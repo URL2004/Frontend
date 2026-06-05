@@ -3530,6 +3530,7 @@ window.loadAdminRefundList = async () =>{
  </div>
  <div style="display:flex;gap:6px;flex-shrink:0;">
  <button onclick="window.approveRefund('${item.id}','${item.kind}')" style="padding:6px 14px;border-radius:6px;border:none;background:var(--red);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">승인</button>
+ ${item.kind === 'order' ? `<button onclick="window.approveFullRefund('${item.id}','${item.kind}')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--red);background:none;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;">전액 환불</button>` : ''}
  <button onclick="window.rejectRefund('${item.id}','${item.kind}')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;">거절</button>
  </div>
  </div>
@@ -3557,6 +3558,22 @@ window.approveRefund = async (orderId, kind) =>{
  const data = await res.json();
  if (res.ok && data.ok) { alert('환불이 완료되었습니다.'); await window.loadAdminRefundList(); await window.loadOrderHistory(); }
  else alert(data.error || '환불 승인 실패');
+ } catch(e) { alert('네트워크 오류: ' + e.message); }
+};
+
+// 관리자: 전액 환불 (사용 크레딧과 무관하게 결제액 전체 환불 + 남은 크레딧 회수)
+window.approveFullRefund = async (orderId, kind) =>{
+ kind = kind || 'order';
+ if (!confirm('전액 환불을 진행하시겠습니까?\n\n사용한 크레딧과 무관하게 결제 금액 전체가 토스에서 환불되며, 남은 크레딧은 회수됩니다.')) return;
+ try {
+ const idToken = await CU.getIdToken();
+ const res = await fetch('https://ai-backend-3xtk.onrender.com/approve-refund', {
+ method:'POST', headers:{'Content-Type':'application/json'},
+ body: JSON.stringify({ orderId, idToken, kind, full: true })
+ });
+ const data = await res.json();
+ if (res.ok && data.ok) { alert('전액 환불이 완료되었습니다.'); await window.loadAdminRefundList(); await window.loadOrderHistory(); }
+ else alert(data.error || '전액 환불 실패');
  } catch(e) { alert('네트워크 오류: ' + e.message); }
 };
 
