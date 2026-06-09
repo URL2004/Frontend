@@ -3241,6 +3241,37 @@ window.saveHistory = async (type, inputText, detectResult, humanResult, credits)
  } catch(e) { console.error('[saveHistory] 실패', { code: e?.code, message: e?.message, name: e?.name }); }
 };
 
+// 진행분 누적 저장 — histId 있으면 갱신, 없으면 생성 후 id 반환.
+// 멀티청크에서 청크 성공마다 호출 → 한 작업=한 행으로 누적, 탭 종료/이탈 시에도 완료분 보존.
+window.upsertHistory = async (histId, type, inputText, detectResult, humanResult, credits) =>{
+ if (!CU) return histId || null;
+ try {
+ const data = {
+ type: type || 'unknown',
+ inputText: inputText || '',
+ credits: typeof credits === 'number' ? credits : 0,
+ updatedAt: serverTimestamp()
+ };
+ if (detectResult) {
+ data.probability = typeof detectResult.probability === 'number' ? detectResult.probability : null;
+ data.summary = detectResult.summary || '';
+ data.detail = detectResult.detail || '';
+ }
+ if (humanResult) {
+ data.outputText = humanResult.outputText || '';
+ data.humanSummary = humanResult.summary || '';
+ data.humanDetail = humanResult.detail || '';
+ }
+ if (histId) {
+ await updateDoc(doc(db,'users',CU.uid,'history',histId), data);
+ return histId;
+ }
+ data.createdAt = serverTimestamp();
+ const ref = await addDoc(collection(db,'users',CU.uid,'history'), data);
+ return ref.id;
+ } catch(e) { console.error('[upsertHistory] 실패', { code: e?.code, message: e?.message }); return histId || null; }
+};
+
 window.loadHistory = async () =>{
  const el = document.getElementById('historyList');
  if (!el) return;
@@ -4372,7 +4403,7 @@ function clearPDF() {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   자동 청크 분할 · 순차 실행 (5,000자 초과 시)
+   자동 청크 분할 · 순차 실행 (8,000자 초과 시)
    ══════════════════════════════════════════════════════════════ */
 function splitByBoundary(text, MIN, MAX) {
  MIN = MIN || 4500;
@@ -4405,7 +4436,14 @@ function splitByBoundary(text, MIN, MAX) {
   chunks.push(rest.slice(0, cut).trim());
   rest = rest.slice(cut).trim();
  }
- if (rest.length) chunks.push(rest);
+ if (rest.length) {
+  // 5자 미만 꼬리 청크는 백엔드 최소 길이(5) 미만으로 400 거부되므로 직전 청크에 합친다
+  if (chunks.length > 0 && rest.length < 5) {
+   chunks[chunks.length - 1] = (chunks[chunks.length - 1] + ' ' + rest).trim();
+  } else {
+   chunks.push(rest);
+  }
+ }
  return chunks;
 }
 
@@ -4494,6 +4532,7 @@ async function runChunkedText(fullText, opts) {
  var results = [];
  var prevTail = '';
  var doneNeeded = 0;  // 차감 정합용 — 서버 청크별 차감 공식(ceil(len/100))을 그대로 누적
+ var histId = null;   // 진행분 누적 저장용 단일 history 문서 id
  for (var i = 0; i < chunks.length; i++) {
   // 청크 진행 표시 (별도 element — setInterval의 가짜 단계 메시지와 분리)
   if (chunks.length > 1) {
@@ -4520,7 +4559,8 @@ async function runChunkedText(fullText, opts) {
      result: combineChunkResults(results, opts.mode),
      done: results.length,
      total: chunks.length,
-     doneNeeded: doneNeeded
+     doneNeeded: doneNeeded,
+     savedHistory: !!histId
     };
    }
    throw err;
@@ -4528,8 +4568,18 @@ async function runChunkedText(fullText, opts) {
   results.push(body.result);
   doneNeeded += Math.ceil(chunks[i].length / 100);
   prevTail = chunks[i].slice(-200);
+  // ★ 청크 성공 즉시 진행분을 단일 history 문서에 누적 저장 → 탭 종료/이탈 시에도 완료분 보존
+  try {
+   var combinedSoFar = combineChunkResults(results, opts.mode);
+   histId = await window.upsertHistory(
+    histId, opts.mode, fullText,
+    opts.mode === 'detect' ? combinedSoFar : null,
+    opts.mode !== 'detect' ? combinedSoFar : null,
+    doneNeeded
+   );
+  } catch (_) {}
  }
- return { ok: true, result: combineChunkResults(results, opts.mode) };
+ return { ok: true, result: combineChunkResults(results, opts.mode), savedHistory: !!histId };
 }
 
 async function runAnalysis() {
@@ -4560,7 +4610,7 @@ async function runAnalysis() {
  // 입력 길이 + 모드 기반 예상 처리 시간 추정
  const estSec = (() => {
   const len = text.length;
-  const chunks = len > 5500 ? Math.ceil(len / 5500) : 1;
+  const chunks = len > 8000 ? Math.ceil(len / 5500) : 1;
   // humanize: 웹검색 ~12s + 메인 ~18s + 2-pass refine ~17s + 검증/네트워크 ~3s
   const humanizePerChunk = 50;
   const perChunk = (mode === 'detect') ? 10 : humanizePerChunk;
@@ -4654,16 +4704,22 @@ async function runAnalysis() {
   useWebSearch: false
  };
 
- if (text.length > 5500) {
-  // 내부 자동 분할 — 유저 노출 없음
+ if (text.length > 8000) {
+  // 내부 자동 분할 — 유저 노출 없음 (8,000자 이하는 단일 호출 = 끝에 1회 원자 차감)
   data = await runChunkedText(text, commonOpts);
  } else {
   data = await callAnalyzeApi(Object.assign({ text: text }, commonOpts));
  }
 
- // 서버가 이미 Firestore 크레딧을 차감했으므로 UI만 낙관적 업데이트
+ // ★ 결과 먼저 렌더 — 저장/부수효과보다 앞서, 어떤 실패에도 이미 받은 결과가 사라지지 않게
+ if (mode === 'detect') renderDetect(data.result);
+ else renderHuman(data.result);
+
+ // 서버가 이미 Firestore 크레딧을 차감했으므로 UI만 낙관적 업데이트 (finally에서 실제 잔액으로 재동기화)
  if (window.UP !== 'unlimited') { window.UC = Math.max(0, (window.UC || 0) - needed); updateCreditUI(); }
 
+ // 히스토리 저장 — 멀티청크는 진행 중 이미 누적 저장됨(data.savedHistory). 단일 호출만 여기서 1회.
+ if (!(data && data.savedHistory)) {
  await window.saveHistory(
  currentMode,
  text,
@@ -4671,6 +4727,7 @@ async function runAnalysis() {
  mode !== 'detect' ? data.result : null,
  needed
  );
+ }
  if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory();
 
  const _ts = localStorage.getItem('traffic_source') || 'direct';
@@ -4681,33 +4738,46 @@ async function runAnalysis() {
   gtag('event', 'humanize_run', { mode: humanizeMode, chars: _chars, lang: selectedLang, pdf: false, traffic_source: _ts });
  }
 
- if (mode === 'detect') renderDetect(data.result);
- else renderHuman(data.result);
-
  } catch (e) {
- // ★ 청크 분할 중 일부만 성공한 경우: 차감된 크레딧이 헛되지 않게 부분 결과를 보여준다.
+ // ★ 청크 분할 중 일부만 성공한 경우: 차감된 크레딧이 헛되지 않게 부분 결과를 먼저 보여준다.
  if (e && e.partial && e.partial.result) {
-  const pCurMode = mode === 'detect' ? 'detect' : 'humanize';
   if (mode === 'detect') renderDetect(e.partial.result);
   else renderHuman(e.partial.result);
   renderPartialWarning(e.partial.done, e.partial.total);
-  // 실제 처리(차감)된 청크만큼만 크레딧 낙관 업데이트 + 부분 결과 히스토리 저장
-  const partialNeeded = Math.max(0, e.partial.doneNeeded || 0);
-  if (window.UP !== 'unlimited' && partialNeeded > 0) { window.UC = Math.max(0, (window.UC || 0) - partialNeeded); updateCreditUI(); }
-  try {
-   await window.saveHistory(
-    pCurMode,
-    text,
-    mode === 'detect' ? e.partial.result : null,
-    mode !== 'detect' ? e.partial.result : null,
-    partialNeeded
-   );
-   if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory();
-  } catch (_) {}
+  // 멀티청크 진행분은 이미 누적 저장됨(e.partial.savedHistory). 아니면 여기서 1회 저장.
+  if (!e.partial.savedHistory) {
+   const pCurMode = mode === 'detect' ? 'detect' : 'humanize';
+   const partialNeeded = Math.max(0, e.partial.doneNeeded || 0);
+   try {
+    await window.saveHistory(
+     pCurMode,
+     text,
+     mode === 'detect' ? e.partial.result : null,
+     mode !== 'detect' ? e.partial.result : null,
+     partialNeeded
+    );
+   } catch (_) {}
+  }
+  if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory();
  } else {
-  renderError(e.message || '오류가 발생했습니다.');
+  // ★ 차감 여부를 단정하지 않음 — 서버가 일부 청크를 차감했는데 클라가 실패로 본 경우(RC-2),
+  //   백엔드의 "크레딧은 차감되지 않았습니다" 단정이 거짓이 된다. 그 문구를 떼고 실제 잔액(finally 재동기화)으로 안내.
+  let em = (e && e.message) ? String(e.message) : '오류가 발생했습니다.';
+  if (em.indexOf('차감되지 않았습니다') !== -1) {
+   em = em.replace(/\s*크레딧은 차감되지 않았습니다\.?/g, '').trim()
+      + ' 처리된 구간이 있으면 그만큼만 차감되며, 현재 크레딧 잔액에서 확인하실 수 있어요.';
+  }
+  renderError(em);
  }
  } finally {
+ // ★ 작업 종료 후 실제 잔액·히스토리로 재동기화 — 낙관 표시와 서버 실값 불일치 자가치유
+ try {
+  if (window.CU) {
+   const _us = await getDoc(doc(db,'users',window.CU.uid));
+   if (_us.exists()) { window.UC = _us.data().credits || 0; updateCreditUI(); }
+  }
+ } catch (_) {}
+ if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory();
  window.removeEventListener('beforeunload', onLeave);
  clearInterval(prog);
  pct = 100;
