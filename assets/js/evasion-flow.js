@@ -236,8 +236,8 @@
       body: JSON.stringify({ approved: ids })
     }).then(function (res) { return res.json(); }).then(function (b) {
       if (b && b.error) throw new Error(b.error);
-      formalStop = startJobTicker(currentBareLen() * 5, '승인 근거로 재구성 중');
-      return pollTransform(jobId);
+      formalStop = startJobTicker(Math.max(240, Math.min(2700, Math.round(currentBareLen() / 4))), '승인 근거로 재구성 중');
+      return pollTransform(jobId, ++pollGen);
     }).catch(function (err) {
       alert(err && err.message ? err.message : '승인 처리에 실패했어요.');
       show('reduce');
@@ -245,8 +245,8 @@
   }
 
   // ── P2 실연결: 블로그 어투 회피 = /analyze(engine:floorV2, mode:blog) ──────────
-  function callEvasionApi(payload) {
-    var ctrl = new AbortController();
+  function callEvasionApi(payload, extCtrl) {
+    var ctrl = extCtrl || new AbortController();
     var timedOut = false;
     // 타임아웃은 글 길이 비례(실측: 2.3K자≈2.5분, 9K자≈13분 — API 레이트리밋 구간 포함). 진짜 hang만 차단.
     var bare = (payload.text || '').replace(/\s/g, '').length;
@@ -292,17 +292,18 @@
   }
 
   // 단일 응답 작업이라 단계는 경과 시간 기반 추정 표시(마지막 단계는 응답 도착 시).
-  function startJobTicker(charLen, label) {
-    var t0 = 0;
+  // estSec=예상 총 소요(초), initialSec=이미 흐른 시간(재진입 복원용 — 새로고침해도 %가 0부터 다시 안 올라감).
+  function startJobTicker(estSec, label, initialSec) {
+    var t0 = initialSec || 0;
     var name = label || '문장 다듬는 중';
-    setJobSteps(1);
-    if ($('lavStepSlot')) $('lavStepSlot').textContent = name;
-    var est = Math.max(90, Math.min(1800, charLen / 12));   // 대략 추정(초) — 실측: 2.1K≈154s, 9K≈13분
-    var timer = setInterval(function () {
-      t0 += 2;
-      if ($('lavStepSlot')) $('lavStepSlot').textContent = name + ' (' + Math.min(99, Math.round(t0 / est * 100)) + '%)';
+    var est = Math.max(60, estSec || 300);
+    setJobSteps(t0 > est * 0.7 ? 2 : 1);
+    var paint = function () {
+      if ($('lavStepSlot')) $('lavStepSlot').textContent = name + ' (' + Math.min(99, Math.round(t0 / est * 100)) + '% · 예상 ' + Math.round(est / 60) + '분)';
       if (t0 > est * 0.7) setJobSteps(2);
-    }, 2000);
+    };
+    paint();
+    var timer = setInterval(function () { t0 += 2; paint(); }, 2000);
     return function stop() { clearInterval(timer); };
   }
 
@@ -331,12 +332,17 @@
     if ($('lavJobTitle')) $('lavJobTitle').textContent = '문장을 다듬고 있어요';
     if ($('lavJobId')) $('lavJobId').textContent = '';
     show('job');
-    var stop = startJobTicker(text.replace(/\s/g, '').length);
+    var bare = text.replace(/\s/g, '').length;
+    var stop = startJobTicker(Math.max(90, Math.min(1200, bare / 12)), '문장 다듬는 중');
+    var ctrl = new AbortController();
+    var userCancelled = false;
+    activeCancel = function () { userCancelled = true; ctrl.abort(); };   // 서버는 disconnect 감지로 작업 중단·무차감
     (async function () {
       var idToken = '';
       try { if (window.CU && window.CU.getIdToken) idToken = await window.CU.getIdToken(); } catch (e) { /* 비로그인 — 서버가 401 안내 */ }
       try {
-        var body = await callEvasionApi({ text: text, humanizeMode: 'blog', idToken: idToken, userNotes: s.memo });
+        var body = await callEvasionApi({ text: text, humanizeMode: 'blog', idToken: idToken, userNotes: s.memo }, ctrl);
+        activeCancel = null;
         stop();
         setJobSteps(4);
         if ($('lavDoneScore')) $('lavDoneScore').textContent = (lastDiag && lastDiag.bands && lastDiag.bands.blog) || '32~41%';
@@ -344,7 +350,9 @@
         renderBadges(body.evasion && body.evasion.floorReport);
         show('done');
       } catch (err) {
+        activeCancel = null;
         stop();
+        if (userCancelled) return;   // 사용자 중단 — 이미 설정 화면으로 이동함
         alert(err && err.message ? err.message : '처리 중 오류가 발생했어요.');
         show('reduce');
       }
@@ -353,11 +361,23 @@
 
   // ── P3+P4 실연결: 격식 유지 재구성 = POST /transform(job) + 폴링 + 근거 승인 ──────────
   var formalStop = null;   // 진행 ticker 정지 함수
+  var activeCancel = null; // 현재 작업 취소 함수(blog=fetch abort, formal=POST /cancel)
+  var pollGen = 0;         // 취소·새 작업 시작 시 증가 → 이전 폴링 루프 자연 종료
   function stopFormalTicker() { if (formalStop) { formalStop(); formalStop = null; } }
   function currentBareLen() {
     var src = $('lavInput');
     return (src ? src.value : '').replace(/\s/g, '').length;
   }
+
+  // 작업 중단(확인 모달 → 서버 취소/abort → 설정 화면 복귀). 차감은 완료 시에만 일어나므로 취소=항상 무과금.
+  window.lavCancelJob = function () {
+    if (!confirm('진행 중인 작업을 중단할까요? 크레딧은 차감되지 않아요.')) return;
+    pollGen++;
+    if (activeCancel) { try { activeCancel(); } catch (e) { } activeCancel = null; }
+    stopFormalTicker();
+    clearJobRef();
+    show('reduce');
+  };
   // ── P5: jobId 재진입 — 새로고침·재방문 시 진행 중 작업 복원(서버 job은 어차피 계속 돌고 있음) ──
   function saveJobRef(jobId) { try { localStorage.setItem('lavJobRef', JSON.stringify({ jobId: jobId, ts: Date.now() })); } catch (e) { } }
   function clearJobRef() { try { localStorage.removeItem('lavJobRef'); } catch (e) { } }
@@ -379,8 +399,10 @@
         if ($('lavJobTitle')) $('lavJobTitle').textContent = '글을 다시 쓰고 있어요';
         if ($('lavJobId')) $('lavJobId').textContent = '#' + ref.jobId.slice(0, 6).toUpperCase();
         show('job');
-        formalStop = startJobTicker(3000, '재구성 중');   // 원문 길이를 모름 — 보수적 추정
-        pollTransform(ref.jobId);
+        activeCancel = makeJobCanceller(ref.jobId);
+        // 서버 estSec·elapsedSec로 진행률 이어서 표시(새로고침해도 0부터 다시 안 올라감)
+        formalStop = startJobTicker(st.estSec || 900, st.status === 'awaiting_approval' ? '근거 검수 대기' : '재구성 중', st.elapsedSec || 0);
+        pollTransform(ref.jobId, ++pollGen);
         return;
       }
       clearJobRef();   // blocked·error는 복원 의미 없음
@@ -390,15 +412,18 @@
   else initJobResume();
 
   // 폴링: 6초 간격, 최대 45분(근거 검색+재구성). 창을 닫아도 서버 작업은 계속됨(job 방식).
-  async function pollTransform(jobId) {
+  // gen 토큰: 사용자가 중단하거나 새 작업을 시작하면 pollGen이 올라가 이전 루프가 조용히 끝남.
+  async function pollTransform(jobId, gen) {
     var deadline = Date.now() + 45 * 60000;
     while (Date.now() < deadline) {
       await new Promise(function (ok) { setTimeout(ok, 6000); });
+      if (gen !== pollGen) return;   // 중단·교체됨
       var st;
       try {
         st = await fetch(window.apiUrl('/transform/' + jobId)).then(function (res) { return res.json(); });
       } catch (e) { continue; }   // 일시 네트워크 오류 — 다음 폴링
       if (!st) continue;
+      if (st.status === 'cancelled') { stopFormalTicker(); clearJobRef(); return; }
       if (st.status === 'awaiting_approval') {
         stopFormalTicker();
         setJobSteps(2);
@@ -430,13 +455,20 @@
     alert('작업이 예상보다 오래 걸리고 있어요. 새로고침하면 진행 중인 작업으로 다시 들어갈 수 있어요.');
   }
 
+  function makeJobCanceller(jobId) {
+    return function () { fetch(window.apiUrl('/transform/' + jobId + '/cancel'), { method: 'POST' }).catch(function () { }); };
+  }
+
   function runFormalEvasion(s) {
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
     if ($('lavJobTitle')) $('lavJobTitle').textContent = '글을 다시 쓰고 있어요';
     if ($('lavJobId')) $('lavJobId').textContent = '';
     show('job');
-    formalStop = startJobTicker(currentBareLen() * (s.evidence ? 7 : 5), s.evidence ? '실제 근거 검색·재구성 중' : '글을 다시 쓰는 중');
+    var bare = currentBareLen();
+    var estSec = Math.max(240, Math.min(2700, Math.round(bare / 4) + (s.evidence ? 480 : 0)));   // 서버 공식과 동일
+    formalStop = startJobTicker(estSec, s.evidence ? '실제 근거 검색·재구성 중' : '글을 다시 쓰는 중');
+    var gen = ++pollGen;
     (async function () {
       var idToken = '';
       try { if (window.CU && window.CU.getIdToken) idToken = await window.CU.getIdToken(); } catch (e) { /* 비로그인 — 서버가 401 안내 */ }
@@ -448,7 +480,8 @@
         }).then(function (res) { return res.json().then(function (b) { if (b && b.error) throw new Error(b.error); if (!res.ok || !b || !b.ok) throw new Error('작업 시작에 실패했어요.'); return b; }); });
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
-        await pollTransform(r.jobId);
+        activeCancel = makeJobCanceller(r.jobId);
+        await pollTransform(r.jobId, gen);
       } catch (err) {
         stopFormalTicker();
         alert(err && err.message ? err.message : '처리 중 오류가 발생했어요.');

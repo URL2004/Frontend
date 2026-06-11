@@ -303,9 +303,10 @@
              <span class="lav-spinner" aria-hidden="true"></span>
              <div>
                <strong id="lavJobTitle">글을 다시 쓰고 있어요</strong>
-               <p>창을 닫아도 작업은 계속돼요. 결과는 결과 보관함에서도 볼 수 있어요.</p>
+               <p>창을 닫아도 작업은 계속돼요. 새로고침하면 진행 중인 작업으로 다시 들어옵니다.</p>
              </div>
-             <span class="lav-job-id" id="lavJobId">#A1B2</span>
+             <span class="lav-job-id" id="lavJobId"></span>
+             <button type="button" class="lav-job-cancel" onclick="lavCancelJob()">중단</button>
            </div>
            <ol class="lav-steps" id="lavSteps">
              <li class="done"><i></i>구조 계획</li>
@@ -317,7 +318,7 @@
            <div class="lav-approve" id="lavApprove" hidden>
              <div class="lav-approve-head">
                <strong id="lavApproveCount">검수할 근거</strong>
-               <span>승인한 자료만 인용해요. 미승인 자료는 엔진이 차단합니다.</span>
+               <span>승인한 자료만 인용해요. 미승인 자료는 엔진이 차단합니다. ★많이 승인할수록 시간이 길어지고 사실 보존 검증이 빡빡해져요 — 핵심 10~15건 승인을 권장해요.</span>
              </div>
              <div class="lav-approve-list" id="lavApproveList"></div>
              <div class="lav-approve-actions">

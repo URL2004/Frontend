@@ -13812,3 +13812,85 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 .gp-lav-entry h1 img{
  transform:translateX(-4px);
 }
+
+/* ===== lavender v38: 게시판 목록 통일 — 공지·커뮤니티·QnA 공통 행(row) ===== */
+/* 컨테이너: 세로 스택(커뮤니티 .post-grid 의 grid 도 덮어씀) */
+.gp-board-list{display:flex !important;flex-direction:column !important;gap:9px !important;}
+.post-grid.gp-board-list{grid-template-columns:none !important;}
+
+/* 테마 무관 기본 골격(라벤더 외 디자인에서도 행 구조 유지) */
+.gp-board-row{display:flex;align-items:center;gap:16px;padding:15px 16px;cursor:pointer;border-radius:12px;}
+.gbr-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
+.gbr-ttl{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gbr-sub{display:flex;align-items:center;gap:11px;flex-wrap:wrap;font-size:12.5px;}
+.gbr-stats{flex-shrink:0;display:flex;align-items:center;gap:14px;}
+.gbr-stat{display:inline-flex;align-items:center;gap:5px;font-weight:700;}
+
+/* 공통 행: 흰 카드, 옅은 보더, 박스감 최소화 */
+#mainContent[data-main-design="lavender"] .gp-board-row{
+ display:flex;align-items:center;gap:16px;
+ padding:16px 18px;
+ background:#fff;
+ border:1px solid #edeef6;
+ border-radius:14px;
+ cursor:pointer;
+ box-shadow:none;
+ transition:border-color .15s, background .15s, transform .12s;
+}
+#mainContent[data-main-design="lavender"] .gp-board-row:hover{
+ background:#faf9ff;
+ border-color:#d8d4f4;
+ transform:translateY(-1px);
+}
+
+/* 좌측: 제목 + 옅은 메타(작성자·날짜·구분) */
+#mainContent[data-main-design="lavender"] .gbr-main{
+ flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;
+}
+#mainContent[data-main-design="lavender"] .gbr-ttl{
+ display:flex;align-items:center;gap:6px;
+ font-size:15.5px;font-weight:700;color:#1b1d2e;line-height:1.4;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+#mainContent[data-main-design="lavender"] .gbr-sub{
+ display:flex;align-items:center;gap:11px;
+ font-size:12.5px;font-weight:500;color:#9a9bb0;flex-wrap:wrap;
+}
+/* 메타 항목 사이 가운뎃점 구분 */
+#mainContent[data-main-design="lavender"] .gbr-sub > span{position:relative;}
+#mainContent[data-main-design="lavender"] .gbr-sub > span + span::before{
+ content:"";position:absolute;left:-6px;top:50%;transform:translateY(-50%);
+ width:2px;height:2px;border-radius:50%;background:#d2d3e0;
+}
+/* 구분(카테고리): 박스 없이 옅은 보라 텍스트로만 */
+#mainContent[data-main-design="lavender"] .gbr-cat{color:#7b6ef0;font-weight:600;}
+
+/* 우측: 조회수·좋아요·댓글 강조 클러스터 */
+#mainContent[data-main-design="lavender"] .gbr-stats{
+ display:flex;align-items:center;gap:15px;flex-shrink:0;
+}
+#mainContent[data-main-design="lavender"] .gbr-stat{
+ display:inline-flex;align-items:center;gap:5px;
+ font-size:14px;font-weight:700;color:#3a3a52;
+}
+#mainContent[data-main-design="lavender"] .gbr-stat svg{color:#a6a7ba;flex-shrink:0;}
+#mainContent[data-main-design="lavender"] .gbr-stat b{font-weight:800;font-variant-numeric:tabular-nums;}
+#mainContent[data-main-design="lavender"] .gbr-stat.views svg{color:#5b8def;}
+#mainContent[data-main-design="lavender"] .gbr-stat.likes svg{color:#f0617f;}
+#mainContent[data-main-design="lavender"] .gbr-stat.cmt svg{color:#7b6ef0;}
+
+#mainContent[data-main-design="lavender"] .gbr-hidden{
+ margin-left:6px;padding:2px 7px;border-radius:6px;
+ background:rgba(217,48,37,.1);color:#d93025;font-size:11px;font-weight:700;
+}
+
+/* 모바일: 스탯은 유지하되 간격 축소, 제목 줄임 유지 */
+@media(max-width:640px){
+ #mainContent[data-main-design="lavender"] .gp-board-row{padding:14px 15px;gap:10px;}
+ #mainContent[data-main-design="lavender"] .gbr-stats{gap:11px;}
+ #mainContent[data-main-design="lavender"] .gbr-stat{font-size:13px;}
+ #mainContent[data-main-design="lavender"] .gbr-ttl{font-size:14.5px;}
+}
+/* ───────── lavender v44: 작업 중단 버튼(회피모드 job 화면) ───────── */
+#mainContent[data-main-design="lavender"] .lav-job-cancel{margin-left:10px;background:none;border:1px solid #dfe3ee;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:600;color:#5b6172;cursor:pointer;white-space:nowrap;}
+#mainContent[data-main-design="lavender"] .lav-job-cancel:hover{border-color:#c9cede;color:#171a2b;background:#f6f7fc;}
