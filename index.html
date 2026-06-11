@@ -4475,6 +4475,7 @@ async function callAnalyzeApi(payload, opts) {
      idToken: payload.idToken,
      prevContext: payload.prevContext || '',
      billingMode: payload.billingMode || 'credit',
+     requestId: payload.requestId || '',
      useWebSearch: false
     }),
     signal: ctrl.signal
@@ -4513,6 +4514,33 @@ async function callAnalyzeApi(payload, opts) {
  }
 }
 
+// 멱등 키 생성 — 요청·재시도·회수에서 동일 id를 써서 서버가 중복 차감을 막고 결과를 회수해준다.
+function genReqId() {
+ try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch(e){}
+ return 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+}
+// 결과 회수 — 응답이 유실돼도 차감됐다면 결과가 서버에 영속돼 있어 requestId로 되가져온다.
+// 서버가 막 커밋 중일 수 있어 404/5xx는 짧게 재시도(총 ~4.5초)한다.
+async function recoverResult(requestId, idToken) {
+ for (var attempt = 0; attempt < 3; attempt++) {
+  try {
+   var res = await fetch('https://ai-backend-3xtk.onrender.com/analyze/result', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requestId: requestId, idToken: idToken })
+   });
+   if (res.ok) {
+    var body = await res.json();
+    if (body && body.ok && body.result) return body;
+   } else if (res.status === 400 || res.status === 401) {
+    return null;   // 요청/인증 문제 — 재시도 무의미
+   }
+   // 404(아직 미커밋) 또는 5xx → 잠시 후 재시도
+  } catch (e) { /* 네트워크 — 재시도 */ }
+  if (attempt < 2) await new Promise(function(r){ setTimeout(r, 1500 + attempt * 1500); });
+ }
+ return null;
+}
+
 function combineChunkResults(results, apiMode) {
  if (apiMode === 'detect') {
   var probs = results.map(function(r){ return typeof r.probability === 'number' ? r.probability : 0; });
@@ -4532,7 +4560,6 @@ async function runChunkedText(fullText, opts) {
  var results = [];
  var prevTail = '';
  var doneNeeded = 0;  // 차감 정합용 — 서버 청크별 차감 공식(ceil(len/100))을 그대로 누적
- var histId = null;   // 진행분 누적 저장용 단일 history 문서 id
  for (var i = 0; i < chunks.length; i++) {
   // 청크 진행 표시 (별도 element — setInterval의 가짜 단계 메시지와 분리)
   if (chunks.length > 1) {
@@ -4540,6 +4567,7 @@ async function runChunkedText(fullText, opts) {
    if (chunkEl) chunkEl.textContent = '청크 ' + (i + 1) + ' / ' + chunks.length;
   }
   var body;
+  var reqId = genReqId();
   try {
    body = await callAnalyzeApi({
     mode: opts.mode,
@@ -4549,37 +4577,34 @@ async function runChunkedText(fullText, opts) {
     idToken: opts.idToken,
     prevContext: prevTail,
     billingMode: opts.billingMode,
+    requestId: reqId,
     useWebSearch: false
    }, { maxRetries: 3 });   // 청크는 한 작업의 일부 — 일시 실패에 더 끈질기게 재시도해 부분 실패 빈도↓
   } catch (err) {
-   // ★ 부분 결과 보존: 앞 청크들은 서버에서 정상 차감·완료됐다(disconnect 아님 → 서버 복구 대상 아님).
-   //   여기서 전체를 버리면 "크레딧만 사라지고 결과 0" 민원이 된다. 처리된 청크 결과를 살려 전달.
-   if (results.length > 0) {
-    err.partial = {
-     result: combineChunkResults(results, opts.mode),
-     done: results.length,
-     total: chunks.length,
-     doneNeeded: doneNeeded,
-     savedHistory: !!histId
-    };
+   // 응답 유실 회수: 차감됐다면 이 청크 결과가 서버에 영속됨 → requestId로 되가져와 진행.
+   var rec = await recoverResult(reqId, opts.idToken);
+   if (rec && rec.result) {
+    body = rec;
+   } else {
+    // 회수도 실패 → 이 청크는 차감 안 됨(차감⟺결과영속). 앞 청크는 서버가 차감+history 기록 완료 → 살려 전달.
+    if (results.length > 0) {
+     err.partial = {
+      result: combineChunkResults(results, opts.mode),
+      done: results.length,
+      total: chunks.length,
+      doneNeeded: doneNeeded,
+      savedHistory: true
+     };
+    }
+    throw err;
    }
-   throw err;
   }
   results.push(body.result);
   doneNeeded += Math.ceil(chunks[i].length / 100);
   prevTail = chunks[i].slice(-200);
-  // ★ 청크 성공 즉시 진행분을 단일 history 문서에 누적 저장 → 탭 종료/이탈 시에도 완료분 보존
-  try {
-   var combinedSoFar = combineChunkResults(results, opts.mode);
-   histId = await window.upsertHistory(
-    histId, opts.mode, fullText,
-    opts.mode === 'detect' ? combinedSoFar : null,
-    opts.mode !== 'detect' ? combinedSoFar : null,
-    doneNeeded
-   );
-  } catch (_) {}
+  // 히스토리는 백엔드가 차감과 원자적으로 기록(청크별) — 클라 저장 불필요.
  }
- return { ok: true, result: combineChunkResults(results, opts.mode), savedHistory: !!histId };
+ return { ok: true, result: combineChunkResults(results, opts.mode), savedHistory: true };
 }
 
 async function runAnalysis() {
@@ -4708,7 +4733,15 @@ async function runAnalysis() {
   // 내부 자동 분할 — 유저 노출 없음 (8,000자 이하는 단일 호출 = 끝에 1회 원자 차감)
   data = await runChunkedText(text, commonOpts);
  } else {
-  data = await callAnalyzeApi(Object.assign({ text: text }, commonOpts));
+  const singleReqId = genReqId();
+  try {
+   data = await callAnalyzeApi(Object.assign({ text: text, requestId: singleReqId }, commonOpts));
+  } catch (err) {
+   // 응답 유실 회수: 차감됐다면 결과가 서버에 영속됨(차감⟺결과영속) → requestId로 되가져온다.
+   const rec = await recoverResult(singleReqId, idToken);
+   if (rec && rec.result) { data = rec; }
+   else throw err;
+  }
  }
 
  // ★ 결과 먼저 렌더 — 저장/부수효과보다 앞서, 어떤 실패에도 이미 받은 결과가 사라지지 않게
