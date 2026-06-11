@@ -93,13 +93,15 @@
     var text = src ? src.value : '';
     show('analyzing');
     var minWait = new Promise(function (r) { setTimeout(r, 900); });   // 스피너 최소 노출(즉답이면 화면이 깜빡임)
+    console.info('[evasion] API_BASE =', window.apiBase ? window.apiBase() : '?');
     var req = fetch(window.apiUrl('/diagnose'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text })
-    }).then(function (r) { return r.json(); }).catch(function () { return null; });
+    }).then(function (r) { return r.json(); }).catch(function (e) { console.warn('[evasion] /diagnose 실패 — 폴백 진단 사용:', e && e.message); return null; });
     Promise.all([req, minWait]).then(function (out) {
       var d = out[0];
+      if (!(d && d.ok)) console.warn('[evasion] 진단 폴백 동작 중 — 백엔드 미연결 상태(블로그 변환은 실패함)');
       applyDiag(d && d.ok ? d : fakeDiagnose(text));
       show('choose');
     });
