@@ -1,0 +1,58 @@
+<div id="appScreen" class="screen active">
+  <div class="app-layout">
+    <aside class="sidebar gp-sidebar">
+      <div class="gp-brand" onclick="switchTab('main')">
+        <img class="gp-brand-logo" src="/assets/img/brand-logo-menu.png" alt="교수님 피하기">
+      </div>
+
+      <nav class="sidebar-nav gp-nav">
+        <button class="snav-btn active" data-tab="main" onclick="switchTab('main')">
+          <svg viewBox="0 0 24 24"><path d="M12 3 20 7v6c0 4.6-3.2 7.4-8 8.8-4.8-1.4-8-4.2-8-8.8V7l8-4Z"/><path d="m9.5 12 1.8 1.8 3.7-4"/></svg>
+          <span>AI 감지 &amp; 휴머나이저</span>
+        </button>
+        <button class="snav-btn" data-tab="notice" onclick="switchTab('notice');loadNotices()">
+          <svg viewBox="0 0 24 24"><path d="M5 19h14M7 17V9a5 5 0 0 1 10 0v8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+          <span>공지사항</span>
+        </button>
+        <button class="snav-btn" data-tab="community" onclick="switchTab('community');loadPosts()">
+          <svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4V5Z"/></svg>
+          <span>커뮤니티</span>
+        </button>
+        <button class="snav-btn" data-tab="qna" onclick="switchTab('qna');loadQuestions()">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.7 2.7 0 0 1 5 1.4c0 1.8-2.6 2.2-2.6 3.8"/><path d="M12 17.5h.01"/></svg>
+          <span>Q&amp;A</span>
+        </button>
+        <button class="snav-btn snav-charge" data-tab="pricing" onclick="switchTab('pricing')">
+          <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 15h5"/></svg>
+          <span>충전하기</span>
+        </button>
+        <button class="snav-btn snav-pro" id="snavProBtn" data-tab="pro" onclick="goToPro()">
+          <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
+          <span>Pro</span>
+          <span id="snavProLock" class="gp-lock" style="display:none;">잠금</span>
+        </button>
+        <div class="sidebar-hist-divider"></div>
+        <button class="snav-btn" data-tab="history" onclick="switchTab('history');loadHistory()">
+          <svg viewBox="0 0 24 24"><path d="M5 5h14v15H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+          <span>히스토리</span>
+        </button>
+        <div id="sidebarHistoryList"></div>
+      </nav>
+
+      <div class="sidebar-footer gp-sidebar-footer">
+        <button class="gp-sidebar-login" onclick="openMyPage()">
+          <span class="gp-user-dot"></span>
+          <span id="uname" class="sidebar-user-name">로그인 / 회원가입</span>
+          <span id="userPlanBadge" class="sidebar-user-badge">Free</span>
+        </button>
+        <div id="sidebarInviteBanner" class="sidebar-invite gp-invite" onclick="openInviteModal()">
+          <button class="gp-invite-close" aria-label="배너 닫기" onclick="event.stopPropagation();document.getElementById('sidebarInviteBanner').style.display='none';">×</button>
+          <div class="sidebar-invite-title">친구 초대 시 20크레딧 증정!</div>
+          <div class="sidebar-invite-sub">친구도 나도 크레딧을 받아요</div>
+          <button type="button" class="gp-invite-btn">초대하기</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content gp-main">
+      <div id="mypage" class="tab-content" style="display:none;"></div>

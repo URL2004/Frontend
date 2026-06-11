@@ -1,0 +1,128 @@
+<div id="policyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;overflow-y:auto;padding:40px 20px;" onclick="if(event.target===this)this.style.display='none'">
+ <div class="gp-modal-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);max-width:600px;margin:0 auto;padding:32px;">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+ <h2 id="policyTitle" style="font-size:18px;font-weight:700;color:var(--text);"></h2>
+ <button class="gp-modal-close" onclick="document.getElementById('policyModal').style.display='none'" aria-label="닫기" style="width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;font-size:16px;line-height:1;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;">×</button>
+</div>
+ <div id="policyBody" style="font-size:14px;color:var(--text2);line-height:1.9;"></div>
+</div>
+</div>
+<!-- 정기결제 동의 모달 -->
+<div id="subConfirmModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeSubscribeConfirm()">
+  <div class="gp-modal-card" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;width:100%;max-width:460px;margin:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative;overflow:hidden;">
+    <button class="gp-modal-close" onclick="closeSubscribeConfirm()" aria-label="닫기" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:none;background:var(--surface2);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">×</button>
+    <div style="padding:24px 22px 6px;">
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:14px;">정기 구독 시작</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
+        <div style="font-size:13px;color:var(--text3);">선택 상품</div>
+        <div id="subConfirmTier" style="font-size:15px;font-weight:700;color:var(--text);margin:2px 0 8px;">—</div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span style="color:var(--text2);">결제 금액</span>
+          <span id="subConfirmAmount" style="color:var(--text);font-weight:600;">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;">
+          <span style="color:var(--text2);">다음 결제 예정일</span>
+          <span id="subConfirmNext" style="color:var(--text);font-weight:600;">—</span>
+        </div>
+      </div>
+      <ul style="margin:0 0 14px;padding-left:18px;font-size:12px;color:var(--text2);line-height:1.7;">
+        <li>위 금액이 즉시 결제되고, 매월 같은 날짜에 자동 결제됩니다. (VAT 포함)</li>
+        <li>결제일 전까지 마이페이지에서 언제든 해지할 수 있고, 해지해도 이번 사이클 끝까지 사용 가능합니다.</li>
+        <li>결제 실패 시 구독은 자동으로 일시 중단됩니다.</li>
+        <li>등록한 카드 정보는 토스페이먼츠가 안전하게 보관하며, 회사는 카드 번호를 저장하지 않습니다.</li>
+        <li><strong style="color:var(--text);">환불</strong>: 결제일로부터 7일 이내, 그리고 이번 사이클의 쿠폰을 한 번도 사용하지 않은 경우 전액 환불 가능합니다.</li>
+      </ul>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin-bottom:14px;cursor:pointer;">
+        <input type="checkbox" id="subConfirmAgree" onchange="onSubConfirmAgreeChange(this)" style="width:16px;height:16px;cursor:pointer;">
+        <span>위 자동 결제 약관 및 <a href="#" onclick="event.preventDefault();showPolicy('terms');" style="color:var(--accent);text-decoration:underline;">이용약관</a>에 동의합니다.</span>
+      </label>
+    </div>
+    <div style="padding:0 22px 22px;display:flex;gap:8px;">
+      <button onclick="closeSubscribeConfirm()" style="flex:1;padding:11px 0;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;cursor:pointer;">취소</button>
+      <button id="subConfirmStartBtn" onclick="startSubscription()" disabled style="flex:1;padding:11px 0;border-radius:10px;border:none;background:var(--gp-accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;opacity:.5;">구독 시작</button>
+    </div>
+  </div>
+</div>
+
+<!-- 환불하기 모달 -->
+<div id="refundModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="gp-modal-card" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;width:100%;max-width:420px;margin:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative;overflow:hidden;">
+    <button class="gp-modal-close" onclick="document.getElementById('refundModal').style.display='none'" aria-label="닫기" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:none;background:var(--surface2);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">×</button>
+    <div style="padding:24px 22px 16px;">
+      <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;">환불하기</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">환불 가능한 결제 내역입니다.</div>
+    </div>
+    <div id="refundModalList" style="padding:0 22px 16px;max-height:320px;overflow-y:auto;">
+      <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">불러오는 중...</div>
+    </div>
+    <div style="padding:0 22px 20px;">
+      <div style="font-size:11px;color:var(--text3);line-height:1.6;background:var(--surface2);border-radius:8px;padding:10px 12px;">구매 후 7일 이내, 미사용 크레딧에 한해 환불 가능합니다.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 친구 초대 모달 -->
+<div id="inviteModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+  <div class="gp-modal-card" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;width:100%;max-width:420px;margin:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative;overflow:hidden;">
+    <!-- 닫기 -->
+    <button class="gp-modal-close" onclick="closeInviteModal()" aria-label="닫기" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:none;background:var(--surface2);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">×</button>
+    <!-- 상단 일러스트 영역 -->
+    <div style="background:var(--surface2);padding:36px 24px 28px;text-align:center;border-bottom:1px solid var(--border);">
+      <svg width="100" height="80" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:16px;opacity:.85;">
+        <circle cx="35" cy="28" r="14" stroke="#8b949e" stroke-width="2" fill="none"/>
+        <path d="M14 62c0-11.6 9.4-21 21-21h0c11.6 0 21 9.4 21 21" stroke="#8b949e" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <circle cx="65" cy="24" r="12" stroke="#3fb950" stroke-width="2" fill="none"/>
+        <path d="M46 62c0-10.5 8.5-19 19-19h0c10.5 0 19 8.5 19 19" stroke="#3fb950" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M50 10 L53 6 M50 10 L47 6 M50 10 L50 4" stroke="#e3b341" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;">친구 초대 시 20크레딧 증정!</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;">친구가 링크로 가입하면 친구도, 나도<br>각각 <strong style="color:var(--green);">20크레딧</strong>을 드려요</div>
+    </div>
+    <!-- 안내 -->
+    <div style="padding:20px 22px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text3);margin-bottom:10px;letter-spacing:.04em;">크레딧 받는 방법</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text2);">
+            <span style="width:18px;height:18px;border-radius:50%;background:var(--green);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">1</span>
+            아래 링크를 친구에게 공유하세요.
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text2);">
+            <span style="width:18px;height:18px;border-radius:50%;background:var(--green);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">2</span>
+            친구가 링크로 신규 가입하면 20크레딧을 받아요.
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text2);">
+            <span style="width:18px;height:18px;border-radius:50%;background:var(--green);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">3</span>
+            친구가 신규 가입하면 나도 20크레딧을 받아요.
+          </div>
+        </div>
+      </div>
+      <!-- 링크 복사 -->
+      <div id="inviteLinkBox" style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <span id="inviteLinkText" style="flex:1;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">로그인 후 링크가 생성됩니다</span>
+        <button id="inviteCopyBtn" onclick="copyInviteLink()" style="padding:6px 14px;border-radius:6px;border:none;background:var(--green);color:#fff;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .15s;">링크 복사</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 회피 시작 확인 모달 (과금 직전) -->
+<div id="lavConfirmModal" class="lav-confirm-modal" hidden onclick="if(event.target===this)lavCloseConfirm()">
+  <div class="lav-confirm-card">
+    <button type="button" class="lav-confirm-x" onclick="lavCloseConfirm()" aria-label="닫기">×</button>
+    <strong class="lav-confirm-title">이 설정으로 시작할까요?</strong>
+    <ul class="lav-confirm-summary" id="lavConfirmSummary"></ul>
+    <div class="lav-confirm-cost">
+      <div><span>예상 크레딧</span><b id="lavConfirmCredit">8 크레딧</b></div>
+      <div><span>예상 시간</span><b id="lavConfirmTime">2~3분</b></div>
+    </div>
+    <p class="lav-confirm-note">작업이 끝나면 크레딧이 차감돼요. 실패하면 차감되지 않습니다.</p>
+    <div class="lav-confirm-actions">
+      <button type="button" class="ghost" onclick="lavCloseConfirm()">취소</button>
+      <button type="button" onclick="lavStartJob()">시작하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 모바일 로고 (좌측 상단 고정) -->

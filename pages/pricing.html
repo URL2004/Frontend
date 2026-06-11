@@ -1,0 +1,163 @@
+<div id="pricingContent" style="display:none">
+ <div class="gp-top-actions">
+   <button class="ls-credit-btn" onclick="openMyPage()">보유 크레딧 10</button>
+   <button class="ls-upgrade-btn" onclick="switchPricingTab('sub')">업그레이드</button>
+ </div>
+
+ <section class="gp-page-hero gp-pricing-hero">
+  <div>
+   <h2 id="pricingHeroTitle">지금 충전하고 바로 사용하세요</h2>
+   <p id="pricingHeroDesc">구매한 크레딧은 <strong>소멸 없이 계속</strong> 쓸 수 있어요. 100자당 1크레딧, 소수점 차감 없음.</p>
+   <div class="pricing-tabs" role="tablist">
+     <button id="pricingTabBtnCredit" type="button" role="tab" aria-selected="true" onclick="switchPricingTab('credit')">크레딧</button>
+     <button id="pricingTabBtnSub" type="button" role="tab" aria-selected="false" onclick="switchPricingTab('sub')">정기구독 <span>Pro</span></button>
+   </div>
+   <div class="phero-badges">
+    <span class="phero-badge">SSL 보안결제</span>
+    <span class="phero-badge">토스</span>
+    <span class="phero-badge">카카오페이</span>
+   </div>
+  </div>
+  <img loading="lazy" decoding="async" src="/assets/img/hero-shield.png" alt="">
+ </section>
+
+ <section class="gp-coupon-panel">
+  <div>
+   <strong>쿠폰 코드</strong>
+   <span>할인 혜택을 받으려면 코드를 입력하세요.</span>
+  </div>
+  <div class="gp-coupon-form">
+   <input id="couponInput" maxlength="14" placeholder="쿠폰 코드를 입력하세요" autocomplete="off" oninput="formatCouponInput(this)" onkeydown="if(event.key==='Enter')redeemCoupon()">
+   <button onclick="redeemCoupon()">적용</button>
+  </div>
+  <div id="couponMsg"></div>
+ </section>
+
+ <div id="pricingTabCredit">
+  <div class="plan-grid gp-plan-grid">
+   <div class="plan-card" onclick="payToss(2900,110,'크레딧 충전','')">
+    <div class="plan-hd-row"><span class="plan-tag">100 크레딧</span><span class="plan-discount">-17%</span></div>
+    <div class="plan-price-main">2,900<span class="plan-won">원</span></div>
+    <div class="plan-unitcost">100자당 <strong>29원</strong></div>
+    <ul class="plan-feats">
+     <li><span>기본 제공</span><strong>100 크레딧</strong></li>
+     <li><span>보너스 지급</span><strong>+10 크레딧</strong></li>
+    </ul>
+    <div class="gp-plan-total">총 110 크레딧</div>
+    <button class="plan-btn">충전하기</button>
+   </div>
+
+   <div class="plan-card" onclick="payToss(8700,330,'크레딧 충전','')">
+    <div class="plan-hd-row"><span class="plan-tag">300 크레딧</span><span class="plan-discount">-9%</span></div>
+    <div class="plan-price-main">8,700<span class="plan-won">원</span></div>
+    <div class="plan-unitcost">100자당 <strong>26원</strong></div>
+    <ul class="plan-feats">
+     <li><span>기본 제공</span><strong>300 크레딧</strong></li>
+     <li><span>보너스 지급</span><strong>+30 크레딧</strong></li>
+    </ul>
+    <div class="gp-plan-total">총 330 크레딧</div>
+    <button class="plan-btn">충전하기</button>
+   </div>
+
+   <div class="plan-card plan-popular" onclick="payToss(14500,600,'크레딧 충전','')">
+    <div class="plan-badge">가장 인기</div>
+    <div class="plan-hd-row"><span class="plan-tag">500 크레딧</span><span class="plan-discount">-17%</span></div>
+    <div class="plan-price-main">14,500<span class="plan-won">원</span></div>
+    <div class="plan-unitcost">100자당 <strong>24원</strong></div>
+    <ul class="plan-feats">
+     <li><span>기본 제공</span><strong>500 크레딧</strong></li>
+     <li><span>보너스 지급</span><strong>+100 크레딧</strong></li>
+    </ul>
+    <div class="gp-plan-total">총 600 크레딧</div>
+    <button class="plan-btn">충전하기</button>
+   </div>
+
+   <div class="plan-card" onclick="payToss(29000,1300,'크레딧 충전','')">
+    <div class="plan-hd-row"><span class="plan-tag">1,000 크레딧</span><span class="plan-discount">-23%</span></div>
+    <div class="plan-price-main">29,000<span class="plan-won">원</span></div>
+    <div class="plan-unitcost">100자당 <strong>22원</strong></div>
+    <ul class="plan-feats">
+     <li><span>기본 제공</span><strong>1,000 크레딧</strong></li>
+     <li><span>보너스 지급</span><strong>+300 크레딧</strong></li>
+    </ul>
+    <div class="gp-plan-total">총 1,300 크레딧</div>
+    <button class="plan-btn">충전하기</button>
+   </div>
+
+   <div class="plan-card plan-premium" onclick="payToss(58000,2700,'크레딧 충전','')">
+    <div class="plan-badge">최대 혜택</div>
+    <div class="plan-hd-row"><span class="plan-tag">2,000 크레딧</span><span class="plan-discount">-26%</span></div>
+    <div class="plan-price-main">58,000<span class="plan-won">원</span></div>
+    <div class="plan-unitcost">100자당 <strong>21원</strong></div>
+    <ul class="plan-feats">
+     <li><span>기본 제공</span><strong>2,000 크레딧</strong></li>
+     <li><span>보너스 지급</span><strong>+700 크레딧</strong></li>
+    </ul>
+    <div class="gp-plan-total">총 2,700 크레딧</div>
+    <button class="plan-btn">충전하기</button>
+   </div>
+  </div>
+
+  <section class="gp-fit-panel">
+   <h3>어떤 플랜이 나에게 맞을까요?</h3>
+   <div>
+    <article><span>01</span><strong>가볍게 시작하고 싶은 분</strong><p>소량 검사로 테스트하고 필요할 때마다 충전</p></article>
+    <article><span>02</span><strong>과제 위주로 검사하는 분</strong><p>주 1~2회 과제 검사로 안심하고 제출</p></article>
+    <article><span>03</span><strong>가장 많은 학생이 선택</strong><p>레포트, 과제, 발표자료까지 폭넓게 활용</p></article>
+    <article><span>04</span><strong>자주 사용하는 분</strong><p>여러 과목 과제와 템플릿도 넉넉하게 커버</p></article>
+    <article><span>05</span><strong>많이 쓰는 헤비 유저</strong><p>논문, 장문 과제도 여유롭게 준비</p></article>
+   </div>
+  </section>
+ </div>
+
+ <div id="pricingTabSub" style="display:none;">
+  <section id="subscriptionSection">
+   <div id="subscriptionDisabledBanner" class="gp-sub-banner" style="display:none;">
+    <strong>정기 구독은 현재 결제 시스템 검수 중입니다</strong>
+    <span>검수가 완료되면 즉시 오픈되며 공지로 안내드립니다.</span>
+   </div>
+   <div class="plan-grid gp-sub-grid">
+    <div class="plan-card" onclick="openSubscribeConfirm('1000')">
+     <div class="plan-hd-row"><span class="plan-tag">베이직</span><span class="plan-discount">-18%</span></div>
+     <div class="plan-credit-amount">1,000자<span class="plan-unit">× 50회/월</span></div>
+     <div class="plan-price-main">11,900<span class="plan-won">원/월</span></div>
+     <ul class="plan-feats"><li>Pro 전용 작업실 제공</li><li>매달 50회 자동 충전</li></ul>
+     <button class="plan-btn">구독 시작</button>
+    </div>
+    <div class="plan-card plan-popular" onclick="openSubscribeConfirm('5000')">
+     <div class="plan-badge">가장 많이 선택</div>
+     <div class="plan-hd-row"><span class="plan-tag">스탠다드</span><span class="plan-discount">-24%</span></div>
+     <div class="plan-credit-amount">5,000자<span class="plan-unit">× 50회/월</span></div>
+     <div class="plan-price-main">54,900<span class="plan-won">원/월</span></div>
+     <ul class="plan-feats"><li>Pro 전용 작업실 제공</li><li>리포트·자소서에 적합</li></ul>
+     <button class="plan-btn">구독 시작</button>
+    </div>
+    <div class="plan-card" onclick="openSubscribeConfirm('10000')">
+     <div class="plan-hd-row"><span class="plan-tag">프로</span><span class="plan-discount">-32%</span></div>
+     <div class="plan-credit-amount">10,000자<span class="plan-unit">× 50회/월</span></div>
+     <div class="plan-price-main">99,000<span class="plan-won">원/월</span></div>
+     <ul class="plan-feats"><li>Pro 전용 작업실 제공</li><li>긴 논문/장편 글에 최적</li></ul>
+     <button class="plan-btn">구독 시작</button>
+    </div>
+    <div class="plan-card plan-premium" onclick="openSubscribeConfirm('unlimited')">
+     <div class="plan-badge">최상위</div>
+     <div class="plan-hd-row"><span class="plan-tag">무제한</span><span class="plan-discount">제한 없음</span></div>
+     <div class="plan-credit-amount">무제한<span class="plan-unit">/월</span></div>
+     <div class="plan-price-main">290,000<span class="plan-won">원/월</span></div>
+     <ul class="plan-feats"><li>회수 무제한</li><li>회당 최대 50,000자</li></ul>
+     <button class="plan-btn">구독 시작</button>
+    </div>
+   </div>
+
+   <section class="gp-fit-panel gp-fit-sub">
+    <h3>어떤 구독이 나에게 맞을까요?</h3>
+    <div>
+     <article><span>01</span><strong>가볍게 유지하고 싶은 분</strong><p>짧은 과제 위주, 매달 자동 충전으로 부담 없이</p></article>
+     <article><span>02</span><strong>리포트·자소서가 많은 분</strong><p>가장 많은 학생이 선택하는 균형형 구성</p></article>
+     <article><span>03</span><strong>긴 글을 자주 쓰는 분</strong><p>논문, 장문 과제까지 여유 있는 분량</p></article>
+     <article><span>04</span><strong>제한 없이 쓰고 싶은 분</strong><p>회당 최대 50,000자, 횟수 제한 없이</p></article>
+    </div>
+   </section>
+  </section>
+ </div>
+</div>

@@ -1,0 +1,52 @@
+<div id="proContent" class="gp-pro-page" style="display:none;">
+  <div class="gp-pro-head">
+    <span class="gp-pro-eyebrow">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Pro
+    </span>
+    <h2>Pro 전용 작업실</h2>
+  </div>
+  <p class="gp-pro-desc">쿠폰을 선택하면 해당 글자 한도 내에서 휴머나이저/AI 감지를 사용할 수 있어요. 휴머나이저 결과는 메인 탭과 동일합니다.</p>
+
+  <!-- 구독 정보 카드 -->
+  <div id="proSubInfo" class="gp-pro-card gp-pro-subinfo">
+    <div>
+      <div class="gp-pro-label">현재 구독</div>
+      <div id="proSubTier" class="gp-pro-tier">—</div>
+      <div id="proSubMeta" class="gp-pro-meta">—</div>
+    </div>
+    <div class="gp-pro-subactions">
+      <button class="cancelbtn" onclick="openMyPage()">구독 관리</button>
+    </div>
+  </div>
+
+  <!-- 쿠폰 카드 -->
+  <div id="proCouponCard" class="gp-pro-card gp-pro-coupons">
+    <div class="gp-pro-card-title">보유 쿠폰</div>
+    <div id="proCouponList" class="gp-pro-coupon-list"></div>
+    <div id="proCouponEmpty" class="gp-pro-empty" style="display:none;">사용 가능한 쿠폰이 없습니다. 다음 결제일에 갱신됩니다.</div>
+  </div>
+
+  <!-- 입력/결과 영역 -->
+  <div class="gp-pro-card gp-pro-workbench">
+    <div class="gp-pro-toolbar">
+      <div class="gp-pro-modes">
+        <button id="proModeDetect" class="pro-mode-btn" onclick="setProMode('detect')">AI 감지</button>
+        <button id="proModeAssignment" class="pro-mode-btn active" onclick="setProMode('assignment')">대학 과제</button>
+        <button id="proModeResume" class="pro-mode-btn" onclick="setProMode('resume')">자기소개서</button>
+        <button id="proModeBlog" class="pro-mode-btn" onclick="setProMode('blog')">블로그/SNS</button>
+      </div>
+      <div id="proSelectedBadge" class="gp-pro-selected">쿠폰을 선택하세요</div>
+    </div>
+    <textarea id="proInputText" placeholder="텍스트를 입력하세요. 쿠폰을 먼저 선택해야 합니다." oninput="updateProCount(this)"></textarea>
+    <div class="gp-pro-footer">
+      <div class="gp-pro-counts">
+        <span id="proCcount">0자</span>
+        <span id="proHint">쿠폰 1회 사용</span>
+      </div>
+      <button id="proRunBtn" onclick="runProAnalysis()" disabled style="opacity:.5;">실행</button>
+    </div>
+  </div>
+
+  <div id="proResult" class="gp-pro-result"></div>
+</div>

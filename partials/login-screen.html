@@ -1,0 +1,45 @@
+<div id="loginScreen" class="screen">
+ <div class="qd-orb o1"></div>
+ <div class="qd-orb o2"></div>
+ <div class="qd-ring" aria-hidden="true">
+  <svg viewBox="0 0 620 620" fill="none" xmlns="http://www.w3.org/2000/svg">
+   <defs>
+    <linearGradient id="qdRingG" x1="0" y1="0" x2="1" y2="1">
+     <stop offset="0%" stop-color="#8b5cf6" stop-opacity=".0"/>
+     <stop offset="45%" stop-color="#3b82f6" stop-opacity=".9"/>
+     <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="qdRingG2" x1="1" y1="0" x2="0" y2="1">
+     <stop offset="0%" stop-color="#7c3aed" stop-opacity="0"/>
+     <stop offset="55%" stop-color="#60a5fa" stop-opacity=".7"/>
+     <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+    </linearGradient>
+   </defs>
+   <circle cx="310" cy="310" r="280" stroke="url(#qdRingG)" stroke-width="1.5" stroke-dasharray="6 10"/>
+   <circle cx="310" cy="310" r="220" stroke="url(#qdRingG2)" stroke-width="1" stroke-dasharray="2 14"/>
+   <circle cx="310" cy="310" r="160" stroke="url(#qdRingG)" stroke-width=".75" stroke-dasharray="1 6"/>
+  </svg>
+ </div>
+ <div class="lcard">
+ <div class="llogo"><img src="/assets/img/brand-logo.png" alt="교수님 피하기"></div>
+ <div class="ltitle">AI가 쓴 글, 들키지 마세요</div>
+ <div class="ldesc">AI 감지 확률 분석부터 사람 글처럼 변환까지,<br>과제·자소서·논문 모두 한 곳에서.</div>
+ <button class="btn-google" onclick="googleLogin()">
+ <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
+ Google로 시작하기
+</button>
+ <button class="btn-kakao" onclick="kakaoLogin()">
+ <img src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_medium.png" alt="kakao" style="width:20px;height:20px;">
+ 카카오로 시작하기
+</button>
+ <div class="lbadge">신규 가입 시 10크레딧이 무료로 제공됩니다</div>
+ <button class="lhome" onclick="showScreen('app'); switchTab('main');">홈으로 돌아가기</button>
+ <div class="kakao-warn">
+ <p>카카오톡에서는 Google 로그인이 제한돼요</p>
+ <span>Chrome 브라우저에서 열어주세요</span>
+ <button onclick="openExternal()" style="padding:10px 20px;border-radius:50px;border:none;background:var(--blue);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Chrome으로 열기</button>
+</div>
+</div>
+</div>
+
+<!-- 앱 -->

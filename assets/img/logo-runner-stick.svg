@@ -1,0 +1,10 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Professor Dodge runner mark">
+  <g stroke="#050505" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="40" cy="20" r="10" fill="#050505" stroke="none"/>
+    <path d="M48 34L58 49L66 63" stroke-width="12"/>
+    <path d="M55 43L38 50L20 64" stroke-width="11"/>
+    <path d="M58 43L79 33L103 43" stroke-width="11"/>
+    <path d="M66 63L48 81L18 105" stroke-width="12"/>
+    <path d="M67 64L90 76L114 61" stroke-width="12"/>
+  </g>
+</svg>

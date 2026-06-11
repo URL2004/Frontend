@@ -1,0 +1,33 @@
+{
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/main", "destination": "/index.html" },
+    { "source": "/pricing", "destination": "/index.html" },
+    { "source": "/community", "destination": "/index.html" },
+    { "source": "/qna", "destination": "/index.html" },
+    { "source": "/notice", "destination": "/index.html" },
+    { "source": "/mypage", "destination": "/index.html" },
+    { "source": "/history", "destination": "/index.html" },
+    { "source": "/pro", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/pages/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/partials/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    }
+  ]
+}

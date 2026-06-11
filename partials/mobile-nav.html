@@ -1,0 +1,44 @@
+<div id="mobileLogo" onclick="switchTab('main')" style="display:none;position:fixed;top:12px;left:16px;z-index:900;cursor:pointer;align-items:center;gap:8px;">
+  <img src="/assets/img/brand-logo-menu.png" alt="교수님 피하기" style="width:154px;height:44px;object-fit:contain;">
+</div>
+
+<!-- 모바일 내 정보 버튼 (우측 상단 고정) -->
+<button id="mobileMyPageBtn" onclick="openMyPage()" style="display:none;position:fixed;top:14px;right:16px;z-index:900;width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(60,64,67,.15);">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+</button>
+
+<!-- 모바일 하단 네비게이션 -->
+<nav class="mobile-nav" id="mobileNav">
+ <button class="mnav-btn active" data-tab="main" onclick="switchTab('main')">
+ <div class="mnav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/></svg></div>
+ <span class="mnav-label">분석</span>
+</button>
+ <button class="mnav-btn" data-tab="history" onclick="switchTab('history');loadHistory()">
+ <div class="mnav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg></div>
+ <span class="mnav-label">히스토리</span>
+</button>
+ <button class="mnav-btn" data-tab="notice" onclick="switchTab('notice');loadNotices()">
+ <div class="mnav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+ <span class="mnav-label">공지</span>
+</button>
+ <button class="mnav-btn" data-tab="community" onclick="switchTab('community');loadPosts()">
+ <div class="mnav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+ <span class="mnav-label">커뮤니티</span>
+</button>
+ <button class="mnav-btn" data-tab="qna" onclick="switchTab('qna');loadQuestions()">
+ <div class="mnav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+ <span class="mnav-label">Q&amp;A</span>
+</button>
+ <button class="mnav-btn" data-tab="pricing" onclick="switchTab('pricing')">
+ <div class="mnav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+ <span class="mnav-label">충전</span>
+</button>
+ <button class="mnav-btn" id="mnavProBtn" data-tab="pro" onclick="goToPro()">
+ <div class="mnav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+ <span class="mnav-label">Pro</span>
+</button>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     3D 애니메이션 라이브러리 (CDN)
+══════════════════════════════════════════ -->

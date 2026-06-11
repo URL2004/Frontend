@@ -1,0 +1,1199 @@
+<div id="mainContent">
+ <div id="lowbanner" class="lowbanner" style="display:none">
+   <span>크레딧이 부족합니다</span>
+   <button class="chargbtn" onclick="switchTab('pricing')">충전하기</button>
+ </div>
+
+ <div class="modetog" style="display:none!important">
+   <button class="mbtn detect active" onclick="setMode('detect')">AI 감지</button>
+   <button class="mbtn human" onclick="setMode('humanize')">휴머나이저</button>
+ </div>
+ <div class="humanize-mode-container" id="humanizeOptions" style="display:none!important">
+   <div class="mode-tabs-group">
+     <button type="button" class="mode-tab active" data-mode="assignment" onclick="selectHumanizeMode(this)">대학 과제</button>
+     <button type="button" class="mode-tab" data-mode="resume" onclick="selectHumanizeMode(this)">자기소개서</button>
+     <button type="button" class="mode-tab" data-mode="blog" onclick="selectHumanizeMode(this)">블로그/SNS</button>
+     <button type="button" class="mode-tab" data-mode="thesis" onclick="selectHumanizeMode(this)">논문/학술지</button>
+   </div>
+ </div>
+ <div class="card detect-mode" id="inputCard" style="display:none!important">
+   <span class="clabel" id="inputLabel">분석할 텍스트</span>
+   <button class="sbtn db" id="sbtn" onclick="runAnalysis()" style="display:none!important">
+     <div class="sbtn-inner"><span class="btxt" id="btxt">분석 시작</span></div>
+     <span class="pct-txt" id="pctTxt"></span>
+   </button>
+ </div>
+
+ <div class="gp-top-actions">
+   <button class="gp-design-open" data-design-trigger type="button" onclick="openMainDesignPicker()">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><path d="M17 14l3 3-3 3"/></svg>
+     디자인 예시
+   </button>
+   <button class="ls-credit-btn" id="creditChip" onclick="switchTab('pricing')">보유 크레딧 10</button>
+   <button class="ls-upgrade-btn" id="lsUpgradeBtn" onclick="switchTab('pricing')">업그레이드</button>
+  </div>
+
+ <div class="gp-design-picker" id="mainDesignPicker" hidden>
+   <div class="gp-design-picker-head">
+     <div>
+       <strong>메인 디자인 예시</strong>
+       <span>화면 전체 레이아웃과 컴포넌트 구성을 전환합니다.</span>
+     </div>
+     <button type="button" onclick="closeMainDesignPicker()" aria-label="닫기">×</button>
+   </div>
+   <div class="gp-design-options">
+     <button type="button" class="gp-design-option" data-design="lavender" onclick="setMainDesign('lavender')">
+       <span class="gp-design-preview preview-lavender"></span>
+       <strong>라벤더 SaaS</strong>
+       <em>확정 메인 디자인</em>
+     </button>
+     <button type="button" class="gp-design-option active" data-design="midnight" onclick="setMainDesign('midnight')">
+       <span class="gp-design-preview preview-midnight"></span>
+       <strong>현재 다크 앱</strong>
+       <em>서비스 화면 중심</em>
+     </button>
+     <button type="button" class="gp-design-option" data-design="paper" onclick="setMainDesign('paper')">
+       <span class="gp-design-preview preview-paper"></span>
+       <strong>화이트 쇼케이스</strong>
+       <em>제공 이미지에 가까운 홍보형</em>
+     </button>
+     <button type="button" class="gp-design-option" data-design="mint" onclick="setMainDesign('mint')">
+       <span class="gp-design-preview preview-mint"></span>
+       <strong>스케치 랜딩</strong>
+       <em>도망 콘셉트의 밝은 홍보형</em>
+     </button>
+     <button type="button" class="gp-design-option" data-design="clean" onclick="setMainDesign('clean')">
+       <span class="gp-design-preview preview-clean"></span>
+       <strong>클린 라벤더</strong>
+       <em>중앙 입력형 화이트 랜딩</em>
+     </button>
+     <button type="button" class="gp-design-option" data-design="hub" onclick="setMainDesign('hub')">
+       <span class="gp-design-preview preview-hub"></span>
+       <strong>콘텐츠 허브</strong>
+       <em>템플릿/문제 탐색형 홈</em>
+     </button>
+     <button type="button" class="gp-design-option" data-design="neon" onclick="setMainDesign('neon')">
+       <span class="gp-design-preview preview-neon"></span>
+       <strong>네온 스튜디오</strong>
+       <em>어두운 제출 워크플로우형</em>
+     </button>
+   </div>
+ </div>
+
+ <div class="gp-lav-page" id="lavPage">
+   <aside class="gp-lav-sidebar" aria-label="주요 메뉴">
+     <div class="gp-lav-brand">
+       <img class="gp-lav-brand-logo" src="/assets/img/brand-logo-menu.png" alt="교수님 피하기">
+       <button type="button" class="gp-lav-collapse" onclick="lavToggleSidebar()" aria-label="사이드바 접기">«</button>
+     </div>
+     <button type="button" class="gp-lav-new" onclick="lavNewSentence()">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+       <span>새 문장 시작</span>
+       <kbd id="lavNewKbd">⌘ N</kbd>
+     </button>
+     <nav class="gp-lav-menu" aria-label="기능 메뉴">
+       <button type="button" class="active" data-tab="main" onclick="switchTab('main')">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3 20 7v6c0 4.6-3.2 7.4-8 8.8-4.8-1.4-8-4.2-8-8.8V7l8-4Z"/><path d="m9.5 12 1.8 1.8 3.7-4"/></svg>
+         <span>AI 감지 &amp; 휴머나이저</span>
+       </button>
+       <button type="button" data-tab="notice" onclick="switchTab('notice');loadNotices()">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19h14M7 17V9a5 5 0 0 1 10 0v8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+         <span>공지사항</span>
+       </button>
+       <button type="button" data-tab="community" onclick="switchTab('community');loadPosts()">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5Z"/></svg>
+         <span>커뮤니티</span>
+       </button>
+       <button type="button" data-tab="qna" onclick="switchTab('qna');loadQuestions()">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.7 2.7 0 0 1 5 1.4c0 1.8-2.6 2.2-2.6 3.8"/><path d="M12 17.5h.01"/></svg>
+         <span>Q&amp;A</span>
+       </button>
+       <button type="button" data-tab="pricing" onclick="switchTab('pricing')">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 15h5"/></svg>
+         <span>충전하기</span>
+       </button>
+       <button type="button" data-tab="pro" onclick="goToPro()">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
+         <span>Pro</span>
+       </button>
+       <div class="gp-lav-side-sep" aria-hidden="true"></div>
+       <button type="button" data-tab="history" onclick="switchTab('history');loadHistory()">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14v15H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+         <span>히스토리</span>
+       </button>
+       <div id="lavHistSlot" class="gp-lav-hist"></div>
+     </nav>
+     <div class="gp-lav-side-bottom" id="lavSideFootSlot"></div>
+   </aside>
+   <div class="gp-lav-backdrop" onclick="lavCloseSidebar()" aria-hidden="true"></div>
+
+   <main class="gp-lav-main">
+     <header class="gp-lav-top">
+       <button type="button" class="gp-lav-hamburger" onclick="lavToggleSidebar()" aria-label="메뉴 열기"><span></span></button>
+       <div class="gp-lav-top-right">
+         <span class="gp-lav-top-slot" id="lavTopSlot"></span>
+         <button type="button" class="gp-lav-guide" onclick="switchTab('qna');loadQuestions()"><b>?</b><span>사용 가이드</span></button>
+         <button type="button" class="gp-lav-bell" onclick="switchTab('notice')" aria-label="알림">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.2 16.2v-5.6a5.8 5.8 0 0 1 11.6 0v5.6l1.6 2.4H4.6Z"/><path d="M10.2 20.8a2 2 0 0 0 3.6 0"/></svg>
+           <i aria-hidden="true"></i>
+         </button>
+         <button type="button" class="gp-lav-design" data-design-trigger onclick="openMainDesignPicker()">디자인 예시</button>
+       </div>
+     </header>
+
+     <section class="gp-lav-hero">
+       <div class="gp-lav-entry" id="lavEntry">
+       <h1 class="gp-lav-hero-title"><img src="/assets/img/brand-logo.png" alt="교수님 피하기"></h1>
+       <p class="gp-lav-sub">AI로 작성한 문장을 자연스럽고 사람답게 바꿔드립니다.</p>
+
+       <div class="gp-lav-composer">
+         <textarea id="lavInput" rows="5" placeholder="AI 느낌이 나는 문장을 붙여넣어 보세요..." onkeydown="lavComposerKey(event)" oninput="lavSyncCount(this)"></textarea>
+         <div class="gp-lav-composer-bar">
+           <label class="gp-lav-add" for="pdfInput" title="파일 업로드 (.pdf)" aria-label="파일 업로드">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+           </label>
+           <span class="gp-lav-count" id="lavCount" aria-live="polite"></span>
+           <button type="button" class="gp-lav-send" onclick="lavRun()" aria-label="분석 시작">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6.5 11.5 12 6l5.5 5.5"/></svg>
+           </button>
+         </div>
+       </div>
+
+       <button type="button" class="gp-lav-proof" onclick="fillLavSample()" aria-label="예시 문장으로 바로 체험하기">
+         <span class="lp-head">
+           <span class="lp-title-txt"><b>AI 탐지율</b><i>문장 전·후 AI 탐지율을 비교해 변환 효과를 확인해 보세요.</i></span>
+         </span>
+
+         <span class="lp-track">
+           <span class="lp-track-cap left">100%</span>
+           <span class="lp-runner" aria-hidden="true">
+             <span class="lp-runner-sprite"></span>
+           </span>
+           <span class="lp-bubble" aria-hidden="true"><b>35<em>%</em></b></span>
+           <span class="lp-track-cap right">0%</span>
+         </span>
+         <span class="lp-track-labels"><span class="bad">AI 탐지율 높음</span><span class="good">AI 탐지율 낮음</span></span>
+
+         <span class="lp-cols">
+           <span class="lp-col before">
+             <span class="lp-tag bad">변환 전</span>
+             <span class="lp-txt">본 연구에서는 인공지능 기술의 발전과 그에 따른 사회적 영향을 분석하고자 하였다. 먼저 개념과 역사를 살펴본 후 활용 사례를 조사하였다.</span>
+           </span>
+           <span class="lp-mid" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h13M12 6l6 6-6 6"/></svg></span>
+           <span class="lp-col after">
+             <span class="lp-tag good">변환 후</span>
+             <span class="lp-txt">요즘 AI가 워낙 빠르게 발전하다 보니 우리 생활에 미치는 영향도 커졌는데요. 개념부터 실제 활용까지 차근차근 짚어봤습니다.</span>
+           </span>
+         </span>
+         <span class="lp-cap">예시를 눌러 이 문장으로 바로 체험해 보세요</span>
+       </button>
+       </div>
+
+       <div class="gp-lav-flow" id="lavFlow" hidden>
+         <header class="lav-flow-bar">
+           <button type="button" class="lav-flow-back" onclick="lavFlowBack()" aria-label="이전">←</button>
+           <div class="lav-flow-ctx">
+             <strong id="lavFlowStep">분석</strong>
+             <span id="lavFlowCtx">원문 0자</span>
+           </div>
+           <button type="button" class="lav-flow-edit" onclick="lavFlowReset()">원문 수정</button>
+         </header>
+
+         <!-- 분석 중 -->
+         <section class="lav-flow-card lav-analyzing" data-flow="analyzing" hidden>
+           <span class="lav-spinner big" aria-hidden="true"></span>
+           <strong>글을 분석하고 있어요</strong>
+           <p>문장 구조와 구체성을 살펴 가장 잘 맞는 방법을 찾는 중이에요.</p>
+         </section>
+
+         <!-- 분석 결과 + 목적 선택(한 화면) -->
+         <section class="lav-flow-card lav-choose" data-flow="choose" hidden>
+           <div class="lav-diag">
+             <div class="lav-diag-head">
+               <span class="lav-diag-grade" id="lavDiagGrade">C</span>
+               <div>
+                 <strong id="lavDiagTitle">추상적 일반론 비중이 높은 글이에요</strong>
+                 <p id="lavDiagDesc">구체적 사례·수치가 적어, 그대로 제출하면 AI 탐지 위험이 높습니다.</p>
+               </div>
+             </div>
+             <div class="lav-diag-bands">
+               <div><span>그대로 다듬기</span><b id="lavBandPolish">90%+</b><em>품질·무결성</em></div>
+               <div><span>블로그 말투</span><b id="lavBandBlog">32~41%</b><em>빠름 · 저비용</em></div>
+               <div class="reco"><span>격식 유지 재구성</span><b id="lavBandRestr">36~43%</b><em>추천</em></div>
+             </div>
+             <p class="lav-diag-note">실측 기반 예상 밴드예요. 보장값은 아닙니다.</p>
+           </div>
+
+           <h3 class="lav-flow-h">무엇을 하고 싶으세요?</h3>
+           <div class="lav-purpose-grid">
+             <button type="button" class="lav-purpose-opt" onclick="lavRunHumanize()">
+               <span class="lav-purpose-ico" aria-hidden="true">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+               </span>
+               <strong>그대로 다듬기</strong>
+               <p>원문 의미·사실을 100% 보존하며 문장만 자연스럽게. 근거 보강으로 완성도를 높여요.</p>
+               <em class="lav-purpose-band quiet">예상 90%+ · 품질·무결성</em>
+             </button>
+             <button type="button" class="lav-purpose-opt accent" onclick="lavFlowGo('reduce')">
+               <span class="lav-purpose-ico" aria-hidden="true">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2Z"/><path d="M18.5 14.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9Z"/></svg>
+               </span>
+               <strong>AI 티 줄이기</strong>
+               <p>탐지 위험을 낮춰 더 사람이 쓴 글에 가깝게. 어투와 분량을 골라 재구성해요.</p>
+               <em class="lav-purpose-band">예상 32~43% · 회피 우선</em>
+             </button>
+           </div>
+         </section>
+
+         <!-- 회피 설정 -->
+         <section class="lav-flow-card lav-reduce" data-flow="reduce" hidden>
+           <div class="lav-set-block">
+             <div class="lav-set-label"><strong>어투</strong><span>가장 큰 변수예요</span></div>
+             <div class="lav-tone-grid">
+               <label class="lav-tone-opt">
+                 <input type="radio" name="lavTone" value="blog" checked onchange="lavToneChange()">
+                 <span class="lav-tone-body">
+                   <b>블로그 말투</b>
+                   <i>거든요·잖아요 같은 구어체로. 가장 낮은 탐지율, 빠르고 저렴해요.</i>
+                   <em>예상 32~41% · 1~3분 · 글자수 차감(다듬기와 동일)</em>
+                 </span>
+               </label>
+               <label class="lav-tone-opt">
+                 <input type="radio" name="lavTone" value="formal" onchange="lavToneChange()">
+                 <span class="lav-tone-body">
+                   <b>격식 유지 재구성</b>
+                   <i>과제 톤(한다체)을 지키면서 칼럼처럼 다시 씁니다. 느리고 비용이 들어요.</i>
+                   <em>예상 36~43% · 2~3분 · 8크레딧</em>
+                 </span>
+               </label>
+             </div>
+           </div>
+
+           <div class="lav-set-block" id="lavLenBlock" hidden>
+             <div class="lav-set-label"><strong>분량</strong><span>재구성에서만 선택</span></div>
+             <div class="lav-radio-row">
+               <label class="lav-radio"><input type="radio" name="lavLen" value="compact" checked><span>컴팩트<i>원문의 약 60% · 더 낮은 탐지율</i></span></label>
+               <label class="lav-radio"><input type="radio" name="lavLen" value="keep"><span>분량 유지<i>원문 길이에 가깝게 · +7~10%p</i></span></label>
+             </div>
+           </div>
+
+           <div class="lav-set-block">
+             <div class="lav-set-label"><strong>경험 메모</strong><span>선택 · 탐지율을 크게 낮춰요</span></div>
+             <textarea class="lav-memo" id="lavMemo" rows="3" placeholder="실제 경험·사례·수치를 적어주세요. 글에 자연스럽게 녹여 드려요. (없는 사실은 만들지 않아요)"></textarea>
+           </div>
+
+           <div class="lav-set-block">
+             <label class="lav-toggle">
+               <input type="checkbox" id="lavEvidence" onchange="lavEvidenceChange()">
+               <span class="lav-toggle-track" aria-hidden="true"><i></i></span>
+               <span class="lav-toggle-text">
+                 <b>근거 보강</b>
+                 <i>주제와 맞는 실제 자료(통계·연구·기관)를 찾아 인용해요. 검수 후 승인한 것만 사용합니다.</i>
+               </span>
+             </label>
+             <p class="lav-evidence-note" id="lavEvidenceNote" hidden>근거 검색에 8~12분이 걸리고, 검수 단계가 추가돼요.</p>
+           </div>
+
+           <button type="button" class="lav-flow-cta" onclick="lavOpenConfirm()">AI 티 줄이기 시작</button>
+         </section>
+
+         <!-- 4) 작업 상태 -->
+         <section class="lav-flow-card lav-job" data-flow="job" hidden>
+           <div class="lav-job-head">
+             <span class="lav-spinner" aria-hidden="true"></span>
+             <div>
+               <strong id="lavJobTitle">글을 다시 쓰고 있어요</strong>
+               <p>창을 닫아도 작업은 계속돼요. 결과는 결과 보관함에서도 볼 수 있어요.</p>
+             </div>
+             <span class="lav-job-id" id="lavJobId">#A1B2</span>
+           </div>
+           <ol class="lav-steps" id="lavSteps">
+             <li class="done"><i></i>구조 계획</li>
+             <li class="active"><i></i><span id="lavStepSlot">문단 재작성 3 / 7</span></li>
+             <li><i></i>사실·날조 검증</li>
+             <li><i></i>마감 정리</li>
+           </ol>
+
+           <div class="lav-approve" id="lavApprove" hidden>
+             <div class="lav-approve-head">
+               <strong>검수할 근거 5건</strong>
+               <span>승인한 자료만 인용해요. 미승인 자료는 엔진이 차단합니다.</span>
+             </div>
+             <div class="lav-approve-list" id="lavApproveList"></div>
+             <div class="lav-approve-actions">
+               <button type="button" class="ghost" onclick="lavApprovePick()">선택만 승인</button>
+               <button type="button" onclick="lavApproveReco()">추천 4건 승인하고 계속</button>
+             </div>
+           </div>
+         </section>
+
+         <!-- 5) 결과 + 신뢰 배지 -->
+         <section class="lav-flow-card lav-done" data-flow="done" hidden>
+           <div class="lav-done-head">
+             <div>
+               <span class="lav-done-kicker">완료</span>
+               <h3>변환 결과</h3>
+             </div>
+             <div class="lav-done-score">
+               <b id="lavDoneScore">38%</b>
+               <em>예상 AI 탐지율</em>
+             </div>
+           </div>
+           <div class="lav-trust" id="lavTrust">
+             <span class="lav-trust-badge ok">날조 0건</span>
+             <span class="lav-trust-badge ok">원문 사실 보존</span>
+             <span class="lav-trust-badge ok">수치·출처 일치</span>
+             <span class="lav-trust-badge ok">검증 통과</span>
+           </div>
+           <div class="lav-done-body" id="lavDoneBody"></div>
+           <div class="lav-done-actions">
+             <button type="button" class="ghost" onclick="lavFlowReset()">새 글 시작</button>
+             <button type="button" class="ghost" onclick="lavDoneCopy(this)">복사</button>
+             <button type="button" onclick="lavDoneCopy(this)">다운로드</button>
+           </div>
+         </section>
+       </div>
+
+       <div class="gp-lav-result" id="lavResultSlot"></div>
+     </section>
+
+     <div class="gp-lav-tabs" id="lavTabSlot"></div>
+   </main>
+ </div>
+
+ <div class="gp-neon-page">
+   <aside class="gp-neon-rail" aria-label="주요 메뉴">
+     <button type="button" class="gp-neon-logo" onclick="switchTab('main')" aria-label="교수님 피하기 홈"><span></span><strong>교수님<br>피하기</strong></button>
+     <nav>
+       <button type="button" class="active" onclick="switchTab('main')"><i class="home"></i><span>홈</span></button>
+       <button type="button" onclick="document.getElementById('inputText')?.focus()"><i class="scan"></i><span>검사</span></button>
+       <button type="button" onclick="openMyPage()"><i class="archive"></i><span>결과함</span></button>
+       <button type="button" onclick="switchTab('community');loadPosts()"><i class="chat"></i><span>커뮤니티</span></button>
+       <button type="button" onclick="switchTab('history');loadHistory()"><i class="clock"></i><span>히스토리</span></button>
+       <button type="button" onclick="switchTab('pricing')"><i class="gear"></i><span>요금제</span></button>
+     </nav>
+     <button type="button" class="gp-neon-help" onclick="switchTab('qna');loadQuestions()"><i></i><span>도움말</span></button>
+   </aside>
+
+   <main class="gp-neon-shell">
+     <header class="gp-neon-top">
+       <button type="button" class="gp-neon-mobile-logo" onclick="switchTab('main')"><span></span>교수님 피하기</button>
+       <nav>
+         <button type="button">기능</button>
+         <button type="button">활용법</button>
+         <button type="button" onclick="switchTab('pricing')">요금제</button>
+         <button type="button">가이드</button>
+       </nav>
+       <div>
+         <button type="button" onclick="showScreen('login')">로그인</button>
+         <button type="button" class="primary" onclick="document.getElementById('inputText')?.focus()">무료로 시작하기</button>
+         <button type="button" class="design" data-design-trigger onclick="openMainDesignPicker()">디자인 예시</button>
+       </div>
+     </header>
+
+     <section class="gp-neon-hero">
+       <div class="gp-neon-hero-copy">
+         <h1><span>AI 티 없이</span><br>제출용 글 완성하기</h1>
+         <p>리포트, 에세이, 자기소개서, 과제 초안을 더 자연스럽고 사람답게 다듬어 보세요.</p>
+         <div class="gp-neon-actions">
+           <button type="button" class="primary" onclick="document.getElementById('inputText')?.focus()">무료로 시작하기</button>
+           <button type="button" onclick="fillNeonSample()">예시 보기</button>
+         </div>
+         <div class="gp-neon-proof">
+           <span><i></i>회원가입 즉시 사용 가능</span>
+           <span><i></i>신용카드 불필요</span>
+         </div>
+       </div>
+       <div class="gp-neon-visual" aria-hidden="true">
+         <div class="gp-neon-code c1"><span></span><span></span><span></span></div>
+         <div class="gp-neon-code c2"><span></span><span></span><span></span></div>
+         <img loading="lazy" decoding="async" src="/assets/img/neon-notebook-student.svg" alt="">
+         <div class="gp-neon-live"><b></b><strong>실시간 변환</strong><span>1,245명 사용 중</span></div>
+       </div>
+     </section>
+
+     <section class="gp-neon-panel" aria-label="문체와 과제 설정">
+       <h2>문체 &amp; 과제 설정</h2>
+       <div class="gp-neon-form">
+         <label><span>과제 유형</span><div class="gp-neon-type-row"><button type="button" class="active">리포트</button><button type="button">에세이</button><button type="button">자소서</button><button type="button">논문 초안</button><button type="button">발표문</button></div></label>
+         <label><span>문장 톤</span><select><option>학술적이면서 자연스러운 톤</option><option>간결하고 설득력 있는 톤</option><option>부드러운 에세이 톤</option></select></label>
+         <label><span>핵심 키워드</span><input type="text" placeholder="핵심 키워드를 입력하세요 (쉼표 구분)"><em>0 / 20</em></label>
+         <button type="button" class="gp-neon-upload" onclick="document.getElementById('pdfInput')?.click()"><i></i><strong>초안 붙여넣기 또는<br>파일 업로드</strong><small>.txt, .docx, .pdf 지원</small></button>
+       </div>
+     </section>
+
+     <div class="gp-neon-filter">
+       <button type="button" class="active">문맥 유지</button>
+       <button type="button">표현 자연화</button>
+       <button type="button">AI 티 감소</button>
+       <button type="button">간결하게</button>
+       <button type="button">학술 톤 유지</button>
+     </div>
+
+     <section class="gp-neon-story">
+       <div class="gp-neon-before-after">
+         <article><span>변환 전</span><p>본 연구는 다양한 <b>문헌을 고찰하여</b> 해당 <b>비영향의</b> 결론을 도출하였다.</p></article>
+         <b aria-hidden="true">»</b>
+         <article><span>변환 후</span><p>선행 연구들을 검토한 뒤, 수집한 데이터를 바탕으로 <b>결과를 분석하고</b> <b>결론을 정리</b>하였다.</p></article>
+       </div>
+       <article class="gp-neon-copy-block">
+         <span>교수님 피하기 Flow</span>
+         <h2>스토리텔링이 아니라,<br>문장 흐름이 핵심입니다</h2>
+         <p>문장 연결, 문맥 전개, 논리 구조를 정돈해 의도는 유지하고 표현은 더 자연스럽게 만듭니다.</p>
+         <button type="button">자세히 알아보기</button>
+       </article>
+     </section>
+
+     <section class="gp-neon-feature-pair refine">
+       <article>
+         <span>교수님 피하기 Refine</span>
+         <h2>초안 이미지를 정교한<br>문장 설계로</h2>
+         <p>다양한 표현 제안을 비교하고, 내 글에 딱 맞는 문장으로 다듬으세요.</p>
+         <button type="button">자세히 알아보기</button>
+       </article>
+       <div class="gp-neon-refine-card"><strong>표현 제안</strong><em>버전 비교</em><p>버전 1<br><span>문장 흐름을 자연스럽게 정리합니다.</span></p><p class="active">버전 2<br><span>핵심 의미를 살리고 반복을 줄입니다.</span></p><p>버전 3<br><span>톤을 더 학술적으로 맞춥니다.</span></p></div>
+       <figure><img loading="lazy" decoding="async" src="/assets/img/content-checklist-banner.png" alt=""></figure>
+     </section>
+
+     <section class="gp-neon-feature-pair library">
+       <div class="gp-neon-library-grid">
+         <article><img loading="lazy" decoding="async" src="/assets/img/content-desk-hero.png" alt=""><span>자연스러운 학술 톤 (기본)</span></article>
+         <article><img loading="lazy" decoding="async" src="/assets/img/content-checklist-banner.png" alt=""><span>간결하고 명료한 톤</span></article>
+         <article><span class="wire"></span><span>설득력 있는 논증 톤</span></article>
+         <article><span class="wave"></span><span>인문학적 서술 톤</span></article>
+         <article><img loading="lazy" decoding="async" src="/assets/img/notice-maintenance.png" alt=""><span>데이터 중심 톤</span></article>
+         <button type="button">새 문체 추가</button>
+       </div>
+       <article>
+         <span>교수님 피하기 Library</span>
+         <h2>유지하고 싶은<br>문체 라이브러리</h2>
+         <p>과제별, 과목별로 나만의 문체를 저장하고 언제든 빠르게 불러와 활용할 수 있어요.</p>
+         <button type="button">자세히 알아보기</button>
+       </article>
+     </section>
+
+     <section class="gp-neon-assist">
+       <article>
+         <span>교수님 피하기 Assist</span>
+         <h2>작업 흐름의 가속화</h2>
+         <p>빠른 변환, 버전 관리, 제출 전 최종 점검까지 한 번에 이어 작업 흐름을 줄이고 집중은 높이세요.</p>
+         <button type="button">자세히 알아보기</button>
+       </article>
+       <div class="gp-neon-chart-grid">
+         <div><strong>최종본</strong><span>v3</span><i></i></div>
+         <div><strong>간결 버전</strong><span>v2</span><i></i></div>
+         <div><strong>학술 톤 강화</strong><span>v1</span><i></i></div>
+       </div>
+       <div class="gp-neon-export">
+         <span></span>
+         <div>
+           <strong>제출 전 점검 완료</strong>
+           <p><b>AI 생성 가능성 낮음</b><b>문장 중복 검사 통과</b><b>인용/출처 확인</b></p>
+         </div>
+         <button type="button">내보내기</button>
+       </div>
+     </section>
+
+     <section class="gp-neon-tools">
+       <h2>모두가 사용할 수 있는 창작 툴</h2>
+       <p>초보 작성자</p>
+       <div>
+         <article><i></i><strong>문장 재작성</strong><span>자연스러운 문장으로 바꿔 줍니다.</span></article>
+         <article><i></i><strong>과제 문단 정리</strong><span>구조를 잡아 읽기 쉽게 정리합니다.</span></article>
+         <article><i></i><strong>핵심 요약</strong><span>긴 글의 핵심을 빠르게 요약합니다.</span></article>
+       </div>
+       <p>검토 작성자</p>
+       <div>
+         <article><i></i><strong>논리 개선</strong><span>논리의 흐름을 고르게 다듬습니다.</span></article>
+         <article><i></i><strong>문체 비교</strong><span>여러 문체를 비교해 최적의 톤을 찾습니다.</span></article>
+         <article><i></i><strong>표현 다듬기</strong><span>어색한 표현을 자연스럽게 바꿉니다.</span></article>
+       </div>
+     </section>
+
+     <footer class="gp-neon-footer">
+       <div>
+         <span></span><strong>교수님 피하기</strong>
+         <p>자연스럽고 사람다운 글, 자연스럽게 제출하세요.</p>
+         <div class="gp-neon-socials" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+       </div>
+       <nav><strong>제품</strong><button>기능</button><button>템플릿</button><button>업데이트</button></nav>
+       <nav><strong>리소스</strong><button>가이드</button><button>블로그</button><button>FAQ</button></nav>
+       <nav><strong>요금제</strong><button onclick="switchTab('pricing')">플랜 비교</button><button onclick="switchTab('pricing')">구독 안내</button><button onclick="switchTab('pricing')">할인/혜택</button></nav>
+       <nav><strong>문의</strong><button>문의하기</button><button>제휴 문의</button><button>이메일 지원</button></nav>
+       <div class="gp-neon-footer-base">
+         <button type="button">이용약관</button>
+         <button type="button">개인정보처리방침</button>
+         <button type="button">환불정책</button>
+         <em>© 2026 교수님 피하기. All rights reserved.</em>
+       </div>
+     </footer>
+   </main>
+ </div>
+
+ <div class="gp-hub-page">
+   <aside class="gp-hub-sidebar">
+     <button type="button" class="gp-hub-brand" onclick="switchTab('main')">
+       <span aria-hidden="true"><i></i></span>
+       <strong>교수님 피하기</strong>
+       <em>AI 글, 자연스럽게 바꿔주는 서비스</em>
+     </button>
+
+     <nav class="gp-hub-menu" aria-label="콘텐츠 메뉴">
+       <section>
+         <h3>SERVICE</h3>
+         <button type="button" class="active" onclick="switchTab('main')"><i class="spark"></i>AI 감지 &amp; 휴머나이저</button>
+         <button type="button" onclick="document.getElementById('hubInputText')?.focus()"><i class="scan"></i>AI 검사</button>
+         <button type="button" onclick="document.getElementById('hubInputText')?.focus()"><i class="tune"></i>휴머나이징</button>
+         <button type="button" onclick="goToPro()"><i class="star"></i>Pro</button>
+       </section>
+       <section>
+         <h3>WORKSPACE</h3>
+         <button type="button" onclick="openMyPage()"><i class="folder"></i>결과 보관함</button>
+         <button type="button" onclick="switchTab('history');loadHistory()"><i class="history"></i>히스토리</button>
+         <button type="button" onclick="switchTab('pricing')"><i class="paper"></i>충전하기</button>
+         <button type="button" onclick="switchTab('pricing')"><i class="grid"></i>요금제</button>
+       </section>
+       <section>
+         <h3>SUPPORT</h3>
+         <button type="button" onclick="switchTab('notice')"><i class="notice"></i>공지사항</button>
+         <button type="button" onclick="switchTab('community');loadPosts()"><i class="chat"></i>커뮤니티</button>
+         <button type="button" onclick="switchTab('qna');loadQuestions()"><i class="help"></i>Q&amp;A</button>
+       </section>
+     </nav>
+
+     <div class="gp-hub-cta">
+       <strong>더 자연스러운 글,<br>더 높은 제출력.</strong>
+       <p>오늘도 과제, 완벽하게 피하자.</p>
+       <button type="button" onclick="document.getElementById('inputText')?.focus()">시작하기</button>
+     </div>
+   </aside>
+
+   <div class="gp-hub-shell">
+     <header class="gp-hub-topbar">
+       <button type="button" class="gp-hub-menu-toggle" aria-label="메뉴 열기"><span></span></button>
+       <div></div>
+       <button type="button" class="gp-hub-design" data-design-trigger onclick="openMainDesignPicker()">디자인 예시</button>
+       <button type="button" class="gp-hub-join" onclick="showScreen('login')">회원가입</button>
+       <button type="button" class="gp-hub-login" onclick="showScreen('login')">로그인</button>
+     </header>
+
+     <main class="gp-hub-content">
+       <section class="gp-hub-quick-entry" aria-label="빠른 AI 검사 입력">
+         <div class="gp-hub-search-pill">
+           <span aria-hidden="true"><i></i></span>
+           <input id="hubQuickInput" type="text" onkeydown="if(event.key==='Enter'){runHubQuickAnalysis();}" placeholder="AI 티가 나는 문장을 붙여넣어 보세요">
+           <button type="button" onclick="runHubQuickAnalysis()" aria-label="빠른 검사 시작"></button>
+         </div>
+       </section>
+
+       <section class="gp-hub-promo" aria-label="서비스 추천 배너">
+         <div>
+           <p>AI 문장 자연화</p>
+           <h2>제출 전 한 번 더, 내 말투로 다듬는 중!</h2>
+           <span>검사부터 휴머나이징, 결과 보관까지 한 화면에서 바로 이어집니다.</span>
+         </div>
+         <div class="gp-hub-promo-cards" aria-hidden="true">
+           <article class="large">
+             <b>자연화 가능</b>
+             <strong>리포트 문장</strong>
+             <em>AI 감지 92% → 7%</em>
+           </article>
+           <article>
+             <b>검사 완료</b>
+             <strong>자기소개서</strong>
+             <em>표현 12개 개선</em>
+           </article>
+           <article>
+             <b>보관됨</b>
+             <strong>논문 초록</strong>
+             <em>3분 전 저장</em>
+           </article>
+         </div>
+       </section>
+
+       <section class="gp-hub-top-grid">
+         <section class="gp-hub-work-card">
+           <header>
+             <div>
+               <p><strong>AI 감지 &amp; 휴머나이저</strong><span>검사하거나 자연스럽게 다듬을 글을 붙여넣어 주세요</span></p>
+               <h1>제출 전, 한 번 더 확인하고<br>내 말투로 자연스럽게 바꾸세요</h1>
+             </div>
+             <button type="button" onclick="document.getElementById('hubInputText')?.focus()">바로 입력</button>
+           </header>
+           <div class="gp-hub-task-row">
+             <button type="button" class="active" onclick="runHubAnalysis('detect')">AI 검사</button>
+             <button type="button" onclick="runHubAnalysis('resume')">자기소개서</button>
+             <button type="button" onclick="runHubAnalysis('thesis')">논문/학술지</button>
+             <button type="button" onclick="runHubAnalysis('blog')">블로그/SNS</button>
+             <button type="button" onclick="runHubAnalysis('assignment')">기타</button>
+           </div>
+           <div class="gp-hub-input-box">
+             <textarea id="hubInputText" oninput="syncHubCount(this)" placeholder="검사하거나 휴머나이징할 텍스트를 입력하거나 붙여넣기 해주세요."></textarea>
+             <div>
+               <span id="hubInputCount">0 / 100,000자</span>
+               <em>100자당 1크레딧</em>
+             </div>
+           </div>
+           <footer>
+             <div>
+               <label for="pdfInput">파일 업로드</label>
+               <button type="button" onclick="fillHubSample()">예시 텍스트</button>
+               <button type="button" onclick="clearHubInput()">전체 지우기</button>
+             </div>
+             <div>
+               <button type="button" class="secondary" onclick="runHubAnalysis('detect')">AI 검사 시작</button>
+               <button type="button" class="primary" onclick="runHubAnalysis('assignment')">휴머나이징</button>
+             </div>
+           </footer>
+         </section>
+
+         <section class="gp-hub-ranking">
+           <header>
+             <h2>TOP 100</h2>
+             <p>가장 많이 사용된 작업 모드 랭킹</p>
+             <button type="button">전체 보기</button>
+           </header>
+           <div class="gp-hub-podium">
+             <article><b>2</b><i class="doc"></i><strong>휴머나이징</strong><span>사용 24.1만회</span><em>10 상승</em></article>
+             <article class="first"><b>1</b><i class="edit"></i><strong>AI 검사</strong><span>사용 38.7만회</span><em>10 상승</em></article>
+             <article><b>3</b><i class="profile"></i><strong>자기소개서</strong><span>사용 18.9만회</span><em class="down">9 하락</em></article>
+           </div>
+           <div class="gp-hub-rank-list">
+             <p><strong>4</strong><span>논문/학술지</span><em>사용 12.4만회</em><b>상승</b></p>
+             <p><strong>5</strong><span>블로그/SNS</span><em>사용 10.8만회</em><b class="down">하락</b></p>
+             <p><strong>6</strong><span>리포트 보정</span><em>사용 8.6만회</em><b>상승</b></p>
+             <p><strong>7</strong><span>영문 검사</span><em>사용 7.3만회</em><b>상승</b></p>
+             <p><strong>8</strong><span>결과 보관함</span><em>사용 6.2만회</em><b class="down">하락</b></p>
+             <p><strong>9</strong><span>Pro 모드</span><em>사용 5.1만회</em><b>상승</b></p>
+           </div>
+         </section>
+       </section>
+
+       <article class="gp-hub-wide-post">
+         <img loading="lazy" decoding="async" src="/assets/img/content-checklist-banner.png" alt="">
+         <div>
+           <p><strong>스페셜 패키지</strong><span>상황별 최적화된 문체 세트로 더 자연스럽게</span></p>
+           <h2>[논문/레포트] 자연스러운 문체 패키지</h2>
+           <div class="gp-hub-meta"><span>패키지</span><span>교수님 피하기 팀</span><span>2026-02-06</span></div>
+           <p class="gp-hub-desc">논문 초록부터 결론까지, AI 티 없이 자연스러운 흐름을 만드는 문체 세트와 예시 문장, 체크리스트를 제공합니다.</p>
+           <div class="gp-hub-post-stats"><span>조회 892</span><span>저장 56</span></div>
+           <button type="button">패키지 자세히 보기 <b>→</b></button>
+         </div>
+       </article>
+
+       <section class="gp-hub-recommend">
+         <header>
+           <h2>추천 활용 리스트</h2>
+           <p>학생들이 자주 쓰는 검사와 휴머나이징 활용법을 확인해보세요</p>
+           <button type="button">전체 보기</button>
+         </header>
+         <div>
+           <article>
+             <span>추천</span>
+             <i class="portrait p1"></i>
+             <strong>담백한 리포트 톤</strong>
+             <p>간결하고 명확한 문장으로 논리적 보고서를 완성해요.</p>
+             <em>리포트 · 보고서</em>
+             <small>사용 31.6만회</small>
+           </article>
+           <article>
+             <span>인기</span>
+             <i class="portrait p2"></i>
+             <strong>설득형 발표문 톤</strong>
+             <p>청중을 이해시키고 설득하는 발표문을 자연스럽게.</p>
+             <em>발표 · 프레젠테이션</em>
+             <small>사용 22.8만회</small>
+           </article>
+           <article>
+             <span>추천</span>
+             <i class="portrait p3"></i>
+             <strong>부드러운 에세이 톤</strong>
+             <p>딱딱한 표현보다 자연히 읽히는 에세이 문체를 써요.</p>
+             <em>에세이 · 서술형</em>
+             <small>사용 19.3만회</small>
+           </article>
+         </div>
+       </section>
+     </main>
+   </div>
+ </div>
+
+ <div class="gp-clean-page">
+   <header class="gp-clean-nav">
+     <button class="gp-clean-brand" type="button" onclick="switchTab('main')">
+       <span class="gp-clean-logo" aria-hidden="true"><i></i></span>
+       <strong>교수님 피하기</strong>
+     </button>
+     <nav>
+       <button type="button">기능</button>
+       <button type="button">사용법</button>
+       <button type="button" onclick="switchTab('pricing')">요금제</button>
+       <button type="button">후기</button>
+       <button type="button">가이드</button>
+     </nav>
+     <div class="gp-clean-actions">
+       <button type="button" class="ghost" onclick="showScreen('login')">로그인</button>
+       <button type="button" class="primary" onclick="document.getElementById('inputText')?.focus()">무료로 시작하기</button>
+       <button type="button" class="design" data-design-trigger onclick="openMainDesignPicker()">디자인 예시</button>
+     </div>
+   </header>
+
+   <main class="gp-clean-main">
+     <section class="gp-clean-hero">
+       <h1>교수님 피하기,<br><span>더 자연스럽게</span> 쓰는 방법</h1>
+       <p>AI가 쓴 티는 줄이고, 내 생각은 그대로. 리포트, 에세이, 자기소개서, 과제까지 자연스럽게 다듬어 드립니다.</p>
+       <form class="gp-clean-prompt" onsubmit="event.preventDefault(); document.getElementById('inputText')?.focus();">
+         <textarea aria-label="변환할 문장 입력" placeholder="AI 느낌이 나는 문장을 붙여넣어 보세요"></textarea>
+         <button type="submit" aria-label="변환 시작">
+           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+         </button>
+       </form>
+       <div class="gp-clean-chips" aria-label="주요 기능">
+         <span><i class="scan"></i>AI 탐지 최소화</span>
+         <span><i class="keep"></i>문맥 유지</span>
+         <span><i class="report"></i>리포트</span>
+         <span><i class="essay"></i>에세이</span>
+         <span><i class="shield"></i>자기소개서</span>
+         <span><i class="make"></i>문장 다듬기</span>
+         <span><i class="tone"></i>자연스러운 톤</span>
+         <span><i class="fast"></i>빠른 변환</span>
+       </div>
+     </section>
+
+     <section class="gp-clean-feature-grid" aria-label="서비스 기능 요약">
+       <article class="gp-clean-card gp-clean-compare-card">
+         <div class="gp-clean-card-head">
+           <span class="gp-clean-card-icon compare"></span>
+           <div>
+             <h2>실시간 변환</h2>
+             <p>AI 문장을 분석하고 즉시 자연스럽게 변환해 줍니다. 원문과 비교하며 결과를 바로 확인하세요.</p>
+           </div>
+         </div>
+         <div class="gp-clean-compare-ui">
+           <div>
+             <small>변환 전</small>
+             <p>본 연구는 다양한 선행 연구를 바탕으로 이 문제에 대해 체계적으로 분석하고, 그 결과를 제시하고자 한다.</p>
+           </div>
+           <b aria-hidden="true">→</b>
+           <div>
+             <small>변환 후</small>
+             <p>이 연구에서는 기존 연구들을 살펴보며 이 문제를 자연스럽게 정리하고, 그 과정을 소개해 보았다.</p>
+           </div>
+         </div>
+       </article>
+
+       <article class="gp-clean-card gp-clean-builder-card">
+         <div class="gp-clean-card-head">
+           <span class="gp-clean-card-icon builder"></span>
+           <div>
+             <h2>과제 맞춤 글쓰기</h2>
+             <p>리포트, 에세이, 토론 등 다양한 과제에 맞게 톤과 표현을 조절해 드립니다.</p>
+           </div>
+         </div>
+         <div class="gp-clean-builder-ui">
+           <strong>유형 선택</strong>
+           <div class="type-row">
+             <span class="active">리포트<small>학술 보고서</small></span>
+             <span>에세이<small>논술 / 서술형</small></span>
+             <span>토론 / 찬반<small>의견 중심 글</small></span>
+           </div>
+           <strong>추가 옵션</strong>
+           <div class="option-row">
+             <span>격식체</span><span class="active">자연스러운 톤</span><span>간결하게</span><span>설득력 강화</span>
+           </div>
+         </div>
+       </article>
+
+       <article class="gp-clean-card gp-clean-device-card">
+         <div class="gp-clean-card-head">
+           <span class="gp-clean-card-icon device"></span>
+           <div>
+             <h2>어디서나 사용</h2>
+             <p>웹은 물론 모바일에서도 간편하게 사용하세요. 작업 내용은 자동으로 동기화됩니다.</p>
+           </div>
+         </div>
+         <div class="gp-clean-device-ui" aria-hidden="true">
+           <div class="laptop">
+             <i></i>
+             <span></span>
+             <span></span>
+             <span></span>
+           </div>
+           <div class="phone">
+             <i></i>
+             <span></span>
+             <span></span>
+           </div>
+         </div>
+       </article>
+     </section>
+
+     <section class="gp-clean-stats" aria-label="서비스 지표">
+       <article><i class="users"></i><span>누적 사용자</span><strong>12만+</strong><em>많은 학생들이 함께 사용 중</em></article>
+       <article><i class="time"></i><span>평균 처리 시간</span><strong>7초</strong><em>빠르고 정확한 변환</em></article>
+       <article><i class="safe"></i><span>AI 탐지 감소율</span><strong>92%</strong><em>자연스러운 결과 보장</em></article>
+       <article><i class="star"></i><span>사용자 만족도</span><strong>4.8 <small>/ 5</small></strong><em>실제 사용자 기준</em></article>
+     </section>
+   </main>
+ </div>
+
+ <div class="gp-sketch-page">
+   <header class="gp-sketch-nav">
+     <button class="gp-sketch-brand" type="button" onclick="switchTab('main')">
+       <span class="gp-sketch-runner" aria-hidden="true"></span>
+       <strong>교수님 피하기</strong>
+     </button>
+     <nav>
+       <button type="button">서비스 소개</button>
+       <button type="button">사용 가이드</button>
+       <button type="button" onclick="switchTab('pricing')">요금제</button>
+       <button type="button" onclick="switchTab('qna')">자주 묻는 질문</button>
+       <button type="button" onclick="switchTab('community')">블로그</button>
+     </nav>
+     <div class="gp-sketch-nav-actions">
+       <button type="button" onclick="showScreen('login')">로그인</button>
+       <button type="button" class="join" onclick="showScreen('login')">회원가입</button>
+       <button type="button" class="gp-design-open gp-sketch-design-btn" data-design-trigger onclick="openMainDesignPicker()">디자인 예시</button>
+     </div>
+   </header>
+
+   <section class="gp-sketch-hero">
+     <div class="gp-sketch-copy">
+       <h1>AI 티는 빼고,<br><span>진짜 내 말로.</span></h1>
+       <p>AI가 쓴 것 같은 문장, 자연스럽고 인간다운 글로 바꿔드려요.</p>
+       <div class="gp-sketch-cta-row">
+         <button type="button" onclick="document.getElementById('inputText').focus()">무료로 시작하기 <b>↗</b></button>
+         <span>회원가입 없이<br>바로 사용!</span>
+       </div>
+       <div class="gp-sketch-proof">
+         <span class="avatar a1"></span><span class="avatar a2"></span><span class="avatar a3"></span><span class="avatar a4"></span>
+         <strong>지금까지 129,842명의 학생이 사용했어요!</strong>
+       </div>
+     </div>
+     <div class="gp-sketch-visual">
+       <img loading="lazy" decoding="async" src="/assets/img/sketch-runner-hero.png" alt="">
+     </div>
+   </section>
+
+   <section class="gp-sketch-convert">
+     <h2>복붙 한 번으로 <span>자연스러운 글 완성</span></h2>
+     <div class="gp-sketch-convert-box">
+       <article>
+         <strong>AI스러운 원문</strong>
+         <p>본 연구에서는 인공지능 기술의 발전과 그에 따른 사회적 영향을 분석하고자 하였다. 먼저 인공지능의 개념과 역사에 대해 살펴본 후 다양한 분야에서의 활용 사례를 조사하였다.</p>
+       </article>
+       <b aria-hidden="true">→</b>
+       <article class="after">
+         <strong>자연스러운 변환 결과</strong>
+         <p>요즘 인공지능이 정말 빠르게 발전하고 있죠. 우리 생활 곳곳에서도 이미 다양하게 활용되고 있는데요. 이번 연구에서는 AI가 사회에 어떤 영향을 미치는지 쉽게 풀어봤습니다.</p>
+         <em>더 자연스럽고,<br>내 말투처럼!</em>
+       </article>
+     </div>
+   </section>
+
+   <section class="gp-sketch-features" aria-label="핵심 기능">
+     <article><i class="pen"></i><strong>자연스러운 표현</strong><span>딱딱한 AI 문장을 사람 말투로 변환</span></article>
+     <article><i class="smile"></i><strong>교수님 탐지 회피</strong><span>AI 탐지기를 피하는 자연스러운 흐름</span></article>
+     <article><i class="bolt"></i><strong>빠르고 간편하게</strong><span>복붙 한 번이면 끝, 몇 초 만에 변환 완료</span></article>
+     <article><i class="lock"></i><strong>안전한 보안</strong><span>입력한 텍스트는 저장되지 않고 즉시 삭제</span></article>
+   </section>
+
+   <section class="gp-sketch-lower">
+     <div class="gp-sketch-situations">
+       <h3>이런 상황에 딱!</h3>
+       <p><span></span>과제 마감이 코앞인데... 교수님 눈은 무서워</p>
+       <p><span></span>AI로 초안은 금방 썼는데, 뭔가 2% 부족해</p>
+       <p><span></span>자소서, 리포트, 토론 글도 자연스럽게</p>
+       <p><span></span>영어 에세이도 한국어처럼 자연스럽게</p>
+     </div>
+     <div class="gp-sketch-review">
+       <h3>실제 사용자 후기</h3>
+       <blockquote>AI로 쓴 티가 너무 나서 걱정이었는데, 교수님 피하기 덕분에 제 말투로 자연스럽게 바뀌었어요!</blockquote>
+       <strong>★★★★★</strong>
+       <span>연세대 컴퓨터공학과 21학번 김○현</span>
+       <div><i></i><i></i><i></i><i></i></div>
+     </div>
+     <div class="gp-sketch-pricing">
+       <h3>합리적인 가격, 자유로운 선택</h3>
+       <div>
+         <article><span>무료 체험</span><strong>0<em>원</em></strong><p>하루 3회 변환<br>기본 기능 이용</p><button type="button">무료로 시작</button></article>
+         <article class="best"><b>BEST</b><span>베이직</span><strong>9,900<em>원 / 월</em></strong><p>무제한 변환<br>고급 변환 모델<br>긴 문서 변환 지원</p><button type="button">베이직 가입</button></article>
+         <article><span>프로</span><strong>19,900<em>원 / 월</em></strong><p>무제한 변환<br>프리미엄 모델<br>우선 지원</p><button type="button">프로 가입</button></article>
+       </div>
+     </div>
+   </section>
+
+   <section class="gp-sketch-final">
+     <span aria-hidden="true"></span>
+     <strong>교수님은 피하고, 당신의 <em>가능성은 더 멀리!</em></strong>
+     <button type="button" onclick="document.getElementById('inputText').focus()">지금 바로 시작하기 <b>↗</b></button>
+   </section>
+ </div>
+
+ <div class="gp-main-stage">
+   <div class="gp-paper-nav" aria-hidden="true">
+     <div class="gp-paper-brand">
+       <span class="gp-paper-mark"></span>
+       <strong>교수님 피하기</strong>
+     </div>
+     <nav>
+       <button type="button">기능</button>
+       <button type="button" onclick="switchTab('pricing')">가격</button>
+       <button type="button">후기</button>
+       <button type="button">가이드</button>
+     </nav>
+     <div class="gp-paper-nav-actions">
+       <button type="button" onclick="showScreen('login')">로그인</button>
+       <button type="button" onclick="document.getElementById('inputText').focus()">지금 무료로 시작</button>
+     </div>
+   </div>
+
+   <section class="gp-hero">
+     <div class="gp-hero-copy">
+       <p class="gp-eyebrow">제출 전, 한 번 더 확인</p>
+       <h1>교수님 피하기로<br><span>AI 탐지 걱정 끝.</span></h1>
+       <p class="gp-hero-sub">AI 감지부터 자연스러운 휴머나이징까지, 당신의 글을 더 안전하고 자연스럽게.</p>
+       <div class="gp-hero-actions">
+         <button type="button" class="gp-hero-primary" onclick="document.getElementById('inputText').focus()">지금 무료로 시작</button>
+         <button type="button" class="gp-hero-secondary" onclick="setMainDesign('paper')">
+           변환 예시 보기
+           <span aria-hidden="true">▶</span>
+         </button>
+       </div>
+     </div>
+     <div class="gp-hero-art">
+       <img loading="lazy" decoding="async" src="/assets/img/hero-shield.png" alt="">
+     </div>
+   </section>
+
+   <section class="gp-paper-demo">
+     <div class="gp-paper-demo-head">
+       <strong>실시간 변환 데모</strong>
+       <span><i></i> LIVE</span>
+     </div>
+     <div class="gp-paper-demo-compare">
+       <article class="before">
+         <span>Before</span>
+         <p>본 연구에서는 다양한 요인을 고려하여 분석을 진행하였다. 이러한 결과는 <mark>여러 선행연구</mark>와 맥락을 같이 하며, <mark>중요한 시사점</mark>을 제공할 수 있을 것으로 판단된다.</p>
+       </article>
+       <b aria-hidden="true">→</b>
+       <article class="after">
+         <span>After</span>
+         <p>이 연구는 여러 요인을 반영해 분석을 진행했습니다. 그 결과는 선행연구와 맥락을 같이하며, 유의미한 시사점을 줍니다.</p>
+       </article>
+     </div>
+     <div class="gp-paper-score">
+       <div>
+         <span>AI 티 감지</span>
+         <strong class="bad">86%</strong>
+         <b>→</b>
+         <strong class="good">14%</strong>
+       </div>
+       <div class="gp-paper-scorebar"><i></i><em></em></div>
+       <footer><span>변환 전</span><span>변환 후</span></footer>
+     </div>
+   </section>
+
+   <section class="ls-card gp-workbench">
+   <div class="gp-workbench-tabs">
+     <div class="ls-task-list" id="lsTaskList">
+       <button class="ls-task-item active" onclick="lsSelectTask(this,'detect')" data-lsmode="detect">
+         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
+         AI 검사
+       </button>
+       <button class="ls-task-item" onclick="lsSelectTask(this,'assignment')" data-lsmode="assignment">
+         <svg viewBox="0 0 24 24"><path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15H6.8A2.8 2.8 0 0 0 4 20.8Z"/></svg>
+         자기소개서
+       </button>
+       <button class="ls-task-item" onclick="lsSelectTask(this,'thesis')" data-lsmode="thesis">
+         <svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+         논문
+       </button>
+       <button class="ls-task-item" onclick="lsSelectTask(this,'blog')" data-lsmode="blog">
+         <svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4V5Z"/></svg>
+         블로그
+       </button>
+       <button class="ls-task-item" onclick="lsSelectTask(this,'resume')" data-lsmode="resume">
+         <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>
+         기타
+       </button>
+     </div>
+     <div class="gp-language">
+       <span>언어</span>
+       <button id="langKo" class="lang-btn active" onclick="setLang('ko')">한국어</button>
+       <button id="langEn" class="lang-btn" onclick="setLang('en')">English</button>
+     </div>
+   </div>
+
+   <div class="ls-input-area">
+     <div id="pdfBadge" class="gp-pdf-badge" style="display:none">
+       <span class="pdf-badge" id="pdfName">PDF 선택됨</span>
+       <button onclick="clearPDF()">제거</button>
+     </div>
+     <div id="langMismatchWarn" class="gp-lang-warn" style="display:none"></div>
+     <textarea id="inputText" placeholder="검사하고 싶은 텍스트를 입력하거나 붙여넣기 해주세요." oninput="updateCount(this)"></textarea>
+     <div class="ls-card-footer">
+       <div class="gp-input-tools">
+         <label class="ls-pro-btn" for="pdfInput">
+           <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M5 15v4h14v-4"/></svg>
+           파일 업로드
+         </label>
+         <button type="button" class="ls-pro-btn" onclick="document.getElementById('inputText').value='';updateCount(document.getElementById('inputText'))">
+           <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/></svg>
+           전체 지우기
+         </button>
+       </div>
+       <div class="gp-submit-row">
+         <span id="ccount">0 / 100,000자</span>
+         <span id="chint">100자당 1크레딧</span>
+         <select id="mobileTaskSelect" onchange="lsSelectTaskMobile(this.value)">
+           <option value="detect">AI 감지</option>
+           <option value="assignment">대학 과제</option>
+           <option value="resume">자기소개서</option>
+           <option value="thesis">논문/학술지</option>
+           <option value="blog">블로그/SNS</option>
+         </select>
+         <button class="ls-send-btn" id="lsSendBtn" onclick="runAnalysis()">
+           <span id="lsSendLabel">AI 검사 시작</span>
+         </button>
+       </div>
+     </div>
+     </div>
+   </section>
+
+   <div class="gp-stat-row">
+     <div><strong>91%</strong><span>평균 회피율</span><small>교수님 AI 감지에서 낮아진 비율</small></div>
+     <div><strong>12만+</strong><span>사용자</span><small>학생들의 선택을 받은 서비스</small></div>
+     <div><strong>320만+</strong><span>변환 문장</span><small>더 자연스러운 글로 재탄생</small></div>
+     <div><strong>4.8/5</strong><span>평점</span><small>실제 사용자 만족도</small></div>
+   </div>
+
+   <div class="gp-paper-bottom-grid">
+     <article class="gp-paper-feature-card">
+       <h3>핵심 기능</h3>
+       <div>
+         <span><b>문맥 유지</b><em>원문의 핵심 의미와 흐름 보존</em></span>
+         <span><b>톤 조절</b><em>격식과 친근함을 상황에 맞게</em></span>
+         <span><b>학생 글 최적화</b><em>논문, 리포트, 에세이에 맞춘 표현</em></span>
+         <span><b>빠른 결과</b><em>평균 3초 내 변환 완료</em></span>
+       </div>
+       <button type="button">기능 더 보기 <b>→</b></button>
+     </article>
+     <article class="gp-paper-review-card">
+       <h3>학생들의 후기</h3>
+       <i aria-hidden="true"></i>
+       <strong>연세대 경영학과 23학번</strong>
+       <p>교수님 피하기 쓰고부터 첨삭 코멘트가 확 줄었어요. 문장 자연스럽다는 피드백을 처음 받았습니다.</p>
+       <span>★★★★★</span>
+       <footer><button type="button">‹</button><em></em><em></em><em></em><button type="button">›</button></footer>
+     </article>
+     <article class="gp-paper-price-card">
+       <h3>요금제</h3>
+       <small>7일 무료 체험</small>
+       <div>
+         <span>Free<em>월 10,000자 변환</em><button type="button">시작하기</button></span>
+         <span class="active">Basic<em>₩9,900 /월</em><button type="button">시작하기</button></span>
+         <span>Team<em>₩29,900 /월</em><button type="button">문의하기</button></span>
+       </div>
+       <p>학생 인증 시 20% 할인 혜택 제공</p>
+     </article>
+     <article class="gp-paper-faq-card">
+       <h3>자주 묻는 질문</h3>
+       <button type="button">정말 비슷하지 않게 바뀌나요? <b>+</b></button>
+       <button type="button">어떤 언어를 지원하나요? <b>+</b></button>
+       <button type="button">제출해도 안전한가요? <b>+</b></button>
+       <button type="button">표절 검사도 통과하나요? <b>+</b></button>
+       <a onclick="switchTab('qna')">더 궁금한 점이 있으신가요?</a>
+     </article>
+   </div>
+
+   <div class="gp-paper-school-strip">
+     <strong>지금 12만+ 학생들이 더 자연스러운 글쓰기를 경험하고 있습니다.</strong>
+     <span>연세대학교</span><span>고려대학교</span><span>서울대학교</span><span>KAIST</span><span>성균관대학교</span><span>한양대학교</span>
+   </div>
+ </div>
+
+ <input type="file" id="pdfInput" accept=".pdf" style="display:none;" onchange="handlePDF(this)">
+ <div id="result"></div>
+
+ <section class="gp-section gp-compare">
+   <div class="gp-section-head">
+     <h2>AI 탐지, 이렇게 달라집니다</h2>
+     <p>교수님 피하기로 더 자연스럽고 안전하게</p>
+   </div>
+   <div class="gp-compare-grid">
+     <article class="gp-detect-card before">
+       <div class="gp-card-kicker">휴머나이징 전</div>
+       <span>AI 탐지 확률</span>
+       <strong>92%</strong>
+       <div class="gp-meter"><i style="width:92%"></i></div>
+       <ul>
+         <li>반복적인 표현과 문장 구조 감지</li>
+         <li>AI 패턴이 뚜렷하게 나타남</li>
+         <li>자연스러움 부족</li>
+       </ul>
+     </article>
+     <div class="gp-compare-arrow">›</div>
+     <article class="gp-detect-card after">
+       <div class="gp-card-kicker">휴머나이징 후</div>
+       <span>AI 탐지 확률</span>
+       <strong>7%</strong>
+       <div class="gp-meter"><i style="width:7%"></i></div>
+       <ul>
+         <li>자연스러운 문장 흐름</li>
+         <li>다양한 어휘와 표현 사용</li>
+         <li>인간이 쓴 글과 유사한 수준</li>
+       </ul>
+     </article>
+   </div>
+ </section>
+
+ <section class="gp-section">
+   <div class="gp-section-head">
+     <h2>3단계로 완성되는 안심 글쓰기</h2>
+   </div>
+   <div class="gp-steps">
+     <article><span>01</span><strong>텍스트 입력</strong><p>검사할 텍스트를 붙여넣거나 파일을 업로드하세요.</p></article>
+     <article><span>02</span><strong>AI 검사 &amp; 분석</strong><p>AI 탐지 확률과 상세 분석 결과를 빠르게 확인합니다.</p></article>
+     <article><span>03</span><strong>휴머나이징 적용</strong><p>자연스럽게 다듬어진 결과로 더 안전하게 제출하세요.</p></article>
+   </div>
+ </section>
+
+ <section class="gp-section">
+   <div class="gp-section-head">
+     <h2>교수님 피하기가 특별한 이유</h2>
+   </div>
+   <div class="gp-feature-grid">
+     <article><span>AI</span><strong>최신 AI 탐지 모델 적용</strong><p>GPTZero, Turnitin 등 주요 탐지 모델 기준으로 정밀하게 분석합니다.</p></article>
+     <article><span>WR</span><strong>자연스러운 휴머나이징</strong><p>문맥을 이해한 문장 재구성으로 인간의 글과 유사하게 다듬습니다.</p></article>
+     <article><span>PR</span><strong>개인정보 100% 보호</strong><p>입력한 데이터는 자동 저장 없이 검사 후 즉시 삭제됩니다.</p></article>
+     <article><span>AC</span><strong>빠르고 정확한 결과</strong><p>몇 초 안에 AI 탐지 확률과 상세 분석 결과를 제공합니다.</p></article>
+     <article><span>AR</span><strong>결과 보관 &amp; 관리</strong><p>검사 기록과 결과를 한곳에서 보관하고 언제든 다시 확인할 수 있습니다.</p></article>
+     <article><span>KR</span><strong>학생·취업 준비생 맞춤</strong><p>과제, 자기소개서, 논문 등 다양한 상황에 최적화된 지원을 제공합니다.</p></article>
+   </div>
+ </section>
+
+ <section class="gp-section gp-faq">
+   <div class="gp-section-head">
+     <h2>자주 묻는 질문</h2>
+   </div>
+   <div class="faq-list">
+    <div class="faq-item">
+     <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>교수님 피하기는 어떤 서비스인가요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+     <div class="faq-a">AI로 작성한 글의 탐지 가능성을 확인하고, 더 자연스러운 문장으로 다듬는 서비스입니다.</div>
+    </div>
+    <div class="faq-item">
+     <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>결과는 얼마나 정확한가요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+     <div class="faq-a">주요 AI 탐지 패턴을 기준으로 분석하지만 모든 외부 감지기를 100% 보장하지는 않습니다. 변환 후 재검사를 권장합니다.</div>
+    </div>
+    <div class="faq-item">
+     <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>휴머나이징 후에도 제 글의 의미가 유지되나요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+     <div class="faq-a">핵심 주장과 논지 흐름은 유지하고, 기계적인 문장 패턴과 반복 표현을 자연스럽게 조정합니다.</div>
+    </div>
+    <div class="faq-item">
+     <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>제 글이 저장되거나 다른 곳에 사용되나요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+     <div class="faq-a">사용자 계정의 히스토리 외에는 외부 학습 데이터로 사용하지 않습니다. 자세한 내용은 개인정보처리방침에서 확인할 수 있습니다.</div>
+    </div>
+   </div>
+ </section>
+</div>
