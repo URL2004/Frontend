@@ -160,8 +160,10 @@ textarea::placeholder{color:var(--text3);}
 .progress-overlay{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;text-align:center;}
 .progress-overlay .prog-pct{font-size:48px;font-weight:800;color:var(--blue);letter-spacing:-.02em;margin-bottom:8px;font-variant-numeric:tabular-nums;}
 .progress-overlay .prog-status{font-size:14px;color:var(--text2);margin-bottom:20px;}
-.progress-overlay .prog-track{width:100%;max-width:320px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+.progress-overlay .prog-track{width:100%;max-width:320px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;position:relative;}
 .progress-overlay .prog-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--blue),#6cb4ee);border-radius:3px;transition:width .4s ease;}
+.progress-overlay .prog-bar.indet{width:40%;position:absolute;left:-40%;animation:progIndet 1.3s ease-in-out infinite;}
+@keyframes progIndet{to{left:100%}}
 .progress-overlay .prog-hint{margin-top:14px;font-size:12px;color:var(--text2);opacity:.75;max-width:320px;line-height:1.5;}
 .progress-overlay .prog-warn{margin-top:10px;font-size:12.5px;color:var(--red);font-weight:600;max-width:320px;line-height:1.5;}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -4632,22 +4634,13 @@ async function runAnalysis() {
  const onLeave = (e) => { e.preventDefault(); e.returnValue = '분석이 진행 중입니다. 떠나면 결과가 사라져요.'; return e.returnValue; };
  window.addEventListener('beforeunload', onLeave);
 
- // 입력 길이 + 모드 기반 예상 처리 시간 추정
- const estSec = (() => {
-  const len = text.length;
-  const chunks = len > 10000 ? Math.ceil(len / 5500) : 1;
-  // humanize: 웹검색 ~12s + 메인 ~18s + 2-pass refine ~17s + 검증/네트워크 ~3s
-  const humanizePerChunk = 50;
-  const perChunk = (mode === 'detect') ? 10 : humanizePerChunk;
-  const base = (mode === 'detect') ? 2 : 3;
-  return chunks * perChunk + base;
- })();
- const hintHtml = `<div class="prog-hint">예상 처리 시간: 약 ${estSec}초. 페이지를 닫지 말아주세요.</div>
-  <div class="prog-warn">중간에 새로고침하면 크레딧이 차감된 채 결과를 받지 못할 수 있어요.</div>`;
+ // 정직한 진행: 가짜 % 카운트다운 대신 경과 시간 + 불확정 바.
+ const hintHtml = `<div class="prog-hint">긴 글은 3~5분까지 걸릴 수 있어요. 완료되면 자동으로 표시됩니다 — 페이지를 닫지 말아주세요.</div>
+  <div class="prog-warn">새로고침하면 진행 중인 변환이 취소됩니다 (크레딧은 차감되지 않아요).</div>`;
  document.getElementById('result').innerHTML = `<div class="progress-overlay" id="progressOverlay">
-  <div class="prog-pct" id="progPct">0%</div>
-  <div class="prog-status" id="progStatus">준비 중...</div>
-  <div class="prog-track"><div class="prog-bar" id="progBar"></div></div>
+  <div class="prog-pct" id="progPct" style="font-size:34px;">0:00</div>
+  <div class="prog-status" id="progStatus">휴머나이징 준비 중...</div>
+  <div class="prog-track"><div class="prog-bar indet" id="progBar"></div></div>
   <div class="prog-chunk" id="progChunk" style="margin-top:8px;font-size:13px;color:var(--text3);"></div>
   ${hintHtml}
  </div>`;
@@ -4661,55 +4654,21 @@ async function runAnalysis() {
  const progStatusEl = document.getElementById('progStatus');
  if (barEl) barEl.style.display = 'block';
 
+ // 활동 표시용 단계 메시지 (가짜 %가 아니라 경과 시간 기반으로 순차 전환, 마지막에서 멈춤)
  const stages = (mode !== 'detect')
-  ? [
-      { at: 0, msg: '텍스트 분석 중...' },
-      { at: 15, msg: '웹에서 참고 자료 검색 중...' },
-      { at: 35, msg: '자연스러운 표현으로 변환 중...' },
-      { at: 60, msg: '문체 다듬는 중...' }
-    ]
-  : [
-      { at: 0, msg: '텍스트 분석 중...' },
-      { at: 25, msg: '특징 추출 중...' },
-      { at: 60, msg: 'AI 패턴 검사 중...' }
-    ];
- const tailMsgs = [
-  '거의 완료...',
-  'AI 패턴 우회 중...',
-  '문장 흐름 재구성 중...',
-  '어휘 다양성 검증 중...',
-  '마지막 다듬는 중...',
-  '거의 다 됐어요...'
- ];
- let tailIdx = 0;
- let tick = 0;
+  ? ['텍스트 분석 중...', '자연스러운 표현으로 변환 중...', '문체 다듬는 중...', '문장 흐름 재구성 중...', '어휘 다양성 검증 중...', '거의 다 됐어요...']
+  : ['텍스트 분석 중...', '특징 추출 중...', 'AI 패턴 검사 중...'];
+ let stageIdx = -1;
  const startMs = Date.now();
- const estimatedMs = estSec * 1000;
+ const fmtElapsed = (ms) => { const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
  const prog = setInterval(() =>{
-  tick++;
   const elapsed = Date.now() - startMs;
-  // 경과 시간/예상 시간 비율로 0→95% 선형 진행. 추정보다 늦으면 95%에서 점근.
-  const linearPct = Math.min((elapsed / estimatedMs) * 95, 95);
-  if (linearPct >= 95) {
-   if (pct < 95) pct = 95;
-   pct += (99 - pct) * 0.03;
-  } else {
-   pct = linearPct;
-  }
-  const rounded = Math.round(pct);
-  if (pctEl) pctEl.textContent = rounded + '%';
-  if (fillEl) fillEl.style.width = pct + '%';
-  if (progPctEl) progPctEl.textContent = rounded + '%';
-  if (progBarEl) progBarEl.style.width = pct + '%';
-  if (pct < 85) {
-   for (let i = stages.length - 1; i >= 0; i--) {
-    if (pct >= stages[i].at) { if (progStatusEl) progStatusEl.textContent = stages[i].msg; break; }
-   }
-  } else {
-   if (tick % 10 === 0) tailIdx = (tailIdx + 1) % tailMsgs.length;
-   if (progStatusEl) progStatusEl.textContent = tailMsgs[tailIdx];
-  }
+  const t = fmtElapsed(elapsed);   // 진짜 경과 시간 (가짜 % 아님)
+  if (progPctEl) progPctEl.textContent = t;
+  if (pctEl) pctEl.textContent = t;
+  const idx = Math.min(Math.floor(elapsed / 7000), stages.length - 1);   // ~7초마다 다음 단계
+  if (idx !== stageIdx) { stageIdx = idx; if (progStatusEl) progStatusEl.textContent = stages[idx]; }
  }, 500);
 
  try {
