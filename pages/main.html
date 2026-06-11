@@ -316,13 +316,13 @@
 
            <div class="lav-approve" id="lavApprove" hidden>
              <div class="lav-approve-head">
-               <strong>검수할 근거 5건</strong>
+               <strong id="lavApproveCount">검수할 근거</strong>
                <span>승인한 자료만 인용해요. 미승인 자료는 엔진이 차단합니다.</span>
              </div>
              <div class="lav-approve-list" id="lavApproveList"></div>
              <div class="lav-approve-actions">
                <button type="button" class="ghost" onclick="lavApprovePick()">선택만 승인</button>
-               <button type="button" onclick="lavApproveReco()">추천 4건 승인하고 계속</button>
+               <button type="button" id="lavApproveRecoBtn" onclick="lavApproveReco()">추천 승인하고 계속</button>
              </div>
            </div>
          </section>

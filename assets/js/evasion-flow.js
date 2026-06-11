@@ -157,7 +157,7 @@
       rows.push(['어투', s.tone === 'formal' ? '격식 유지 재구성' : '블로그 말투']);
       if (s.tone === 'formal') rows.push(['분량', s.length === 'keep' ? '분량 유지' : '컴팩트(~60%)']);
       rows.push(['경험 메모', s.memo ? (s.tone === 'blog' ? '입력함' : '준비 중(재구성엔 다음 업데이트)') : '없음']);
-      rows.push(['근거 보강', s.evidence ? '준비 중(이번 변환엔 미적용)' : '끔']);
+      rows.push(['근거 보강', s.evidence ? (s.tone === 'formal' ? '켬 — 검색 후 검수·승인' : '미적용(블로그는 다음 업데이트)') : '끔']);
       sum.innerHTML = rows.map(function (r) {
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
       }).join('');
@@ -179,88 +179,69 @@
     if (modal) modal.hidden = true;
   };
 
-  // 더미 근거 후보(P0). 실제 P4 RAG가 채움.
-  var FAKE_EVIDENCE = [
-    { ok: true, grade: 'A', text: '오픈서베이 2024 — 한국 대학생 92.4%가 챗GPT 사용', src: 'opensurvey.co.kr' },
-    { ok: true, grade: 'A', text: '성균관대 교육개발센터 2023 설문 — 학습 이해 활용 69.8%', src: 'skku.edu' },
-    { ok: true, grade: 'B', text: 'KERIS 2023 실태조사 — 교수자 54.7%가 사고과정 미노출 지적', src: 'keris.or.kr' },
-    { ok: true, grade: 'B', text: '스위스 비즈니스스쿨 2025 — AI 의존과 비판적 사고 상관 -0.68', src: 'arxiv.org' },
-    { ok: false, grade: 'C', text: '프린스턴 관련 수치 — 출처 불명확, 블로그 재인용 (충돌)', src: 'blog (보류)' }
-  ];
+  // ── P4 실연결: 근거 승인 리스트(서버 후보 — DOM 생성으로 XSS-safe) ──────────
+  var pendingApproval = null;   // { jobId } — 승인 핸들러가 폴링을 재개할 때 사용
 
-  function renderApprovalList() {
+  function renderApprovalList(candidates, jobId) {
+    pendingApproval = { jobId: jobId };
     var list = $('lavApproveList');
     if (!list) return;
-    list.innerHTML = FAKE_EVIDENCE.map(function (e, i) {
-      var checked = e.grade !== 'C' ? 'checked' : '';
-      var warn = e.grade === 'C' ? '<span class="warn">⚠ 수치 충돌 — 확인 필요</span>' : '<span>' + e.src + '</span>';
-      return '<label class="lav-approve-item">' +
-        '<input type="checkbox" ' + checked + ' data-idx="' + i + '">' +
-        '<div><b>' + e.text + '</b>' + warn + '</div>' +
-        '<span class="lav-approve-grade ' + e.grade.toLowerCase() + '">' + e.grade + '</span>' +
-        '</label>';
-    }).join('');
-  }
-
-  function runJobSequence(withEvidence) {
-    show('job');
-    var jobId = '#' + (1000 + Math.floor((Date.now ? 0 : 0))).toString(36).toUpperCase();
-    // Date.now 회피 — 고정 더미 id (P0)
-    if ($('lavJobId')) $('lavJobId').textContent = '#A1B2';
-    var steps = $('lavSteps').querySelectorAll('li');
-    var slot = $('lavStepSlot');
-    var n = 0, total = 7;
-
-    function setStep(active) {
-      steps.forEach(function (li, i) {
-        li.classList.toggle('done', i < active);
-        li.classList.toggle('active', i === active);
-      });
-    }
-    setStep(1);
-
-    var slotTimer = setInterval(function () {
-      n++;
-      if (slot) slot.textContent = '문단 재작성 ' + Math.min(n, total) + ' / ' + total;
-      if (n >= total) {
-        clearInterval(slotTimer);
-        if (withEvidence) {
-          // 검증 전 근거 승인 단계 노출
-          setStep(2);
-          renderApprovalList();
-          var ap = $('lavApprove');
-          if (ap) ap.hidden = false;
-        } else {
-          finishJob();
-        }
+    list.innerHTML = '';
+    var recoCount = 0;
+    candidates.forEach(function (c) {
+      var reco = c.grade !== 'C' && !c.conflict;   // A·B + 무충돌 = 추천(기본 체크)
+      if (reco) recoCount++;
+      var label = document.createElement('label');
+      label.className = 'lav-approve-item';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = reco;
+      cb.setAttribute('data-id', c.id);
+      cb.setAttribute('data-reco', reco ? '1' : '0');
+      var div = document.createElement('div');
+      var b = document.createElement('b');
+      b.textContent = c.fact;
+      var span = document.createElement('span');
+      if (c.conflict) {
+        span.className = 'warn';
+        span.textContent = '⚠ 수치 충돌(' + (c.conflictDetail || '확인 필요') + ') — ' + (c.host || '');
+      } else {
+        span.textContent = (c.sourceTitle ? c.sourceTitle + ' · ' : '') + (c.host || '');
       }
-    }, 420);
+      div.appendChild(b); div.appendChild(span);
+      var gradeChip = document.createElement('span');
+      gradeChip.className = 'lav-approve-grade ' + String(c.grade || 'b').toLowerCase();
+      gradeChip.textContent = c.grade || 'B';
+      label.appendChild(cb); label.appendChild(div); label.appendChild(gradeChip);
+      list.appendChild(label);
+    });
+    if ($('lavApproveCount')) $('lavApproveCount').textContent = '검수할 근거 ' + candidates.length + '건';
+    if ($('lavApproveRecoBtn')) $('lavApproveRecoBtn').textContent = '추천 ' + recoCount + '건 승인하고 계속';
   }
 
-  function finishJob() {
-    var ap = $('lavApprove');
-    if (ap) ap.hidden = true;
-    var steps = $('lavSteps').querySelectorAll('li');
-    var i = 0;
-    var t = setInterval(function () {
-      i++;
-      steps.forEach(function (li, idx) {
-        li.classList.toggle('done', idx < i + 2);
-        li.classList.toggle('active', idx === i + 2);
-      });
-      if (i >= 2) { clearInterval(t); showResult(); }
-    }, 700);
-  }
-
-  function showResult() {
-    var s = currentSettings();
-    if ($('lavDoneScore')) $('lavDoneScore').textContent = s.tone === 'formal' ? '38%' : '34%';
-    if ($('lavDoneBody')) {
-      $('lavDoneBody').textContent = s.tone === 'formal'
-        ? '대학 교육의 풍경이 바뀌고 있다. 강의실과 교재로 굴러가던 학습은 이제 인공지능 학습 도구를 빼고 말하기 어렵다. 오픈서베이가 2024년에 조사한 결과를 보면 한국 대학생의 92.4%가 챗GPT를 쓴다고 답했는데, 단순한 유행이라 보기엔 숫자가 묵직하다. 문제는 도구의 유무가 아니라 학생이 그 도구를 어떻게 다루느냐다. (재구성 결과 미리보기 — 실제 엔진 연결 시 전문 표시)'
-        : '요즘 대학 다니면서 챗GPT 안 써본 사람 거의 없을걸요. 실제로 오픈서베이 2024 조사에서도 대학생 92.4%가 쓴다고 나왔거든요. 근데 솔직히 도구가 문제가 아니라, 그걸 어떻게 쓰느냐가 진짜 핵심이더라고요. (변환 결과 미리보기 — 실제 엔진 연결 시 전문 표시)';
-    }
-    show('done');
+  function submitApproval(mode) {
+    if (!pendingApproval) return;
+    var list = $('lavApproveList');
+    var ids = [];
+    if (list) list.querySelectorAll('input[type=checkbox]').forEach(function (cb) {
+      var take = mode === 'pick' ? cb.checked : cb.getAttribute('data-reco') === '1';
+      if (take) ids.push(parseInt(cb.getAttribute('data-id'), 10));
+    });
+    var jobId = pendingApproval.jobId;
+    pendingApproval = null;
+    var ap = $('lavApprove'); if (ap) ap.hidden = true;
+    if ($('lavStepSlot')) $('lavStepSlot').textContent = '승인 ' + ids.length + '건으로 재구성 중';
+    fetch(window.apiUrl('/transform/' + jobId + '/approve'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ approved: ids })
+    }).then(function (res) { return res.json(); }).then(function (b) {
+      if (b && b.error) throw new Error(b.error);
+      formalStop = startJobTicker(currentBareLen() * 5, '승인 근거로 재구성 중');
+      return pollTransform(jobId);
+    }).catch(function (err) {
+      alert(err && err.message ? err.message : '승인 처리에 실패했어요.');
+      show('reduce');
+    });
   }
 
   // ── P2 실연결: 블로그 어투 회피 = /analyze(engine:floorV2, mode:blog) ──────────
@@ -311,14 +292,15 @@
   }
 
   // 단일 응답 작업이라 단계는 경과 시간 기반 추정 표시(마지막 단계는 응답 도착 시).
-  function startJobTicker(charLen) {
+  function startJobTicker(charLen, label) {
     var t0 = 0;
+    var name = label || '문장 다듬는 중';
     setJobSteps(1);
-    if ($('lavStepSlot')) $('lavStepSlot').textContent = '문장 다듬는 중';
-    var est = Math.max(90, Math.min(1200, charLen / 12));   // 대략 추정(초) — 실측: 2.1K≈154s, 9K≈13분
+    if ($('lavStepSlot')) $('lavStepSlot').textContent = name;
+    var est = Math.max(90, Math.min(1800, charLen / 12));   // 대략 추정(초) — 실측: 2.1K≈154s, 9K≈13분
     var timer = setInterval(function () {
       t0 += 2;
-      if ($('lavStepSlot')) $('lavStepSlot').textContent = '문장 다듬는 중 (' + Math.min(99, Math.round(t0 / est * 100)) + '%)';
+      if ($('lavStepSlot')) $('lavStepSlot').textContent = name + ' (' + Math.min(99, Math.round(t0 / est * 100)) + '%)';
       if (t0 > est * 0.7) setJobSteps(2);
     }, 2000);
     return function stop() { clearInterval(timer); };
@@ -339,6 +321,7 @@
     badge(m.lostFacts === 0, m.lostFacts === 0 ? '원문 사실 보존' : '사실 누락 ' + m.lostFacts + '건');
     badge(m.repetition === 0, m.repetition === 0 ? '반복 없음' : '반복 ' + m.repetition + '건');
     badge(m.judge !== 'fail', m.judge === 'pass' ? '의미 검증 통과' : m.judge === 'fail' ? '의미 검증 실패' : '의미 검증 생략(저위험)');
+    if (m.evidenceUsed > 0) badge(true, '승인 근거 ' + m.evidenceUsed + '건 · 수치·출처 일치');
     if (typeof m.lengthRatio === 'number') badge(true, '분량 ' + Math.round(m.lengthRatio * 100) + '%');
   }
 
@@ -368,14 +351,61 @@
     })();
   }
 
-  // ── P3 실연결: 격식 유지 재구성 = POST /transform(job) + 폴링 ──────────
+  // ── P3+P4 실연결: 격식 유지 재구성 = POST /transform(job) + 폴링 + 근거 승인 ──────────
+  var formalStop = null;   // 진행 ticker 정지 함수
+  function stopFormalTicker() { if (formalStop) { formalStop(); formalStop = null; } }
+  function currentBareLen() {
+    var src = $('lavInput');
+    return (src ? src.value : '').replace(/\s/g, '').length;
+  }
+
+  // 폴링: 6초 간격, 최대 45분(근거 검색+재구성). 창을 닫아도 서버 작업은 계속됨(job 방식).
+  async function pollTransform(jobId) {
+    var deadline = Date.now() + 45 * 60000;
+    while (Date.now() < deadline) {
+      await new Promise(function (ok) { setTimeout(ok, 6000); });
+      var st;
+      try {
+        st = await fetch(window.apiUrl('/transform/' + jobId)).then(function (res) { return res.json(); });
+      } catch (e) { continue; }   // 일시 네트워크 오류 — 다음 폴링
+      if (!st) continue;
+      if (st.status === 'awaiting_approval') {
+        stopFormalTicker();
+        setJobSteps(2);
+        if ($('lavStepSlot')) $('lavStepSlot').textContent = '근거 검수 대기 — 승인한 자료만 인용돼요';
+        renderApprovalList(st.candidates || [], jobId);
+        var ap = $('lavApprove'); if (ap) ap.hidden = false;
+        return;   // 사용자 승인 대기 — submitApproval이 폴링 재개
+      }
+      if (st.status === 'done') {
+        stopFormalTicker();
+        setJobSteps(4);
+        if ($('lavDoneScore')) $('lavDoneScore').textContent = (lastDiag && lastDiag.bands && lastDiag.bands.restructure) || '36~43%';
+        if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
+        renderBadges({ metrics: st.result && st.result.metrics });
+        if (st.note) console.info('[evasion]', st.note);
+        show('done');
+        return;
+      }
+      if (st.status === 'blocked' || st.status === 'error') {
+        stopFormalTicker();
+        alert(st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
+        show('reduce');
+        return;
+      }
+    }
+    stopFormalTicker();
+    alert('작업이 예상보다 오래 걸리고 있어요. 잠시 후 다시 시도해주세요.');
+    show('reduce');
+  }
+
   function runFormalEvasion(s) {
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
     if ($('lavJobTitle')) $('lavJobTitle').textContent = '글을 다시 쓰고 있어요';
     if ($('lavJobId')) $('lavJobId').textContent = '';
     show('job');
-    var stop = startJobTicker(text.replace(/\s/g, '').length * 5);   // 재구성은 변환보다 ~5배 느림(실측 5~25분)
+    formalStop = startJobTicker(currentBareLen() * (s.evidence ? 7 : 5), s.evidence ? '실제 근거 검색·재구성 중' : '글을 다시 쓰는 중');
     (async function () {
       var idToken = '';
       try { if (window.CU && window.CU.getIdToken) idToken = await window.CU.getIdToken(); } catch (e) { /* 비로그인 — 서버가 401 안내 */ }
@@ -383,38 +413,12 @@
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, idToken: idToken })
+          body: JSON.stringify({ text: text, idToken: idToken, evidence: !!s.evidence })
         }).then(function (res) { return res.json().then(function (b) { if (b && b.error) throw new Error(b.error); if (!res.ok || !b || !b.ok) throw new Error('작업 시작에 실패했어요.'); return b; }); });
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
-        // 폴링: 6초 간격, 최대 35분. 창을 닫아도 서버 작업은 계속됨(job 방식).
-        var deadline = Date.now() + 35 * 60000;
-        while (Date.now() < deadline) {
-          await new Promise(function (ok) { setTimeout(ok, 6000); });
-          var st;
-          try {
-            st = await fetch(window.apiUrl('/transform/' + r.jobId)).then(function (res) { return res.json(); });
-          } catch (e) { continue; }   // 일시 네트워크 오류 — 다음 폴링
-          if (!st) continue;
-          if (st.status === 'done') {
-            stop(); setJobSteps(4);
-            if ($('lavDoneScore')) $('lavDoneScore').textContent = (lastDiag && lastDiag.bands && lastDiag.bands.restructure) || '36~43%';
-            if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
-            renderBadges({ metrics: st.result && st.result.metrics });
-            show('done');
-            return;
-          }
-          if (st.status === 'blocked' || st.status === 'error') {
-            stop();
-            alert(st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
-            show('reduce');
-            return;
-          }
-        }
-        stop();
-        alert('작업이 예상보다 오래 걸리고 있어요. 잠시 후 다시 시도해주세요.');
-        show('reduce');
+        await pollTransform(r.jobId);
       } catch (err) {
-        stop();
+        stopFormalTicker();
         alert(err && err.message ? err.message : '처리 중 오류가 발생했어요.');
         show('reduce');
       }
@@ -425,11 +429,11 @@
     window.lavCloseConfirm();
     var s = currentSettings();
     if (s.tone === 'blog') return runBlogEvasion(s);   // ★ P2 실연결(블로그 어투)
-    return runFormalEvasion(s);                        // ★ P3 실연결(격식 유지 재구성, job+폴링)
+    return runFormalEvasion(s);                        // ★ P3+P4 실연결(격식 유지 재구성, job+폴링+근거 승인)
   };
 
-  window.lavApproveReco = function () { finishJob(); };
-  window.lavApprovePick = function () { finishJob(); };
+  window.lavApproveReco = function () { submitApproval('reco'); };
+  window.lavApprovePick = function () { submitApproval('pick'); };
 
   window.lavDoneCopy = function (btn) {
     var body = $('lavDoneBody');
