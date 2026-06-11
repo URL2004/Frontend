@@ -4403,7 +4403,7 @@ function clearPDF() {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   자동 청크 분할 · 순차 실행 (8,000자 초과 시)
+   자동 청크 분할 · 순차 실행 (10,000자 초과 시 — 크레딧 모드 상한이라 사실상 미발생)
    ══════════════════════════════════════════════════════════════ */
 function splitByBoundary(text, MIN, MAX) {
  MIN = MIN || 4500;
@@ -4455,7 +4455,7 @@ function splitByBoundary(text, MIN, MAX) {
 async function callAnalyzeApi(payload, opts) {
  opts = opts || {};
  var maxRetries = (opts.maxRetries == null) ? 1 : opts.maxRetries;
- var timeoutMs = opts.timeoutMs || 300000;
+ var timeoutMs = opts.timeoutMs || 480000;
  var delay = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
  var attempt = 0;
  while (true) {
@@ -4635,7 +4635,7 @@ async function runAnalysis() {
  // 입력 길이 + 모드 기반 예상 처리 시간 추정
  const estSec = (() => {
   const len = text.length;
-  const chunks = len > 8000 ? Math.ceil(len / 5500) : 1;
+  const chunks = len > 10000 ? Math.ceil(len / 5500) : 1;
   // humanize: 웹검색 ~12s + 메인 ~18s + 2-pass refine ~17s + 검증/네트워크 ~3s
   const humanizePerChunk = 50;
   const perChunk = (mode === 'detect') ? 10 : humanizePerChunk;
@@ -4729,8 +4729,9 @@ async function runAnalysis() {
   useWebSearch: false
  };
 
- if (text.length > 8000) {
-  // 내부 자동 분할 — 유저 노출 없음 (8,000자 이하는 단일 호출 = 끝에 1회 원자 차감)
+ if (text.length > 10000) {
+  // 내부 자동 분할 — 유저 노출 없음 (10,000자 이하는 단일 호출 = 끝에 1회 원자 차감.
+  //   크레딧 모드 상한이 10,000이라 크레딧 사용자는 사실상 항상 단일 호출 → 멀티청크·부분실패 없음)
   data = await runChunkedText(text, commonOpts);
  } else {
   const singleReqId = genReqId();
