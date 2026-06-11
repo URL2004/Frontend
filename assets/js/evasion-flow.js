@@ -266,7 +266,11 @@
   // ── P2 실연결: 블로그 어투 회피 = /analyze(engine:floorV2, mode:blog) ──────────
   function callEvasionApi(payload) {
     var ctrl = new AbortController();
-    var timer = setTimeout(function () { ctrl.abort(); }, 420000);   // 서버 작업 1~4분 — hang만 차단
+    var timedOut = false;
+    // 타임아웃은 글 길이 비례(실측: 2.3K자≈2.5분, 9K자≈13분 — API 레이트리밋 구간 포함). 진짜 hang만 차단.
+    var bare = (payload.text || '').replace(/\s/g, '').length;
+    var timeoutMs = Math.min(20 * 60000, Math.max(6 * 60000, bare * 120));
+    var timer = setTimeout(function () { timedOut = true; ctrl.abort(); }, timeoutMs);
     return fetch(window.apiUrl('/analyze'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -288,6 +292,12 @@
         if (!res.ok || !b || !b.ok) throw new Error('처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
         return b;
       });
+    }).catch(function (e) {
+      // AbortError 원문("signal is aborted without reason")은 사용자에게 무의미 → 사람 말로.
+      if (timedOut || (e && e.name === 'AbortError')) {
+        throw new Error('서버 처리가 길어져 요청을 중단했어요. 크레딧은 차감되지 않았어요. 글을 더 짧게 나눠 다시 시도해주세요.');
+      }
+      throw e;
     }).finally(function () { clearTimeout(timer); });
   }
 
@@ -305,7 +315,7 @@
     var t0 = 0;
     setJobSteps(1);
     if ($('lavStepSlot')) $('lavStepSlot').textContent = '문장 다듬는 중';
-    var est = Math.max(60, Math.min(240, charLen / 40));   // 대략 추정(초)
+    var est = Math.max(90, Math.min(1200, charLen / 12));   // 대략 추정(초) — 실측: 2.1K≈154s, 9K≈13분
     var timer = setInterval(function () {
       t0 += 2;
       if ($('lavStepSlot')) $('lavStepSlot').textContent = '문장 다듬는 중 (' + Math.min(99, Math.round(t0 / est * 100)) + '%)';
