@@ -156,8 +156,8 @@
       var rows = [];
       rows.push(['어투', s.tone === 'formal' ? '격식 유지 재구성' : '블로그 말투']);
       if (s.tone === 'formal') rows.push(['분량', s.length === 'keep' ? '분량 유지' : '컴팩트(~60%)']);
-      rows.push(['경험 메모', s.memo ? '입력함' : '없음']);
-      rows.push(['근거 보강', s.evidence ? '켬 (검수 후 승인)' : '끔']);
+      rows.push(['경험 메모', s.memo ? (s.tone === 'blog' ? '입력함' : '준비 중(재구성엔 다음 업데이트)') : '없음']);
+      rows.push(['근거 보강', s.evidence ? '준비 중(이번 변환엔 미적용)' : '끔']);
       sum.innerHTML = rows.map(function (r) {
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
       }).join('');
@@ -166,8 +166,8 @@
     var src = $('lavInput');
     var len = src ? src.value.length : 0;
     var blogCredit = Math.max(1, Math.ceil(len / 100));
-    var credit = s.tone === 'formal' ? (s.evidence ? '단가 확정 전' : '단가 확정 전') : blogCredit + ' 크레딧';
-    var time = s.tone === 'formal' ? (s.evidence ? '10~25분' : '10~25분') : '약 1~3분';
+    var credit = s.tone === 'formal' ? blogCredit + ' 크레딧(임시 단가)' : blogCredit + ' 크레딧';
+    var time = s.tone === 'formal' ? '5~25분' : '약 1~3분';
     if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = credit;
     if ($('lavConfirmTime')) $('lavConfirmTime').textContent = time;
     var modal = $('lavConfirmModal');
@@ -368,13 +368,64 @@
     })();
   }
 
+  // ── P3 실연결: 격식 유지 재구성 = POST /transform(job) + 폴링 ──────────
+  function runFormalEvasion(s) {
+    var src = $('lavInput');
+    var text = (src ? src.value : '').trim();
+    if ($('lavJobTitle')) $('lavJobTitle').textContent = '글을 다시 쓰고 있어요';
+    if ($('lavJobId')) $('lavJobId').textContent = '';
+    show('job');
+    var stop = startJobTicker(text.replace(/\s/g, '').length * 5);   // 재구성은 변환보다 ~5배 느림(실측 5~25분)
+    (async function () {
+      var idToken = '';
+      try { if (window.CU && window.CU.getIdToken) idToken = await window.CU.getIdToken(); } catch (e) { /* 비로그인 — 서버가 401 안내 */ }
+      try {
+        var r = await fetch(window.apiUrl('/transform'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text, idToken: idToken })
+        }).then(function (res) { return res.json().then(function (b) { if (b && b.error) throw new Error(b.error); if (!res.ok || !b || !b.ok) throw new Error('작업 시작에 실패했어요.'); return b; }); });
+        if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
+        // 폴링: 6초 간격, 최대 35분. 창을 닫아도 서버 작업은 계속됨(job 방식).
+        var deadline = Date.now() + 35 * 60000;
+        while (Date.now() < deadline) {
+          await new Promise(function (ok) { setTimeout(ok, 6000); });
+          var st;
+          try {
+            st = await fetch(window.apiUrl('/transform/' + r.jobId)).then(function (res) { return res.json(); });
+          } catch (e) { continue; }   // 일시 네트워크 오류 — 다음 폴링
+          if (!st) continue;
+          if (st.status === 'done') {
+            stop(); setJobSteps(4);
+            if ($('lavDoneScore')) $('lavDoneScore').textContent = (lastDiag && lastDiag.bands && lastDiag.bands.restructure) || '36~43%';
+            if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
+            renderBadges({ metrics: st.result && st.result.metrics });
+            show('done');
+            return;
+          }
+          if (st.status === 'blocked' || st.status === 'error') {
+            stop();
+            alert(st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
+            show('reduce');
+            return;
+          }
+        }
+        stop();
+        alert('작업이 예상보다 오래 걸리고 있어요. 잠시 후 다시 시도해주세요.');
+        show('reduce');
+      } catch (err) {
+        stop();
+        alert(err && err.message ? err.message : '처리 중 오류가 발생했어요.');
+        show('reduce');
+      }
+    })();
+  }
+
   window.lavStartJob = function () {
     window.lavCloseConfirm();
     var s = currentSettings();
     if (s.tone === 'blog') return runBlogEvasion(s);   // ★ P2 실연결(블로그 어투)
-    // 격식 유지 재구성은 P3(job 백엔드) 연결 전까지 더미 시연 유지
-    if ($('lavJobTitle')) $('lavJobTitle').textContent = '글을 다시 쓰고 있어요';
-    runJobSequence(s.evidence);
+    return runFormalEvasion(s);                        // ★ P3 실연결(격식 유지 재구성, job+폴링)
   };
 
   window.lavApproveReco = function () { finishJob(); };
