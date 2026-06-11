@@ -358,6 +358,36 @@
     var src = $('lavInput');
     return (src ? src.value : '').replace(/\s/g, '').length;
   }
+  // ── P5: jobId 재진입 — 새로고침·재방문 시 진행 중 작업 복원(서버 job은 어차피 계속 돌고 있음) ──
+  function saveJobRef(jobId) { try { localStorage.setItem('lavJobRef', JSON.stringify({ jobId: jobId, ts: Date.now() })); } catch (e) { } }
+  function clearJobRef() { try { localStorage.removeItem('lavJobRef'); } catch (e) { } }
+  function initJobResume() {
+    var ref = null;
+    try { ref = JSON.parse(localStorage.getItem('lavJobRef') || 'null'); } catch (e) { }
+    if (!ref || !ref.jobId || (Date.now() - (ref.ts || 0)) > 6 * 3600 * 1000) { if (ref) clearJobRef(); return; }
+    fetch(window.apiUrl('/transform/' + ref.jobId)).then(function (r) { return r.json(); }).then(function (st) {
+      if (!st || !st.ok) { clearJobRef(); return; }
+      if (st.status === 'done') {
+        if ($('lavDoneScore')) $('lavDoneScore').textContent = '36~43%';
+        if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
+        renderBadges({ metrics: st.result && st.result.metrics });
+        clearJobRef();
+        show('done');
+        return;
+      }
+      if (st.status === 'running' || st.status === 'awaiting_approval') {
+        if ($('lavJobTitle')) $('lavJobTitle').textContent = '글을 다시 쓰고 있어요';
+        if ($('lavJobId')) $('lavJobId').textContent = '#' + ref.jobId.slice(0, 6).toUpperCase();
+        show('job');
+        formalStop = startJobTicker(3000, '재구성 중');   // 원문 길이를 모름 — 보수적 추정
+        pollTransform(ref.jobId);
+        return;
+      }
+      clearJobRef();   // blocked·error는 복원 의미 없음
+    }).catch(function () { /* 서버 미접속 — 다음 방문에 재시도 */ });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initJobResume);
+  else initJobResume();
 
   // 폴링: 6초 간격, 최대 45분(근거 검색+재구성). 창을 닫아도 서버 작업은 계속됨(job 방식).
   async function pollTransform(jobId) {
@@ -384,19 +414,20 @@
         if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
         renderBadges({ metrics: st.result && st.result.metrics });
         if (st.note) console.info('[evasion]', st.note);
+        clearJobRef();
         show('done');
         return;
       }
       if (st.status === 'blocked' || st.status === 'error') {
         stopFormalTicker();
+        clearJobRef();
         alert(st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
         show('reduce');
         return;
       }
     }
     stopFormalTicker();
-    alert('작업이 예상보다 오래 걸리고 있어요. 잠시 후 다시 시도해주세요.');
-    show('reduce');
+    alert('작업이 예상보다 오래 걸리고 있어요. 새로고침하면 진행 중인 작업으로 다시 들어갈 수 있어요.');
   }
 
   function runFormalEvasion(s) {
@@ -416,6 +447,7 @@
           body: JSON.stringify({ text: text, idToken: idToken, evidence: !!s.evidence })
         }).then(function (res) { return res.json().then(function (b) { if (b && b.error) throw new Error(b.error); if (!res.ok || !b || !b.ok) throw new Error('작업 시작에 실패했어요.'); return b; }); });
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
+        saveJobRef(r.jobId);
         await pollTransform(r.jobId);
       } catch (err) {
         stopFormalTicker();
