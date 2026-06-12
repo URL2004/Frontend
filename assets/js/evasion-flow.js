@@ -351,7 +351,7 @@
     var sum = $('lavConfirmSummary');
     if (sum) {
       var rows = [];
-      rows.push(['방식', s.tone === 'formal' ? '고급 피하기 — 과제 톤 유지' : '기본 피하기 — 블로그 말투']);
+      rows.push(['방식', s.tone === 'formal' ? '고급 피하기 — 논문·격식체' : '기본 피하기 — 블로그·SNS·과제']);
       if (s.tone === 'formal') rows.push(['분량', s.length === 'keep' ? '분량 유지' : '컴팩트(~60%)']);
       rows.push(['경험 메모', s.memo ? (s.tone === 'blog' ? '입력함' : '준비 중(재구성엔 다음 업데이트)') : '없음']);
       rows.push(['근거 보강', s.tone === 'formal' ? (s.evidence ? '켬 — 검색 후 검수·승인' : '끔') : '기본 피하기에선 사용 안 함']);
