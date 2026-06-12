@@ -5,3 +5,9 @@ node_modules/
 .vercel/
 .DS_Store
 *.log
+_probe-*.html
+runtime-config.local.js
+runtime-config.js
+dist/
+
+.vercel

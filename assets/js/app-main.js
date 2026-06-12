@@ -686,6 +686,24 @@ function splitByBoundary(text, MIN, MAX) {
 //   abort 시 서버는 req.on('close')로 작업 중단 + 차감 스킵/복구하므로 "크레딧만 사라짐"이 안 생긴다.
 // - 재시도: 429/5xx/네트워크 오류처럼 일시적인 실패만 백오프 재시도. 잔액부족·인증·길이 오류는 즉시 throw.
 // 성공 시 서버 body({ ok, result, usage, ... })를 반환한다.
+// 작업 멱등 키: 같은 작업(재시도·청크 포함)이 두 번 도달해도 서버가 1회만 차감하도록 고정 ID를 발급.
+function genReqId() {
+ try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (_) {}
+ return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+
+// 입력 글의 주 언어 자동 판별 — 영어 글을 'ko'로 보내 결과가 한글로 나오던 버그(민원 #124·#145) 방지.
+// 한글 비중<15%면 영어로, >50%면 한국어로 확정. 애매한 혼합문은 사용자가 고른 fallback 유지.
+function autoLangForText(text, fallback) {
+ var t = (text || '').replace(/\s+/g, '');
+ if (!t.length) return fallback || 'ko';
+ var ko = (t.match(/[가-힣]/g) || []).length;
+ var ratio = ko / t.length;
+ if (ratio < 0.15) return 'en';
+ if (ratio > 0.5) return 'ko';
+ return fallback || 'ko';
+}
+
 async function callAnalyzeApi(payload, opts) {
  opts = opts || {};
  var maxRetries = (opts.maxRetries == null) ? 1 : opts.maxRetries;
@@ -709,6 +727,7 @@ async function callAnalyzeApi(payload, opts) {
      idToken: payload.idToken,
      prevContext: payload.prevContext || '',
      billingMode: payload.billingMode || 'credit',
+     requestId: payload.requestId || undefined,
      useWebSearch: false
     }),
     signal: ctrl.signal
@@ -782,6 +801,8 @@ async function runChunkedText(fullText, opts) {
     idToken: opts.idToken,
     prevContext: prevTail,
     billingMode: opts.billingMode,
+    // 청크별 고정 멱등 키 — 재시도(maxRetries:3) 시 같은 청크의 중복 차감 방지.
+    requestId: opts.requestId ? (opts.requestId + ':' + i) : undefined,
     useWebSearch: false
    }, { maxRetries: 3 });   // 청크는 한 작업의 일부 — 일시 실패에 더 끈질기게 재시도해 부분 실패 빈도↓
   } catch (err) {
@@ -814,10 +835,17 @@ async function runAnalysis() {
  if (!text) { alert('텍스트를 입력하거나 PDF를 첨부해주세요.'); return; }
  if (text.length < 20) { alert('20자 이상 입력해주세요.'); return; }
 
- const needed = Math.ceil(text.length / 100);
- if (window.UP !== 'unlimited' && window.UC < needed) { 
- if (confirm('크레딧이 부족합니다. 충전 페이지로 이동할까요?')) switchTab('pricing'); 
- return; 
+ // ★ 긴 글 사전 차감 정합(P0-3): 청크 분할 시 서버는 청크별 ceil(len/100)을 각각 차감하므로,
+ //   단순 ceil(전체/100)이 아니라 청크 합계로 선검증해야 "99%에서 크레딧 부족"으로 중간 중단되던 민원(#120)을 막는다.
+ let needed;
+ if (text.length > 5500) {
+  needed = splitByBoundary(text, 4500, 5500).reduce(function (s, c) { return s + Math.ceil(c.length / 100); }, 0);
+ } else {
+  needed = Math.ceil(text.length / 100);
+ }
+ if (window.UP !== 'unlimited' && (window.UC || 0) < needed) {
+ if (confirm('이 글을 변환하려면 ' + needed + '크레딧이 필요해요(현재 ' + (window.UC || 0) + '크레딧). 충전 페이지로 이동할까요?')) switchTab('pricing');
+ return;
  }
 
  const btn = document.getElementById('sbtn');
@@ -918,11 +946,13 @@ async function runAnalysis() {
  // 여기서는 항상 텍스트 경로로 처리한다. (서버 /analyze-pdf 호출 분기는 미사용이라 제거됨)
  const selectedHumanizeMode = humanizeMode || 'assignment';
  const apiMode = mode === 'detect' ? 'detect' : 'humanize';
+ const runLang = autoLangForText(text, selectedLang);   // 영어 글이 한글로 나오던 버그 방지
  const commonOpts = {
   mode: apiMode,
   humanizeMode: selectedHumanizeMode,
-  lang: selectedLang,
+  lang: runLang,
   idToken: idToken,
+  requestId: genReqId(),   // 이 변환 작업의 멱등 키(단일·청크 공통)
   useWebSearch: false
  };
 
@@ -948,9 +978,9 @@ async function runAnalysis() {
  const _ts = localStorage.getItem('traffic_source') || 'direct';
  const _chars = text.length;
  if (currentMode === 'detect') {
-  gtag('event', 'detect_run', { chars: _chars, lang: selectedLang, pdf: false, traffic_source: _ts });
+  gtag('event', 'detect_run', { chars: _chars, lang: runLang, pdf: false, traffic_source: _ts });
  } else {
-  gtag('event', 'humanize_run', { mode: humanizeMode, chars: _chars, lang: selectedLang, pdf: false, traffic_source: _ts });
+  gtag('event', 'humanize_run', { mode: humanizeMode, chars: _chars, lang: runLang, pdf: false, traffic_source: _ts });
  }
 
  if (mode === 'detect') renderDetect(data.result);
@@ -1075,12 +1105,17 @@ function renderDetect(r) {
 }
 
 function renderHuman(r) {
+ // ★ 고지: '그대로 다듬기'(보존형)는 원문 의미·사실을 유지하는 품질 다듬기라 외부 AI 검출 회피력이 약해요.
+ //   외부 검출률을 낮추려면 '회피(블로그/재구성)' 경로를 쓰도록 안내. 글에 따라 70%대가 나올 수 있음을 명시.
+ const note = '<div class="sstrip" style="background:var(--surface2,#f6f6f8);color:var(--text3);font-size:12.5px;line-height:1.5;">'
+  + '이 결과는 의미·사실을 보존하는 <b>다듬기</b>예요. 외부 AI 검사기(카피킬러 등)의 탐지율은 글에 따라 그대로(70% 이상)일 수 있어요. '
+  + '탐지율을 더 낮추려면 회피(블로그 말투·격식 재구성) 모드를 이용하고, 변환 후 외부 검사기로 재확인하세요.</div>';
  document.getElementById('result').innerHTML=
  '<div class="rsec"><div class="ocard"><div class="ohd"><span class="olbl">변환 결과</span>'
  +'<button class="cpybtn" id="dlbtn" onclick="dlOut()" style="margin-left:auto;">다운로드</button>'
  +'<button class="cpybtn" id="cpybtn" onclick="cpyOut()" style="margin-left:8px;">복사</button></div>'
  +'<div class="obody" id="outText">'+escapeHtml(r.outputText||'')+'</div></div>'
- +(r.summary?'<div class="sstrip">'+escapeHtml(r.summary)+'</div>':'')+'</div>';
+ +(r.summary?'<div class="sstrip">'+escapeHtml(r.summary)+'</div>':'')+note+'</div>';
 }
 function renderError(msg) {
  document.getElementById('result').innerHTML=
@@ -1133,8 +1168,16 @@ function dlOut() {
  document.body.appendChild(a);
  a.click();
  document.body.removeChild(a);
- setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+function openKakaoInquiry() {
+  const url = window.APP_CONFIG && window.APP_CONFIG.KAKAO_INQUIRY_URL;
+  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  else alert('카카오톡 문의 주소가 설정되지 않았어요. 고객센터 이메일(aqua0661123@naver.com)로 문의해주세요.');
+}
+window.openKakaoInquiry = openKakaoInquiry;
+
 async function payToss(amount, credits, name, plan) {
  if (!window.CU) { alert('로그인이 필요합니다.'); return; }
 
@@ -1146,9 +1189,10 @@ async function payToss(amount, credits, name, plan) {
   traffic_source: localStorage.getItem('traffic_source') || 'direct'
  });
 
- // 1. 테스트 키 대신 주신 'API 개별 연동' 라이브 클라이언트 키 적용
- const clientKey = window.APP_CONFIG.TOSS_CLIENT_KEY;
- const tp = TossPayments(clientKey);
+  // 1. 테스트 키 대신 주신 'API 개별 연동' 라이브 클라이언트 키 적용
+  const clientKey = window.APP_CONFIG.TOSS_CLIENT_KEY;
+  if (!clientKey) { alert('결제는 운영 환경에서만 사용할 수 있어요.'); return; }
+  const tp = TossPayments(clientKey);
 
  try {
  await tp.requestPayment('카드', { 
@@ -1294,8 +1338,9 @@ async function payTossSubscription(tier) {
    traffic_source: localStorage.getItem('traffic_source') || 'direct'
  });
 
- const clientKey = window.APP_CONFIG.TOSS_CLIENT_KEY;
- const tp = TossPayments(clientKey);
+  const clientKey = window.APP_CONFIG.TOSS_CLIENT_KEY;
+  if (!clientKey) { alert('정기 구독 결제는 운영 환경에서만 사용할 수 있어요.'); return; }
+  const tp = TossPayments(clientKey);
  const customerKey = 'cust_' + window.CU.uid;
 
  try {
@@ -1373,6 +1418,7 @@ function showPolicy(type) {
 1. 수집하는 개인정보 항목
 - Google/카카오 로그인을 통해 이름, 이메일 주소를 수집합니다.
 - 서비스 이용 기록, 크레딧 사용 내역, 결제 정보(주문번호, 결제금액)를 수집합니다.
+- 사용자가 입력한 텍스트, 변환 결과, Q&A/커뮤니티 작성 내용은 서비스 처리, 결과 보관함, 고객지원 제공을 위해 저장될 수 있습니다.
 - 서비스 이용 과정에서 접속 IP, 접속 일시, 브라우저 정보 등이 자동으로 수집될 수 있습니다.
 
 2. 개인정보 수집 및 이용 목적
@@ -1380,6 +1426,7 @@ function showPolicy(type) {
 - 크레딧 관리 및 결제 처리
 - 서비스 개선 및 통계 분석
 - 부정 이용 방지
+- 고객 문의, 환불, 장애 확인 및 분쟁 대응
 
 3. 개인정보 보유 및 이용 기간
 - 회원 탈퇴 시까지 보관합니다.
@@ -1403,13 +1450,13 @@ function showPolicy(type) {
 권리 행사는 고객센터 이메일(aqua0661123@naver.com)로 신청하실 수 있으며, 접수 후 10일 이내에 처리합니다.
 
 6. 개인정보 파기
-회원 탈퇴 시 또는 보유 기간 만료 시 지체 없이 파기합니다. 전자적 파일은 복구 불가능한 방법으로 영구 삭제합니다.
+회원 탈퇴 시 또는 보유 기간 만료 시 지체 없이 파기합니다. 단, 결제·환불·분쟁 처리 기록은 관련 법령 및 운영상 필요한 기간 동안 보관될 수 있습니다.
 
 7. 개인정보보호책임자
 - 성명: 윤동민
 - 직책: 대표
 - 이메일: aqua0661123@naver.com
-- 연락처: 010-4595-1744
+- 문의: 카카오톡 문의 또는 고객센터 이메일
 
 8. 개인정보 침해 신고
 개인정보 침해 관련 신고·상담은 아래 기관에 문의하실 수 있습니다.
@@ -1423,21 +1470,20 @@ function showPolicy(type) {
 (전자상거래 등에서의 소비자보호에 관한 법률에 따라 아래와 같이 환불 정책을 안내합니다.)
 
 1. 크레딧 환불 정책
-- 구매 후 7일 이내, 미사용 크레딧에 한해 전액 환불 가능합니다.
+- 구매 후 7일 이내 환불을 요청할 수 있으며, 사용한 크레딧은 환불액에서 제외됩니다.
 - 무료로 지급된 크레딧은 환불 대상이 아닙니다.
 - 크레딧 소비 기준은 100자당 1크레딧이며, 소비된 크레딧은 환불되지 않습니다.
 
 2. 구독 플랜 환불 정책
-- 구독 후 7일 이내 미사용 시 전액 환불 가능합니다.
-- 구독 기간 중 크레딧을 사용한 경우, 사용분을 제외한 금액을 환불합니다.
+- 구독 후 7일 이내 환불을 요청할 수 있으며, 해당 사이클 쿠폰을 사용하지 않은 경우 전액 환불 가능합니다.
+- 구독 기간 중 쿠폰 또는 크레딧을 사용한 경우, 사용분을 제외하거나 환불이 제한될 수 있습니다.
 - 월 구독의 경우 당월 환불만 가능하며, 익월 자동결제는 해지 신청으로 중단할 수 있습니다.
 
 3. 환불 신청 방법
-- 고객센터 이메일(aqua0661123@naver.com)로 환불 신청
+- 마이페이지의 환불하기 메뉴 또는 카카오톡 문의/고객센터 이메일(aqua0661123@naver.com)로 환불 신청
 - 신청 시 아래 정보를 기재해 주세요.
   · 주문번호 및 결제일
   · 환불 사유
-  · 환불 받으실 계좌번호 (은행명, 계좌번호, 예금주명)
 - 처리 기간: 영업일 기준 3~5일
 - 환불은 결제 수단으로 원칙 환불하며, 카드 결제의 경우 카드 취소로 처리됩니다.
 

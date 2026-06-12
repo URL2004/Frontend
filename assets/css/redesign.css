@@ -14066,3 +14066,121 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 #mainContent[data-main-design="lavender"] .lav-flow-ctx #lavFlowCtx{display:inline;}
 #mainContent[data-main-design="lavender"] .lav-flow-edit{display:inline;margin-left:9px;padding:0;border:0;border-radius:0;background:none;color:#5a5bd8;font-size:12.5px;font-weight:700;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#c9cbf2;vertical-align:baseline;}
 #mainContent[data-main-design="lavender"] .lav-flow-edit:hover{background:none;color:#3a3bb0;text-decoration-color:#3a3bb0;}
+
+/* ───────── lavender v63: 충전 카드 = 사이버 카드(uiverse cowardly-eagle-56 이식) ─────────
+   다크 네이비-바이올렛 카드 + 9분할 호버 트래커 3D 틸트 + 스캔라인·사이버라인·코너 브래킷·글레어·파티클.
+   원본 네온 그린(#00ffaa)은 우리 라벤더(#7c6bff)–블루(#5bbdff) 팔레트로 치환.
+   트래커가 카드 "내부" 자식이라 원본의 ~ 형제 선택자 대신 :has()로 틸트.
+   overflow:hidden은 카드가 아닌 .pc-fx에(카드에 주면 plan-badge top:-16px가 잘림).
+   클릭은 기존 카드 onclick 그대로(트래커 클릭이 버블링). */
+#mainContent[data-main-design="lavender"] :is(.gp-plan-grid,.gp-sub-grid) .plan-card{
+ position:relative;
+ background:linear-gradient(150deg,#1b1e34 0%,#23284a 100%) !important;
+ border:1.5px solid rgba(149,134,255,.28) !important;
+ box-shadow:0 14px 34px rgba(23,26,43,.28),inset 0 0 26px rgba(8,10,22,.4) !important;
+}
+#mainContent[data-main-design="lavender"] .plan-card .pc-fx{
+ position:absolute;inset:0;z-index:6;
+ border-radius:inherit;overflow:hidden;
+ display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+ pointer-events:none;
+}
+#mainContent[data-main-design="lavender"] .pc-tr{pointer-events:auto;cursor:pointer;}
+
+/* 사이버 라인(상시 은은히 흐름) */
+#mainContent[data-main-design="lavender"] .pc-line{
+ position:absolute;left:0;width:100%;height:1px;
+ background:linear-gradient(90deg,transparent,rgba(151,136,255,.26),transparent);
+ transform:scaleX(0);
+}
+#mainContent[data-main-design="lavender"] .pc-line.l1{top:22%;transform-origin:left;animation:pcLineGrow 3.2s linear infinite;}
+#mainContent[data-main-design="lavender"] .pc-line.l2{top:43%;transform-origin:right;animation:pcLineGrow 3.2s linear infinite 1.1s;}
+#mainContent[data-main-design="lavender"] .pc-line.l3{top:64%;transform-origin:left;animation:pcLineGrow 3.2s linear infinite 2.1s;}
+#mainContent[data-main-design="lavender"] .pc-line.l4{top:85%;transform-origin:right;animation:pcLineGrow 3.2s linear infinite 1.6s;}
+
+/* 스캔 라인 */
+#mainContent[data-main-design="lavender"] .pc-scan{
+ position:absolute;inset:0;
+ background:linear-gradient(to bottom,transparent,rgba(151,136,255,.1),transparent);
+ transform:translateY(-100%);
+ animation:pcScan 3s linear infinite;
+}
+
+/* 코너 브래킷 */
+#mainContent[data-main-design="lavender"] .pc-corner{position:absolute;width:14px;height:14px;border:2px solid rgba(151,136,255,.38);transition:border-color .3s,box-shadow .3s;}
+#mainContent[data-main-design="lavender"] .pc-corner.c1{top:10px;left:10px;border-right:0;border-bottom:0;}
+#mainContent[data-main-design="lavender"] .pc-corner.c2{top:10px;right:10px;border-left:0;border-bottom:0;}
+#mainContent[data-main-design="lavender"] .pc-corner.c3{bottom:10px;left:10px;border-right:0;border-top:0;}
+#mainContent[data-main-design="lavender"] .pc-corner.c4{bottom:10px;right:10px;border-left:0;border-top:0;}
+
+/* 글레어·파티클(호버에서만) */
+#mainContent[data-main-design="lavender"] .pc-glare{
+ position:absolute;inset:0;opacity:0;transition:opacity .3s;
+ background:linear-gradient(125deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.05) 45%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.05) 55%,rgba(255,255,255,0) 100%);
+}
+#mainContent[data-main-design="lavender"] .pc-dot{position:absolute;width:3px;height:3px;border-radius:50%;background:#a78bfa;opacity:0;}
+#mainContent[data-main-design="lavender"] .pc-dot.d1{--x:1;--y:-1;top:40%;left:20%;}
+#mainContent[data-main-design="lavender"] .pc-dot.d2{--x:-1;--y:-1;top:60%;right:20%;}
+#mainContent[data-main-design="lavender"] .pc-dot.d3{--x:.5;--y:1;top:20%;left:40%;}
+#mainContent[data-main-design="lavender"] .pc-dot.d4{--x:-.5;--y:1;top:80%;right:40%;}
+#mainContent[data-main-design="lavender"] .pc-dot.d5{--x:1;--y:.5;top:30%;left:60%;}
+#mainContent[data-main-design="lavender"] .pc-dot.d6{--x:-1;--y:.5;top:70%;right:60%;}
+
+/* 인기·프리미엄 변형(호버 글로우보다 앞에 둬서 호버가 이김) */
+#mainContent[data-main-design="lavender"] .plan-card.plan-popular{border-color:rgba(151,99,255,.8) !important;box-shadow:0 16px 40px rgba(124,91,255,.3),inset 0 0 26px rgba(8,10,22,.4) !important;}
+#mainContent[data-main-design="lavender"] .plan-card.plan-premium{border-color:rgba(91,189,255,.55) !important;}
+
+/* 호버: 보더 글로우·글레어·코너 점등·파티클 부유 */
+#mainContent[data-main-design="lavender"] .plan-card:hover{
+ border-color:rgba(167,139,250,.7) !important;
+ box-shadow:0 20px 46px rgba(23,26,43,.42),0 0 24px rgba(124,107,255,.28),inset 0 0 26px rgba(8,10,22,.45) !important;
+}
+#mainContent[data-main-design="lavender"] .plan-card:hover .pc-glare{opacity:1;}
+#mainContent[data-main-design="lavender"] .plan-card:hover .pc-corner{border-color:rgba(167,139,250,.9);box-shadow:0 0 10px rgba(124,107,255,.5);}
+#mainContent[data-main-design="lavender"] .plan-card:hover .pc-dot{animation:pcFloat 2s infinite;}
+
+/* 9분할 3D 틸트 */
+#mainContent[data-main-design="lavender"] .plan-card:has(.pc-tr.t1:hover){transform:perspective(720px) rotateX(6deg) rotateY(-6deg);}
+#mainContent[data-main-design="lavender"] .plan-card:has(.pc-tr.t2:hover){transform:perspective(720px) rotateX(6deg);}
+#mainContent[data-main-design="lavender"] .plan-card:has(.pc-tr.t3:hover){transform:perspective(720px) rotateX(6deg) rotateY(6deg);}
+#mainContent[data-main-design="lavender"] .plan-card:has(.pc-tr.t4:hover){transform:perspective(720px) rotateY(-6deg);}
+#mainContent[data-main-design="lavender"] .plan-card:has(.pc-tr.t5:hover){transform:perspective(720px) translateY(-2px);}
+#mainContent[data-main-design="lavender"] .plan-card:has(.pc-tr.t6:hover){transform:perspective(720px) rotateY(6deg);}
+#mainContent[data-main-design="lavender"] .plan-card:has(.pc-tr.t7:hover){transform:perspective(720px) rotateX(-6deg) rotateY(-6deg);}
+#mainContent[data-main-design="lavender"] .plan-card:has(.pc-tr.t8:hover){transform:perspective(720px) rotateX(-6deg);}
+#mainContent[data-main-design="lavender"] .plan-card:has(.pc-tr.t9:hover){transform:perspective(720px) rotateX(-6deg) rotateY(6deg);}
+
+/* 다크 카드 위 텍스트 위계 */
+#mainContent[data-main-design="lavender"] .plan-tag{
+ background:linear-gradient(45deg,#b6a6ff,#6ec4ff);
+ -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+ filter:drop-shadow(0 0 12px rgba(124,107,255,.35));
+ font-weight:800 !important;letter-spacing:.3px;
+}
+#mainContent[data-main-design="lavender"] .plan-discount{background:rgba(228,90,75,.18) !important;color:#ff9d90 !important;}
+#mainContent[data-main-design="lavender"] .plan-price-main{color:#fff !important;text-shadow:0 0 18px rgba(124,107,255,.22);}
+#mainContent[data-main-design="lavender"] .plan-won{color:rgba(233,235,255,.5) !important;}
+#mainContent[data-main-design="lavender"] .plan-unitcost{color:rgba(233,235,255,.45) !important;}
+#mainContent[data-main-design="lavender"] .plan-unitcost strong{color:rgba(233,235,255,.82) !important;}
+#mainContent[data-main-design="lavender"] .plan-feats{border-top:1px solid rgba(255,255,255,.1) !important;}
+#mainContent[data-main-design="lavender"] .plan-feats li{color:rgba(233,235,255,.72) !important;}
+#mainContent[data-main-design="lavender"] .plan-feats li span{color:rgba(233,235,255,.46) !important;}
+#mainContent[data-main-design="lavender"] .plan-feats li strong{color:#fff !important;}
+#mainContent[data-main-design="lavender"] .gp-plan-total{background:rgba(9,11,24,.5);border:1px solid rgba(151,136,255,.22);color:#cfd4ff !important;}
+#mainContent[data-main-design="lavender"] .plan-credit-amount{color:#fff !important;}
+#mainContent[data-main-design="lavender"] .plan-credit-amount .plan-unit{color:rgba(233,235,255,.5) !important;}
+#mainContent[data-main-design="lavender"] .plan-btn{
+ background:linear-gradient(135deg,#7c6bff,#5a8bff) !important;
+ box-shadow:0 6px 18px rgba(98,86,255,.32) !important;
+}
+#mainContent[data-main-design="lavender"] .plan-card:hover .plan-btn{background:linear-gradient(135deg,#8d7dff,#6a9aff) !important;}
+#mainContent[data-main-design="lavender"] .plan-badge{box-shadow:0 4px 16px rgba(90,91,216,.5) !important;}
+
+@keyframes pcLineGrow{0%{transform:scaleX(0);opacity:0;}50%{transform:scaleX(1);opacity:1;}100%{transform:scaleX(0);opacity:0;}}
+@keyframes pcScan{to{transform:translateY(100%);}}
+@keyframes pcFloat{0%{transform:translate(0,0);opacity:0;}50%{opacity:1;}100%{transform:translate(calc(var(--x,0)*30px),calc(var(--y,0)*30px));opacity:0;}}
+
+@media (prefers-reduced-motion:reduce){
+ #mainContent[data-main-design="lavender"] :is(.pc-line,.pc-scan,.pc-dot){animation:none !important;}
+ #mainContent[data-main-design="lavender"] .plan-card{transform:none !important;}
+}

@@ -1,0 +1,9 @@
+_probe-*.html
+*.log
+.env
+.env.local
+.env.*.local
+node_modules
+.vercel
+runtime-config.local.js
+dist

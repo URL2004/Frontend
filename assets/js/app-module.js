@@ -695,43 +695,22 @@ window.deleteAccount = async () =>{
  } catch(e) { /* 조회 실패해도 탈퇴는 시도 가능 */ }
 
  if (!confirm('정말 탈퇴하시겠어요?\n탈퇴 시 모든 크레딧과 데이터가 삭제되며 복구할 수 없습니다.\n(결제·환불 기록은 전자상거래법에 따라 5년간 보관됩니다.)')) return;
+ // ★ 탈퇴는 백엔드(Admin SDK)에서 처리 — 카카오 비밀번호 추측 재인증 제거.
+ //   추측 패턴 불일치로 탈퇴 불가하던 민원(#40·#61·#62·#91) 해결. 서버가 idToken만 검증하고 데이터·Auth 계정을 삭제.
  try {
- const provider = CU.providerData[0]?.providerId;
- if (provider === 'google.com') {
-   await reauthenticateWithPopup(CU, new GoogleAuthProvider());
- } else {
-   // Firestore에서 kakaoId 조회, 없으면 이메일 prefix로 폴백
-   const userSnap = await getDoc(doc(db,'users',CU.uid));
-   const kakaoId = userSnap.data()?.kakaoId || CU.email.split('@')[0];
-   // 카카오 로그인 경로별 비밀번호 패턴이 다름: kakaoLogin(_!@#) vs handleKakaoCallback(_pw!)
-   let reauthed = false;
-   for (const suffix of ['_!@#', '_pw!']) {
-     try {
-       const cred = EmailAuthProvider.credential(CU.email, 'kakao_' + kakaoId + suffix);
-       await reauthenticateWithCredential(CU, cred);
-       reauthed = true;
-       break;
-     } catch(e) { /* 다음 패턴 시도 */ }
-   }
-   if (!reauthed) throw new Error('카카오 계정 재인증에 실패했습니다.');
- }
- // Firestore 데이터를 먼저 삭제 (인증이 유효한 상태에서)
- const uid = CU.uid;
- const subs = ['creditHistory','couponHistory','history','notifications'];
- for (const sub of subs) {
-   const snap = await getDocs(collection(db,'users',uid,sub));
-   for (const d of snap.docs) await deleteDoc(d.ref);
- }
- await deleteDoc(doc(db,'users',uid));
- await deleteUser(CU);
- alert('탈퇴가 완료됐어요.');
- location.reload();
+   const idToken = await CU.getIdToken();
+   const res = await fetch(window.apiUrl('/delete-account'), {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({ idToken })
+   });
+   const body = await res.json().catch(() => null);
+   if (!res.ok || !body || !body.ok) throw new Error((body && body.error) || '탈퇴 처리 중 오류가 발생했어요.');
+   try { await signOut(auth); } catch(_) {}   // 서버에서 계정이 이미 삭제됨 — 클라 세션 정리
+   alert('탈퇴가 완료됐어요.');
+   location.reload();
  } catch(e) {
- if (e.code === 'auth/requires-recent-login') {
- alert('보안을 위해 재로그인이 필요해요. 로그아웃 후 다시 시도해주세요.');
- } else {
- alert('탈퇴 실패: ' + e.message);
- }
+   alert('탈퇴 실패: ' + (e.message || e));
  }
 };
 
@@ -770,7 +749,7 @@ window.showReferralPopup = async () => {
 
 // 보안: credits/plan 직접 수정은 전부 백엔드(Admin SDK)에서만 처리.
 // 과거 클라이언트측 addCredits/deductCredits는 콘솔에서 누구나 호출 가능한
-// 권한 상승 취약점이었으므로 완전 제거. 차감은 /analyze·/analyze-pdf에서,
+// 권한 상승 취약점이었으므로 완전 제거. 차감은 /analyze에서,
 // 지급은 /confirm-payment·/apply-referral에서만 발생한다.
 
 // ===== COMMUNITY =====
@@ -792,6 +771,12 @@ const CAT_SLUG = {
 const _ICO_VIEW='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
 const _ICO_CMT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
 const _ICO_HRT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+// 통일 게시판 행(공지/커뮤니티/QnA 공통)의 강조 스탯 아이콘 — 14px
+const _SICO_VIEW='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+const _SICO_CMT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+const _SICO_HRT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+// 강조 스탯 한 칸: 아이콘 + 굵은 숫자
+function _gbrStat(ico, n, kind){ return '<span class="gbr-stat'+(kind?' '+kind:'')+'">'+ico+'<b>'+n+'</b></span>'; }
 
 function _categorySlug(cat){ return CAT_SLUG[cat] || 'free'; }
 function _postScore(p){
@@ -822,30 +807,25 @@ function _makeExcerpt(body, n){
 
 function _renderPostCard(p){
  const cat = p.category || '자유';
- const slug = _categorySlug(cat);
- const thumb = _postThumbUrl(p);
  const date = _fmtDate(p);
  const likes = (p.likes || []).length;
- const excerpt = _makeExcerpt(p.body, 80);
- const hiddenBadge = p.hidden ? '<span style="display:inline-block;margin-left:6px;padding:2px 7px;border-radius:50px;background:rgba(217,48,37,.12);color:var(--red);font-size:11px;font-weight:700;">숨김</span>' : '';
- const thumbHtml = thumb
-  ? '<div class="post-card-thumb" style="background-image:url(\''+escapeHtml(thumb)+'\')"></div>'
-  : '<div class="post-card-thumb no-img">'+escapeHtml(cat)+'</div>';
+ const hiddenBadge = p.hidden ? '<span class="gbr-hidden">숨김</span>' : '';
  const onClick = p.demo ? "showScreen('login')" : "viewPost('"+jsAttr(p.id)+"')";
- return '<div class="post-card" onclick="'+onClick+'">'
-  + thumbHtml
-  + '<div class="post-card-body">'
-  +  '<div class="post-card-cat-row"><span class="cat-chip cat-'+slug+'">'+escapeHtml(cat)+'</span>'+hiddenBadge+'</div>'
-  +  '<div class="post-card-ttl">'+escapeHtml(p.title||'')+'</div>'
-  +  (excerpt ? '<div class="post-card-excerpt">'+escapeHtml(excerpt)+'</div>' : '')
-  +  '<div class="post-card-meta">'
+ return '<div class="gp-board-row" onclick="'+onClick+'">'
+  + '<div class="gbr-main">'
+  +  '<div class="gbr-ttl">'+escapeHtml(p.title||'')+hiddenBadge+'</div>'
+  +  '<div class="gbr-sub">'
   +   '<span>'+escapeHtml(p.authorName||'')+'</span>'
   +   '<span>'+date+'</span>'
-  +   '<span>'+_ICO_VIEW+(p.views||0)+'</span>'
-  +   '<span>'+_ICO_HRT+likes+'</span>'
-  +   '<span>'+_ICO_CMT+(p.commentCount||0)+'</span>'
+  +   '<span class="gbr-cat">'+escapeHtml(cat)+'</span>'
   +  '</div>'
-  + '</div></div>';
+  + '</div>'
+  + '<div class="gbr-stats">'
+  +  _gbrStat(_SICO_VIEW, (p.views||0), 'views')
+  +  _gbrStat(_SICO_HRT, likes, 'likes')
+  +  _gbrStat(_SICO_CMT, (p.commentCount||0), 'cmt')
+  + '</div>'
+  + '</div>';
 }
 
 function _renderFeaturedCard(p){
@@ -1328,11 +1308,14 @@ window.loadQuestions = async (sort) =>{
    ['계정','등록한 이메일을 변경하고 싶어요.','익명','1일 전',0],
    ['AI 검사','AI 검사 결과가 계속 100%로 나와요.','사용자901','1일 전',4],
    ['버그/오류','문서 업로드가 자꾸 실패해요.','익명','2일 전',1]
-  ].map((q, i) => '<div class="qna-item qna-demo" onclick="showScreen(\'login\')">'
-   + '<span class="qna-status '+(i === 1 ? 'answered' : 'pending')+'">'+(i === 1 ? '답변 완료' : '답변 대기')+'</span>'
-   + '<div class="qna-body">'
-   +  '<div class="qna-ttl"><span class="cat-chip">'+escapeHtml(q[0])+'</span> '+escapeHtml(q[1])+'</div>'
-   +  '<div class="qna-meta"><span>'+escapeHtml(q[2])+'</span><span>'+escapeHtml(q[3])+'</span><span>댓글 '+q[4]+'</span></div>'
+  ].map((q, i) => '<div class="gp-board-row qna-demo" onclick="showScreen(\'login\')">'
+   + '<div class="gbr-main">'
+   +  '<div class="gbr-ttl">'+escapeHtml(q[1])+'</div>'
+   +  '<div class="gbr-sub"><span class="gbr-cat">'+escapeHtml(q[0])+'</span><span>'+escapeHtml(q[2])+'</span><span>'+escapeHtml(q[3])+'</span></div>'
+   + '</div>'
+   + '<div class="gbr-stats">'
+   +  _gbrStat(_SICO_CMT, q[4], 'cmt')
+   +  '<span class="qna-status '+(i === 1 ? 'answered' : 'pending')+'">'+(i === 1 ? '답변 완료' : '답변 대기')+'</span>'
    + '</div>'
    + '</div>').join('');
   return;
@@ -1367,15 +1350,17 @@ window.loadQuestions = async (sort) =>{
    const canView = isAdm || (myUid && q.authorId === myUid);
    const displayTitle = canView ? escapeHtml(q.title||'') : '비공개 질문입니다.';
    const lockHtml = canView ? '' : lockIco;
-   return '<div class="qna-item" onclick="viewQuestion(\''+q.id+'\')">'
-    + '<span class="qna-status '+status+'">'+statusTxt+'</span>'
-    + '<div class="qna-body">'
-    +  '<div class="qna-ttl">'+lockHtml+displayTitle+'</div>'
-    +  '<div class="qna-meta">'
+   return '<div class="gp-board-row" onclick="viewQuestion(\''+q.id+'\')">'
+    + '<div class="gbr-main">'
+    +  '<div class="gbr-ttl">'+lockHtml+displayTitle+'</div>'
+    +  '<div class="gbr-sub">'
     +   '<span>'+escapeHtml(q.authorName||'')+'</span>'
     +   '<span>'+date+'</span>'
-    +   (canView ? '' : '<span class="qna-private-chip">비공개</span>')
+    +   (canView ? '' : '<span class="gbr-cat">비공개</span>')
     +  '</div>'
+    + '</div>'
+    + '<div class="gbr-stats">'
+    +  '<span class="qna-status '+status+'">'+statusTxt+'</span>'
     + '</div>'
     + '</div>';
   }).join('');
@@ -1573,12 +1558,12 @@ window.loadNotices = async () =>{
    ['업데이트','커뮤니티 기능 개선 및 버그 수정','2024.04.28','1,532'],
    ['이벤트','친구 초대 이벤트 당첨자 발표','2024.04.20','987']
   ];
-  el.innerHTML = samples.map(n => '<div class="notice-item notice-demo" onclick="showScreen(\'login\')">'
-   + '<div class="notice-badge">'+escapeHtml(n[0])+'</div>'
-   + '<div class="notice-ttl">'+escapeHtml(n[1])+'</div>'
-   + '<div class="notice-date">'+escapeHtml(n[2])+'</div>'
-   + '<div class="notice-views">'+escapeHtml(n[3])+'</div>'
-   + '<div class="notice-arrow">›</div>'
+  el.innerHTML = samples.map(n => '<div class="gp-board-row notice-demo" onclick="showScreen(\'login\')">'
+   + '<div class="gbr-main">'
+   +  '<div class="gbr-ttl">'+escapeHtml(n[1])+'</div>'
+   +  '<div class="gbr-sub"><span class="gbr-cat">'+escapeHtml(n[0])+'</span><span>'+escapeHtml(n[2])+'</span></div>'
+   + '</div>'
+   + '<div class="gbr-stats">'+_gbrStat(_SICO_VIEW, escapeHtml(n[3]), 'views')+'</div>'
    + '</div>').join('');
   return;
  }
@@ -1589,12 +1574,12 @@ window.loadNotices = async () =>{
  el.innerHTML = snap.docs.map(d =>{
  const n = d.data();
  const date = n.createdAt ? new Date(n.createdAt.toDate()).toLocaleDateString('ko-KR') : '';
- return '<div class="notice-item" onclick="viewNotice(\''+d.id+'\')">'
- +'<div class="notice-badge">공지</div>'
- +'<div class="notice-ttl">'+escapeHtml(n.title)+'</div>'
- +'<div class="notice-date">'+date+'</div>'
- +'<div class="notice-views">'+Number(n.views || 0).toLocaleString('ko-KR')+'</div>'
- +'<div class="notice-arrow">›</div>'
+ return '<div class="gp-board-row" onclick="viewNotice(\''+d.id+'\')">'
+ +'<div class="gbr-main">'
+ +'<div class="gbr-ttl">'+escapeHtml(n.title)+'</div>'
+ +'<div class="gbr-sub"><span class="gbr-cat">공지</span><span>'+date+'</span></div>'
+ +'</div>'
+ +'<div class="gbr-stats">'+_gbrStat(_SICO_VIEW, Number(n.views || 0).toLocaleString('ko-KR'), 'views')+'</div>'
  +'</div>';
  }).join('');
  } catch(e) { el.innerHTML='<div style="color:var(--red)">불러오기 실패</div>'; }
@@ -2155,31 +2140,54 @@ window.loadRefundModalList = async () =>{
  if (refundable.length === 0) {
  el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">환불 가능한 결제 내역이 없습니다.</div>';
  return;
- }
- const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
- el.innerHTML = refundable.map(item => {
- const o = item.data;
+  }
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+  const currentCredits = window.UC || 0;
+  const coupon = window.COUPON || null;
+  el.innerHTML = refundable.map(item => {
+  const o = item.data;
  const ts = o.createdAt?.toMillis?.() || o.approvedAt?.toMillis?.() || 0;
  const date = ts ? new Date(ts).toLocaleString('ko-KR') : '';
  const isSub = item.kind === 'sub';
  const title = isSub
    ? `정기결제 · ${SUB_TIER_LABELS[o.tier] || o.tier}`
    : `크레딧 충전 · ${o.safeCredits||0}크레딧`;
- // 정기결제: 7일 이내 + 미사용 시에만 환불 가능 (서버에서 최종 검증)
- let eligibilityNote = '';
- let canRequest = true;
- if (isSub) {
-   const within7 = ts && (Date.now() - ts) <= SEVEN_DAYS;
-   if (!within7) { canRequest = false; eligibilityNote = '결제일로부터 7일이 지나 환불할 수 없습니다.'; }
-   else eligibilityNote = '결제일 7일 이내 + 이번 사이클 쿠폰 미사용 시 전액 환불';
- }
- return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
- <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
- <div style="flex:1;min-width:0;">
- <div style="font-weight:600;font-size:14px;color:var(--text);">${(o.amount||0).toLocaleString()}원 · ${title}</div>
- <div style="color:var(--text3);font-size:12px;margin-top:4px;">${date}</div>
- ${eligibilityNote ? `<div style="color:${canRequest?'var(--text3)':'var(--red)'};font-size:11px;margin-top:4px;">${eligibilityNote}</div>` : ''}
- </div>
+  // 정기결제: 7일 이내 + 미사용 시에만 환불 가능 (서버에서 최종 검증)
+  let eligibilityNote = '';
+  let refundPreview = '';
+  let canRequest = true;
+  if (isSub) {
+    const within7 = ts && (Date.now() - ts) <= SEVEN_DAYS;
+    if (!within7) { canRequest = false; eligibilityNote = '결제일로부터 7일이 지나 환불할 수 없습니다.'; }
+    else {
+      const used = coupon && coupon.tier === o.tier ? Math.max(0, (coupon.granted || 0) - (coupon.remaining || 0)) : 0;
+      eligibilityNote = used > 0
+        ? `이번 사이클 쿠폰 ${used}회 사용으로 서버 검증 후 환불이 제한될 수 있습니다.`
+        : '결제일 7일 이내 + 이번 사이클 쿠폰 미사용 시 전액 환불';
+      refundPreview = used > 0
+        ? '예상 환불액: 서버 검증 후 확정'
+        : `예상 환불액: ${(o.amount || 0).toLocaleString()}원`;
+    }
+  } else {
+    const safe = parseInt(o.safeCredits) || 0;
+    const amt = parseInt(o.amount) || 0;
+    const refundableCredits = Math.min(currentCredits, safe);
+    const usedCredits = Math.max(0, safe - refundableCredits);
+    const refundAmt = safe > 0 ? Math.floor(amt * refundableCredits / safe) : 0;
+    eligibilityNote = usedCredits > 0
+      ? `사용한 ${usedCredits}크레딧은 환불액에서 제외됩니다.`
+      : '현재 기준 미사용 결제 크레딧 전액 환불 예상';
+    refundPreview = `예상 환불액: ${refundAmt.toLocaleString()}원 · 환불 대상 ${refundableCredits.toLocaleString()}크레딧`;
+    if (refundableCredits <= 0) canRequest = false;
+  }
+  return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+  <div style="flex:1;min-width:0;">
+  <div style="font-weight:600;font-size:14px;color:var(--text);">${(o.amount||0).toLocaleString()}원 · ${title}</div>
+  <div style="color:var(--text3);font-size:12px;margin-top:4px;">${date}</div>
+  ${refundPreview ? `<div style="color:var(--text);font-size:12px;font-weight:700;margin-top:7px;">${refundPreview}</div>` : ''}
+  ${eligibilityNote ? `<div style="color:${canRequest?'var(--text3)':'var(--red)'};font-size:11px;margin-top:4px;">${eligibilityNote}</div>` : ''}
+  </div>
  <button ${canRequest ? '' : 'disabled'} onclick="window.requestRefund('${item.id}','${item.kind}')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--red);background:none;color:${canRequest?'var(--red)':'var(--text3)'};font-size:12px;font-weight:600;cursor:${canRequest?'pointer':'not-allowed'};white-space:nowrap;opacity:${canRequest?'1':'.5'};">환불 요청</button>
  </div>
 </div>`;
