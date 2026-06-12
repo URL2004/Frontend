@@ -111,6 +111,9 @@
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
            </label>
            <span class="gp-lav-count" id="lavCount" aria-live="polite"></span>
+           <button type="button" class="gp-lav-detect" onclick="lavDetect()" aria-label="AI 감지 (무료)">
+             <span class="material-symbols-outlined" aria-hidden="true">search_insights</span>AI 감지<em>무료</em>
+           </button>
            <button type="button" class="gp-lav-send" onclick="lavRun()" aria-label="분석 시작">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6.5 11.5 12 6l5.5 5.5"/></svg>
            </button>
@@ -162,6 +165,35 @@
            <span class="lav-spinner big" aria-hidden="true"></span>
            <strong>글을 분석하고 있어요</strong>
            <p>문장 구조와 구체성을 살펴 가장 잘 맞는 방법을 찾는 중이에요.</p>
+         </section>
+
+         <!-- AI 감지 보고서 (무료 감지 — 휴머나이징 전환 퍼널) -->
+         <section class="lav-flow-card lav-report" data-flow="report" hidden>
+           <div class="lav-rep-head">
+             <div class="lav-rep-score" id="lavRepScore"><b id="lavRepProb">--</b><i>%</i><span>AI 작성 확률</span></div>
+             <div class="lav-rep-headtxt">
+               <strong id="lavRepTitle">분석 결과</strong>
+               <p id="lavRepSummary"></p>
+             </div>
+           </div>
+
+           <div class="lav-rep-paras">
+             <h4>문단별 진단 <span id="lavRepParaCount"></span></h4>
+             <div id="lavRepParaList"></div>
+           </div>
+
+           <div class="lav-rep-example" id="lavRepExample" hidden>
+             <h4>이 문장, 이렇게 바뀌어요 <em>내 글에서 가장 AI스러운 문장을 골라 실제로 바꿔봤어요</em></h4>
+             <div class="lav-rep-ba">
+               <div class="ba-col before"><span class="ba-tag bad">지금</span><p id="lavRepBefore"></p></div>
+               <span class="ba-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h13M12 6l6 6-6 6"/></svg></span>
+               <div class="ba-col after"><span class="ba-tag good">변환 후</span><p id="lavRepAfter"></p></div>
+             </div>
+           </div>
+
+           <h3 class="lav-flow-h">탐지율을 낮추려면</h3>
+           <div class="lav-rep-solutions" id="lavRepSolutions"></div>
+           <p class="lav-diag-note" id="lavRepRemain"></p>
          </section>
 
          <!-- 분석 결과 + 목적 선택(한 화면) -->

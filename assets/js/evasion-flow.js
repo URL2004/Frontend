@@ -27,7 +27,7 @@
   }
 
   var STEP_LABEL = {
-    analyzing: '분석', choose: '방법 선택', reduce: 'AI 티 줄이기 설정',
+    analyzing: '분석', report: 'AI 감지 보고서', choose: '방법 선택', reduce: 'AI 티 줄이기 설정',
     job: '재구성 중', done: '완료'
   };
 
@@ -60,9 +60,9 @@
     var label = $('lavFlowStep'); if (label) label.textContent = STEP_LABEL[name] || '';
     var ctx = $('lavFlowCtx'), src = $('lavInput');
     if (ctx && src) ctx.textContent = '원문 ' + (src.value || '').replace(/\s/g, '').length.toLocaleString() + '자';
-    // 뒤로 버튼: 방법선택(choose)·회피설정(reduce)에서 표시. 분석중·작업중·완료에선 숨김(되돌아갈 수 없는 단계).
+    // 뒤로 버튼: 방법선택(choose)·회피설정(reduce)·감지 보고서(report)에서 표시. 분석중·작업중·완료에선 숨김.
     var back = document.querySelector('.lav-flow-back');
-    if (back) back.style.visibility = (name === 'choose' || name === 'reduce') ? 'visible' : 'hidden';
+    if (back) back.style.visibility = (name === 'choose' || name === 'reduce' || name === 'report') ? 'visible' : 'hidden';
   }
 
   // 오프라인 폴백 진단: /diagnose 실패 시 입력 길이로 등급만 흉내(서비스 연속성용).
@@ -91,6 +91,7 @@
   window.lavFlowDiagnose = function () {
     var src = $('lavInput');
     var text = src ? src.value : '';
+    cameFromReport = false;   // 진단 경유 동선 — 설정 화면 뒤로가기는 방법선택으로
     show('analyzing');
     var minWait = new Promise(function (r) { setTimeout(r, 900); });   // 스피너 최소 노출(즉답이면 화면이 깜빡임)
     console.info('[evasion] API_BASE =', window.apiBase ? window.apiBase() : '?');
@@ -109,13 +110,131 @@
 
   window.lavFlowGo = function (name) { show(name); };
 
-  // 뒤로: 회피설정→방법선택, 방법선택→입력화면(원문 수정)
+  // 뒤로: 회피설정→직전 화면(보고서에서 왔으면 보고서), 방법선택·보고서→입력화면(원문 수정)
   window.lavFlowBack = function () {
     var step = $('lavFlow') && $('lavFlow').dataset.step;
-    if (step === 'reduce') show('choose');
-    else if (step === 'choose') window.lavFlowReset();   // 입력 화면으로(원문 유지)
+    if (step === 'reduce') show(cameFromReport ? 'report' : 'choose');
+    else if (step === 'choose' || step === 'report') window.lavFlowReset();   // 입력 화면으로(원문 유지)
     else show('choose');
   };
+
+  // ── AI 감지 분리: 무료 감지 → 보고서(전환 퍼널) ──────────────────────────
+  var cameFromReport = false;   // 설정 화면 뒤로가기가 보고서로 돌아가게(진단 경유와 동선 구분)
+
+  window.lavDetect = async function () {
+    var src = $('lavInput');
+    var text = src ? src.value : '';
+    if (text.replace(/\s+/g, '').length < 100) {
+      alert('AI 감지를 하려면 최소 100자가 필요해요.');
+      if (src) src.focus();
+      return;
+    }
+    if (text.length > (window.LAV_MAX_CHARS || 30000)) {
+      alert('한 번에 최대 30,000자까지 감지할 수 있어요.');
+      return;
+    }
+    cameFromReport = false;
+    show('analyzing');
+    var idToken = null;
+    try { if (window.CU && window.CU.getIdToken) idToken = await window.CU.getIdToken(); } catch (e) { /* 비로그인 — 무료 감지는 IP 기준 한도 */ }
+    var minWait = new Promise(function (r) { setTimeout(r, 900); });
+    try {
+      var resP = fetch(window.apiUrl('/detect-report'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text, idToken: idToken })
+      });
+      var out = await Promise.all([resP, minWait]);
+      var d = await out[0].json();
+      if (!out[0].ok || !d.ok) {
+        window.lavFlowReset();
+        alert(d.error || 'AI 감지에 실패했어요. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+      renderReport(d);
+      cameFromReport = true;
+      show('report');
+    } catch (e) {
+      console.warn('[evasion] /detect-report 실패:', e && e.message);
+      window.lavFlowReset();
+      alert('AI 감지에 실패했어요. 네트워크 상태를 확인해 주세요.');
+    }
+  };
+
+  // 보고서 CTA → 어투 미리 선택 후 설정 화면으로(전환 동선 단축)
+  function presetTone(v) {
+    var radio = document.querySelector('input[name="lavTone"][value="' + v + '"]');
+    if (radio) { radio.checked = true; window.lavToneChange(); }
+    show('reduce');
+  }
+
+  function renderReport(d) {
+    if ($('lavRepProb')) $('lavRepProb').textContent = (d.probability == null ? '—' : d.probability);
+    var score = $('lavRepScore');
+    if (score) score.className = 'lav-rep-score ' + (d.probability == null ? '' : d.probability >= 70 ? 'bad' : d.probability >= 40 ? 'mid' : 'good');
+    if ($('lavRepTitle')) $('lavRepTitle').textContent = d.title || '분석 결과';
+    if ($('lavRepSummary')) $('lavRepSummary').textContent = d.summary || '';
+
+    // 문단 지도 — DOM 생성(XSS-safe)
+    var list = $('lavRepParaList');
+    if (list) {
+      list.innerHTML = '';
+      (d.paragraphs || []).forEach(function (p) {
+        var row = document.createElement('div');
+        row.className = 'lav-rep-para ' + (p.kind || 'thin');
+        var chip = document.createElement('span');
+        chip.className = 'rp-chip';
+        chip.textContent = p.kind === 'concrete' ? '안전' : (p.kind === 'abstract_risk' ? '위험' : '주의');
+        var body = document.createElement('div');
+        body.className = 'rp-body';
+        var snip = document.createElement('p');
+        snip.textContent = p.snippet + (p.snippet && p.snippet.length >= 90 ? '…' : '');
+        var why = document.createElement('em');
+        why.textContent = p.reason || '';
+        body.appendChild(snip); body.appendChild(why);
+        row.appendChild(chip); row.appendChild(body);
+        list.appendChild(row);
+      });
+    }
+    var c = d.counts || {};
+    if ($('lavRepParaCount')) $('lavRepParaCount').textContent = '위험 ' + (c.risk || 0) + ' · 주의 ' + (c.thin || 0) + ' · 안전 ' + (c.safe || 0);
+
+    // 실시간 1문장 미리보기 — 없으면 블록 숨김
+    var ex = $('lavRepExample');
+    if (ex) {
+      ex.hidden = !d.example;
+      if (d.example) {
+        if ($('lavRepBefore')) $('lavRepBefore').textContent = d.example.before;
+        if ($('lavRepAfter')) $('lavRepAfter').textContent = d.example.after;
+      }
+    }
+
+    // 해결 경로 3장 — 이 글 기준 비용·예상 밴드 + 바로 진입 CTA
+    var sol = d.solutions || {};
+    var grid = $('lavRepSolutions');
+    if (grid) {
+      grid.innerHTML = '';
+      [
+        { name: '그대로 다듬기', desc: '의미·사실 100% 보존, 문장만 자연스럽게 다듬어요.', band: sol.polish && sol.polish.band, cost: sol.polish ? sol.polish.credits + ' 크레딧' : '-', act: function () { window.lavRunHumanize(); } },
+        { name: '블로그 말투', desc: '구어체로 바꿔 가장 빠르고 저렴하게 낮춰요.', band: sol.blog && sol.blog.band, cost: sol.blog ? sol.blog.credits + ' 크레딧' : '-', act: function () { presetTone('blog'); } },
+        { name: '격식 유지 재구성', desc: '과제 톤을 지키면서 칼럼처럼 다시 써요. 근거 보강 추천.', band: sol.restructure && sol.restructure.band, cost: sol.restructure ? sol.restructure.credits + '~' + sol.restructure.creditsEvidence + ' 크레딧' : '-', reco: true, act: function () { presetTone('formal'); } }
+      ].forEach(function (s) {
+        var card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'lav-rep-sol' + (s.reco ? ' reco' : '');
+        var name = document.createElement('strong'); name.textContent = s.name;
+        var band = document.createElement('b'); band.textContent = '예상 ' + (s.band || '—');
+        var desc = document.createElement('p'); desc.textContent = s.desc;
+        var cost = document.createElement('em'); cost.textContent = '이 글 기준 ' + s.cost;
+        card.appendChild(name); card.appendChild(band); card.appendChild(desc); card.appendChild(cost);
+        card.onclick = s.act;
+        grid.appendChild(card);
+      });
+    }
+    if ($('lavRepRemain')) {
+      $('lavRepRemain').textContent = 'AI 감지는 무료예요' + (d.remainingToday != null ? ' (오늘 ' + d.remainingToday + '회 남음)' : '') + '. 예상 밴드는 실측 기반이며 보장값은 아니에요.';
+    }
+  }
 
   window.lavFlowReset = function () {
     exitWorkspace();
