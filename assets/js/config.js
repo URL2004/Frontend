@@ -2,8 +2,9 @@
   var prodApiBase = 'https://ai-backend-3xtk.onrender.com';
   var siteUrl = 'https://gpkorea.ai.kr';
   // 로컬 정적 서빙(localhost/127.0.0.1) 시 로컬 백엔드로 — 배포 환경엔 영향 없음.
+  // 포트 3100: 3000은 Next.js 기본 포트라 다른 프로젝트(OpenRisk 등)와 상습 충돌(2026-06-12 실사고 — Failed to fetch의 원인).
   var isLocalHost = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
-  var apiBase = isLocalHost ? 'http://localhost:3000' : prodApiBase;
+  var apiBase = isLocalHost ? 'http://localhost:3100' : prodApiBase;
 
   window.APP_CONFIG = Object.freeze({
     SITE_URL: siteUrl,
