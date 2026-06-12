@@ -1,7 +1,8 @@
 (function () {
   var STORAGE_KEY = 'gp-main-design';
   var DEFAULT_DESIGN = 'lavender';
-  var allowed = { lavender: true, midnight: true, paper: true, mint: true, clean: true, hub: true, neon: true };
+  // ★ 라벤더 확정(2026-06-12 사장님 결정): 구형 시안 전부 걷어냄 — main.html 시안 블록 삭제, ?design= 무시.
+  var allowed = { lavender: true };
 
   function getMain() {
     return document.getElementById('mainContent');
@@ -390,8 +391,8 @@
     group.querySelectorAll('.cat-fbtn').forEach(function (b) { b.classList.toggle('active', b === btn); });
     var label = btn.textContent.trim();
     var showAll = label === '전체';
-    page.querySelectorAll('.qna-item, .notice-item').forEach(function (row) {
-      var tag = row.querySelector('.cat-chip, .notice-badge');
+    page.querySelectorAll('.gp-board-row').forEach(function (row) {
+      var tag = row.querySelector('.gbr-cat, .cat-chip, .notice-badge');
       row.style.display = showAll || (tag && tag.textContent.trim() === label) ? '' : 'none';
     });
   });
@@ -403,7 +404,7 @@
     var page = input.closest('[id$="Content"]');
     if (!page) return;
     var q = input.value.trim().toLowerCase();
-    page.querySelectorAll('.post-card, .qna-item, .notice-item, .pitem').forEach(function (row) {
+    page.querySelectorAll('.gp-board-row, .pitem').forEach(function (row) {
       row.style.display = !q || row.textContent.toLowerCase().indexOf(q) !== -1 ? '' : 'none';
     });
   });
@@ -420,7 +421,15 @@
   });
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { applyDesign(getInitialDesign()); });
+    // ★ 즉시 적용(2026-06-12): page-loader가 동기 XHR로 DOM 조립을 이미 끝낸 뒤 이 스크립트가 실행되므로
+    //   DOMContentLoaded를 기다릴 필요가 없다 — 그 대기가 "구형 셸이 한 번 그려졌다 사라지는" 플래시의 원인이었음.
+    //   적용 완료 시 html.design-ready → index.html의 anti-FOUC 가드가 화면을 보여준다.
+    function bootDesign() {
+      applyDesign(getInitialDesign());
+      document.documentElement.classList.add('design-ready');
+    }
+    try { bootDesign(); }
+    catch (e) { document.addEventListener('DOMContentLoaded', bootDesign); }
   } else {
     applyDesign(getInitialDesign());
   }
