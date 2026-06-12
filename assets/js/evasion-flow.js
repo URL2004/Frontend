@@ -121,6 +121,19 @@
   // ── AI 감지 분리: 무료 감지 → 보고서(전환 퍼널) ──────────────────────────
   var cameFromReport = false;   // 설정 화면 뒤로가기가 보고서로 돌아가게(진단 경유와 동선 구분)
 
+  // 실행 모드 토글(컴포저 세그먼트): 전송 버튼은 하나 — 선택된 모드가 lavRun의 동작을 결정.
+  window.lavMode = 'humanize';
+  window.lavSetMode = function (m) {
+    window.lavMode = m;
+    document.querySelectorAll('.gp-lav-mode button').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-mode') === m);
+    });
+    var ta = $('lavInput');
+    if (ta) ta.placeholder = m === 'detect'
+      ? 'AI가 썼는지 궁금한 글을 붙여넣어 보세요...'
+      : 'AI 느낌이 나는 문장을 붙여넣어 보세요...';
+  };
+
   window.lavDetect = async function () {
     var src = $('lavInput');
     var text = src ? src.value : '';

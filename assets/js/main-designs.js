@@ -356,6 +356,8 @@
       if (src) src.focus();
       return;
     }
+    // 모드 토글(컴포저 세그먼트): AI 감지 선택 시 무료 감지 보고서로 — 전송 버튼은 하나.
+    if (window.lavMode === 'detect' && typeof window.lavDetect === 'function') { window.lavDetect(); return; }
     if (typeof window.lavFlowDiagnose === 'function') { window.lavFlowDiagnose(); return; }
     window.lavRunHumanize();
   };

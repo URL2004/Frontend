@@ -13934,11 +13934,13 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 
 
 /* ───────── lavender v54: AI 감지 분리 — 무료 감지 보고서(전환 퍼널) ───────── */
-/* 컴포저 감지 버튼: 보조 액션(필 형태) — 메인 전송 버튼과 위계 구분 */
-#mainContent[data-main-design="lavender"] .gp-lav-detect{display:inline-flex;align-items:center;gap:5px;margin-right:8px;padding:9px 14px;border:1px solid #d9ddeb;border-radius:999px;background:#fff;font-size:12.5px;font-weight:700;color:#4b4cc6;cursor:pointer;white-space:nowrap;}
-#mainContent[data-main-design="lavender"] .gp-lav-detect:hover{border-color:#b9bde0;background:#f6f6fd;}
-#mainContent[data-main-design="lavender"] .gp-lav-detect .material-symbols-outlined{font-size:17px;line-height:1;}
-#mainContent[data-main-design="lavender"] .gp-lav-detect em{font-style:normal;font-size:10px;font-weight:800;color:#fff;background:#5a5bd8;border-radius:999px;padding:2px 6px;margin-left:2px;}
+/* 컴포저 모드 토글(세그먼트): 전송 버튼은 하나 — 버튼 2개의 혼동 제거(v55에서 버튼→토글 교체) */
+#mainContent[data-main-design="lavender"] .gp-lav-mode{display:inline-flex;align-items:center;gap:2px;margin-right:8px;padding:3px;border:1px solid #e2e5f0;border-radius:999px;background:#f3f4fa;}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button{display:inline-flex;align-items:center;gap:4px;border:0;border-radius:999px;background:transparent;padding:7px 13px;font-size:12.5px;font-weight:700;color:#7d83a0;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button:hover{color:#4b4cc6;}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button.on{background:#fff;color:#3a3bb0;box-shadow:0 1px 4px rgba(26,31,46,.10);}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button em{font-style:normal;font-size:9.5px;font-weight:800;color:#fff;background:#5a5bd8;border-radius:999px;padding:2px 6px;}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button:not(.on) em{background:#b9bde0;}
 
 /* 보고서 헤더: 확률 + 한 줄 판정 */
 #mainContent[data-main-design="lavender"] .lav-rep-head{display:flex;gap:18px;align-items:center;background:#fff;border:1px solid #eef0f7;border-radius:14px;padding:18px 20px;}
