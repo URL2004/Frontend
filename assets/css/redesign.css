@@ -13953,6 +13953,9 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 
 /* ── 보고서 v57 재구성: 게이지 히어로가 주인공 — 간격 체계 통일(섹션 간 14px·라운드 16px·패딩 22/24px) ── */
 #mainContent[data-main-design="lavender"] .lav-report{display:flex;flex-direction:column;gap:14px;}
+/* ★ display:flex가 hidden 속성(UA display:none)을 덮어써 보고서가 항상 보이던 실사고(2026-06-13 —
+   "버튼 누르면 밑에 이어서 생긴다"의 정체). 워크스페이스 카드 전환은 hidden 기반이므로 가드 필수. */
+#mainContent[data-main-design="lavender"] .lav-flow-card[hidden]{display:none !important;}
 
 /* ① 히어로: 반원 게이지 + 판정 — 보고서의 첫인상, 가장 크게 */
 #mainContent[data-main-design="lavender"] .lav-rep-hero{display:flex;align-items:center;gap:38px;background:#fff;border:1px solid #eef0f7;border-radius:16px;padding:28px 34px;}
