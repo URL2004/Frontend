@@ -14062,3 +14062,9 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 /* 근거 보강 잠금(기본 피하기에서): 토글 흐리게 + 클릭 차단(checkbox disabled와 이중) */
 #mainContent[data-main-design="lavender"] .lav-set-block.ev-off .lav-toggle{opacity:.45;pointer-events:none;}
 #mainContent[data-main-design="lavender"] .lav-evidence-hint{margin:8px 0 0 54px;font-size:12px;font-weight:500;color:#8a90a6;}
+
+/* v62: 원문 수정 — 우상단 필 버튼(상단 크레딧·업그레이드와 시각 충돌, 사장님 피드백) →
+   "원문 N자" 옆 인라인 텍스트 링크로 이동(컨텍스트와 한 묶음이라 의미도 더 맞음) */
+#mainContent[data-main-design="lavender"] .lav-flow-ctx #lavFlowCtx{display:inline;}
+#mainContent[data-main-design="lavender"] .lav-flow-edit{display:inline;margin-left:9px;padding:0;border:0;border-radius:0;background:none;color:#5a5bd8;font-size:12.5px;font-weight:700;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#c9cbf2;vertical-align:baseline;}
+#mainContent[data-main-design="lavender"] .lav-flow-edit:hover{background:none;color:#3a3bb0;text-decoration-color:#3a3bb0;}
