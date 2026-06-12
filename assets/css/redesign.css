@@ -13917,3 +13917,14 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 .lav-lib-acts button:hover{background:#f6f7fc;border-color:#c9cede;}
 .lav-lib-del{color:#c0392b !important;}
 .lav-lib-empty{font-size:13px;color:#8088a0;text-align:center;padding:34px 0;line-height:1.6;}
+
+/* ───────── lavender v52: 한국어 줄바꿈 정리(어절 단위) ───────── */
+/* 회피 워크스페이스 전체 텍스트를 어절 단위로 줄바꿈(음절 중간 끊김 방지) */
+#mainContent[data-main-design="lavender"] .lav-flow-card,
+#mainContent[data-main-design="lavender"] .lav-confirm-card{word-break:keep-all;overflow-wrap:break-word;}
+/* flex 항목 오버플로 방지(설명이 박스 폭을 넘지 않게) */
+#mainContent[data-main-design="lavender"] .lav-toggle-text,
+#mainContent[data-main-design="lavender"] .lav-tone-body{min-width:0;}
+/* 토글·어투 설명의 ★ 강조문을 별도 줄로(em.note-em) */
+#mainContent[data-main-design="lavender"] .lav-toggle-text i .hl,
+#mainContent[data-main-design="lavender"] .lav-tone-body i .hl{display:block;margin-top:5px;color:#4b4cc6;font-weight:600;}
