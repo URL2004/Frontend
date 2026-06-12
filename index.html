@@ -4457,7 +4457,7 @@ function splitByBoundary(text, MIN, MAX) {
 async function callAnalyzeApi(payload, opts) {
  opts = opts || {};
  var maxRetries = (opts.maxRetries == null) ? 1 : opts.maxRetries;
- var timeoutMs = opts.timeoutMs || 480000;
+ var timeoutMs = opts.timeoutMs || 720000;
  var delay = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
  var attempt = 0;
  while (true) {
