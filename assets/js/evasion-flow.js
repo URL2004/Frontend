@@ -169,12 +169,46 @@
       renderReport(d);
       cameFromReport = true;
       show('report');
+      playReportIntro();
     } catch (e) {
       console.warn('[evasion] /detect-report 실패:', e && e.message);
       window.lavFlowReset();
       alert('AI 감지에 실패했어요. 네트워크 상태를 확인해 주세요.');
     }
   };
+
+  // ── 게이지 인트로: 화면 공개 후 호 채움(CSS 트랜지션) + 숫자 카운트업(rAF, easeOutCubic 동조) ──
+  var repProbTarget = null;
+  function playReportIntro() {
+    var p = repProbTarget;
+    var arc = $('lavRepArc'), num = $('lavRepProb');
+    var LEN = Math.PI * 90;
+    var target = p == null ? LEN : LEN * (1 - Math.max(0, Math.min(100, p)) / 100);
+    // 모션 최소화 환경(접근성·헤드리스 검증): 애니 없이 최종 상태 즉시 — rAF 카운트업이 얼어 어긋나는 것 방지
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (arc) { arc.style.transition = 'none'; arc.style.strokeDashoffset = target; }
+      if (num && p != null) num.textContent = p;
+      return;
+    }
+    // 2프레임 양보: hidden 해제가 페인트된 뒤에 목표치를 줘야 트랜지션이 실제로 보인다.
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      if (arc) {
+        arc.style.transition = '';
+        arc.style.strokeDashoffset = target;
+      }
+      if (num && p != null) {
+        var t0 = null, dur = 1100;
+        var step = function (ts) {
+          if (t0 == null) t0 = ts;
+          var k = Math.min(1, (ts - t0) / dur);
+          var e = 1 - Math.pow(1 - k, 3);
+          num.textContent = Math.round(p * e);
+          if (k < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }
+    }); });
+  }
 
   // 보고서 CTA → 어투 미리 선택 후 설정 화면으로(전환 동선 단축)
   function presetTone(v) {
@@ -189,20 +223,21 @@
     if ($('lavRepProb')) $('lavRepProb').textContent = (p == null ? '—' : p);
     var score = $('lavRepScore');
     if (score) score.className = 'lav-rep-hero' + (sev ? ' ' + sev : '');
-    // 반원 게이지: 호 길이 π×r(r=90) — dashoffset으로 채움. 0에서 목표치로 트랜지션(첫 인상 애니).
+    // 게이지는 여기서 0%로 리셋만 — 채움·카운트업은 화면 공개 후 playReportIntro가
+    // (카드가 hidden(display:none)인 동안 채우면 트랜지션이 안 보임 — 2026-06-13 실사고).
+    repProbTarget = p;
     var arc = $('lavRepArc');
     if (arc) {
       var LEN = Math.PI * 90;
       arc.style.strokeDasharray = LEN;
       arc.style.transition = 'none';
       arc.style.strokeDashoffset = LEN;
-      void arc.getBoundingClientRect();
-      arc.style.transition = '';
-      arc.style.strokeDashoffset = p == null ? LEN : LEN * (1 - Math.max(0, Math.min(100, p)) / 100);
     }
+    // "판정 보류" 금지(사장님 지시) — 서버가 LLM 실패 시에도 엔진 추정 숫자를 보내므로 보류 문구 자체를 제거.
     var badge = $('lavRepBadge');
     if (badge) {
-      badge.textContent = p == null ? 'AI 판정 보류' : (sev === 'bad' ? 'AI 의심 높음' : sev === 'mid' ? 'AI 의심 중간' : 'AI 의심 낮음');
+      badge.hidden = (p == null);
+      badge.textContent = sev === 'bad' ? 'AI 의심 높음' : sev === 'mid' ? 'AI 의심 중간' : 'AI 의심 낮음';
       badge.className = 'lav-rep-badge' + (sev ? ' ' + sev : '');
     }
     if ($('lavRepTitle')) $('lavRepTitle').textContent = d.title || '분석 결과';
@@ -262,13 +297,22 @@
         var name = document.createElement('strong'); name.textContent = s.name;
         head.appendChild(name);
         if (s.reco) { var rc = document.createElement('i'); rc.className = 'sol-reco'; rc.textContent = '추천'; head.appendChild(rc); }
-        var band = document.createElement('b'); band.textContent = '예상 ' + (s.band || '—');
         var desc = document.createElement('p'); desc.textContent = s.desc;
-        var foot = document.createElement('span'); foot.className = 'sol-foot';
-        var cost = document.createElement('em'); cost.textContent = '이 글 기준 ' + s.cost;
-        var go = document.createElement('i'); go.textContent = '시작하기 →';
-        foot.appendChild(cost); foot.appendChild(go);
-        card.appendChild(head); card.appendChild(band); card.appendChild(desc); card.appendChild(foot);
+        // 칩 대신 키-값 행: 라벨(좌) + 값(우) — "예상 퍼센트 라벨 처리" 사장님 피드백 반영
+        var rows = document.createElement('span'); rows.className = 'sol-rows';
+        [['예상 탐지율', s.band || '—', 'band'], ['이 글 기준', s.cost, '']].forEach(function (r) {
+          var row = document.createElement('span'); row.className = 'sol-row';
+          var k = document.createElement('span'); k.textContent = r[0];
+          var v = document.createElement('b');
+          if (r[2]) v.className = r[2];
+          // "40~55%(근거 보강 시)" 같은 괄호 단서는 값 아래 작은 줄로 — 우측 정렬 줄바꿈이 지저분해지는 문제 방지
+          var m = String(r[1]).match(/^(.*?)\s*\((.+)\)\s*$/);
+          v.textContent = m ? m[1] : r[1];
+          if (m) { var note = document.createElement('i'); note.textContent = m[2]; v.appendChild(note); }
+          row.appendChild(k); row.appendChild(v); rows.appendChild(row);
+        });
+        var go = document.createElement('span'); go.className = 'sol-go'; go.textContent = '시작하기 →';
+        card.appendChild(head); card.appendChild(desc); card.appendChild(rows); card.appendChild(go);
         card.onclick = s.act;
         grid.appendChild(card);
       });
@@ -412,6 +456,19 @@
     });
   }
 
+  // 작업 멱등 키 — 재시도·응답 유실 시 서버가 1회만 차감하도록(중복 차감 방지).
+  function evGenReqId() {
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+    return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  }
+  // 입력 주 언어 자동 판별 — 영어 글이 한글로 변환되던 버그(민원 #124·#145) 방지. 한글<15%면 영어.
+  function evDetectLang(text) {
+    var t = (text || '').replace(/\s+/g, '');
+    if (!t.length) return 'ko';
+    var ko = (t.match(/[가-힣]/g) || []).length;
+    return (ko / t.length) < 0.15 ? 'en' : 'ko';
+  }
+
   // ── P2 실연결: 블로그 어투 회피 = /analyze(engine:floorV2, mode:blog) ──────────
   function callEvasionApi(payload, extCtrl) {
     var ctrl = extCtrl || new AbortController();
@@ -428,10 +485,11 @@
         engine: 'floorV2',
         text: payload.text,
         humanizeMode: payload.humanizeMode || 'blog',
-        lang: payload.lang || 'ko',
+        lang: payload.lang || evDetectLang(payload.text),
         idToken: payload.idToken || '',
         userNotes: payload.userNotes || '',
         billingMode: payload.billingMode || 'credit',
+        requestId: payload.requestId || undefined,
         useWebSearch: false
       }),
       signal: ctrl.signal
@@ -509,7 +567,7 @@
       var idToken = '';
       try { if (window.CU && window.CU.getIdToken) idToken = await window.CU.getIdToken(); } catch (e) { /* 비로그인 — 서버가 401 안내 */ }
       try {
-        var body = await callEvasionApi({ text: text, humanizeMode: 'blog', idToken: idToken, userNotes: s.memo }, ctrl);
+        var body = await callEvasionApi({ text: text, humanizeMode: 'blog', lang: evDetectLang(text), requestId: evGenReqId(), idToken: idToken, userNotes: s.memo }, ctrl);
         activeCancel = null;
         stop();
         setJobSteps(4);
