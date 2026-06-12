@@ -283,8 +283,10 @@
   }
 
   // 보고서 → 휴머나이저 핸드오프(완전 분리 — 사장님 지시): 해결 경로 선택은 보고서가 아니라
-  // 기존 방법 선택(choose) 화면에서. 보고서 데이터로 진단 배너·밴드를 채워 재진단 없이 이어간다.
+  // 기존 방법 선택(choose) 화면에서. 보고서 데이터로 진단 배너·밴드를 채워 재진단 없이 이어가고,
+  // 글은 입력칸(lavInput)에 그대로 남아 있어 같은 글로 바로 진행된다(컨텍스트 바 원문 N자 표기 동일).
   window.lavReportToHumanize = function () {
+    window.lavSetMode('humanize');   // 휴머나이저로 "이동" — 모드 상태도 함께 전환(입력 화면 복귀 시 일관)
     var d = lastReport;
     if (d) {
       var sol = d.solutions || {};
