@@ -184,11 +184,33 @@
   }
 
   function renderReport(d) {
-    if ($('lavRepProb')) $('lavRepProb').textContent = (d.probability == null ? '—' : d.probability);
+    var p = d.probability;
+    var sev = p == null ? '' : p >= 70 ? 'bad' : p >= 40 ? 'mid' : 'good';
+    if ($('lavRepProb')) $('lavRepProb').textContent = (p == null ? '—' : p);
     var score = $('lavRepScore');
-    if (score) score.className = 'lav-rep-score ' + (d.probability == null ? '' : d.probability >= 70 ? 'bad' : d.probability >= 40 ? 'mid' : 'good');
+    if (score) score.className = 'lav-rep-hero' + (sev ? ' ' + sev : '');
+    // 반원 게이지: 호 길이 π×r(r=90) — dashoffset으로 채움. 0에서 목표치로 트랜지션(첫 인상 애니).
+    var arc = $('lavRepArc');
+    if (arc) {
+      var LEN = Math.PI * 90;
+      arc.style.strokeDasharray = LEN;
+      arc.style.transition = 'none';
+      arc.style.strokeDashoffset = LEN;
+      void arc.getBoundingClientRect();
+      arc.style.transition = '';
+      arc.style.strokeDashoffset = p == null ? LEN : LEN * (1 - Math.max(0, Math.min(100, p)) / 100);
+    }
+    var badge = $('lavRepBadge');
+    if (badge) {
+      badge.textContent = p == null ? 'AI 판정 보류' : (sev === 'bad' ? 'AI 의심 높음' : sev === 'mid' ? 'AI 의심 중간' : 'AI 의심 낮음');
+      badge.className = 'lav-rep-badge' + (sev ? ' ' + sev : '');
+    }
     if ($('lavRepTitle')) $('lavRepTitle').textContent = d.title || '분석 결과';
     if ($('lavRepSummary')) $('lavRepSummary').textContent = d.summary || '';
+    var cc = d.counts || {};
+    if ($('lavRepStatRisk')) $('lavRepStatRisk').textContent = cc.risk || 0;
+    if ($('lavRepStatThin')) $('lavRepStatThin').textContent = cc.thin || 0;
+    if ($('lavRepStatSafe')) $('lavRepStatSafe').textContent = cc.safe || 0;
 
     // 문단 지도 — DOM 생성(XSS-safe)
     var list = $('lavRepParaList');
@@ -211,8 +233,7 @@
         list.appendChild(row);
       });
     }
-    var c = d.counts || {};
-    if ($('lavRepParaCount')) $('lavRepParaCount').textContent = '위험 ' + (c.risk || 0) + ' · 주의 ' + (c.thin || 0) + ' · 안전 ' + (c.safe || 0);
+    if ($('lavRepParaCount')) $('lavRepParaCount').textContent = '총 ' + ((d.paragraphs || []).length) + '문단';
 
     // 실시간 1문장 미리보기 — 없으면 블록 숨김
     var ex = $('lavRepExample');
@@ -237,11 +258,17 @@
         var card = document.createElement('button');
         card.type = 'button';
         card.className = 'lav-rep-sol' + (s.reco ? ' reco' : '');
+        var head = document.createElement('span'); head.className = 'sol-head';
         var name = document.createElement('strong'); name.textContent = s.name;
+        head.appendChild(name);
+        if (s.reco) { var rc = document.createElement('i'); rc.className = 'sol-reco'; rc.textContent = '추천'; head.appendChild(rc); }
         var band = document.createElement('b'); band.textContent = '예상 ' + (s.band || '—');
         var desc = document.createElement('p'); desc.textContent = s.desc;
+        var foot = document.createElement('span'); foot.className = 'sol-foot';
         var cost = document.createElement('em'); cost.textContent = '이 글 기준 ' + s.cost;
-        card.appendChild(name); card.appendChild(band); card.appendChild(desc); card.appendChild(cost);
+        var go = document.createElement('i'); go.textContent = '시작하기 →';
+        foot.appendChild(cost); foot.appendChild(go);
+        card.appendChild(head); card.appendChild(band); card.appendChild(desc); card.appendChild(foot);
         card.onclick = s.act;
         grid.appendChild(card);
       });

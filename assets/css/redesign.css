@@ -13951,60 +13951,97 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
   #mainContent[data-main-design="lavender"] .gp-lav-mode button .material-symbols-outlined{font-size:15px;}
 }
 
-/* 보고서 헤더: 확률 + 한 줄 판정 */
-#mainContent[data-main-design="lavender"] .lav-rep-head{display:flex;gap:18px;align-items:center;background:#fff;border:1px solid #eef0f7;border-radius:14px;padding:18px 20px;}
-#mainContent[data-main-design="lavender"] .lav-rep-score{flex-shrink:0;width:104px;height:104px;border-radius:50%;border:6px solid #e4e7f1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;}
-#mainContent[data-main-design="lavender"] .lav-rep-score b{font-size:30px;font-weight:800;color:#1a1f2e;line-height:1;}
-#mainContent[data-main-design="lavender"] .lav-rep-score i{font-style:normal;font-size:12px;font-weight:700;color:#8088a0;}
-#mainContent[data-main-design="lavender"] .lav-rep-score span{font-size:10.5px;color:#8088a0;}
-#mainContent[data-main-design="lavender"] .lav-rep-score.bad{border-color:#e8b0ab;}
-#mainContent[data-main-design="lavender"] .lav-rep-score.bad b{color:#c0392b;}
-#mainContent[data-main-design="lavender"] .lav-rep-score.mid{border-color:#ead9a8;}
-#mainContent[data-main-design="lavender"] .lav-rep-score.mid b{color:#9a7d1f;}
-#mainContent[data-main-design="lavender"] .lav-rep-score.good{border-color:#b5d8be;}
-#mainContent[data-main-design="lavender"] .lav-rep-score.good b{color:#2e7d49;}
-#mainContent[data-main-design="lavender"] .lav-rep-headtxt strong{display:block;font-size:16.5px;font-weight:700;color:#1a1f2e;margin-bottom:6px;}
-#mainContent[data-main-design="lavender"] .lav-rep-headtxt p{font-size:13px;color:#5b6172;line-height:1.65;margin:0;}
+/* ── 보고서 v57 재구성: 게이지 히어로가 주인공 — 간격 체계 통일(섹션 간 14px·라운드 16px·패딩 22/24px) ── */
+#mainContent[data-main-design="lavender"] .lav-report{display:flex;flex-direction:column;gap:14px;}
 
-/* 문단별 진단 지도 */
-#mainContent[data-main-design="lavender"] .lav-rep-paras{margin-top:14px;background:#fff;border:1px solid #eef0f7;border-radius:14px;padding:16px 18px;}
-#mainContent[data-main-design="lavender"] .lav-rep-paras h4{font-size:13.5px;font-weight:700;color:#1a1f2e;margin:0 0 10px;}
-#mainContent[data-main-design="lavender"] .lav-rep-paras h4 span{font-size:11.5px;font-weight:600;color:#8088a0;margin-left:6px;}
-#mainContent[data-main-design="lavender"] .lav-rep-para{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid #f1f3f9;}
-#mainContent[data-main-design="lavender"] .lav-rep-para:first-of-type{border-top:0;}
-#mainContent[data-main-design="lavender"] .rp-chip{flex-shrink:0;font-size:10.5px;font-weight:800;border-radius:999px;padding:3px 9px;margin-top:2px;}
+/* ① 히어로: 반원 게이지 + 판정 — 보고서의 첫인상, 가장 크게 */
+#mainContent[data-main-design="lavender"] .lav-rep-hero{display:flex;align-items:center;gap:38px;background:#fff;border:1px solid #eef0f7;border-radius:16px;padding:28px 34px;}
+#mainContent[data-main-design="lavender"] .lav-rep-gauge{position:relative;flex:0 0 236px;width:236px;}
+#mainContent[data-main-design="lavender"] .lav-rep-gauge svg{display:block;width:100%;height:auto;}
+#mainContent[data-main-design="lavender"] .lav-rep-gauge .g-track{fill:none;stroke:#eef0f7;stroke-width:18;stroke-linecap:round;}
+#mainContent[data-main-design="lavender"] .lav-rep-gauge .g-val{fill:none;stroke:#9aa0b4;stroke-width:18;stroke-linecap:round;transition:stroke-dashoffset .9s cubic-bezier(.22,.8,.34,1),stroke .3s;}
+#mainContent[data-main-design="lavender"] .lav-rep-hero.bad .g-val{stroke:#e05a4b;}
+#mainContent[data-main-design="lavender"] .lav-rep-hero.mid .g-val{stroke:#e8a13a;}
+#mainContent[data-main-design="lavender"] .lav-rep-hero.good .g-val{stroke:#3f9e63;}
+#mainContent[data-main-design="lavender"] .lav-rep-gauge .g-center{position:absolute;left:0;right:0;bottom:4px;display:flex;flex-direction:column;align-items:center;gap:2px;}
+#mainContent[data-main-design="lavender"] .lav-rep-gauge .g-num{display:flex;align-items:baseline;gap:2px;line-height:1;}
+#mainContent[data-main-design="lavender"] .lav-rep-gauge .g-num b{font-size:48px;font-weight:800;letter-spacing:-1px;color:#1a1f2e;}
+#mainContent[data-main-design="lavender"] .lav-rep-hero.bad .g-num b{color:#cf4636;}
+#mainContent[data-main-design="lavender"] .lav-rep-hero.mid .g-num b{color:#c07f17;}
+#mainContent[data-main-design="lavender"] .lav-rep-hero.good .g-num b{color:#2e7d49;}
+#mainContent[data-main-design="lavender"] .lav-rep-gauge .g-num i{font-style:normal;font-size:17px;font-weight:800;color:#9aa0b4;}
+#mainContent[data-main-design="lavender"] .lav-rep-gauge .g-cap{font-size:12px;font-weight:700;color:#8a90a6;}
+#mainContent[data-main-design="lavender"] .lav-rep-gauge .g-end{position:absolute;bottom:-16px;font-size:10.5px;font-weight:700;color:#b4b9ca;}
+#mainContent[data-main-design="lavender"] .lav-rep-gauge .g-end.min{left:12px;}
+#mainContent[data-main-design="lavender"] .lav-rep-gauge .g-end.max{right:4px;}
+#mainContent[data-main-design="lavender"] .lav-rep-verdict{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:9px;}
+#mainContent[data-main-design="lavender"] .lav-rep-badge{font-size:11px;font-weight:800;border-radius:999px;padding:4px 11px;background:#f1f2f8;color:#6a7188;}
+#mainContent[data-main-design="lavender"] .lav-rep-badge.bad{background:#fdeceb;color:#c0392b;}
+#mainContent[data-main-design="lavender"] .lav-rep-badge.mid{background:#fbf4dd;color:#9a7d1f;}
+#mainContent[data-main-design="lavender"] .lav-rep-badge.good{background:#e7f4ec;color:#2e7d49;}
+#mainContent[data-main-design="lavender"] .lav-rep-verdict strong{font-size:19px;font-weight:800;letter-spacing:-.3px;color:#1a1f2e;line-height:1.4;}
+#mainContent[data-main-design="lavender"] .lav-rep-verdict p{font-size:13.5px;color:#4a5066;line-height:1.75;margin:0;max-width:54ch;}
+#mainContent[data-main-design="lavender"] .lav-rep-stats{display:flex;gap:8px;margin-top:3px;flex-wrap:wrap;}
+#mainContent[data-main-design="lavender"] .lav-rep-stats .st{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;border-radius:999px;padding:5px 12px;}
+#mainContent[data-main-design="lavender"] .lav-rep-stats .st b{font-size:13px;font-weight:800;}
+#mainContent[data-main-design="lavender"] .lav-rep-stats .st.bad{background:#fdeceb;color:#b04a3e;}
+#mainContent[data-main-design="lavender"] .lav-rep-stats .st.mid{background:#fbf4dd;color:#9a7d1f;}
+#mainContent[data-main-design="lavender"] .lav-rep-stats .st.good{background:#e7f4ec;color:#2e7d49;}
+
+/* 공통 섹션 카드 + 헤더(제목 좌·보조설명 우) — 모든 섹션 같은 높이 패딩·같은 위계 */
+#mainContent[data-main-design="lavender"] .lav-rep-sec{background:#fff;border:1px solid #eef0f7;border-radius:16px;padding:20px 24px;}
+#mainContent[data-main-design="lavender"] .lav-rep-sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;}
+#mainContent[data-main-design="lavender"] .lav-rep-sec-h h4{font-size:14.5px;font-weight:800;letter-spacing:-.2px;color:#1a1f2e;margin:0;}
+#mainContent[data-main-design="lavender"] .lav-rep-sec-h span{font-size:12px;font-weight:600;color:#9aa0b4;white-space:nowrap;}
+
+/* ② 문단별 진단: 칩 고정폭 정렬 + 본문/사유 행간 */
+#mainContent[data-main-design="lavender"] .lav-rep-para{display:flex;gap:14px;align-items:flex-start;padding:13px 0;border-top:1px solid #f1f3f9;}
+#mainContent[data-main-design="lavender"] .lav-rep-para:first-of-type{border-top:0;padding-top:2px;}
+#mainContent[data-main-design="lavender"] .lav-rep-para:last-of-type{padding-bottom:2px;}
+#mainContent[data-main-design="lavender"] .rp-chip{flex:0 0 46px;text-align:center;font-size:11px;font-weight:800;border-radius:999px;padding:4px 0;margin-top:2px;}
 #mainContent[data-main-design="lavender"] .lav-rep-para.abstract_risk .rp-chip{background:#fdeceb;color:#c0392b;}
 #mainContent[data-main-design="lavender"] .lav-rep-para.thin .rp-chip{background:#fbf4dd;color:#9a7d1f;}
 #mainContent[data-main-design="lavender"] .lav-rep-para.concrete .rp-chip{background:#e7f4ec;color:#2e7d49;}
 #mainContent[data-main-design="lavender"] .rp-body{min-width:0;}
-#mainContent[data-main-design="lavender"] .rp-body p{font-size:12.5px;color:#454c60;line-height:1.6;margin:0 0 3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-#mainContent[data-main-design="lavender"] .rp-body em{font-style:normal;font-size:11.5px;color:#8088a0;}
+#mainContent[data-main-design="lavender"] .rp-body p{font-size:13.5px;color:#3c4356;line-height:1.7;margin:0 0 4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+#mainContent[data-main-design="lavender"] .rp-body em{font-style:normal;font-size:12px;color:#8a90a6;line-height:1.6;}
 #mainContent[data-main-design="lavender"] .lav-rep-para.abstract_risk .rp-body em{color:#b04a3e;}
 
-/* 실시간 1문장 미리보기(전환 장치) */
-#mainContent[data-main-design="lavender"] .lav-rep-example{margin-top:14px;background:#f8f7ff;border:1px solid #e3e1fb;border-radius:14px;padding:16px 18px;}
-#mainContent[data-main-design="lavender"] .lav-rep-example h4{font-size:13.5px;font-weight:700;color:#3a3bb0;margin:0 0 12px;}
-#mainContent[data-main-design="lavender"] .lav-rep-example h4 em{display:block;font-style:normal;font-size:11.5px;font-weight:500;color:#7d83a8;margin-top:3px;}
-#mainContent[data-main-design="lavender"] .lav-rep-ba{display:flex;gap:12px;align-items:stretch;}
-#mainContent[data-main-design="lavender"] .lav-rep-ba .ba-col{flex:1;min-width:0;background:#fff;border:1px solid #e7e9f3;border-radius:11px;padding:12px 14px;}
-#mainContent[data-main-design="lavender"] .lav-rep-ba .ba-tag{display:inline-block;font-size:10.5px;font-weight:800;border-radius:999px;padding:3px 9px;margin-bottom:7px;}
+/* ③ 미리보기: 라벤더 틴트(전환 장치 — 유일하게 색을 가진 섹션) */
+#mainContent[data-main-design="lavender"] .lav-rep-example{background:#f8f7ff;border-color:#e6e4fb;}
+#mainContent[data-main-design="lavender"] .lav-rep-example .lav-rep-sec-h h4{color:#3a3bb0;}
+#mainContent[data-main-design="lavender"] .lav-rep-example .lav-rep-sec-h span{color:#8d92bd;}
+#mainContent[data-main-design="lavender"] .lav-rep-ba{display:flex;gap:14px;align-items:stretch;}
+#mainContent[data-main-design="lavender"] .lav-rep-ba .ba-col{flex:1;min-width:0;background:#fff;border:1px solid #e7e9f3;border-radius:12px;padding:15px 18px;}
+#mainContent[data-main-design="lavender"] .lav-rep-ba .ba-tag{display:inline-block;font-size:10.5px;font-weight:800;border-radius:999px;padding:3px 10px;margin-bottom:9px;}
 #mainContent[data-main-design="lavender"] .lav-rep-ba .ba-tag.bad{background:#fdeceb;color:#c0392b;}
 #mainContent[data-main-design="lavender"] .lav-rep-ba .ba-tag.good{background:#e7f4ec;color:#2e7d49;}
-#mainContent[data-main-design="lavender"] .lav-rep-ba p{font-size:12.5px;color:#454c60;line-height:1.65;margin:0;}
+#mainContent[data-main-design="lavender"] .lav-rep-ba p{font-size:13.5px;color:#3c4356;line-height:1.75;margin:0;}
 #mainContent[data-main-design="lavender"] .lav-rep-ba .ba-arrow{align-self:center;color:#5a5bd8;flex-shrink:0;}
 #mainContent[data-main-design="lavender"] .lav-rep-ba .ba-arrow svg{width:20px;height:20px;}
 
-/* 해결 경로 3장: 밴드·이 글 기준 비용·CTA */
-#mainContent[data-main-design="lavender"] .lav-rep-solutions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-#mainContent[data-main-design="lavender"] .lav-rep-sol{text-align:left;background:#fff;border:1px solid #eef0f7;border-radius:13px;padding:15px 16px;cursor:pointer;display:flex;flex-direction:column;gap:5px;transition:border-color .15s, box-shadow .15s;}
-#mainContent[data-main-design="lavender"] .lav-rep-sol:hover{border-color:#b9bde0;box-shadow:0 4px 14px rgba(90,91,216,.08);}
+/* ④ 해결 경로 3장: 등고 카드 — 제목/밴드칩/설명/푸터(비용·시작) 4단 정렬 */
+#mainContent[data-main-design="lavender"] .lav-rep-solwrap{padding-bottom:24px;}
+#mainContent[data-main-design="lavender"] .lav-rep-solutions{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+#mainContent[data-main-design="lavender"] .lav-rep-sol{text-align:left;background:#fff;border:1px solid #e7e9f3;border-radius:14px;padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:9px;transition:border-color .15s,box-shadow .15s,transform .15s;}
+#mainContent[data-main-design="lavender"] .lav-rep-sol:hover{border-color:#b9bde0;box-shadow:0 8px 20px rgba(90,91,216,.10);transform:translateY(-1px);}
 #mainContent[data-main-design="lavender"] .lav-rep-sol.reco{border-color:#c9c7f5;background:#fbfaff;}
-#mainContent[data-main-design="lavender"] .lav-rep-sol strong{font-size:13.5px;font-weight:700;color:#1a1f2e;}
-#mainContent[data-main-design="lavender"] .lav-rep-sol b{font-size:12px;font-weight:700;color:#4b4cc6;}
-#mainContent[data-main-design="lavender"] .lav-rep-sol p{font-size:11.5px;color:#6a7188;line-height:1.55;margin:0;flex:1;}
-#mainContent[data-main-design="lavender"] .lav-rep-sol em{font-style:normal;font-size:11.5px;font-weight:700;color:#454c60;border-top:1px dashed #e7e9f3;padding-top:7px;}
-@media (max-width:760px){
+#mainContent[data-main-design="lavender"] .lav-rep-sol .sol-head{display:flex;align-items:center;gap:7px;}
+#mainContent[data-main-design="lavender"] .lav-rep-sol strong{font-size:14.5px;font-weight:800;letter-spacing:-.2px;color:#1a1f2e;}
+#mainContent[data-main-design="lavender"] .lav-rep-sol .sol-reco{font-style:normal;font-size:10px;font-weight:800;color:#fff;background:#5a5bd8;border-radius:999px;padding:2px 8px;}
+#mainContent[data-main-design="lavender"] .lav-rep-sol b{align-self:flex-start;font-size:11.5px;font-weight:800;color:#4b4cc6;background:#efeffd;border-radius:999px;padding:4px 11px;}
+#mainContent[data-main-design="lavender"] .lav-rep-sol p{font-size:12.5px;color:#6a7188;line-height:1.65;margin:0;flex:1;}
+#mainContent[data-main-design="lavender"] .lav-rep-sol .sol-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid #f1f3f9;padding-top:11px;}
+#mainContent[data-main-design="lavender"] .lav-rep-sol .sol-foot em{font-style:normal;font-size:12px;font-weight:700;color:#3c4356;}
+#mainContent[data-main-design="lavender"] .lav-rep-sol .sol-foot i{font-style:normal;font-size:12px;font-weight:800;color:#5a5bd8;white-space:nowrap;}
+
+/* 하단 안내문 */
+#mainContent[data-main-design="lavender"] .lav-rep-note{text-align:center;font-size:12px;color:#9aa0b4;line-height:1.6;margin:2px 0 0;}
+
+@media (max-width:860px){
+  #mainContent[data-main-design="lavender"] .lav-rep-hero{flex-direction:column;gap:22px;padding:24px 20px;}
+  #mainContent[data-main-design="lavender"] .lav-rep-verdict{align-items:center;text-align:center;}
   #mainContent[data-main-design="lavender"] .lav-rep-solutions{grid-template-columns:1fr;}
   #mainContent[data-main-design="lavender"] .lav-rep-ba{flex-direction:column;}
-  #mainContent[data-main-design="lavender"] .lav-rep-ba .ba-arrow{transform:rotate(90deg);align-self:flex-start;margin-left:8px;}
+  #mainContent[data-main-design="lavender"] .lav-rep-ba .ba-arrow{transform:rotate(90deg);align-self:center;}
 }
