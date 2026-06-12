@@ -562,9 +562,9 @@
     if (typeof m.lengthRatio === 'number') badge(true, '분량 ' + Math.round(m.lengthRatio * 100) + '%');
   }
 
-  // ★ 기본 피하기(blog)도 job 방식(2026-06-13): 직접 fetch는 새로고침에 작업이 죽었음(사장님 지적) →
-  //   /transform mode:'blog' job + 폴링 + lavJobRef 재진입 — 고급 피하기와 동일하게 새로고침·창닫기 생존.
-  function runBlogEvasion(s) {
+  // ★ short job(2026-06-13): 직접 fetch였던 기본 피하기(blog)·그대로 다듬기(polish)를 /transform job으로 —
+  //   새로고침·창닫기 생존 + lavJobRef 재진입(고급 피하기와 동일). 둘 다 크레딧이 드는 작업이라 생존 필수(사장님 지적).
+  function runShortJob(mode, s) {
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
     if ($('lavJobTitle')) $('lavJobTitle').textContent = '문장을 다듬고 있어요';
@@ -580,7 +580,7 @@
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, mode: 'blog', memo: s.memo, lang: evDetectLang(text), idToken: idToken })
+          body: JSON.stringify({ text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text), idToken: idToken })
         }).then(function (res) { return res.json().then(function (b) { if (b && b.error) throw new Error(b.error); if (!res.ok || !b || !b.ok) throw new Error('작업 시작에 실패했어요.'); return b; }); });
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
@@ -589,10 +589,19 @@
       } catch (err) {
         stopFormalTicker();
         alert(err && err.message ? err.message : '처리 중 오류가 발생했어요.');
-        show('reduce');
+        show(mode === 'polish' ? 'choose' : 'reduce');
       }
     })();
   }
+  function runBlogEvasion(s) { return runShortJob('blog', s); }
+
+  // 그대로 다듬기(보존형) — 방법 선택 카드에서 바로 시작. 서버측 청킹 job이라 새로고침 생존.
+  window.lavRunPolish = function () {
+    var src = $('lavInput');
+    var text = (src ? src.value : '').trim();
+    if (!text) { if (src) src.focus(); return; }
+    runShortJob('polish', null);
+  };
 
   // ── P3+P4 실연결: 격식 유지 재구성 = POST /transform(job) + 폴링 + 근거 승인 ──────────
   var formalStop = null;   // 진행 ticker 정지 함수
@@ -631,13 +640,13 @@
         return;
       }
       if (st.status === 'running' || st.status === 'awaiting_approval') {
-        var isBlog = st.mode === 'blog';
-        if ($('lavJobTitle')) $('lavJobTitle').textContent = isBlog ? '문장을 다듬고 있어요' : '글을 다시 쓰고 있어요';
+        var isShort = st.mode === 'blog' || st.mode === 'polish';
+        if ($('lavJobTitle')) $('lavJobTitle').textContent = isShort ? '문장을 다듬고 있어요' : '글을 다시 쓰고 있어요';
         if ($('lavJobId')) $('lavJobId').textContent = '#' + ref.jobId.slice(0, 6).toUpperCase();
         show('job');
         activeCancel = makeJobCanceller(ref.jobId);
         // 서버 estSec·elapsedSec로 진행률 이어서 표시(새로고침해도 0부터 다시 안 올라감)
-        formalStop = startJobTicker(st.estSec || (isBlog ? 180 : 900), st.status === 'awaiting_approval' ? '근거 검수 대기' : (isBlog ? '문장 다듬는 중' : '재구성 중'), st.elapsedSec || 0);
+        formalStop = startJobTicker(st.estSec || (isShort ? 180 : 900), st.status === 'awaiting_approval' ? '근거 검수 대기' : (isShort ? '문장 다듬는 중' : '재구성 중'), st.elapsedSec || 0);
         pollTransform(ref.jobId, ++pollGen);
         return;
       }
@@ -683,7 +692,7 @@
         clearJobRef();
         if (st.gateDetail) console.warn('[evasion] 차단 상세:', st.gates, st.gateDetail);
         alert(st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
-        show('reduce');
+        show(st.mode === 'polish' ? 'choose' : 'reduce');   // 다듬기는 설정 화면이 없음 — 방법 선택으로
         return;
       }
     }
@@ -693,11 +702,15 @@
 
   // 완료 렌더(폴링·재진입 공용): job mode에 따라 점수·배지·보관함 라벨 분기
   function renderJobDone(st) {
-    var isBlog = st.mode === 'blog';
     var score, label;
-    if (isBlog) {
+    if (st.mode === 'blog') {
       score = (lastDiag && lastDiag.bands && lastDiag.bands.blog) || '40~55%';
       label = '블로그';
+      renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics });
+    } else if (st.mode === 'polish') {
+      // 다듬기는 품질·무결성 경로 — 정직 표기(진단 밴드 그대로, 회피 약속 없음)
+      score = (lastDiag && lastDiag.bands && lastDiag.bands.polish) || '—';
+      label = '다듬기';
       renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics });
     } else {
       // 예상 밴드(보수 표기): 근거 사용 시 40~55%, 미사용 시 50~60%대
