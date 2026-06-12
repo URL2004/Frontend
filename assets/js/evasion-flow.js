@@ -421,7 +421,7 @@
   // 폴링: 6초 간격, 최대 45분(근거 검색+재구성). 창을 닫아도 서버 작업은 계속됨(job 방식).
   // gen 토큰: 사용자가 중단하거나 새 작업을 시작하면 pollGen이 올라가 이전 루프가 조용히 끝남.
   async function pollTransform(jobId, gen) {
-    var deadline = Date.now() + 45 * 60000;
+    var deadline = Date.now() + 95 * 60000;   // 3만자 재구성 대비(긴 글). 창 닫아도 서버 작업은 계속.
     while (Date.now() < deadline) {
       await new Promise(function (ok) { setTimeout(ok, 6000); });
       if (gen !== pollGen) return;   // 중단·교체됨
