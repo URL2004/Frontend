@@ -176,16 +176,17 @@
          <section class="lav-flow-card lav-report" data-flow="report" hidden>
            <!-- ① 핵심 판정: 반원 게이지(주인공) + 판정 텍스트 -->
            <div class="lav-rep-hero" id="lavRepScore">
+             <!-- 풀 서클 링 게이지(MagicUI animated-circular-progress-bar 스타일) — r45 둘레 = 2π×45 = π×90,
+                  기존 반원(r90) 호 길이와 동일해 JS dashoffset 계산은 그대로 호환 -->
              <div class="lav-rep-gauge">
-               <svg viewBox="0 0 220 124" aria-hidden="true">
-                 <path class="g-track" d="M20 114 A90 90 0 0 1 200 114"/>
-                 <path class="g-val" id="lavRepArc" d="M20 114 A90 90 0 0 1 200 114"/>
+               <svg viewBox="0 0 100 100" aria-hidden="true">
+                 <circle class="g-track" cx="50" cy="50" r="45"/>
+                 <circle class="g-val" id="lavRepArc" cx="50" cy="50" r="45"/>
                </svg>
                <div class="g-center">
                  <span class="g-num"><b id="lavRepProb">--</b><i>%</i></span>
                  <span class="g-cap">AI 작성 확률</span>
                </div>
-               <span class="g-end min">0</span><span class="g-end max">100</span>
              </div>
              <div class="lav-rep-verdict">
                <span class="lav-rep-badge" id="lavRepBadge">판정</span>
