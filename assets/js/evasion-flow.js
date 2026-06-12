@@ -446,6 +446,7 @@
       if (st.status === 'blocked' || st.status === 'error') {
         stopFormalTicker();
         clearJobRef();
+        if (st.gateDetail) console.warn('[evasion] 차단 상세:', st.gates, st.gateDetail);
         alert(st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
         show('reduce');
         return;
