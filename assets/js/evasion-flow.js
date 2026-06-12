@@ -167,8 +167,10 @@
     var len = src ? src.value.length : 0;
     var credit, time;
     if (s.tone === 'formal') {
-      credit = (s.evidence ? 300 : 200) + ' 크레딧 (건당)';
-      time = '5~25분';
+      // 길이 구간 정액(서버와 동일): ~1만 200 · ~2만 400 · ~3만 600, 근거 시 +100
+      var tier = len <= 10000 ? 0 : (len <= 20000 ? 1 : 2);
+      credit = ([200, 400, 600][tier] + (s.evidence ? 100 : 0)) + ' 크레딧';
+      time = len <= 10000 ? '5~25분' : (len <= 20000 ? '20~50분' : '40~90분');
     } else {
       credit = Math.max(2, Math.ceil(len / 100) * 2) + ' 크레딧';
       time = '약 1~3분';
