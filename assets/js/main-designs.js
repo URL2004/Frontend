@@ -148,7 +148,7 @@
   window.syncHubCount = function (textarea) {
     var count = document.getElementById('hubInputCount');
     if (!count || !textarea) return;
-    count.textContent = (textarea.value || '').length.toLocaleString() + ' / 100,000자';
+    count.textContent = (textarea.value || '').length.toLocaleString() + ' / 30,000자';
   };
 
   window.clearHubInput = function () {
@@ -329,11 +329,13 @@
     if (label) label.textContent = LAV_MODELS[lavState.model];
   };
 
+  window.LAV_MAX_CHARS = 30000;
   window.lavSyncCount = function (textarea) {
     var count = document.getElementById('lavCount');
     if (!count || !textarea) return;
     var len = (textarea.value || '').length;
-    count.textContent = len ? len.toLocaleString() + ' / 100,000자' : '';
+    count.textContent = len ? len.toLocaleString() + ' / 30,000자' : '';
+    count.classList.toggle('over', len > window.LAV_MAX_CHARS);
   };
 
   window.lavComposerKey = function (event) {
@@ -349,6 +351,11 @@
     var src = document.getElementById('lavInput');
     var text = src && src.value.trim() ? src.value : '';
     if (!text.trim()) { if (src) src.focus(); return; }
+    if (text.length > (window.LAV_MAX_CHARS || 30000)) {
+      alert('한 번에 최대 30,000자까지 입력할 수 있어요. 글을 나눠서 시도해주세요.');
+      if (src) src.focus();
+      return;
+    }
     if (typeof window.lavFlowDiagnose === 'function') { window.lavFlowDiagnose(); return; }
     window.lavRunHumanize();
   };

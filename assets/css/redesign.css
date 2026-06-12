@@ -13928,3 +13928,6 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 /* 토글·어투 설명의 ★ 강조문을 별도 줄로(em.note-em) */
 #mainContent[data-main-design="lavender"] .lav-toggle-text i .hl,
 #mainContent[data-main-design="lavender"] .lav-tone-body i .hl{display:block;margin-top:5px;color:#4b4cc6;font-weight:600;}
+
+/* lavender v53: 입력 글자수 초과 경고 */
+#mainContent[data-main-design="lavender"] .gp-lav-count.over{color:#c0392b;font-weight:700;}
