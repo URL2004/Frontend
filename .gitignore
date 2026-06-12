@@ -6,6 +6,7 @@ node_modules/
 .DS_Store
 *.log
 _probe-*.html
+_probe-*.cjs
 runtime-config.local.js
 runtime-config.js
 dist/
