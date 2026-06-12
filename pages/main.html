@@ -112,8 +112,12 @@
            </label>
            <span class="gp-lav-count" id="lavCount" aria-live="polite"></span>
            <div class="gp-lav-mode" role="group" aria-label="실행 모드 선택">
-             <button type="button" class="on" data-mode="humanize" onclick="lavSetMode('humanize')">휴머나이징</button>
-             <button type="button" data-mode="detect" onclick="lavSetMode('detect')">AI 감지<em>무료</em></button>
+             <button type="button" class="on" data-mode="humanize" onclick="lavSetMode('humanize')" aria-pressed="true">
+               <span class="material-symbols-outlined" aria-hidden="true">auto_fix_high</span><span class="lbl">휴머나이징</span>
+             </button>
+             <button type="button" data-mode="detect" onclick="lavSetMode('detect')" aria-pressed="false">
+               <span class="material-symbols-outlined" aria-hidden="true">search_insights</span><span class="lbl">AI 감지</span><em>무료</em>
+             </button>
            </div>
            <button type="button" class="gp-lav-send" onclick="lavRun()" aria-label="시작">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6.5 11.5 12 6l5.5 5.5"/></svg>

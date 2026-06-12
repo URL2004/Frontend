@@ -126,7 +126,9 @@
   window.lavSetMode = function (m) {
     window.lavMode = m;
     document.querySelectorAll('.gp-lav-mode button').forEach(function (b) {
-      b.classList.toggle('on', b.getAttribute('data-mode') === m);
+      var on = b.getAttribute('data-mode') === m;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
     var ta = $('lavInput');
     if (ta) ta.placeholder = m === 'detect'

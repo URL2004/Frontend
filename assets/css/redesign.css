@@ -13934,13 +13934,22 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 
 
 /* ───────── lavender v54: AI 감지 분리 — 무료 감지 보고서(전환 퍼널) ───────── */
-/* 컴포저 모드 토글(세그먼트): 전송 버튼은 하나 — 버튼 2개의 혼동 제거(v55에서 버튼→토글 교체) */
-#mainContent[data-main-design="lavender"] .gp-lav-mode{display:inline-flex;align-items:center;gap:2px;margin-right:8px;padding:3px;border:1px solid #e2e5f0;border-radius:999px;background:#f3f4fa;}
-#mainContent[data-main-design="lavender"] .gp-lav-mode button{display:inline-flex;align-items:center;gap:4px;border:0;border-radius:999px;background:transparent;padding:7px 13px;font-size:12.5px;font-weight:700;color:#7d83a0;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;}
-#mainContent[data-main-design="lavender"] .gp-lav-mode button:hover{color:#4b4cc6;}
-#mainContent[data-main-design="lavender"] .gp-lav-mode button.on{background:#fff;color:#3a3bb0;box-shadow:0 1px 4px rgba(26,31,46,.10);}
+/* 컴포저 모드 토글(세그먼트): 전송 버튼은 하나 — 버튼 2개의 혼동 제거(v55에서 버튼→토글 교체).
+   v56 재디자인: 바의 기존 언어에 맞춤 — [+ 44px 원형]과 같은 높이(44px)·흰 배경·#e4e7f1 보더,
+   활성 세그먼트는 사이트 공통 선택 틴트(#efeffd/#4b4cc6, 레거시 .gp-lav-mode.detect와 동일 팔레트). */
+#mainContent[data-main-design="lavender"] .gp-lav-mode{display:inline-flex;align-items:center;gap:3px;min-height:44px;margin:0;padding:4px;border:1px solid #e4e7f1;border-radius:999px;background:#fff;cursor:default;font-size:0;}
+#mainContent[data-main-design="lavender"] .gp-lav-mode:hover{background:#fff;}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button{display:inline-flex;align-items:center;gap:6px;height:36px;border:0;border-radius:999px;background:transparent;padding:0 15px;font-size:13px;font-weight:700;color:#8a90a6;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s;}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button .material-symbols-outlined{font-size:17px;line-height:1;color:#a8adc2;transition:color .15s;}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button:hover{color:#4b4cc6;background:#f6f6fd;}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button.on{background:#efeffd;color:#3a3bb0;}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button.on .material-symbols-outlined{color:#5a5bd8;}
 #mainContent[data-main-design="lavender"] .gp-lav-mode button em{font-style:normal;font-size:9.5px;font-weight:800;color:#fff;background:#5a5bd8;border-radius:999px;padding:2px 6px;}
-#mainContent[data-main-design="lavender"] .gp-lav-mode button:not(.on) em{background:#b9bde0;}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button:not(.on) em{background:#c3c6e8;}
+@media (max-width:700px){
+  #mainContent[data-main-design="lavender"] .gp-lav-mode button{padding:0 11px;gap:4px;font-size:12px;}
+  #mainContent[data-main-design="lavender"] .gp-lav-mode button .material-symbols-outlined{font-size:15px;}
+}
 
 /* 보고서 헤더: 확률 + 한 줄 판정 */
 #mainContent[data-main-design="lavender"] .lav-rep-head{display:flex;gap:18px;align-items:center;background:#fff;border:1px solid #eef0f7;border-radius:14px;padding:18px 20px;}
