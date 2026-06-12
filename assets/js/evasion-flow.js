@@ -60,18 +60,18 @@
     var label = $('lavFlowStep'); if (label) label.textContent = STEP_LABEL[name] || '';
     var ctx = $('lavFlowCtx'), src = $('lavInput');
     if (ctx && src) ctx.textContent = '원문 ' + (src.value || '').replace(/\s/g, '').length.toLocaleString() + '자';
-    // 분석·결과 화면에선 뒤로 버튼 숨김
+    // 뒤로 버튼: 방법선택(choose)·회피설정(reduce)에서 표시. 분석중·작업중·완료에선 숨김(되돌아갈 수 없는 단계).
     var back = document.querySelector('.lav-flow-back');
-    if (back) back.style.visibility = (name === 'reduce' || name === 'job') ? 'visible' : 'hidden';
+    if (back) back.style.visibility = (name === 'choose' || name === 'reduce') ? 'visible' : 'hidden';
   }
 
   // 오프라인 폴백 진단: /diagnose 실패 시 입력 길이로 등급만 흉내(서비스 연속성용).
   function fakeDiagnose(text) {
     var len = (text || '').replace(/\s/g, '').length;
-    var bands = { polish: '85%+', blog: '32~41%', restructure: '36~43%' };
-    if (len < 400) return { grade: 'A', bands: bands, title: '구체적 정보가 충분한 글이에요', desc: '사례·수치가 풍부해, 다듬기만으로도 자연스럽게 마무리할 수 있어요.' };
-    if (len < 1200) return { grade: 'B', bands: bands, title: '추상과 구체가 섞인 글이에요', desc: '일부 문단은 일반론에 가까워요. 회피 모드로 더 사람답게 만들 수 있어요.' };
-    return { grade: 'C', bands: bands, title: '추상적 일반론 비중이 높은 글이에요', desc: '구체적 사례·수치가 적어, 그대로 제출하면 AI 탐지 위험이 높습니다. 어떻게 할지 골라주세요.' };
+    // 백엔드 BLOG_BAND/POLISH_BAND/RESTRUCTURE_BAND와 동일한 보수 표기(/diagnose 실패 시 폴백)
+    if (len < 400) return { grade: 'A', bands: { polish: '30~55%', blog: '30~45%', restructure: '40~55%(근거 보강 시)' }, title: '구체적 정보가 충분한 글이에요', desc: '사례·수치가 풍부해, 다듬기만으로도 자연스럽게 마무리할 수 있어요.' };
+    if (len < 1200) return { grade: 'B', bands: { polish: '60~85%', blog: '35~50%', restructure: '40~55%(근거 보강 시)' }, title: '추상과 구체가 섞인 글이에요', desc: '일부 문단은 일반론에 가까워요. 회피 모드로 더 사람답게 만들 수 있어요.' };
+    return { grade: 'C', bands: { polish: '85%+', blog: '40~55%', restructure: '40~55%(근거 보강 시)' }, title: '추상적 일반론 비중이 높은 글이에요', desc: '구체적 사례·수치가 적어, 그대로 제출하면 AI 탐지 위험이 높습니다. 어떻게 할지 골라주세요.' };
   }
 
   var lastDiag = null;   // 결과 화면의 예상 밴드 표기에 재사용
@@ -109,11 +109,11 @@
 
   window.lavFlowGo = function (name) { show(name); };
 
-  // 뒤로: 설정→선택, 작업→설정
+  // 뒤로: 회피설정→방법선택, 방법선택→입력화면(원문 수정)
   window.lavFlowBack = function () {
     var step = $('lavFlow') && $('lavFlow').dataset.step;
     if (step === 'reduce') show('choose');
-    else if (step === 'job') show('reduce');
+    else if (step === 'choose') window.lavFlowReset();   // 입력 화면으로(원문 유지)
     else show('choose');
   };
 
@@ -162,12 +162,17 @@
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
       }).join('');
     }
-    // 블로그 = 기존 휴머나이즈와 같은 글자수 차감(서버 ceil(글자수/100)). 재구성·근거는 P3·P4 단가 확정 전 안내값.
+    // 과금(서버와 동일): 블로그=100자당 2크레딧, 재구성=건당 정액(무근거 200·근거 300).
     var src = $('lavInput');
     var len = src ? src.value.length : 0;
-    var blogCredit = Math.max(1, Math.ceil(len / 100));
-    var credit = s.tone === 'formal' ? blogCredit + ' 크레딧(임시 단가)' : blogCredit + ' 크레딧';
-    var time = s.tone === 'formal' ? '5~25분' : '약 1~3분';
+    var credit, time;
+    if (s.tone === 'formal') {
+      credit = (s.evidence ? 300 : 200) + ' 크레딧 (건당)';
+      time = '5~25분';
+    } else {
+      credit = Math.max(2, Math.ceil(len / 100) * 2) + ' 크레딧';
+      time = '약 1~3분';
+    }
     if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = credit;
     if ($('lavConfirmTime')) $('lavConfirmTime').textContent = time;
     var modal = $('lavConfirmModal');
@@ -345,9 +350,11 @@
         activeCancel = null;
         stop();
         setJobSteps(4);
-        if ($('lavDoneScore')) $('lavDoneScore').textContent = (lastDiag && lastDiag.bands && lastDiag.bands.blog) || '32~41%';
+        var blogBand = (lastDiag && lastDiag.bands && lastDiag.bands.blog) || '40~55%';
+        if ($('lavDoneScore')) $('lavDoneScore').textContent = blogBand;
         if ($('lavDoneBody')) $('lavDoneBody').textContent = (body.result && body.result.outputText) || '';
         renderBadges(body.evasion && body.evasion.floorReport);
+        lavSaveToLibrary('블로그', body.result && body.result.outputText, blogBand);
         show('done');
       } catch (err) {
         activeCancel = null;
@@ -435,12 +442,13 @@
       if (st.status === 'done') {
         stopFormalTicker();
         setJobSteps(4);
-        // 예상 밴드는 근거 사용 여부에 따라 정직하게(실측: 근거 분산이 −15~22%p 레버 — 무근거 56~63%)
+        // 예상 밴드(보수 표기): 근거 사용 시 40~55%, 미사용 시 50~60%대
         var mEv = st.result && st.result.metrics && st.result.metrics.evidenceUsed;
-        if ($('lavDoneScore')) $('lavDoneScore').textContent = mEv > 0 ? '36~48%' : '50~60%대';
+        if ($('lavDoneScore')) $('lavDoneScore').textContent = mEv > 0 ? '40~55%' : '50~60%대';
         if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
         renderBadges({ metrics: st.result && st.result.metrics });
         if (st.note) console.info('[evasion]', st.note);
+        lavSaveToLibrary('재구성', st.result && st.result.outputText, mEv > 0 ? '40~55%' : '50~60%대');
         clearJobRef();
         show('done');
         return;
@@ -513,6 +521,76 @@
       btn.textContent = '복사됨';
       setTimeout(function () { btn.textContent = t; }, 1200);
     }
+  };
+
+  // ── 결과 .md 파일 다운로드 ──────────
+  window.lavDoneDownload = function () {
+    var body = $('lavDoneBody');
+    var text = body ? body.textContent : '';
+    if (!text.trim()) return;
+    var firstLine = (text.split('\n').find(function (l) { return l.trim(); }) || '결과').trim().slice(0, 40).replace(/[\\/:*?"<>|]/g, '');
+    var md = text;   // 결과 본문은 이미 줄글(첫 줄=제목). md로 저장.
+    var blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = (firstLine || '변환결과') + '.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  };
+
+  // ── 보관함(localStorage 기반 — Firebase 없이도 동작) ──────────
+  var LIB_KEY = 'lavLibrary';
+  function lavLibAll() {
+    try { return JSON.parse(localStorage.getItem(LIB_KEY) || '[]'); } catch (e) { return []; }
+  }
+  window.lavSaveToLibrary = function (kind, text, band) {
+    if (!text || !text.trim()) return;
+    try {
+      var list = lavLibAll();
+      var title = (text.split('\n').find(function (l) { return l.trim(); }) || '제목 없음').trim().slice(0, 50);
+      list.unshift({ id: 'L' + (list.length ? (parseInt(list[0].id.slice(1), 10) + 1) : 1), kind: kind, band: band || '', title: title, text: text, len: text.replace(/\s/g, '').length });
+      if (list.length > 50) list = list.slice(0, 50);   // 보관 상한
+      localStorage.setItem(LIB_KEY, JSON.stringify(list));
+      if (typeof window.lavRenderLibrary === 'function') window.lavRenderLibrary();
+    } catch (e) { /* localStorage 가득참 등 — 무시 */ }
+  };
+  window.lavOpenLibrary = function () {
+    window.lavRenderLibrary();
+    var m = $('lavLibraryModal'); if (m) m.hidden = false;
+    if (typeof window.lavCloseSidebar === 'function') window.lavCloseSidebar();
+  };
+  window.lavCloseLibrary = function () {
+    var m = $('lavLibraryModal'); if (m) m.hidden = true;
+  };
+  window.lavRenderLibrary = function () {
+    var wrap = $('lavLibraryList');
+    if (!wrap) return;
+    var list = lavLibAll();
+    if (!list.length) { wrap.innerHTML = '<p class="lav-lib-empty">아직 보관된 결과가 없어요. 변환을 완료하면 자동으로 여기에 저장됩니다.</p>'; return; }
+    wrap.innerHTML = '';
+    list.forEach(function (item) {
+      var row = document.createElement('div');
+      row.className = 'lav-lib-item';
+      var meta = document.createElement('div');
+      meta.className = 'lav-lib-meta';
+      var b1 = document.createElement('b'); b1.textContent = item.title;
+      var sp = document.createElement('span'); sp.textContent = item.kind + ' · ' + (item.band || '') + ' · ' + item.len.toLocaleString() + '자';
+      meta.appendChild(b1); meta.appendChild(sp);
+      var acts = document.createElement('div');
+      acts.className = 'lav-lib-acts';
+      var copyBtn = document.createElement('button'); copyBtn.type = 'button'; copyBtn.className = 'ghost'; copyBtn.textContent = '복사';
+      copyBtn.onclick = function () { if (navigator.clipboard) navigator.clipboard.writeText(item.text).catch(function () {}); copyBtn.textContent = '복사됨'; setTimeout(function () { copyBtn.textContent = '복사'; }, 1200); };
+      var dlBtn = document.createElement('button'); dlBtn.type = 'button'; dlBtn.className = 'ghost'; dlBtn.textContent = '.md';
+      dlBtn.onclick = function () { var blob = new Blob([item.text], { type: 'text/markdown;charset=utf-8' }); var url = URL.createObjectURL(blob); var a = document.createElement('a'); a.href = url; a.download = item.title.replace(/[\\/:*?"<>|]/g, '').slice(0, 40) + '.md'; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); };
+      var delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.className = 'ghost lav-lib-del'; delBtn.textContent = '삭제';
+      delBtn.onclick = function () { var l = lavLibAll().filter(function (x) { return x.id !== item.id; }); localStorage.setItem(LIB_KEY, JSON.stringify(l)); window.lavRenderLibrary(); };
+      acts.appendChild(copyBtn); acts.appendChild(dlBtn); acts.appendChild(delBtn);
+      row.appendChild(meta); row.appendChild(acts);
+      wrap.appendChild(row);
+    });
   };
 })();
 

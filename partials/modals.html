@@ -125,4 +125,14 @@
   </div>
 </div>
 
+<!-- 보관함 모달 (회피 결과 — localStorage 기반) -->
+<div id="lavLibraryModal" class="lav-confirm-modal" hidden onclick="if(event.target===this)lavCloseLibrary()">
+  <div class="lav-confirm-card lav-library-card">
+    <button type="button" class="lav-confirm-x" onclick="lavCloseLibrary()" aria-label="닫기">×</button>
+    <strong class="lav-confirm-title">보관함</strong>
+    <p class="lav-confirm-note" style="margin-top:0">변환을 완료하면 결과가 이 기기에 자동 저장돼요(최근 50건). 복사·다운로드·삭제할 수 있어요.</p>
+    <div class="lav-library-list" id="lavLibraryList"></div>
+  </div>
+</div>
+
 <!-- 모바일 로고 (좌측 상단 고정) -->

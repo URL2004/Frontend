@@ -278,6 +278,8 @@
     }
     var res = document.getElementById('result');
     if (res) res.innerHTML = '';
+    // ★ 회피 워크스페이스(lavFlow)가 떠 있으면 닫고 입력 화면으로(입력은 이미 비움 → 진짜 새 글)
+    if (typeof window.lavFlowReset === 'function') window.lavFlowReset();
     window.lavCloseSidebar();
     if (src) src.focus();
   };
