@@ -1,4 +1,4 @@
-/* 회피 모드 워크스페이스 — P0 정적 목업 (더미 데이터, 백엔드 미연결) */
+﻿/* 회피 모드 워크스페이스 — P0 정적 목업 (더미 데이터, 백엔드 미연결) */
 (function () {
   function $(id) { return document.getElementById(id); }
 
@@ -437,7 +437,7 @@
         setJobSteps(4);
         // 예상 밴드는 근거 사용 여부에 따라 정직하게(실측: 근거 분산이 −15~22%p 레버 — 무근거 56~63%)
         var mEv = st.result && st.result.metrics && st.result.metrics.evidenceUsed;
-        if ($('lavDoneScore')) $('lavDoneScore').textContent = mEv > 0 ? '36~43%' : '50~60%대';
+        if ($('lavDoneScore')) $('lavDoneScore').textContent = mEv > 0 ? '36~48%' : '50~60%대';
         if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
         renderBadges({ metrics: st.result && st.result.metrics });
         if (st.note) console.info('[evasion]', st.note);
@@ -515,3 +515,4 @@
     }
   };
 })();
+
