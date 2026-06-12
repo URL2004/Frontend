@@ -232,8 +232,8 @@
              </div>
              <div class="lav-diag-bands">
                <div><span>그대로 다듬기</span><b id="lavBandPolish">85%+</b><em>품질·무결성</em></div>
-               <div><span>블로그 말투</span><b id="lavBandBlog">40~55%</b><em>빠름 · 저비용</em></div>
-               <div class="reco"><span>격식 유지 재구성</span><b id="lavBandRestr">40~55%</b><em>추천</em></div>
+               <div><span>기본 피하기</span><b id="lavBandBlog">40~55%</b><em>빠름 · 저비용</em></div>
+               <div class="reco"><span>고급 피하기</span><b id="lavBandRestr">40~55%</b><em>추천</em></div>
              </div>
              <p class="lav-diag-note">실측 기반 예상 밴드예요(보장값 아님). 글의 구체성·길이·주제에 따라 결과가 달라지고, 일부 글은 70% 이상이 나오기도 해요. 변환 후 외부 검사기로 꼭 재확인하세요.</p>
            </div>
@@ -264,16 +264,16 @@
                <label class="lav-tone-opt">
                  <input type="radio" name="lavTone" value="blog" checked onchange="lavToneChange()">
                  <span class="lav-tone-body">
-                   <b>블로그 말투</b>
-                   <i>거든요·잖아요 같은 구어체로. 가장 낮은 탐지율, 빠르고 저렴해요.</i>
+                   <b>기본 피하기 <u>블로그 말투</u></b>
+                   <i>거든요·잖아요 같은 블로그 말투로 확 바꿔요. 가장 빠르고 저렴하지만 과제 톤은 사라져요 — 블로그·SNS 글에 맞아요.</i>
                    <em>예상 40~55% · 1~3분 · 100자당 2크레딧</em>
                  </span>
                </label>
                <label class="lav-tone-opt">
                  <input type="radio" name="lavTone" value="formal" onchange="lavToneChange()">
                  <span class="lav-tone-body">
-                   <b>격식 유지 재구성</b>
-                   <i>과제 톤(한다체)을 지키면서 칼럼처럼 다시 씁니다. 느리고 비용이 들어요.<span class="hl">★ 근거 보강을 켜야 효과가 큽니다.</span></i>
+                   <b>고급 피하기 <u>과제 톤 유지</u></b>
+                   <i>리포트 문체(한다체)는 그대로 두고 글 구조를 칼럼처럼 다시 짜요 — 과제·리포트 제출용이에요.<span class="hl">★ 근거 보강을 켜야 효과가 큽니다.</span></i>
                    <em>근거 보강 시 40~55% · 길이별 200~600크레딧(근거 시 +100)</em>
                  </span>
                </label>
@@ -293,9 +293,10 @@
              <textarea class="lav-memo" id="lavMemo" rows="3" placeholder="실제 경험·사례·수치를 적어주세요. 글에 자연스럽게 녹여 드려요. (없는 사실은 만들지 않아요)"></textarea>
            </div>
 
-           <div class="lav-set-block">
+           <!-- 근거 보강은 '과제 톤 지키며 피하기'(재구성) 전용 — 블로그 말투에선 비활성(기본 어투가 blog라 초기 disabled) -->
+           <div class="lav-set-block ev-off" id="lavEvidenceBlock">
              <label class="lav-toggle">
-               <input type="checkbox" id="lavEvidence" onchange="lavEvidenceChange()">
+               <input type="checkbox" id="lavEvidence" onchange="lavEvidenceChange()" disabled>
                <span class="lav-toggle-track" aria-hidden="true"><i></i></span>
                <span class="lav-toggle-text">
                  <b>근거 보강</b>
@@ -303,6 +304,7 @@
                </span>
              </label>
              <p class="lav-evidence-note" id="lavEvidenceNote" hidden>근거 검색에 8~12분이 걸리고, 검수 단계가 추가돼요.</p>
+             <p class="lav-evidence-hint" id="lavEvidenceHint">‘고급 피하기’를 선택하면 켤 수 있어요.</p>
            </div>
 
            <button type="button" class="lav-flow-cta" onclick="lavOpenConfirm()">AI 티 줄이기 시작</button>
@@ -611,7 +613,7 @@
    <div class="gp-feature-grid">
      <article><span>AI</span><strong>최신 AI 탐지 모델 적용</strong><p>GPTZero, Turnitin 등 주요 탐지 모델 기준으로 정밀하게 분석합니다.</p></article>
      <article><span>WR</span><strong>자연스러운 휴머나이징</strong><p>문맥을 이해한 문장 재구성으로 인간의 글과 유사하게 다듬습니다.</p></article>
-     <article><span>PR</span><strong>개인정보 100% 보호</strong><p>입력한 데이터는 자동 저장 없이 검사 후 즉시 삭제됩니다.</p></article>
+      <article><span>PR</span><strong>학습 사용 없음</strong><p>입력한 글은 서비스 처리와 사용자 보관함 제공 목적에만 사용되며 외부 학습에 쓰지 않습니다.</p></article>
      <article><span>AC</span><strong>빠르고 정확한 결과</strong><p>몇 초 안에 AI 탐지 확률과 상세 분석 결과를 제공합니다.</p></article>
      <article><span>AR</span><strong>결과 보관 &amp; 관리</strong><p>검사 기록과 결과를 한곳에서 보관하고 언제든 다시 확인할 수 있습니다.</p></article>
      <article><span>KR</span><strong>학생·취업 준비생 맞춤</strong><p>과제, 자기소개서, 논문 등 다양한 상황에 최적화된 지원을 제공합니다.</p></article>
@@ -637,9 +639,8 @@
     </div>
     <div class="faq-item">
      <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>제 글이 저장되거나 다른 곳에 사용되나요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-     <div class="faq-a">사용자 계정의 히스토리 외에는 외부 학습 데이터로 사용하지 않습니다. 자세한 내용은 개인정보처리방침에서 확인할 수 있습니다.</div>
+     <div class="faq-a">결과 보관함과 이용 기록 제공을 위해 일부 결과가 저장될 수 있습니다. 외부 학습 데이터로는 사용하지 않으며, 자세한 내용은 개인정보처리방침에서 확인할 수 있습니다.</div>
     </div>
    </div>
  </section>
 </div>
-

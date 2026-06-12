@@ -315,6 +315,16 @@
     var isFormal = formal && formal.value === 'formal';
     var lenBlock = $('lavLenBlock');
     if (lenBlock) lenBlock.hidden = !isFormal;
+    // 근거 보강은 고급 피하기(재구성) 전용 — 엔진이 blog 경로 미지원이라 기본 피하기에선 기능·시각 모두 잠금
+    var ev = $('lavEvidence');
+    if (ev) {
+      ev.disabled = !isFormal;
+      if (!isFormal && ev.checked) { ev.checked = false; window.lavEvidenceChange(); }
+    }
+    var evBlock = $('lavEvidenceBlock');
+    if (evBlock) evBlock.classList.toggle('ev-off', !isFormal);
+    var evHint = $('lavEvidenceHint');
+    if (evHint) evHint.hidden = isFormal;
   };
 
   window.lavEvidenceChange = function () {
@@ -341,10 +351,10 @@
     var sum = $('lavConfirmSummary');
     if (sum) {
       var rows = [];
-      rows.push(['어투', s.tone === 'formal' ? '격식 유지 재구성' : '블로그 말투']);
+      rows.push(['방식', s.tone === 'formal' ? '고급 피하기 — 과제 톤 유지' : '기본 피하기 — 블로그 말투']);
       if (s.tone === 'formal') rows.push(['분량', s.length === 'keep' ? '분량 유지' : '컴팩트(~60%)']);
       rows.push(['경험 메모', s.memo ? (s.tone === 'blog' ? '입력함' : '준비 중(재구성엔 다음 업데이트)') : '없음']);
-      rows.push(['근거 보강', s.evidence ? (s.tone === 'formal' ? '켬 — 검색 후 검수·승인' : '미적용(블로그는 다음 업데이트)') : '끔']);
+      rows.push(['근거 보강', s.tone === 'formal' ? (s.evidence ? '켬 — 검색 후 검수·승인' : '끔') : '기본 피하기에선 사용 안 함']);
       sum.innerHTML = rows.map(function (r) {
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
       }).join('');
@@ -412,7 +422,7 @@
     if ($('lavApproveRecoBtn')) $('lavApproveRecoBtn').textContent = '추천 ' + recoCount + '건 승인하고 계속';
   }
 
-  function submitApproval(mode) {
+  async function submitApproval(mode) {
     if (!pendingApproval) return;
     var list = $('lavApproveList');
     var ids = [];
@@ -424,9 +434,10 @@
     pendingApproval = null;
     var ap = $('lavApprove'); if (ap) ap.hidden = true;
     if ($('lavStepSlot')) $('lavStepSlot').textContent = '승인 ' + ids.length + '건으로 재구성 중';
+    var idToken = await evGetIdToken();
     fetch(window.apiUrl('/transform/' + jobId + '/approve'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),
       body: JSON.stringify({ approved: ids })
     }).then(function (res) { return res.json(); }).then(function (b) {
       if (b && b.error) throw new Error(b.error);
@@ -449,6 +460,23 @@
     if (!t.length) return 'ko';
     var ko = (t.match(/[가-힣]/g) || []).length;
     return (ko / t.length) < 0.15 ? 'en' : 'ko';
+  }
+
+  async function evGetIdToken() {
+    for (var i = 0; i < 20 && !window.authReady; i++) {
+      await new Promise(function (ok) { setTimeout(ok, 100); });
+    }
+    try { if (window.authReady) await window.authReady; } catch (e) {}
+    try {
+      if (window.CU && window.CU.getIdToken) return await window.CU.getIdToken();
+    } catch (e) {}
+    return '';
+  }
+
+  function evAuthHeaders(idToken, extra) {
+    var headers = Object.assign({}, extra || {});
+    if (idToken) headers.Authorization = 'Bearer ' + idToken;
+    return headers;
   }
 
   // ── P2 실연결: 블로그 어투 회피 = /analyze(engine:floorV2, mode:blog) ──────────
@@ -595,7 +623,9 @@
     var ref = null;
     try { ref = JSON.parse(localStorage.getItem('lavJobRef') || 'null'); } catch (e) { }
     if (!ref || !ref.jobId || (Date.now() - (ref.ts || 0)) > 6 * 3600 * 1000) { if (ref) clearJobRef(); return; }
-    fetch(window.apiUrl('/transform/' + ref.jobId)).then(function (r) { return r.json(); }).then(function (st) {
+    evGetIdToken().then(function (idToken) {
+      return fetch(window.apiUrl('/transform/' + ref.jobId), { headers: evAuthHeaders(idToken) });
+    }).then(function (r) { return r.json(); }).then(function (st) {
       if (!st || !st.ok) { clearJobRef(); return; }
       if (st.status === 'done') {
         if ($('lavDoneScore')) $('lavDoneScore').textContent = '36~43%';
@@ -625,12 +655,13 @@
   // gen 토큰: 사용자가 중단하거나 새 작업을 시작하면 pollGen이 올라가 이전 루프가 조용히 끝남.
   async function pollTransform(jobId, gen) {
     var deadline = Date.now() + 95 * 60000;   // 3만자 재구성 대비(긴 글). 창 닫아도 서버 작업은 계속.
+    var idToken = await evGetIdToken();
     while (Date.now() < deadline) {
       await new Promise(function (ok) { setTimeout(ok, 6000); });
       if (gen !== pollGen) return;   // 중단·교체됨
       var st;
       try {
-        st = await fetch(window.apiUrl('/transform/' + jobId)).then(function (res) { return res.json(); });
+        st = await fetch(window.apiUrl('/transform/' + jobId), { headers: evAuthHeaders(idToken) }).then(function (res) { return res.json(); });
       } catch (e) { continue; }   // 일시 네트워크 오류 — 다음 폴링
       if (!st) continue;
       if (st.status === 'cancelled') { stopFormalTicker(); clearJobRef(); return; }
@@ -670,7 +701,15 @@
   }
 
   function makeJobCanceller(jobId) {
-    return function () { fetch(window.apiUrl('/transform/' + jobId + '/cancel'), { method: 'POST' }).catch(function () { }); };
+    return function () {
+      evGetIdToken().then(function (idToken) {
+        return fetch(window.apiUrl('/transform/' + jobId + '/cancel'), {
+          method: 'POST',
+          headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),
+          body: JSON.stringify({})
+        });
+      }).catch(function () { });
+    };
   }
 
   function runFormalEvasion(s) {
@@ -796,4 +835,3 @@
     });
   };
 })();
-

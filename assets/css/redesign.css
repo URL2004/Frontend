@@ -14055,3 +14055,10 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
   #mainContent[data-main-design="lavender"] .lav-rep-ba{flex-direction:column;}
   #mainContent[data-main-design="lavender"] .lav-rep-ba .ba-arrow{transform:rotate(90deg);align-self:center;}
 }
+
+/* ───────── lavender v61: 어투 기본/고급 네이밍 + 근거 토글 재구성 전용 잠금 ───────── */
+/* 어투 제목 옆 보조 태그(<u> 재활용 — 밑줄 아님): 기본 피하기 [블로그 말투] / 고급 피하기 [과제 톤 유지] */
+#mainContent[data-main-design="lavender"] .lav-tone-body b u{text-decoration:none;font-size:10.5px;font-weight:800;color:#6a7188;background:#f1f2f8;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:1px;white-space:nowrap;}
+/* 근거 보강 잠금(기본 피하기에서): 토글 흐리게 + 클릭 차단(checkbox disabled와 이중) */
+#mainContent[data-main-design="lavender"] .lav-set-block.ev-off .lav-toggle{opacity:.45;pointer-events:none;}
+#mainContent[data-main-design="lavender"] .lav-evidence-hint{margin:8px 0 0 54px;font-size:12px;font-weight:500;color:#8a90a6;}
