@@ -669,6 +669,15 @@
         st = await fetch(window.apiUrl('/transform/' + jobId), { headers: evAuthHeaders(idToken) }).then(function (res) { return res.json(); });
       } catch (e) { continue; }   // 일시 네트워크 오류 — 다음 폴링
       if (!st) continue;
+      // 404(서버 재시작·만료)·권한 오류 등 — 영원히 안 끝나는 무한 폴링 방지(2026-06-13 실사고:
+      // 서버 재시작으로 job이 사라졌는데 화면은 진행률만 계속 올라감).
+      if (st.ok === false || (st.error && !st.status)) {
+        stopFormalTicker();
+        clearJobRef();
+        alert(st.error || '작업을 찾을 수 없어요. (서버가 재시작됐을 수 있어요) 다시 시도해 주세요.');
+        show('choose');
+        return;
+      }
       if (st.status === 'cancelled') { stopFormalTicker(); clearJobRef(); return; }
       if (st.status === 'awaiting_approval') {
         stopFormalTicker();
