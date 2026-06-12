@@ -110,11 +110,12 @@
 
   window.lavFlowGo = function (name) { show(name); };
 
-  // 뒤로: 회피설정→직전 화면(보고서에서 왔으면 보고서), 방법선택·보고서→입력화면(원문 수정)
+  // 뒤로: 회피설정→방법선택, 방법선택→(보고서 경유면) 보고서, 보고서→입력화면(원문 유지)
   window.lavFlowBack = function () {
     var step = $('lavFlow') && $('lavFlow').dataset.step;
-    if (step === 'reduce') show(cameFromReport ? 'report' : 'choose');
-    else if (step === 'choose' || step === 'report') window.lavFlowReset();   // 입력 화면으로(원문 유지)
+    if (step === 'reduce') show('choose');
+    else if (step === 'choose') { if (cameFromReport) show('report'); else window.lavFlowReset(); }
+    else if (step === 'report') window.lavFlowReset();
     else show('choose');
   };
 
@@ -210,14 +211,10 @@
     }); });
   }
 
-  // 보고서 CTA → 어투 미리 선택 후 설정 화면으로(전환 동선 단축)
-  function presetTone(v) {
-    var radio = document.querySelector('input[name="lavTone"][value="' + v + '"]');
-    if (radio) { radio.checked = true; window.lavToneChange(); }
-    show('reduce');
-  }
+  var lastReport = null;   // 보고서 → 휴머나이저 핸드오프용(진단 배너 채움)
 
   function renderReport(d) {
+    lastReport = d;
     var p = d.probability;
     var sev = p == null ? '' : p >= 70 ? 'bad' : p >= 40 ? 'mid' : 'good';
     if ($('lavRepProb')) $('lavRepProb').textContent = (p == null ? '—' : p);
@@ -280,47 +277,30 @@
       }
     }
 
-    // 해결 경로 3장 — 이 글 기준 비용·예상 밴드 + 바로 진입 CTA
-    var sol = d.solutions || {};
-    var grid = $('lavRepSolutions');
-    if (grid) {
-      grid.innerHTML = '';
-      [
-        { name: '그대로 다듬기', desc: '의미·사실 100% 보존, 문장만 자연스럽게 다듬어요.', band: sol.polish && sol.polish.band, cost: sol.polish ? sol.polish.credits + ' 크레딧' : '-', act: function () { window.lavRunHumanize(); } },
-        { name: '블로그 말투', desc: '구어체로 바꿔 가장 빠르고 저렴하게 낮춰요.', band: sol.blog && sol.blog.band, cost: sol.blog ? sol.blog.credits + ' 크레딧' : '-', act: function () { presetTone('blog'); } },
-        { name: '격식 유지 재구성', desc: '과제 톤을 지키면서 칼럼처럼 다시 써요. 근거 보강 추천.', band: sol.restructure && sol.restructure.band, cost: sol.restructure ? sol.restructure.credits + '~' + sol.restructure.creditsEvidence + ' 크레딧' : '-', reco: true, act: function () { presetTone('formal'); } }
-      ].forEach(function (s) {
-        var card = document.createElement('button');
-        card.type = 'button';
-        card.className = 'lav-rep-sol' + (s.reco ? ' reco' : '');
-        var head = document.createElement('span'); head.className = 'sol-head';
-        var name = document.createElement('strong'); name.textContent = s.name;
-        head.appendChild(name);
-        if (s.reco) { var rc = document.createElement('i'); rc.className = 'sol-reco'; rc.textContent = '추천'; head.appendChild(rc); }
-        var desc = document.createElement('p'); desc.textContent = s.desc;
-        // 칩 대신 키-값 행: 라벨(좌) + 값(우) — "예상 퍼센트 라벨 처리" 사장님 피드백 반영
-        var rows = document.createElement('span'); rows.className = 'sol-rows';
-        [['예상 탐지율', s.band || '—', 'band'], ['이 글 기준', s.cost, '']].forEach(function (r) {
-          var row = document.createElement('span'); row.className = 'sol-row';
-          var k = document.createElement('span'); k.textContent = r[0];
-          var v = document.createElement('b');
-          if (r[2]) v.className = r[2];
-          // "40~55%(근거 보강 시)" 같은 괄호 단서는 값 아래 작은 줄로 — 우측 정렬 줄바꿈이 지저분해지는 문제 방지
-          var m = String(r[1]).match(/^(.*?)\s*\((.+)\)\s*$/);
-          v.textContent = m ? m[1] : r[1];
-          if (m) { var note = document.createElement('i'); note.textContent = m[2]; v.appendChild(note); }
-          row.appendChild(k); row.appendChild(v); rows.appendChild(row);
-        });
-        var go = document.createElement('span'); go.className = 'sol-go'; go.textContent = '시작하기 →';
-        card.appendChild(head); card.appendChild(desc); card.appendChild(rows); card.appendChild(go);
-        card.onclick = s.act;
-        grid.appendChild(card);
-      });
-    }
     if ($('lavRepRemain')) {
-      $('lavRepRemain').textContent = 'AI 감지는 무료예요' + (d.remainingToday != null ? ' (오늘 ' + d.remainingToday + '회 남음)' : '') + '. 예상 밴드는 실측 기반이며 보장값은 아니에요.';
+      $('lavRepRemain').textContent = 'AI 감지는 무료예요' + (d.remainingToday != null ? ' (오늘 ' + d.remainingToday + '회 남음)' : '') + '.';
     }
   }
+
+  // 보고서 → 휴머나이저 핸드오프(완전 분리 — 사장님 지시): 해결 경로 선택은 보고서가 아니라
+  // 기존 방법 선택(choose) 화면에서. 보고서 데이터로 진단 배너·밴드를 채워 재진단 없이 이어간다.
+  window.lavReportToHumanize = function () {
+    var d = lastReport;
+    if (d) {
+      var sol = d.solutions || {};
+      applyDiag({
+        grade: d.grade,
+        title: d.title,
+        desc: d.summary || '',
+        bands: {
+          polish: sol.polish && sol.polish.band,
+          blog: sol.blog && sol.blog.band,
+          restructure: sol.restructure && sol.restructure.band
+        }
+      });
+    }
+    show('choose');
+  };
 
   window.lavFlowReset = function () {
     exitWorkspace();

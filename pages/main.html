@@ -151,7 +151,7 @@
              <span class="lp-txt">요즘 AI가 워낙 빠르게 발전하다 보니 우리 생활에 미치는 영향도 커졌는데요. 개념부터 실제 활용까지 차근차근 짚어봤습니다.</span>
            </span>
          </span>
-         <span class="lp-cap">예시를 눌러 이 문장으로 바로 체험해 보세요</span>
+         <span class="lp-cap">예시를 눌러 이 문장으로 바로 체험해 보세요 · 실제 탐지율은 글에 따라 달라요(보장값 아님)</span>
        </button>
        </div>
 
@@ -215,11 +215,11 @@
              </div>
            </div>
 
-           <!-- ④ 해결 경로 -->
-           <div class="lav-rep-sec lav-rep-solwrap">
-             <div class="lav-rep-sec-h"><h4>탐지율을 낮추려면</h4><span>카드를 누르면 바로 시작해요</span></div>
-             <div class="lav-rep-solutions" id="lavRepSolutions"></div>
-           </div>
+           <!-- ④ 휴머나이저로 이동(완전 분리 — 해결 경로 선택은 방법 선택 화면에서) -->
+           <button type="button" class="lav-rep-cta" onclick="lavReportToHumanize()">
+             <strong>AI 탐지율 낮추러 가기</strong>
+             <span>그대로 다듬기 · 블로그 말투 · 격식 유지 재구성 중에서 골라요</span>
+           </button>
            <p class="lav-rep-note" id="lavRepRemain"></p>
          </section>
 
@@ -238,10 +238,11 @@
                <div><span>블로그 말투</span><b id="lavBandBlog">40~55%</b><em>빠름 · 저비용</em></div>
                <div class="reco"><span>격식 유지 재구성</span><b id="lavBandRestr">40~55%</b><em>추천</em></div>
              </div>
-             <p class="lav-diag-note">실측 기반 예상 밴드예요. 보장값은 아닙니다.</p>
+             <p class="lav-diag-note">실측 기반 예상 밴드예요(보장값 아님). 글의 구체성·길이·주제에 따라 결과가 달라지고, 일부 글은 70% 이상이 나오기도 해요. 변환 후 외부 검사기로 꼭 재확인하세요.</p>
            </div>
 
            <h3 class="lav-flow-h">무엇을 하고 싶으세요?</h3>
+           <p class="lav-flow-sub" style="margin:-4px 0 12px;font-size:12.5px;line-height:1.5;color:var(--text3);">‘그대로 다듬기’는 빠르지만 외부 검출 회피력이 약해요(탐지율이 그대로일 수 있음). 탐지율을 낮추려면 ‘AI 티 줄이기’를 고르세요 — 어투·분량을 정하는 단계가 추가돼요.</p>
            <div class="lav-purpose-grid">
              <button type="button" class="lav-purpose-opt" onclick="lavRunHumanize()">
                <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">edit_note</span></span>
@@ -359,6 +360,7 @@
              <span class="lav-trust-badge ok">수치·출처 일치</span>
              <span class="lav-trust-badge ok">검증 통과</span>
            </div>
+           <p class="lav-done-note" style="margin:2px 0 12px;font-size:12.5px;line-height:1.5;color:var(--text3);">예상치예요. 글의 구체성·길이·주제에 따라 탐지율이 달라지고, 추상적·짧은 글은 70% 이상이 나오기도 해요. 외부 검사기로 재확인하고, 높게 나오면 경험 메모를 더해 다시 돌려보세요.</p>
            <div class="lav-done-body" id="lavDoneBody"></div>
            <div class="lav-done-actions">
              <button type="button" class="ghost" onclick="lavNewSentence()">새 글 시작</button>
