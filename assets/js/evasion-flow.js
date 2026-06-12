@@ -562,6 +562,8 @@
     if (typeof m.lengthRatio === 'number') badge(true, '분량 ' + Math.round(m.lengthRatio * 100) + '%');
   }
 
+  // ★ 기본 피하기(blog)도 job 방식(2026-06-13): 직접 fetch는 새로고침에 작업이 죽었음(사장님 지적) →
+  //   /transform mode:'blog' job + 폴링 + lavJobRef 재진입 — 고급 피하기와 동일하게 새로고침·창닫기 생존.
   function runBlogEvasion(s) {
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
@@ -569,28 +571,23 @@
     if ($('lavJobId')) $('lavJobId').textContent = '';
     show('job');
     var bare = text.replace(/\s/g, '').length;
-    var stop = startJobTicker(Math.max(90, Math.min(1200, bare / 12)), '문장 다듬는 중');
-    var ctrl = new AbortController();
-    var userCancelled = false;
-    activeCancel = function () { userCancelled = true; ctrl.abort(); };   // 서버는 disconnect 감지로 작업 중단·무차감
+    formalStop = startJobTicker(Math.max(90, Math.min(1200, bare / 12)), '문장 다듬는 중');
+    var gen = ++pollGen;
     (async function () {
       var idToken = '';
       try { if (window.CU && window.CU.getIdToken) idToken = await window.CU.getIdToken(); } catch (e) { /* 비로그인 — 서버가 401 안내 */ }
       try {
-        var body = await callEvasionApi({ text: text, humanizeMode: 'blog', lang: evDetectLang(text), requestId: evGenReqId(), idToken: idToken, userNotes: s.memo }, ctrl);
-        activeCancel = null;
-        stop();
-        setJobSteps(4);
-        var blogBand = (lastDiag && lastDiag.bands && lastDiag.bands.blog) || '40~55%';
-        if ($('lavDoneScore')) $('lavDoneScore').textContent = blogBand;
-        if ($('lavDoneBody')) $('lavDoneBody').textContent = (body.result && body.result.outputText) || '';
-        renderBadges(body.evasion && body.evasion.floorReport);
-        lavSaveToLibrary('블로그', body.result && body.result.outputText, blogBand);
-        show('done');
+        var r = await fetch(window.apiUrl('/transform'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text, mode: 'blog', memo: s.memo, lang: evDetectLang(text), idToken: idToken })
+        }).then(function (res) { return res.json().then(function (b) { if (b && b.error) throw new Error(b.error); if (!res.ok || !b || !b.ok) throw new Error('작업 시작에 실패했어요.'); return b; }); });
+        if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
+        saveJobRef(r.jobId);
+        activeCancel = makeJobCanceller(r.jobId);
+        await pollTransform(r.jobId, gen);
       } catch (err) {
-        activeCancel = null;
-        stop();
-        if (userCancelled) return;   // 사용자 중단 — 이미 설정 화면으로 이동함
+        stopFormalTicker();
         alert(err && err.message ? err.message : '처리 중 오류가 발생했어요.');
         show('reduce');
       }
@@ -628,20 +625,19 @@
     }).then(function (r) { return r.json(); }).then(function (st) {
       if (!st || !st.ok) { clearJobRef(); return; }
       if (st.status === 'done') {
-        if ($('lavDoneScore')) $('lavDoneScore').textContent = '36~43%';
-        if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
-        renderBadges({ metrics: st.result && st.result.metrics });
+        renderJobDone(st);   // blog/formal 모드별 점수·배지·보관함 — 폴링 완료와 동일 렌더
         clearJobRef();
         show('done');
         return;
       }
       if (st.status === 'running' || st.status === 'awaiting_approval') {
-        if ($('lavJobTitle')) $('lavJobTitle').textContent = '글을 다시 쓰고 있어요';
+        var isBlog = st.mode === 'blog';
+        if ($('lavJobTitle')) $('lavJobTitle').textContent = isBlog ? '문장을 다듬고 있어요' : '글을 다시 쓰고 있어요';
         if ($('lavJobId')) $('lavJobId').textContent = '#' + ref.jobId.slice(0, 6).toUpperCase();
         show('job');
         activeCancel = makeJobCanceller(ref.jobId);
         // 서버 estSec·elapsedSec로 진행률 이어서 표시(새로고침해도 0부터 다시 안 올라감)
-        formalStop = startJobTicker(st.estSec || 900, st.status === 'awaiting_approval' ? '근거 검수 대기' : '재구성 중', st.elapsedSec || 0);
+        formalStop = startJobTicker(st.estSec || (isBlog ? 180 : 900), st.status === 'awaiting_approval' ? '근거 검수 대기' : (isBlog ? '문장 다듬는 중' : '재구성 중'), st.elapsedSec || 0);
         pollTransform(ref.jobId, ++pollGen);
         return;
       }
@@ -676,13 +672,8 @@
       if (st.status === 'done') {
         stopFormalTicker();
         setJobSteps(4);
-        // 예상 밴드(보수 표기): 근거 사용 시 40~55%, 미사용 시 50~60%대
-        var mEv = st.result && st.result.metrics && st.result.metrics.evidenceUsed;
-        if ($('lavDoneScore')) $('lavDoneScore').textContent = mEv > 0 ? '40~55%' : '50~60%대';
-        if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
-        renderBadges({ metrics: st.result && st.result.metrics });
+        renderJobDone(st);
         if (st.note) console.info('[evasion]', st.note);
-        lavSaveToLibrary('재구성', st.result && st.result.outputText, mEv > 0 ? '40~55%' : '50~60%대');
         clearJobRef();
         show('done');
         return;
@@ -698,6 +689,26 @@
     }
     stopFormalTicker();
     alert('작업이 예상보다 오래 걸리고 있어요. 새로고침하면 진행 중인 작업으로 다시 들어갈 수 있어요.');
+  }
+
+  // 완료 렌더(폴링·재진입 공용): job mode에 따라 점수·배지·보관함 라벨 분기
+  function renderJobDone(st) {
+    var isBlog = st.mode === 'blog';
+    var score, label;
+    if (isBlog) {
+      score = (lastDiag && lastDiag.bands && lastDiag.bands.blog) || '40~55%';
+      label = '블로그';
+      renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics });
+    } else {
+      // 예상 밴드(보수 표기): 근거 사용 시 40~55%, 미사용 시 50~60%대
+      var mEv = st.result && st.result.metrics && st.result.metrics.evidenceUsed;
+      score = mEv > 0 ? '40~55%' : '50~60%대';
+      label = '재구성';
+      renderBadges({ metrics: st.result && st.result.metrics });
+    }
+    if ($('lavDoneScore')) $('lavDoneScore').textContent = score;
+    if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
+    lavSaveToLibrary(label, st.result && st.result.outputText, score);
   }
 
   function makeJobCanceller(jobId) {
