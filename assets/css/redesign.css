@@ -15456,3 +15456,10 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
  content:"준비 중";position:absolute;top:12px;right:12px;z-index:7;
  font-size:11px;font-weight:800;color:#8a86c8;background:#efeefc;border:1px solid #e1ddf6;border-radius:999px;padding:3px 9px;
 }
+/* ───────── lavender v85: 공지 featured 카드 — 리뉴얼 공지 셋팅 보정 ─────────
+   두 featured 카드(서비스/엔진 리뉴얼)는 밝은 라벤더 배경이라 기본 small(#aeb9cd)이 흐림 → 날짜 대비 보정.
+   카드2의 죽은 '자세히 보기' 버튼은 notice.html에서 날짜로 교체됨(둘 다 자기완결형 공지). */
+#mainContent[data-main-design="lavender"] .gp-notice-card small{
+ color:#7b80a6 !important;
+ font-weight:600;
+}
