@@ -61,16 +61,7 @@
      <button class="sortbtn" data-sort="oldest" onclick="loadPosts('oldest')">댓글순</button>
     </div>
 
-    <div id="featuredSection" class="feat-section" style="display:none;">
-     <div class="feat-title">에디터 추천 <span class="feat-title-badge">PICK</span></div>
-     <div id="featuredList" class="feat-grid"></div>
-    </div>
-    <div id="popularSection" class="popular-section" style="display:none;">
-     <div class="feat-title">이번주 인기글</div>
-     <div id="popularHero"></div>
-     <div id="popularRest" class="popular-rest"></div>
-    </div>
-
+    <!-- 에디터 추천은 aside(우측)로 이동, 이번주 인기글은 제거 — 메인은 글 목록만(혼동 방지, 사장님 지시) -->
     <div id="postList" class="post-grid gp-board-list"></div>
     <div id="postPager" class="gp-pager" style="display:none;"></div>
    </div>
@@ -83,9 +74,14 @@
      </div>
      <img loading="lazy" decoding="async" src="/assets/img/community-quill.png" alt="">
     </article>
+    <!-- 에디터 추천(PICK): 메인에서 우측 aside로 이동 — JS(_renderFeaturedSection)가 동일 id로 채움 -->
+    <article id="featuredSection" class="gp-aside-card feat-section feat-aside" style="display:none;">
+     <div class="feat-title">에디터 추천 <span class="feat-title-badge">PICK</span></div>
+     <div id="featuredList" class="feat-grid"></div>
+    </article>
     <article class="gp-aside-card">
      <h3>인기 게시글 TOP 5</h3>
-     <ol class="gp-rank-list">
+     <ol class="gp-rank-list" id="rankList">
       <li><span>1</span>AI 탐지 안전하게 피하는 블로그 글 작성 루틴 <strong>128</strong></li>
       <li><span>2</span>교수님이 좋아하는 보고서 작성법 <strong>112</strong></li>
       <li><span>3</span>서론에서 시선 끄는 문장 쓰는 법 <strong>96</strong></li>

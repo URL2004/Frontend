@@ -15349,3 +15349,93 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 /* 히스토리 헤더 */
 #mainContent[data-main-design="lavender"] #historyContent .gp-history-head h2{color:#1a1f2e;}
 #mainContent[data-main-design="lavender"] #historyContent .gp-history-head span{color:#9aa0b4;}
+/* ───────── lavender v80: 커뮤니티 정리 — 에디터 추천 aside 이동·라이트, 이번주 인기글 제거(HTML) ─────────
+   메인은 글 목록만(혼동 방지). 에디터 추천은 우측 aside 카드로 — feat-card가 var() 다크값이라 변수 라이트화 + 단일 컬럼. */
+#mainContent[data-main-design="lavender"] .feat-aside{
+ --surface:#fff;--surface2:#f5f6fb;--border:#e7e9f4;
+ --text:#1a1f2e;--text2:#5d6477;--text3:#9aa0b4;--blue:#5a5bd8;
+}
+#mainContent[data-main-design="lavender"] .feat-aside .feat-title{margin-bottom:12px;font-size:14px;}
+#mainContent[data-main-design="lavender"] .feat-aside .feat-grid{display:flex;flex-direction:column;gap:8px;}
+#mainContent[data-main-design="lavender"] .feat-aside .feat-card{background:transparent;border:0;border-radius:10px;box-shadow:none;}
+#mainContent[data-main-design="lavender"] .feat-aside .feat-card:hover{transform:none;background:#f6f6fc;box-shadow:none;}
+#mainContent[data-main-design="lavender"] .feat-aside .feat-thumb{height:84px;border-radius:8px;}
+/* ───────── lavender v81: 게시글 상세·문의 상세 라벤더 + 레이아웃 정리 ─────────
+   상세 뷰도 인라인/클래스 var() 다크값이라 라벤더 배경에 글자가 안 보임 → 변수 라이트화 + 흰 카드로 감싸 정돈. */
+#mainContent[data-main-design="lavender"] #detailView,
+#mainContent[data-main-design="lavender"] #qnaDetailView{
+ --surface:#fff;--surface2:#f5f6fb;--border:#e7e9f4;
+ --text:#1a1f2e;--text2:#5d6477;--text3:#9aa0b4;
+ --blue:#5a5bd8;--green:#3f9e63;--yellow:#d99a2b;--red:#e05a4b;--accent:#7c6bff;
+ max-width:780px;margin:0 auto;
+}
+/* 상세 본문 흰 카드 — 백 버튼 아래 컨텐츠 감싸기 */
+#mainContent[data-main-design="lavender"] #postDetail,
+#mainContent[data-main-design="lavender"] #questionDetail{
+ background:#fff;border:1px solid #e7e9f4;border-radius:16px;padding:8px 26px 26px;
+ box-shadow:0 8px 22px rgba(84,90,160,.06);
+}
+/* 백 버튼은 카드 위로 살짝 간격 */
+#mainContent[data-main-design="lavender"] #detailView .backbtn,
+#mainContent[data-main-design="lavender"] #qnaDetailView .backbtn{margin-bottom:14px;}
+/* ───────── lavender v82: 상세 뷰 액션 버튼 현행 정책 적용 ─────────
+   질문/답변 삭제·수정·등록 버튼을 10px·라벤더 아웃라인(삭제=빨강 위험)으로 통일. */
+#mainContent[data-main-design="lavender"] :is(#postDetail,#questionDetail) .abtn{
+ border-radius:10px !important;border:1px solid #d2cdf0 !important;background:#fff !important;color:#5a5bd8 !important;font-weight:600;
+}
+#mainContent[data-main-design="lavender"] :is(#postDetail,#questionDetail) .abtn:hover{background:#f3f2fc !important;border-color:#c4bdf0 !important;}
+#mainContent[data-main-design="lavender"] :is(#postDetail,#questionDetail) .abtn.danger{border-color:#f0c4c0 !important;color:#d6452f !important;background:#fff !important;}
+#mainContent[data-main-design="lavender"] :is(#postDetail,#questionDetail) .abtn.danger:hover{background:#fdf1ef !important;border-color:#e9a89f !important;}
+#mainContent[data-main-design="lavender"] :is(#postDetail,#questionDetail) .abtn.bookmarked{color:#d99a2b !important;border-color:#ecd9a8 !important;}
+/* 답변 등록 = 라벤더 주 버튼 */
+#mainContent[data-main-design="lavender"] #questionDetail .qna-answer-submit{background:#5a5bd8 !important;border-radius:10px !important;}
+#mainContent[data-main-design="lavender"] #questionDetail .qna-answer-submit:hover{background:#4a4bc0 !important;}
+/* 관리자 답변 작성 폼: 초록 → 중립 라벤더 톤(우리 컨셉) */
+#mainContent[data-main-design="lavender"] #questionDetail .qna-admin-form{background:#f7f7fd !important;border-color:#e1ddf6 !important;}
+#mainContent[data-main-design="lavender"] #questionDetail .qna-admin-form textarea:focus{border-color:#7c6bff !important;}
+/* v80b: 에디터 추천 = 가로 슬라이드(사장님) — 우측 aside 안에서 가로 스크롤 카드 */
+#mainContent[data-main-design="lavender"] .feat-aside .feat-grid{
+ flex-direction:row;overflow-x:auto;overflow-y:hidden;gap:10px;padding-bottom:6px;
+ scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;
+}
+#mainContent[data-main-design="lavender"] .feat-aside .feat-card{
+ flex:0 0 168px;scroll-snap-align:start;background:#fff;border:1px solid #eceef6;
+}
+#mainContent[data-main-design="lavender"] .feat-aside .feat-card:hover{background:#fff;border-color:#d2cdf0;}
+#mainContent[data-main-design="lavender"] .feat-aside .feat-grid::-webkit-scrollbar{height:6px;}
+#mainContent[data-main-design="lavender"] .feat-aside .feat-grid::-webkit-scrollbar-thumb{background:#d8d5f0;border-radius:6px;}
+#mainContent[data-main-design="lavender"] .feat-aside .feat-grid::-webkit-scrollbar-track{background:transparent;}
+/* v80c: 에디터픽 카드 느낌 강화 + 인기 TOP5 클릭 링크 */
+#mainContent[data-main-design="lavender"] .feat-aside .feat-card{
+ flex:0 0 174px;border:1px solid #e7e9f4;border-radius:14px;overflow:hidden;
+ box-shadow:0 6px 16px rgba(84,90,160,.07);transition:transform .15s,box-shadow .15s,border-color .15s;
+}
+#mainContent[data-main-design="lavender"] .feat-aside .feat-card:hover{border-color:#d2cdf0;box-shadow:0 12px 26px rgba(84,90,160,.13);transform:translateY(-3px);background:#fff;}
+#mainContent[data-main-design="lavender"] #rankList li{cursor:pointer;border-radius:8px;padding:4px 6px;margin:0 -6px;transition:background .15s;}
+#mainContent[data-main-design="lavender"] #rankList li:hover{background:#f4f3fe;}
+#mainContent[data-main-design="lavender"] #rankList li:hover strong{color:#5a5bd8;}
+#mainContent[data-main-design="lavender"] #rankList .rt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:#3c4356;}
+#mainContent[data-main-design="lavender"] #rankList .rank-empty{display:block;cursor:default;color:#9aa0b4;font-size:13px;padding:6px 0;}
+
+/* ───────── lavender v83: 분석 히스토리 아코디언 — 글래스(다크) → 흰 카드, 가독성·펼침 힌트 ─────────
+   .history-item에 var(--glass-bg)!important(다크)가 걸려 변수 오버라이드를 못 이겼음 → 직접 흰 카드로. */
+#mainContent[data-main-design="lavender"] #historyContent .history-item{
+ background:#fff !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
+ border:1px solid #e7e9f4 !important;border-radius:14px !important;
+ box-shadow:0 4px 14px rgba(84,90,160,.05) !important;padding:16px 18px !important;margin-bottom:10px !important;
+}
+#mainContent[data-main-design="lavender"] #historyContent .history-item:hover{
+ border-color:#d2cdf0 !important;box-shadow:0 10px 24px rgba(84,90,160,.1) !important;transform:none !important;
+}
+#mainContent[data-main-design="lavender"] #historyContent .history-preview{
+ color:#4b5366 !important;line-height:1.65;font-size:14px;
+}
+/* 펼침 힌트(접힘 상태에만) */
+#mainContent[data-main-design="lavender"] #historyContent .history-item::after{
+ content:"자세히 보기 ⌄";display:inline-block;margin-top:10px;font-size:12px;font-weight:700;color:#8a86c8;
+}
+#mainContent[data-main-design="lavender"] #historyContent .history-item:has(.history-detail[style*="block"])::after{display:none;}
+/* 펼친 상세: 닫기 버튼을 정책 톤으로 */
+#mainContent[data-main-design="lavender"] #historyContent .history-detail button{
+ border-radius:10px !important;border:1px solid #d2cdf0 !important;background:#fff !important;color:#5a5bd8 !important;
+}

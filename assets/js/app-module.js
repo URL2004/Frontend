@@ -886,6 +886,19 @@ function _renderFeaturedSection(featured){
  list.innerHTML = featured.slice(0, 4).map(_renderFeaturedCard).join('');
 }
 
+// 인기 게시글 TOP 5(aside) — 실제 글로 클릭 가능하게(사장님: 제목에 링크)
+function _renderRankList(top5){
+ const el = document.getElementById('rankList');
+ if (!el) return;
+ if (!top5 || !top5.length){
+  el.innerHTML = '<li class="rank-empty">아직 인기 글이 모이는 중이에요.</li>';
+  return;
+ }
+ el.innerHTML = top5.map((p,i) =>
+  '<li onclick="viewPost(\''+p.id+'\')" title="'+escapeHtml(p.title||'')+'"><span>'+(i+1)+'</span><b class="rt">'+escapeHtml(p.title||'')+'</b><strong>'+(p.views||0)+'</strong></li>'
+ ).join('');
+}
+
 function _renderPopularSection(top5){
  const sect = document.getElementById('popularSection');
  const heroEl = document.getElementById('popularHero');
@@ -1067,6 +1080,7 @@ window.loadPosts = async (sort) =>{
  if (ps) ps.dataset.has = top5.length ? '1' : '0';
  _renderFeaturedSection(featured);
  _renderPopularSection(top5);
+ _renderRankList(top5);
 
  // 카테고리 필터가 걸려 있으면 추천/인기 섹션 숨김
  if (window.currentCategory) {
