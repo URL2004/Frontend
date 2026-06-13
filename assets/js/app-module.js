@@ -60,7 +60,8 @@ window.UP = 'free';
 const ADMIN_ROLES = {
  'nC90IyjgaIZ8Z0JTABMTiyQHF9g1': { name:'운영자', label:'운영자' },
  'qa0iQAeVmMOxoy6Vg5ENTRKk0Vm2': { name:'관리자', label:'관리자' },
- 'upyxtXMQEgQXfqTUWPrf6QS9EqE2': { name:'개발자', label:'개발자' }
+ 'upyxtXMQEgQXfqTUWPrf6QS9EqE2': { name:'개발자', label:'개발자' },
+ '9i6YA66mpXSBcpPJqNmJQ5jnJsT2': { name:'박도현', label:'관리자' }
 };
 window.isAdmin = () =>CU && !!ADMIN_ROLES[CU.uid];
 window.getAdminName = () =>CU && ADMIN_ROLES[CU.uid] ? ADMIN_ROLES[CU.uid].name : null;
