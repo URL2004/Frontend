@@ -14321,3 +14321,39 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 @media (prefers-reduced-motion:reduce){
  .lav-flow-cta,.lav-flow-cta::before{transition:none !important;}
 }
+
+/* ───────── lavender v66: 우측 하단 카카오 1:1 문의 플로팅 CTA ─────────
+   카카오 브랜드(노랑 #FEE500 + 갈색 글자)로 즉시 인지. #appScreen 안이라 로그인 화면 자동 비표시.
+   데스크톱 우하단, 모바일은 하단 네비(z 1000) 위로 올림. */
+.gp-kakao-fab{
+ position:fixed;
+ right:24px;
+ bottom:24px;
+ z-index:999;
+ display:inline-flex;
+ align-items:center;
+ gap:8px;
+ height:52px;
+ padding:0 20px 0 15px;
+ border:0;
+ border-radius:999px;
+ background:#FEE500;
+ color:#3a1d1d;
+ font-size:14px;
+ font-weight:800;
+ letter-spacing:-.2px;
+ cursor:pointer;
+ box-shadow:0 10px 26px rgba(60,45,0,.24);
+ transition:transform .16s ease,box-shadow .16s ease;
+}
+.gp-kakao-fab:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(60,45,0,.32);}
+.gp-kakao-fab:active{transform:translateY(0) scale(.97);}
+.gp-kakao-fab-ic{width:24px;height:24px;fill:#3a1d1d;flex-shrink:0;}
+@media(max-width:600px){
+ /* 모바일 하단 네비(약 60px) 위로 — 라벨 빼고 아이콘만 원형으로 컴팩트 */
+ .gp-kakao-fab{bottom:74px;right:16px;height:50px;width:50px;padding:0;justify-content:center;}
+ .gp-kakao-fab-tx{display:none;}
+}
+@media (prefers-reduced-motion:reduce){
+ .gp-kakao-fab{transition:none !important;}
+}
