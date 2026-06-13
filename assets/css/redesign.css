@@ -14819,6 +14819,105 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
   }
 }
 
+/* Production maintenance screen */
+.gp-maintenance-body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(85,87,210,.12), transparent 34%),
+    radial-gradient(circle at 80% 20%, rgba(111,132,255,.10), transparent 30%),
+    #f7f8fc !important;
+  color:#111827;
+}
+.gp-maintenance-page{
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:32px 18px;
+  font-family:var(--font, Pretendard, sans-serif);
+}
+.gp-maintenance-card{
+  width:min(520px,100%);
+  text-align:center;
+  padding:42px 34px 36px;
+  border:1px solid #e4e7f1;
+  border-radius:28px;
+  background:rgba(255,255,255,.88);
+  box-shadow:0 26px 70px rgba(49,58,110,.13);
+  backdrop-filter:blur(18px);
+}
+.gp-maintenance-logo{
+  display:block;
+  width:min(260px,72%);
+  height:auto;
+  margin:0 auto 22px;
+}
+.gp-maintenance-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin:0 0 12px;
+  padding:7px 12px;
+  border-radius:999px;
+  background:#efeffd;
+  color:#5557d2;
+  font-size:13px;
+  font-weight:800;
+}
+.gp-maintenance-kicker::before{
+  content:"";
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#5557d2;
+  box-shadow:0 0 0 5px rgba(85,87,210,.12);
+}
+.gp-maintenance-card h1{
+  margin:0;
+  color:#111827;
+  font-size:clamp(30px,5vw,44px);
+  line-height:1.12;
+  letter-spacing:0;
+  font-weight:900;
+}
+.gp-maintenance-copy{
+  margin:16px auto 0;
+  max-width:430px;
+  color:#5d6475;
+  font-size:16px;
+  line-height:1.65;
+  word-break:keep-all;
+}
+.gp-maintenance-kakao{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:50px;
+  margin-top:28px;
+  padding:0 22px;
+  border-radius:999px;
+  background:#5557d2;
+  color:#fff;
+  text-decoration:none;
+  font-size:15px;
+  font-weight:850;
+  box-shadow:0 12px 28px rgba(85,87,210,.22);
+}
+.gp-maintenance-kakao:hover{
+  background:#4648bf;
+}
+.gp-maintenance-note{
+  margin:16px 0 0;
+  color:#8a92a6;
+  font-size:13px;
+  line-height:1.5;
+}
+@media(max-width:560px){
+  .gp-maintenance-card{
+    padding:34px 22px 30px;
+    border-radius:22px;
+  }
+}
+
 
 /* ───────── lavender v67: FAQ 페이지(신규) + 문의하기(1:1) 페이지 ─────────
    공개 Q&A 게시판 → FAQ(공개 지식) + 문의하기(1:1) 분리. FAQ는 aside 없는 단일 컬럼.
@@ -15152,3 +15251,16 @@ body[data-main-design="lavender"] .gp-notification-empty{color:#8a90a6;}
 body[data-main-design="lavender"] .gp-notification-empty .material-symbols-outlined{background:#efeefc;color:#6a5bd6;}
 body[data-main-design="lavender"] .gp-notification-empty b{color:#1a1f2e;}
 body[data-main-design="lavender"] .gp-notification-empty p{color:#9aa0b4;}
+
+/* ───────── lavender v76: 안읽음 알림 강조 자연스럽게 ─────────
+   기존: 항목 전체를 라벤더 배경으로 채움 → 여러 개가 인접하면 한 덩어리처럼 뭉치고 구별이 어려움.
+   변경: 항목 간 간격 + 좌측 라벤더 액센트 바 + 아주 옅은 틴트 + 진한 라벤더 제목. */
+body[data-main-design="lavender"] .gp-notification-list{display:flex;flex-direction:column;gap:4px;}
+body[data-main-design="lavender"] .gp-notification-item{position:relative;}
+body[data-main-design="lavender"] .gp-notification-item.unread{background:#f6f5fd;}
+body[data-main-design="lavender"] .gp-notification-item.unread:hover{background:#f0eefb;}
+body[data-main-design="lavender"] .gp-notification-item.unread::before{
+ content:"";position:absolute;left:4px;top:50%;transform:translateY(-50%);
+ width:3px;height:24px;border-radius:2px;background:#7c6bff;
+}
+body[data-main-design="lavender"] .gp-notification-item.unread .gp-notification-body b{color:#4a4bc0;}
