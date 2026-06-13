@@ -6,6 +6,8 @@
     { "source": "/main", "destination": "/index.html" },
     { "source": "/pricing", "destination": "/pricing/index.html" },
     { "source": "/community", "destination": "/community/index.html" },
+    { "source": "/blog", "destination": "/blog/index.html" },
+    { "source": "/detect-report", "destination": "/detect-report/index.html" },
     { "source": "/qna", "destination": "/qna/index.html" },
     { "source": "/notice", "destination": "/notice/index.html" },
     { "source": "/faq", "destination": "/faq/index.html" },

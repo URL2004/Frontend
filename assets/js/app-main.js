@@ -1,10 +1,12 @@
 let mode='detect', dark=true, tab='main', humanizeMode='assignment', selectedLang='ko';
 window.mode='detect';
-const ROUTE_TABS = ['main','pricing','community','faq','qna','notice','mypage','history','pro'];
+const ROUTE_TABS = ['main','pricing','community','blog','detectReport','faq','qna','notice','mypage','history','pro'];
 const ROUTE_PATHS = {
  main: '/',
  pricing: '/pricing',
  community: '/community',
+ blog: '/blog',
+ detectReport: '/detect-report',
  faq: '/faq',
  qna: '/qna',
  notice: '/notice',
@@ -17,6 +19,8 @@ const PATH_ROUTES = {
  '/main': 'main',
  '/pricing': 'pricing',
  '/community': 'community',
+ '/blog': 'blog',
+ '/detect-report': 'detectReport',
  '/faq': 'faq',
  '/qna': 'qna',
  '/notice': 'notice',
@@ -33,13 +37,21 @@ const ROUTE_META = {
   title: '요금제 · 교수님 피하기',
   description: '교수님 피하기 크레딧 충전, 구독 플랜, Pro 기능을 확인하세요.'
  },
- community: {
-  title: '커뮤니티 · 교수님 피하기',
-  description: 'AI 감지, 과제 작성, 휴머나이징 활용 경험을 나누는 커뮤니티입니다.'
- },
- faq: {
-  title: '자주 묻는 질문 · 교수님 피하기',
-  description: '교수님 피하기 이용, 크레딧·환불, AI 감지 정확도 등 자주 묻는 질문을 모았습니다.'
+community: {
+ title: '커뮤니티 · 교수님 피하기',
+ description: 'AI 감지, 과제 작성, 휴머나이징 활용 경험을 나누는 커뮤니티입니다.'
+},
+blog: {
+ title: '블로그 · AI 글쓰기 다듬기 가이드 | 교수님 피하기',
+ description: 'AI 티 줄이기, 과제 문장 다듬기, 자기소개서와 리포트 표현 개선을 위한 교수님 피하기 블로그 허브입니다.'
+},
+detectReport: {
+ title: '무료 AI 감지기 · AI 탐지 확률 확인 | 교수님 피하기',
+ description: '글을 붙여넣고 AI 작성 흔적과 탐지 위험 문장을 무료로 확인하세요. 결과를 바탕으로 휴머나이징까지 이어갈 수 있습니다.'
+},
+faq: {
+ title: '자주 묻는 질문 · 교수님 피하기',
+ description: '교수님 피하기 이용, 크레딧·환불, AI 감지 정확도 등 자주 묻는 질문을 모았습니다.'
  },
  qna: {
   title: '문의하기 · 교수님 피하기',
@@ -325,7 +337,7 @@ function switchTab(t, opts) {
  document.querySelectorAll('.ntab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.mnav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.snav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
- ['main','pricing','community','faq','qna','notice','mypage','history','pro'].forEach(n=>{
+ ['main','pricing','community','blog','detectReport','faq','qna','notice','mypage','history','pro'].forEach(n=>{
  const el = document.getElementById(n+'Content');
  if (el) el.style.display = n===t ? 'block' : 'none';
  });

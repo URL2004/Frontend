@@ -9,6 +9,8 @@
     '/pages/history.html',
     '/pages/notice.html',
     '/pages/community.html',
+    '/pages/blog.html',
+    '/pages/detect-report.html',
     '/pages/faq.html',
     '/pages/qna.html',
     '/pages/pricing.html',
@@ -41,7 +43,6 @@
   root.insertAdjacentHTML('beforeend', partials.map(loadPartial).join('\n'));
   window.PAGE_PARTIALS = partials;
 })();
-
 
 
 

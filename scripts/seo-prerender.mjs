@@ -69,6 +69,28 @@ const ROUTES = [
     faq: false
   },
   {
+    out: 'blog/index.html',
+    url: '/blog',
+    partial: 'blog.html',
+    title: '블로그 – AI 티 줄이는 글쓰기 · 과제 문장 다듬기 | 교수님 피하기',
+    h1: '교수님 피하기 블로그',
+    description:
+      'AI가 쓴 것처럼 보이는 문장을 자연스럽게 다듬는 방법을 정리한 블로그 허브입니다. 과제, 자기소개서, 리포트, 블로그 글쓰기 가이드를 확인하세요.',
+    breadcrumb: '블로그',
+    faq: false
+  },
+  {
+    out: 'detect-report/index.html',
+    url: '/detect-report',
+    partial: 'detect-report.html',
+    title: '무료 AI 감지기 – AI 탐지 확률 확인 · 위험 문장 분석 | 교수님 피하기',
+    h1: '무료 AI 감지기',
+    description:
+      '제출 전 글을 붙여넣고 AI 작성 흔적과 탐지 위험 문장을 무료로 확인하세요. AI 감지 결과를 바탕으로 휴머나이징까지 이어갈 수 있습니다.',
+    breadcrumb: '무료 AI 감지기',
+    faq: false
+  },
+  {
     out: 'qna/index.html',
     url: '/qna',
     partial: 'qna.html',
