@@ -14251,3 +14251,72 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  .gp-lav-send::before,.gp-lav-send::after,.lav-send-box{transition:none !important;}
  .gp-lav-send:hover .lav-send-box,.gp-lav-send:focus-visible .lav-send-box{transform:translateX(-52px);}
 }
+
+/* ───────── lavender v65: 검정 주 버튼 전부 = wonderful-baboon-62 이식 ─────────
+   그라데이션 림(#af40ff→#5b42f3→#00ddeb) + 짙은 남색 속(rgb(5,6,45)), 호버 시 속이 사라지며 그라데이션 풀 채움.
+   원본은 button>span 2겹 — 마크업 수정 없이 ::before(z-index:-1, inset 3px) 한 겹으로 동일 효과.
+   (button에 z-index:0 → 스태킹 컨텍스트 생성 → 음수 z 자식이 배경 위·텍스트 아래 끼는 구조)
+   대상(기존 #171a2b 검정 계열 전부): 워크스페이스 주 CTA 4종·업그레이드·사이드바 초대·쿠폰 적용.
+   충전하기(.plan-btn)는 v63 사이버 카드의 보라 그라데이션 유지. */
+.lav-flow-cta,
+.lav-confirm-actions button:last-child,
+.lav-approve-actions button:last-child,
+.lav-done-actions button:last-child,
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn,
+.gp-lav-side-bottom .gp-invite-btn,
+#mainContent[data-main-design="lavender"] .gp-coupon-form button{
+ position:relative;
+ z-index:0;
+ overflow:hidden;
+ border:0 !important;
+ background:linear-gradient(144deg,#af40ff,#5b42f3 50%,#00ddeb) !important;
+ color:#fff !important;
+ box-shadow:rgba(151,65,252,.2) 0 15px 30px -5px !important;
+ transition:transform .3s;
+}
+.lav-flow-cta::before,
+.lav-confirm-actions button:last-child::before,
+.lav-approve-actions button:last-child::before,
+.lav-done-actions button:last-child::before,
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn::before,
+.gp-lav-side-bottom .gp-invite-btn::before,
+#mainContent[data-main-design="lavender"] .gp-coupon-form button::before{
+ content:"";
+ position:absolute;
+ inset:3px;
+ z-index:-1;
+ border-radius:inherit;
+ background:rgb(5,6,45);
+ transition:background-color .3s;
+}
+/* 호버: 기존 #23263a 호버 규칙(!important 포함)을 그라데이션 유지로 덮고, 속만 비워 차오르게 */
+.lav-flow-cta:hover,
+.lav-confirm-actions button:last-child:hover,
+.lav-approve-actions button:last-child:hover,
+.lav-done-actions button:last-child:hover,
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn:hover,
+.gp-lav-side-bottom .gp-invite-btn:hover,
+#mainContent[data-main-design="lavender"] .gp-coupon-form button:hover{
+ background:linear-gradient(144deg,#af40ff,#5b42f3 50%,#00ddeb) !important;
+}
+.lav-flow-cta:hover::before,
+.lav-confirm-actions button:last-child:hover::before,
+.lav-approve-actions button:last-child:hover::before,
+.lav-done-actions button:last-child:hover::before,
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn:hover::before,
+.gp-lav-side-bottom .gp-invite-btn:hover::before,
+#mainContent[data-main-design="lavender"] .gp-coupon-form button:hover::before{
+ background:transparent;
+}
+.lav-flow-cta:active,
+.lav-confirm-actions button:last-child:active,
+.lav-approve-actions button:last-child:active,
+.lav-done-actions button:last-child:active,
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn:active,
+.gp-lav-side-bottom .gp-invite-btn:active,
+#mainContent[data-main-design="lavender"] .gp-coupon-form button:active{
+ transform:scale(.95); /* 원본 .9 — 풀폭 CTA에선 과해서 살짝 완화 */
+}
+@media (prefers-reduced-motion:reduce){
+ .lav-flow-cta,.lav-flow-cta::before{transition:none !important;}
+}

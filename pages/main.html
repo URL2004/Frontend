@@ -203,13 +203,16 @@
              </div>
            </div>
 
-           <!-- ② 문단별 진단 -->
+           <!-- ② 휴머나이저로 이동 — 사장님: 본문 글 위로. 완전 분리(해결 경로 선택은 방법 선택 화면에서, 글은 그대로 가져감) -->
+           <button type="button" class="lav-flow-cta lav-rep-go" onclick="lavReportToHumanize()">이 글 그대로 휴머나이저로 이동 →</button>
+
+           <!-- ③ 문단별 진단 -->
            <div class="lav-rep-sec lav-rep-paras">
              <div class="lav-rep-sec-h"><h4>문단별 진단</h4><span id="lavRepParaCount"></span></div>
              <div id="lavRepParaList"></div>
            </div>
 
-           <!-- ③ 실시간 1문장 미리보기(전환 장치) -->
+           <!-- ④ 실시간 1문장 미리보기(전환 장치) -->
            <div class="lav-rep-sec lav-rep-example" id="lavRepExample" hidden>
              <div class="lav-rep-sec-h"><h4>이 문장, 이렇게 바뀌어요</h4><span>가장 AI스러운 문장 1개를 실제로 변환했어요</span></div>
              <div class="lav-rep-ba">
@@ -219,8 +222,6 @@
              </div>
            </div>
 
-           <!-- ④ 휴머나이저로 이동(완전 분리 — 해결 경로 선택은 방법 선택 화면에서, 글은 그대로 가져감) -->
-           <button type="button" class="lav-flow-cta lav-rep-go" onclick="lavReportToHumanize()">이 글 그대로 휴머나이저로 이동 →</button>
            <p class="lav-rep-note" id="lavRepRemain"></p>
          </section>
 
