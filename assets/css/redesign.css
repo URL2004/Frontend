@@ -15118,3 +15118,10 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 /* v73b: 글쓰기·문의·공지 작성 입력창 높이 확대(사장님 — 더 높게) */
 #mainContent[data-main-design="lavender"] .wform textarea{min-height:200px !important;}
 @media(max-width:560px){#mainContent[data-main-design="lavender"] .wform textarea{min-height:160px !important;}}
+
+/* ───────── lavender v74: 알람 벨 외곽선 통일 ─────────
+   외부 gp-bell-uiverse의 이중 링(외곽 1px + 내부 3px #c9cbf2)이 다른 버튼과 안 맞음 →
+   내부 링 제거, 외곽선 1px #d2cdf0(통일 라벤더), 호버 시 #7c6bff. */
+#mainContent[data-main-design="lavender"] .gp-lav-bell.gp-bell-uiverse{border:1px solid #d2cdf0 !important;}
+#mainContent[data-main-design="lavender"] .gp-lav-bell.gp-bell-uiverse::before{display:none !important;}
+#mainContent[data-main-design="lavender"] .gp-lav-bell.gp-bell-uiverse:hover{border-color:#7c6bff !important;}
