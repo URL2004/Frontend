@@ -58,9 +58,13 @@
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5Z"/></svg>
          <span>커뮤니티</span>
        </button>
+       <button type="button" data-tab="faq" onclick="switchTab('faq')">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.7 2.7 0 0 1 5 1.4c0 1.8-2.6 2.2-2.6 3.8"/><path d="M12 17.5h.01"/></svg>
+         <span>자주 묻는 질문</span>
+       </button>
        <button type="button" data-tab="qna" onclick="switchTab('qna');loadQuestions()">
-         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.7 2.7 0 0 1 5 1.4c0 1.8-2.6 2.2-2.6 3.8"/><path d="M12 17.5h.01"/></svg>
-         <span>Q&amp;A</span>
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3a8.5 8.5 0 0 1 8.5 8.5z"/></svg>
+         <span>문의하기</span>
        </button>
        <button type="button" data-tab="pricing" onclick="switchTab('pricing')">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 15h5"/></svg>
@@ -90,10 +94,11 @@
        <button type="button" class="gp-lav-hamburger" onclick="lavToggleSidebar()" aria-label="메뉴 열기"><span></span></button>
        <div class="gp-lav-top-right">
          <span class="gp-lav-top-slot" id="lavTopSlot"></span>
-         <button type="button" class="gp-lav-guide" onclick="switchTab('qna');loadQuestions()"><b>?</b><span>사용 가이드</span></button>
-         <button type="button" class="gp-lav-bell" onclick="switchTab('notice')" aria-label="알림">
+         <button type="button" class="gp-lav-guide" onclick="switchTab('faq')"><b>?</b><span>사용 가이드</span></button>
+         <button type="button" class="gp-lav-bell" onclick="gpOpenNotificationCenter(event)" aria-label="알림" aria-haspopup="dialog">
            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.2 16.2v-5.6a5.8 5.8 0 0 1 11.6 0v5.6l1.6 2.4H4.6Z"/><path d="M10.2 20.8a2 2 0 0 0 3.6 0"/></svg>
            <i aria-hidden="true"></i>
+           <span id="notifBadge" class="gp-notif-badge" hidden></span>
          </button>
          <button type="button" class="gp-lav-design" data-design-trigger onclick="openMainDesignPicker()">디자인 예시</button>
        </div>

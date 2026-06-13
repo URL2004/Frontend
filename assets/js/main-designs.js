@@ -28,7 +28,7 @@
   // 라벤더에서는 실제 앱 요소(분석 결과·탭 컨테이너·크레딧 칩·업그레이드 버튼·
   // 사이드바 푸터·최근 기록 리스트)를 라벤더 셸 안의 슬롯으로 옮긴다.
   // 복제가 아니라 이동이므로 #uname, #creditChip 등 동적 갱신이 그대로 동작한다.
-  var TAB_IDS = ['main', 'pricing', 'community', 'qna', 'notice', 'mypage', 'history', 'pro'];
+  var TAB_IDS = ['main', 'pricing', 'community', 'faq', 'qna', 'notice', 'mypage', 'history', 'pro'];
   var MOVED_TABS = ['history', 'notice', 'community', 'qna', 'pricing', 'pro', 'mypage'];
 
   function moveInto(el, target) {

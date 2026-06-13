@@ -1,10 +1,11 @@
 let mode='detect', dark=true, tab='main', humanizeMode='assignment', selectedLang='ko';
 window.mode='detect';
-const ROUTE_TABS = ['main','pricing','community','qna','notice','mypage','history','pro'];
+const ROUTE_TABS = ['main','pricing','community','faq','qna','notice','mypage','history','pro'];
 const ROUTE_PATHS = {
  main: '/',
  pricing: '/pricing',
  community: '/community',
+ faq: '/faq',
  qna: '/qna',
  notice: '/notice',
  mypage: '/mypage',
@@ -16,6 +17,7 @@ const PATH_ROUTES = {
  '/main': 'main',
  '/pricing': 'pricing',
  '/community': 'community',
+ '/faq': 'faq',
  '/qna': 'qna',
  '/notice': 'notice',
  '/mypage': 'mypage',
@@ -35,9 +37,13 @@ const ROUTE_META = {
   title: '커뮤니티 · 교수님 피하기',
   description: 'AI 감지, 과제 작성, 휴머나이징 활용 경험을 나누는 커뮤니티입니다.'
  },
+ faq: {
+  title: '자주 묻는 질문 · 교수님 피하기',
+  description: '교수님 피하기 이용, 크레딧·환불, AI 감지 정확도 등 자주 묻는 질문을 모았습니다.'
+ },
  qna: {
-  title: 'Q&A · 교수님 피하기',
-  description: '교수님 피하기 서비스 이용과 AI 감지 회피 관련 질문을 확인하세요.'
+  title: '문의하기 · 교수님 피하기',
+  description: '교수님 피하기 1:1 문의 — 결제·계정·오류 등 개인 문의는 여기서 남기거나 카카오톡으로 연락주세요.'
  },
  notice: {
   title: '공지사항 · 교수님 피하기',
@@ -317,7 +323,7 @@ function switchTab(t, opts) {
  document.querySelectorAll('.ntab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.mnav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.snav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
- ['main','pricing','community','qna','notice','mypage','history','pro'].forEach(n=>{
+ ['main','pricing','community','faq','qna','notice','mypage','history','pro'].forEach(n=>{
  const el = document.getElementById(n+'Content');
  if (el) el.style.display = n===t ? 'block' : 'none';
  });

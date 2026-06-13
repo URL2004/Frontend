@@ -74,6 +74,7 @@ onAuthStateChanged(auth, async u =>{
  }
  else {
  CU = null; window.CU = null;
+ if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications([]);
  showScreen('app');
  if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });
  else switchTab('main');
@@ -133,7 +134,8 @@ async function loadUser(u) {
    if (data.ok) {
     window.UC += 20; updateCreditUI();
     gtag('event', 'referral_applied', { reward: 20, traffic_source: localStorage.getItem('traffic_source') || 'direct' });
-    alert('추천 보상으로 20크레딧이 지급됐어요!');
+    if (window.gpToast) window.gpToast('추천 보상으로 20크레딧이 지급됐어요!', { type: 'success' });
+    else alert('추천 보상으로 20크레딧이 지급됐어요!');
     localStorage.removeItem('pendingRef');
    }
    else { console.log('추천 적용 실패:', data.error); localStorage.removeItem('pendingRef'); }
@@ -1300,24 +1302,8 @@ window.loadQuestions = async (sort) =>{
  const el = document.getElementById('questionList');
  if (!el) return;
  if (!CU) {
-  el.innerHTML = [
-   ['결제','AI 검사 크레딧은 어떻게 차감되나요?','사용자123','10분 전',0],
-   ['휴머나이징','휴머나이징 후에도 AI 검출률이 높게 나와요.','익명','1시간 전',2],
-   ['결제','결제했는데 크레딧이 충전되지 않았어요.','익명','3시간 전',3],
-   ['결제','환불은 어떻게 요청하나요?','사용자567','5시간 전',1],
-   ['계정','등록한 이메일을 변경하고 싶어요.','익명','1일 전',0],
-   ['AI 검사','AI 검사 결과가 계속 100%로 나와요.','사용자901','1일 전',4],
-   ['버그/오류','문서 업로드가 자꾸 실패해요.','익명','2일 전',1]
-  ].map((q, i) => '<div class="gp-board-row qna-demo" onclick="showScreen(\'login\')">'
-   + '<div class="gbr-main">'
-   +  '<div class="gbr-ttl">'+escapeHtml(q[1])+'</div>'
-   +  '<div class="gbr-sub"><span class="gbr-cat">'+escapeHtml(q[0])+'</span><span>'+escapeHtml(q[2])+'</span><span>'+escapeHtml(q[3])+'</span></div>'
-   + '</div>'
-   + '<div class="gbr-stats">'
-   +  _gbrStat(_SICO_CMT, q[4], 'cmt')
-   +  '<span class="qna-status '+(i === 1 ? 'answered' : 'pending')+'">'+(i === 1 ? '답변 완료' : '답변 대기')+'</span>'
-   + '</div>'
-   + '</div>').join('');
+  // 1:1 문의는 로그인 필요 — 공개 게시판이 아니므로 데모 목록 대신 로그인 유도
+  el.innerHTML = '<div class="qna-empty">로그인하면 1:1 문의를 남기고 답변을 확인할 수 있어요.<br>급하면 우측 하단 카카오톡 문의를 이용해 주세요.</div>';
   return;
  }
  el.innerHTML = '<div class="qna-empty">불러오는 중...</div>';
@@ -1403,7 +1389,7 @@ window.submitQuestion = async () =>{
   alert('등록 실패: '+e.message);
  } finally {
   btn.disabled = false;
-  btn.textContent = '등록';
+  btn.textContent = '문의 등록';
  }
 };
 
@@ -1819,36 +1805,98 @@ window.resumeSubscription = async function() {
   } catch(e) { alert('네트워크 오류: ' + e.message); }
 };
 
+function notifCreatedMs(n) {
+ const created = n && n.createdAt;
+ if (created && typeof created.toMillis === 'function') return created.toMillis();
+ if (created && typeof created.toDate === 'function') return created.toDate().getTime();
+ if (created && created._seconds) return created._seconds * 1000;
+ return Number(n && n.createdAtMs) || 0;
+}
+
+function notifFromDoc(d) {
+ const n = d.data() || {};
+ return {
+  id: d.id,
+  clientId: n.clientId || d.id,
+  source: 'remote',
+  type: n.type || (n.postId ? 'comment' : 'notice'),
+  title: n.title || (n.postId ? '커뮤니티 댓글' : '알림'),
+  message: n.message || '',
+  read: !!n.read,
+  createdAt: notifCreatedMs(n),
+  action: n.action || null,
+  postId: n.postId || null
+ };
+}
+
+function notifDocId(n) {
+ return String((n && (n.clientId || n.id)) || Date.now())
+  .replace(/[^\w.-]/g, '_')
+  .slice(0, 120);
+}
+
+window.persistUserNotification = async (n) =>{
+ if (!CU || !n) return;
+ try {
+  const cleanAction = n.action ? JSON.parse(JSON.stringify(n.action)) : null;
+  await setDoc(doc(db,'users',CU.uid,'notifications',notifDocId(n)), {
+   clientId: n.clientId || n.id || null,
+   type: n.type || 'notice',
+   title: n.title || '알림',
+   message: n.message || '',
+   action: cleanAction,
+   postId: n.postId || null,
+   read: !!n.read,
+   createdAt: serverTimestamp(),
+   createdAtMs: n.createdAt || Date.now()
+  }, { merge: true });
+  if (typeof window.updateNotifBadge === 'function') await window.updateNotifBadge(CU.uid);
+ } catch(e) { console.log('알림 저장 오류:', e); }
+};
+
 window.loadNotifications = async () =>{
- if (!CU) return;
+ if (!CU) {
+  if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications([]);
+  return;
+ }
  const el = document.getElementById('notifList');
- if (!el) return;
  try {
  const snap = await getDocs(query(collection(db,'users',CU.uid,'notifications'),orderBy('createdAt','desc')));
- if (snap.empty) { el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3)">새 알림이 없어요</div>'; return; }
- el.innerHTML = snap.docs.map(d=>{
- const n=d.data();
- const date=n.createdAt?new Date(n.createdAt.toDate()).toLocaleDateString('ko-KR'):'';
+ const items = snap.docs.map(notifFromDoc);
+ if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications(items);
+ if (!el) return;
+ if (!items.length) { el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3)">새 알림이 없어요</div>'; return; }
+ el.innerHTML = items.map(n=>{
+ const date=n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):'';
  const borderColor = n.read ? 'var(--border)' : 'var(--blue)';
  const fontWeight = n.read ? '400' : '600';
- return '<div style="background:var(--surface);border:1px solid '+borderColor+';border-radius:var(--rs);padding:14px;margin-bottom:8px;cursor:pointer;" onclick="markRead(\''+d.id+'\');switchTab(\'community\');setTimeout(()=>viewPost(\''+n.postId+'\'),100)">'
- +'<div style="font-size:13px;font-weight:'+fontWeight+';">'+n.message+'</div>'
+ const action = n.postId
+  ? "switchTab('community');setTimeout(()=>viewPost('"+jsAttr(n.postId)+"'),100)"
+  : (n.action && n.action.tab ? "switchTab('"+jsAttr(n.action.tab)+"')" : "");
+ return '<div style="background:var(--surface);border:1px solid '+borderColor+';border-radius:var(--rs);padding:14px;margin-bottom:8px;cursor:pointer;" onclick="markRead(\''+jsAttr(n.id)+'\');'+action+'">'
+ +'<div style="font-size:13px;font-weight:'+fontWeight+';">'+escapeHtml(n.message)+'</div>'
  +'<div style="font-size:12px;color:var(--text3);margin-top:4px;">'+date+'</div></div>';
  }).join('');
- } catch(e) { el.innerHTML='<div style="color:var(--red)">불러오기 실패</div>'; }
+ } catch(e) {
+  if (el) el.innerHTML='<div style="color:var(--red)">불러오기 실패</div>';
+ }
 };
 
 window.markRead = async (notifId) =>{
- if (!CU) return;
+ if (!CU || !notifId) return;
  await updateDoc(doc(db,'users',CU.uid,'notifications',notifId),{read:true});
+ if (typeof window.loadNotifications === 'function') await window.loadNotifications();
 };
 
 window.sendNotification = async (postId, postAuthorId, commenterName, postTitle) =>{
  if (!postAuthorId || postAuthorId === CU.uid) return;
  try {
  await addDoc(collection(db,'users',postAuthorId,'notifications'),{
+ type: 'comment',
+ title: '새 댓글',
  message: commenterName + '님이 내 글에 댓글을 달았어요',
- postId, read: false, createdAt: serverTimestamp()
+ action: { type: 'post', postId },
+ postId, read: false, createdAt: serverTimestamp(), createdAtMs: Date.now()
  });
  updateNotifBadge(postAuthorId);
  const authorSnap = await getDoc(doc(db,'users',postAuthorId));
@@ -1867,10 +1915,14 @@ window.updateNotifBadge = async (uid) =>{
  if (!CU || CU.uid !== uid) return;
  try {
  const snap = await getDocs(query(collection(db,'users',CU.uid,'notifications')));
- let unread = 0;
- snap.forEach(d=>{ if(!d.data().read) unread++; });
- const badge = document.getElementById('notifBadge');
- if (badge) { badge.textContent = unread >0 ? unread : ''; badge.style.display = unread >0 ? 'inline' : 'none'; }
+ const items = snap.docs.map(notifFromDoc);
+ if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications(items);
+ else {
+  let unread = 0;
+  snap.forEach(d=>{ if(!d.data().read) unread++; });
+  const badge = document.getElementById('notifBadge');
+  if (badge) { badge.textContent = unread >0 ? unread : ''; badge.style.display = unread >0 ? 'inline-flex' : 'none'; }
+ }
  } catch(e) {}
 };
 
