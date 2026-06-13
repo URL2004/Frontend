@@ -392,7 +392,10 @@ window.couponPrevPage = function() {
 };
 
 window.deleteBatch = async function(batchId) {
- if (!confirm('이 배치 기록을 영구 삭제할까요?\n발급된 쿠폰들과 배치 정보가 모두 사라집니다. 복구할 수 없어요.\n(사용자의 크레딧 사용 내역은 그대로 남아요)')) return;
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({ title: '쿠폰 배치 기록을 삭제할까요?', message: '발급된 쿠폰들과 배치 정보가 모두 사라집니다. 사용자의 크레딧 사용 내역은 그대로 남아요.', confirmText: '삭제하기', danger: true })
+  : confirm('이 배치 기록을 영구 삭제할까요?\n발급된 쿠폰들과 배치 정보가 모두 사라집니다. 복구할 수 없어요.\n(사용자의 크레딧 사용 내역은 그대로 남아요)');
+ if (!ok) return;
  try {
   const token = await window.CU.getIdToken();
   const res = await fetch(COUPON_API + '/admin/delete-coupon-batch', {
@@ -418,7 +421,9 @@ window.updateBatchExpiry = async function(batchId, currentMs) {
   const d = new Date(currentMs);
   currentStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
  }
- const input = prompt('새 만료일 (YYYY-MM-DD, 비우면 무기한):', currentStr);
+ const input = window.gpPrompt
+  ? await window.gpPrompt({ title: '쿠폰 만료일 변경', message: 'YYYY-MM-DD 형식으로 입력하세요. 비우면 무기한으로 변경됩니다.', placeholder: 'YYYY-MM-DD', defaultValue: currentStr, confirmText: '변경하기' })
+  : prompt('새 만료일 (YYYY-MM-DD, 비우면 무기한):', currentStr);
  if (input === null) return; // 취소
  const trimmed = input.trim();
  let expiresAt = null;
@@ -504,7 +509,10 @@ window.showBatchDetail = async function(batchId) {
 };
 
 window.voidBatch = async function(batchId, unusedCount) {
- if (!confirm('이 배치의 미사용 쿠폰 ' + unusedCount + '개를 모두 무효화할까요?\n이미 사용된 쿠폰은 그대로 유지됩니다.')) return;
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({ title: '미사용 쿠폰을 무효화할까요?', message: '이 배치의 미사용 쿠폰 ' + unusedCount + '개가 모두 무효화됩니다. 이미 사용된 쿠폰은 유지됩니다.', confirmText: '무효화', danger: true })
+  : confirm('이 배치의 미사용 쿠폰 ' + unusedCount + '개를 모두 무효화할까요?\n이미 사용된 쿠폰은 그대로 유지됩니다.');
+ if (!ok) return;
  try {
   const token = await window.CU.getIdToken();
   const res = await fetch(COUPON_API + '/admin/void-coupons', {
@@ -524,7 +532,10 @@ window.voidBatch = async function(batchId, unusedCount) {
 };
 
 window.voidCoupon = async function(code) {
- if (!confirm('이 쿠폰을 무효화할까요?')) return;
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({ title: '쿠폰을 무효화할까요?', message: '무효화한 쿠폰은 다시 사용할 수 없어요.', confirmText: '무효화', danger: true })
+  : confirm('이 쿠폰을 무효화할까요?');
+ if (!ok) return;
  try {
   const token = await window.CU.getIdToken();
   const res = await fetch(COUPON_API + '/admin/void-coupons', {
@@ -656,11 +667,18 @@ window.openExternal = () =>{
  if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(url);
  else location.href='intent://'+url.replace(/https?:\/\//,'')+'#Intent;scheme=https;package=com.android.chrome;end';
 };
-window.logout = async () =>{ if(confirm('로그아웃 하시겠어요?')) { await signOut(auth); switchTab('main'); } };
+window.logout = async () =>{
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({ title: '로그아웃할까요?', message: '언제든 다시 로그인할 수 있어요.', confirmText: '로그아웃' })
+  : confirm('로그아웃 하시겠어요?');
+ if(ok) { await signOut(auth); switchTab('main'); }
+};
 
 window.changeNickname = async () =>{
  if (!CU) return;
- const newName = prompt('새 닉네임을 입력하세요:', CU.displayName);
+ const newName = window.gpPrompt
+  ? await window.gpPrompt({ title: '닉네임 변경', message: '커뮤니티와 마이페이지에 표시될 이름입니다.', placeholder: '새 닉네임', defaultValue: CU.displayName || '', confirmText: '변경하기', required: true })
+  : prompt('새 닉네임을 입력하세요:', CU.displayName);
  if (!newName || newName.trim() === '') return;
  if (newName.trim().length >20) { alert('닉네임은 20자 이내로 입력해주세요.'); return; }
  try {
@@ -696,7 +714,15 @@ window.deleteAccount = async () =>{
    }
  } catch(e) { /* 조회 실패해도 탈퇴는 시도 가능 */ }
 
- if (!confirm('정말 탈퇴하시겠어요?\n탈퇴 시 모든 크레딧과 데이터가 삭제되며 복구할 수 없습니다.\n(결제·환불 기록은 전자상거래법에 따라 5년간 보관됩니다.)')) return;
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({
+    title: '정말 탈퇴하시겠어요?',
+    message: '모든 크레딧과 데이터가 삭제되며 복구할 수 없습니다. 결제·환불 기록은 전자상거래법에 따라 5년간 보관됩니다.',
+    confirmText: '탈퇴하기',
+    danger: true
+  })
+  : confirm('정말 탈퇴하시겠어요?\n탈퇴 시 모든 크레딧과 데이터가 삭제되며 복구할 수 없습니다.\n(결제·환불 기록은 전자상거래법에 따라 5년간 보관됩니다.)');
+ if (!ok) return;
  // ★ 탈퇴는 백엔드(Admin SDK)에서 처리 — 카카오 비밀번호 추측 재인증 제거.
  //   추측 패턴 불일치로 탈퇴 불가하던 민원(#40·#61·#62·#91) 해결. 서버가 idToken만 검증하고 데이터·Auth 계정을 삭제.
  try {
@@ -1262,7 +1288,10 @@ window.copyLink = (url) =>{
 };
 
 window.delPost = async (postId) =>{
- if (!confirm('글을 삭제하시겠어요?')) return;
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({ title: '글을 삭제할까요?', message: '삭제한 글은 복구할 수 없어요.', confirmText: '삭제하기', danger: true })
+  : confirm('글을 삭제하시겠어요?');
+ if (!ok) return;
  try {
    await deleteDoc(doc(db,'posts',postId));
    backToList();
@@ -1275,7 +1304,10 @@ window.delPost = async (postId) =>{
 window.togglePostHidden = async (postId, makeHidden) =>{
  if (!(window.isAdmin && window.isAdmin())) { alert('권한이 없습니다.'); return; }
  const msg = makeHidden ? '이 글을 숨김 처리할까요? (다른 유저에게 노출되지 않음)' : '숨김을 해제할까요?';
- if (!confirm(msg)) return;
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({ title: makeHidden ? '글을 숨김 처리할까요?' : '숨김을 해제할까요?', message: makeHidden ? '다른 사용자에게 노출되지 않습니다.' : '다시 목록과 상세 화면에 노출됩니다.', confirmText: makeHidden ? '숨김 처리' : '해제하기', danger: makeHidden })
+  : confirm(msg);
+ if (!ok) return;
  try {
    await updateDoc(doc(db,'posts',postId), { hidden: makeHidden });
    await window.viewPost(postId);
@@ -1285,7 +1317,10 @@ window.togglePostHidden = async (postId, makeHidden) =>{
 };
 
 window.delComment = async (postId, commentId) =>{
- if (!confirm('댓글을 삭제하시겠어요?')) return;
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({ title: '댓글을 삭제할까요?', message: '삭제한 댓글은 복구할 수 없어요.', confirmText: '삭제하기', danger: true })
+  : confirm('댓글을 삭제하시겠어요?');
+ if (!ok) return;
  try {
  await deleteDoc(doc(db,'posts',postId,'comments',commentId));
  await updateDoc(doc(db,'posts',postId),{commentCount:increment(-1)});
@@ -1308,11 +1343,16 @@ window.loadQuestions = async (sort) =>{
  }
  el.innerHTML = '<div class="qna-empty">불러오는 중...</div>';
  try {
-  const snap = await getDocs(collection(db,'qna'));
-  let questions = [];
-  snap.forEach(d => questions.push({id:d.id, ...d.data()}));
   const isAdm = window.isAdmin && window.isAdmin();
   const myUid = CU ? CU.uid : null;
+  // 1:1 문의: 관리자는 전체, 일반 사용자는 본인 문의만 조회.
+  // Firestore Rules의 qna list 권한(admin 또는 authorId==uid)과 정확히 일치시켜야 권한 거부가 안 난다.
+  const qref = isAdm
+   ? collection(db,'qna')
+   : query(collection(db,'qna'), where('authorId','==',myUid));
+  const snap = await getDocs(qref);
+  let questions = [];
+  snap.forEach(d => questions.push({id:d.id, ...d.data()}));
   // 정렬
   if (window.qnaSort === 'pending') {
    questions.sort((a,b) => {
@@ -1325,7 +1365,9 @@ window.loadQuestions = async (sort) =>{
   }
 
   if (!questions.length) {
-   el.innerHTML = '<div class="qna-empty">아직 질문이 없어요. 첫 질문을 남겨보세요.</div>';
+   el.innerHTML = isAdm
+    ? '<div class="qna-empty">접수된 문의가 없어요.</div>'
+    : '<div class="qna-empty">아직 남긴 문의가 없어요. 위에서 문의를 남겨보세요.</div>';
    return;
   }
   const lockIco = '<svg class="lock-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
@@ -1484,7 +1526,9 @@ window.editAnswer = async (qid) =>{
  const snap = await getDoc(doc(db,'qna',qid));
  const q = snap.data() || {};
  const cur = q.answer && q.answer.body ? q.answer.body : '';
- const next = prompt('답변을 수정하세요:', cur);
+ const next = window.gpPrompt
+  ? await window.gpPrompt({ title: '답변 수정', message: '사용자에게 보일 답변 내용을 수정합니다.', defaultValue: cur, placeholder: '답변 내용', confirmText: '수정하기', required: true })
+  : prompt('답변을 수정하세요:', cur);
  if (next == null) return;
  const trimmed = next.trim();
  if (!trimmed) { alert('빈 답변은 등록할 수 없어요.'); return; }
@@ -1502,7 +1546,10 @@ window.editAnswer = async (qid) =>{
 
 window.delAnswer = async (qid) =>{
  if (!window.isAdmin || !window.isAdmin()) return;
- if (!confirm('답변을 삭제하시겠어요?')) return;
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({ title: '답변을 삭제할까요?', message: '질문 상태가 답변 대기로 돌아갑니다.', confirmText: '삭제하기', danger: true })
+  : confirm('답변을 삭제하시겠어요?');
+ if (!ok) return;
  try {
   await updateDoc(doc(db,'qna',qid), {status: 'pending', answer: null});
   await window.viewQuestion(qid);
@@ -1512,7 +1559,10 @@ window.delAnswer = async (qid) =>{
 };
 
 window.delQuestion = async (qid) =>{
- if (!confirm('질문을 삭제하시겠어요?')) return;
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({ title: '질문을 삭제할까요?', message: '삭제한 문의는 복구할 수 없어요.', confirmText: '삭제하기', danger: true })
+  : confirm('질문을 삭제하시겠어요?');
+ if (!ok) return;
  try {
   await deleteDoc(doc(db,'qna',qid));
   window.backToQList();
@@ -1612,7 +1662,10 @@ window.submitNotice = async () =>{
 };
 
 window.delNotice = async (id) =>{
- if (!confirm('공지를 삭제하시겠어요?')) return;
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({ title: '공지를 삭제할까요?', message: '삭제한 공지는 복구할 수 없어요.', confirmText: '삭제하기', danger: true })
+  : confirm('공지를 삭제하시겠어요?');
+ if (!ok) return;
  await deleteDoc(doc(db,'notices',id));
  await window.loadNotices();
 };
@@ -1762,13 +1815,19 @@ window.retrySubscription = async function(tier) {
     return;
   }
   if (!window.CU) return;
-  if (!confirm('카드를 다시 등록하면 즉시 결제가 시도됩니다. 진행할까요?')) return;
+  const ok = window.gpConfirm
+    ? await window.gpConfirm({ title: '카드를 다시 등록할까요?', message: '등록이 끝나면 즉시 결제가 시도됩니다.', confirmText: '등록하기' })
+    : confirm('카드를 다시 등록하면 즉시 결제가 시도됩니다. 진행할까요?');
+  if (!ok) return;
   await payTossSubscription(tier);
 };
 
 window.cancelSubscription = async function() {
   if (!window.CU) return;
-  if (!confirm('정말 구독을 해지하시겠어요? 다음 결제일까지는 계속 사용할 수 있습니다.')) return;
+  const ok = window.gpConfirm
+    ? await window.gpConfirm({ title: '구독을 해지할까요?', message: '다음 결제일까지는 계속 사용할 수 있습니다.', confirmText: '해지하기', danger: true })
+    : confirm('정말 구독을 해지하시겠어요? 다음 결제일까지는 계속 사용할 수 있습니다.');
+  if (!ok) return;
   try {
     const idToken = await window.CU.getIdToken();
     const res = await fetch(window.apiUrl('/subscription/cancel'), {
@@ -2253,7 +2312,9 @@ window.loadRefundModalList = async () =>{
 // 사용자: 환불 요청 (크레딧/정기결제 분기)
 window.requestRefund = async (orderId, kind) =>{
  kind = kind || 'credit';
- const reason = prompt('환불 사유를 입력해주세요:');
+ const reason = window.gpPrompt
+  ? await window.gpPrompt({ title: '환불 사유', message: '처리 기준 확인을 위해 사유를 남겨주세요.', placeholder: '예: 결과를 받지 못했어요 / 크레딧이 중복 차감됐어요', confirmText: '환불 요청', required: true })
+  : prompt('환불 사유를 입력해주세요:');
  if (!reason || reason.trim().length < 2) { alert('환불 사유를 2자 이상 입력해주세요.'); return; }
  try {
  const idToken = await CU.getIdToken();
@@ -2262,7 +2323,11 @@ window.requestRefund = async (orderId, kind) =>{
  body: JSON.stringify({ orderId, idToken, cancelReason: reason.trim(), kind })
  });
  const data = await res.json();
- if (res.ok && data.ok) { alert('환불 요청이 접수되었습니다.'); await window.loadOrderHistory(); await window.loadRefundModalList(); }
+ if (res.ok && data.ok) {
+  if (window.gpNotify) window.gpNotify({ clientId: 'refund_requested_' + orderId, type: 'refund', title: '환불 요청 접수', message: '환불 요청이 접수됐어요. 처리 결과는 알림으로 확인할 수 있습니다.', action: { tab: 'mypage' } }, { persist: true });
+  else alert('환불 요청이 접수되었습니다.');
+  await window.loadOrderHistory(); await window.loadRefundModalList();
+ }
  else alert(data.error || '환불 요청 실패');
  } catch(e) { alert('네트워크 오류: ' + e.message); }
 };
@@ -2343,7 +2408,10 @@ window.loadAdminRefundList = async () =>{
 // 관리자: 환불 승인
 window.approveRefund = async (orderId, kind) =>{
  kind = kind || 'order';
- if (!confirm('이 환불을 승인하시겠습니까? 토스에서 실제 환불이 진행됩니다.')) return;
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({ title: '환불을 승인할까요?', message: '승인하면 토스에서 실제 환불이 진행됩니다.', confirmText: '승인하기', danger: true })
+  : confirm('이 환불을 승인하시겠습니까? 토스에서 실제 환불이 진행됩니다.');
+ if (!ok) return;
  try {
  const idToken = await CU.getIdToken();
  const res = await fetch(window.apiUrl('/approve-refund'), {
@@ -2359,7 +2427,9 @@ window.approveRefund = async (orderId, kind) =>{
 // 관리자: 환불 거절
 window.rejectRefund = async (orderId, kind) =>{
  kind = kind || 'order';
- const reason = prompt('거절 사유를 입력해주세요:');
+ const reason = window.gpPrompt
+  ? await window.gpPrompt({ title: '환불 거절 사유', message: '사용자에게 안내할 사유를 입력해주세요.', placeholder: '거절 사유', confirmText: '거절 처리', required: true })
+  : prompt('거절 사유를 입력해주세요:');
  if (!reason || reason.trim().length < 2) { alert('거절 사유를 2자 이상 입력해주세요.'); return; }
  try {
  const idToken = await CU.getIdToken();
