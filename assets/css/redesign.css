@@ -15013,10 +15013,16 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 /* ───────── lavender v71: 흰색 버튼 일관화 + 크레딧 칩·공지 버튼 calm-tiger + 점검/업데이트 라벨 가독성 ─────────
    사장님: 외곽선색/모서리를 크레딧 칩 기준(풀 라운드)으로 통일·더 라벤더스럽게, 공지 자세히보기·크레딧 칩도 동일하게. */
 
-/* (A) 5종 공통 외형: 라벤더 보더 + 풀 라운드(크레딧 칩 정도) */
+/* (A) 5종 공통 외형: 라벤더 보더 + 업그레이드 버튼 둥글기(10px, 풀라운드는 과했음). */
 #mainContent[data-main-design="lavender"] :is(.gp-lav-top-right .ls-credit-btn,.gp-lav-guide,.cancelbtn,.backbtn,.gp-notice-card button){
  border:1px solid #d2cdf0 !important;
- border-radius:999px !important;
+ border-radius:10px !important;
+}
+/* 크레딧·가이드 버튼 크기 통일(업그레이드 버튼과 같은 높이/패딩) */
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-credit-btn,
+#mainContent[data-main-design="lavender"] .gp-lav-guide{
+ min-height:42px !important;height:42px !important;padding:0 18px !important;
+ font-size:14px !important;
 }
 
 /* (B) 크레딧 칩·공지 버튼에 calm-tiger(가이드/취소/목록으로는 v70). 크레딧 칩은 ::before가 숨김이라 ::after 단일 물결 */
