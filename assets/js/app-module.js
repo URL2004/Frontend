@@ -1504,6 +1504,25 @@ window.backToQList = () =>{
  window.loadQuestions();
 };
 
+async function notifyQnaAnswered(qid, message) {
+ try {
+  const snap = await getDoc(doc(db,'qna',qid));
+  if (!snap.exists()) return;
+  const q = snap.data() || {};
+  if (!q.authorId) return;
+  await setDoc(doc(db,'users',q.authorId,'notifications','qna_answered_' + qid), {
+   clientId: 'qna_answered_' + qid,
+   type: 'qna',
+   title: '문의 답변',
+   message: message || '남겨주신 문의에 답변이 등록됐어요.',
+   action: { tab: 'qna' },
+   read: false,
+   createdAt: serverTimestamp(),
+   createdAtMs: Date.now()
+  }, { merge: true });
+ } catch(e) { console.log('Q&A 알림 저장 오류:', e); }
+}
+
 window.submitAnswer = async (qid) =>{
  if (!window.isAdmin || !window.isAdmin()) { alert('관리자만 답변할 수 있어요.'); return; }
  const ta = document.getElementById('answerBody');
@@ -1515,6 +1534,7 @@ window.submitAnswer = async (qid) =>{
    status: 'answered',
    answer: { body, answeredBy, answeredAt: new Date() }
   });
+  await notifyQnaAnswered(qid, '남겨주신 문의에 운영팀 답변이 등록됐어요.');
   await window.viewQuestion(qid);
  } catch(e) {
   alert('답변 등록 실패: '+e.message);
@@ -1538,6 +1558,7 @@ window.editAnswer = async (qid) =>{
    answer: { body: trimmed, answeredBy, answeredAt: new Date() },
    status: 'answered'
   });
+  await notifyQnaAnswered(qid, '문의 답변이 수정됐어요. 다시 확인해 주세요.');
   await window.viewQuestion(qid);
  } catch(e) {
   alert('수정 실패: '+e.message);

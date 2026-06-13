@@ -11,7 +11,8 @@
     await new Promise(r => setTimeout(r, 1500));
   }
   if (!window.CU) {
-    alert('결제 확인을 위해 로그인이 필요합니다. 로그인 후 이 페이지로 돌아오시면 자동으로 처리됩니다.');
+    if (window.gpToast) window.gpToast('결제 확인을 위해 로그인이 필요합니다. 로그인 후 이 페이지로 돌아오시면 자동으로 처리됩니다.', { type: 'error' });
+    else alert('결제 확인을 위해 로그인이 필요합니다. 로그인 후 이 페이지로 돌아오시면 자동으로 처리됩니다.');
     return;
   }
 
@@ -31,7 +32,8 @@
     idToken = await window.CU.getIdToken();
   } catch (e) {
     localStorage.removeItem(storageKey);
-    alert('로그인 토큰을 가져올 수 없습니다. 다시 로그인해주세요.');
+    if (window.gpToast) window.gpToast('로그인 토큰을 가져올 수 없습니다. 다시 로그인해주세요.', { type: 'error' });
+    else alert('로그인 토큰을 가져올 수 없습니다. 다시 로그인해주세요.');
     return;
   }
 
@@ -69,14 +71,25 @@
         window.UC = snap.data().credits || 0;
         window.updateCreditUI();
       } catch(e) {}
-      alert((data.creditAmount || credits) + '크레딧 충전 완료!');
+      const chargedCredits = data.creditAmount || credits;
+      if (window.gpNotify) {
+        window.gpNotify({
+          clientId: 'payment_' + orderId,
+          type: 'payment',
+          title: '충전 완료',
+          message: chargedCredits + '크레딧이 충전됐어요. 보유 크레딧을 확인해 주세요.',
+          action: { tab: 'pricing' }
+        }, { persist: true });
+      } else alert(chargedCredits + '크레딧 충전 완료!');
     } else if (data.error === "이미 처리된 결제입니다.") {
       history.replaceState({}, '', location.pathname);
     } else {
-      alert('충전 실패: ' + (data.error || '알 수 없는 오류'));
+      if (window.gpToast) window.gpToast('충전 실패: ' + (data.error || '알 수 없는 오류'), { type: 'error' });
+      else alert('충전 실패: ' + (data.error || '알 수 없는 오류'));
     }
   } catch(err) {
-    alert('네트워크 오류: ' + err.message);
+    if (window.gpToast) window.gpToast('네트워크 오류: ' + err.message, { type: 'error' });
+    else alert('네트워크 오류: ' + err.message);
   }
 
   // 24시간 지난 localStorage 항목 정리
@@ -104,7 +117,8 @@
     await new Promise(r => setTimeout(r, 1500));
   }
   if (!window.CU) {
-    alert('구독 처리를 위해 로그인이 필요합니다. 로그인 후 이 페이지로 돌아오시면 자동으로 처리됩니다.');
+    if (window.gpToast) window.gpToast('구독 처리를 위해 로그인이 필요합니다. 로그인 후 이 페이지로 돌아오시면 자동으로 처리됩니다.', { type: 'error' });
+    else alert('구독 처리를 위해 로그인이 필요합니다. 로그인 후 이 페이지로 돌아오시면 자동으로 처리됩니다.');
     return;
   }
 
@@ -116,7 +130,8 @@
   try { idToken = await window.CU.getIdToken(); }
   catch (e) {
     localStorage.removeItem(dedupKey);
-    alert('로그인 토큰을 가져올 수 없습니다. 다시 로그인해주세요.');
+    if (window.gpToast) window.gpToast('로그인 토큰을 가져올 수 없습니다. 다시 로그인해주세요.', { type: 'error' });
+    else alert('로그인 토큰을 가져올 수 없습니다. 다시 로그인해주세요.');
     return;
   }
 
@@ -162,14 +177,24 @@
         const lock = document.getElementById('snavProLock');
         if (lock) lock.style.display = 'none';
       } catch(e) {}
-      alert('구독이 시작되었습니다! Pro 탭에서 바로 사용해보세요.');
+      if (window.gpNotify) {
+        window.gpNotify({
+          clientId: 'subscription_' + data.orderId,
+          type: 'payment',
+          title: '구독 시작',
+          message: '구독이 시작됐어요. Pro 탭에서 바로 사용할 수 있습니다.',
+          action: { tab: 'pro' }
+        }, { persist: true });
+      } else alert('구독이 시작되었습니다! Pro 탭에서 바로 사용해보세요.');
       switchTab('pro');
     } else {
       localStorage.removeItem(dedupKey);
-      alert('구독 처리 실패: ' + (data.error || '알 수 없는 오류'));
+      if (window.gpToast) window.gpToast('구독 처리 실패: ' + (data.error || '알 수 없는 오류'), { type: 'error' });
+      else alert('구독 처리 실패: ' + (data.error || '알 수 없는 오류'));
     }
   } catch(err) {
     localStorage.removeItem(dedupKey);
-    alert('네트워크 오류: ' + err.message);
+    if (window.gpToast) window.gpToast('네트워크 오류: ' + err.message, { type: 'error' });
+    else alert('네트워크 오류: ' + err.message);
   }
 })();

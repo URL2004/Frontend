@@ -55,7 +55,11 @@ window.APP_RUNTIME_CONFIG = {
   SITE_URL: ${literal(process.env.VITE_SITE_URL || '')},
   API_BASE: ${literal(process.env.VITE_API_BASE || '')},
   TOSS_CLIENT_KEY: ${literal(process.env.VITE_TOSS_CLIENT_KEY || '')},
-  KAKAO_INQUIRY_URL: ${literal(process.env.VITE_KAKAO_INQUIRY_URL || 'https://open.kakao.com/o/s3Jegizi')}${firebaseLine}
+  KAKAO_JS_KEY: ${literal(process.env.VITE_KAKAO_JS_KEY || '')},
+  KAKAO_INQUIRY_URL: ${literal(process.env.VITE_KAKAO_INQUIRY_URL || 'https://open.kakao.com/o/s3Jegizi')},
+  MAINTENANCE_MODE: ${literal(process.env.VITE_MAINTENANCE_MODE || '')},
+  MAINTENANCE_PREVIEW_KEY: ${literal(process.env.VITE_MAINTENANCE_PREVIEW_KEY || '')},
+  MAINTENANCE_MESSAGE: ${literal(process.env.VITE_MAINTENANCE_MESSAGE || '')}${firebaseLine}
 };
 `;
   await fs.writeFile(path.join(dist, 'runtime-config.js'), body, 'utf8');

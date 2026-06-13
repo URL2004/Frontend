@@ -847,10 +847,17 @@ async function runAnalysis() {
  if (text.length > 5500) {
   needed = splitByBoundary(text, 4500, 5500).reduce(function (s, c) { return s + Math.ceil(c.length / 100); }, 0);
  } else {
-  needed = Math.ceil(text.length / 100);
+ needed = Math.ceil(text.length / 100);
  }
  if (window.UP !== 'unlimited' && (window.UC || 0) < needed) {
- if (confirm('이 글을 변환하려면 ' + needed + '크레딧이 필요해요(현재 ' + (window.UC || 0) + '크레딧). 충전 페이지로 이동할까요?')) switchTab('pricing');
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({
+    title: '크레딧이 부족해요',
+    message: '이 글을 변환하려면 ' + needed + '크레딧이 필요합니다. 현재 보유 크레딧은 ' + (window.UC || 0) + '크레딧이에요.',
+    confirmText: '충전하러 가기'
+  })
+  : confirm('이 글을 변환하려면 ' + needed + '크레딧이 필요해요(현재 ' + (window.UC || 0) + '크레딧). 충전 페이지로 이동할까요?');
+ if (ok) switchTab('pricing');
  return;
  }
 

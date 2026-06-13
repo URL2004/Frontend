@@ -19,14 +19,20 @@
   var siteUrl = runtime.SITE_URL || (isProductionHost ? prodSiteUrl : window.location.origin);
   var apiBase = runtime.API_BASE || (isLocalHost ? 'http://localhost:3100' : (isProductionHost ? prodApiBase : ''));
   var tossClientKey = runtime.TOSS_CLIENT_KEY || (isProductionHost ? 'live_ck_DnyRpQWGrNw0XnWnYN6O8Kwv1M9E' : '');
+  function truthy(v) {
+    return v === true || v === 'true' || v === '1' || v === 'yes' || v === 'on';
+  }
 
   window.APP_CONFIG = Object.freeze({
     APP_ENV: appEnv,
     SITE_URL: siteUrl,
     API_BASE: apiBase,
     GA_MEASUREMENT_ID: 'G-Z95JMLJXZ2',
-    KAKAO_JS_KEY: '742c97ee8a4457012e84eff0a3d72bf5',
+    KAKAO_JS_KEY: runtime.KAKAO_JS_KEY || 'ad2364a2d83abfe7ad22e6cdd3162dfd',
     KAKAO_INQUIRY_URL: runtime.KAKAO_INQUIRY_URL || 'https://open.kakao.com/o/s3Jegizi',
+    MAINTENANCE_MODE: truthy(runtime.MAINTENANCE_MODE),
+    MAINTENANCE_PREVIEW_KEY: runtime.MAINTENANCE_PREVIEW_KEY || '',
+    MAINTENANCE_MESSAGE: runtime.MAINTENANCE_MESSAGE || '',
     EMAILJS_PUBLIC_KEY: 'Cl-t76hcNwZUra4y-',
     TOSS_CLIENT_KEY: tossClientKey,
     FIREBASE: runtime.FIREBASE || prodFirebase
