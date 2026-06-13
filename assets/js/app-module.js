@@ -84,6 +84,19 @@ onAuthStateChanged(auth, async u =>{
  _authResolve();
 });
 
+// 운영 알림 중계(문의·가입·초대) — fire-and-forget, 사용자 흐름 절대 안 막음. 백엔드 /events가 미설정이면 즉시 종료됨.
+async function gpNotifyEvent(type, data) {
+ try {
+  if (!CU || !CU.getIdToken) return;
+  const idToken = await CU.getIdToken();
+  fetch(window.apiUrl('/events'), {
+   method: 'POST', headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify({ idToken, type, ...(data || {}) })
+  }).catch(() => {});
+ } catch (_) { /* 알림 실패는 무시 */ }
+}
+window.gpNotifyEvent = gpNotifyEvent;
+
 async function loadUser(u) {
  const uRef = doc(db,'users',u.uid);
  const snap = await getDoc(uRef);
@@ -96,6 +109,7 @@ async function loadUser(u) {
  const signMethod = (u.providerData[0]?.providerId === 'google.com') ? 'google' : (u.email?.includes('@kakao.com')) ? 'kakao' : 'email';
  gtag('event', 'sign_up', { method: signMethod, traffic_source: trafficSource });
  localStorage.removeItem('traffic_source');
+ gpNotifyEvent('signup', { via: signMethod });   // 운영 알림(신규 가입)
  } else {
  const d = snap.data();
  window.UC = d.credits||0; window.UP = d.plan||'free';
@@ -1426,7 +1440,7 @@ window.submitQuestion = async () =>{
  btn.textContent = '등록 중...';
  try {
   const authorName = anon ? '익명' : ((window.getAdminName && window.getAdminName()) || CU.displayName || '사용자');
-  await addDoc(collection(db,'qna'), {
+  const _qref = await addDoc(collection(db,'qna'), {
    title,
    body,
    authorId: CU.uid,
@@ -1437,6 +1451,7 @@ window.submitQuestion = async () =>{
    createdAt: serverTimestamp(),
    views: 0
   });
+  gpNotifyEvent('inquiry', { id: _qref.id });   // 운영 알림(새 문의)
   document.getElementById('qtitle').value = '';
   document.getElementById('qbody').value = '';
   document.getElementById('qAnon').checked = false;
