@@ -95,8 +95,10 @@
        <div class="gp-lav-top-right">
          <span class="gp-lav-top-slot" id="lavTopSlot"></span>
          <button type="button" class="gp-lav-guide" onclick="switchTab('faq')"><b>?</b><span>사용 가이드</span></button>
-         <button type="button" class="gp-lav-bell" onclick="gpOpenNotificationCenter(event)" aria-label="알림" aria-haspopup="dialog">
-           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.2 16.2v-5.6a5.8 5.8 0 0 1 11.6 0v5.6l1.6 2.4H4.6Z"/><path d="M10.2 20.8a2 2 0 0 0 3.6 0"/></svg>
+         <button type="button" class="gp-lav-bell gp-bell-uiverse" onclick="gpOpenNotificationCenter(event)" aria-label="알림" aria-haspopup="dialog">
+           <svg class="gp-bell-icon" viewBox="0 0 448 512" aria-hidden="true">
+             <path d="M224 0c-17.7 0-32 14.3-32 32V49.9C119.5 61.4 64 124.2 64 200v33.4c0 45.4-15.5 89.5-43.8 124.9L5.3 377c-5.8 7.2-6.9 17.1-2.9 25.4S14.8 416 24 416H424c9.2 0 17.6-5.3 21.6-13.6s2.9-18.2-2.9-25.4l-14.9-18.6C399.5 322.9 384 278.8 384 233.4V200C384 124.2 328.5 61.4 256 49.9V32c0-17.7-14.3-32-32-32zm0 512c35.3 0 64-28.7 64-64H160c0 35.3 28.7 64 64 64z"/>
+           </svg>
            <i aria-hidden="true"></i>
            <span id="notifBadge" class="gp-notif-badge" hidden></span>
          </button>
@@ -112,8 +114,8 @@
        <div class="gp-lav-composer">
          <textarea id="lavInput" rows="5" placeholder="AI 느낌이 나는 문장을 붙여넣어 보세요..." onkeydown="lavComposerKey(event)" oninput="lavSyncCount(this)"></textarea>
          <div class="gp-lav-composer-bar">
-           <label class="gp-lav-add" for="pdfInput" title="파일 업로드 (.pdf)" aria-label="파일 업로드">
-             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+           <label class="gp-lav-add gp-upload-uiverse" for="pdfInput" title="파일 업로드 (.pdf)" aria-label="파일 업로드">
+             <span class="gp-upload-plus" aria-hidden="true"></span>
            </label>
            <span class="gp-lav-count" id="lavCount" aria-live="polite"></span>
            <div class="gp-lav-mode" role="group" aria-label="실행 모드 선택">
@@ -187,7 +189,8 @@
            <!-- ③ 문단별 진단 -->
            <div class="lav-rep-sec lav-rep-paras">
              <div class="lav-rep-sec-h"><h4>문단별 진단</h4><span id="lavRepParaCount"></span></div>
-             <div id="lavRepParaList"></div>
+             <div id="lavRepParaList" class="lav-collapse"></div>
+             <button type="button" class="lav-collapse-toggle" id="lavRepParaToggle" onclick="lavToggleCollapse('lavRepParaList',this)" aria-expanded="false" hidden><span>펼쳐보기</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
            </div>
 
            <!-- ④ 실시간 1문장 미리보기(전환 장치) -->
@@ -343,7 +346,8 @@
              <span class="lav-trust-badge ok">검증 통과</span>
            </div>
            <p class="lav-done-note" style="margin:2px 0 12px;font-size:12.5px;line-height:1.5;color:var(--text3);">예상치예요. 글의 구체성·길이·주제에 따라 탐지율이 달라지고, 추상적·짧은 글은 70% 이상이 나오기도 해요. 외부 검사기로 재확인하고, 높게 나오면 경험 메모를 더해 다시 돌려보세요.</p>
-           <div class="lav-done-body" id="lavDoneBody"></div>
+           <div class="lav-done-body lav-collapse" id="lavDoneBody"></div>
+           <button type="button" class="lav-collapse-toggle" id="lavDoneToggle" onclick="lavToggleCollapse('lavDoneBody',this)" aria-expanded="false" hidden><span>펼쳐보기</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
            <div class="lav-done-actions">
              <button type="button" class="ghost" onclick="lavNewSentence()">새 글 시작</button>
              <button type="button" class="ghost" onclick="lavDoneCopy(this)">복사</button>

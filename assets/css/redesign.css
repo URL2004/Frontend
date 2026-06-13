@@ -15087,3 +15087,34 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 @media (prefers-reduced-motion:reduce){
  #mainContent[data-main-design="lavender"] :is(.wbtn,.gp-faq-ask-go,.gp-qna-help button)::after{transition:none !important;}
 }
+
+
+/* ───────── lavender v73: 결과/보고서 본문 접기 — 한 화면 미리보기 + 펼쳐보기 ─────────
+   휴머나이즈 결과(#lavDoneBody)·AI 감지 문단 진단(#lavRepParaList) 둘 다 기본 접힘(미리보기),
+   필요한 사람은 펼쳐서 전체 보기. 토글은 내용이 접힌 높이를 넘을 때만 JS가 노출. */
+#mainContent[data-main-design="lavender"] .lav-collapse{position:relative;max-height:340px;overflow:hidden;}
+#mainContent[data-main-design="lavender"] .lav-collapse.expanded{max-height:none;overflow:visible;}
+/* 하단 페이드(접힘 상태) — 각 컨테이너 배경색에 맞춤 */
+#mainContent[data-main-design="lavender"] #lavDoneBody.lav-collapse:not(.expanded)::after{
+ content:"";position:absolute;left:0;right:0;bottom:0;height:72px;pointer-events:none;
+ background:linear-gradient(to bottom,rgba(250,251,252,0),#fafbfc);
+}
+#mainContent[data-main-design="lavender"] #lavRepParaList.lav-collapse:not(.expanded)::after{
+ content:"";position:absolute;left:0;right:0;bottom:0;height:64px;pointer-events:none;
+ background:linear-gradient(to bottom,rgba(255,255,255,0),#fff);
+}
+/* 펼쳐보기/접기 토글 */
+#mainContent[data-main-design="lavender"] .lav-collapse-toggle{
+ display:flex;align-items:center;justify-content:center;gap:6px;
+ width:100%;margin-top:10px;min-height:38px;padding:0 14px;
+ border:1px solid #d2cdf0;border-radius:10px;background:#fff;
+ color:#5a5bd8;font-size:13px;font-weight:700;cursor:pointer;
+ transition:background .15s ease,border-color .15s ease;
+}
+#mainContent[data-main-design="lavender"] .lav-collapse-toggle:hover{background:#f3f2fc;border-color:#c4bdf0;}
+#mainContent[data-main-design="lavender"] .lav-collapse-toggle svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease;}
+#mainContent[data-main-design="lavender"] .lav-collapse-toggle.is-open svg{transform:rotate(180deg);}
+
+/* v73b: 글쓰기·문의·공지 작성 입력창 높이 확대(사장님 — 더 높게) */
+#mainContent[data-main-design="lavender"] .wform textarea{min-height:200px !important;}
+@media(max-width:560px){#mainContent[data-main-design="lavender"] .wform textarea{min-height:160px !important;}}

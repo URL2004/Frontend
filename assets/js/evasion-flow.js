@@ -171,6 +171,7 @@
       cameFromReport = true;
       show('report');
       playReportIntro();
+      lavInitCollapse('lavRepParaList', 'lavRepParaToggle');
     } catch (e) {
       console.warn('[evasion] /detect-report 실패:', e && e.message);
       window.lavFlowReset();
@@ -309,6 +310,34 @@
     var src = $('lavInput');
     if (src) src.focus();
   };
+
+  // ── 결과/보고서 본문 접기(한 화면 미리보기 + 펼쳐보기) ──
+  window.lavToggleCollapse = function (targetId, btn) {
+    var el = document.getElementById(targetId);
+    if (!el) return;
+    var open = el.classList.toggle('expanded');
+    if (btn) {
+      btn.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      var lbl = btn.querySelector('span');
+      if (lbl) lbl.textContent = open ? '접기' : '펼쳐보기';
+    }
+  };
+  function lavInitCollapse(targetId, toggleId) {
+    var el = document.getElementById(targetId);
+    var btn = document.getElementById(toggleId);
+    if (!el || !btn) return;
+    el.classList.remove('expanded');
+    btn.classList.remove('is-open');
+    btn.setAttribute('aria-expanded', 'false');
+    var lbl = btn.querySelector('span'); if (lbl) lbl.textContent = '펼쳐보기';
+    // 레이아웃 반영(2 rAF) 후, 접힌 높이보다 내용이 길 때만 토글 노출
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        btn.hidden = el.scrollHeight <= el.clientHeight + 6;
+      });
+    });
+  }
 
   window.lavToneChange = function () {
     var formal = document.querySelector('input[name="lavTone"]:checked');
@@ -612,14 +641,43 @@
     var src = $('lavInput');
     return (src ? src.value : '').replace(/\s/g, '').length;
   }
+  function notifyJobDone(st, label, score) {
+    if (!window.gpNotify || !st || !st.jobId) return;
+    window.gpNotify({
+      clientId: 'job_done_' + st.jobId,
+      type: 'job_done',
+      title: '작업 완료',
+      message: label + ' 결과가 준비됐어요. 예상 탐지율 ' + score + '로 보관함에 저장했습니다.',
+      action: { type: 'library' }
+    }, { persist: true });
+  }
+  function notifyJobIssue(jobId, message) {
+    if (!window.gpNotify || !jobId) return;
+    window.gpNotify({
+      clientId: 'job_failed_' + jobId,
+      type: 'job_failed',
+      title: '작업 확인 필요',
+      message: message || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.',
+      action: { tab: 'main' }
+    }, { persist: true });
+  }
 
   // 작업 중단(확인 모달 → 서버 취소/abort → 설정 화면 복귀). 차감은 완료 시에만 일어나므로 취소=항상 무과금.
-  window.lavCancelJob = function () {
-    if (!confirm('진행 중인 작업을 중단할까요? 크레딧은 차감되지 않아요.')) return;
+  window.lavCancelJob = async function () {
+    var ok = window.gpConfirm
+      ? await window.gpConfirm({
+        title: '작업을 중단할까요?',
+        message: '크레딧은 차감되지 않아요. 진행 중인 작업만 멈춥니다.',
+        confirmText: '중단하기',
+        danger: true
+      })
+      : confirm('진행 중인 작업을 중단할까요? 크레딧은 차감되지 않아요.');
+    if (!ok) return;
     pollGen++;
     if (activeCancel) { try { activeCancel(); } catch (e) { } activeCancel = null; }
     stopFormalTicker();
     clearJobRef();
+    if (window.gpToast) window.gpToast('작업을 중단했어요. 크레딧은 차감되지 않았습니다.', { type: 'info' });
     show('reduce');
   };
   // ── P5: jobId 재진입 — 새로고침·재방문 시 진행 중 작업 복원(서버 job은 어차피 계속 돌고 있음) ──
@@ -634,9 +692,11 @@
     }).then(function (r) { return r.json(); }).then(function (st) {
       if (!st || !st.ok) { clearJobRef(); return; }
       if (st.status === 'done') {
+        st.jobId = ref.jobId;
         renderJobDone(st);   // blog/formal 모드별 점수·배지·보관함 — 폴링 완료와 동일 렌더
         clearJobRef();
         show('done');
+        lavInitCollapse('lavDoneBody', 'lavDoneToggle');
         return;
       }
       if (st.status === 'running' || st.status === 'awaiting_approval') {
@@ -674,7 +734,8 @@
       if (st.ok === false || (st.error && !st.status)) {
         stopFormalTicker();
         clearJobRef();
-        alert(st.error || '작업을 찾을 수 없어요. (서버가 재시작됐을 수 있어요) 다시 시도해 주세요.');
+        notifyJobIssue(jobId, st.error || '작업을 찾을 수 없어요. 다시 시도해 주세요.');
+        if (!window.gpNotify) alert(st.error || '작업을 찾을 수 없어요. (서버가 재시작됐을 수 있어요) 다시 시도해 주세요.');
         show('choose');
         return;
       }
@@ -690,23 +751,27 @@
       if (st.status === 'done') {
         stopFormalTicker();
         setJobSteps(4);
+        st.jobId = jobId;
         renderJobDone(st);
         if (st.note) console.info('[evasion]', st.note);
         clearJobRef();
         show('done');
+        lavInitCollapse('lavDoneBody', 'lavDoneToggle');
         return;
       }
       if (st.status === 'blocked' || st.status === 'error') {
         stopFormalTicker();
         clearJobRef();
         if (st.gateDetail) console.warn('[evasion] 차단 상세:', st.gates, st.gateDetail);
-        alert(st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
+        notifyJobIssue(jobId, st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
+        if (!window.gpNotify) alert(st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
         show(st.mode === 'polish' ? 'choose' : 'reduce');   // 다듬기는 설정 화면이 없음 — 방법 선택으로
         return;
       }
     }
     stopFormalTicker();
-    alert('작업이 예상보다 오래 걸리고 있어요. 새로고침하면 진행 중인 작업으로 다시 들어갈 수 있어요.');
+    notifyJobIssue(jobId, '작업이 예상보다 오래 걸리고 있어요. 새로고침하면 진행 중인 작업으로 다시 들어갈 수 있어요.');
+    if (!window.gpNotify) alert('작업이 예상보다 오래 걸리고 있어요. 새로고침하면 진행 중인 작업으로 다시 들어갈 수 있어요.');
   }
 
   // 완료 렌더(폴링·재진입 공용): job mode에 따라 점수·배지·보관함 라벨 분기
@@ -731,6 +796,7 @@
     if ($('lavDoneScore')) $('lavDoneScore').textContent = score;
     if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
     lavSaveToLibrary(label, st.result && st.result.outputText, score);
+    notifyJobDone(st, label, score);
   }
 
   function makeJobCanceller(jobId) {
