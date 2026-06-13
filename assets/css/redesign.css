@@ -14733,3 +14733,80 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  #mainContent[data-main-design="lavender"] .gp-faq-ask-btns button,
  #mainContent[data-main-design="lavender"] .gp-inq-quick button{width:100%;}
 }
+
+
+/* ───────── lavender v68: FAQ 아코디언 = CodePen kathykato/MoZJom 이식 ─────────
+   v67 카드형 → 하단 보더 행 + +/− 원형 아이콘 + max-height 슬라이드. 색만 라벤더(원본 teal #03b5d2 → #5a5bd8).
+   토글은 기존 toggleFaq(.faq-item.open) 그대로 사용. */
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-list{display:block;}
+/* 카드 스타일(v67) 무력화 → 구분선 행 */
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-item{
+ background:none !important;border:0 !important;border-bottom:1px solid #e6e8f2 !important;
+ border-radius:0 !important;box-shadow:none !important;overflow:visible;
+}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-item.open{border-bottom-color:#7c6bff !important;}
+/* 질문 버튼 */
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-q{
+ display:block;position:relative;width:100%;min-height:0;
+ padding:18px 46px 18px 0;
+ text-align:left;background:none !important;border:0;cursor:pointer;
+ color:#6c7790 !important;
+ font-size:16.5px;font-weight:400;line-height:1.5;
+ transition:color .15s linear;
+}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-q:hover{color:#5a5bd8 !important;}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-item.open .faq-q{color:#5a5bd8 !important;}
+/* +/− 원형 아이콘(currentColor = 버튼 색) */
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-plus{
+ position:absolute;right:0;top:50%;margin-top:-11px;
+ width:22px;height:22px;border:1px solid currentColor;border-radius:50%;
+}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-plus::before{
+ content:"";position:absolute;top:9px;left:5px;width:10px;height:2px;background:currentColor;
+}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-plus::after{
+ content:"";position:absolute;top:5px;left:9px;width:2px;height:10px;background:currentColor;
+ transition:all .2s linear;will-change:width;
+}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-item.open .faq-plus::after{width:0;}
+/* 답변 슬라이드(display → max-height 전환) */
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-a{
+ display:block !important;max-height:0;opacity:0;overflow:hidden;padding:0 !important;
+ color:#5b6275 !important;font-size:15px;line-height:1.75;
+ transition:max-height .2s linear,opacity .2s linear,padding .2s linear;will-change:max-height,opacity;
+}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-item.open .faq-a{
+ max-height:22em;opacity:1;padding:0 0 22px !important;
+}
+
+
+/* ───────── lavender v69: FAQ 아코디언 마감 + 컴포저 입력창 높이 고정 ─────────
+   (1) 호버 배경(사장님: 호버 시 배경 없음) — text 안 밀리게 버튼 ::after로 양옆 bleed.
+   (2) 애니메이션 부드럽게(사장님: 딱딱함) — 원본도 9em인데 22em으로 잡아 빈 공간까지 늘던 것 12em으로,
+       linear → cubic-bezier(.4,0,.2,1). 아이콘 +/− 전환도 ease.
+   (3) 컴포저 입력창: 타이핑 시 확장 금지 — 높이 고정 + 내부 스크롤. */
+/* 호버/열림 배경 — 버튼에 직접(z-index 가림 방지) + 또렷한 라벤더 틴트(페이지 배경과 구분). text는 14px 인셋 */
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-q{
+ padding-left:14px;border-radius:12px;transition:background .2s ease,color .2s ease;
+}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-q:hover{background:#ecebfb;}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-item.open .faq-q{background:#f1effd;}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-a{padding-left:14px;}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-plus{transition:border-color .2s ease;}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-plus::before,
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-plus::after{transition:all .25s cubic-bezier(.4,0,.2,1);}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-a{
+ transition:max-height .32s cubic-bezier(.4,0,.2,1),opacity .26s ease,padding .32s cubic-bezier(.4,0,.2,1);
+}
+#mainContent[data-main-design="lavender"] .gp-faq-page .faq-item.open .faq-a{max-height:12em;padding:0 0 22px 14px !important;}
+
+/* 컴포저 입력창 높이 고정(입력해도 안 커지게) */
+#mainContent[data-main-design="lavender"] .gp-lav-composer textarea{
+ height:160px !important;min-height:160px !important;max-height:160px !important;
+ overflow-y:auto !important;resize:none !important;field-sizing:fixed;
+}
+@media(max-width:560px){
+ #mainContent[data-main-design="lavender"] .gp-lav-composer textarea{
+  height:132px !important;min-height:132px !important;max-height:132px !important;
+ }
+}
