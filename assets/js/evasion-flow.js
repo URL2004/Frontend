@@ -59,7 +59,7 @@
     flow.dataset.step = name;
     var label = $('lavFlowStep'); if (label) label.textContent = STEP_LABEL[name] || '';
     var ctx = $('lavFlowCtx'), src = $('lavInput');
-    if (ctx && src) ctx.textContent = '원문 ' + (src.value || '').replace(/\s/g, '').length.toLocaleString() + '자';
+    if (ctx && src) ctx.textContent = '원문 ' + (src.value || '').length.toLocaleString() + '자';   // 글자수 통일: 공백 포함(과금·메인 컴포저와 동일)
     // 뒤로 버튼: 방법선택(choose)·회피설정(reduce)·감지 보고서(report)에서 표시. 분석중·작업중·완료에선 숨김.
     var back = document.querySelector('.lav-flow-back');
     if (back) back.style.visibility = (name === 'choose' || name === 'reduce' || name === 'report') ? 'visible' : 'hidden';
@@ -140,7 +140,7 @@
   window.lavDetect = async function () {
     var src = $('lavInput');
     var text = src ? src.value : '';
-    if (text.replace(/\s+/g, '').length < 100) {
+    if (text.length < 100) {   // 글자수 통일: 공백 포함 기준(표시 카운트와 동일)
       alert('AI 감지를 하려면 최소 100자가 필요해요.');
       if (src) src.focus();
       return;
@@ -376,6 +376,9 @@
   }
 
   window.lavOpenConfirm = function () {
+    pendingPolish = false;   // 휴머나이징 확인 — 다듬기 플래그 정리
+    var ttl = document.querySelector('.lav-confirm-title');
+    if (ttl) ttl.textContent = '이 설정으로 시작할까요?';
     var s = currentSettings();
     var sum = $('lavConfirmSummary');
     if (sum) {
@@ -408,6 +411,7 @@
   };
 
   window.lavCloseConfirm = function () {
+    pendingPolish = false;   // 취소·닫기 시 플래그 정리(다음 확인에 안 새게)
     var modal = $('lavConfirmModal');
     if (modal) modal.hidden = true;
   };
@@ -624,12 +628,26 @@
   }
   function runBlogEvasion(s) { return runShortJob('blog', s); }
 
-  // 그대로 다듬기(보존형) — 방법 선택 카드에서 바로 시작. 서버측 청킹 job이라 새로고침 생존.
+  // 그대로 다듬기(보존형) — 사장님: 바로 실행 말고 확인창부터(과금 있음). 확인 모달 재사용.
+  var pendingPolish = false;
   window.lavRunPolish = function () {
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
     if (!text) { if (src) src.focus(); return; }
-    runShortJob('polish', null);
+    pendingPolish = true;
+    var ttl = document.querySelector('.lav-confirm-title');
+    if (ttl) ttl.textContent = '이대로 다듬을까요?';
+    var sum = $('lavConfirmSummary');
+    if (sum) {
+      sum.innerHTML =
+        '<li><span>방식</span><b>그대로 다듬기 — 문장만 자연스럽게</b></li>' +
+        '<li><span>원문 보존</span><b>구조·의미 유지(회피 재작성 아님)</b></li>';
+    }
+    var len = src ? src.value.length : 0;   // 글자수 통일: 공백 포함
+    if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = Math.max(1, Math.ceil(len / 100)) + ' 크레딧';
+    if ($('lavConfirmTime')) $('lavConfirmTime').textContent = '약 1~3분';
+    var modal = $('lavConfirmModal');
+    if (modal) modal.hidden = false;
   };
 
   // ── P3+P4 실연결: 격식 유지 재구성 = POST /transform(job) + 폴링 + 근거 승인 ──────────
@@ -843,7 +861,9 @@
   }
 
   window.lavStartJob = function () {
+    var polish = pendingPolish;       // 확인창 닫기 전에 캡처(lavCloseConfirm이 플래그를 비움)
     window.lavCloseConfirm();
+    if (polish) return runShortJob('polish', null);    // 그대로 다듬기 — 확인 후 시작
     var s = currentSettings();
     if (s.tone === 'blog') return runBlogEvasion(s);   // ★ P2 실연결(블로그 어투)
     return runFormalEvasion(s);                        // ★ P3+P4 실연결(격식 유지 재구성, job+폴링+근거 승인)
