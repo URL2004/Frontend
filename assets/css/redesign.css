@@ -15125,3 +15125,30 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 #mainContent[data-main-design="lavender"] .gp-lav-bell.gp-bell-uiverse{border:1px solid #d2cdf0 !important;}
 #mainContent[data-main-design="lavender"] .gp-lav-bell.gp-bell-uiverse::before{display:none !important;}
 #mainContent[data-main-design="lavender"] .gp-lav-bell.gp-bell-uiverse:hover{border-color:#7c6bff !important;}
+
+
+/* ───────── lavender v75: 알림창(알림 센터) 라벤더 컨셉 — 다크 → 밝은 라벤더 전면 재구성 ─────────
+   패널은 body 직속(document.body append)이라 body[data-main-design="lavender"]로 스코프. */
+body[data-main-design="lavender"] .gp-notification-panel{
+ border:1px solid #e7e9f4;border-radius:18px;background:#fff;color:#1a1f2e;
+ box-shadow:0 24px 70px rgba(84,90,160,.22);backdrop-filter:none;
+}
+body[data-main-design="lavender"] .gp-notification-head{border-bottom:1px solid #eef0f7;background:#fff;}
+body[data-main-design="lavender"] .gp-notification-head strong{color:#1a1f2e;}
+body[data-main-design="lavender"] .gp-notification-head span{color:#9aa0b4;}
+body[data-main-design="lavender"] .gp-notification-head button{border:1px solid #e4e7f1 !important;background:#fff !important;color:#7d8597 !important;}
+body[data-main-design="lavender"] .gp-notification-head button:hover{background:#f3f3fb !important;color:#5a5bd8 !important;border-color:#d2cdf0 !important;}
+body[data-main-design="lavender"] .gp-notification-actions{border-bottom:1px solid #eef0f7;}
+body[data-main-design="lavender"] .gp-notification-actions button{border:1px solid #d2cdf0 !important;background:#fff !important;color:#5a5bd8 !important;font-weight:700;}
+body[data-main-design="lavender"] .gp-notification-actions button:hover{background:#f3f3fb !important;border-color:#c4bdf0 !important;}
+body[data-main-design="lavender"] .gp-notification-item:hover{background:#f6f6fc;}
+body[data-main-design="lavender"] .gp-notification-item.unread{background:#f1effd;}
+body[data-main-design="lavender"] .gp-notification-item.unread .gp-notification-body b{color:#4a4bc0;}
+body[data-main-design="lavender"] .gp-notification-item > .material-symbols-outlined{background:#efeefc;color:#6a5bd6;}
+body[data-main-design="lavender"] .gp-notification-body b{color:#1a1f2e;}
+body[data-main-design="lavender"] .gp-notification-body em{color:#5d6477;}
+body[data-main-design="lavender"] .gp-notification-body small{color:#9aa0b4;}
+body[data-main-design="lavender"] .gp-notification-empty{color:#8a90a6;}
+body[data-main-design="lavender"] .gp-notification-empty .material-symbols-outlined{background:#efeefc;color:#6a5bd6;}
+body[data-main-design="lavender"] .gp-notification-empty b{color:#1a1f2e;}
+body[data-main-design="lavender"] .gp-notification-empty p{color:#9aa0b4;}
