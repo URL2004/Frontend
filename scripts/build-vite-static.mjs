@@ -1,6 +1,7 @@
 import { build } from 'vite';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { prerenderSeo } from './seo-prerender.mjs';
 
 const root = process.cwd();
 const dist = path.join(root, 'dist');
@@ -28,6 +29,7 @@ const staticEntries = [
   'og-image.png',
   'robots.txt',
   'sitemap.xml',
+  'google9fc9828aad4d4ecc.html',
   'CNAME',
   'vercel.json'
 ];
@@ -107,3 +109,8 @@ for (const entry of staticEntries) {
 }
 
 await writeRuntimeConfig();
+
+// SEO 프리렌더: dist/index.html 및 라우트별 dist/<route>/index.html 생성.
+// (정적 복사 이후에 실행해 원본 index.html을 본문 포함 버전으로 덮어쓴다.)
+const prerendered = await prerenderSeo({ root, dist });
+console.log(`[seo-prerender] generated ${prerendered.length} routes: ${prerendered.join(', ')}`);

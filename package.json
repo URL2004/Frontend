@@ -6,6 +6,12 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "node scripts/build-vite-static.mjs",
+    "ga4:auth": "node scripts/ga4-cli.mjs auth",
+    "ga4:list": "node scripts/ga4-cli.mjs list",
+    "ga4:setup": "node scripts/ga4-cli.mjs setup",
+    "ga4:mp-secret": "node scripts/ga4-cli.mjs mp-secret",
+    "ga4:validate": "node scripts/ga4-cli.mjs validate",
+    "ga4:test": "node scripts/ga4-cli.mjs send-test",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "deploy:preview": "vercel deploy --scope toavoidtheprofessor"
   },

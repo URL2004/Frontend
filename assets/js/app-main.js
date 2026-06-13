@@ -283,6 +283,7 @@ function openInviteModal() {
   const modal = document.getElementById('inviteModal');
   if (!modal) return;
   modal.style.display = 'flex';
+  if (window.gpTrack) window.gpTrack('invite_open');
   const linkText = document.getElementById('inviteLinkText');
   if (linkText) {
     const uid = window.CU ? window.CU.uid : null;
@@ -297,6 +298,7 @@ function closeInviteModal() {
 function copyInviteLink() {
   const text = document.getElementById('inviteLinkText')?.textContent || '';
   navigator.clipboard.writeText(text).then(() => {
+    if (window.gpTrack) window.gpTrack('invite_copy', { is_logged_in: !!window.CU });
     const btn = document.getElementById('inviteCopyBtn');
     if (btn) { btn.textContent = '복사됨!'; setTimeout(() => { btn.textContent = '링크 복사'; }, 1500); }
   });
@@ -330,6 +332,7 @@ function switchTab(t, opts) {
  if (t === 'pro' && typeof window.refreshProTab === 'function') window.refreshProTab();
  updateRouteMeta(t);
  if (!opts.skipRoute) setRouteUrl(t, opts.replaceRoute);
+ if (!opts.skipTrack && typeof window.gpTrackPageView === 'function') window.gpTrackPageView(t, document.title, window.location.href);
 }
 
 window.addEventListener('hashchange', () => applyRouteFromUrl({ replace: true }));
@@ -838,6 +841,7 @@ async function runChunkedText(fullText, opts) {
 
 async function runAnalysis() {
  if (!window.CU) {
+ if (window.gpTrack) window.gpTrack('login_required', { source: 'analysis' });
  alert('로그인 후 무료로 체험해보세요!');
  showScreen('login');
  return;
@@ -863,6 +867,12 @@ async function runAnalysis() {
   })
   : confirm('이 글을 변환하려면 ' + needed + '크레딧이 필요해요(현재 ' + (window.UC || 0) + '크레딧). 충전 페이지로 이동할까요?');
  if (ok) switchTab('pricing');
+ if (window.gpTrack) window.gpTrack('credit_insufficient', {
+  analysis_mode: mode === 'detect' ? 'detect' : 'humanize',
+  needed_credits: needed,
+  current_credits: window.UC || 0,
+  chars: text.length
+ });
  return;
  }
 
@@ -903,6 +913,13 @@ async function runAnalysis() {
  const progBarEl = document.getElementById('progBar');
  const progStatusEl = document.getElementById('progStatus');
  if (barEl) barEl.style.display = 'block';
+
+ if (window.gpTrack) window.gpTrack('analysis_start', {
+  analysis_mode: mode === 'detect' ? 'detect' : 'humanize',
+  humanize_mode: mode === 'detect' ? '' : (humanizeMode || 'assignment'),
+  needed_credits: needed,
+  chars: text.length
+ });
 
  const stages = (mode !== 'detect')
   ? [
@@ -996,10 +1013,19 @@ async function runAnalysis() {
  const _ts = localStorage.getItem('traffic_source') || 'direct';
  const _chars = text.length;
  if (currentMode === 'detect') {
-  gtag('event', 'detect_run', { chars: _chars, lang: runLang, pdf: false, traffic_source: _ts });
+  if (window.gpTrack) window.gpTrack('detect_run', { chars: _chars, lang: runLang, pdf: false, traffic_source: _ts });
  } else {
-  gtag('event', 'humanize_run', { mode: humanizeMode, chars: _chars, lang: runLang, pdf: false, traffic_source: _ts });
+  if (window.gpTrack) window.gpTrack('humanize_run', { mode: humanizeMode, chars: _chars, lang: runLang, pdf: false, traffic_source: _ts });
  }
+ if (window.gpTrack) window.gpTrack('analysis_complete', {
+  analysis_mode: currentMode,
+  humanize_mode: currentMode === 'detect' ? '' : (humanizeMode || 'assignment'),
+  chars: _chars,
+  lang: runLang,
+  pdf: false,
+  credits_used: needed,
+  traffic_source: _ts
+ });
 
  if (mode === 'detect') renderDetect(data.result);
  else renderHuman(data.result);
@@ -1007,6 +1033,12 @@ async function runAnalysis() {
  } catch (e) {
  // ★ 청크 분할 중 일부만 성공한 경우: 차감된 크레딧이 헛되지 않게 부분 결과를 보여준다.
  if (e && e.partial && e.partial.result) {
+  if (window.gpTrack) window.gpTrack('analysis_partial', {
+   analysis_mode: mode === 'detect' ? 'detect' : 'humanize',
+   chunks_done: e.partial.done || 0,
+   chunks_total: e.partial.total || 0,
+   chars: text.length
+  });
   const pCurMode = mode === 'detect' ? 'detect' : 'humanize';
   if (mode === 'detect') renderDetect(e.partial.result);
   else renderHuman(e.partial.result);
@@ -1025,6 +1057,11 @@ async function runAnalysis() {
    if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory();
   } catch (_) {}
  } else {
+  if (window.gpTrack) window.gpTrack('analysis_error', {
+   analysis_mode: mode === 'detect' ? 'detect' : 'humanize',
+   message: String(e.message || 'unknown').slice(0, 120),
+   chars: text.length
+  });
   renderError(e.message || '오류가 발생했습니다.');
  }
  } finally {
@@ -1190,6 +1227,7 @@ function dlOut() {
 }
 
 function openKakaoInquiry() {
+  if (window.gpTrack) window.gpTrack('contact_click', { channel: 'kakao' });
   const url = window.APP_CONFIG && window.APP_CONFIG.KAKAO_INQUIRY_URL;
   if (url) window.open(url, '_blank', 'noopener,noreferrer');
   else alert('카카오톡 문의 주소가 설정되지 않았어요. 고객센터 이메일(aqua0661123@naver.com)로 문의해주세요.');
@@ -1202,14 +1240,24 @@ function maintenancePreviewQuery() {
 }
 
 async function payToss(amount, credits, name, plan) {
- if (!window.CU) { alert('로그인이 필요합니다.'); return; }
+ if (!window.CU) {
+  if (window.gpTrack) window.gpTrack('login_required', { source: 'payment', value: amount, currency: 'KRW' });
+  alert('로그인이 필요합니다.');
+  return;
+ }
 
- gtag('event', 'select_item', {
+ if (window.gpTrack) window.gpTrack('select_item', {
   item_list_name: 'pricing',
   items: [{ item_id: 'credits_' + credits, item_name: name + ' ' + credits + '크레딧', quantity: 1, price: amount }],
   value: amount,
   currency: 'KRW',
   traffic_source: localStorage.getItem('traffic_source') || 'direct'
+ });
+ if (window.gpTrack) window.gpTrack('begin_checkout', {
+  items: [{ item_id: 'credits_' + credits, item_name: name + ' ' + credits + '크레딧', quantity: 1, price: amount }],
+  value: amount,
+  currency: 'KRW',
+  checkout_type: 'credits'
  });
 
   // 1. 테스트 키 대신 주신 'API 개별 연동' 라이브 클라이언트 키 적용
@@ -1228,6 +1276,13 @@ async function payToss(amount, credits, name, plan) {
  failUrl: location.origin + location.pathname + '?fail=1' + maintenancePreviewQuery()
  });
  } catch(e) {
+ if (window.gpTrack) window.gpTrack(e.code === 'USER_CANCEL' ? 'checkout_cancel' : 'checkout_error', {
+  checkout_type: 'credits',
+  value: amount,
+  currency: 'KRW',
+  code: e.code || '',
+  message: String(e.message || '').slice(0, 120)
+ });
  if(e.code !== 'USER_CANCEL') alert('결제 오류: ' + e.message);
  }
 }
@@ -1267,6 +1322,7 @@ function switchPricingTab(t) {
       heroDesc.innerHTML = '글자 한도 내 월 50회 또는 무제한. <strong>매달 자동 결제</strong>되며 언제든 해지할 수 있어요.';
     }
   }
+  if (window.gpTrack) window.gpTrack('pricing_tab_change', { pricing_tab: t });
 }
 
 // === 정기결제 구독 ===
@@ -1357,11 +1413,17 @@ async function payTossSubscription(tier) {
  const info = SUB_PLAN_INFO[tier];
  if (!info) return;
 
- gtag('event', 'select_item', {
+ if (window.gpTrack) window.gpTrack('select_item', {
    item_list_name: 'subscription',
    items: [{ item_id: 'sub_' + tier, item_name: info.name, quantity: 1, price: info.amount }],
    value: info.amount, currency: 'KRW',
    traffic_source: localStorage.getItem('traffic_source') || 'direct'
+ });
+ if (window.gpTrack) window.gpTrack('begin_checkout', {
+   items: [{ item_id: 'sub_' + tier, item_name: info.name, quantity: 1, price: info.amount }],
+   value: info.amount,
+   currency: 'KRW',
+   checkout_type: 'subscription'
  });
 
   const clientKey = window.APP_CONFIG.TOSS_CLIENT_KEY;
@@ -1376,6 +1438,13 @@ async function payTossSubscription(tier) {
      failUrl: location.origin + location.pathname + '?subfail=1' + maintenancePreviewQuery()
    });
  } catch(e) {
+   if (window.gpTrack) window.gpTrack(e.code === 'USER_CANCEL' ? 'checkout_cancel' : 'checkout_error', {
+    checkout_type: 'subscription',
+    value: info.amount,
+    currency: 'KRW',
+    code: e.code || '',
+    message: String(e.message || '').slice(0, 120)
+   });
    if (e.code !== 'USER_CANCEL') alert('결제 오류: ' + e.message);
  }
 }

@@ -9,6 +9,8 @@ _probe-*.html
 _probe-*.cjs
 runtime-config.local.js
 runtime-config.js
+.ga4-token.json
+ga4-oauth-client*.json
 dist/
 
 .vercel

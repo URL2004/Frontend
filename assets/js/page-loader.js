@@ -30,6 +30,12 @@
     return xhr.responseText;
   }
 
+  // SEO 프리렌더 블록 제거: 빌드된 정적 HTML에는 크롤러용 #seo-prerender 가 박혀
+  // 있다. 실제 브라우저에서는 SPA가 본문을 새로 렌더하므로, 동일 ID 중복을 막기 위해
+  // 파셜을 주입하기 전에 먼저 제거한다(하이드레이션 인계). dev/preview엔 없어서 no-op.
+  var seo = document.getElementById('seo-prerender');
+  if (seo && seo.parentNode) seo.parentNode.removeChild(seo);
+
   var root = document.getElementById('page-root');
   if (!root) throw new Error('Missing #page-root');
   root.insertAdjacentHTML('beforeend', partials.map(loadPartial).join('\n'));

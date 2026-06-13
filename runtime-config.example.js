@@ -4,6 +4,7 @@ window.APP_RUNTIME_CONFIG = {
   APP_ENV: 'preview',
   SITE_URL: 'https://your-preview.vercel.app',
   API_BASE: 'https://your-staging-backend.onrender.com',
+  GA_MEASUREMENT_ID: 'G-4FVJBV5FDJ',
   TOSS_CLIENT_KEY: 'test_ck_replace_me',
   KAKAO_INQUIRY_URL: 'https://open.kakao.com/o/s3Jegizi',
   FIREBASE: {

@@ -27,7 +27,7 @@
     APP_ENV: appEnv,
     SITE_URL: siteUrl,
     API_BASE: apiBase,
-    GA_MEASUREMENT_ID: 'G-Z95JMLJXZ2',
+    GA_MEASUREMENT_ID: runtime.GA_MEASUREMENT_ID || 'G-4FVJBV5FDJ',
     KAKAO_JS_KEY: runtime.KAKAO_JS_KEY || '742c97ee8a4457012e84eff0a3d72bf5',
     KAKAO_REST_KEY: runtime.KAKAO_REST_KEY || '943f7421fdaef8af6e9ed698f6fa9250',
     KAKAO_INQUIRY_URL: runtime.KAKAO_INQUIRY_URL || 'https://open.kakao.com/o/s3Jegizi',

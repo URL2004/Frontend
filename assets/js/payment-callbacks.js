@@ -57,7 +57,7 @@
       const _amt = Number(url.get('amount')) || 0;
       const _plan = url.get('plan') || '';
       const _cred = data.creditAmount || credits;
-      gtag('event', 'purchase', {
+      if (window.gpTrack) window.gpTrack('purchase', {
         transaction_id: orderId,
         value: _amt,
         currency: 'KRW',
@@ -150,7 +150,7 @@
     const data = await res.json();
     if (res.ok && data.ok) {
       history.replaceState({}, '', location.pathname);
-      gtag('event', 'purchase', {
+      if (window.gpTrack) window.gpTrack('purchase', {
         transaction_id: data.orderId,
         value: data.amount,
         currency: 'KRW',

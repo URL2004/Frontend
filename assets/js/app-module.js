@@ -107,7 +107,7 @@ async function loadUser(u) {
  window.SUB = null; window.COUPON = null;
  const trafficSource = localStorage.getItem('traffic_source') || 'direct';
  const signMethod = (u.providerData[0]?.providerId === 'google.com') ? 'google' : (u.email?.includes('@kakao.com')) ? 'kakao' : 'email';
- gtag('event', 'sign_up', { method: signMethod, traffic_source: trafficSource });
+ if (window.gpTrack) window.gpTrack('sign_up', { method: signMethod, traffic_source: trafficSource });
  localStorage.removeItem('traffic_source');
  gpNotifyEvent('signup', { via: signMethod });   // 운영 알림(신규 가입)
  } else {
@@ -148,7 +148,7 @@ async function loadUser(u) {
    const data = await res.json();
    if (data.ok) {
     window.UC += 20; updateCreditUI();
-    gtag('event', 'referral_applied', { reward: 20, traffic_source: localStorage.getItem('traffic_source') || 'direct' });
+    if (window.gpTrack) window.gpTrack('referral_applied', { reward: 20, traffic_source: localStorage.getItem('traffic_source') || 'direct' });
     if (window.gpToast) window.gpToast('추천 보상으로 20크레딧이 지급됐어요!', { type: 'success' });
     else alert('추천 보상으로 20크레딧이 지급됐어요!');
     localStorage.removeItem('pendingRef');
@@ -195,7 +195,10 @@ window.redeemCoupon = async function() {
  const input = document.getElementById('couponInput');
  const msg = document.getElementById('couponMsg');
  if (!input || !msg) return;
- if (!window.CU) { msg.style.color = 'var(--red)'; msg.textContent = '로그인이 필요해요.'; return; }
+ if (!window.CU) {
+  if (window.gpTrack) window.gpTrack('login_required', { source: 'coupon' });
+  msg.style.color = 'var(--red)'; msg.textContent = '로그인이 필요해요.'; return;
+ }
  const code = input.value.trim();
  if (code.replace(/[-\s]/g, '').length !== 12) {
   msg.style.color = 'var(--red)'; msg.textContent = '쿠폰 코드 12자리를 입력해주세요.'; return;
@@ -214,6 +217,7 @@ window.redeemCoupon = async function() {
    msg.style.color = 'var(--green)';
    msg.textContent = '+' + data.credits + '크레딧이 충전됐어요! (현재 ' + data.newBalance + '크레딧)';
    input.value = '';
+   if (window.gpTrack) window.gpTrack('coupon_redeem', { credits: data.credits || 0 });
   } else {
    msg.style.color = 'var(--red)';
    msg.textContent = data.error || '쿠폰 적용에 실패했어요.';
@@ -639,6 +643,7 @@ window.kakaoLogin = async () =>{
  return;
  }
  try {
+ if (window.gpTrack) window.gpTrack('login_start', { method: 'kakao' });
  const authResult = await new Promise((resolve, reject) =>{
  Kakao.Auth.login({
  success: resolve,
@@ -668,14 +673,23 @@ window.kakaoLogin = async () =>{
  }
  await updateProfile(user, { displayName: data.nickname, photoURL: data.photo });
  await updateDoc(doc(db,'users',user.uid), { kakaoId: String(data.kakaoId) }).catch(()=>{});
+ if (window.gpTrack) window.gpTrack('login', { method: 'kakao' });
  } catch(e) {
+ if (window.gpTrack) window.gpTrack((e && e.error_code === 'CANCELED') ? 'login_cancel' : 'login_error', { method: 'kakao', message: String(e.message || '').slice(0, 120) });
  if (e && e.error_code !== 'CANCELED') alert('카카오 로그인 실패: ' + (e.message || JSON.stringify(e)));
  }
 };
 
 window.googleLogin = async () =>{
  if (/KAKAOTALK/i.test(navigator.userAgent)) { document.querySelector('.kakao-warn').style.display='flex'; return; }
- try { await signInWithPopup(auth, provider); } catch(e) { if(e.code!=='auth/popup-closed-by-user') alert('로그인 실패: '+e.message); }
+ try {
+  if (window.gpTrack) window.gpTrack('login_start', { method: 'google' });
+  await signInWithPopup(auth, provider);
+  if (window.gpTrack) window.gpTrack('login', { method: 'google' });
+ } catch(e) {
+  if (window.gpTrack) window.gpTrack(e.code === 'auth/popup-closed-by-user' ? 'login_cancel' : 'login_error', { method: 'google', message: String(e.message || '').slice(0, 120) });
+  if(e.code!=='auth/popup-closed-by-user') alert('로그인 실패: '+e.message);
+ }
 };
 window.openExternal = () =>{
  const url = location.href;
@@ -686,7 +700,7 @@ window.logout = async () =>{
  const ok = window.gpConfirm
   ? await window.gpConfirm({ title: '로그아웃할까요?', message: '언제든 다시 로그인할 수 있어요.', confirmText: '로그아웃' })
   : confirm('로그아웃 하시겠어요?');
- if(ok) { await signOut(auth); switchTab('main'); }
+ if(ok) { if (window.gpTrack) window.gpTrack('logout'); await signOut(auth); switchTab('main'); }
 };
 
 window.changeNickname = async () =>{
@@ -1161,6 +1175,7 @@ window.submitPost = async () =>{
  createdAt:serverTimestamp(),
  photos: photoUrls // 사진 링크 배열 저장!
  });
+ if (window.gpTrack) window.gpTrack('community_post_create', { category, photos_count: photoUrls.length, is_anon: anon });
 
  // 3. 폼 초기화
  document.getElementById('ptitle').value='';
@@ -1294,6 +1309,7 @@ window.submitComment = async (postId) =>{
  else { anonName = '익명' + (anonCount + 1); }
  }
  await addDoc(collection(db,'posts',postId,'comments'),{ body, authorId:CU.uid, authorName:anonName, isAnon:anon, createdAt:serverTimestamp() });
+ if (window.gpTrack) window.gpTrack('comment_create', { post_id: postId, is_anon: anon });
  await updateDoc(doc(db,'posts',postId),{commentCount:increment(1)});
  const psnap = await getDoc(doc(db,'posts',postId));
  if(psnap.exists()) await window.sendNotification(postId, psnap.data().authorId, anonName, psnap.data().title);
@@ -1451,6 +1467,7 @@ window.submitQuestion = async () =>{
    createdAt: serverTimestamp(),
    views: 0
   });
+  if (window.gpTrack) window.gpTrack('qna_submit', { qna_id: _qref.id, is_anon: anon });
   gpNotifyEvent('inquiry', { id: _qref.id });   // 운영 알림(새 문의)
   document.getElementById('qtitle').value = '';
   document.getElementById('qbody').value = '';
@@ -2092,6 +2109,7 @@ window.submitReply = async (postId, commentId, parentAuthorName) =>{
  parentCommentId: commentId, isReply: true,
  createdAt: serverTimestamp()
  });
+ if (window.gpTrack) window.gpTrack('comment_reply_create', { post_id: postId, parent_comment_id: commentId, is_anon: anon });
  await updateDoc(doc(db,'posts',postId), {commentCount: increment(1)});
  const psnap = await getDoc(doc(db,'posts',postId));
  if (psnap.exists()) await window.sendNotification(postId, psnap.data().authorId, authorName, psnap.data().title);
