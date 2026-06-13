@@ -337,6 +337,11 @@ window.addEventListener('popstate', () => applyRouteFromUrl({ replace: true }));
 
 // Pro 탭 진입 가드: 미로그인이면 로그인 화면, 비구독자면 가격 페이지로 안내
 function goToPro() {
+ if (!window.PRO_ENABLED) {
+   if (window.gpToast) window.gpToast('오픈되면 공지·메일로 안내드릴게요.', { type: 'info', title: 'Pro는 준비 중이에요' });
+   else alert('Pro 기능은 준비 중이에요.\n오픈되면 공지·메일로 안내드릴게요.');
+   return;
+ }
  if (!window.CU) { showScreen('login'); return; }
  const sub = window.SUB;
  const valid = sub && (sub.status === 'active' || (sub.status === 'cancelled' && sub.nextBillingMs > Date.now()));
@@ -1262,7 +1267,9 @@ function switchPricingTab(t) {
 // === 정기결제 구독 ===
 // ⚠️ 토스 정기결제 심사 통과 후 true로 변경하면 즉시 활성화됩니다.
 //    false면 가격 페이지에 정기구독 카드는 노출되지만 "구독 시작" 버튼은 비활성 + 안내 배너 표시.
-window.SUBSCRIPTION_ENABLED = true;
+// 아직 구현 전이라 막아둠(준비 중). 오픈 시 true로.
+window.SUBSCRIPTION_ENABLED = false;
+window.PRO_ENABLED = false;
 
 // 정기구독 가용성 UI 적용 (카드 비활성 처리, 배너 토글, 버튼 라벨)
 window.applySubscriptionAvailability = function() {
@@ -1278,7 +1285,7 @@ window.applySubscriptionAvailability = function() {
     } else {
       card.classList.add('sub-disabled');
       const btn = card.querySelector('.plan-btn');
-      if (btn) btn.textContent = '검수 중';
+      if (btn) btn.textContent = '준비 중';
     }
   });
 };
@@ -1298,7 +1305,8 @@ const SUB_PLAN_INFO = {
 
 function openSubscribeConfirm(tier) {
  if (!window.SUBSCRIPTION_ENABLED) {
-   alert('정기 구독은 현재 결제 시스템 검수 중입니다.\n검수 완료 즉시 공지·메일로 안내드릴게요.');
+   if (window.gpToast) window.gpToast('오픈되면 공지·메일로 안내드릴게요.', { type: 'info', title: '정기 구독은 준비 중이에요' });
+   else alert('정기 구독은 준비 중이에요.\n오픈되면 공지·메일로 안내드릴게요.');
    return;
  }
  if (!window.CU) { alert('로그인이 필요합니다.'); showScreen('login'); return; }
