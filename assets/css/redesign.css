@@ -14185,3 +14185,69 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  #mainContent[data-main-design="lavender"] :is(.pc-line,.pc-scan,.pc-dot){animation:none !important;}
  #mainContent[data-main-design="lavender"] .plan-card{transform:none !important;}
 }
+
+/* ───────── lavender v64: 컴포저 전송 버튼 = modern-stingray-68 이식 ─────────
+   링 스왑(대기 옅은 라벤더 → 호버 본색 보라) + 화살표 슬라이드 교대.
+   원본과 차이: 테두리·화살표 색만 우리 팔레트, 화살표는 위(-90deg), 52px 규격(원본 56px).
+   .lav-send-elem 폭 합(16+20+16)=52 = 슬라이드 거리 — 크기 바꾸면 같이 맞출 것. */
+.gp-lav-send{
+ position:relative;
+ overflow:hidden;
+ background:transparent !important;
+ box-shadow:none !important;
+}
+.gp-lav-send:hover{transform:none;filter:none;box-shadow:none !important;}
+.gp-lav-send::before,
+.gp-lav-send::after{
+ content:"";
+ position:absolute;
+ inset:6px;
+ border-radius:50%;
+}
+.gp-lav-send::before{
+ border:4px solid #c9cbf2;
+ transition:opacity .4s cubic-bezier(.77,0,.175,1) 80ms,transform .5s cubic-bezier(.455,.03,.515,.955) 80ms;
+}
+.gp-lav-send::after{
+ border:4px solid #5557d2;
+ transform:scale(1.3);
+ opacity:0;
+ transition:opacity .4s cubic-bezier(.165,.84,.44,1),transform .5s cubic-bezier(.25,.46,.45,.94);
+}
+.gp-lav-send:hover::before,
+.gp-lav-send:focus-visible::before{
+ opacity:0;
+ transform:scale(.7);
+ transition:opacity .4s cubic-bezier(.165,.84,.44,1),transform .5s cubic-bezier(.25,.46,.45,.94);
+}
+.gp-lav-send:hover::after,
+.gp-lav-send:focus-visible::after{
+ opacity:1;
+ transform:scale(1);
+ transition:opacity .4s cubic-bezier(.77,0,.175,1) 80ms,transform .5s cubic-bezier(.455,.03,.515,.955) 80ms;
+}
+.lav-send-box{
+ display:flex;
+ position:absolute;
+ top:0;
+ left:0;
+}
+.lav-send-elem{
+ display:block;
+ width:20px;
+ height:20px;
+ margin:16px 16px 0 16px;
+ transform:rotate(-90deg);
+ fill:#5557d2;
+}
+/* 기존 .gp-lav-send svg{width:22px} 계열(9855·12741·12844)이 새 화살표를 키우지 않게 고정 */
+.lav-send-elem svg{display:block;width:100%;height:100%;}
+.gp-lav-send:hover .lav-send-box,
+.gp-lav-send:focus-visible .lav-send-box{
+ transition:.4s;
+ transform:translateX(-52px);
+}
+@media (prefers-reduced-motion:reduce){
+ .gp-lav-send::before,.gp-lav-send::after,.lav-send-box{transition:none !important;}
+ .gp-lav-send:hover .lav-send-box,.gp-lav-send:focus-visible .lav-send-box{transform:translateX(-52px);}
+}
