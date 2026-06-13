@@ -15264,3 +15264,56 @@ body[data-main-design="lavender"] .gp-notification-item.unread::before{
  width:3px;height:24px;border-radius:2px;background:#7c6bff;
 }
 body[data-main-design="lavender"] .gp-notification-item.unread .gp-notification-body b{color:#4a4bc0;}
+
+
+/* ───────── lavender v77: 토스트·다이얼로그 라벤더 컨셉 — 다크 → 밝은 라벤더 ─────────
+   body 직속 오버레이라 body[data-main-design="lavender"]로 스코프. */
+/* 토스트 */
+body[data-main-design="lavender"] .gp-toast{
+ background:#fff;color:#1a1f2e;border:1px solid #e7e9f4;
+ box-shadow:0 16px 44px rgba(84,90,160,.18);backdrop-filter:none;
+}
+body[data-main-design="lavender"] .gp-toast b{color:#1a1f2e;}
+body[data-main-design="lavender"] .gp-toast p{color:#5d6477;}
+body[data-main-design="lavender"] .gp-toast button{background:#f1f2f8;color:#7d8597;}
+body[data-main-design="lavender"] .gp-toast button:hover{background:#e7e8f2;color:#5a5bd8;}
+body[data-main-design="lavender"] .gp-toast-mark{background:linear-gradient(135deg,#7c6bff,#5a8bff);}
+/* error/info 마크는 타입 색(빨강·블루) 그대로 — 흰 배경에서도 잘 보임 */
+
+/* 다이얼로그 */
+body[data-main-design="lavender"] .gp-dialog-backdrop{background:rgba(38,40,78,.34);backdrop-filter:blur(6px);}
+body[data-main-design="lavender"] .gp-dialog-card{
+ background:#fff;color:#1a1f2e;border:1px solid #e7e9f4;box-shadow:0 26px 70px rgba(84,90,160,.28);
+}
+body[data-main-design="lavender"] .gp-dialog-card h2{color:#1a1f2e;}
+body[data-main-design="lavender"] .gp-dialog-card p{color:#5d6477;}
+body[data-main-design="lavender"] .gp-dialog-x{border:1px solid #e4e7f1;background:#fff;color:#7d8597;}
+body[data-main-design="lavender"] .gp-dialog-x:hover{background:#f3f3fb;color:#5a5bd8;border-color:#d2cdf0;}
+body[data-main-design="lavender"] .gp-dialog-icon{background:linear-gradient(135deg,#7c6bff,#5a8bff);}
+body[data-main-design="lavender"] .gp-prompt-wrap textarea{background:#fff !important;border:1px solid #dfe3ef !important;color:#1a1f2e !important;}
+body[data-main-design="lavender"] .gp-dialog-cancel{border:1px solid #d2cdf0;background:#fff;color:#5a5bd8;}
+body[data-main-design="lavender"] .gp-dialog-cancel:hover{background:#f3f3fb;border-color:#c4bdf0;}
+body[data-main-design="lavender"] .gp-dialog-confirm{background:linear-gradient(135deg,#7c6bff,#5a8bff);box-shadow:0 10px 24px rgba(98,86,255,.28);}
+/* danger(위험) confirm·icon은 빨강 유지(주의 신호) */
+
+/* ───────── lavender v78: 메인 컴포저 모바일 최적화 ─────────
+   문제: 모드 토글(휴머나이징/AI 감지)이 너무 넓어 바가 가로로 넘쳐 전송 버튼이 화면 밖으로 밀리고
+   컴포저가 뷰포트를 초과(전송 버튼 찌그러짐). → 토글을 남는 폭에 균등 분할·압축, 전송·+ 고정 크기. */
+@media(max-width:560px){
+ #mainContent[data-main-design="lavender"] .gp-lav-composer-bar{gap:8px;min-width:0;flex-wrap:nowrap;}
+ #mainContent[data-main-design="lavender"] .gp-lav-mode{flex:1 1 auto;min-width:0;padding:3px;gap:2px;}
+ #mainContent[data-main-design="lavender"] .gp-lav-mode button{flex:1 1 0;min-width:0;justify-content:center;padding:0 8px;gap:4px;font-size:12px;}
+ #mainContent[data-main-design="lavender"] .gp-lav-mode button .material-symbols-outlined{display:none;}
+ #mainContent[data-main-design="lavender"] .gp-lav-mode button .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+ #mainContent[data-main-design="lavender"] .gp-lav-mode button em{padding:1px 5px;font-size:9px;}
+ #mainContent[data-main-design="lavender"] .gp-lav-add{flex:0 0 42px;width:42px;height:42px;}
+ #mainContent[data-main-design="lavender"] .gp-lav-send{flex:0 0 48px !important;width:48px !important;height:48px !important;}
+}
+/* v78 보강: 컴포저의 기본 min-width:auto가 바의 min-content(전송·+ 고정폭)로 부풀어 width:min(980,100%)를 무시 →
+   min-width:0 전파해 실제로 줄어들게(전송 버튼 찌그러짐/넘침 해결). */
+#mainContent[data-main-design="lavender"] .gp-lav-composer{min-width:0;}
+@media(max-width:560px){
+ #mainContent[data-main-design="lavender"] .gp-lav-mode button .lbl{min-width:0;}
+}
+/* v77 보강: 에러 토스트 마크는 빨강 유지(에러 신호 명확). body[lavender] .gp-toast-mark(0-2-1)가 .gp-toast-error .gp-toast-mark(0-2-0)를 덮어 라벤더가 됐던 것 → 특이도 올려 빨강 복원 */
+body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:linear-gradient(135deg,#ef4444,#f97316);}
