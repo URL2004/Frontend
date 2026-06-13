@@ -14228,6 +14228,7 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 }
 .lav-send-box{
  display:flex;
+ flex-direction:column; /* 세로 교대(사장님): 화살표가 위로 날아가고 아래에서 새 화살표 */
  position:absolute;
  top:0;
  left:0;
@@ -14236,7 +14237,7 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  display:block;
  width:20px;
  height:20px;
- margin:16px 16px 0 16px;
+ margin:16px; /* 16+20+16=52 = 세로 슬라이드 거리 */
  transform:rotate(-90deg);
  fill:#5557d2;
 }
@@ -14245,11 +14246,11 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 .gp-lav-send:hover .lav-send-box,
 .gp-lav-send:focus-visible .lav-send-box{
  transition:.4s;
- transform:translateX(-52px);
+ transform:translateY(-52px);
 }
 @media (prefers-reduced-motion:reduce){
  .gp-lav-send::before,.gp-lav-send::after,.lav-send-box{transition:none !important;}
- .gp-lav-send:hover .lav-send-box,.gp-lav-send:focus-visible .lav-send-box{transform:translateX(-52px);}
+ .gp-lav-send:hover .lav-send-box,.gp-lav-send:focus-visible .lav-send-box{transform:translateY(-52px);}
 }
 
 /* ───────── lavender v65: 검정 주 버튼 전부 = wonderful-baboon-62 이식 ─────────
