@@ -269,6 +269,9 @@
   };
 
   window.lavNewSentence = function () {
+    // 다른 탭(FAQ·문의·공지 등)에서 눌러도 동작하도록 메인(컴포저)으로 먼저 복귀.
+    // 안 그러면 숨겨진 lavInput만 비우고 화면이 안 바뀌어 "안 눌린다"처럼 보임.
+    if (typeof window.switchTab === 'function') window.switchTab('main');
     var src = document.getElementById('lavInput');
     var target = document.getElementById('inputText');
     if (src) { src.value = ''; window.lavSyncCount(src); }
