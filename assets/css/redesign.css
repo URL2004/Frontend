@@ -15317,3 +15317,35 @@ body[data-main-design="lavender"] .gp-dialog-confirm{background:linear-gradient(
 }
 /* v77 보강: 에러 토스트 마크는 빨강 유지(에러 신호 명확). body[lavender] .gp-toast-mark(0-2-1)가 .gp-toast-error .gp-toast-mark(0-2-0)를 덮어 라벤더가 됐던 것 → 특이도 올려 빨강 복원 */
 body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:linear-gradient(135deg,#ef4444,#f97316);}
+/* ───────── lavender v79: 마이페이지·히스토리 라벤더 + 레이아웃 정리 ─────────
+   두 페이지는 인라인 스타일 + CSS 변수(body.dark 다크값)로 그려져 라벤더 배경에 다크로 떴음.
+   → 컨테이너에서 색 변수만 라이트 라벤더로 재정의(인라인 var() 전부 라이트화) + 폭 정리. */
+#mainContent[data-main-design="lavender"] #mypageContent,
+#mainContent[data-main-design="lavender"] #historyContent{
+ --surface:#fff;
+ --surface2:#f5f6fb;
+ --border:#e7e9f4;
+ --text:#1a1f2e;
+ --text2:#5d6477;
+ --text3:#9aa0b4;
+ --blue:#5a5bd8;
+ --green:#3f9e63;
+ --yellow:#d99a2b;
+ --red:#e05a4b;
+ --accent:#7c6bff;
+ max-width:760px;
+ margin:0 auto;
+}
+/* 마이페이지 카드/항목 정리: 부드러운 섀도·여백 */
+#mainContent[data-main-design="lavender"] #mypageContent .shell > div,
+#mainContent[data-main-design="lavender"] #mypageContent #subManageCard > div{
+ box-shadow:0 8px 22px rgba(84,90,160,.06) !important;
+}
+#mainContent[data-main-design="lavender"] #mypageContent .pitem{
+ background:#fff !important;border:1px solid #e7e9f4 !important;border-radius:12px !important;
+ margin-bottom:8px !important;box-shadow:0 4px 14px rgba(84,90,160,.04) !important;
+}
+#mainContent[data-main-design="lavender"] #mypageContent .pitem:hover{border-color:#d2cdf0 !important;}
+/* 히스토리 헤더 */
+#mainContent[data-main-design="lavender"] #historyContent .gp-history-head h2{color:#1a1f2e;}
+#mainContent[data-main-design="lavender"] #historyContent .gp-history-head span{color:#9aa0b4;}
