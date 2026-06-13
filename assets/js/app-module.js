@@ -599,7 +599,7 @@ window.handleKakaoCallback = async () =>{
  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
  body: new URLSearchParams({
  grant_type: 'authorization_code',
- client_id: 'ad2364a2d83abfe7ad22e6cdd3162dfd',
+ client_id: window.APP_CONFIG.KAKAO_REST_KEY,
  redirect_uri: window.APP_CONFIG.SITE_URL,
  code
  })

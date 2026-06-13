@@ -1196,6 +1196,11 @@ function openKakaoInquiry() {
 }
 window.openKakaoInquiry = openKakaoInquiry;
 
+function maintenancePreviewQuery() {
+  if (!window.GP_MAINTENANCE_BYPASSED || !window.APP_CONFIG?.MAINTENANCE_PREVIEW_KEY) return '';
+  return '&preview_key=' + encodeURIComponent(window.APP_CONFIG.MAINTENANCE_PREVIEW_KEY);
+}
+
 async function payToss(amount, credits, name, plan) {
  if (!window.CU) { alert('로그인이 필요합니다.'); return; }
 
@@ -1219,8 +1224,8 @@ async function payToss(amount, credits, name, plan) {
  orderName: name + ' ' + credits + '크레딧',
  customerName: window.CU.displayName,
  // 2. 결제 성공/실패 시 돌아올 URL 설정
- successUrl: `${window.location.origin + window.location.pathname}?credits=${credits}&plan=${encodeURIComponent(plan||'')}&uid=${encodeURIComponent(window.CU.uid)}`,
- failUrl: location.origin + location.pathname + '?fail=1' 
+ successUrl: `${window.location.origin + window.location.pathname}?credits=${credits}&plan=${encodeURIComponent(plan||'')}&uid=${encodeURIComponent(window.CU.uid)}${maintenancePreviewQuery()}`,
+ failUrl: location.origin + location.pathname + '?fail=1' + maintenancePreviewQuery()
  });
  } catch(e) {
  if(e.code !== 'USER_CANCEL') alert('결제 오류: ' + e.message);
@@ -1367,8 +1372,8 @@ async function payTossSubscription(tier) {
  try {
    await tp.requestBillingAuth('카드', {
      customerKey,
-     successUrl: `${window.location.origin + window.location.pathname}?sub=${tier}&ck=${encodeURIComponent(customerKey)}&uid=${encodeURIComponent(window.CU.uid)}`,
-     failUrl: location.origin + location.pathname + '?subfail=1'
+     successUrl: `${window.location.origin + window.location.pathname}?sub=${tier}&ck=${encodeURIComponent(customerKey)}&uid=${encodeURIComponent(window.CU.uid)}${maintenancePreviewQuery()}`,
+     failUrl: location.origin + location.pathname + '?subfail=1' + maintenancePreviewQuery()
    });
  } catch(e) {
    if (e.code !== 'USER_CANCEL') alert('결제 오류: ' + e.message);

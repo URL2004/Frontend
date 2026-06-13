@@ -48,7 +48,7 @@ async function copyIfExists(entry) {
 }
 
 function literal(value) {
-  return JSON.stringify(value == null ? '' : String(value));
+  return JSON.stringify(value == null ? '' : String(value).replace(/^\uFEFF/, '').trim());
 }
 
 async function writeRuntimeConfig() {
@@ -69,6 +69,7 @@ window.APP_RUNTIME_CONFIG = {
   API_BASE: ${literal(process.env.VITE_API_BASE || '')},
   TOSS_CLIENT_KEY: ${literal(process.env.VITE_TOSS_CLIENT_KEY || '')},
   KAKAO_JS_KEY: ${literal(process.env.VITE_KAKAO_JS_KEY || '')},
+  KAKAO_REST_KEY: ${literal(process.env.VITE_KAKAO_REST_KEY || '')},
   KAKAO_INQUIRY_URL: ${literal(process.env.VITE_KAKAO_INQUIRY_URL || 'https://open.kakao.com/o/s3Jegizi')},
   MAINTENANCE_MODE: ${literal(process.env.VITE_MAINTENANCE_MODE || '')},
   MAINTENANCE_PREVIEW_KEY: ${literal(process.env.VITE_MAINTENANCE_PREVIEW_KEY || '')},
