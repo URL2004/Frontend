@@ -12417,6 +12417,30 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  color:#4b4cc6;
  font-weight:700;
 }
+.lav-bands-legend{
+ margin:16px 0 -2px;
+ font-size:11.5px;
+ font-weight:600;
+ color:#8a91a3;
+}
+.lav-bands-legend b{color:#5a5bd8;font-weight:800;}
+.lav-diag-bands > div.warnband{
+ border-color:#ecd6ad;
+ background:#fdf8ee;
+}
+.lav-diag-bands > div.warnband b{color:#b9791a;}
+.lav-diag-bands > div.warnband em{color:#b9791a;font-weight:700;}
+.lav-evade-warn{
+ margin:-2px 0 14px;
+ padding:11px 13px;
+ border:1px solid #ecd6ad;
+ background:#fdf6e9;
+ border-radius:11px;
+ font-size:12.5px;
+ line-height:1.55;
+ color:#7a5a16;
+}
+.lav-evade-warn b{color:#8a5a05;font-weight:800;}
 .lav-diag-note{
  margin:14px 0 0;
  color:#8a91a3;

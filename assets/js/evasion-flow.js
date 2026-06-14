@@ -615,15 +615,13 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text), idToken: idToken })
-        }).then(function (res) { return res.json().then(function (b) { if (b && b.error) throw new Error(b.error); if (!res.ok || !b || !b.ok) throw new Error('작업 시작에 실패했어요.'); return b; }); });
+        }).then(parseTransformStart);
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
         activeCancel = makeJobCanceller(r.jobId);
         await pollTransform(r.jobId, gen);
       } catch (err) {
-        stopFormalTicker();
-        alert(err && err.message ? err.message : '처리 중 오류가 발생했어요.');
-        show(mode === 'polish' ? 'choose' : 'reduce');
+        await handleTransformStartError(err, mode === 'polish' ? 'choose' : 'reduce');
       }
     })();
   }
@@ -642,7 +640,8 @@
     if (sum) {
       sum.innerHTML =
         '<li><span>방식</span><b>그대로 다듬기 — 문장만 자연스럽게</b></li>' +
-        '<li><span>원문 보존</span><b>구조·의미 유지(회피 재작성 아님)</b></li>';
+        '<li><span>원문 보존</span><b>구조·의미 유지(회피 재작성 아님)</b></li>' +
+        '<li><span>외부 검사</span><b>카피킬러 등 회피용 아님 — 탐지율이 그대로일 수 있어요</b></li>';
     }
     var len = src ? src.value.length : 0;   // 글자수 통일: 공백 포함
     if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = Math.max(1, Math.ceil(len / 100)) + ' 크레딧';
@@ -716,30 +715,78 @@
       if (o.httpStatus === 401) return;
       var st = o.st;
       if (!st || !st.ok) { clearJobRef(); return; }
-      if (st.status === 'done') {
-        st.jobId = ref.jobId;
-        renderJobDone(st);   // blog/formal 모드별 점수·배지·보관함 — 폴링 완료와 동일 렌더
-        clearJobRef();
-        show('done');
-        lavInitCollapse('lavDoneBody', 'lavDoneToggle');
-        return;
-      }
-      if (st.status === 'running' || st.status === 'awaiting_approval') {
-        var isShort = st.mode === 'blog' || st.mode === 'polish';
-        if ($('lavJobTitle')) $('lavJobTitle').textContent = isShort ? '문장을 다듬고 있어요' : '글을 다시 쓰고 있어요';
-        if ($('lavJobId')) $('lavJobId').textContent = '#' + ref.jobId.slice(0, 6).toUpperCase();
-        show('job');
-        activeCancel = makeJobCanceller(ref.jobId);
-        // 서버 estSec·elapsedSec로 진행률 이어서 표시(새로고침해도 0부터 다시 안 올라감)
-        formalStop = startJobTicker(st.estSec || (isShort ? 180 : 900), st.status === 'awaiting_approval' ? '근거 검수 대기' : (isShort ? '문장 다듬는 중' : '재구성 중'), st.elapsedSec || 0);
-        pollTransform(ref.jobId, ++pollGen);
-        return;
-      }
+      if (resumeTransformState(ref.jobId, st)) return;
       clearJobRef();   // blocked·error는 복원 의미 없음
     }).catch(function () { /* 서버 미접속 — 다음 방문에 재시도 */ });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initJobResume);
   else initJobResume();
+
+  function parseTransformStart(res) {
+    return res.json().catch(function () { return null; }).then(function (b) {
+      if (b && b.error) {
+        var e = new Error(b.error);
+        e.httpStatus = res.status;
+        e.activeJobId = b.activeJobId || '';
+        e.activeStatus = b.activeStatus || '';
+        throw e;
+      }
+      if (!res.ok || !b || !b.ok) throw new Error('작업 시작에 실패했어요.');
+      return b;
+    });
+  }
+
+  function resumeTransformState(jobId, st) {
+    if (!jobId || !st || !st.ok && !st.status) return false;
+    st.jobId = jobId;
+    if (st.status === 'done') {
+      renderJobDone(st);   // blog/formal 모드별 점수·배지·보관함 — 폴링 완료와 동일 렌더
+      clearJobRef();
+      show('done');
+      lavInitCollapse('lavDoneBody', 'lavDoneToggle');
+      return true;
+    }
+    if (st.status !== 'running' && st.status !== 'awaiting_approval') return false;
+    saveJobRef(jobId);
+    activeCancel = makeJobCanceller(jobId);
+    var isShort = st.mode === 'blog' || st.mode === 'polish';
+    if ($('lavJobTitle')) $('lavJobTitle').textContent = isShort ? '문장을 다듬고 있어요' : '글을 다시 쓰고 있어요';
+    if ($('lavJobId')) $('lavJobId').textContent = '#' + jobId.slice(0, 6).toUpperCase();
+    show('job');
+    if (st.status === 'awaiting_approval') {
+      stopFormalTicker();
+      setJobSteps(2);
+      if ($('lavStepSlot')) $('lavStepSlot').textContent = '근거 검수 대기 — 승인한 자료만 인용돼요';
+      renderApprovalList(st.candidates || [], jobId);
+      var ap = $('lavApprove'); if (ap) ap.hidden = false;
+      return true;
+    }
+    stopFormalTicker();
+    // 서버 estSec·elapsedSec로 진행률 이어서 표시(새로고침해도 0부터 다시 안 올라감)
+    formalStop = startJobTicker(st.estSec || (isShort ? 180 : 900), isShort ? '문장 다듬는 중' : '재구성 중', st.elapsedSec || 0);
+    pollTransform(jobId, ++pollGen);
+    return true;
+  }
+
+  async function recoverActiveTransformJob() {
+    var idToken = await evGetIdToken(true);
+    var res = await fetch(window.apiUrl('/transform/active'), { headers: evAuthHeaders(idToken) });
+    if (!res.ok) return false;
+    var data = await res.json().catch(function () { return null; });
+    var job = data && data.job;
+    if (!data || !data.ok || !job || !job.id) return false;
+    if (window.gpToast) window.gpToast('진행 중이던 작업으로 다시 들어갑니다.', { type: 'info' });
+    return resumeTransformState(job.id, job);
+  }
+
+  async function handleTransformStartError(err, fallbackStep) {
+    stopFormalTicker();
+    if (err && err.httpStatus === 409) {
+      try { if (await recoverActiveTransformJob()) return; } catch (e) { /* 기존 안내로 폴백 */ }
+    }
+    alert(err && err.message ? err.message : '처리 중 오류가 발생했어요.');
+    show(fallbackStep || 'reduce');
+  }
 
   // 폴링: 6초 간격, 최대 45분(근거 검색+재구성). 창을 닫아도 서버 작업은 계속됨(job 방식).
   // gen 토큰: 사용자가 중단하거나 새 작업을 시작하면 pollGen이 올라가 이전 루프가 조용히 끝남.
@@ -886,15 +933,13 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: text, idToken: idToken, evidence: !!s.evidence })
-        }).then(function (res) { return res.json().then(function (b) { if (b && b.error) throw new Error(b.error); if (!res.ok || !b || !b.ok) throw new Error('작업 시작에 실패했어요.'); return b; }); });
+        }).then(parseTransformStart);
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
         activeCancel = makeJobCanceller(r.jobId);
         await pollTransform(r.jobId, gen);
       } catch (err) {
-        stopFormalTicker();
-        alert(err && err.message ? err.message : '처리 중 오류가 발생했어요.');
-        show('reduce');
+        await handleTransformStartError(err, 'reduce');
       }
     })();
   }
