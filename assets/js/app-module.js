@@ -322,7 +322,7 @@ window.loadCouponBatches = async function() {
  const el = document.getElementById('couponBatchList');
  if (!el) return;
  if (!window.CU || !window.isAdmin()) return;
- el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div>';
+ el.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
  try {
   const token = await window.CU.getIdToken();
   const cursor = window._couponPages.cursors[window._couponPages.index];
@@ -334,7 +334,7 @@ window.loadCouponBatches = async function() {
   });
   const data = await res.json();
   if (!res.ok || !data.ok) {
-   el.innerHTML = '<div style="color:var(--red);padding:12px;">' + (data.error || '조회 실패') + '</div>';
+   el.innerHTML = '<div class="gp-admin-empty gp-admin-error-text">' + escapeHtml(data.error || '조회 실패') + '</div>';
    return;
   }
   // nextCursor stack 갱신
@@ -344,7 +344,7 @@ window.loadCouponBatches = async function() {
   window._couponPages.hasNext = !!data.nextCursor;
 
   if ((!data.batches || data.batches.length === 0) && window._couponPages.index === 0) {
-   el.innerHTML = '<div style="color:var(--text3);padding:12px;text-align:center;">발급 이력이 없어요.</div>';
+   el.innerHTML = '<div class="gp-admin-empty">발급 이력이 없어요.</div>';
    return;
   }
   // 페이지가 비었는데 index>0인 경우 (삭제 직후 케이스): 한 페이지 뒤로
@@ -352,33 +352,33 @@ window.loadCouponBatches = async function() {
    window._couponPages.index--;
    return window.loadCouponBatches();
   }
-  let html = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">'
-   + '<thead><tr style="border-bottom:2px solid var(--border);color:var(--text2);">'
-   + '<th style="padding:8px;text-align:left;">발급일</th>'
-   + '<th style="padding:8px;text-align:left;">발급자</th>'
-   + '<th style="padding:8px;text-align:right;">크레딧</th>'
-   + '<th style="padding:8px;text-align:right;">발급</th>'
-   + '<th style="padding:8px;text-align:right;">사용</th>'
-   + '<th style="padding:8px;text-align:right;">무효</th>'
-   + '<th style="padding:8px;text-align:right;">잔여</th>'
-   + '<th style="padding:8px;text-align:left;">만료</th>'
-   + '<th style="padding:8px;"></th>'
+  let html = '<div class="gp-admin-table-wrap"><table class="gp-admin-table">'
+   + '<thead><tr>'
+   + '<th>발급일</th>'
+   + '<th>발급자</th>'
+   + '<th class="num">크레딧</th>'
+   + '<th class="num">발급</th>'
+   + '<th class="num">사용</th>'
+   + '<th class="num">무효</th>'
+   + '<th class="num">잔여</th>'
+   + '<th>만료</th>'
+   + '<th></th>'
    + '</tr></thead><tbody>';
   data.batches.forEach(b => {
    const actionBtn = (b.unusedCount > 0)
-    ? '<button onclick="voidBatch(\'' + escapeHtml(b.batchId) + '\',' + b.unusedCount + ')" style="padding:5px 10px;border-radius:6px;border:1px solid var(--red);background:transparent;color:var(--red);font-size:11px;cursor:pointer;">배치 무효화</button>'
-    : '<button onclick="deleteBatch(\'' + escapeHtml(b.batchId) + '\')" style="padding:5px 10px;border-radius:6px;border:1px solid var(--text3);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;">기록 지우기</button>';
-   html += '<tr style="border-bottom:1px solid var(--border);">'
-    + '<td style="padding:8px;color:var(--text3);">' + escapeHtml(fmtDate(b.createdAt)) + '</td>'
-    + '<td style="padding:8px;">' + escapeHtml(adminLabel(b.adminUid)) + '</td>'
-    + '<td style="padding:8px;text-align:right;font-weight:600;">' + b.credits + '</td>'
-    + '<td style="padding:8px;text-align:right;">' + b.count + '</td>'
-    + '<td style="padding:8px;text-align:right;color:var(--blue);">' + b.redeemedCount + '</td>'
-    + '<td style="padding:8px;text-align:right;color:var(--text3);">' + b.voidedCount + '</td>'
-    + '<td style="padding:8px;text-align:right;color:var(--green);font-weight:600;">' + b.unusedCount + '</td>'
-    + '<td style="padding:8px;color:var(--text3);cursor:pointer;text-decoration:underline;text-decoration-style:dotted;" onclick="updateBatchExpiry(\'' + escapeHtml(b.batchId) + '\',' + (b.expiresAt !== null && b.expiresAt !== undefined ? b.expiresAt : 'null') + ')" title="클릭해서 만료일 변경">' + escapeHtml(fmtDateShort(b.expiresAt)) + ' ✎</td>'
-    + '<td style="padding:8px;white-space:nowrap;">'
-    + '<button onclick="showBatchDetail(\'' + escapeHtml(b.batchId) + '\')" style="padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:11px;cursor:pointer;margin-right:4px;">상세</button>'
+    ? '<button class="gp-admin-mini-btn danger" onclick="voidBatch(\'' + escapeHtml(b.batchId) + '\',' + b.unusedCount + ')">배치 무효화</button>'
+    : '<button class="gp-admin-mini-btn" onclick="deleteBatch(\'' + escapeHtml(b.batchId) + '\')">기록 지우기</button>';
+   html += '<tr>'
+    + '<td class="muted">' + escapeHtml(fmtDate(b.createdAt)) + '</td>'
+    + '<td>' + escapeHtml(adminLabel(b.adminUid)) + '</td>'
+    + '<td class="num" style="font-weight:700;">' + b.credits + '</td>'
+    + '<td class="num">' + b.count + '</td>'
+    + '<td class="num">' + b.redeemedCount + '</td>'
+    + '<td class="num muted">' + b.voidedCount + '</td>'
+    + '<td class="num gp-admin-pos">' + b.unusedCount + '</td>'
+    + '<td class="muted edit" onclick="updateBatchExpiry(\'' + escapeHtml(b.batchId) + '\',' + (b.expiresAt !== null && b.expiresAt !== undefined ? b.expiresAt : 'null') + ')" title="클릭해서 만료일 변경">' + escapeHtml(fmtDateShort(b.expiresAt)) + ' ✎</td>'
+    + '<td style="white-space:nowrap;">'
+    + '<button class="gp-admin-mini-btn" style="margin-right:4px;" onclick="showBatchDetail(\'' + escapeHtml(b.batchId) + '\')">상세</button>'
     + actionBtn
     + '</td></tr>'
     + '<tr id="batchDetail-' + escapeHtml(b.batchId) + '" style="display:none;"><td colspan="9" style="padding:0;"></td></tr>';
@@ -387,14 +387,14 @@ window.loadCouponBatches = async function() {
   // 페이지네이션 컨트롤
   const prevDisabled = window._couponPages.index === 0;
   const nextDisabled = !window._couponPages.hasNext;
-  html += '<div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px;font-size:13px;color:var(--text2);">'
-   + '<button ' + (prevDisabled ? 'disabled' : '') + ' onclick="couponPrevPage()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:' + (prevDisabled ? 'var(--text3)' : 'var(--text2)') + ';font-size:12px;cursor:' + (prevDisabled ? 'not-allowed' : 'pointer') + ';opacity:' + (prevDisabled ? '0.5' : '1') + ';">‹ 이전</button>'
+  html += '<div class="gp-admin-pager">'
+   + '<button ' + (prevDisabled ? 'disabled' : '') + ' onclick="couponPrevPage()">‹ 이전</button>'
    + '<span>' + (window._couponPages.index + 1) + ' 페이지</span>'
-   + '<button ' + (nextDisabled ? 'disabled' : '') + ' onclick="couponNextPage()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:' + (nextDisabled ? 'var(--text3)' : 'var(--text2)') + ';font-size:12px;cursor:' + (nextDisabled ? 'not-allowed' : 'pointer') + ';opacity:' + (nextDisabled ? '0.5' : '1') + ';">다음 ›</button>'
+   + '<button ' + (nextDisabled ? 'disabled' : '') + ' onclick="couponNextPage()">다음 ›</button>'
    + '</div>';
   el.innerHTML = html;
  } catch (e) {
-  el.innerHTML = '<div style="color:var(--red);padding:12px;">네트워크 오류: ' + escapeHtml(e.message) + '</div>';
+  el.innerHTML = '<div class="gp-admin-empty gp-admin-error-text">네트워크 오류: ' + escapeHtml(e.message) + '</div>';
  }
 };
 
@@ -2445,7 +2445,7 @@ window.loadAdminRefundList = async () =>{
  if (!window.isAdmin()) return;
  const el = document.getElementById('adminRefundList');
  if (!el) return;
- el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">불러오는 중...</div>';
+ el.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
  try {
  const [creditSnap, subSnap] = await Promise.all([
    getDocs(query(collection(db,'orders'), where('status','==','refund_requested'), orderBy('createdAt','desc'))),
@@ -2460,11 +2460,12 @@ window.loadAdminRefundList = async () =>{
    const bt = b.data.refundRequestedAt?.toMillis?.() || 0;
    return bt - at;
  });
+ adminSetRefundStat(items.length);
  if (items.length === 0) {
- el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">환불 요청이 없습니다</div>';
+ el.innerHTML = '<div class="gp-admin-empty">대기 중인 환불 요청이 없습니다.</div>';
  return;
  }
- let html = '';
+ let html = '<div class="gp-admin-refund-list">';
  for (const item of items) {
  const o = item.data;
  const date = o.refundRequestedAt ? new Date(o.refundRequestedAt.toDate()).toLocaleString('ko-KR') : '';
@@ -2477,10 +2478,11 @@ window.loadAdminRefundList = async () =>{
      userCredits = uSnap.data().credits || 0;
    }
  } catch(e){}
+ const isSub = item.kind === 'subscription';
  let itemLabel, refundDetail;
- if (item.kind === 'subscription') {
+ if (isSub) {
    itemLabel = `정기결제 · ${SUB_TIER_LABELS[o.tier] || o.tier}`;
-   refundDetail = `<div style="color:var(--text2);font-size:12px;margin-top:6px;">환불 예정 금액: <b style="color:var(--red);">${(o.amount||0).toLocaleString()}원</b> (전액)</div>`;
+   refundDetail = `<div class="gp-admin-refund-detail">환불 예정 금액 <b class="neg">${(o.amount||0).toLocaleString()}원</b> (전액)</div>`;
  } else {
    // 무료 보너스(회원가입/추천)는 결제 크레딧보다 먼저 소진된다고 가정 → 잔액은 모두 결제분으로 취급
    const safe = parseInt(o.safeCredits) || 0;
@@ -2489,27 +2491,27 @@ window.loadAdminRefundList = async () =>{
    const usedFromOrder = Math.max(0, safe - refundable);
    const refundAmt = safe > 0 ? Math.floor(amt * refundable / safe) : 0;
    itemLabel = `크레딧 · ${safe}크레딧 결제`;
-   refundDetail = `<div style="color:var(--text2);font-size:12px;margin-top:6px;line-height:1.6;">사용한 크레딧: <b>${usedFromOrder}크레딧</b> · 현재 잔액 ${userCredits}크레딧<br>환불 예정 금액: <b style="color:var(--red);">${refundAmt.toLocaleString()}원</b> · 차감 크레딧: <b>${refundable}크레딧</b></div>`;
+   refundDetail = `<div class="gp-admin-refund-detail">사용 <b>${usedFromOrder}</b> · 현재 잔액 <b>${userCredits}</b>크레딧 · 환불 예정 <b class="neg">${refundAmt.toLocaleString()}원</b> · 차감 <b>${refundable}</b>크레딧</div>`;
  }
- html += `<div style="padding:12px 0;border-bottom:1px solid var(--border);font-size:13px;">
- <div style="display:flex;justify-content:space-between;align-items:center;">
- <div>
- <div style="font-weight:600;">${escapeHtml(userEmail)} <span style="font-size:11px;color:var(--text3);font-weight:500;">[${item.kind === 'subscription' ? '구독' : '크레딧'}]</span></div>
- <div style="color:var(--text3);font-size:12px;">${(o.amount||0).toLocaleString()}원 결제 · ${itemLabel} · ${date}</div>
+ html += `<div class="gp-admin-refund-item">
+ <div class="gp-admin-refund-top">
+ <div class="gp-admin-refund-who">
+ <strong>${escapeHtml(userEmail)}<span class="gp-admin-refund-tag">${isSub ? '구독' : '크레딧'}</span></strong>
+ <span>${(o.amount||0).toLocaleString()}원 · ${itemLabel} · ${date}</span>
  </div>
- <div style="display:flex;gap:6px;flex-shrink:0;">
- <button onclick="window.approveRefund('${item.id}','${item.kind}')" style="padding:6px 14px;border-radius:6px;border:none;background:var(--red);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">승인</button>
- <button onclick="window.rejectRefund('${item.id}','${item.kind}')" style="padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;">거절</button>
+ <div class="gp-admin-refund-actions">
+ <button class="gp-admin-btn-approve" onclick="window.approveRefund('${item.id}','${item.kind}')">승인</button>
+ <button class="gp-admin-btn-reject" onclick="window.rejectRefund('${item.id}','${item.kind}')">거절</button>
  </div>
  </div>
  ${refundDetail}
- <div style="color:var(--text2);font-size:12px;margin-top:6px;word-break:break-all;">사유: ${escapeHtml(o.cancelReason || '없음')}</div>
+ <div class="gp-admin-refund-reason">사유: ${escapeHtml(o.cancelReason || '없음')}</div>
 </div>`;
  }
- el.innerHTML = html;
+ el.innerHTML = html + '</div>';
  } catch(e) {
  console.log('환불 목록 로드 실패:', e);
- el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">환불 요청이 없습니다</div>';
+ el.innerHTML = '<div class="gp-admin-empty gp-admin-error-text">환불 목록을 불러오지 못했습니다.</div>';
  }
 };
 
@@ -2666,7 +2668,7 @@ function adminRenderUserBundle(data) {
  const coupon = user.coupon || null;
  const hist = data.creditHistory || [];
  const historyHtml = hist.length
-  ? hist.slice(0, 8).map(h => `
+  ? hist.slice(0, 6).map(h => `
     <div class="gp-admin-ledger-row">
       <div>
         <strong>${escapeHtml(adminHistoryTypeText(h.type))}</strong>
@@ -2686,16 +2688,17 @@ function adminRenderUserBundle(data) {
       <span>${escapeHtml(user.email || '-')}</span>
       <code>${escapeHtml(user.uid || '')}</code>
     </div>
-    <div class="gp-admin-stat-row">
-      <div><span>보유 크레딧</span><strong>${adminNumber(user.credits).toLocaleString('ko-KR')}</strong></div>
-      <div><span>플랜</span><strong>${escapeHtml(adminPlanText(user.plan))}</strong></div>
-      <div><span>가입일</span><strong>${escapeHtml(adminDateShortText(user.createdAtMs))}</strong></div>
+    <div class="gp-admin-figs">
+      <div class="gp-admin-fig"><span>보유 크레딧</span><strong>${adminNumber(user.credits).toLocaleString('ko-KR')}</strong></div>
+      <div class="gp-admin-fig"><span>플랜</span><strong>${escapeHtml(adminPlanText(user.plan))}</strong></div>
+      <div class="gp-admin-fig"><span>가입일</span><strong>${escapeHtml(adminDateShortText(user.createdAtMs))}</strong></div>
+      <div class="gp-admin-fig"><span>구독</span><strong>${sub ? escapeHtml((SUB_TIER_LABELS[sub.tier] || sub.tier || '-')) : '없음'}</strong></div>
+      <div class="gp-admin-fig"><span>쿠폰 잔여</span><strong>${coupon ? `${adminNumber(coupon.remaining).toLocaleString('ko-KR')} / ${adminNumber(coupon.granted).toLocaleString('ko-KR')}` : '없음'}</strong></div>
     </div>
-    <div class="gp-admin-mini-lines">
-      <div><span>구독</span><strong>${sub ? escapeHtml((SUB_TIER_LABELS[sub.tier] || sub.tier || '-') + ' · ' + (sub.status || '-')) : '없음'}</strong></div>
-      <div><span>쿠폰</span><strong>${coupon ? `${adminNumber(coupon.remaining).toLocaleString('ko-KR')} / ${adminNumber(coupon.granted).toLocaleString('ko-KR')}` : '없음'}</strong></div>
+    <div>
+      <div class="gp-admin-ledger-head">최근 크레딧 내역</div>
+      <div class="gp-admin-ledger">${historyHtml}</div>
     </div>
-    <div class="gp-admin-ledger">${historyHtml}</div>
   </div>`;
 
  const orders = data.orders || [];
@@ -2755,11 +2758,46 @@ window.loadAdminPage = async function() {
   gate.textContent = '';
  }
  await Promise.allSettled([
+  window.loadAdminOverview(),
   window.loadAdminRefundList(),
   window.loadAllCreditHistory(),
   window.loadCouponBatches()
  ]);
 };
+
+// 관리자: 상단 개요 바 (매출 요약)
+window.loadAdminOverview = async function() {
+ if (!window.isAdmin()) return;
+ const todayEl = document.getElementById('adminStatRevToday');
+ const monthEl = document.getElementById('adminStatRevMonth');
+ try {
+  const data = await adminPost('/admin/revenue-summary', {});
+  const won = (n) => '₩' + adminNumber(n).toLocaleString('ko-KR');
+  if (todayEl) todayEl.textContent = won(data.today.totalPaid);
+  const tCnt = document.getElementById('adminStatRevTodayCnt');
+  if (tCnt) tCnt.textContent = `${adminNumber(data.today.totalCount)}건${data.today.refundCount ? ` · 환불 ${data.today.refundCount}` : ''}`;
+  if (monthEl) monthEl.textContent = won(data.month.totalPaid);
+  const mCnt = document.getElementById('adminStatRevMonthCnt');
+  if (mCnt) mCnt.textContent = `${adminNumber(data.month.totalCount)}건`;
+ } catch (e) {
+  if (todayEl) todayEl.textContent = '—';
+  if (monthEl) monthEl.textContent = '—';
+ }
+};
+
+// 개요: 환불 대기 수치 갱신
+function adminSetRefundStat(count) {
+ const stat = document.getElementById('adminStatRefund');
+ if (stat) {
+  stat.textContent = `${count}건`;
+  stat.classList.toggle('gp-admin-ov-warn', count > 0);
+ }
+ const badge = document.getElementById('adminRefundCount');
+ if (badge) {
+  if (count > 0) { badge.hidden = false; badge.textContent = count; badge.classList.add('is-alert'); }
+  else { badge.hidden = true; badge.classList.remove('is-alert'); }
+ }
+}
 
 window.adminSearchUser = async function(quiet) {
  const input = document.getElementById('adminUserQuery');
@@ -2964,7 +3002,7 @@ window.loadAllCreditHistory = async () =>{
  if (!window.isAdmin()) return;
  const el = document.getElementById('adminCreditHistory');
  if (!el) return;
- el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">불러오는 중...</div>';
+ el.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
  try {
  const idToken = await CU.getIdToken();
  const res = await fetch(window.apiUrl('/admin/credit-history'), {
@@ -2982,13 +3020,20 @@ window.loadAllCreditHistory = async () =>{
 
  window._adminHistory.dailyUsed = data.dailyUsed || {};
 
+ // 개요 바: 최근 7일 크레딧 사용 합계
+ const stat7d = document.getElementById('adminStatCredit7d');
+ if (stat7d) {
+  const sum = Object.values(window._adminHistory.dailyUsed).reduce((a, b) => a + (Number(b) || 0), 0);
+  stat7d.textContent = sum.toLocaleString('ko-KR');
+ }
+
  window._adminHistory.data = allHistory;
  window._adminHistory.filtered = allHistory;
  window._adminHistory.page = 0;
  window.renderAdminHistory();
  } catch(e) {
  console.log('전체 사용자 내역 로드 실패:', e);
- el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--red)">불러오기 실패: ${e.message}</div>`;
+ el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">불러오기 실패: ${e.message}</div>`;
  }
 };
 
@@ -3056,68 +3101,59 @@ window.filterAdminHistory = async () => {
 window.renderAdminHistory = () =>{
  const el = document.getElementById('adminCreditHistory');
  if (!el) return;
- const { filtered, page, pageSize, dateFrom, dateTo, emailFilter } = window._adminHistory;
+ const { filtered, page, pageSize } = window._adminHistory;
  const total = filtered.length;
  const totalPages = Math.max(1, Math.ceil(total / pageSize));
  const start = page * pageSize;
  const items = filtered.slice(start, start + pageSize);
 
- // DB에서 조회한 일별 크레딧 사용 총합 표시
+ const countEl = document.getElementById('adminHistoryCount');
+ if (countEl) countEl.textContent = total.toLocaleString('ko-KR');
+
+ // DB에서 조회한 일별 크레딧 사용 총합 표시 (칩)
  const dailyUsed = window._adminHistory.dailyUsed || {};
- const dailySummary = Object.entries(dailyUsed).slice(0, 7).map(([day, used]) =>
- `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;"><span>${day}</span><span style="font-weight:600;color:var(--red);">-${used} 크레딧 사용</span></div>`
+ const dailyEntries = Object.entries(dailyUsed).slice(0, 7);
+ const dailySummary = dailyEntries.map(([day, used]) =>
+ `<div class="gp-admin-daily-item"><span>${escapeHtml(day)}</span><strong>-${adminNumber(used).toLocaleString('ko-KR')}</strong></div>`
  ).join('');
 
- let html = `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
- <input type="date" id="adminDateFrom" value="${dateFrom||''}" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text);font-size:13px;" onchange="window.filterAdminHistory()">
- <span style="color:var(--text3);">~</span>
- <input type="date" id="adminDateTo" value="${dateTo||''}" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text);font-size:13px;" onchange="window.filterAdminHistory()">
- <span style="font-size:12px;color:var(--text3);">총 ${total}건</span>
-</div>
-<div style="margin-bottom:12px;">
- <input type="text" id="adminEmailFilter" value="${emailFilter||''}" placeholder="이메일로 검색" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);box-sizing:border-box;" oninput="window.filterAdminHistory()">
-</div>`;
-
- if (dailySummary) {
- html += `<div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--rs);border:1px solid var(--border);">
- <div style="font-size:13px;font-weight:700;margin-bottom:6px;">일별 크레딧 변동</div>
- ${dailySummary}
-</div>`;
- }
+ let html = dailySummary ? `<div class="gp-admin-daily">${dailySummary}</div>` : '';
 
  if (total === 0) {
- el.innerHTML = html + '<div style="text-align:center;padding:20px;color:var(--text3)">해당 기간 내역이 없어요</div>';
+ el.innerHTML = html + '<div class="gp-admin-empty">해당 조건의 내역이 없습니다.</div>';
  return;
  }
 
- html += `<table style="width:100%;border-collapse:collapse;font-size:13px;">
- <thead><tr style="border-bottom:2px solid var(--border);color:var(--text3);">
- <th style="padding:8px;text-align:left;">날짜</th>
- <th style="padding:8px;text-align:left;">유저</th>
- <th style="padding:8px;text-align:left;">종류</th>
- <th style="padding:8px;text-align:right;">사용</th>
- <th style="padding:8px;text-align:right;">잔여</th>
-</tr></thead><tbody>`
+ html += `<div class="gp-admin-table-wrap"><table class="gp-admin-table">
+ <thead><tr>
+ <th>날짜</th><th>유저</th><th>종류</th><th class="num">사용</th><th class="num">잔여</th>
+ </tr></thead><tbody>`
  + items.map(h =>{
  const date = adminHistoryDateText(h);
  const typeTxt = adminHistoryTypeText(h.type);
  const amountTxt = adminHistoryAmountHtml(h);
- return `<tr style="border-bottom:1px solid var(--border);">
- <td style="padding:8px;color:var(--text3);font-size:12px;">${date}</td>
- <td style="padding:8px;">${escapeHtml(h.userName)}<br><span style="font-size:11px;color:var(--text3);">${escapeHtml(h.userEmail)}</span></td>
- <td style="padding:8px;">${typeTxt}</td>
- <td style="padding:8px;text-align:right;font-weight:600;">${amountTxt}</td>
- <td style="padding:8px;text-align:right;color:var(--text3);">${h.remaining}</td>
+ return `<tr>
+ <td class="muted">${date}</td>
+ <td>${escapeHtml(h.userName)}<br><span class="muted">${escapeHtml(h.userEmail)}</span></td>
+ <td>${typeTxt}</td>
+ <td class="num">${amountTxt}</td>
+ <td class="num muted">${adminNumber(h.remaining).toLocaleString('ko-KR')}</td>
 </tr>`;
  }).join('')
- + `</tbody></table>
- <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-top:12px;">
- <button onclick="window._adminHistory.page=Math.max(0,window._adminHistory.page-1);window.renderAdminHistory()" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface2);color:var(--text);cursor:pointer;font-family:var(--font);" ${page===0?'disabled':''}>◀ 이전</button>
- <span style="font-size:13px;color:var(--text3);">${page+1} / ${totalPages}</span>
- <button onclick="window._adminHistory.page=Math.min(${totalPages-1},window._adminHistory.page+1);window.renderAdminHistory()" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface2);color:var(--text);cursor:pointer;font-family:var(--font);" ${page>=totalPages-1?'disabled':''}>다음 ▶</button>
+ + `</tbody></table></div>
+ <div class="gp-admin-pager">
+ <button onclick="window._adminHistory.page=Math.max(0,window._adminHistory.page-1);window.renderAdminHistory()" ${page===0?'disabled':''}>‹ 이전</button>
+ <span>${page+1} / ${totalPages}</span>
+ <button onclick="window._adminHistory.page=Math.min(${totalPages-1},window._adminHistory.page+1);window.renderAdminHistory()" ${page>=totalPages-1?'disabled':''}>다음 ›</button>
 </div>`;
 
  el.innerHTML = html;
+};
+
+// 이메일 필터: 입력마다 Firestore 조회를 피하려고 디바운스
+window.adminHistoryEmailInput = () => {
+ clearTimeout(window._adminHistory._emailTimer);
+ window._adminHistory._emailTimer = setTimeout(() => window.filterAdminHistory(), 350);
 };
 
 window.backToList = () =>{

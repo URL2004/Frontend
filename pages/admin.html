@@ -1,10 +1,9 @@
 <div id="adminContent" class="gp-admin-page" style="display:none;">
   <div class="gp-admin-shell">
     <header class="gp-admin-head">
-      <div>
+      <div class="gp-admin-head-title">
         <div class="gp-admin-kicker">Admin</div>
         <h2>운영 관리</h2>
-        <p>환불, 크레딧, 쿠폰, 사용자 원장</p>
       </div>
       <button type="button" class="gp-admin-refresh" onclick="loadAdminPage()">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.4 6.4M3 12A9 9 0 0 1 18.4 5.6"/><path d="M21 4v6h-6M3 20v-6h6"/></svg>
@@ -14,68 +13,70 @@
 
     <div id="adminGateMsg" class="gp-admin-gate" hidden></div>
 
-    <div class="gp-admin-grid gp-admin-top-grid">
-      <section class="gp-admin-panel">
-        <div class="gp-admin-panel-head">
-          <div>
-            <h3>사용자 검색</h3>
-            <p>이메일 또는 UID</p>
-          </div>
-          <span id="adminSelectedUid" class="gp-admin-muted"></span>
-        </div>
-        <div class="gp-admin-search-row">
-          <input id="adminUserQuery" class="gp-admin-input" type="text" autocomplete="off" placeholder="user@example.com 또는 UID" onkeydown="if(event.key==='Enter')window.adminSearchUser()">
-          <button type="button" class="gp-admin-primary" onclick="adminSearchUser()">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.4-3.4"/></svg>
-            검색
-          </button>
-        </div>
-        <div id="adminUserResult" class="gp-admin-user-result">
-          <div class="gp-admin-empty">사용자를 검색하세요.</div>
-        </div>
-      </section>
-
-      <section class="gp-admin-panel">
-        <div class="gp-admin-panel-head">
-          <div>
-            <h3>크레딧 조정</h3>
-            <p>추가 또는 차감</p>
-          </div>
-        </div>
-        <div class="gp-admin-form-stack">
-          <label class="gp-admin-label">
-            변동값
-            <input id="adminCreditDelta" class="gp-admin-input" type="number" step="1" placeholder="+100 또는 -30">
-          </label>
-          <label class="gp-admin-label">
-            사유
-            <input id="adminCreditReason" class="gp-admin-input" type="text" maxlength="120" placeholder="예: 중복 차감 보정">
-          </label>
-          <button type="button" class="gp-admin-primary gp-admin-wide" onclick="adminAdjustCredits()">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-            적용
-          </button>
-          <div id="adminCreditAdjustMsg" class="gp-admin-msg"></div>
-        </div>
-      </section>
+    <!-- 개요 바: 박스 대신 구분선으로 나눈 핵심 지표 -->
+    <div class="gp-admin-overview" id="adminOverview">
+      <div class="gp-admin-ov-item">
+        <span class="gp-admin-ov-label">오늘 매출</span>
+        <strong id="adminStatRevToday">—</strong>
+        <em id="adminStatRevTodayCnt"></em>
+      </div>
+      <div class="gp-admin-ov-item">
+        <span class="gp-admin-ov-label">이번 달 매출</span>
+        <strong id="adminStatRevMonth">—</strong>
+        <em id="adminStatRevMonthCnt"></em>
+      </div>
+      <div class="gp-admin-ov-item">
+        <span class="gp-admin-ov-label">환불 대기</span>
+        <strong id="adminStatRefund" class="gp-admin-ov-warn">—</strong>
+      </div>
+      <div class="gp-admin-ov-item">
+        <span class="gp-admin-ov-label">최근 7일 크레딧 사용</span>
+        <strong id="adminStatCredit7d">—</strong>
+      </div>
     </div>
 
-    <section class="gp-admin-panel">
-      <div class="gp-admin-panel-head">
-        <div>
-          <h3>선택 사용자 결제건</h3>
-          <p>주문별 직접 환불</p>
+    <!-- 사용자 워크스페이스: 검색 → 요약 + 크레딧 조정 + 환불을 한 화면에 -->
+    <section class="gp-admin-panel gp-admin-ws">
+      <div class="gp-admin-section-head">
+        <h3>사용자 관리</h3>
+        <span id="adminSelectedUid" class="gp-admin-muted"></span>
+      </div>
+      <div class="gp-admin-ws-search">
+        <input id="adminUserQuery" class="gp-admin-input" type="text" autocomplete="off" placeholder="이메일 또는 UID로 검색" onkeydown="if(event.key==='Enter')window.adminSearchUser()">
+        <button type="button" class="gp-admin-primary" onclick="adminSearchUser()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.4-3.4"/></svg>
+          검색
+        </button>
+      </div>
+      <div class="gp-admin-ws-grid">
+        <div class="gp-admin-ws-info" id="adminUserResult">
+          <div class="gp-admin-empty">이메일 또는 UID로 사용자를 검색하세요.</div>
+        </div>
+        <div class="gp-admin-ws-actions">
+          <div class="gp-admin-action-block">
+            <div class="gp-admin-action-title">크레딧 조정</div>
+            <div class="gp-admin-adjust-row">
+              <input id="adminCreditDelta" class="gp-admin-input" type="number" step="1" placeholder="+100 / -30">
+              <button type="button" class="gp-admin-primary" onclick="adminAdjustCredits()">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                적용
+              </button>
+            </div>
+            <input id="adminCreditReason" class="gp-admin-input" type="text" maxlength="120" placeholder="사유 (예: 중복 차감 보정)">
+            <div id="adminCreditAdjustMsg" class="gp-admin-msg"></div>
+          </div>
+          <div class="gp-admin-action-block">
+            <div class="gp-admin-action-title">결제건 환불</div>
+            <div id="adminUserOrders" class="gp-admin-empty gp-admin-empty-compact">검색하면 결제건이 표시됩니다.</div>
+          </div>
         </div>
       </div>
-      <div id="adminUserOrders" class="gp-admin-empty">사용자를 검색하면 결제건이 표시됩니다.</div>
     </section>
 
     <section class="gp-admin-panel">
-      <div class="gp-admin-panel-head">
-        <div>
-          <h3>환불 요청 목록</h3>
-          <p>고객 요청 기반 환불</p>
-        </div>
+      <div class="gp-admin-section-head">
+        <h3>환불 요청 <span id="adminRefundCount" class="gp-admin-count" hidden></span></h3>
+        <p>고객이 요청한 환불 처리</p>
       </div>
       <div id="adminRefundList">
         <div class="gp-admin-empty">불러오는 중...</div>
@@ -83,10 +84,13 @@
     </section>
 
     <section class="gp-admin-panel">
-      <div class="gp-admin-panel-head">
-        <div>
-          <h3>전체 사용자 내역</h3>
-          <p>크레딧 원장</p>
+      <div class="gp-admin-section-head">
+        <h3>전체 크레딧 원장 <span id="adminHistoryCount" class="gp-admin-count"></span></h3>
+        <div class="gp-admin-filter-row">
+          <input type="date" id="adminDateFrom" class="gp-admin-input gp-admin-input-sm" onchange="window.filterAdminHistory()" aria-label="시작일">
+          <span class="gp-admin-filter-sep">~</span>
+          <input type="date" id="adminDateTo" class="gp-admin-input gp-admin-input-sm" onchange="window.filterAdminHistory()" aria-label="종료일">
+          <input type="text" id="adminEmailFilter" class="gp-admin-input gp-admin-input-sm gp-admin-filter-email" placeholder="이메일로 검색" oninput="window.adminHistoryEmailInput()">
         </div>
       </div>
       <div id="adminCreditHistory">
@@ -96,11 +100,8 @@
 
     <div class="gp-admin-grid">
       <section class="gp-admin-panel">
-        <div class="gp-admin-panel-head">
-          <div>
-            <h3>쿠폰 발급</h3>
-            <p>크레딧 쿠폰 생성</p>
-          </div>
+        <div class="gp-admin-section-head">
+          <h3>쿠폰 발급</h3>
         </div>
         <div class="gp-admin-coupon-form">
           <label class="gp-admin-label">
@@ -125,11 +126,8 @@
       </section>
 
       <section class="gp-admin-panel">
-        <div class="gp-admin-panel-head">
-          <div>
-            <h3>쿠폰 발급 이력</h3>
-            <p>배치 관리</p>
-          </div>
+        <div class="gp-admin-section-head">
+          <h3>쿠폰 발급 이력</h3>
         </div>
         <div id="couponBatchList">
           <div class="gp-admin-empty">불러오는 중...</div>
