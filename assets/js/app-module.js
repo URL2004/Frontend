@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, EmailAuthProvider, signInWithPopup, signOut, onAuthStateChanged, deleteUser, reauthenticateWithPopup, reauthenticateWithCredential, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, collectionGroup, addDoc, getDocs, orderBy, query, where, limit, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, orderBy, query, where, limit, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 // XSS 방어: 사용자 입력이 innerHTML에 들어갈 때 escape 필수
@@ -1814,7 +1814,13 @@ window.loadMyPage = async () =>{
  await window.loadOrderHistory();
  await window.loadCreditHistory();
  window.renderSubManage(u);
- if (window.isAdmin()) { await window.loadAdminRefundList(); await window.loadAllCreditHistory(); await window.loadCouponBatches(); }
+ if (window.isAdmin()) {
+  await Promise.allSettled([
+   window.loadAdminRefundList(),
+   window.loadAllCreditHistory(),
+   window.loadCouponBatches()
+  ]);
+ }
  } catch(e) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">불러오기 실패: '+e.message+'</div>'; }
 };
 
@@ -2615,58 +2621,43 @@ window.loadCreditHistory = async () =>{
 
 window._adminHistory = { data: [], page: 0, pageSize: 10, filtered: [] };
 
+function adminHistoryCreatedMs(h) {
+ const c = h && h.createdAt;
+ if (c && typeof c.toMillis === 'function') return c.toMillis();
+ if (c && typeof c.toDate === 'function') return c.toDate().getTime();
+ if (c && c._seconds) return c._seconds * 1000;
+ const direct = Number(h && h.createdAtMs);
+ if (Number.isFinite(direct) && direct > 0) return direct;
+ const parsed = Date.parse(c || '');
+ return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function adminHistoryDateText(h) {
+ const ms = adminHistoryCreatedMs(h);
+ return ms ? new Date(ms).toLocaleString('ko-KR') : '';
+}
+
 window.loadAllCreditHistory = async () =>{
  if (!window.isAdmin()) return;
  const el = document.getElementById('adminCreditHistory');
  if (!el) return;
  el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">불러오는 중...</div>';
  try {
- const snap = await getDocs(query(
- collectionGroup(db, 'creditHistory'),
- orderBy('createdAt', 'desc'),
- limit(1000)
- ));
+ const idToken = await CU.getIdToken();
+ const res = await fetch(window.apiUrl('/admin/credit-history'), {
+  method:'POST',
+  headers:{'Content-Type':'application/json'},
+  body: JSON.stringify({ idToken, limit: 1000 })
+ });
+ const data = await res.json();
+ if (!res.ok || !data.ok) throw new Error(data.error || '전체 사용자 내역을 불러오지 못했습니다.');
 
- // uid 목록 추출 후 유저 정보 병렬 조회
- const uidSet = new Set();
- snap.docs.forEach(d => uidSet.add(d.ref.parent.parent.id));
- const uidCache = {};
- await Promise.all([...uidSet].map(async uid => {
- try {
- const uSnap = await getDoc(doc(db, 'users', uid));
- uidCache[uid] = uSnap.exists() ? uSnap.data() : {};
- } catch(e) { uidCache[uid] = {}; }
+ const allHistory = (data.history || []).map(h => ({
+  ...h,
+  createdAtMs: Number(h.createdAtMs) || 0
  }));
 
- const allHistory = snap.docs.map(d => {
- const uid = d.ref.parent.parent.id;
- return {
- ...d.data(),
- userName: uidCache[uid].name || '알 수 없음',
- userEmail: uidCache[uid].email || '',
- uid
- };
- });
-
- // 일별 크레딧 요약용 별도 쿼리 (최근 7일, limit 없이 DB 전체 조회)
- const sevenDaysAgo = new Date();
- sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
- sevenDaysAgo.setHours(0, 0, 0, 0);
- const dailySnap = await getDocs(query(
-  collectionGroup(db, 'creditHistory'),
-  where('createdAt', '>=', sevenDaysAgo),
-  orderBy('createdAt', 'desc')
- ));
- const dailyUsed = {};
- dailySnap.docs.forEach(d => {
-  const h = d.data();
-  if (!h.createdAt) return;
-  if (h.type === 'charge' || h.type === 'refund') return;
-  const day = new Date(h.createdAt.toDate()).toLocaleDateString('ko-KR');
-  if (!dailyUsed[day]) dailyUsed[day] = 0;
-  dailyUsed[day] += (h.used || 0);
- });
- window._adminHistory.dailyUsed = dailyUsed;
+ window._adminHistory.dailyUsed = data.dailyUsed || {};
 
  window._adminHistory.data = allHistory;
  window._adminHistory.filtered = allHistory;
@@ -2710,8 +2701,14 @@ window.filterAdminHistory = async () => {
   }
   const histSnap = await getDocs(query(collection(db, 'users', uid, 'creditHistory'), orderBy('createdAt', 'desc')));
   let filtered = histSnap.docs.map(d => ({ ...d.data(), userName, userEmail: email, uid }));
-  if (from) filtered = filtered.filter(h => h.createdAt && new Date(h.createdAt.toDate()) >= new Date(from));
-  if (to) filtered = filtered.filter(h => h.createdAt && new Date(h.createdAt.toDate()) <= new Date(to + 'T23:59:59'));
+  if (from) filtered = filtered.filter(h => {
+   const ms = adminHistoryCreatedMs(h);
+   return ms && ms >= new Date(from).getTime();
+  });
+  if (to) filtered = filtered.filter(h => {
+   const ms = adminHistoryCreatedMs(h);
+   return ms && ms <= new Date(to + 'T23:59:59').getTime();
+  });
   window._adminHistory.filtered = filtered;
   window._adminHistory.page = 0;
   window.renderAdminHistory();
@@ -2720,8 +2717,14 @@ window.filterAdminHistory = async () => {
 
  // 이메일 없으면 기존 로직 (전체 1000건에서 날짜 필터)
  let filtered = window._adminHistory.data;
- if (from) filtered = filtered.filter(h => h.createdAt && new Date(h.createdAt.toDate()) >= new Date(from));
- if (to) filtered = filtered.filter(h => h.createdAt && new Date(h.createdAt.toDate()) <= new Date(to + 'T23:59:59'));
+ if (from) filtered = filtered.filter(h => {
+  const ms = adminHistoryCreatedMs(h);
+  return ms && ms >= new Date(from).getTime();
+ });
+ if (to) filtered = filtered.filter(h => {
+  const ms = adminHistoryCreatedMs(h);
+  return ms && ms <= new Date(to + 'T23:59:59').getTime();
+ });
  window._adminHistory.filtered = filtered;
  window._adminHistory.page = 0;
  window.renderAdminHistory();
@@ -2773,7 +2776,7 @@ window.renderAdminHistory = () =>{
  <th style="padding:8px;text-align:right;">잔여</th>
 </tr></thead><tbody>`
  + items.map(h =>{
- const date = h.createdAt ? new Date(h.createdAt.toDate()).toLocaleString('ko-KR') : '';
+ const date = adminHistoryDateText(h);
  const typeTxt = h.type === 'charge' ? '충전' : h.type === 'refund' ? '환불' : h.type === 'referral' ? '친구 추천' : h.type === 'coupon_redeem' ? '쿠폰' : h.type === 'detect' ? '탐지' : h.type === 'humanize' ? '휴머나이저' : '기타';
  const amountTxt = (h.type === 'charge' || h.type === 'referral' || h.type === 'coupon_redeem') ? `<span style="color:var(--green);">+${h.amount}</span>`
  : h.type === 'refund' ? `<span style="color:var(--yellow);">${h.amount}</span>`
