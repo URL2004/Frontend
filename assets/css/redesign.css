@@ -16068,8 +16068,11 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-danger{display:inline-flex;align-items:center;gap:5px;border:1px solid #ecc4bd;background:#fff;color:var(--admin-red);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s;}
 .gp-admin-danger:hover{background:#fdf3f1;border-color:#e3a89f;}
 .gp-admin-danger:disabled{cursor:not-allowed;opacity:.45;background:#f7f8fb;color:#9aa0b4;border-color:#e6e8f1;}
-.gp-admin-coupon-form{display:grid;grid-template-columns:1fr 1fr 1.3fr auto;gap:9px;align-items:end;}
-.gp-admin-label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;color:var(--admin-text2);}
+.gp-admin-coupon-form{display:grid;grid-template-columns:1fr 1fr;gap:10px 9px;align-items:end;}
+.gp-admin-coupon-form>*{min-width:0;}
+.gp-admin-coupon-form .gp-admin-primary{height:38px;}
+.gp-admin-label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;color:var(--admin-text2);min-width:0;}
+.gp-admin-select{font-weight:700;cursor:pointer;min-width:84px;}
 .gp-admin-coupon-result{margin-top:10px;}
 .gp-admin-gate{margin-bottom:14px;padding:11px 14px;border:1px solid #ecc4bd;background:#fdf3f1;color:var(--admin-red);border-radius:8px;font-size:13px;font-weight:700;}
 .gp-admin-empty{padding:20px 10px;text-align:center;color:var(--admin-text3);font-size:13px;}
@@ -16085,7 +16088,7 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-action-block{padding:0 0 2px;}
 .gp-admin-action-block + .gp-admin-action-block{border-top:1px solid var(--admin-line);padding-top:14px;margin-top:14px;}
 .gp-admin-action-title{font-size:12px;font-weight:800;color:var(--admin-text2);margin-bottom:9px;}
-.gp-admin-adjust-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;}
+.gp-admin-adjust-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;margin-bottom:8px;}
 @media(min-width:861px){.gp-admin-ws-actions{border-left:1px solid var(--admin-line);padding-left:18px;}}
 
 /* 사용자 요약(플랫 수치) */
@@ -16111,10 +16114,23 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 
 /* 결제건/환불 */
 .gp-admin-order-list{display:flex;flex-direction:column;gap:8px;}
-.gp-admin-order-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--admin-border);border-radius:8px;padding:10px 12px;}
+.gp-admin-order{border:1px solid var(--admin-border);border-radius:8px;overflow:hidden;}
+.gp-admin-order-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;}
 .gp-admin-order-main{display:flex;flex-direction:column;gap:2px;min-width:0;}
 .gp-admin-order-main strong{font-size:13px;color:var(--admin-text);}
 .gp-admin-order-main span{font-size:11px;color:var(--admin-text3);word-break:break-all;}
+
+/* 결제건 환불 모드 패널 */
+.gp-admin-refund-panel{border-top:1px solid var(--admin-line);background:var(--admin-soft);padding:11px 12px;display:flex;flex-direction:column;gap:8px;}
+.gp-admin-refund-modes{display:flex;gap:6px;flex-wrap:wrap;}
+.gp-admin-mode{flex:1 1 auto;min-width:88px;border:1px solid var(--admin-border);background:var(--admin-surface);color:var(--admin-text2);border-radius:7px;padding:8px 8px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
+.gp-admin-mode.is-active{border-color:var(--admin-blue);background:#eceeffe6;color:var(--admin-blue);}
+.gp-admin-refund-custom{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--admin-text3);flex-wrap:wrap;}
+.gp-admin-refund-custom input{max-width:160px;}
+.gp-admin-refund-preview{font-size:12px;color:var(--admin-text2);min-height:16px;}
+.gp-admin-refund-preview b{color:var(--admin-text);}
+.gp-admin-refund-preview .neg{color:var(--admin-red);}
+.gp-admin-refund-go{display:flex;gap:8px;align-items:center;}
 
 /* ── 환불 요청 목록 ── */
 .gp-admin-refund-list{display:flex;flex-direction:column;}
@@ -16134,9 +16150,10 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-refund-reason{font-size:12px;color:var(--admin-text3);word-break:break-all;}
 
 /* ── 공용 테이블(원장 + 쿠폰) ── */
-.gp-admin-filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.gp-admin-filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.gp-admin-date-range{display:flex;align-items:center;gap:6px;}
 .gp-admin-filter-sep{color:var(--admin-text3);}
-.gp-admin-filter-email{flex:1 1 180px;min-width:140px;}
+.gp-admin-filter-email{flex:1 1 200px;min-width:150px;}
 .gp-admin-daily{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
 .gp-admin-daily-item{display:flex;flex-direction:column;gap:2px;padding:7px 12px;border:1px solid var(--admin-line);border-radius:8px;background:var(--admin-soft);min-width:92px;}
 .gp-admin-daily-item span{font-size:11px;color:var(--admin-text3);}
@@ -16169,12 +16186,31 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
  .gp-mypage-admin-entry{align-items:flex-start;flex-direction:column;}
  .gp-mypage-admin-entry button{width:100%;}
 }
-@media (max-width: 520px){
- .gp-admin-ov-item{flex:1 1 100%;border-top:1px solid var(--admin-line);}
+@media (max-width: 560px){
+ .gp-admin-shell{padding:16px 11px 40px;}
+ .gp-admin-head h2{font-size:20px;}
+ .gp-admin-ov-item{flex:1 1 100%;border-top:1px solid var(--admin-line);padding:10px 14px;}
  .gp-admin-ov-item:first-child{border-top:none;}
+ .gp-admin-ov-item strong{font-size:18px;}
  .gp-admin-ws-search{grid-template-columns:1fr;}
  .gp-admin-coupon-form{grid-template-columns:1fr;}
+ /* 크레딧 조정: 부호+수량 한 줄, 적용 버튼은 아래 전체폭 */
+ .gp-admin-adjust-row{grid-template-columns:auto minmax(0,1fr);}
+ .gp-admin-adjust-row .gp-admin-primary{grid-column:1 / -1;}
+ /* 결제건: 정보 위, 버튼 아래 전체폭 */
+ .gp-admin-order-row{flex-direction:column;align-items:stretch;gap:8px;}
+ .gp-admin-order-row .gp-admin-danger{width:100%;justify-content:center;}
+ /* 환불 모드: 한 줄에 꽉 차게 */
+ .gp-admin-mode{flex:1 1 100%;}
+ .gp-admin-refund-go{flex-direction:column;align-items:stretch;}
+ .gp-admin-refund-go .gp-admin-primary,.gp-admin-refund-go .gp-admin-mini-btn{width:100%;}
+ .gp-admin-refund-custom input{max-width:none;flex:1;}
+ /* 환불 요청 카드 */
  .gp-admin-refund-top{flex-direction:column;}
  .gp-admin-refund-actions{width:100%;}
  .gp-admin-refund-actions button{flex:1;}
+ /* 원장 필터: 날짜 범위·이메일 각각 전체폭 */
+ .gp-admin-date-range{flex:1 1 100%;}
+ .gp-admin-date-range input{flex:1;}
+ .gp-admin-filter-email{flex:1 1 100%;}
 }

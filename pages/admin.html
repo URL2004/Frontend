@@ -56,11 +56,12 @@
           <div class="gp-admin-action-block">
             <div class="gp-admin-action-title">크레딧 조정</div>
             <div class="gp-admin-adjust-row">
-              <input id="adminCreditDelta" class="gp-admin-input" type="number" step="1" placeholder="+100 / -30">
-              <button type="button" class="gp-admin-primary" onclick="adminAdjustCredits()">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                적용
-              </button>
+              <select id="adminCreditSign" class="gp-admin-input gp-admin-select">
+                <option value="1">추가 +</option>
+                <option value="-1">차감 −</option>
+              </select>
+              <input id="adminCreditAmount" class="gp-admin-input" type="number" min="1" step="1" inputmode="numeric" placeholder="크레딧 수량">
+              <button type="button" class="gp-admin-primary" onclick="adminAdjustCredits()">적용</button>
             </div>
             <input id="adminCreditReason" class="gp-admin-input" type="text" maxlength="120" placeholder="사유 (예: 중복 차감 보정)">
             <div id="adminCreditAdjustMsg" class="gp-admin-msg"></div>
@@ -86,12 +87,14 @@
     <section class="gp-admin-panel">
       <div class="gp-admin-section-head">
         <h3>전체 크레딧 원장 <span id="adminHistoryCount" class="gp-admin-count"></span></h3>
-        <div class="gp-admin-filter-row">
+      </div>
+      <div class="gp-admin-filter-row">
+        <div class="gp-admin-date-range">
           <input type="date" id="adminDateFrom" class="gp-admin-input gp-admin-input-sm" onchange="window.filterAdminHistory()" aria-label="시작일">
           <span class="gp-admin-filter-sep">~</span>
           <input type="date" id="adminDateTo" class="gp-admin-input gp-admin-input-sm" onchange="window.filterAdminHistory()" aria-label="종료일">
-          <input type="text" id="adminEmailFilter" class="gp-admin-input gp-admin-input-sm gp-admin-filter-email" placeholder="이메일로 검색" oninput="window.adminHistoryEmailInput()">
         </div>
+        <input type="text" id="adminEmailFilter" class="gp-admin-input gp-admin-input-sm gp-admin-filter-email" placeholder="이메일로 검색" oninput="window.adminHistoryEmailInput()">
       </div>
       <div id="adminCreditHistory">
         <div class="gp-admin-empty">불러오는 중...</div>
