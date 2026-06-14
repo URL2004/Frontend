@@ -2939,6 +2939,7 @@ window.adminSearchUser = async function(quiet) {
   if (input) input.value = data.user.uid || raw;
   adminSetMessage('adminCreditAdjustMsg', '', 'info');
   adminRenderUserBundle(data);
+  window.loadAdminUserLog(data.user.uid);
   if (!quiet && window.gpTrack) window.gpTrack('admin_user_search');
  } catch (e) {
   window._adminSelectedBundle = null;
@@ -2946,7 +2947,134 @@ window.adminSearchUser = async function(quiet) {
   const msg = escapeHtml(e.message);
   if (resultEl) resultEl.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">${msg}</div>`;
   if (ordersEl) ordersEl.innerHTML = '<div class="gp-admin-empty">사용자를 먼저 선택하세요.</div>';
+  const logEl = document.getElementById('adminUserLog');
+  if (logEl) logEl.innerHTML = '<div class="gp-admin-empty">사용자를 먼저 선택하세요.</div>';
+  const logCnt = document.getElementById('adminUserLogCount');
+  if (logCnt) logCnt.textContent = '';
  }
+};
+
+// ===== 관리자: 사용자 작업 기록 =====
+window._adminUserLog = { uid: null, items: [], nextCursorMs: null, loading: false };
+
+const ADMIN_LOG_TYPE = {
+ detect: { label: '탐지', cls: 'detect' },
+ humanize: { label: '휴머나이징', cls: 'humanize' }
+};
+function adminLogTypeInfo(type) {
+ return ADMIN_LOG_TYPE[type] || { label: type || '기타', cls: 'etc' };
+}
+function adminProbBadge(p) {
+ if (typeof p !== 'number') return '';
+ const v = Math.round(p);
+ const cls = v <= 20 ? 'safe' : v <= 49 ? 'warn' : 'risk';
+ return `<span class="gp-admin-log-prob ${cls}">AI ${v}%</span>`;
+}
+
+window.loadAdminUserLog = async function(uid, append) {
+ const el = document.getElementById('adminUserLog');
+ if (!el || !uid) return;
+ const st = window._adminUserLog;
+ if (st.loading) return;
+ st.loading = true;
+ if (!append) {
+  st.uid = uid; st.items = []; st.nextCursorMs = null;
+  el.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
+ }
+ try {
+  const data = await adminPost('/admin/user-history', { uid, limit: 20, cursorMs: append ? st.nextCursorMs : 0 });
+  st.items = st.items.concat(data.items || []);
+  st.nextCursorMs = data.nextCursorMs || null;
+  window.renderAdminUserLog();
+ } catch (e) {
+  if (!append) el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">${escapeHtml(e.message)}</div>`;
+ } finally {
+  st.loading = false;
+ }
+};
+
+window.renderAdminUserLog = function() {
+ const el = document.getElementById('adminUserLog');
+ if (!el) return;
+ const st = window._adminUserLog;
+ const cntEl = document.getElementById('adminUserLogCount');
+ if (cntEl) cntEl.textContent = st.items.length ? (st.items.length + (st.nextCursorMs ? '+' : '')) : '';
+ if (!st.items.length) {
+  el.innerHTML = '<div class="gp-admin-empty">작업 기록이 없습니다.</div>';
+  return;
+ }
+ const rows = st.items.map(it => {
+  const ti = adminLogTypeInfo(it.type);
+  const isDetect = it.type === 'detect';
+  const preview = isDetect ? (it.summaryPreview || it.inputPreview) : (it.outputPreview || it.inputPreview);
+  const lenInfo = isDetect
+   ? `입력 ${adminNumber(it.inputLen).toLocaleString('ko-KR')}자`
+   : `입력 ${adminNumber(it.inputLen).toLocaleString('ko-KR')}자 → 결과 ${adminNumber(it.outputLen).toLocaleString('ko-KR')}자`;
+  return `
+   <div class="gp-admin-log-item">
+     <div class="gp-admin-log-head" onclick="adminToggleLogItem('${jsAttr(it.id)}')">
+       <div class="gp-admin-log-meta">
+         <span class="gp-admin-log-badge ${ti.cls}">${escapeHtml(ti.label)}</span>
+         ${adminProbBadge(it.probability)}
+         <span class="gp-admin-log-date">${escapeHtml(adminDateText(it.createdAtMs))}</span>
+         <span class="gp-admin-log-sub">${escapeHtml(lenInfo)} · ${adminNumber(it.credits)}크레딧</span>
+       </div>
+       <span class="gp-admin-log-toggle" id="logToggle-${jsAttr(it.id)}">자세히 ▾</span>
+     </div>
+     <div class="gp-admin-log-preview">${escapeHtml(preview) || '<span class="gp-admin-muted">내용 없음</span>'}</div>
+     <div class="gp-admin-log-detail" id="logDetail-${jsAttr(it.id)}" hidden></div>
+   </div>`;
+ }).join('');
+ const more = st.nextCursorMs
+  ? `<button type="button" class="gp-admin-mini-btn gp-admin-log-more" onclick="loadAdminUserLog(window._adminUserLog.uid, true)">더 보기</button>`
+  : '';
+ el.innerHTML = `<div class="gp-admin-log-list">${rows}</div>${more}`;
+};
+
+window.adminToggleLogItem = async function(id) {
+ const box = document.getElementById('logDetail-' + id);
+ const toggle = document.getElementById('logToggle-' + id);
+ if (!box) return;
+ if (!box.hidden) { box.hidden = true; if (toggle) toggle.textContent = '자세히 ▾'; return; }
+ box.hidden = false;
+ if (toggle) toggle.textContent = '접기 ▴';
+ if (box.dataset.loaded === '1') return;
+ box.innerHTML = '<div class="gp-admin-empty gp-admin-empty-compact">불러오는 중...</div>';
+ try {
+  const data = await adminPost('/admin/user-history-item', { uid: window._adminUserLog.uid, id });
+  const it = data.item || {};
+  const block = (label, text, mono) => text
+   ? `<div class="gp-admin-log-block">
+        <div class="gp-admin-log-block-head"><span>${escapeHtml(label)}</span><button type="button" class="gp-admin-mini-btn" onclick="adminCopyText(this)" data-copy="${escapeHtml(text)}">복사</button></div>
+        <div class="gp-admin-log-text${mono ? ' mono' : ''}">${escapeHtml(text)}</div>
+      </div>`
+   : '';
+  let html = '';
+  html += block('입력 원문', it.inputText, true);
+  if (it.type === 'detect') {
+   if (typeof it.probability === 'number') html += `<div class="gp-admin-log-block"><div class="gp-admin-log-block-head"><span>AI 탐지 확률</span></div><div class="gp-admin-log-text">${Math.round(it.probability)}%</div></div>`;
+   html += block('탐지 요약', it.summary, false);
+   html += block('탐지 상세', it.detail, true);
+  } else {
+   html += block('결과', it.outputText, true);
+   html += block('결과 요약', it.humanSummary, false);
+   html += block('결과 상세', it.humanDetail, true);
+  }
+  box.innerHTML = html || '<div class="gp-admin-empty gp-admin-empty-compact">표시할 내용이 없습니다.</div>';
+  box.dataset.loaded = '1';
+ } catch (e) {
+  box.innerHTML = `<div class="gp-admin-empty gp-admin-empty-compact gp-admin-error-text">${escapeHtml(e.message)}</div>`;
+ }
+};
+
+window.adminCopyText = function(btn) {
+ const text = btn?.dataset?.copy || '';
+ if (!text) return;
+ navigator.clipboard.writeText(text).then(() => {
+  const prev = btn.textContent;
+  btn.textContent = '복사됨';
+  setTimeout(() => { btn.textContent = prev; }, 1200);
+ }).catch(() => alert('복사 실패'));
 };
 
 window.adminAdjustCredits = async function() {
