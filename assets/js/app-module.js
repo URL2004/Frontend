@@ -159,6 +159,8 @@ async function loadUser(u) {
  updateCreditUI();
  window.updateNotifBadge(u.uid);
  setTimeout(() => { if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory(); }, 300);
+ // 저장 실패로 localStorage에 백업된 기록이 있으면 로그인·데이터 로드 후 자동 재시도.
+ setTimeout(() => { if (typeof window.flushPendingHistory === 'function') window.flushPendingHistory(); }, 1200);
 }
 
 function updateCreditUI() {
@@ -2119,27 +2121,68 @@ window.submitReply = async (postId, commentId, parentAuthorName) =>{
 };
 
 // ===== HISTORY =====
-window.saveHistory = async (type, inputText, detectResult, humanResult, credits) =>{
- if (!CU) return;
+// 이용 기록 저장(2026-06-14 강화) — 실패를 조용히 삼키지 않고:
+//   ① localStorage 백업(결과 유실 방지) ② 사용자에게 토스트 안내 ③ 다음 로드·온라인 복귀 시 자동 재시도.
+//   (서버측 /analyze 저장과 별개의 클라 폴백 — 청크·구형서버·비과금 경로 대비.)
+const PENDING_HISTORY_KEY = 'gp_pending_history';
+function backupHistoryLocal(uid, data) {
  try {
+  const q = JSON.parse(localStorage.getItem(PENDING_HISTORY_KEY) || '[]');
+  const { createdAt, ...rest } = data;   // serverTimestamp()는 직렬화 불가 → 제거(재시도 때 재생성)
+  q.push({ uid, data: rest, ts: Date.now() });
+  while (q.length > 50) q.shift();        // 적체 상한
+  localStorage.setItem(PENDING_HISTORY_KEY, JSON.stringify(q));
+ } catch (e) { /* localStorage 불가·용량 초과 — 백업 생략(토스트는 이미 안내) */ }
+}
+window.flushPendingHistory = async function flushPendingHistory() {
+ if (!CU || !db) return;
+ let q;
+ try { q = JSON.parse(localStorage.getItem(PENDING_HISTORY_KEY) || '[]'); } catch (e) { return; }
+ if (!q.length) return;
+ const remaining = [];
+ let restored = 0;
+ for (const item of q) {
+  if (!item || item.uid !== CU.uid) { if (item) remaining.push(item); continue; }   // 다른 계정 항목은 보존
+  try {
+   await addDoc(collection(db,'users',CU.uid,'history'), { ...item.data, createdAt: serverTimestamp(), backupAtMs: item.ts });
+   restored++;
+  } catch (e) { remaining.push(item); }   // 여전히 실패 → 다음 기회에
+ }
+ try { localStorage.setItem(PENDING_HISTORY_KEY, JSON.stringify(remaining)); } catch (e) {}
+ if (restored > 0) {
+  if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory();
+  if (window.gpToast) window.gpToast(`저장하지 못했던 기록 ${restored}건을 복구했어요.`, { type: 'success' });
+ }
+};
+window.addEventListener('online', () => { try { window.flushPendingHistory(); } catch (e) {} });
+
+window.saveHistory = async (type, inputText, detectResult, humanResult, credits) =>{
+ if (!CU) return false;
  const data = {
- type: type || 'unknown',
- inputText: inputText || '',
- credits: typeof credits === 'number' ? credits : 0,
- createdAt: serverTimestamp()
+  type: type || 'unknown',
+  inputText: inputText || '',
+  credits: typeof credits === 'number' ? credits : 0,
+  createdAt: serverTimestamp()
  };
  if (detectResult) {
- data.probability = typeof detectResult.probability === 'number' ? detectResult.probability : null;
- data.summary = detectResult.summary || '';
- data.detail = detectResult.detail || '';
+  data.probability = typeof detectResult.probability === 'number' ? detectResult.probability : null;
+  data.summary = detectResult.summary || '';
+  data.detail = detectResult.detail || '';
  }
  if (humanResult) {
- data.outputText = humanResult.outputText || '';
- data.humanSummary = humanResult.summary || '';
- data.humanDetail = humanResult.detail || '';
+  data.outputText = humanResult.outputText || '';
+  data.humanSummary = humanResult.summary || '';
+  data.humanDetail = humanResult.detail || '';
  }
- await addDoc(collection(db,'users',CU.uid,'history'), data);
- } catch(e) { console.error('[saveHistory] 실패', { code: e?.code, message: e?.message, name: e?.name }); }
+ try {
+  await addDoc(collection(db,'users',CU.uid,'history'), data);
+  return true;
+ } catch(e) {
+  console.error('[saveHistory] 실패', { code: e?.code, message: e?.message, name: e?.name });
+  backupHistoryLocal(CU.uid, data);   // 결과 유실 방지 — 로컬 백업 후 자동 재시도
+  if (window.gpToast) window.gpToast('결과를 기록에 저장하지 못했어요. 결과는 안전하게 백업해뒀고, 잠시 후 자동으로 다시 저장할게요.', { type: 'warning', title: '기록 저장 지연' });
+  return false;
+ }
 };
 
 window.loadHistory = async () =>{

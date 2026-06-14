@@ -1013,13 +1013,17 @@ async function runAnalysis() {
  // 서버가 이미 Firestore 크레딧을 차감했으므로 UI만 낙관적 업데이트
  if (window.UP !== 'unlimited') { window.UC = Math.max(0, (window.UC || 0) - needed); updateCreditUI(); }
 
- await window.saveHistory(
- currentMode,
- text,
- mode === 'detect' ? data.result : null,
- mode !== 'detect' ? data.result : null,
- needed
- );
+ // 서버가 단일 호출 결과를 이미 저장했으면(historySaved) 중복 저장하지 않는다.
+ // 청크(>5500자)·구형 서버 응답은 historySaved가 없어 기존대로 클라가 저장(폴백).
+ if (!data.historySaved) {
+  await window.saveHistory(
+  currentMode,
+  text,
+  mode === 'detect' ? data.result : null,
+  mode !== 'detect' ? data.result : null,
+  needed
+  );
+ }
  if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory();
 
  const _ts = localStorage.getItem('traffic_source') || 'direct';

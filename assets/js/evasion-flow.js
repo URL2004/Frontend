@@ -804,12 +804,27 @@
       score = (lastDiag && lastDiag.bands && lastDiag.bands.polish) || '—';
       label = '다듬기';
       renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics });
+    } else if (st.result && st.result.preservationFallback) {
+      // 차단→보존형 폴백: 고급 재구성이 게이트에 막혀 원문 보존형으로 처리된 결과.
+      // 재생성 회피 점수(50~60%대)를 약속하면 거짓 표기가 되므로, 다듬기와 동일하게 정직 표기 + 안내 배너.
+      score = (lastDiag && lastDiag.bands && lastDiag.bands.polish) || '—';
+      label = '보존형';
+      renderBadges({ metrics: st.result && st.result.metrics });
     } else {
       // 예상 밴드(보수 표기): 근거 사용 시 40~55%, 미사용 시 50~60%대
       var mEv = st.result && st.result.metrics && st.result.metrics.evidenceUsed;
       score = mEv > 0 ? '40~55%' : '50~60%대';
       label = '재구성';
       renderBadges({ metrics: st.result && st.result.metrics });
+    }
+    // 보존형 폴백 안내 배너(정직 표기) — 일반 결과에선 항상 숨김으로 리셋
+    var lavFbBanner = $('lavFallbackBanner');
+    if (lavFbBanner) {
+      var isFb = !!(st.result && st.result.preservationFallback);
+      lavFbBanner.hidden = !isFb;
+      if (isFb && $('lavFallbackMsg')) {
+        $('lavFallbackMsg').textContent = st.note || '고급 변환이 원문 보존 기준을 통과하지 못해, 원문을 최대한 보존하는 방식으로 변환했어요.';
+      }
     }
     if ($('lavDoneScore')) $('lavDoneScore').textContent = score;
     if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
