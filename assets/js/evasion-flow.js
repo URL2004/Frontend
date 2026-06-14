@@ -474,6 +474,10 @@
       body: JSON.stringify({ approved: ids })
     }).then(function (res) { return res.json(); }).then(function (b) {
       if (b && b.error) throw new Error(b.error);
+      if (b && b.job && b.job.status === 'queued') {
+        resumeTransformState(jobId, b.job);
+        return;
+      }
       formalStop = startJobTicker(Math.max(240, Math.min(2700, Math.round(currentBareLen() / 4))), '승인 근거로 재구성 중');
       return pollTransform(jobId, ++pollGen);
     }).catch(function (err) {
@@ -577,6 +581,24 @@
     return function stop() { clearInterval(timer); };
   }
 
+  function lavQueueWaitText(sec) {
+    var s = Math.max(0, Math.round(sec || 0));
+    if (s < 60) return '곧 시작';
+    return '약 ' + Math.max(1, Math.round(s / 60)) + '분';
+  }
+
+  function renderQueuedState(jobId, st) {
+    stopFormalTicker();
+    setJobSteps(0);
+    var ap = $('lavApprove'); if (ap) ap.hidden = true;
+    if ($('lavJobTitle')) $('lavJobTitle').textContent = '대기열에서 기다리고 있어요';
+    if ($('lavJobId')) $('lavJobId').textContent = jobId ? '#' + jobId.slice(0, 6).toUpperCase() : '';
+    var pos = st && st.queuePosition ? st.queuePosition : 1;
+    var size = st && st.queueSize ? st.queueSize : pos;
+    var wait = lavQueueWaitText(st && st.queueEtaSec);
+    if ($('lavStepSlot')) $('lavStepSlot').textContent = '대기 ' + pos + '번째' + (size > 1 ? ' / ' + size + '명' : '') + ' · 예상 ' + wait;
+  }
+
   function renderBadges(fr) {
     var wrap = $('lavTrust');
     if (!wrap) return;
@@ -619,6 +641,10 @@
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
         activeCancel = makeJobCanceller(r.jobId);
+        if (r.job && r.job.status === 'queued') {
+          resumeTransformState(r.jobId, r.job);
+          return;
+        }
         await pollTransform(r.jobId, gen);
       } catch (err) {
         await handleTransformStartError(err, mode === 'polish' ? 'choose' : 'reduce');
@@ -746,13 +772,18 @@
       lavInitCollapse('lavDoneBody', 'lavDoneToggle');
       return true;
     }
-    if (st.status !== 'running' && st.status !== 'awaiting_approval') return false;
+    if (st.status !== 'running' && st.status !== 'queued' && st.status !== 'awaiting_approval') return false;
     saveJobRef(jobId);
     activeCancel = makeJobCanceller(jobId);
     var isShort = st.mode === 'blog' || st.mode === 'polish';
     if ($('lavJobTitle')) $('lavJobTitle').textContent = isShort ? '문장을 다듬고 있어요' : '글을 다시 쓰고 있어요';
     if ($('lavJobId')) $('lavJobId').textContent = '#' + jobId.slice(0, 6).toUpperCase();
     show('job');
+    if (st.status === 'queued') {
+      renderQueuedState(jobId, st);
+      pollTransform(jobId, ++pollGen);
+      return true;
+    }
     if (st.status === 'awaiting_approval') {
       stopFormalTicker();
       setJobSteps(2);
@@ -791,7 +822,7 @@
   // 폴링: 6초 간격, 최대 45분(근거 검색+재구성). 창을 닫아도 서버 작업은 계속됨(job 방식).
   // gen 토큰: 사용자가 중단하거나 새 작업을 시작하면 pollGen이 올라가 이전 루프가 조용히 끝남.
   async function pollTransform(jobId, gen) {
-    var deadline = Date.now() + 95 * 60000;   // 3만자 재구성 대비(긴 글). 창 닫아도 서버 작업은 계속.
+    var deadline = Date.now() + 6 * 3600 * 1000;   // 큐 대기 + 3만자 재구성 대비. 창 닫아도 서버 작업은 계속.
     var idToken = await evGetIdToken();
     var authRetries = 0;   // 폴링 중 401(토큰 만료) 연속 횟수
     while (Date.now() < deadline) {
@@ -829,6 +860,15 @@
         return;
       }
       if (st.status === 'cancelled') { stopFormalTicker(); clearJobRef(); return; }
+      if (st.status === 'queued') {
+        renderQueuedState(jobId, st);
+        continue;
+      }
+      if (st.status === 'running') {
+        var runningShort = st.mode === 'blog' || st.mode === 'polish';
+        if (!formalStop) formalStop = startJobTicker(st.estSec || (runningShort ? 180 : 900), runningShort ? '문장 다듬는 중' : '재구성 중', st.elapsedSec || 0);
+        continue;
+      }
       if (st.status === 'awaiting_approval') {
         stopFormalTicker();
         setJobSteps(2);
@@ -937,6 +977,10 @@
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
         activeCancel = makeJobCanceller(r.jobId);
+        if (r.job && r.job.status === 'queued') {
+          resumeTransformState(r.jobId, r.job);
+          return;
+        }
         await pollTransform(r.jobId, gen);
       } catch (err) {
         await handleTransformStartError(err, 'reduce');

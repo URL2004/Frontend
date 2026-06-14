@@ -16173,6 +16173,19 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-refund-detail .neg{color:var(--admin-red);}
 .gp-admin-refund-reason{font-size:12px;color:var(--admin-text3);word-break:break-all;}
 
+/* ── 작업 모니터(transformJobs) ── */
+.gp-admin-jobs-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+.gp-admin-jobs-all{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--admin-text2);cursor:pointer;}
+.gp-admin-jobs-note{font-size:12px;color:var(--admin-text3);margin-left:auto;}
+.gp-admin-jobs-note.alert{color:var(--admin-red);font-weight:800;}
+#adminJobsBody .gp-admin-table{min-width:720px;}
+.gp-admin-jobst{display:inline-block;font-size:11px;font-weight:800;border-radius:5px;padding:2px 8px;white-space:nowrap;}
+.gp-admin-jobst.run{background:#e9efff;color:#3a5bd8;}
+.gp-admin-jobst.wait{background:#fbf1dd;color:var(--admin-amber);}
+.gp-admin-jobst.done{background:#e7f6ec;color:var(--admin-green);}
+.gp-admin-jobst.err{background:#fdeae6;color:var(--admin-red);}
+.gp-admin-jobst.muted{background:var(--admin-soft);color:var(--admin-text2);}
+
 /* ── 사용자 작업 기록 ── */
 .gp-admin-log-list{display:flex;flex-direction:column;}
 .gp-admin-log-item{border-top:1px solid var(--admin-line);padding:11px 0;}

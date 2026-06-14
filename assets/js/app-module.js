@@ -2881,6 +2881,7 @@ window.loadAdminPage = async function() {
  }
  await Promise.allSettled([
   window.loadAdminOverview(),
+  window.loadAdminJobs(),
   window.loadAdminRefundList(),
   window.loadAllCreditHistory(),
   window.loadCouponBatches()
@@ -3075,6 +3076,99 @@ window.adminCopyText = function(btn) {
   btn.textContent = '복사됨';
   setTimeout(() => { btn.textContent = prev; }, 1200);
  }).catch(() => alert('복사 실패'));
+};
+
+// ===== 관리자: 작업 모니터 (transformJobs) =====
+const ADMIN_JOB_STATUS = {
+ queued: { l: '대기 중', c: 'wait' },
+ running: { l: '진행 중', c: 'run' },
+ awaiting_approval: { l: '승인 대기', c: 'wait' },
+ done: { l: '완료', c: 'done' },
+ error: { l: '오류·중단', c: 'err' },
+ blocked: { l: '차단', c: 'err' },
+ cancelled: { l: '취소', c: 'muted' }
+};
+
+window.loadAdminJobs = async function() {
+ if (!window.isAdmin()) return;
+ const el = document.getElementById('adminJobsBody');
+ if (!el) return;
+ const filter = document.getElementById('adminJobsFilter')?.value || 'issues';
+ const hours = parseInt(document.getElementById('adminJobsHours')?.value, 10) || 24;
+ el.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
+ try {
+  const data = await adminPost('/admin/jobs', { filter, hours, limit: 200 });
+  window._adminJobs = data;
+  renderAdminJobs(data);
+ } catch (e) {
+  el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">${escapeHtml(e.message)}</div>`;
+ }
+};
+
+function renderAdminJobs(data) {
+ const el = document.getElementById('adminJobsBody');
+ if (!el) return;
+ const cnt = document.getElementById('adminJobsCount');
+ if (cnt) cnt.textContent = data.count ? String(data.count) : '';
+ if (!data.rows || !data.rows.length) {
+  el.innerHTML = '<div class="gp-admin-empty">해당 조건의 작업이 없습니다.</div>';
+  return;
+ }
+ const charged = data.chargedCount || 0;
+ const rows = data.rows.map(r => {
+  const s = ADMIN_JOB_STATUS[r.status] || { l: r.status || '-', c: 'muted' };
+  return `<tr>
+    <td><input type="checkbox" class="gp-admin-job-cb" data-uid="${jsAttr(r.uid)}"></td>
+    <td>${escapeHtml(r.email || '(이메일 없음)')}<br><span class="muted">${escapeHtml((r.uid || '').slice(0, 8))}</span></td>
+    <td><span class="gp-admin-jobst ${s.c}">${escapeHtml(s.l)}</span></td>
+    <td>${r.deducted ? '<span class="gp-admin-neg">⚠ 차감</span>' : '<span class="muted">—</span>'}</td>
+    <td class="num">${adminNumber(r.needed)}</td>
+    <td class="muted">${escapeHtml(r.stage || '')}</td>
+    <td class="muted">${escapeHtml(adminDateText(r.createdAtMs))}</td>
+    <td><button type="button" class="gp-admin-mini-btn" onclick="adminOpenUser('${jsAttr(r.uid)}')">열기</button></td>
+  </tr>`;
+ }).join('');
+ el.innerHTML = `
+  <div class="gp-admin-jobs-bar">
+    <label class="gp-admin-jobs-all"><input type="checkbox" onclick="adminJobsToggleAll(this)"> 전체 선택</label>
+    <button type="button" class="gp-admin-primary" onclick="adminNotifyAffected()">선택 사용자에게 알림</button>
+    <span class="gp-admin-jobs-note ${charged ? 'alert' : ''}">${charged ? `⚠ 실제 차감된 작업 ${charged}건 — 확인 필요` : '차감된 작업 없음'}</span>
+  </div>
+  <div class="gp-admin-table-wrap"><table class="gp-admin-table gp-admin-jobs-table">
+   <thead><tr><th></th><th>사용자</th><th>상태</th><th>차감</th><th class="num">크레딧</th><th>단계</th><th>시각</th><th></th></tr></thead>
+   <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+window.adminJobsToggleAll = function(cb) {
+ document.querySelectorAll('.gp-admin-job-cb').forEach(x => { x.checked = cb.checked; });
+};
+
+window.adminOpenUser = function(uid) {
+ const i = document.getElementById('adminUserQuery');
+ if (i) i.value = uid;
+ window.adminSearchUser();
+ const ws = document.querySelector('.gp-admin-ws');
+ if (ws) ws.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+window.adminNotifyAffected = async function() {
+ const cbs = [...document.querySelectorAll('.gp-admin-job-cb:checked')];
+ const uids = [...new Set(cbs.map(c => c.dataset.uid).filter(Boolean))];
+ if (!uids.length) { alert('알림 보낼 사용자를 선택하세요.'); return; }
+ const defMsg = '재구성 작업 중 일시적 오류로 진행이 중단됐어요. 원인은 수정 완료됐고, 크레딧은 차감되지 않았습니다. 번거로우시겠지만 다시 시도해 주세요. 불편을 드려 죄송합니다.';
+ const message = window.gpPrompt
+  ? await window.gpPrompt({ title: '영향 사용자 알림', message: `${uids.length}명에게 인앱 알림을 보냅니다.`, placeholder: '알림 메시지', defaultValue: defMsg, confirmText: '발송', required: true })
+  : prompt('알림 메시지', defMsg);
+ if (!message || message.trim().length < 2) return;
+ try {
+  const dayKey = new Date().toISOString().slice(0, 10);
+  const data = await adminPost('/admin/notify-users', { uids, title: '작업 오류 안내 (수정 완료)', message: message.trim(), clientId: 'job_incident_' + dayKey + '_' + message.trim().length });
+  if (window.gpToast) window.gpToast(`${data.sent}/${data.total}명에게 알림을 보냈어요.`, { type: 'success', title: '알림 발송' });
+  else alert(`${data.sent}/${data.total}명에게 알림 발송 완료`);
+ } catch (e) {
+  alert(e.message || '알림 발송에 실패했습니다.');
+ }
 };
 
 window.adminAdjustCredits = async function() {
