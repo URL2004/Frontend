@@ -2313,13 +2313,13 @@ window.loadOrderHistory = async () =>{
  el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">결제 내역이 없어요</div>';
  return;
  }
- const statusMap = { paid:'결제 완료', refund_requested:'환불 심사중', refunded:'환불 완료', refund_rejected:'환불 거절', failed:'결제 실패' };
+ const statusMap = { paid:'결제 완료', refund_requested:'환불 심사중', partially_refunded:'부분 환불', refunded:'환불 완료', refund_rejected:'환불 거절', failed:'결제 실패' };
  el.innerHTML = all.slice(0,30).map(item =>{
  const o = item.data;
  const ts = o.createdAt?.toMillis?.() || o.approvedAt?.toMillis?.() || o.requestedAt?.toMillis?.() || 0;
  const date = ts ? new Date(ts).toLocaleString('ko-KR') : '';
  const statusTxt = statusMap[o.status] || o.status || '결제 완료';
- const statusColor = o.status === 'refunded' ? 'var(--yellow)' : o.status === 'refund_requested' ? 'var(--blue)' : (o.status === 'refund_rejected' || o.status === 'failed') ? 'var(--red)' : 'var(--green)';
+ const statusColor = (o.status === 'refunded' || o.status === 'partially_refunded') ? 'var(--yellow)' : o.status === 'refund_requested' ? 'var(--blue)' : (o.status === 'refund_rejected' || o.status === 'failed') ? 'var(--red)' : 'var(--green)';
  const title = item.kind === 'sub'
    ? `정기결제 · ${SUB_TIER_LABELS[o.tier] || o.tier}`
    : `크레딧 충전 · ${o.safeCredits||0}크레딧`;
@@ -2601,6 +2601,7 @@ function adminOrderStatusText(status) {
   paid: '결제 완료',
   refund_requested: '환불 요청',
   refund_rejected: '환불 거절',
+  partially_refunded: '부분 환불',
   refunded: '환불 완료',
   cancelled: '취소',
   failed: '실패'
@@ -2711,10 +2712,14 @@ function adminRenderUserBundle(data) {
   const title = isSub
    ? `정기결제 · ${escapeHtml(SUB_TIER_LABELS[o.tier] || o.tier || '-')}`
    : `크레딧 · ${adminNumber(o.safeCredits).toLocaleString('ko-KR')}크레딧`;
-  const canRefund = !!o.paymentKey && ['paid', 'refund_requested', 'refund_rejected'].includes(o.status);
+  const priorRefunded = adminNumber(o.refundedAmount || o.refundAmount);
+  const remainingMoney = Math.max(0, adminNumber(o.amount) - priorRefunded);
+  const canRefund = !!o.paymentKey && ['paid', 'refund_requested', 'refund_rejected', 'partially_refunded'].includes(o.status) && remainingMoney > 0;
   const disabledTitle = !o.paymentKey ? 'paymentKey가 없는 이전 결제건입니다.' : '현재 상태에서는 환불할 수 없습니다.';
   const refundMeta = o.status === 'refunded'
-   ? `<span>환불 ${adminMoney(o.refundAmount)} · ${adminNumber(o.refundedCredits).toLocaleString('ko-KR')}크레딧</span>`
+   ? `<span>환불 완료 ${adminMoney(priorRefunded)} · ${adminNumber(o.refundedCredits).toLocaleString('ko-KR')}크레딧</span>`
+   : o.status === 'partially_refunded'
+   ? `<span>부분환불 ${adminMoney(priorRefunded)} · 잔여 ${adminMoney(remainingMoney)} 환불 가능</span>`
    : '';
 
   let actionBtn, panel = '';
@@ -2732,8 +2737,8 @@ function adminRenderUserBundle(data) {
          <button type="button" class="gp-admin-mode" data-mode="custom" onclick="adminSetRefundMode(${i},'custom')">직접 입력</button>
        </div>
        <div class="gp-admin-refund-custom" id="refundCustom-${i}" hidden>
-         <input type="number" class="gp-admin-input gp-admin-input-sm" id="refundAmt-${i}" min="1" max="${adminNumber(o.amount)}" placeholder="환불 금액" oninput="adminRefundPreview(${i})">
-         <span>원 · 최대 ${adminMoney(o.amount)}</span>
+         <input type="number" class="gp-admin-input gp-admin-input-sm" id="refundAmt-${i}" min="1" max="${remainingMoney}" placeholder="환불 금액" oninput="adminRefundPreview(${i})">
+         <span>원 · 최대 ${adminMoney(remainingMoney)}</span>
        </div>
        <input type="text" class="gp-admin-input gp-admin-input-sm" id="refundReason-${i}" maxlength="120" placeholder="환불 사유 (필수)">
        <div class="gp-admin-refund-preview" id="refundPreview-${i}"></div>
@@ -2760,20 +2765,25 @@ function adminRenderUserBundle(data) {
  }).join('') + '</div>';
 }
 
-// 결제건 환불 계산(백엔드 processRefund 미러) — {amount, credits} 또는 null
+// 결제건 환불 계산(백엔드 processRefund 미러, 누적 부분환불 반영) — {amount, credits} 또는 null
 function adminComputeRefund(order, mode, customAmount) {
  const orderAmount = adminNumber(order.amount);
  const safe = adminNumber(order.safeCredits);
+ const priorAmount = adminNumber(order.refundedAmount || order.refundAmount);
+ const priorCredits = adminNumber(order.refundedCredits);
+ const remainingMoney = Math.max(0, orderAmount - priorAmount);
+ const remainingOrderCredits = Math.max(0, safe - priorCredits);
  const current = adminNumber(window._adminSelectedUser?.credits);
- const usable = Math.min(current, safe);
- if (mode === 'full') return { amount: orderAmount, credits: usable };
+ const usable = Math.min(current, remainingOrderCredits);
+ if (remainingMoney <= 0) return { amount: 0, credits: 0 };
+ if (mode === 'full') return { amount: remainingMoney, credits: usable };
  if (mode === 'custom') {
   const amt = Math.floor(Number(customAmount));
-  if (!Number.isFinite(amt) || amt <= 0 || amt > orderAmount) return null;
+  if (!Number.isFinite(amt) || amt <= 0 || amt > remainingMoney) return null;
   return { amount: amt, credits: Math.min(usable, safe > 0 ? Math.floor(safe * amt / orderAmount) : 0) };
  }
  if (usable <= 0) return { amount: 0, credits: 0 };
- return { amount: safe > 0 ? Math.floor(orderAmount * usable / safe) : 0, credits: usable };
+ return { amount: Math.min(remainingMoney, safe > 0 ? Math.floor(orderAmount * usable / safe) : 0), credits: usable };
 }
 
 function adminGetRefundMode(i) {
@@ -2793,7 +2803,7 @@ window.adminRefundPreview = function(i) {
  if (!order || !prev) return;
  const amtInput = document.getElementById('refundAmt-' + i);
  const calc = adminComputeRefund(order, adminGetRefundMode(i), amtInput ? amtInput.value : null);
- if (!calc) { prev.innerHTML = '<span class="neg">금액을 확인하세요 (1원 이상, 결제금액 이하)</span>'; return; }
+ if (!calc) { prev.innerHTML = '<span class="neg">금액을 확인하세요 (1원 이상, 환불 가능액 이하)</span>'; return; }
  if (calc.amount <= 0) { prev.innerHTML = '<span class="neg">환불 가능 금액이 없습니다. 전체/직접입력을 사용하세요.</span>'; return; }
  prev.innerHTML = `환불 <b>${adminMoney(calc.amount)}</b> · 크레딧 <b>${calc.credits.toLocaleString('ko-KR')}</b> 차감`;
 };
@@ -2816,7 +2826,8 @@ window.adminSetRefundMode = function(i, mode) {
   const order = (window._adminSelectedBundle?.orders || [])[i];
   if (amtInput && order && !amtInput.value) {
    const def = adminComputeRefund(order, 'remaining');
-   amtInput.value = def && def.amount > 0 ? def.amount : adminNumber(order.amount);
+   const remaining = adminNumber(order.amount) - adminNumber(order.refundedAmount || order.refundAmount);
+   amtInput.value = def && def.amount > 0 ? def.amount : Math.max(0, remaining);
   }
   if (amtInput) amtInput.focus();
  }
@@ -2826,8 +2837,9 @@ window.adminSetRefundMode = function(i, mode) {
 async function adminRunRefund(i, body) {
  try {
   const data = await adminPost('/admin/direct-refund', body);
-  const doneMsg = `환불 완료: ${adminMoney(data.refundAmount)}${data.refundedCredits ? ' · ' + data.refundedCredits.toLocaleString('ko-KR') + '크레딧 차감' : ''}`;
-  if (window.gpToast) window.gpToast(doneMsg, { type: 'success', title: '환불 완료' });
+  const isPartial = data.fullyRefunded === false;
+  const doneMsg = `${isPartial ? '부분 환불' : '환불'} 완료: ${adminMoney(data.refundAmount)}${data.refundedCredits ? ' · ' + data.refundedCredits.toLocaleString('ko-KR') + '크레딧 차감' : ''}`;
+  if (window.gpToast) window.gpToast(doneMsg, { type: 'success', title: isPartial ? '부분 환불 완료' : '환불 완료' });
   else alert(doneMsg);
   await window.adminSearchUser(true);
   await Promise.allSettled([
