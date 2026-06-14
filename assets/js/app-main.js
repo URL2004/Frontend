@@ -1,12 +1,13 @@
 let mode='detect', dark=true, tab='main', humanizeMode='assignment', selectedLang='ko';
 window.mode='detect';
-const ROUTE_TABS = ['main','pricing','community','blog','detectReport','faq','qna','notice','mypage','history','pro'];
+const ROUTE_TABS = ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','history','pro'];
 const ROUTE_PATHS = {
  main: '/',
  pricing: '/pricing',
  community: '/community',
  blog: '/blog',
  detectReport: '/detect-report',
+ guide: '/guide',
  faq: '/faq',
  qna: '/qna',
  notice: '/notice',
@@ -21,6 +22,7 @@ const PATH_ROUTES = {
  '/community': 'community',
  '/blog': 'blog',
  '/detect-report': 'detectReport',
+ '/guide': 'guide',
  '/faq': 'faq',
  '/qna': 'qna',
  '/notice': 'notice',
@@ -48,6 +50,10 @@ blog: {
 detectReport: {
  title: '무료 AI 감지기 · AI 탐지 확률 확인 | 교수님 피하기',
  description: '글을 붙여넣고 AI 작성 흔적과 탐지 위험 문장을 무료로 확인하세요. 결과를 바탕으로 휴머나이징까지 이어갈 수 있습니다.'
+},
+guide: {
+ title: '사용 가이드 · 교수님 피하기',
+ description: '교수님 피하기 사용 방법을 처음부터 결과 보관까지 단계별로 안내합니다.'
 },
 faq: {
  title: '자주 묻는 질문 · 교수님 피하기',
@@ -337,7 +343,7 @@ function switchTab(t, opts) {
  document.querySelectorAll('.ntab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.mnav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.snav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
- ['main','pricing','community','blog','detectReport','faq','qna','notice','mypage','history','pro'].forEach(n=>{
+ ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','history','pro'].forEach(n=>{
  const el = document.getElementById(n+'Content');
  if (el) el.style.display = n===t ? 'block' : 'none';
  });

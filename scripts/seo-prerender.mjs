@@ -91,6 +91,17 @@ const ROUTES = [
     faq: false
   },
   {
+    out: 'guide/index.html',
+    url: '/guide',
+    partial: 'guide.html',
+    title: '사용 가이드 – AI 감지 · 휴머나이징 · 결과 보관 | 교수님 피하기',
+    h1: '교수님 피하기 사용 가이드',
+    description:
+      '교수님 피하기에서 글을 붙여넣고 AI 감지, 휴머나이징, 결과 보관, 크레딧 충전까지 진행하는 방법을 단계별로 안내합니다.',
+    breadcrumb: '사용 가이드',
+    faq: false
+  },
+  {
     out: 'qna/index.html',
     url: '/qna',
     partial: 'qna.html',
