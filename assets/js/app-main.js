@@ -1471,6 +1471,12 @@ function showPolicy(type) {
  const body = document.getElementById('policyBody');
  modal.style.display = 'block';
 
+ if (type === 'company') {
+ title.textContent = '회사 정보 · 사업자 정보';
+ body.innerHTML = '상호명: 지피코리아(gpkorea)<br>대표자: 윤동민<br>개인정보보호책임자: 윤동민<br>사업자등록번호: 213-11-67637<br>통신판매업 신고번호: 2024-인천연수구-4281<br>사업장 주소: 인천광역시 연수구 랜드마크로360번길 40, 108동 3201호<br>이메일: aqua0661123@naver.com<br>고객센터: 카카오톡 문의 · 운영시간 09:00 ~ 23:59<br><br><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2131167637" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;">▸ 통신판매사업자 정보 확인 (공정거래위원회)</a>';
+ return;
+ }
+
  if (type === 'terms') {
  title.textContent = '이용약관';
  body.innerHTML = `제1조 (목적)
