@@ -495,13 +495,14 @@
     return (ko / t.length) < 0.15 ? 'en' : 'ko';
   }
 
-  async function evGetIdToken() {
+  async function evGetIdToken(forceRefresh) {
     for (var i = 0; i < 20 && !window.authReady; i++) {
       await new Promise(function (ok) { setTimeout(ok, 100); });
     }
     try { if (window.authReady) await window.authReady; } catch (e) {}
     try {
-      if (window.CU && window.CU.getIdToken) return await window.CU.getIdToken();
+      // forceRefresh=true → 만료된 토큰을 강제 갱신(긴 작업 폴링 중 401 복구용).
+      if (window.CU && window.CU.getIdToken) return await window.CU.getIdToken(!!forceRefresh);
     } catch (e) {}
     return '';
   }
@@ -707,7 +708,13 @@
     if (!ref || !ref.jobId || (Date.now() - (ref.ts || 0)) > 6 * 3600 * 1000) { if (ref) clearJobRef(); return; }
     evGetIdToken().then(function (idToken) {
       return fetch(window.apiUrl('/transform/' + ref.jobId), { headers: evAuthHeaders(idToken) });
-    }).then(function (r) { return r.json(); }).then(function (st) {
+    }).then(function (r) {
+      var httpStatus = r.status;
+      return r.json().catch(function () { return null; }).then(function (st) { return { httpStatus: httpStatus, st: st }; });
+    }).then(function (o) {
+      // 401(토큰 만료): jobRef를 지우지 않는다 — 다음 로드에 재시도해 진행 중 작업을 복원.
+      if (o.httpStatus === 401) return;
+      var st = o.st;
       if (!st || !st.ok) { clearJobRef(); return; }
       if (st.status === 'done') {
         st.jobId = ref.jobId;
@@ -739,17 +746,34 @@
   async function pollTransform(jobId, gen) {
     var deadline = Date.now() + 95 * 60000;   // 3만자 재구성 대비(긴 글). 창 닫아도 서버 작업은 계속.
     var idToken = await evGetIdToken();
+    var authRetries = 0;   // 폴링 중 401(토큰 만료) 연속 횟수
     while (Date.now() < deadline) {
       await new Promise(function (ok) { setTimeout(ok, 6000); });
       if (gen !== pollGen) return;   // 중단·교체됨
-      var st;
+      var st = null, httpStatus = 0;
       try {
-        st = await fetch(window.apiUrl('/transform/' + jobId), { headers: evAuthHeaders(idToken) }).then(function (res) { return res.json(); });
+        var pollRes = await fetch(window.apiUrl('/transform/' + jobId), { headers: evAuthHeaders(idToken) });
+        httpStatus = pollRes.status;
+        st = await pollRes.json().catch(function () { return null; });
       } catch (e) { continue; }   // 일시 네트워크 오류 — 다음 폴링
+
+      // ★ 401(토큰 만료): 긴 작업(10분+) 폴링 중 idToken이 만료된 경우. 작업은 서버에서 계속 돌아
+      //   완료되므로 절대 jobRef를 지우지 않는다 — 토큰을 강제 갱신해 폴링을 이어간다.
+      //   (2026-06-14 실사고: 401을 fatal로 보고 복귀 → 6초 뒤 완료된 결과가 사용자 화면에서 유실.)
+      if (httpStatus === 401) {
+        authRetries++;
+        if (authRetries <= 6) { idToken = await evGetIdToken(true); continue; }
+        stopFormalTicker();
+        notifyJobIssue(jobId, '로그인이 만료됐어요. 다시 로그인하면 진행 중이던 작업으로 들어갈 수 있어요. (작업·결과는 사라지지 않아요)');
+        if (!window.gpNotify) alert('로그인이 만료됐어요. 다시 로그인하면 진행 중이던 작업으로 들어갈 수 있어요.');
+        return;   // jobRef 유지 — 재로그인·새로고침으로 복원 가능
+      }
+      authRetries = 0;
+
       if (!st) continue;
-      // 404(서버 재시작·만료)·권한 오류 등 — 영원히 안 끝나는 무한 폴링 방지(2026-06-13 실사고:
+      // 404(서버 재시작·만료) 등 진짜 "작업 없음" — 무한 폴링 방지(2026-06-13 실사고:
       // 서버 재시작으로 job이 사라졌는데 화면은 진행률만 계속 올라감).
-      if (st.ok === false || (st.error && !st.status)) {
+      if (httpStatus === 404 || st.ok === false || (st.error && !st.status)) {
         stopFormalTicker();
         clearJobRef();
         notifyJobIssue(jobId, st.error || '작업을 찾을 수 없어요. 다시 시도해 주세요.');
