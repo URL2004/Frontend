@@ -1,14 +1,14 @@
 <div id="policyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;overflow-y:auto;padding:40px 20px;" onclick="if(event.target===this)this.style.display='none'">
- <div class="gp-modal-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);max-width:600px;margin:0 auto;padding:32px;">
- <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+ <div class="gp-modal-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);max-width:600px;margin:0 auto;padding:22px 32px 28px;">
+ <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
  <h2 id="policyTitle" style="font-size:18px;font-weight:700;color:var(--text);"></h2>
  <button class="gp-modal-close" onclick="document.getElementById('policyModal').style.display='none'" aria-label="닫기" style="width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;font-size:16px;line-height:1;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;">×</button>
 </div>
- <div class="gp-policy-nav" style="display:flex;flex-wrap:wrap;gap:6px 4px;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:14px;">
-  <button type="button" data-policy="company" onclick="showPolicy('company')" style="background:none;border:none;padding:4px 8px;color:var(--text3);cursor:pointer;font-size:13px;border-radius:8px;">회사정보</button>
-  <button type="button" data-policy="terms" onclick="showPolicy('terms')" style="background:none;border:none;padding:4px 8px;color:var(--text3);cursor:pointer;font-size:13px;border-radius:8px;">이용약관</button>
-  <button type="button" data-policy="privacy" onclick="showPolicy('privacy')" style="background:none;border:none;padding:4px 8px;color:var(--text3);cursor:pointer;font-size:13px;border-radius:8px;">개인정보처리방침</button>
-  <button type="button" data-policy="refund" onclick="showPolicy('refund')" style="background:none;border:none;padding:4px 8px;color:var(--text3);cursor:pointer;font-size:13px;border-radius:8px;">환불 규정</button>
+ <div class="gp-policy-nav" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+  <button type="button" data-policy="company" onclick="showPolicy('company')" style="background:none;border:none;padding:2px 8px;color:var(--text3);cursor:pointer;font-size:13px;border-radius:8px;">회사정보</button>
+  <button type="button" data-policy="terms" onclick="showPolicy('terms')" style="background:none;border:none;padding:2px 8px;color:var(--text3);cursor:pointer;font-size:13px;border-radius:8px;">이용약관</button>
+  <button type="button" data-policy="privacy" onclick="showPolicy('privacy')" style="background:none;border:none;padding:2px 8px;color:var(--text3);cursor:pointer;font-size:13px;border-radius:8px;">개인정보처리방침</button>
+  <button type="button" data-policy="refund" onclick="showPolicy('refund')" style="background:none;border:none;padding:2px 8px;color:var(--text3);cursor:pointer;font-size:13px;border-radius:8px;">환불 규정</button>
  </div>
  <div id="policyBody" style="font-size:14px;color:var(--text2);line-height:1.9;"></div>
 </div>
