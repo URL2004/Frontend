@@ -13,6 +13,7 @@
     { "source": "/notice", "destination": "/notice/index.html" },
     { "source": "/faq", "destination": "/faq/index.html" },
     { "source": "/mypage", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" },
     { "source": "/history", "destination": "/index.html" },
     { "source": "/pro", "destination": "/index.html" }
   ],

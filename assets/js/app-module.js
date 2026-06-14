@@ -1805,22 +1805,12 @@ window.loadMyPage = async () =>{
  +'<div id="notifList"><div style="text-align:center;padding:24px;color:var(--text3);">불러오는 중...</div></div>'
  +'<div style="margin-top:28px;"><div style="font-size:15px;font-weight:700;margin-bottom:12px;">결제 내역 / 환불</div><div id="orderHistoryList"><div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div></div></div>'
  +'<div style="margin-top:28px;"><div style="font-size:15px;font-weight:700;margin-bottom:12px;">크레딧 사용 내역</div><div id="creditHistoryList"><div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div></div></div>'
- +(window.isAdmin() ? '<div style="margin-top:28px;padding:20px;background:rgba(217,48,37,.05);border:1px solid rgba(217,48,37,.2);border-radius:var(--r);"><div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--red);">관리자 - 환불 요청 목록</div><div id="adminRefundList"><div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div></div></div>' : '')
- +(window.isAdmin() ? '<div style="margin-top:28px;padding:20px;background:rgba(217,48,37,.05);border:1px solid rgba(217,48,37,.2);border-radius:var(--r);"><div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--red);">관리자 - 전체 사용자 내역</div><div id="adminCreditHistory"><div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div></div></div>' : '')
- +(window.isAdmin() ? '<div style="margin-top:28px;padding:20px;background:rgba(217,48,37,.05);border:1px solid rgba(217,48,37,.2);border-radius:var(--r);"><div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--red);">관리자 - 쿠폰 발급</div><div style="display:grid;grid-template-columns:1fr 1fr 1.2fr auto;gap:8px;align-items:end;"><label style="font-size:12px;color:var(--text2);">크레딧<input id="couponCredits" type="number" min="1" max="10000" value="100" style="width:100%;margin-top:4px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-family:var(--font);font-size:14px;box-sizing:border-box;"></label><label style="font-size:12px;color:var(--text2);">개수<input id="couponCount" type="number" min="1" max="400" value="30" style="width:100%;margin-top:4px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-family:var(--font);font-size:14px;box-sizing:border-box;"></label><label style="font-size:12px;color:var(--text2);">만료일 (선택)<input id="couponExpires" type="date" style="width:100%;margin-top:4px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);font-family:var(--font);font-size:14px;box-sizing:border-box;"></label><button onclick="adminCreateCoupons()" style="padding:9px 16px;border-radius:8px;border:none;background:var(--red);color:#fff;font-weight:600;cursor:pointer;font-size:13px;height:38px;">발급</button></div><div id="couponCreateMsg" style="margin-top:10px;font-size:13px;min-height:18px;"></div><div id="couponCreateResult" style="margin-top:8px;"></div></div>' : '')
- +(window.isAdmin() ? '<div style="margin-top:28px;padding:20px;background:rgba(217,48,37,.05);border:1px solid rgba(217,48,37,.2);border-radius:var(--r);"><div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--red);">관리자 - 쿠폰 발급 이력</div><div id="couponBatchList"><div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div></div></div>' : '')
+ +(window.isAdmin() ? '<div class="gp-mypage-admin-entry"><div><div class="gp-mypage-admin-title">관리자 페이지</div><div class="gp-mypage-admin-sub">환불, 크레딧, 쿠폰, 사용자 원장을 별도 화면에서 처리합니다.</div></div><button type="button" onclick="openAdminPage()">관리자 페이지 열기</button></div>' : '')
  +'</div>';
  await loadNotifications();
  await window.loadOrderHistory();
  await window.loadCreditHistory();
  window.renderSubManage(u);
- if (window.isAdmin()) {
-  await Promise.allSettled([
-   window.loadAdminRefundList(),
-   window.loadAllCreditHistory(),
-   window.loadCouponBatches()
-  ]);
- }
  } catch(e) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">불러오기 실패: '+e.message+'</div>'; }
 };
 
@@ -2537,7 +2527,15 @@ window.approveRefund = async (orderId, kind) =>{
  body: JSON.stringify({ orderId, idToken, kind })
  });
  const data = await res.json();
- if (res.ok && data.ok) { alert('환불이 완료되었습니다.'); await window.loadAdminRefundList(); await window.loadOrderHistory(); }
+ if (res.ok && data.ok) {
+  alert('환불이 완료되었습니다.');
+  await Promise.allSettled([
+   window.loadAdminRefundList(),
+   window.loadOrderHistory(),
+   window.loadAllCreditHistory(),
+   window._adminSelectedUser ? window.adminSearchUser(true) : Promise.resolve()
+  ]);
+ }
  else alert(data.error || '환불 승인 실패');
  } catch(e) { alert('네트워크 오류: ' + e.message); }
 };
@@ -2556,9 +2554,331 @@ window.rejectRefund = async (orderId, kind) =>{
  body: JSON.stringify({ orderId, idToken, rejectReason: reason.trim(), kind })
  });
  const data = await res.json();
- if (res.ok && data.ok) { alert('환불 요청이 거절되었습니다.'); await window.loadAdminRefundList(); await window.loadOrderHistory(); }
+ if (res.ok && data.ok) {
+  alert('환불 요청이 거절되었습니다.');
+  await Promise.allSettled([
+   window.loadAdminRefundList(),
+   window.loadOrderHistory(),
+   window._adminSelectedUser ? window.adminSearchUser(true) : Promise.resolve()
+  ]);
+ }
  else alert(data.error || '환불 거절 실패');
  } catch(e) { alert('네트워크 오류: ' + e.message); }
+};
+
+// ===== ADMIN PAGE =====
+function adminNumber(n) {
+ const v = Number(n);
+ return Number.isFinite(v) ? v : 0;
+}
+
+function adminMoney(n) {
+ return adminNumber(n).toLocaleString('ko-KR') + '원';
+}
+
+function adminDateText(ms) {
+ const v = Number(ms);
+ return Number.isFinite(v) && v > 0 ? new Date(v).toLocaleString('ko-KR') : '-';
+}
+
+function adminDateShortText(ms) {
+ const v = Number(ms);
+ return Number.isFinite(v) && v > 0 ? new Date(v).toLocaleDateString('ko-KR') : '-';
+}
+
+function adminPlanText(plan) {
+ return ({ free:'무료', starter:'스타터', pro:'프로', master:'마스터', unlimited:'무제한' })[plan] || plan || '무료';
+}
+
+function adminKindText(kind) {
+ return kind === 'subscription' ? '정기결제' : '크레딧';
+}
+
+function adminOrderStatusText(status) {
+ return ({
+  paid: '결제 완료',
+  refund_requested: '환불 요청',
+  refund_rejected: '환불 거절',
+  refunded: '환불 완료',
+  cancelled: '취소',
+  failed: '실패'
+ })[status] || status || '-';
+}
+
+function adminHistoryTypeText(type) {
+ return ({
+  charge: '충전',
+  refund: '환불',
+  referral: '친구 추천',
+  coupon_redeem: '쿠폰',
+  detect: 'AI 감지',
+  humanize: '휴머나이저',
+  admin_adjust: '관리자 조정'
+ })[type] || '기타';
+}
+
+function adminHistoryAmountHtml(h) {
+ if (h.type === 'admin_adjust') {
+  const amount = adminNumber(h.amount);
+  const color = amount >= 0 ? 'var(--green)' : 'var(--red)';
+  const prefix = amount > 0 ? '+' : '';
+  return `<span style="color:${color};">${prefix}${amount}</span>`;
+ }
+ if (h.type === 'charge' || h.type === 'referral' || h.type === 'coupon_redeem') {
+  return `<span style="color:var(--green);">+${adminNumber(h.amount)}</span>`;
+ }
+ if (h.type === 'refund') {
+  return `<span style="color:var(--yellow);">${adminNumber(h.amount)}</span>`;
+ }
+ return `<span style="color:var(--red);">-${adminNumber(h.used)}</span>`;
+}
+
+async function adminPost(path, body) {
+ if (!window.CU || !window.isAdmin()) throw new Error('관리자 권한이 필요합니다.');
+ const idToken = await window.CU.getIdToken();
+ const res = await fetch(window.apiUrl(path), {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ ...(body || {}), idToken })
+ });
+ let data = {};
+ try { data = await res.json(); } catch (_) {}
+ if (!res.ok || !data.ok) throw new Error(data.error || '요청 처리에 실패했습니다.');
+ return data;
+}
+
+function adminSetMessage(id, text, type) {
+ const el = document.getElementById(id);
+ if (!el) return;
+ el.textContent = text || '';
+ el.style.color = type === 'error' ? 'var(--red)' : type === 'success' ? 'var(--green)' : 'var(--text3)';
+}
+
+function adminRenderUserBundle(data) {
+ const user = data.user || {};
+ const resultEl = document.getElementById('adminUserResult');
+ const uidEl = document.getElementById('adminSelectedUid');
+ const ordersEl = document.getElementById('adminUserOrders');
+ if (uidEl) uidEl.textContent = user.uid ? 'UID ' + user.uid.slice(0, 8) : '';
+ if (!resultEl || !ordersEl) return;
+
+ const sub = user.subscription || null;
+ const coupon = user.coupon || null;
+ const hist = data.creditHistory || [];
+ const historyHtml = hist.length
+  ? hist.slice(0, 8).map(h => `
+    <div class="gp-admin-ledger-row">
+      <div>
+        <strong>${escapeHtml(adminHistoryTypeText(h.type))}</strong>
+        <span>${escapeHtml(adminDateText(h.createdAtMs))}</span>
+      </div>
+      <div>
+        ${adminHistoryAmountHtml(h)}
+        <span>잔여 ${adminNumber(h.remaining).toLocaleString('ko-KR')}</span>
+      </div>
+    </div>`).join('')
+  : '<div class="gp-admin-empty gp-admin-empty-compact">최근 크레딧 내역이 없습니다.</div>';
+
+ resultEl.innerHTML = `
+  <div class="gp-admin-user-summary">
+    <div class="gp-admin-user-main">
+      <strong>${escapeHtml(user.name || '이름 없음')}</strong>
+      <span>${escapeHtml(user.email || '-')}</span>
+      <code>${escapeHtml(user.uid || '')}</code>
+    </div>
+    <div class="gp-admin-stat-row">
+      <div><span>보유 크레딧</span><strong>${adminNumber(user.credits).toLocaleString('ko-KR')}</strong></div>
+      <div><span>플랜</span><strong>${escapeHtml(adminPlanText(user.plan))}</strong></div>
+      <div><span>가입일</span><strong>${escapeHtml(adminDateShortText(user.createdAtMs))}</strong></div>
+    </div>
+    <div class="gp-admin-mini-lines">
+      <div><span>구독</span><strong>${sub ? escapeHtml((SUB_TIER_LABELS[sub.tier] || sub.tier || '-') + ' · ' + (sub.status || '-')) : '없음'}</strong></div>
+      <div><span>쿠폰</span><strong>${coupon ? `${adminNumber(coupon.remaining).toLocaleString('ko-KR')} / ${adminNumber(coupon.granted).toLocaleString('ko-KR')}` : '없음'}</strong></div>
+    </div>
+    <div class="gp-admin-ledger">${historyHtml}</div>
+  </div>`;
+
+ const orders = data.orders || [];
+ if (!orders.length) {
+  ordersEl.innerHTML = '<div class="gp-admin-empty">결제건이 없습니다.</div>';
+  return;
+ }
+ ordersEl.innerHTML = '<div class="gp-admin-order-list">' + orders.map(o => {
+  const isSub = o.kind === 'subscription';
+  const title = isSub
+   ? `정기결제 · ${escapeHtml(SUB_TIER_LABELS[o.tier] || o.tier || '-')}`
+   : `크레딧 · ${adminNumber(o.safeCredits).toLocaleString('ko-KR')}크레딧`;
+  const canRefund = !!o.paymentKey && ['paid', 'refund_requested', 'refund_rejected'].includes(o.status);
+  const disabledTitle = !o.paymentKey ? 'paymentKey가 없는 이전 결제건입니다.' : '현재 상태에서는 환불할 수 없습니다.';
+  const refundMeta = o.status === 'refunded'
+   ? `<span>환불 ${adminMoney(o.refundAmount)} · ${adminNumber(o.refundedCredits).toLocaleString('ko-KR')}크레딧</span>`
+   : '';
+  return `
+   <div class="gp-admin-order-row">
+     <div class="gp-admin-order-main">
+       <strong>${title}</strong>
+       <span>${escapeHtml(o.id)} · ${adminKindText(o.kind)} · ${adminDateText(o.createdAtMs)}</span>
+       <span>${adminMoney(o.amount)} · ${escapeHtml(adminOrderStatusText(o.status))}</span>
+       ${refundMeta}
+     </div>
+     <button type="button" class="gp-admin-danger" onclick="adminDirectRefund('${jsAttr(o.id)}','${jsAttr(o.kind)}')" ${canRefund ? '' : 'disabled title="' + escapeHtml(disabledTitle) + '"'}>
+       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+       직접 환불
+     </button>
+   </div>`;
+ }).join('') + '</div>';
+}
+
+window.loadAdminPage = async function() {
+ const el = document.getElementById('adminContent');
+ if (!el) return;
+ el.style.display = 'block';
+ window.scrollTo(0, 0);
+ const gate = document.getElementById('adminGateMsg');
+ if (!window.CU) {
+  if (gate) {
+   gate.hidden = false;
+   gate.textContent = '로그인이 필요합니다.';
+  }
+  showScreen('login');
+  return;
+ }
+ if (!window.isAdmin()) {
+  if (gate) {
+   gate.hidden = false;
+   gate.textContent = '관리자 권한이 필요합니다.';
+  }
+  return;
+ }
+ if (gate) {
+  gate.hidden = true;
+  gate.textContent = '';
+ }
+ await Promise.allSettled([
+  window.loadAdminRefundList(),
+  window.loadAllCreditHistory(),
+  window.loadCouponBatches()
+ ]);
+};
+
+window.adminSearchUser = async function(quiet) {
+ const input = document.getElementById('adminUserQuery');
+ const resultEl = document.getElementById('adminUserResult');
+ const ordersEl = document.getElementById('adminUserOrders');
+ const raw = (input?.value || window._adminSelectedUser?.uid || '').trim();
+ if (!raw) {
+  if (resultEl) resultEl.innerHTML = '<div class="gp-admin-empty">검색어를 입력하세요.</div>';
+  return;
+ }
+ if (resultEl) resultEl.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
+ if (ordersEl) ordersEl.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
+ try {
+  const data = await adminPost('/admin/user-summary', { query: raw });
+  window._adminSelectedBundle = data;
+  window._adminSelectedUser = data.user;
+  if (input) input.value = data.user.uid || raw;
+  adminSetMessage('adminCreditAdjustMsg', '', 'info');
+  adminRenderUserBundle(data);
+  if (!quiet && window.gpTrack) window.gpTrack('admin_user_search');
+ } catch (e) {
+  window._adminSelectedBundle = null;
+  window._adminSelectedUser = null;
+  const msg = escapeHtml(e.message);
+  if (resultEl) resultEl.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">${msg}</div>`;
+  if (ordersEl) ordersEl.innerHTML = '<div class="gp-admin-empty">사용자를 먼저 선택하세요.</div>';
+ }
+};
+
+window.adminAdjustCredits = async function() {
+ const user = window._adminSelectedUser;
+ if (!user || !user.uid) {
+  adminSetMessage('adminCreditAdjustMsg', '사용자를 먼저 검색하세요.', 'error');
+  return;
+ }
+ const deltaEl = document.getElementById('adminCreditDelta');
+ const reasonEl = document.getElementById('adminCreditReason');
+ const delta = parseInt(deltaEl?.value, 10);
+ const reason = (reasonEl?.value || '').trim();
+ if (!Number.isInteger(delta) || delta === 0) {
+  adminSetMessage('adminCreditAdjustMsg', '0이 아닌 정수 변동값을 입력하세요.', 'error');
+  return;
+ }
+ if (reason.length < 2) {
+  adminSetMessage('adminCreditAdjustMsg', '조정 사유를 2자 이상 입력하세요.', 'error');
+  return;
+ }
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({
+    title: delta > 0 ? '크레딧을 추가할까요?' : '크레딧을 차감할까요?',
+    message: `${user.email || user.uid} · ${delta > 0 ? '+' : ''}${delta.toLocaleString('ko-KR')}크레딧`,
+    confirmText: delta > 0 ? '추가하기' : '차감하기',
+    danger: delta < 0
+   })
+  : confirm(`${user.email || user.uid}에게 ${delta > 0 ? '+' : ''}${delta}크레딧을 적용할까요?`);
+ if (!ok) return;
+
+ adminSetMessage('adminCreditAdjustMsg', '처리 중...', 'info');
+ try {
+  const data = await adminPost('/admin/adjust-credits', { uid: user.uid, delta, reason });
+  adminSetMessage('adminCreditAdjustMsg', `완료: ${data.before.toLocaleString('ko-KR')} → ${data.after.toLocaleString('ko-KR')}크레딧`, 'success');
+  if (deltaEl) deltaEl.value = '';
+  if (reasonEl) reasonEl.value = '';
+  if (window.CU && user.uid === window.CU.uid) {
+   window.UC = data.after;
+   if (typeof window.updateCreditUI === 'function') window.updateCreditUI();
+  }
+  await window.adminSearchUser(true);
+  await window.loadAllCreditHistory();
+ } catch (e) {
+  adminSetMessage('adminCreditAdjustMsg', e.message, 'error');
+ }
+};
+
+window.adminDirectRefund = async function(orderId, kind) {
+ const order = (window._adminSelectedBundle?.orders || []).find(o => o.id === orderId && o.kind === kind);
+ if (!order) {
+  alert('주문 정보를 찾을 수 없습니다. 사용자를 다시 검색해주세요.');
+  return;
+ }
+ const reason = window.gpPrompt
+  ? await window.gpPrompt({ title: '직접 환불 사유', message: '고객 요청 없이 바로 환불합니다.', placeholder: '예: 중복 결제 환불', confirmText: '환불 진행', required: true })
+  : prompt('직접 환불 사유를 입력해주세요:');
+ if (!reason || reason.trim().length < 2) {
+  alert('환불 사유를 2자 이상 입력해주세요.');
+  return;
+ }
+ let expected = adminMoney(order.amount);
+ if (kind !== 'subscription') {
+  const userCredits = adminNumber(window._adminSelectedUser?.credits);
+  const safe = adminNumber(order.safeCredits);
+  const refundable = Math.min(userCredits, safe);
+  const amount = safe > 0 ? Math.floor(adminNumber(order.amount) * refundable / safe) : 0;
+  expected = `${adminMoney(amount)} · ${refundable.toLocaleString('ko-KR')}크레딧 차감`;
+ }
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({
+    title: '실제 환불을 진행할까요?',
+    message: `${order.id} · 예상 ${expected}`,
+    confirmText: '환불하기',
+    danger: true
+   })
+  : confirm(`${order.id} 주문을 실제 환불할까요?\n예상: ${expected}`);
+ if (!ok) return;
+
+ try {
+  const data = await adminPost('/admin/direct-refund', { orderId, kind, reason: reason.trim() });
+  const doneMsg = `환불 완료: ${adminMoney(data.refundAmount)}${data.refundedCredits ? ' · ' + data.refundedCredits.toLocaleString('ko-KR') + '크레딧 차감' : ''}`;
+  if (window.gpToast) window.gpToast(doneMsg, { type: 'success', title: '환불 완료' });
+  else alert(doneMsg);
+  await window.adminSearchUser(true);
+  await Promise.allSettled([
+   window.loadAdminRefundList(),
+   window.loadAllCreditHistory(),
+   window.loadOrderHistory()
+  ]);
+ } catch (e) {
+  alert(e.message || '환불 처리에 실패했습니다.');
+ }
 };
 
 window.loadCreditHistory = async () =>{
@@ -2582,11 +2902,14 @@ window.loadCreditHistory = async () =>{
  const isRefund = h.type === 'refund';
  const isReferral = h.type === 'referral';
  const isCoupon = h.type === 'coupon_redeem';
- const typeTxt = isCharge ? '충전' : isRefund ? '환불' : isReferral ? '친구 추천' : isCoupon ? '쿠폰' : h.type === 'detect' ? ' AI 감지' : h.type === 'humanize' ? ' 휴머나이저' : '기타';
+ const isAdminAdjust = h.type === 'admin_adjust';
+ const typeTxt = isCharge ? '충전' : isRefund ? '환불' : isReferral ? '친구 추천' : isCoupon ? '쿠폰' : isAdminAdjust ? '관리자 조정' : h.type === 'detect' ? ' AI 감지' : h.type === 'humanize' ? ' 휴머나이저' : '기타';
  const amountTxt = isCharge || isReferral || isCoupon
  ? `<div style="color:var(--green);font-weight:600;">+${h.amount} 크레딧</div>`
  : isRefund
  ? `<div style="color:var(--yellow);font-weight:600;">${h.amount} 크레딧 (환불)</div>`
+ : isAdminAdjust
+ ? `<div style="color:${(Number(h.amount)||0) >= 0 ? 'var(--green)' : 'var(--red)'};font-weight:600;">${(Number(h.amount)||0) > 0 ? '+' : ''}${Number(h.amount)||0} 크레딧</div>`
  : `<div style="color:var(--red);font-weight:600;">-${h.used} 크레딧</div>`;
  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;">
  <div>
@@ -2777,10 +3100,8 @@ window.renderAdminHistory = () =>{
 </tr></thead><tbody>`
  + items.map(h =>{
  const date = adminHistoryDateText(h);
- const typeTxt = h.type === 'charge' ? '충전' : h.type === 'refund' ? '환불' : h.type === 'referral' ? '친구 추천' : h.type === 'coupon_redeem' ? '쿠폰' : h.type === 'detect' ? '탐지' : h.type === 'humanize' ? '휴머나이저' : '기타';
- const amountTxt = (h.type === 'charge' || h.type === 'referral' || h.type === 'coupon_redeem') ? `<span style="color:var(--green);">+${h.amount}</span>`
- : h.type === 'refund' ? `<span style="color:var(--yellow);">${h.amount}</span>`
- : `<span style="color:var(--red);">-${h.used}</span>`;
+ const typeTxt = adminHistoryTypeText(h.type);
+ const amountTxt = adminHistoryAmountHtml(h);
  return `<tr style="border-bottom:1px solid var(--border);">
  <td style="padding:8px;color:var(--text3);font-size:12px;">${date}</td>
  <td style="padding:8px;">${escapeHtml(h.userName)}<br><span style="font-size:11px;color:var(--text3);">${escapeHtml(h.userEmail)}</span></td>

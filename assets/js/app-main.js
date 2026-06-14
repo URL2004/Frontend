@@ -1,6 +1,6 @@
 let mode='detect', dark=true, tab='main', humanizeMode='assignment', selectedLang='ko';
 window.mode='detect';
-const ROUTE_TABS = ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','history','pro'];
+const ROUTE_TABS = ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','history','pro'];
 const ROUTE_PATHS = {
  main: '/',
  pricing: '/pricing',
@@ -12,6 +12,7 @@ const ROUTE_PATHS = {
  qna: '/qna',
  notice: '/notice',
  mypage: '/mypage',
+ admin: '/admin',
  history: '/history',
  pro: '/pro'
 };
@@ -27,6 +28,7 @@ const PATH_ROUTES = {
  '/qna': 'qna',
  '/notice': 'notice',
  '/mypage': 'mypage',
+ '/admin': 'admin',
  '/history': 'history',
  '/pro': 'pro'
 };
@@ -70,6 +72,10 @@ faq: {
  mypage: {
   title: '마이페이지 · 교수님 피하기',
   description: '내 크레딧, 구독, 계정 정보를 확인하세요.'
+ },
+ admin: {
+  title: '관리자 · 교수님 피하기',
+  description: '교수님 피하기 관리자 운영 페이지입니다.'
  },
  history: {
   title: '이용 기록 · 교수님 피하기',
@@ -139,6 +145,7 @@ function runRouteSideEffects(t) {
  if (t === 'notice' && typeof window.loadNotices === 'function') window.loadNotices();
  if (t === 'community' && typeof window.loadPosts === 'function') window.loadPosts();
  if (t === 'qna' && typeof window.loadQuestions === 'function') window.loadQuestions();
+ if (t === 'admin' && typeof window.loadAdminPage === 'function') window.loadAdminPage();
 }
 
 function applyRouteFromUrl(opts) {
@@ -147,6 +154,10 @@ function applyRouteFromUrl(opts) {
  updateRouteMeta(routeTab);
  if (routeTab === 'mypage') {
   openMyPage();
+  return;
+ }
+ if (routeTab === 'admin') {
+  openAdminPage();
   return;
  }
  if (routeTab === 'pro') {
@@ -336,6 +347,22 @@ function openMyPage() {
  };
  tryLoad(10);
 }
+function openAdminPage() {
+ if (!window.CU) { showScreen('login'); return; }
+ if (typeof window.isAdmin === 'function' && !window.isAdmin()) {
+  if (window.gpToast) window.gpToast('관리자 권한이 필요합니다.', { type: 'error', title: '접근 제한' });
+  else alert('관리자 권한이 필요합니다.');
+  openMyPage();
+  return;
+ }
+ switchTab('admin');
+ var tryLoad = function(tries) {
+  if (typeof window.loadAdminPage === 'function') { window.loadAdminPage(); }
+  else if (tries > 0) { setTimeout(function(){ tryLoad(tries-1); }, 200); }
+ };
+ tryLoad(10);
+}
+window.openAdminPage = openAdminPage;
 function switchTab(t, opts) {
  opts = opts || {};
  t = normalizeRouteTab(t);
@@ -343,7 +370,7 @@ function switchTab(t, opts) {
  document.querySelectorAll('.ntab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.mnav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.snav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
- ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','history','pro'].forEach(n=>{
+ ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','history','pro'].forEach(n=>{
  const el = document.getElementById(n+'Content');
  if (el) el.style.display = n===t ? 'block' : 'none';
  });

@@ -1,0 +1,140 @@
+<div id="adminContent" class="gp-admin-page" style="display:none;">
+  <div class="gp-admin-shell">
+    <header class="gp-admin-head">
+      <div>
+        <div class="gp-admin-kicker">Admin</div>
+        <h2>운영 관리</h2>
+        <p>환불, 크레딧, 쿠폰, 사용자 원장</p>
+      </div>
+      <button type="button" class="gp-admin-refresh" onclick="loadAdminPage()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.4 6.4M3 12A9 9 0 0 1 18.4 5.6"/><path d="M21 4v6h-6M3 20v-6h6"/></svg>
+        새로고침
+      </button>
+    </header>
+
+    <div id="adminGateMsg" class="gp-admin-gate" hidden></div>
+
+    <div class="gp-admin-grid gp-admin-top-grid">
+      <section class="gp-admin-panel">
+        <div class="gp-admin-panel-head">
+          <div>
+            <h3>사용자 검색</h3>
+            <p>이메일 또는 UID</p>
+          </div>
+          <span id="adminSelectedUid" class="gp-admin-muted"></span>
+        </div>
+        <div class="gp-admin-search-row">
+          <input id="adminUserQuery" class="gp-admin-input" type="text" autocomplete="off" placeholder="user@example.com 또는 UID" onkeydown="if(event.key==='Enter')window.adminSearchUser()">
+          <button type="button" class="gp-admin-primary" onclick="adminSearchUser()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.4-3.4"/></svg>
+            검색
+          </button>
+        </div>
+        <div id="adminUserResult" class="gp-admin-user-result">
+          <div class="gp-admin-empty">사용자를 검색하세요.</div>
+        </div>
+      </section>
+
+      <section class="gp-admin-panel">
+        <div class="gp-admin-panel-head">
+          <div>
+            <h3>크레딧 조정</h3>
+            <p>추가 또는 차감</p>
+          </div>
+        </div>
+        <div class="gp-admin-form-stack">
+          <label class="gp-admin-label">
+            변동값
+            <input id="adminCreditDelta" class="gp-admin-input" type="number" step="1" placeholder="+100 또는 -30">
+          </label>
+          <label class="gp-admin-label">
+            사유
+            <input id="adminCreditReason" class="gp-admin-input" type="text" maxlength="120" placeholder="예: 중복 차감 보정">
+          </label>
+          <button type="button" class="gp-admin-primary gp-admin-wide" onclick="adminAdjustCredits()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            적용
+          </button>
+          <div id="adminCreditAdjustMsg" class="gp-admin-msg"></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="gp-admin-panel">
+      <div class="gp-admin-panel-head">
+        <div>
+          <h3>선택 사용자 결제건</h3>
+          <p>주문별 직접 환불</p>
+        </div>
+      </div>
+      <div id="adminUserOrders" class="gp-admin-empty">사용자를 검색하면 결제건이 표시됩니다.</div>
+    </section>
+
+    <section class="gp-admin-panel">
+      <div class="gp-admin-panel-head">
+        <div>
+          <h3>환불 요청 목록</h3>
+          <p>고객 요청 기반 환불</p>
+        </div>
+      </div>
+      <div id="adminRefundList">
+        <div class="gp-admin-empty">불러오는 중...</div>
+      </div>
+    </section>
+
+    <section class="gp-admin-panel">
+      <div class="gp-admin-panel-head">
+        <div>
+          <h3>전체 사용자 내역</h3>
+          <p>크레딧 원장</p>
+        </div>
+      </div>
+      <div id="adminCreditHistory">
+        <div class="gp-admin-empty">불러오는 중...</div>
+      </div>
+    </section>
+
+    <div class="gp-admin-grid">
+      <section class="gp-admin-panel">
+        <div class="gp-admin-panel-head">
+          <div>
+            <h3>쿠폰 발급</h3>
+            <p>크레딧 쿠폰 생성</p>
+          </div>
+        </div>
+        <div class="gp-admin-coupon-form">
+          <label class="gp-admin-label">
+            크레딧
+            <input id="couponCredits" class="gp-admin-input" type="number" min="1" max="10000" value="100">
+          </label>
+          <label class="gp-admin-label">
+            개수
+            <input id="couponCount" class="gp-admin-input" type="number" min="1" max="400" value="30">
+          </label>
+          <label class="gp-admin-label">
+            만료일
+            <input id="couponExpires" class="gp-admin-input" type="date">
+          </label>
+          <button type="button" class="gp-admin-primary" onclick="adminCreateCoupons()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5A2.5 2.5 0 1 1 10 4.5C10 6 12 7 12 7Z"/><path d="M12 7h4.5A2.5 2.5 0 1 0 14 4.5C14 6 12 7 12 7Z"/></svg>
+            발급
+          </button>
+        </div>
+        <div id="couponCreateMsg" class="gp-admin-msg"></div>
+        <div id="couponCreateResult" class="gp-admin-coupon-result"></div>
+      </section>
+
+      <section class="gp-admin-panel">
+        <div class="gp-admin-panel-head">
+          <div>
+            <h3>쿠폰 발급 이력</h3>
+            <p>배치 관리</p>
+          </div>
+        </div>
+        <div id="couponBatchList">
+          <div class="gp-admin-empty">불러오는 중...</div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
