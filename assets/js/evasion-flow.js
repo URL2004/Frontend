@@ -1020,15 +1020,25 @@
     var offer = (st && st.blockOffer) || {};
     var reasonEl = $('lavBlockedReason');
     if (reasonEl && st && st.reason) reasonEl.textContent = st.reason + ' 크레딧은 차감되지 않았어요.';
-    // surfaceguard가 짚은 추상 문단(여기에 실제 경험·사례를 더하면 회피가 잘 된다)
+    // 차단 원인이 lostFacts면 실제 빠진 사실/수치를 먼저 보여준다.
+    // 아니면 surfaceguard가 짚은 추상 문단(경험·사례 메모로 보강할 위치)을 보여준다.
     var abEl = $('lavBlockedAbstract'), abList = $('lavBlockedAbstractList');
-    var paras = offer.abstractParas || [];
+    var gates = (st && st.gates) || [];
+    var lost = st && st.gateDetail && st.gateDetail.lostFacts ? st.gateDetail.lostFacts : [];
+    var showLost = gates.indexOf('lostFacts') >= 0 && lost.length;
+    var paras = showLost ? lost.map(function (x) { return { snippet: x }; }) : (offer.abstractParas || []);
     if (abEl && abList) {
       if (paras.length) {
+        var title = abEl.querySelector('.lav-blocked-abstract-title');
+        var tip = abEl.querySelector('.lav-blocked-abstract-tip');
+        if (title) title.textContent = showLost ? '이 사실·수치가 빠져 차단됐어요' : '이 부분이 추상적이라 회피가 어려워요';
+        if (tip) tip.innerHTML = showLost
+          ? '사실·수치가 많은 글은 <b>문단을 짧게 나누거나</b>, 해당 부분은 원문 표현을 더 유지해서 다시 도전해 주세요.'
+          : '위 내용과 관련된 <b>실제 경험·사례·수치</b>를 경험 메모에 적고 다시 도전하면, 그 부분을 구체적으로 바꿔 더 잘 통과돼요.';
         abList.innerHTML = '';
         paras.forEach(function (p) {
           var li = document.createElement('li');
-          li.textContent = '“' + (p.snippet || '') + '…”';   // textContent = XSS-safe
+          li.textContent = showLost ? String(p.snippet || '') : '“' + (p.snippet || '') + '…”';   // textContent = XSS-safe
           abList.appendChild(li);
         });
         abEl.hidden = false;
@@ -1117,7 +1127,7 @@
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, idToken: idToken, evidence: !!s.evidence })
+          body: JSON.stringify({ text: text, idToken: idToken, evidence: !!s.evidence, memo: s.memo || '', lang: evDetectLang(text) })
         }).then(parseTransformStart);
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
