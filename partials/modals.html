@@ -51,19 +51,15 @@
 </div>
 
 <!-- 환불하기 모달 -->
-<div id="refundModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
-  <div class="gp-modal-card" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;width:100%;max-width:420px;margin:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative;overflow:hidden;">
-    <button class="gp-modal-close" onclick="document.getElementById('refundModal').style.display='none'" aria-label="닫기" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:none;background:var(--surface2);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">×</button>
-    <div style="padding:24px 22px 16px;">
-      <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:4px;">환불하기</div>
-      <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">환불 요청 전 사용분 차감 기준의 예상 환불액을 확인해주세요.</div>
+<div id="refundModal" class="lav-confirm-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="lav-confirm-card">
+    <button type="button" class="lav-confirm-x" onclick="document.getElementById('refundModal').style.display='none'" aria-label="닫기">×</button>
+    <strong class="lav-confirm-title">환불하기</strong>
+    <p class="lav-refund-lead">환불 요청 전, 사용분을 뺀 <b>예상 환불액</b>을 확인해주세요.</p>
+    <div id="refundModalList" class="lav-refund-list">
+      <div class="lav-confirm-empty">불러오는 중...</div>
     </div>
-    <div id="refundModalList" style="padding:0 22px 16px;max-height:320px;overflow-y:auto;">
-      <div style="text-align:center;padding:20px;color:var(--text3);font-size:13px;">불러오는 중...</div>
-    </div>
-    <div style="padding:0 22px 20px;">
-      <div style="font-size:11px;color:var(--text3);line-height:1.6;background:var(--surface2);border-radius:8px;padding:10px 12px;">무료 지급 크레딧은 환불 대상이 아니며, 이미 사용한 크레딧/쿠폰은 환불액에서 제외됩니다. 최종 금액은 서버 검증 후 확정됩니다.</div>
-    </div>
+    <p class="lav-confirm-fine">무료 지급 크레딧은 환불 대상이 아니며, 이미 사용한 크레딧·쿠폰은 환불액에서 제외돼요. 최종 금액은 서버 검증 후 확정됩니다.</p>
   </div>
 </div>
 

@@ -687,15 +687,13 @@
     var src = $('lavInput');
     return (src ? src.value : '').replace(/\s/g, '').length;
   }
-  function notifyJobDone(st, label, score) {
+  function notifyJobDone(st, label) {
     if (!window.gpNotify || !st || !st.jobId) return;
     window.gpNotify({
       clientId: 'job_done_' + st.jobId,
       type: 'job_done',
       title: '작업 완료',
-      message: st.mode === 'polish'
-        ? label + ' 결과가 준비됐어요. 보관함에 저장했습니다.'
-        : label + ' 결과가 준비됐어요. 예상 탐지율 ' + score + '로 보관함에 저장했습니다.',
+      message: label + ' 결과가 준비됐어요. 보관함에 저장했습니다.',
       action: { type: 'library' }
     }, { persist: true });
   }
@@ -912,26 +910,18 @@
 
   // 완료 렌더(폴링·재진입 공용): job mode에 따라 점수·배지·보관함 라벨 분기
   function renderJobDone(st) {
-    var score, label;
+    var label;
     if (st.mode === 'blog') {
-      score = (lastDiag && lastDiag.bands && lastDiag.bands.blog) || '40~55%';
       label = '블로그';
       renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics });
     } else if (st.mode === 'polish') {
-      // 과제 어투 다듬기 — 회피가 아니므로 '예상 AI 탐지율'을 표기하지 않는다(오해 방지).
-      score = '과제체';
       label = '다듬기';
       renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics });
     } else if (st.result && st.result.preservationFallback) {
       // 차단→보존형 폴백: 고급 재구성이 게이트에 막혀 원문 보존형으로 처리된 결과.
-      // 재생성 회피 점수(50~60%대)를 약속하면 거짓 표기가 되므로, 다듬기와 동일하게 정직 표기 + 안내 배너.
-      score = (lastDiag && lastDiag.bands && lastDiag.bands.polish) || '—';
       label = '보존형';
       renderBadges({ metrics: st.result && st.result.metrics });
     } else {
-      // 예상 밴드(보수 표기): 근거 사용 시 35~60%, 미사용 시 50~60%대
-      var mEv = st.result && st.result.metrics && st.result.metrics.evidenceUsed;
-      score = mEv > 0 ? '35~60%' : '50~60%대';
       label = '재구성';
       renderBadges({ metrics: st.result && st.result.metrics });
     }
@@ -944,18 +934,28 @@
         $('lavFallbackMsg').textContent = st.note || '고급 변환이 원문 보존 기준을 통과하지 못해, 원문을 최대한 보존하는 방식으로 변환했어요.';
       }
     }
-    // 과제 어투 다듬기: '예상 AI 탐지율' 블록 숨김 + 안내 문구 교체(회피 아님)
-    var isPolish = st.mode === 'polish';
+    // ── '예상 AI 탐지율 %' 표기 제거(2026-06-15) ──────────────────────────────
+    //   결과 화면 우상단 숫자는 진단 밴드를 그대로 재표기한 값이라 실제 출력과 무관 — 격식·추상글은
+    //   실제 100%인데 35~60%로 표기돼 거짓 약속·환불 사고를 냈다. 회피율은 LLM 생성·탐지기·글에 따라
+    //   크게 흔들려 약속할 수 없으므로, surfaceguard가 신뢰성 있게 맞히는 '글 등급'만 정성 신호로 노출하고
+    //   (다듬기·등급 미상이면 숨김), 정확한 수치는 직접 측정을 안내한다.
+    var GRADE_LABEL = { A: '쉬움', B: '보통', C: '어려움' };
+    var GRADE_COLOR = { A: '#1e8e3e', B: '#d9920a', C: '#d23f3f' };
+    var grade = (lastDiag && lastDiag.grade) || '';
+    var showGrade = st.mode !== 'polish' && !!GRADE_LABEL[grade];
     var scoreWrap = $('lavDoneScoreWrap');
-    if (scoreWrap) scoreWrap.hidden = isPolish;
+    if (scoreWrap) scoreWrap.hidden = !showGrade;
+    if (showGrade && $('lavDoneScore')) {
+      $('lavDoneScore').textContent = GRADE_LABEL[grade];
+      $('lavDoneScore').style.color = GRADE_COLOR[grade];
+    }
     var doneNote = $('lavDoneNote');
-    if (doneNote) doneNote.textContent = isPolish
+    if (doneNote) doneNote.textContent = st.mode === 'polish'
       ? 'AI로 쓴 글을 과제체로 다듬었어요. 탐지 회피용이 아니라 어투·완성도 정리이고, 원문의 사실·분량은 그대로 보존했어요.'
-      : '예상치예요. 글의 구체성·길이·주제에 따라 탐지율은 달라질 수 있어요. 결과가 만족스럽지 않으면 경험 메모를 더해 다시 돌려보세요.';
-    if ($('lavDoneScore')) $('lavDoneScore').textContent = score;
+      : '탐지율은 글·탐지기에 따라 크게 달라서 수치로 약속하지 않아요. 정확한 결과는 직접 탐지기로 확인해 주세요. 높게 나오면 경험 메모를 더해 다시 돌려보세요.';
     if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
-    lavSaveToLibrary(label, st.result && st.result.outputText, score);
-    notifyJobDone(st, label, score);
+    lavSaveToLibrary(label, st.result && st.result.outputText, grade ? grade + '등급' : '');
+    notifyJobDone(st, label);
   }
 
   function makeJobCanceller(jobId) {

@@ -2616,8 +2616,34 @@ function adminHistoryTypeText(type) {
   coupon_redeem: '쿠폰',
   detect: 'AI 감지',
   humanize: '휴머나이저',
+  restructure: '고급 피하기(재구성)',
   admin_adjust: '관리자 조정'
  })[type] || '기타';
+}
+
+// 정확한 작업명: type + mode(+evidence/fallback)로 "다듬기 / 기본 피하기 / 고급 재구성 / 근거" 까지 구분.
+// 차감 doc에 mode가 기록된 신규 건만 세분화되고, mode 없는 구 데이터는 기존 라벨로 폴백한다.
+function adminHistoryLabel(h) {
+ h = h || {};
+ const type = h.type || '';
+ if (type.endsWith('_restore')) {
+  return adminHistoryTypeText(type.slice(0, -8)) + ' 복구';
+ }
+ if (type === 'humanize') {
+  if (h.fallback) return '고급 피하기 → 보존형 폴백';
+  switch (h.mode) {
+   case 'blog': return '기본 피하기(블로그)';
+   case 'polish':
+   case 'assignment': return '다듬기(보존형)';
+   case 'thesis': return '다듬기(논문)';
+   case 'resume': return '다듬기(자소서)';
+   default: return '휴머나이저';   // 구 데이터(모드 미기록)
+  }
+ }
+ if (type === 'restructure') {
+  return '고급 피하기(재구성)' + (h.evidence ? ' + 근거' : '');
+ }
+ return adminHistoryTypeText(type);
 }
 
 function adminHistoryAmountHtml(h) {
@@ -2672,7 +2698,7 @@ function adminRenderUserBundle(data) {
   ? hist.slice(0, 6).map(h => `
     <div class="gp-admin-ledger-row">
       <div>
-        <strong>${escapeHtml(adminHistoryTypeText(h.type))}</strong>
+        <strong>${escapeHtml(adminHistoryLabel(h))}</strong>
         <span>${escapeHtml(adminDateText(h.createdAtMs))}</span>
       </div>
       <div>
@@ -3286,7 +3312,7 @@ window.loadCreditHistory = async () =>{
  const isReferral = h.type === 'referral';
  const isCoupon = h.type === 'coupon_redeem';
  const isAdminAdjust = h.type === 'admin_adjust';
- const typeTxt = isCharge ? '충전' : isRefund ? '환불' : isReferral ? '친구 추천' : isCoupon ? '쿠폰' : isAdminAdjust ? '관리자 조정' : h.type === 'detect' ? ' AI 감지' : h.type === 'humanize' ? ' 휴머나이저' : '기타';
+ const typeTxt = isCharge ? '충전' : isRefund ? '환불' : isReferral ? '친구 추천' : isCoupon ? '쿠폰' : isAdminAdjust ? '관리자 조정' : h.type === 'detect' ? 'AI 감지' : adminHistoryLabel(h);
  const amountTxt = isCharge || isReferral || isCoupon
  ? `<div style="color:var(--green);font-weight:600;">+${h.amount} 크레딧</div>`
  : isRefund
@@ -3475,12 +3501,12 @@ window.renderAdminHistory = () =>{
  </tr></thead><tbody>`
  + items.map(h =>{
  const date = adminHistoryDateText(h);
- const typeTxt = adminHistoryTypeText(h.type);
+ const typeTxt = adminHistoryLabel(h);
  const amountTxt = adminHistoryAmountHtml(h);
  return `<tr>
  <td class="muted">${date}</td>
  <td>${escapeHtml(h.userName)}<br><span class="muted">${escapeHtml(h.userEmail)}</span></td>
- <td>${typeTxt}</td>
+ <td>${escapeHtml(typeTxt)}</td>
  <td class="num">${amountTxt}</td>
  <td class="num muted">${adminNumber(h.remaining).toLocaleString('ko-KR')}</td>
 </tr>`;

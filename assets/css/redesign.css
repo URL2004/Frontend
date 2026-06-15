@@ -12935,7 +12935,13 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 .lav-confirm-cost b{display:block;margin-top:4px;color:#14182a;font-size:17px;font-weight:800;letter-spacing:-.01em;}
 .lav-confirm-cost-main b{color:#4b4cc6;}
 /* 안내: 안심 라인(차감 없음) 강조 + 보조 한 줄 */
-.lav-confirm-note{margin:0 0 18px;}
+.lav-confirm-note{margin:0 0 18px;color:#8a91a3;font-size:12px;line-height:1.5;font-weight:500;}
+/* 환불 모달(공용 lav-confirm 카드 사용) */
+.lav-refund-lead{margin:8px 0 14px;color:#5d6477;font-size:13px;line-height:1.55;font-weight:500;}
+.lav-refund-lead b{color:#1a1f2e;font-weight:700;}
+.lav-refund-list{max-height:340px;overflow-y:auto;margin:0 0 14px;display:flex;flex-direction:column;gap:8px;}
+.lav-confirm-empty{text-align:center;padding:22px 10px;color:#9097a8;font-size:13px;}
+.lav-confirm-fine{margin:0;padding:11px 13px;border-radius:11px;background:#f7f8fc;color:#8a91a3;font-size:11.5px;line-height:1.6;font-weight:500;}
 .lav-confirm-safe{display:flex;align-items:flex-start;gap:8px;margin:0;color:#2f9654;font-size:12.5px;font-weight:600;line-height:1.5;}
 .lav-confirm-safe b{color:#1f7a45;font-weight:800;}
 .lav-confirm-check{flex:0 0 auto;width:18px;height:18px;border-radius:50%;background:#e7f6ec;color:#2f9654;font-size:11px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;margin-top:1px;}
