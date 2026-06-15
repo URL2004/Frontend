@@ -225,7 +225,8 @@
                <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">edit_note</span></span>
                <strong>과제 어투로 다듬기</strong>
                <p>AI로 쓴 초안을 대학 과제체로 매끄럽게 정리해요. 사실·분량은 그대로 두고 문장만 다듬어요.</p>
-               <span class="lav-purpose-caveat">어투·완성도용 · 탐지 회피용은 아니에요</span>
+               <em class="lav-purpose-band quiet">어투·완성도 정리</em>
+               <span class="lav-purpose-caveat">탐지 회피용은 아니에요</span>
              </button>
              <button type="button" class="lav-purpose-opt accent" onclick="lavFlowGo('reduce')">
                <span class="lav-purpose-reco">추천</span>
@@ -330,7 +331,7 @@
                <span class="lav-done-kicker">완료</span>
                <h3>변환 결과</h3>
              </div>
-             <div class="lav-done-score">
+             <div class="lav-done-score" id="lavDoneScoreWrap">
                <b id="lavDoneScore">38%</b>
                <em>예상 AI 탐지율</em>
              </div>
@@ -344,7 +345,7 @@
              <span class="lav-trust-badge ok">수치·출처 일치</span>
              <span class="lav-trust-badge ok">검증 통과</span>
            </div>
-           <p class="lav-done-note" style="margin:2px 0 12px;font-size:12.5px;line-height:1.5;color:var(--text3);">예상치예요. 글의 구체성·길이·주제에 따라 탐지율은 달라질 수 있어요. 결과가 만족스럽지 않으면 경험 메모를 더해 다시 돌려보세요.</p>
+           <p class="lav-done-note" id="lavDoneNote" style="margin:2px 0 12px;font-size:12.5px;line-height:1.5;color:var(--text3);">예상치예요. 글의 구체성·길이·주제에 따라 탐지율은 달라질 수 있어요. 결과가 만족스럽지 않으면 경험 메모를 더해 다시 돌려보세요.</p>
            <div class="lav-done-body lav-collapse" id="lavDoneBody"></div>
            <button type="button" class="lav-collapse-toggle" id="lavDoneToggle" onclick="lavToggleCollapse('lavDoneBody',this)" aria-expanded="false" hidden><span>펼쳐보기</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
            <div class="lav-done-actions">

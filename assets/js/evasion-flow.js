@@ -691,7 +691,9 @@
       clientId: 'job_done_' + st.jobId,
       type: 'job_done',
       title: '작업 완료',
-      message: label + ' 결과가 준비됐어요. 예상 탐지율 ' + score + '로 보관함에 저장했습니다.',
+      message: st.mode === 'polish'
+        ? label + ' 결과가 준비됐어요. 보관함에 저장했습니다.'
+        : label + ' 결과가 준비됐어요. 예상 탐지율 ' + score + '로 보관함에 저장했습니다.',
       action: { type: 'library' }
     }, { persist: true });
   }
@@ -914,8 +916,8 @@
       label = '블로그';
       renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics });
     } else if (st.mode === 'polish') {
-      // 다듬기는 품질·무결성 경로 — 정직 표기(진단 밴드 그대로, 회피 약속 없음)
-      score = (lastDiag && lastDiag.bands && lastDiag.bands.polish) || '—';
+      // 과제 어투 다듬기 — 회피가 아니므로 '예상 AI 탐지율'을 표기하지 않는다(오해 방지).
+      score = '과제체';
       label = '다듬기';
       renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics });
     } else if (st.result && st.result.preservationFallback) {
@@ -940,6 +942,14 @@
         $('lavFallbackMsg').textContent = st.note || '고급 변환이 원문 보존 기준을 통과하지 못해, 원문을 최대한 보존하는 방식으로 변환했어요.';
       }
     }
+    // 과제 어투 다듬기: '예상 AI 탐지율' 블록 숨김 + 안내 문구 교체(회피 아님)
+    var isPolish = st.mode === 'polish';
+    var scoreWrap = $('lavDoneScoreWrap');
+    if (scoreWrap) scoreWrap.hidden = isPolish;
+    var doneNote = $('lavDoneNote');
+    if (doneNote) doneNote.textContent = isPolish
+      ? 'AI로 쓴 글을 과제체로 다듬었어요. 탐지 회피용이 아니라 어투·완성도 정리이고, 원문의 사실·분량은 그대로 보존했어요.'
+      : '예상치예요. 글의 구체성·길이·주제에 따라 탐지율은 달라질 수 있어요. 결과가 만족스럽지 않으면 경험 메모를 더해 다시 돌려보세요.';
     if ($('lavDoneScore')) $('lavDoneScore').textContent = score;
     if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
     lavSaveToLibrary(label, st.result && st.result.outputText, score);
