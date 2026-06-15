@@ -1127,7 +1127,7 @@
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, idToken: idToken, evidence: !!s.evidence, memo: s.memo || '', lang: evDetectLang(text) })
+          body: JSON.stringify({ text: text, idToken: idToken, evidence: !!s.evidence, memo: s.memo || '', lang: evDetectLang(text), length: s.length || 'keep' })
         }).then(parseTransformStart);
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
