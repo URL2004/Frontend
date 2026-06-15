@@ -272,8 +272,10 @@
            </div>
 
            <div class="lav-set-block">
-             <div class="lav-set-label"><strong>경험 메모</strong><span>선택 · 탐지율을 크게 낮춰요</span></div>
-             <textarea class="lav-memo" id="lavMemo" rows="3" placeholder="실제 경험·사례·수치를 적어주세요. 글에 자연스럽게 녹여 드려요. (없는 사실은 만들지 않아요)"></textarea>
+             <div class="lav-set-label"><strong>경험 메모</strong><span>선택 · 탐지율을 낮추는 가장 효과적인 방법</span></div>
+             <p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:var(--text3);">AI가 쓴 글이 걸리는 가장 큰 이유는 <b style="color:var(--text2);">구체적인 경험·사례가 없기 때문</b>이에요. 글 주제와 관련해 <b style="color:var(--text2);">직접 겪은 일, 실제 사례, 정확히 아는 수치</b>를 적어주시면 그 내용을 글에 자연스럽게 녹여 더 사람이 쓴 글처럼 만들어 드려요. <b style="color:var(--text2);">적어주신 범위 안에서만</b> 사용하고, 없는 사실은 절대 지어내지 않아요.</p>
+             <textarea class="lav-memo" id="lavMemo" rows="4" placeholder="이렇게 적어주세요 —&#10;· 작년 여름 ○○기관에서 3주간 봉사하며 ~한 점을 직접 봤다&#10;· 우리 팀은 ~방식을 도입해 처리 시간을 절반으로 줄였다&#10;· 본문의 ○○% 수치는 내가 읽은 △△ 보고서 기준이다"></textarea>
+             <p style="margin:8px 0 0;font-size:12px;line-height:1.5;color:var(--text3);">예전엔 ‘기본 피하기(블로그)’에서만 됐지만, 이제 <b style="color:var(--text2);">‘고급 피하기(재구성)’</b>에서도 쓸 수 있어요. 한 줄에 한 가지씩 적으면 더 잘 녹아요.</p>
            </div>
 
            <!-- 근거 보강은 '과제 톤 지키며 피하기'(재구성) 전용 — 블로그 말투에선 비활성(기본 어투가 blog라 초기 disabled) -->
@@ -302,7 +304,7 @@
                <p>창을 닫아도 작업은 계속돼요. 새로고침하면 진행 중인 작업으로 다시 들어옵니다.</p>
              </div>
              <span class="lav-job-id" id="lavJobId"></span>
-             <button type="button" class="lav-job-cancel" onclick="lavCancelJob()">중단</button>
+             <button type="button" class="lav-job-cancel" id="lavJobCancel" onclick="lavCancelJob()" hidden>중단</button>
            </div>
            <ol class="lav-steps" id="lavSteps">
              <li class="done"><i></i>구조 계획</li>
@@ -321,6 +323,26 @@
                <button type="button" class="ghost" onclick="lavApprovePick()">선택만 승인</button>
                <button type="button" id="lavApproveRecoBtn" onclick="lavApproveReco()">추천 승인하고 계속</button>
              </div>
+           </div>
+         </section>
+
+         <!-- 4.5) 차단 → 동의 기반 재시도/보존형 받기 -->
+         <section class="lav-flow-card lav-blocked" data-flow="blocked" hidden>
+           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+             <strong style="font-size:16px;">회피 변환이 잠깐 멈췄어요</strong>
+             <span style="font-size:11.5px;font-weight:700;color:#1e8e3e;background:rgba(30,142,62,.1);padding:2px 9px;border-radius:8px;">크레딧 차감 없음</span>
+           </div>
+           <p id="lavBlockedReason" style="margin:0 0 14px;font-size:13px;line-height:1.65;color:var(--text2);">원문에 없는 내용이 생기거나 사실이 빠질 위험이 있어, 안전하게 멈췄어요(없는 사실은 만들지 않아요).</p>
+           <div id="lavBlockedAbstract" hidden style="margin:0 0 16px;padding:12px 14px;border-radius:10px;background:#faf7f7;border:1px solid #f0e3e3;">
+             <div style="font-size:12.5px;font-weight:700;color:var(--text2);margin-bottom:8px;">이 부분이 추상적이라 회피가 어려워요</div>
+             <ul id="lavBlockedAbstractList" style="margin:0 0 6px;padding-left:18px;font-size:12px;line-height:1.6;color:var(--text3);"></ul>
+             <div style="font-size:12px;line-height:1.5;color:var(--text3);">→ 위 내용과 관련된 <b style="color:var(--text2);">실제 경험·사례·수치</b>를 경험 메모에 적고 다시 도전하면, 그 부분을 구체적으로 바꿔 더 잘 통과돼요.</div>
+           </div>
+           <div style="display:flex;flex-direction:column;gap:8px;">
+             <button type="button" class="lav-flow-cta" onclick="lavBlockedRetryMemo()">경험 메모 넣고 다시 도전</button>
+             <button type="button" id="lavBlockedEvidence" class="ghost" onclick="lavBlockedRetryEvidence()" hidden>근거 보강 켜고 다시 도전</button>
+             <button type="button" id="lavBlockedFallback" class="ghost" onclick="lavBlockedAcceptFallback()" hidden>원문 보존 다듬기로 받기</button>
+             <button type="button" class="ghost" onclick="lavBlockedCancel()">취소</button>
            </div>
          </section>
 

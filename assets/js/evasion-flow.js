@@ -28,7 +28,7 @@
 
   var STEP_LABEL = {
     analyzing: '분석', report: 'AI 감지 보고서', choose: '방법 선택', reduce: 'AI 티 줄이기 설정',
-    job: '재구성 중', done: '완료'
+    job: '재구성 중', blocked: '다시 도전', done: '완료'
   };
 
   // 입력 화면 → 워크스페이스 화면 전환(페이지 전환)
@@ -50,6 +50,7 @@
   function show(name) {
     var flow = $('lavFlow');
     if (!flow) return;
+    if (name !== 'job') clearCancelWindow();   // job 화면을 벗어나면 30초 취소 버튼·타이머 정리
     enterWorkspace();
     flow.querySelectorAll('.lav-flow-card').forEach(function (c) {
       var on = c.getAttribute('data-flow') === name;
@@ -385,7 +386,7 @@
       var rows = [];
       rows.push(['방식', s.tone === 'formal' ? '고급 피하기 — 논문·격식체' : '기본 피하기 — 블로그·SNS·과제']);
       if (s.tone === 'formal') rows.push(['분량', s.length === 'keep' ? '분량 유지' : '컴팩트(~60%)']);
-      rows.push(['경험 메모', s.memo ? (s.tone === 'blog' ? '입력함' : '준비 중(재구성엔 다음 업데이트)') : '없음']);
+      rows.push(['경험 메모', s.memo ? '입력함 · 글에 자연스럽게 녹여요' : '없음 (적으면 탐지율↓)']);
       rows.push(['근거 보강', s.tone === 'formal' ? (s.evidence ? '켬 — 검색 후 검수·승인' : '끔') : '기본 피하기에선 사용 안 함']);
       sum.innerHTML = rows.map(function (r) {
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
@@ -627,6 +628,7 @@
     if ($('lavJobTitle')) $('lavJobTitle').textContent = '문장을 다듬고 있어요';
     if ($('lavJobId')) $('lavJobId').textContent = '';
     show('job');
+    armCancelWindow(0);   // 방금 시작 — 30초 취소 창 열기
     var bare = text.replace(/\s/g, '').length;
     formalStop = startJobTicker(Math.max(90, Math.min(1200, bare / 12)), '문장 다듬는 중');
     var gen = ++pollGen;
@@ -682,6 +684,25 @@
   var formalStop = null;   // 진행 ticker 정지 함수
   var activeCancel = null; // 현재 작업 취소 함수(blog=fetch abort, formal=POST /cancel)
   var pollGen = 0;         // 취소·새 작업 시작 시 증가 → 이전 폴링 루프 자연 종료
+  var lavBlockedJobId = null;   // 차단 화면이 띄운 job — '보존형으로 받기'(accept-fallback)에 필요
+  // ── 30초 취소 창(2026-06-15): 시작 직후 오타·실수만 구제, 후반 취소 악용(LLM 원가만 날리는)은 차단.
+  //   job 시작/재진입 시 경과시간 기준으로 남은 창만큼만 '중단' 버튼을 띄우고, 창이 지나면 영구히 숨긴다.
+  var cancelWindowTimer = null;
+  var CANCEL_WINDOW_SEC = 30;
+  function clearCancelWindow() {
+    if (cancelWindowTimer) { clearTimeout(cancelWindowTimer); cancelWindowTimer = null; }
+    var btn = $('lavJobCancel');
+    if (btn) btn.hidden = true;
+  }
+  function armCancelWindow(elapsedSec) {
+    var btn = $('lavJobCancel');
+    if (!btn) return;
+    if (cancelWindowTimer) { clearTimeout(cancelWindowTimer); cancelWindowTimer = null; }
+    var remainSec = CANCEL_WINDOW_SEC - (Number(elapsedSec) || 0);
+    if (remainSec <= 0) { btn.hidden = true; return; }   // 30초 지난 작업(재진입 등) — 취소 불가
+    btn.hidden = false;
+    cancelWindowTimer = setTimeout(function () { btn.hidden = true; cancelWindowTimer = null; }, remainSec * 1000);
+  }
   function stopFormalTicker() { if (formalStop) { formalStop(); formalStop = null; } }
   function currentBareLen() {
     var src = $('lavInput');
@@ -774,6 +795,12 @@
       lavInitCollapse('lavDoneBody', 'lavDoneToggle');
       return true;
     }
+    // 차단(blog/formal) 재진입 — 새로고침해도 동의 기반 재시도/보존형 화면 복원(blockOffer는 영속화됨)
+    if (st.status === 'blocked' && (st.mode === 'blog' || st.mode === 'formal')) {
+      renderBlockOffer(jobId, st);
+      show('blocked');
+      return true;
+    }
     if (st.status !== 'running' && st.status !== 'queued' && st.status !== 'awaiting_approval') return false;
     saveJobRef(jobId);
     activeCancel = makeJobCanceller(jobId);
@@ -781,6 +808,7 @@
     if ($('lavJobTitle')) $('lavJobTitle').textContent = isShort ? '문장을 다듬고 있어요' : '글을 다시 쓰고 있어요';
     if ($('lavJobId')) $('lavJobId').textContent = '#' + jobId.slice(0, 6).toUpperCase();
     show('job');
+    armCancelWindow(st.elapsedSec || 0);   // 재진입 — 시작 30초 이내일 때만 취소 버튼 노출
     if (st.status === 'queued') {
       renderQueuedState(jobId, st);
       pollTransform(jobId, ++pollGen);
@@ -895,8 +923,15 @@
       }
       if (st.status === 'blocked' || st.status === 'error') {
         stopFormalTicker();
-        clearJobRef();
         if (st.gateDetail) console.warn('[evasion] 차단 상세:', st.gates, st.gateDetail);
+        // 회피(blog/formal) 차단 → 동의 기반 재시도/보존형 화면. error·polish는 기존 안내.
+        //   jobRef는 유지(보존형 받기 accept-fallback에 jobId 필요).
+        if (st.status === 'blocked' && (st.mode === 'blog' || st.mode === 'formal')) {
+          renderBlockOffer(jobId, st);
+          show('blocked');
+          return;
+        }
+        clearJobRef();
         notifyJobIssue(jobId, st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
         if (!window.gpNotify) alert(st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
         show(st.mode === 'polish' ? 'choose' : 'reduce');   // 다듬기는 설정 화면이 없음 — 방법 선택으로
@@ -958,6 +993,79 @@
     notifyJobDone(st, label);
   }
 
+  // ── 차단 화면(2026-06-15): 자동 폴백 대신 "왜 막혔나 + 재시도/보존형/취소"를 사용자가 고르게 한다 ──
+  function renderBlockOffer(jobId, st) {
+    lavBlockedJobId = jobId;
+    var offer = (st && st.blockOffer) || {};
+    var reasonEl = $('lavBlockedReason');
+    if (reasonEl && st && st.reason) reasonEl.textContent = st.reason + ' 크레딧은 차감되지 않았어요.';
+    // surfaceguard가 짚은 추상 문단(여기에 실제 경험·사례를 더하면 회피가 잘 된다)
+    var abEl = $('lavBlockedAbstract'), abList = $('lavBlockedAbstractList');
+    var paras = offer.abstractParas || [];
+    if (abEl && abList) {
+      if (paras.length) {
+        abList.innerHTML = '';
+        paras.forEach(function (p) {
+          var li = document.createElement('li');
+          li.textContent = '“' + (p.snippet || '') + '…”';   // textContent = XSS-safe
+          abList.appendChild(li);
+        });
+        abEl.hidden = false;
+      } else { abEl.hidden = true; }
+    }
+    // 근거 보강 켜고 다시(재구성·미사용 시만)
+    var evBtn = $('lavBlockedEvidence');
+    if (evBtn) evBtn.hidden = !offer.canEvidence;
+    // 보존형으로 받기(+단가). 폴백 불가(polish 등)면 숨김.
+    var fbBtn = $('lavBlockedFallback');
+    if (fbBtn) {
+      fbBtn.hidden = !offer.fallbackOffer;
+      if (offer.fallbackOffer) fbBtn.textContent = '원문 보존 다듬기로 받기' + (offer.fallbackCredit ? ' (' + offer.fallbackCredit + ' 크레딧)' : '');
+    }
+  }
+
+  // 경험 메모 넣고 다시 — 설정 화면으로 돌아가 메모칸에 포커스(원문은 lavInput에 유지 → 재제출 시 새 작업)
+  window.lavBlockedRetryMemo = function () {
+    show('reduce');
+    var memo = $('lavMemo');
+    if (memo) { try { memo.focus(); } catch (e) { } try { memo.scrollIntoView({ block: 'center' }); } catch (e) { } }
+  };
+  // 근거 보강 켜고 다시 — 고급(formal)으로 전환 + 근거 토글 ON
+  window.lavBlockedRetryEvidence = function () {
+    var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
+    if (formalRadio) { formalRadio.checked = true; if (window.lavToneChange) window.lavToneChange(); }
+    var ev = $('lavEvidence');
+    if (ev && !ev.disabled) { ev.checked = true; if (window.lavEvidenceChange) window.lavEvidenceChange(); }
+    show('reduce');
+  };
+  // 보존형 다듬기로 받기 — 명시 동의로만 보존형 재처리(보존형 단가 차감). 백그라운드 처리 → 폴링으로 완료 수신.
+  window.lavBlockedAcceptFallback = function () {
+    if (!lavBlockedJobId) return;
+    var jid = lavBlockedJobId;
+    if ($('lavJobTitle')) $('lavJobTitle').textContent = '원문 보존형으로 처리하고 있어요';
+    show('job');
+    armCancelWindow(0);
+    var gen = ++pollGen;
+    evGetIdToken().then(function (idToken) {
+      return fetch(window.apiUrl('/transform/' + jid + '/accept-fallback'), {
+        method: 'POST', headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }), body: JSON.stringify({})
+      });
+    }).then(function (r) {
+      if (r && !r.ok) throw new Error('accept-fallback ' + r.status);
+      saveJobRef(jid);
+      pollTransform(jid, gen);
+    }).catch(function () {
+      if (window.gpToast) window.gpToast('처리 요청에 실패했어요. 다시 시도해 주세요.', { type: 'error' });
+      show('blocked');
+    });
+  };
+  // 취소 — 무과금 종료(차단 job은 그대로 두고 화면만 방법 선택으로)
+  window.lavBlockedCancel = function () {
+    lavBlockedJobId = null;
+    clearJobRef();
+    show('choose');
+  };
+
   function makeJobCanceller(jobId) {
     return function () {
       evGetIdToken().then(function (idToken) {
@@ -976,6 +1084,7 @@
     if ($('lavJobTitle')) $('lavJobTitle').textContent = '글을 다시 쓰고 있어요';
     if ($('lavJobId')) $('lavJobId').textContent = '';
     show('job');
+    armCancelWindow(0);   // 방금 시작 — 30초 취소 창 열기
     var bare = currentBareLen();
     var estSec = Math.max(240, Math.min(2700, Math.round(bare / 4) + (s.evidence ? 480 : 0)));   // 서버 공식과 동일
     formalStop = startJobTicker(estSec, s.evidence ? '실제 근거 검색·재구성 중' : '글을 다시 쓰는 중');
