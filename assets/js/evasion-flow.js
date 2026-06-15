@@ -79,6 +79,7 @@
 
   function applyDiag(d) {
     lastDiag = d;
+    var rn = $('lavResumeNote'); if (rn) rn.hidden = !d.resumeLike;   // 자소서·이력 유형 → 재구성 부적합 안내
     if ($('lavDiagGrade')) $('lavDiagGrade').textContent = d.grade;
     if ($('lavDiagTitle')) $('lavDiagTitle').textContent = d.title;
     if ($('lavDiagDesc')) $('lavDiagDesc').textContent = d.desc;
@@ -109,7 +110,26 @@
     });
   };
 
-  window.lavFlowGo = function (name) { show(name); };
+  window.lavFlowGo = function (name) {
+    if (name === 'reduce') applyResumeLock();   // 자소서·이력이면 재구성(고급) 잠그고 기본 피하기만 허용
+    show(name);
+    if (name === 'reduce' && window.lavToneChange) window.lavToneChange();   // 분량/근거 블록 동기화
+  };
+
+  // 자소서·이력 유형(diagnose resumeLike) → 재구성(고급) 잠금 + 기본 피하기 강제. 비자소서면 원복.
+  function applyResumeLock() {
+    var isResume = !!(lastDiag && lastDiag.resumeLike);
+    var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
+    var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');
+    var formalOpt = formalRadio ? formalRadio.closest('.lav-tone-opt') : null;
+    if (formalRadio) {
+      formalRadio.disabled = isResume;
+      if (isResume && formalRadio.checked && blogRadio) blogRadio.checked = true;   // 고급 선택돼 있었으면 기본으로
+    }
+    if (formalOpt) formalOpt.classList.toggle('is-locked', isResume);
+    var note = $('lavToneResumeNote');
+    if (note) note.hidden = !isResume;
+  }
 
   // 뒤로: 회피설정→방법선택, 방법선택→(보고서 경유면) 보고서, 보고서→입력화면(원문 유지)
   window.lavFlowBack = function () {

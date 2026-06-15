@@ -218,6 +218,12 @@
              </div>
            </div>
 
+           <!-- 자소서·이력 유형 안내(재구성 부적합) -->
+           <div class="lav-resume-note" id="lavResumeNote" hidden>
+             <strong>자기소개서·이력 유형의 글로 보여요.</strong>
+             이런 글은 <b>‘AI 티 줄이기’의 고급 피하기(재구성)와 맞지 않습니다</b> — 재구성은 시사·논증 글을 칼럼으로 바꾸는 기능이라, 자소서에 쓰면 글을 비평하듯 뒤집어 의미가 틀어져요. <b>과제 어투로 다듬기</b>를 권장하고, 회피가 필요하면 <b>기본 피하기</b>만 사용하세요.
+           </div>
+
            <!-- ② 목적 선택 — 2갈래로 명확하게 -->
            <h3 class="lav-flow-h">목적을 골라주세요</h3>
            <div class="lav-purpose-grid">
@@ -261,6 +267,7 @@
                  </span>
                </label>
              </div>
+             <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>자기소개서·이력 유형이라 <b>고급 피하기(재구성)를 잠갔어요</b> — 자소서엔 맞지 않거든요. <b>기본 피하기</b>로 자연스럽게 바꾸거나, 뒤로 가서 <b>과제 어투로 다듬기</b>를 선택하세요.</p>
            </div>
 
            <div class="lav-set-block" id="lavLenBlock" hidden>
@@ -328,21 +335,21 @@
 
          <!-- 4.5) 차단 → 동의 기반 재시도/보존형 받기 -->
          <section class="lav-flow-card lav-blocked" data-flow="blocked" hidden>
-           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-             <strong style="font-size:16px;">회피 변환이 잠깐 멈췄어요</strong>
-             <span style="font-size:11.5px;font-weight:700;color:#1e8e3e;background:rgba(30,142,62,.1);padding:2px 9px;border-radius:8px;">크레딧 차감 없음</span>
+           <div class="lav-blocked-head">
+             <strong>회피 변환이 잠깐 멈췄어요</strong>
+             <span class="lav-blocked-free">크레딧 차감 없음</span>
            </div>
-           <p id="lavBlockedReason" style="margin:0 0 14px;font-size:13px;line-height:1.65;color:var(--text2);">원문에 없는 내용이 생기거나 사실이 빠질 위험이 있어, 안전하게 멈췄어요(없는 사실은 만들지 않아요).</p>
-           <div id="lavBlockedAbstract" hidden style="margin:0 0 16px;padding:12px 14px;border-radius:10px;background:#faf7f7;border:1px solid #f0e3e3;">
-             <div style="font-size:12.5px;font-weight:700;color:var(--text2);margin-bottom:8px;">이 부분이 추상적이라 회피가 어려워요</div>
-             <ul id="lavBlockedAbstractList" style="margin:0 0 6px;padding-left:18px;font-size:12px;line-height:1.6;color:var(--text3);"></ul>
-             <div style="font-size:12px;line-height:1.5;color:var(--text3);">→ 위 내용과 관련된 <b style="color:var(--text2);">실제 경험·사례·수치</b>를 경험 메모에 적고 다시 도전하면, 그 부분을 구체적으로 바꿔 더 잘 통과돼요.</div>
+           <p id="lavBlockedReason" class="lav-blocked-reason">원문에 없는 내용이 생기거나 사실이 빠질 위험이 있어 안전하게 멈췄어요. 없는 사실은 만들지 않아요.</p>
+           <div id="lavBlockedAbstract" class="lav-blocked-abstract" hidden>
+             <div class="lav-blocked-abstract-title">이 부분이 추상적이라 회피가 어려워요</div>
+             <ul id="lavBlockedAbstractList" class="lav-blocked-abstract-list"></ul>
+             <div class="lav-blocked-abstract-tip">위 내용과 관련된 <b>실제 경험·사례·수치</b>를 경험 메모에 적고 다시 도전하면, 그 부분을 구체적으로 바꿔 더 잘 통과돼요.</div>
            </div>
-           <div style="display:flex;flex-direction:column;gap:8px;">
+           <div class="lav-blocked-actions">
              <button type="button" class="lav-flow-cta" onclick="lavBlockedRetryMemo()">경험 메모 넣고 다시 도전</button>
-             <button type="button" id="lavBlockedEvidence" class="ghost" onclick="lavBlockedRetryEvidence()" hidden>근거 보강 켜고 다시 도전</button>
-             <button type="button" id="lavBlockedFallback" class="ghost" onclick="lavBlockedAcceptFallback()" hidden>원문 보존 다듬기로 받기</button>
-             <button type="button" class="ghost" onclick="lavBlockedCancel()">취소</button>
+             <button type="button" id="lavBlockedEvidence" class="lav-blocked-2nd" onclick="lavBlockedRetryEvidence()" hidden>근거 보강 켜고 다시 도전</button>
+             <button type="button" id="lavBlockedFallback" class="lav-blocked-2nd" onclick="lavBlockedAcceptFallback()" hidden>원문 보존 다듬기로 받기</button>
+             <button type="button" class="lav-blocked-cancel" onclick="lavBlockedCancel()">취소</button>
            </div>
          </section>
 
