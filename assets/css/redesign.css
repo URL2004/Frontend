@@ -12502,6 +12502,10 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  font-weight:500;
 }
 .lav-purpose-opt.accent .lav-purpose-caveat{color:#7a7fb0;}
+/* 보장값 아님 — 강조(굵게 + 경고색) */
+.lav-purpose-caveat.strong{font-weight:800;font-size:12px;}
+.lav-purpose-opt .lav-purpose-caveat.strong,
+.lav-purpose-opt.accent .lav-purpose-caveat.strong{color:#b9791a;}
 .lav-purpose-opt:hover{border-color:#bcbef0;background:#fafaff;}
 .lav-purpose-opt.accent{border-color:#cdcef4;background:#f7f7ff;}
 .lav-purpose-opt.accent:hover{border-color:#a9abee;}
