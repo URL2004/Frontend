@@ -815,7 +815,10 @@
     if (err && err.httpStatus === 409) {
       try { if (await recoverActiveTransformJob()) return; } catch (e) { /* 기존 안내로 폴백 */ }
     }
-    alert(err && err.message ? err.message : '처리 중 오류가 발생했어요.');
+    var msg = (err && err.message) ? err.message : '처리 중 오류가 발생했어요.';
+    // 작업 시작 실패는 차감 전 단계 — "차감 없음" 안심 문구로 결제·환불 문의 감소
+    if (!/차감/.test(msg)) msg += '\n\n크레딧은 차감되지 않았어요. (차감은 작업이 완료될 때만 일어나요)';
+    alert(msg);
     show(fallbackStep || 'reduce');
   }
 

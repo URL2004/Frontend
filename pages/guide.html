@@ -37,11 +37,27 @@
 .gpg-cta button:not(.ghost):hover{filter:brightness(1.08);}
 .gpg-cta .ghost{background:transparent;color:var(--text2,#525a6e);border:1px solid var(--border,#e4e7f1);}
 
+.gpg-explain{margin:0 0 44px;}
+.gpg-explain h3{font-size:18px;font-weight:800;margin:0 0 16px;text-align:center;}
+.gpg-explain-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.gpg-ex-card{border:1px solid var(--border,#e4e7f1);border-radius:14px;padding:16px 18px;background:var(--surface2,#f7f8fc);}
+.gpg-ex-card h4{font-size:14.5px;font-weight:800;margin:0 0 11px;}
+.gpg-ex-card.do h4{color:#2f9654;}
+.gpg-ex-card.dont h4{color:#d2603f;}
+.gpg-ex-card ul{list-style:none;margin:0;padding:0;display:grid;gap:9px;}
+.gpg-ex-card li{position:relative;padding-left:22px;font-size:13.5px;line-height:1.6;color:var(--text2,#525a6e);}
+.gpg-ex-card li b{color:var(--text,#1a1f2e);font-weight:700;}
+.gpg-ex-card.do li::before{content:'✓';position:absolute;left:2px;top:0;color:#2f9654;font-weight:800;}
+.gpg-ex-card.dont li::before{content:'✕';position:absolute;left:2px;top:0;color:#d2603f;font-weight:800;}
+.gpg-ex-note{margin:14px 0 0;padding:12px 14px;border:1px solid #ecd6ad;background:#fdf6e9;border-radius:11px;font-size:13px;line-height:1.62;color:#7a5a16;}
+.gpg-ex-note b{color:#8a5a05;font-weight:700;}
+
 @media(max-width:640px){
  .gpg{padding:6px 12px 40px;}
  .gpg-head h2{font-size:22px;}
  .gpg-step-text h3{font-size:18px;}
  .gpg-step{margin-bottom:36px;}
+ .gpg-explain-grid{grid-template-columns:1fr;}
 }
 </style>
 
@@ -92,6 +108,31 @@
    <p>완료된 글은 왼쪽 <b>보관함·히스토리</b>에 저장돼요. 실수로 창을 닫았거나 화면을 놓쳤어도 거기서 그대로 다시 불러올 수 있습니다.</p>
   </div>
   <figure class="gpg-shot"><img src="/assets/img/guide/step4.png" alt="보관함·히스토리에서 결과를 다시 여는 화면" loading="lazy" onerror="this.style.display='none'"></figure>
+ </section>
+
+ <hr class="gpg-divider">
+
+ <section class="gpg-explain">
+  <h3>휴머나이저, 이렇게 작동해요</h3>
+  <div class="gpg-explain-grid">
+   <div class="gpg-ex-card do">
+    <h4>이런 걸 해요</h4>
+    <ul>
+     <li>AI 티가 나는 문장을 <b>사람이 쓴 것처럼</b> 자연스럽게 바꿔요.</li>
+     <li><b>고급 피하기(재구성)</b>는 어투·구조를 다시 짜서 외부 탐지율을 낮춰요.</li>
+     <li>원문의 <b>의미·사실은 보존</b>해요(없는 사실은 만들지 않아요).</li>
+    </ul>
+   </div>
+   <div class="gpg-ex-card dont">
+    <h4>이런 건 안 해요</h4>
+    <ul>
+     <li><b>요약기가 아니에요</b> — 핵심만 뽑거나 내용을 줄이지 않아요('컴팩트' 분량을 고를 때만 짧아져요).</li>
+     <li><b>'그대로 다듬기'는 회피용이 아니에요</b> — 품질 보정용이라 카피킬러 등 외부 탐지율은 그대로일 수 있어요.</li>
+     <li>모든 검사기 <b>100% 통과를 보장하진 않아요</b> — 변환 후 외부 검사기로 꼭 재확인하세요.</li>
+    </ul>
+   </div>
+  </div>
+  <p class="gpg-ex-note">⚠ <b>카피킬러 등 외부 검사 통과가 목적이면 '고급 피하기(재구성)'</b>를 고르세요. 그리고 <b>작업이 실패하거나 품질 게이트에 막히면 크레딧은 차감되지 않아요.</b> 환불은 미사용 크레딧만 가능하며, 이미 사용한 크레딧은 환불되지 않습니다.</p>
  </section>
 
  <hr class="gpg-divider">

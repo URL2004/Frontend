@@ -524,11 +524,12 @@ async function runProAnalysis() {
 
  try {
    const idToken = await window.CU.getIdToken();
+   const runLang = autoLangForText(text, selectedLang);
    const res = await callAnalyzeApi({
      mode: apiMode,
      text,
      humanizeMode,
-     lang: 'ko',
+     lang: runLang,
      idToken,
      billingMode: 'coupon'
    });
@@ -1292,6 +1293,16 @@ async function payToss(amount, credits, name, plan) {
  if (!window.CU) {
   if (window.gpTrack) window.gpTrack('login_required', { source: 'payment', value: amount, currency: 'KRW' });
   alert('로그인이 필요합니다.');
+  return;
+ }
+
+ // 오결제 방지: 결제 전 1회 확인 + 환불/차감 정책 명시(실수 클릭·기대 불일치 환불 감소)
+ const confirmMsg = `${Number(credits).toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매합니다.\n\n· 작업이 실패하면 크레딧은 차감되지 않아요.\n· 환불은 미사용 크레딧만 가능하고, 이미 사용한 크레딧은 환불되지 않아요.`;
+ const buyOk = window.gpConfirm
+  ? await window.gpConfirm({ title: '구매를 진행할까요?', message: confirmMsg, confirmText: '구매하기' })
+  : confirm(`${Number(credits).toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n· 작업 실패 시 크레딧 차감 없음\n· 미사용 크레딧만 환불 가능`);
+ if (!buyOk) {
+  if (window.gpTrack) window.gpTrack('checkout_cancel', { checkout_type: 'credits', value: amount, currency: 'KRW', code: 'PRE_CONFIRM_CANCEL' });
   return;
  }
 
