@@ -69,9 +69,9 @@
   function fakeDiagnose(text) {
     var len = (text || '').replace(/\s/g, '').length;
     // 백엔드 BLOG_BAND/POLISH_BAND/RESTRUCTURE_BAND와 동일한 보수 표기(/diagnose 실패 시 폴백)
-    if (len < 400) return { grade: 'A', bands: { polish: '30~55%', blog: '30~45%', restructure: '40~55%(근거 보강 시)' }, title: '구체적 정보가 충분한 글이에요', desc: '사례·수치가 풍부해, 다듬기만으로도 자연스럽게 마무리할 수 있어요.' };
-    if (len < 1200) return { grade: 'B', bands: { polish: '60~85%', blog: '35~50%', restructure: '40~55%(근거 보강 시)' }, title: '추상과 구체가 섞인 글이에요', desc: '일부 문단은 일반론에 가까워요. 회피 모드로 더 사람답게 만들 수 있어요.' };
-    return { grade: 'C', bands: { polish: '85%+', blog: '40~55%', restructure: '40~55%(근거 보강 시)' }, title: '추상적 일반론 비중이 높은 글이에요', desc: '구체적 사례·수치가 적어, 그대로 제출하면 AI 탐지 위험이 높습니다. 어떻게 할지 골라주세요.' };
+    if (len < 400) return { grade: 'A', bands: { polish: '30~55%', blog: '30~45%', restructure: '40~70%(근거 보강 시)' }, title: '구체적 정보가 충분한 글이에요', desc: '사례·수치가 풍부해, 다듬기만으로도 자연스럽게 마무리할 수 있어요.' };
+    if (len < 1200) return { grade: 'B', bands: { polish: '60~85%', blog: '35~50%', restructure: '40~70%(근거 보강 시)' }, title: '추상과 구체가 섞인 글이에요', desc: '일부 문단은 일반론에 가까워요. 회피 모드로 더 사람답게 만들 수 있어요.' };
+    return { grade: 'C', bands: { polish: '85%+', blog: '40~70%', restructure: '40~70%(근거 보강 시)' }, title: '추상적 일반론 비중이 높은 글이에요', desc: '구체적 사례·수치가 적어, 그대로 제출하면 AI 탐지 위험이 높습니다. 어떻게 할지 골라주세요.' };
   }
 
   var lastDiag = null;   // 결과 화면의 예상 밴드 표기에 재사용
@@ -910,7 +910,7 @@
   function renderJobDone(st) {
     var score, label;
     if (st.mode === 'blog') {
-      score = (lastDiag && lastDiag.bands && lastDiag.bands.blog) || '40~55%';
+      score = (lastDiag && lastDiag.bands && lastDiag.bands.blog) || '40~70%';
       label = '블로그';
       renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics });
     } else if (st.mode === 'polish') {
@@ -925,9 +925,9 @@
       label = '보존형';
       renderBadges({ metrics: st.result && st.result.metrics });
     } else {
-      // 예상 밴드(보수 표기): 근거 사용 시 40~55%, 미사용 시 50~60%대
+      // 예상 밴드(보수 표기): 근거 사용 시 40~70%, 미사용 시 50~60%대
       var mEv = st.result && st.result.metrics && st.result.metrics.evidenceUsed;
-      score = mEv > 0 ? '40~55%' : '50~60%대';
+      score = mEv > 0 ? '40~70%' : '50~60%대';
       label = '재구성';
       renderBadges({ metrics: st.result && st.result.metrics });
     }

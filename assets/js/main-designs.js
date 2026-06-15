@@ -445,6 +445,7 @@
     try { bootDesign(); }
     catch (e) { document.addEventListener('DOMContentLoaded', bootDesign); }
   } else {
-    applyDesign(getInitialDesign());
+    try { applyDesign(getInitialDesign()); }
+    finally { document.documentElement.classList.add('design-ready'); }
   }
 })();

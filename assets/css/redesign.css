@@ -15633,7 +15633,9 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 /* 입력 영역 너비 확대: 960 → 1180(노트북 본문 폭을 더 채움).
    ★ .gp-lav-entry가 hero의 flex(align-items:center)로 콘텐츠 폭(~603px)으로 줄어들어 컴포저 100%가 묶였음
    → entry를 100%로 펴야 컴포저가 hero/본문 폭을 따라간다. */
-#mainContent[data-main-design="lavender"] .gp-lav-hero{width:min(1180px,100%);}
+/* 큰 화면에서 워크스페이스가 왼쪽으로 쏠리던 문제: flow-active가 margin:0이라 좌측 정렬됨.
+   진입·흐름 두 상태 모두 중앙 정렬되도록 좌우 auto 마진 복구(이 규칙이 .flow-active{margin:0}보다 우선). */
+#mainContent[data-main-design="lavender"] .gp-lav-hero{width:min(1180px,100%);margin-left:auto;margin-right:auto;}
 #mainContent[data-main-design="lavender"] .gp-lav-entry{width:100%;}
 #mainContent[data-main-design="lavender"] .gp-lav-composer{width:min(980px,100%);margin-left:auto;margin-right:auto;}
 

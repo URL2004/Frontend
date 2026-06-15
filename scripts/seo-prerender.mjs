@@ -11,9 +11,9 @@
 //   - 각 공개 라우트마다 dist/<route>/index.html 생성(홈은 dist/index.html 덮어쓰기)
 //   - <title>/description/og/canonical 을 라우트별로 치환
 //   - <head>에 JSON-LD(Organization/WebSite/FAQPage/BreadcrumbList) 주입
-//   - <div id="page-root"> 뒤에 <div id="seo-prerender">{해당 페이지 본문}</div> 주입
-//   - 실제 브라우저에서는 page-loader.js가 부팅 시 #seo-prerender 를 제거하고
-//     기존 SPA가 그대로 렌더 → 사용자 UX/동작은 변하지 않는다(하이드레이션 패턴).
+//   - <div id="page-root"> 뒤에 <noscript>{해당 페이지 본문}</noscript> 주입
+//   - JS 브라우저에서는 정적 본문이 렌더되지 않고, page-loader.js가 noscript 노드를 제거한 뒤
+//     기존 SPA가 그대로 렌더 → 사용자 UX/동작은 변하지 않는다.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -239,7 +239,7 @@ export async function prerenderSeo({ root, dist }) {
     const partialPath = path.join(root, 'pages', route.partial);
     const partialHtml = cleanPartial(await fs.readFile(partialPath, 'utf8'));
     const h1 = route.url === '/' || !/<h1[\s>]/i.test(partialHtml) ? `<h1>${route.h1}</h1>\n` : '';
-    const seoBlock = `<div id="seo-prerender" data-seo-route="${route.url}">\n${h1}${partialHtml}\n</div>`;
+    const seoBlock = `<noscript id="seo-prerender-static" data-seo-route="${route.url}">\n<div id="seo-prerender">\n${h1}${partialHtml}\n</div>\n</noscript>`;
     html = html.replace(
       /(<div id="page-root"><\/div>)/i,
       `$1\n${seoBlock}`
