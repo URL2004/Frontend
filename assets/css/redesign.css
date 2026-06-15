@@ -12872,12 +12872,12 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 }
 .lav-confirm-modal[hidden]{display:none;}
 .lav-confirm-card{
- width:min(420px,100%);
+ width:min(440px,100%);
  padding:26px 24px 22px;
- border:1px solid #e7e9f4;
+ border:1px solid #e9ebf5;
  border-radius:20px;
  background:#fff;
- box-shadow:0 30px 80px rgba(52,58,110,.22);
+ box-shadow:0 24px 70px rgba(40,46,90,.20);
  position:relative;
 }
 .lav-confirm-x{
@@ -12894,42 +12894,54 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  cursor:pointer;
 }
 .lav-confirm-x:hover{background:#f1f2f8;color:#3d4458;}
-.lav-confirm-title{display:block;color:#14182a;font-size:17px;font-weight:700;}
+.lav-confirm-title{display:block;color:#14182a;font-size:18.5px;font-weight:800;letter-spacing:-.01em;padding-right:26px;line-height:1.3;}
+/* 요약: 채운 박스 대신 하이라인 목록으로 깔끔하게 */
 .lav-confirm-summary{
  list-style:none;
- margin:16px 0;
- padding:14px 16px;
- border-radius:12px;
- background:#f6f7fc;
+ margin:16px 0 14px;
+ padding:2px 0;
+ border-top:1px solid #eef0f7;
+ border-bottom:1px solid #eef0f7;
  display:flex;
  flex-direction:column;
- gap:8px;
 }
 .lav-confirm-summary li{
  display:flex;
- align-items:center;
+ align-items:flex-start;
  justify-content:space-between;
- gap:12px;
- color:#39415a;
+ gap:16px;
+ padding:9px 2px;
  font-size:13px;
- font-weight:500;
+ line-height:1.5;
 }
-.lav-confirm-summary li b{color:#1a1f2e;font-weight:700;}
+.lav-confirm-summary li + li{border-top:1px solid #f3f4fa;}
+.lav-confirm-summary li span{color:#8a91a3;font-weight:600;flex:0 0 auto;}
+.lav-confirm-summary li b{color:#1a1f2e;font-weight:700;text-align:right;}
+/* 비용: 크레딧을 주인공으로 */
 .lav-confirm-cost{
  display:flex;
  gap:10px;
- margin-bottom:14px;
+ margin-bottom:16px;
 }
 .lav-confirm-cost > div{
  flex:1;
  padding:12px 14px;
- border:1px solid #e7e9f4;
- border-radius:11px;
+ border:1px solid #eef0f7;
+ border-radius:13px;
+ background:#fafbff;
 }
-.lav-confirm-cost span{display:block;color:#8a91a3;font-size:12px;font-weight:500;}
-.lav-confirm-cost b{display:block;margin-top:3px;color:#14182a;font-size:15px;font-weight:700;}
-.lav-confirm-note{margin:0 0 16px;color:#8a91a3;font-size:12px;line-height:1.5;font-weight:500;}
-.lav-confirm-actions{display:flex;gap:8px;}
+.lav-confirm-cost-main{border-color:#d9dbf6;background:#f2f3ff;}
+.lav-confirm-cost span{display:block;color:#8a91a3;font-size:11.5px;font-weight:600;}
+.lav-confirm-cost b{display:block;margin-top:4px;color:#14182a;font-size:17px;font-weight:800;letter-spacing:-.01em;}
+.lav-confirm-cost-main b{color:#4b4cc6;}
+/* 안내: 안심 라인(차감 없음) 강조 + 보조 한 줄 */
+.lav-confirm-note{margin:0 0 18px;}
+.lav-confirm-safe{display:flex;align-items:flex-start;gap:8px;margin:0;color:#2f9654;font-size:12.5px;font-weight:600;line-height:1.5;}
+.lav-confirm-safe b{color:#1f7a45;font-weight:800;}
+.lav-confirm-check{flex:0 0 auto;width:18px;height:18px;border-radius:50%;background:#e7f6ec;color:#2f9654;font-size:11px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;margin-top:1px;}
+.lav-confirm-sub{margin:7px 0 0;padding-left:26px;color:#9097a8;font-size:11.5px;line-height:1.5;font-weight:500;}
+.lav-confirm-sub[hidden]{display:none;}
+.lav-confirm-actions{display:flex;gap:9px;margin-top:4px;}
 .lav-confirm-actions button{flex:1;}
 
 @media(max-width:560px){

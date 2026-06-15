@@ -406,6 +406,7 @@
     }
     if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = credit;
     if ($('lavConfirmTime')) $('lavConfirmTime').textContent = time;
+    var subC = $('lavConfirmSub'); if (subC) subC.hidden = false;   // 회피는 탐지율 안내 노출
     var modal = $('lavConfirmModal');
     if (modal) modal.hidden = false;
   };
@@ -661,14 +662,15 @@
     if (!text) { if (src) src.focus(); return; }
     pendingPolish = true;
     var ttl = document.querySelector('.lav-confirm-title');
-    if (ttl) ttl.textContent = '이대로 다듬을까요?';
+    if (ttl) ttl.textContent = '과제 어투로 다듬을까요?';
     var sum = $('lavConfirmSummary');
     if (sum) {
       sum.innerHTML =
-        '<li><span>방식</span><b>그대로 다듬기 — 문장만 자연스럽게</b></li>' +
-        '<li><span>원문 보존</span><b>구조·의미 유지(회피 재작성 아님)</b></li>' +
-        '<li><span>외부 검사</span><b>카피킬러 등 회피용 아님 — 탐지율이 그대로일 수 있어요</b></li>';
+        '<li><span>방식</span><b>과제 어투로 다듬기</b></li>' +
+        '<li><span>원문 보존</span><b>사실·분량 그대로 (재작성 아님)</b></li>' +
+        '<li><span>용도</span><b>어투·완성도 정리 (탐지 회피용 아님)</b></li>';
     }
+    var subP = $('lavConfirmSub'); if (subP) subP.hidden = true;   // 과제 다듬기는 탐지율과 무관
     var len = src ? src.value.length : 0;   // 글자수 통일: 공백 포함
     if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = Math.max(1, Math.ceil(len / 100)) + ' 크레딧';
     if ($('lavConfirmTime')) $('lavConfirmTime').textContent = '약 1~3분';

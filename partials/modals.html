@@ -120,10 +120,13 @@
     <strong class="lav-confirm-title">이 설정으로 시작할까요?</strong>
     <ul class="lav-confirm-summary" id="lavConfirmSummary"></ul>
     <div class="lav-confirm-cost">
-      <div><span>예상 크레딧</span><b id="lavConfirmCredit">8 크레딧</b></div>
+      <div class="lav-confirm-cost-main"><span>예상 크레딧</span><b id="lavConfirmCredit">8 크레딧</b></div>
       <div><span>예상 시간</span><b id="lavConfirmTime">2~3분</b></div>
     </div>
-    <p class="lav-confirm-note">작업이 끝나면 크레딧이 차감돼요. 실패하면 차감되지 않습니다. 탐지율은 글에 따라 달라질 수 있으며 보장값이 아니에요.</p>
+    <div class="lav-confirm-note">
+      <p class="lav-confirm-safe"><span class="lav-confirm-check" aria-hidden="true">✓</span><span>완료될 때만 차감돼요. <b>실패하면 차감되지 않아요.</b></span></p>
+      <p class="lav-confirm-sub" id="lavConfirmSub">탐지율은 글에 따라 달라질 수 있으며 보장값이 아니에요.</p>
+    </div>
     <div class="lav-confirm-actions">
       <button type="button" class="ghost" onclick="lavCloseConfirm()">취소</button>
       <button type="button" onclick="lavStartJob()">시작하기</button>
