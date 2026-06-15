@@ -1210,11 +1210,9 @@ function renderDetect(r) {
 }
 
 function renderHuman(r) {
- // ★ 고지: '그대로 다듬기'(보존형)는 원문 의미·사실을 유지하는 품질 다듬기라 외부 AI 검출 회피력이 약해요.
- //   외부 검출률을 낮추려면 '회피(블로그/재구성)' 경로를 쓰도록 안내. 글에 따라 70%대가 나올 수 있음을 명시.
+ // ★ 고지: '그대로 다듬기'(보존형)는 원문 의미·사실을 유지하는 품질 다듬기라 회피 목적과 구분한다.
  const note = '<div class="sstrip" style="background:var(--surface2,#f6f6f8);color:var(--text3);font-size:12.5px;line-height:1.5;">'
-  + '이 결과는 의미·사실을 보존하는 <b>다듬기</b>예요. 외부 AI 검사기(카피킬러 등)의 탐지율은 글에 따라 그대로(70% 이상)일 수 있어요. '
-  + '탐지율을 더 낮추려면 회피(블로그 말투·격식 재구성) 모드를 이용하고, 변환 후 외부 검사기로 재확인하세요.</div>';
+  + '이 결과는 의미·사실을 보존하는 <b>다듬기</b>예요. 탐지율을 낮추는 목적이라면 AI 티 줄이기(블로그 말투·격식 재구성) 모드를 이용하세요.</div>';
  document.getElementById('result').innerHTML=
  '<div class="rsec"><div class="ocard"><div class="ohd"><span class="olbl">변환 결과</span>'
  +'<button class="cpybtn" id="dlbtn" onclick="dlOut()" style="margin-left:auto;">다운로드</button>'
