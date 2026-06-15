@@ -209,37 +209,32 @@
 
          <!-- 분석 결과 + 목적 선택(한 화면) -->
          <section class="lav-flow-card lav-choose" data-flow="choose" hidden>
-           <div class="lav-diag">
-             <div class="lav-diag-head">
-               <span class="lav-diag-grade" id="lavDiagGrade">C</span>
-               <div>
-                 <strong id="lavDiagTitle">추상적 일반론 비중이 높은 글이에요</strong>
-                 <p id="lavDiagDesc">구체적 사례·수치가 적어, 그대로 제출하면 AI 탐지 위험이 높습니다.</p>
-               </div>
+           <!-- ① 진단 요약 -->
+           <div class="lav-diag2">
+             <span class="lav-diag-grade" id="lavDiagGrade">C</span>
+             <div class="lav-diag2-text">
+               <strong id="lavDiagTitle">추상적 일반론 비중이 높은 글이에요</strong>
+               <p id="lavDiagDesc">구체적 사례·수치가 적어, 그대로 제출하면 AI 탐지 위험이 높습니다.</p>
              </div>
-             <div class="lav-bands-legend">예상 외부 탐지율 <b>(숫자가 낮을수록 회피 ↑)</b></div>
-             <div class="lav-diag-bands">
-               <div class="warnband"><span>그대로 다듬기</span><b id="lavBandPolish">85%+</b><em>탐지율 그대로</em></div>
-               <div><span>기본 피하기</span><b id="lavBandBlog">40~70%</b><em>빠름·저렴</em></div>
-               <div class="reco"><span>고급 피하기</span><b id="lavBandRestr">40~70%</b><em>추천</em></div>
-             </div>
-             <p class="lav-diag-note">실측 기반 예상 밴드예요(보장값 아님). 글의 구체성·길이·주제에 따라 결과가 달라지고, 일부 글은 70% 이상이 나오기도 해요. <b>변환 후 카피킬러 등 외부 검사기로 꼭 재확인하세요.</b></p>
            </div>
 
-           <h3 class="lav-flow-h">무엇을 하고 싶으세요?</h3>
-           <div class="lav-evade-warn">⚠ <b>카피킬러 등 외부 검사 통과가 목적이라면 ‘AI 티 줄이기’</b>를 고르세요. ‘그대로 다듬기’는 품질 보정용이라 외부 탐지율이 거의 그대로일 수 있어요.</div>
+           <!-- ② 목적 선택 — 2갈래로 명확하게 -->
+           <h3 class="lav-flow-h">목적을 골라주세요</h3>
            <div class="lav-purpose-grid">
              <button type="button" class="lav-purpose-opt" onclick="lavRunPolish()">
                <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">edit_note</span></span>
                <strong>그대로 다듬기</strong>
-               <p>원문 의미·사실을 100% 보존하며 문장만 자연스럽게. 품질·완성도용이에요.</p>
-               <em class="lav-purpose-band quiet">탐지율 그대로 · 외부 검사 회피용 아님</em>
+               <p>원문 의미·사실을 100% 보존하며 문장만 자연스럽게 다듬어요. 품질·완성도용이에요.</p>
+               <em class="lav-purpose-band quiet">예상 탐지율 거의 그대로</em>
+               <span class="lav-purpose-caveat">외부 검사(카피킬러 등) 회피용은 아니에요</span>
              </button>
              <button type="button" class="lav-purpose-opt accent" onclick="lavFlowGo('reduce')">
-               <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">shield</span></span>
+               <span class="lav-purpose-reco">추천</span>
+               <span class="lav-purpose-ico reduce" aria-hidden="true"><span class="material-symbols-outlined">shield</span></span>
                <strong>AI 티 줄이기</strong>
-               <p>탐지 위험을 낮춰 더 사람이 쓴 글에 가깝게. 어투와 분량을 골라 재구성해요.</p>
-               <em class="lav-purpose-band">카피킬러 등 외부 검사 통과용 · 예상 35~55%</em>
+               <p>사람이 쓴 글에 가깝게 어투·구조를 재구성해요. 카피킬러 등 외부 검사 통과가 목적이면 이걸 고르세요.</p>
+               <em class="lav-purpose-band">예상 탐지율 35~60%</em>
+               <span class="lav-purpose-caveat">글의 구체성·길이·주제에 따라 이 범위를 벗어날 수 있어요</span>
              </button>
            </div>
          </section>
@@ -254,7 +249,7 @@
                  <span class="lav-tone-body">
                    <b>기본 피하기</b>
                    <i>거든요·잖아요 같은 자연스러운 말투로 확 바꿔요. 가장 빠르고 저렴해요 — 단, 딱딱한 격식 문체는 사라져요.</i>
-                   <em>예상 40~70% · 1~3분 · 100자당 2크레딧</em>
+                   <em>예상 35~60% · 1~3분 · 100자당 2크레딧</em>
                  </span>
                </label>
                <label class="lav-tone-opt">
@@ -262,7 +257,7 @@
                  <span class="lav-tone-body">
                    <b>고급 피하기</b>
                    <i>격식 문체(한다체)는 그대로 지키면서 글 구조를 칼럼처럼 다시 짜요.<span class="hl">★ 근거 보강을 켜야 효과가 큽니다.</span></i>
-                   <em>근거 보강 시 40~70% · 길이별 200~600크레딧(근거 시 +100)</em>
+                   <em>근거 보강 시 35~60% · 길이별 200~600크레딧(근거 시 +100)</em>
                  </span>
                </label>
              </div>

@@ -12448,6 +12448,21 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  font-weight:500;
 }
 
+/* 진단 요약 스트립(방법 선택 상단) */
+.lav-diag2{
+ display:flex;
+ align-items:flex-start;
+ gap:14px;
+ padding:16px 18px;
+ border:1px solid #eef0f7;
+ border-radius:14px;
+ background:#fafbff;
+ margin-bottom:18px;
+}
+.lav-diag2 .lav-diag-grade{flex:0 0 auto;}
+.lav-diag2-text strong{display:block;color:#14182a;font-size:16px;font-weight:700;line-height:1.35;}
+.lav-diag2-text p{margin:5px 0 0;color:#5d6477;font-size:13.5px;line-height:1.6;font-weight:500;}
+
 /* 목적 카드 2장 */
 .lav-purpose-grid{
  display:grid;
@@ -12455,6 +12470,7 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  gap:12px;
 }
 .lav-purpose-opt{
+ position:relative;
  display:block;
  padding:20px;
  border:1px solid #e4e7f1;
@@ -12465,6 +12481,27 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  font:inherit;
  transition:border-color .15s ease,background .15s ease;
 }
+.lav-purpose-reco{
+ position:absolute;
+ top:14px;
+ right:14px;
+ padding:3px 10px;
+ border-radius:999px;
+ background:#5a5bd8;
+ color:#fff;
+ font-size:10.5px;
+ font-weight:800;
+ letter-spacing:.02em;
+}
+.lav-purpose-caveat{
+ display:block;
+ margin-top:8px;
+ color:#9097a8;
+ font-size:11.5px;
+ line-height:1.5;
+ font-weight:500;
+}
+.lav-purpose-opt.accent .lav-purpose-caveat{color:#7a7fb0;}
 .lav-purpose-opt:hover{border-color:#bcbef0;background:#fafaff;}
 .lav-purpose-opt.accent{border-color:#cdcef4;background:#f7f7ff;}
 .lav-purpose-opt.accent:hover{border-color:#a9abee;}
