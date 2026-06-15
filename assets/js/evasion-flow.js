@@ -80,6 +80,7 @@
   function applyDiag(d) {
     lastDiag = d;
     var rn = $('lavResumeNote'); if (rn) rn.hidden = !d.resumeLike;   // 자소서·이력 유형 → 재구성 부적합 안내
+    var fdn = $('lavFactDenseNote'); if (fdn) fdn.hidden = !(d.factDense && !d.resumeLike);   // 연도·수치 빼곡 → 재구성 시 사실오류 위험 안내
     if ($('lavDiagGrade')) $('lavDiagGrade').textContent = d.grade;
     if ($('lavDiagTitle')) $('lavDiagTitle').textContent = d.title;
     if ($('lavDiagDesc')) $('lavDiagDesc').textContent = d.desc;
