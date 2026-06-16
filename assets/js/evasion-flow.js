@@ -712,6 +712,7 @@
   var activeCancel = null; // 현재 작업 취소 함수(blog=fetch abort, formal=POST /cancel)
   var pollGen = 0;         // 취소·새 작업 시작 시 증가 → 이전 폴링 루프 자연 종료
   var lavBlockedJobId = null;   // 차단 화면이 띄운 job — '보존형으로 받기'(accept-fallback)에 필요
+  var lavBlockedFallbackCredit = 0;   // 보존형 받기 단가 — 클릭 전 잔액(window.UC) 사전확인용
   // ── 30초 취소 창(2026-06-15): 시작 직후 오타·실수만 구제, 후반 취소 악용(LLM 원가만 날리는)은 차단.
   //   job 시작/재진입 시 경과시간 기준으로 남은 창만큼만 '중단' 버튼을 띄우고, 창이 지나면 영구히 숨긴다.
   var cancelWindowTimer = null;
@@ -1055,9 +1056,15 @@
     if (evBtn) evBtn.hidden = !offer.canEvidence;
     // 보존형으로 받기(+단가). 폴백 불가(polish 등)면 숨김.
     var fbBtn = $('lavBlockedFallback');
+    lavBlockedFallbackCredit = offer.fallbackCredit || 0;
     if (fbBtn) {
       fbBtn.hidden = !offer.fallbackOffer;
-      if (offer.fallbackOffer) fbBtn.textContent = '원문 보존 다듬기로 받기' + (offer.fallbackCredit ? ' (' + offer.fallbackCredit + ' 크레딧)' : '');
+      if (offer.fallbackOffer) {
+        var need = offer.fallbackCredit || 0;
+        // 잔액이 단가보다 적으면 버튼에 '충전 필요'를 미리 표시(서버 precheck와 동일 기준 — 클릭 전에 알 수 있게).
+        var short = need && window.UP !== 'unlimited' && (window.UC || 0) < need;
+        fbBtn.textContent = '원문 보존 다듬기로 받기' + (need ? ' (' + need + ' 크레딧)' : '') + (short ? ' · 충전 필요' : '');
+      }
     }
   }
 
@@ -1079,6 +1086,17 @@
   window.lavBlockedAcceptFallback = function () {
     if (!lavBlockedJobId) return;
     var jid = lavBlockedJobId;
+    // ★ 크레딧 사전 확인(2026-06-16, 서버 precheck와 동일 기준): 부족하면 작업을 시작하지 않고 충전으로 안내.
+    //   서버도 accept-fallback에서 402로 막지만, 여기서 먼저 걸러 헛클릭·헛요청을 줄인다(서버가 최종 권위).
+    var need = lavBlockedFallbackCredit || 0;
+    if (need && window.UP !== 'unlimited' && (window.UC || 0) < need) {
+      var go = window.gpConfirm
+        ? window.gpConfirm({ title: '크레딧이 부족해요', message: '원문 보존 다듬기로 받으려면 ' + need + '크레딧이 필요해요. 현재 보유 크레딧은 ' + (window.UC || 0) + '크레딧이에요.', confirmText: '충전하러 가기' })
+        : Promise.resolve(confirm('원문 보존 다듬기로 받으려면 ' + need + '크레딧이 필요해요(현재 ' + (window.UC || 0) + '크레딧). 충전 페이지로 이동할까요?'));
+      Promise.resolve(go).then(function (ok) { if (ok && window.switchTab) window.switchTab('pricing'); });
+      if (window.gpTrack) window.gpTrack('credit_insufficient', { analysis_mode: 'fallback', needed_credits: need, current_credits: window.UC || 0 });
+      return;
+    }
     if ($('lavJobTitle')) $('lavJobTitle').textContent = '원문 보존형으로 처리하고 있어요';
     show('job');
     armCancelWindow(0);
@@ -1088,11 +1106,26 @@
         method: 'POST', headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }), body: JSON.stringify({})
       });
     }).then(function (r) {
-      if (r && !r.ok) throw new Error('accept-fallback ' + r.status);
+      if (r && !r.ok) {
+        // 서버가 막은 경우(잔액 부족 402 등) — 본문의 구체 메시지를 살려 보여준다(일반 실패 문구로 덮지 않음).
+        return r.json().catch(function () { return null; }).then(function (b) {
+          var err = new Error((b && b.error) || ('처리 요청에 실패했어요. (' + r.status + ')'));
+          err.httpStatus = r.status;
+          throw err;
+        });
+      }
       saveJobRef(jid);
       pollTransform(jid, gen);
-    }).catch(function () {
-      if (window.gpToast) window.gpToast('처리 요청에 실패했어요. 다시 시도해 주세요.', { type: 'error' });
+    }).catch(function (e) {
+      var msg = (e && e.message) || '처리 요청에 실패했어요. 다시 시도해 주세요.';
+      if (e && e.httpStatus === 402) {   // 잔액 부족(주로 사전확인 후 다른 탭에서 소진된 레이스) — 충전 안내
+        var go2 = window.gpConfirm
+          ? window.gpConfirm({ title: '크레딧이 부족해요', message: msg, confirmText: '충전하러 가기' })
+          : Promise.resolve(confirm(msg + '\n충전 페이지로 이동할까요?'));
+        Promise.resolve(go2).then(function (ok) { if (ok && window.switchTab) window.switchTab('pricing'); });
+      } else if (window.gpToast) {
+        window.gpToast(msg, { type: 'error' });
+      }
       show('blocked');
     });
   };
