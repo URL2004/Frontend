@@ -178,33 +178,72 @@
       return;
     }
     cameFromReport = false;
-    show('analyzing');
-    var idToken = null;
-    try { if (window.CU && window.CU.getIdToken) idToken = await window.CU.getIdToken(); } catch (e) { /* 비로그인 — 무료 감지는 IP 기준 한도 */ }
-    var minWait = new Promise(function (r) { setTimeout(r, 900); });
-    try {
-      var resP = fetch(window.apiUrl('/detect-report'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: text, idToken: idToken })
-      });
-      var out = await Promise.all([resP, minWait]);
-      var d = await out[0].json();
-      if (!out[0].ok || !d.ok) {
+    // 멱등키 — 무료 호출과 유료 재요청이 같은 키를 써서 재시도 중복 차감 방지
+    var reqId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('det_' + Date.now());
+
+    async function runDetect(paid) {
+      show('analyzing');
+      var idToken = null;
+      try { if (window.CU && window.CU.getIdToken) idToken = await window.CU.getIdToken(); } catch (e) { /* 비로그인 — 무료 감지는 IP 기준 한도 */ }
+      var minWait = new Promise(function (r) { setTimeout(r, 900); });
+      try {
+        var resP = fetch(window.apiUrl('/detect-report'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text, idToken: idToken, paid: !!paid, requestId: reqId })
+        });
+        var out = await Promise.all([resP, minWait]);
+        var res = out[0];
+        var d = await res.json().catch(function () { return null; });
+
+        // 무료 한도 소진 → 유료 감지 안내(확인 후 paid:true로 재요청)
+        if (res.status === 402 && d && d.code === 'FREE_EXHAUSTED') {
+          window.lavFlowReset();
+          if (!window.CU) { alert('오늘 무료 감지(' + d.freeCap + '회)를 다 썼어요. 유료 감지는 로그인이 필요해요.'); return; }
+          var ok = window.gpConfirm
+            ? await window.gpConfirm({ title: '오늘 무료 감지를 다 썼어요', message: '무료 ' + d.freeCap + '회를 모두 사용했어요.\n이 글을 ' + d.cost + '크레딧으로 감지할까요? (100자당 1크레딧)', confirmText: d.cost + '크레딧으로 감지' })
+            : confirm('무료 감지를 다 썼어요. ' + d.cost + '크레딧으로 감지할까요?');
+          if (ok) return runDetect(true);
+          return;
+        }
+        // 잔액 부족
+        if (res.status === 402 && d && d.code === 'INSUFFICIENT_CREDITS') {
+          window.lavFlowReset();
+          var go = window.gpConfirm
+            ? await window.gpConfirm({ title: '크레딧이 부족해요', message: '이 글 감지에 ' + d.cost + '크레딧이 필요해요. 충전하러 갈까요?', confirmText: '충전하러 가기' })
+            : confirm('크레딧이 부족해요. 충전할까요?');
+          if (go && typeof switchTab === 'function') switchTab('pricing');
+          return;
+        }
+        if (res.status === 401 && d && d.code === 'LOGIN_REQUIRED') {
+          window.lavFlowReset();
+          alert('유료 감지는 로그인이 필요해요.');
+          return;
+        }
+        if (!res.ok || !d || !d.ok) {
+          window.lavFlowReset();
+          alert((d && d.error) || 'AI 감지에 실패했어요. 잠시 후 다시 시도해 주세요.');
+          return;
+        }
+        // 성공(무료 or 유료) — 유료면 크레딧 차감 반영
+        if (d.charged) {
+          window.UC = Math.max(0, (window.UC || 0) - d.charged);
+          if (typeof window.updateCreditUI === 'function') window.updateCreditUI();
+          if (window.gpToast) window.gpToast(d.charged + '크레딧이 차감됐어요.', { type: 'info' });
+        }
+        renderReport(d);
+        cameFromReport = true;
+        show('report');
+        playReportIntro();
+        lavInitCollapse('lavRepParaList', 'lavRepParaToggle');
+      } catch (e) {
+        console.warn('[evasion] /detect-report 실패:', e && e.message);
         window.lavFlowReset();
-        alert(d.error || 'AI 감지에 실패했어요. 잠시 후 다시 시도해 주세요.');
-        return;
+        alert('AI 감지에 실패했어요. 네트워크 상태를 확인해 주세요.');
       }
-      renderReport(d);
-      cameFromReport = true;
-      show('report');
-      playReportIntro();
-      lavInitCollapse('lavRepParaList', 'lavRepParaToggle');
-    } catch (e) {
-      console.warn('[evasion] /detect-report 실패:', e && e.message);
-      window.lavFlowReset();
-      alert('AI 감지에 실패했어요. 네트워크 상태를 확인해 주세요.');
     }
+
+    runDetect(false);
   };
 
   // ── 게이지 인트로: 화면 공개 후 호 채움(CSS 트랜지션) + 숫자 카운트업(rAF, easeOutCubic 동조) ──
