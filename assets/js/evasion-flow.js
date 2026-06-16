@@ -79,8 +79,10 @@
 
   function applyDiag(d) {
     lastDiag = d;
-    var rn = $('lavResumeNote'); if (rn) rn.hidden = !d.resumeLike;   // 자소서·이력 유형 → 재구성 부적합 안내
-    var fdn = $('lavFactDenseNote'); if (fdn) fdn.hidden = !(d.factDense && !d.resumeLike);   // 연도·수치 빼곡 → 재구성 시 사실오류 위험 안내
+    var unfit = !!(d.restructureUnfit || d.resumeLike);   // 자소서·생기부·탐구문·짧고추상 → 재구성 부적합
+    var rn = $('lavResumeNote');
+    if (rn) { rn.hidden = !unfit; if (unfit && d.restructureUnfitReason) rn.textContent = d.restructureUnfitReason; }   // 명확한 사유 노출
+    var fdn = $('lavFactDenseNote'); if (fdn) fdn.hidden = !(d.factDense && !unfit);   // 연도·수치 빼곡 → 재구성 시 사실오류 위험 안내
     if ($('lavDiagGrade')) $('lavDiagGrade').textContent = d.grade;
     if ($('lavDiagTitle')) $('lavDiagTitle').textContent = d.title;
     if ($('lavDiagDesc')) $('lavDiagDesc').textContent = d.desc;
@@ -117,19 +119,23 @@
     if (name === 'reduce' && window.lavToneChange) window.lavToneChange();   // 분량/근거 블록 동기화
   };
 
-  // 자소서·이력 유형(diagnose resumeLike) → 재구성(고급) 잠금 + 기본 피하기 강제. 비자소서면 원복.
+  // 재구성 부적합(자소서·생기부·탐구문·짧고추상) → 재구성(고급) 잠금 + 기본 피하기 강제. 적합하면 원복.
   function applyResumeLock() {
-    var isResume = !!(lastDiag && lastDiag.resumeLike);
+    var unfit = !!(lastDiag && (lastDiag.restructureUnfit || lastDiag.resumeLike));
     var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
     var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');
     var formalOpt = formalRadio ? formalRadio.closest('.lav-tone-opt') : null;
     if (formalRadio) {
-      formalRadio.disabled = isResume;
-      if (isResume && formalRadio.checked && blogRadio) blogRadio.checked = true;   // 고급 선택돼 있었으면 기본으로
+      formalRadio.disabled = unfit;
+      if (unfit && formalRadio.checked && blogRadio) blogRadio.checked = true;   // 고급 선택돼 있었으면 기본으로
     }
-    if (formalOpt) formalOpt.classList.toggle('is-locked', isResume);
+    if (formalOpt) formalOpt.classList.toggle('is-locked', unfit);
     var note = $('lavToneResumeNote');
-    if (note) note.hidden = !isResume;
+    if (note) {
+      note.hidden = !unfit;
+      var reason = lastDiag && lastDiag.restructureUnfitReason;   // 명확한 사유를 잠금 안내에 그대로 노출
+      if (unfit && reason) note.textContent = reason;
+    }
   }
 
   // 뒤로: 회피설정→방법선택, 방법선택→(보고서 경유면) 보고서, 보고서→입력화면(원문 유지)
