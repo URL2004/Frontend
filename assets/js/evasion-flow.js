@@ -329,9 +329,31 @@
         var why = document.createElement('em');
         why.textContent = p.reason || '';
         body.appendChild(snip); body.appendChild(why);
+        // ★ 문단별 코칭(2026-06-17): 학습된 프록시 예측태그 → 채울 경험 메모 칸 안내
+        if (p.coach && p.coach.length) {
+          var fset = [];
+          p.coach.forEach(function (c) { (c.fields || []).forEach(function (f) { if (fset.indexOf(f) < 0) fset.push(f); }); });
+          var pc = document.createElement('div');
+          pc.className = 'rp-coach';
+          pc.textContent = '💡 경험 메모 ' + fset.join(' · ') + ' 를 채우면 내려가요';
+          body.appendChild(pc);
+        }
         row.appendChild(chip); row.appendChild(body);
         list.appendChild(row);
       });
+      // ★ 글 전체 코칭 요약 배너 — 상위 예측태그 → 채울 메모 칸 + 이유
+      if (d.coach && d.coach.length) {
+        var bf = [];
+        d.coach.forEach(function (c) { (c.fields || []).forEach(function (f) { if (bf.indexOf(f) < 0) bf.push(f); }); });
+        var banner = document.createElement('div');
+        banner.className = 'lav-rep-coach';
+        var bt = document.createElement('b');
+        bt.textContent = '탐지율 내리려면 → 경험 메모 ' + bf.join(' · ');
+        var bw = document.createElement('span');
+        bw.textContent = ' 를 채우세요. (' + d.coach.map(function (c) { return c.why; }).join(' / ') + ')';
+        banner.appendChild(bt); banner.appendChild(bw);
+        list.insertBefore(banner, list.firstChild);
+      }
     }
     if ($('lavRepParaCount')) $('lavRepParaCount').textContent = '총 ' + ((d.paragraphs || []).length) + '문단';
 
