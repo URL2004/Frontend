@@ -285,10 +285,27 @@
            </div>
 
            <div class="lav-set-block">
-             <div class="lav-set-label"><strong>경험 메모</strong><span>선택 · 탐지율을 낮추는 가장 효과적인 방법</span></div>
-             <p style="margin:0 0 8px;font-size:12.5px;line-height:1.6;color:var(--text3);">AI가 쓴 글이 걸리는 가장 큰 이유는 <b style="color:var(--text2);">구체적인 경험·사례가 없기 때문</b>이에요. 글 주제와 관련해 <b style="color:var(--text2);">직접 겪은 일, 실제 사례, 정확히 아는 수치</b>를 적어주시면 그 내용을 글에 자연스럽게 녹여 더 사람이 쓴 글처럼 만들어 드려요. <b style="color:var(--text2);">적어주신 범위 안에서만</b> 사용하고, 없는 사실은 절대 지어내지 않아요.</p>
-             <textarea class="lav-memo" id="lavMemo" rows="4" placeholder="이렇게 적어주세요 —&#10;· 작년 여름 ○○기관에서 3주간 봉사하며 ~한 점을 직접 봤다&#10;· 우리 팀은 ~방식을 도입해 처리 시간을 절반으로 줄였다&#10;· 본문의 ○○% 수치는 내가 읽은 △△ 보고서 기준이다"></textarea>
-             <p style="margin:8px 0 0;font-size:12px;line-height:1.5;color:var(--text3);">예전엔 ‘기본 피하기(블로그)’에서만 됐지만, 이제 <b style="color:var(--text2);">‘고급 피하기(재구성)’</b>에서도 쓸 수 있어요. 한 줄에 한 가지씩 적으면 더 잘 녹아요.</p>
+             <div class="lav-set-label"><strong>경험 메모</strong><span>선택 · 탐지율 낮추는 1순위</span></div>
+             <p class="lav-memo-intro">AI 글이 걸리는 가장 큰 이유는 <b>구체적인 경험·사례가 없어서</b>예요. 아래 항목 중 <b>아는 것만</b> 적으면 글에 자연스럽게 녹여 더 사람 글처럼 만들어 드려요. <b>적어주신 범위 안에서만</b> 쓰고, 없는 사실은 절대 지어내지 않아요.</p>
+
+             <div class="lav-memo-field">
+               <div class="lav-memo-flabel is-key"><b>① 직접 겪은 일·경험</b><span>가장 강력 — AI는 경험이 없거든요</span></div>
+               <textarea class="lav-memo" id="lavMemoExp" rows="2" placeholder="예) 작년 여름 ○○기관에서 3주간 봉사하며 ~한 점을 직접 봤다"></textarea>
+             </div>
+             <div class="lav-memo-field">
+               <div class="lav-memo-flabel"><b>② 구체적인 사례·예시</b><span>‘구체적 근거 부족’ 신호를 낮춰요</span></div>
+               <textarea class="lav-memo" id="lavMemoCase" rows="2" placeholder="예) 우리 팀은 ~방식을 도입해 처리 시간을 절반으로 줄였다"></textarea>
+             </div>
+             <div class="lav-memo-field">
+               <div class="lav-memo-flabel"><b>③ 정확히 아는 수치·출처</b><span>숫자가 들어가면 의심이 크게 내려가요</span></div>
+               <textarea class="lav-memo" id="lavMemoNum" rows="2" placeholder="예) 본문의 ○○% 수치는 내가 읽은 △△ 보고서 기준이다"></textarea>
+             </div>
+             <div class="lav-memo-field">
+               <div class="lav-memo-flabel"><b>④ 내 생각·입장</b><span>‘무견해·판단 회피’ 신호를 없애요</span></div>
+               <textarea class="lav-memo" id="lavMemoView" rows="2" placeholder="예) 나는 이 문제의 핵심이 ~라고 본다 / ~점이 가장 중요하다고 생각한다"></textarea>
+             </div>
+
+             <p class="lav-memo-foot">아는 칸만 채우면 돼요 — 비워도 진행됩니다. 한 줄에 한 가지씩 적으면 더 잘 녹아요.</p>
            </div>
 
            <!-- 근거 보강은 '과제 톤 지키며 피하기'(재구성) 전용 — 블로그 말투에선 비활성(기본 어투가 blog라 초기 disabled) -->

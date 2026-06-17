@@ -429,15 +429,26 @@
     if (note) note.hidden = !on;
   };
 
+  // ★ 경험 메모 4칸(직접경험·사례·수치·내생각) → 한 줄에 한 가지씩 합쳐 memo 문자열로(엔진은 줄 단위로 녹임).
+  var MEMO_FIELDS = ['lavMemoExp', 'lavMemoCase', 'lavMemoNum', 'lavMemoView'];
+  function collectMemo() {
+    var lines = [];
+    MEMO_FIELDS.forEach(function (id) {
+      var el = $(id);
+      if (el && el.value.trim()) {
+        el.value.split(/\n+/).forEach(function (ln) { ln = ln.trim(); if (ln) lines.push(ln); });
+      }
+    });
+    return lines.join('\n');
+  }
   function currentSettings() {
     var tone = document.querySelector('input[name="lavTone"]:checked');
     var len = document.querySelector('input[name="lavLen"]:checked');
-    var memo = $('lavMemo');
     var ev = $('lavEvidence');
     return {
       tone: tone ? tone.value : 'blog',
       length: len ? len.value : 'compact',
-      memo: memo && memo.value.trim() ? memo.value.trim() : '',
+      memo: collectMemo(),
       evidence: !!(ev && ev.checked)
     };
   }
@@ -1110,7 +1121,7 @@
   // 경험 메모 넣고 다시 — 설정 화면으로 돌아가 메모칸에 포커스(원문은 lavInput에 유지 → 재제출 시 새 작업)
   window.lavBlockedRetryMemo = function () {
     show('reduce');
-    var memo = $('lavMemo');
+    var memo = $('lavMemoExp');
     if (memo) { try { memo.focus(); } catch (e) { } try { memo.scrollIntoView({ block: 'center' }); } catch (e) { } }
   };
   // 근거 보강 켜고 다시 — 고급(formal)으로 전환 + 근거 토글 ON
