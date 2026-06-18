@@ -512,19 +512,34 @@
   };
   function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   var _coachRenderGen = 0;
+  function lavStartBtn() { return $('lavConfirmStartBtn'); }
+  function lavStartBtnState(loading) {   // 픽 로딩 중엔 시작 잠금(빈 창에서 그냥 넘어가는 것 방지)
+    var b = lavStartBtn(); if (!b) return;
+    b.disabled = !!loading;
+    b.textContent = loading ? '추천 불러오는 중…' : '시작하기';
+  }
   // 시작 확인 모달에 추천 픽(입장·경험) 체크박스 렌더 — 자동 코칭 ON이면(기본/고급 둘 다). 관점은 기본 체크, 경험은 해제.
   //   ★2026-06-18: 해요체 캐주얼 글(기본 피하기)에서 자동코칭 픽이 안 뜨던 문제 — 'formal 전용' 게이트 제거.
   //   메모 경로(collectMemo→memo)는 blog(runShortJob)·formal 둘 다 전송하므로 픽이 양쪽에 적용된다.
+  //   ★★2026-06-18(사장님 지적): 확인창이 먼저 뜨고 픽이 ~9초 뒤 채워져, 그 빈 순간에 사용자가 "코칭 안 되네" 하고
+  //   바로 시작을 눌러 픽을 건너뛴다. → 픽 로딩 동안 '시작하기' 버튼을 잠그고(추천 불러오는 중…), 픽이 뜨거나
+  //   실패/없음·15초 타임아웃 시 풀어준다. 프리페치(진단단계)가 끝나 있으면 즉시 풀려 체감 지연 거의 없음.
   function renderCoachPicks(s) {
     var wrap = $('lavCoachPicks'), list = $('lavCoachPicksList');
-    if (!wrap || !list) return;
-    if (!s.autoCoach) { wrap.hidden = true; return; }
+    if (!wrap || !list) { lavStartBtnState(false); return; }
+    if (!s.autoCoach) { wrap.hidden = true; lavStartBtnState(false); return; }
     wrap.hidden = false;
-    list.innerHTML = '<div class="lav-coach-picks-loading">추천 불러오는 중…</div>';
+    list.innerHTML = '<div class="lav-coach-picks-loading">당신에게 맞는 관점·경험을 찾고 있어요…</div>';
+    lavStartBtnState(true);   // 픽 뜰 때까지 시작 잠금
     var src = $('lavInput'); var text = src ? src.value : '';
     var gen = ++_coachRenderGen;
+    var done = false;
+    var unlock = function () { if (gen === _coachRenderGen) lavStartBtnState(false); };
+    setTimeout(function () { if (!done) unlock(); }, 15000);   // 안전: 15초 넘으면 잠금 해제(무한 잠금 방지)
     fetchCoach(text).then(function (d) {
+      done = true;
       if (gen !== _coachRenderGen) return;   // 더 최신 요청 있으면 무시
+      lavStartBtnState(false);               // 로딩 끝 → 시작 가능
       var items = ((d.stances || []).map(function (x) { return { text: x.text, tag: '관점', pre: true }; }))
         .concat((d.experiences || []).map(function (x) { return { text: x.text, tag: '경험', pre: false }; }));
       if (!items.length) { wrap.hidden = true; return; }
@@ -838,6 +853,7 @@
     if (!text) { if (src) src.focus(); return; }
     pendingPolish = true;
     var cp = $('lavCoachPicks'); if (cp) cp.hidden = true;   // 다듬기(최소수정)는 코칭 픽 없음 — 모달 재사용 시 직전 잔여 숨김
+    lavStartBtnState(false);   // 코칭 잠금이 남아있을 수 있으니 시작 버튼 활성화 보장
     var ttl = document.querySelector('.lav-confirm-title');
     if (ttl) ttl.textContent = '과제 어투로 다듬을까요?';
     var sum = $('lavConfirmSummary');
