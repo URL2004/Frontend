@@ -12951,6 +12951,21 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 .lav-confirm-summary li + li{border-top:1px solid #f3f4fa;}
 .lav-confirm-summary li span{color:#8a91a3;font-weight:600;flex:0 0 auto;}
 .lav-confirm-summary li b{color:#1a1f2e;font-weight:700;text-align:right;}
+/* 자동 코칭 추천 픽(시작 직전 선택) */
+.lav-coach-picks{margin:14px 0 4px;}
+.lav-coach-picks-head{display:flex;flex-direction:column;gap:2px;margin-bottom:9px;}
+.lav-coach-picks-head b{font-size:13.5px;color:#1a1f2e;font-weight:700;}
+.lav-coach-picks-head span{font-size:11.5px;color:#8a91a3;}
+.lav-coach-picks-list{display:flex;flex-direction:column;gap:7px;max-height:240px;overflow-y:auto;}
+.lav-coach-picks-loading{font-size:12.5px;color:#8a91a3;padding:8px 2px;}
+.lav-pick{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border:1px solid #e7e9f2;border-radius:11px;cursor:pointer;transition:border-color .12s,background .12s;}
+.lav-pick:has(input:checked){border-color:var(--gp-accent,#6c5ce7);background:#f6f5ff;}
+.lav-pick-cb{margin-top:2px;width:16px;height:16px;flex:0 0 auto;accent-color:var(--gp-accent,#6c5ce7);cursor:pointer;}
+.lav-pick-tag{flex:0 0 auto;font-size:10.5px;font-weight:700;color:#6c5ce7;background:#efe9ff;border-radius:5px;padding:2px 6px;margin-top:1px;}
+.lav-pick-text{font-size:12.5px;line-height:1.5;color:#2a2f3e;}
+/* 자동 ↔ 직접 메모 토글 안내 */
+.lav-memo-toggle-hint{margin:8px 0 0;font-size:12px;color:#8a91a3;}
+.lav-linkbtn{background:none;border:none;padding:0;color:#6c5ce7;font-weight:700;font-size:12px;cursor:pointer;text-decoration:underline;font-family:inherit;}
 /* 비용: 크레딧을 주인공으로 */
 .lav-confirm-cost{
  display:flex;

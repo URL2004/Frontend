@@ -284,23 +284,23 @@
              </div>
            </div>
 
-           <!-- 자동 코칭(고급 전용·기본 ON) — 글의 관점을 1인칭으로 자동으로 살려 탐지율 인하 '확률'을 높임. 무날조(입장만 자동, 경험 자동생성 안 함). -->
+           <!-- 경험·관점 입력: 자동 코칭(추천 받아 고르기) ↔ 직접 메모. 자동 ON이면 메모칸 숨김(가독성). -->
            <div class="lav-set-block ev-off" id="lavAutoCoachBlock">
              <label class="lav-toggle">
-               <input type="checkbox" id="lavAutoCoach" checked disabled>
+               <input type="checkbox" id="lavAutoCoach" checked disabled onchange="lavAutoCoachChange()">
                <span class="lav-toggle-track" aria-hidden="true"><i></i></span>
                <span class="lav-toggle-text">
                  <b>자동 코칭 · 추천</b>
-                 <i>메모를 직접 안 써도 돼요. 글이 이미 말하는 핵심을 <b>당신의 관점("나는 ~라고 본다")으로 자동으로 살려</b> 넣어 줍니다.<span class="hl">★ AI가 가장 자주 걸리는 ‘간접화법·무견해’ 신호를 줄여 탐지율이 내려갈 <b>확률을 높여요</b>(확정 아님 — 글에 따라 변동).</span></i>
+                 <i>시작할 때 <b>맞는 관점·경험을 추천</b>해드려요 — 고르기만 하면 글에 녹여 <span class="hl">탐지율 내려갈 확률을 높여요</span>. 없는 경험은 안 만들어요.</i>
                </span>
              </label>
-             <p class="lav-evidence-note" id="lavAutoCoachNote"><b>왜 효과가 있나요?</b> AI 글은 ‘누구 생각인지 안 드러나는 비인칭 서술’ 때문에 걸려요. 글의 논리를 당신 목소리로 바꾸면 그 신호가 줄어듭니다. 글에 <b>이미 있는 논리만</b> 1인칭으로 살리는 거라 <b>없는 사실·경험은 만들지 않아요</b>. 실제 겪은 구체 경험을 아래 메모칸에 직접 적으면 더 내려가요.</p>
+             <p class="lav-memo-toggle-hint" id="lavMemoToggleHint">직접 쓰고 싶으면 <button type="button" class="lav-linkbtn" onclick="lavMemoManual()">경험 메모 직접 입력</button></p>
              <p class="lav-evidence-hint" id="lavAutoCoachHint" hidden>‘고급 피하기’를 선택하면 켤 수 있어요.</p>
            </div>
 
-           <div class="lav-set-block">
-             <div class="lav-set-label"><strong>경험 메모</strong><span>선택 · 탐지율 낮추는 1순위</span></div>
-             <p class="lav-memo-intro">AI 글이 걸리는 가장 큰 이유는 <b>구체적인 경험·사례가 없어서</b>예요. 아래 항목 중 <b>아는 것만</b> 적으면 글에 자연스럽게 녹여 더 사람 글처럼 만들어 드려요. <b>적어주신 범위 안에서만</b> 쓰고, 없는 사실은 절대 지어내지 않아요.</p>
+           <div class="lav-set-block" id="lavMemoBlock" hidden>
+             <div class="lav-set-label"><strong>경험 메모</strong><span>아는 칸만 — 비워도 진행</span></div>
+             <p class="lav-memo-intro">아는 칸만 적으면 글에 자연스럽게 녹여요. <b>적어주신 범위 안에서만</b> 쓰고, 없는 사실은 지어내지 않아요.</p>
 
              <div class="lav-memo-field">
                <div class="lav-memo-flabel is-key"><b>① 직접 겪은 일·경험</b><span>가장 강력 — AI는 경험이 없거든요</span></div>

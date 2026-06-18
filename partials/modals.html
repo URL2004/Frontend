@@ -114,6 +114,11 @@
   <div class="lav-confirm-card">
     <button type="button" class="lav-confirm-x" onclick="lavCloseConfirm()" aria-label="닫기">×</button>
     <strong class="lav-confirm-title">이 설정으로 시작할까요?</strong>
+    <!-- 자동 코칭 추천 픽(시작 직전 선택) — 자동 코칭 ON일 때만 표시 -->
+    <div class="lav-coach-picks" id="lavCoachPicks" hidden>
+      <div class="lav-coach-picks-head"><b>맞는 것만 골라주세요</b><span>체크한 것만 글에 들어가요 · 없는 경험은 만들지 않아요</span></div>
+      <div class="lav-coach-picks-list" id="lavCoachPicksList"><div class="lav-coach-picks-loading">추천 불러오는 중…</div></div>
+    </div>
     <ul class="lav-confirm-summary" id="lavConfirmSummary"></ul>
     <div class="lav-confirm-cost">
       <div class="lav-confirm-cost-main"><span>예상 크레딧</span><b id="lavConfirmCredit">8 크레딧</b></div>

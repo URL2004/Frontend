@@ -450,6 +450,7 @@
     if (acBlock) acBlock.classList.toggle('ev-off', !isFormal);
     var acHint = $('lavAutoCoachHint');
     if (acHint) acHint.hidden = isFormal;
+    window.lavAutoCoachChange();   // 메모칸 가시성 동기화(자동 ON=숨김 / blog·자동OFF=노출) + 형식이면 후보 프리페치
   };
 
   window.lavEvidenceChange = function () {
@@ -468,7 +469,65 @@
         el.value.split(/\n+/).forEach(function (ln) { ln = ln.trim(); if (ln) lines.push(ln); });
       }
     });
+    // 자동 코칭 모달에서 체크한 추천 픽(입장·경험)도 memo로 합류 — 체크=저자 승인(무날조)
+    document.querySelectorAll('#lavCoachPicksList input.lav-pick-cb:checked').forEach(function (cb) {
+      var t = (cb.getAttribute('data-text') || '').trim();
+      if (t && lines.indexOf(t) < 0) lines.push(t);
+    });
     return lines.join('\n');
+  }
+
+  // ── 자동 코칭 후보 fetch(캐시·프리페치). /coach-suggest는 LLM 1콜(~10초)이라 시작 모달 전에 미리 받아둔다.
+  var _coachCache = {}, _coachPending = {};
+  function coachKey(t) { return (t || '').trim(); }
+  function fetchCoach(text) {
+    var key = coachKey(text);
+    if (!key || key.replace(/\s/g, '').length < 80) return Promise.resolve({ stances: [], experiences: [] });
+    if (_coachCache[key]) return Promise.resolve(_coachCache[key]);
+    if (_coachPending[key]) return _coachPending[key];
+    var p = fetch(window.apiUrl('/coach-suggest'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      var out = (d && d.ok) ? { stances: d.stances || [], experiences: d.experiences || [] } : { stances: [], experiences: [] };
+      _coachCache[key] = out; delete _coachPending[key]; return out;
+    }).catch(function () { delete _coachPending[key]; return { stances: [], experiences: [] }; });
+    _coachPending[key] = p;
+    return p;
+  }
+  // 자동 코칭 ON ↔ 직접 메모칸 토글(가독성: 둘 중 하나만 노출)
+  window.lavAutoCoachChange = function () {
+    var ac = $('lavAutoCoach');
+    var on = !!(ac && ac.checked && !ac.disabled);
+    var memo = $('lavMemoBlock'); if (memo) memo.hidden = on;          // 자동 ON → 메모칸 숨김
+    var hint = $('lavMemoToggleHint'); if (hint) hint.hidden = !on;    // 자동 ON일 때만 '직접 입력' 링크
+    if (on) { var src = $('lavInput'); if (src) fetchCoach(src.value); }  // 미리 후보 받아두기(모달 즉시 표시)
+  };
+  window.lavMemoManual = function () {   // '경험 메모 직접 입력' → 자동 끄고 메모칸 노출
+    var ac = $('lavAutoCoach');
+    if (ac && !ac.disabled) { ac.checked = false; window.lavAutoCoachChange(); }
+  };
+  function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var _coachRenderGen = 0;
+  // 시작 확인 모달에 추천 픽(입장·경험) 체크박스 렌더 — 자동 코칭 ON(고급)일 때만. 관점은 기본 체크, 경험은 해제.
+  function renderCoachPicks(s) {
+    var wrap = $('lavCoachPicks'), list = $('lavCoachPicksList');
+    if (!wrap || !list) return;
+    if (!(s.tone === 'formal' && s.autoCoach)) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    list.innerHTML = '<div class="lav-coach-picks-loading">추천 불러오는 중…</div>';
+    var src = $('lavInput'); var text = src ? src.value : '';
+    var gen = ++_coachRenderGen;
+    fetchCoach(text).then(function (d) {
+      if (gen !== _coachRenderGen) return;   // 더 최신 요청 있으면 무시
+      var items = ((d.stances || []).map(function (x) { return { text: x.text, tag: '관점', pre: true }; }))
+        .concat((d.experiences || []).map(function (x) { return { text: x.text, tag: '경험', pre: false }; }));
+      if (!items.length) { wrap.hidden = true; return; }
+      list.innerHTML = items.map(function (it) {
+        return '<label class="lav-pick"><input type="checkbox" class="lav-pick-cb"' + (it.pre ? ' checked' : '') +
+          ' data-text="' + escHtml(it.text) + '"><span class="lav-pick-tag">' + it.tag + '</span><span class="lav-pick-text">' + escHtml(it.text) + '</span></label>';
+      }).join('');
+    });
   }
   function currentSettings() {
     var tone = document.querySelector('input[name="lavTone"]:checked');
@@ -489,13 +548,14 @@
     var ttl = document.querySelector('.lav-confirm-title');
     if (ttl) ttl.textContent = '이 설정으로 시작할까요?';
     var s = currentSettings();
+    renderCoachPicks(s);   // 자동 코칭 ON(고급)이면 추천 픽 체크박스 표시(시작 직전 선택)
     var sum = $('lavConfirmSummary');
     if (sum) {
       var rows = [];
       rows.push(['방식', s.tone === 'formal' ? '고급 피하기 — 논문·격식체' : '기본 피하기 — 블로그·SNS·과제']);
       if (s.tone === 'formal') rows.push(['분량', s.length === 'keep' ? '분량 유지' : '컴팩트(~60%)']);
-      if (s.tone === 'formal') rows.push(['자동 코칭', s.autoCoach ? '켬 — 글의 관점을 살려 탐지율↓ 확률을 높여요' : '끔']);
-      rows.push(['경험 메모', s.memo ? '입력함 · 글에 자연스럽게 녹여요' : '없음 (적으면 탐지율↓)']);
+      // 자동 코칭 ON이면 위 추천 픽 섹션이 입력을 대신함 → 메모 행 생략(중복·혼동 방지)
+      if (!(s.tone === 'formal' && s.autoCoach)) rows.push(['경험 메모', s.memo ? '입력함 · 글에 자연스럽게 녹여요' : '없음 (적으면 탐지율↓)']);
       rows.push(['근거 보강', s.tone === 'formal' ? (s.evidence ? '켬 — 검색 후 검수·승인' : '끔') : '기본 피하기에선 사용 안 함']);
       sum.innerHTML = rows.map(function (r) {
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
@@ -1248,7 +1308,7 @@
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, idToken: idToken, evidence: !!s.evidence, memo: s.memo || '', autoCoach: !!s.autoCoach, lang: evDetectLang(text), length: s.length || 'keep' })
+          body: JSON.stringify({ text: text, idToken: idToken, evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: s.length || 'keep' })
         }).then(parseTransformStart);
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
