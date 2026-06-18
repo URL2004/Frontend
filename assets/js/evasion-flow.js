@@ -97,6 +97,9 @@
     var src = $('lavInput');
     var text = src ? src.value : '';
     cameFromReport = false;   // 진단 경유 동선 — 설정 화면 뒤로가기는 방법선택으로
+    // ★ 코칭 픽 조기 프리페치(2026-06-18): /coach-suggest가 ~9초 걸려, 확인창에서야 받으면 "불러오는 중"이 길어
+    //   사용자가 못 보고 시작을 누른다. 진단 단계(가장 이른 시점)에 미리 받아 캐시 → 확인창 열 땐 즉시 표시.
+    try { if (text && text.trim().replace(/\s/g, '').length >= 80) fetchCoach(text); } catch (e) { }
     show('analyzing');
     var minWait = new Promise(function (r) { setTimeout(r, 900); });   // 스피너 최소 노출(즉답이면 화면이 깜빡임)
     console.info('[evasion] API_BASE =', window.apiBase ? window.apiBase() : '?');
