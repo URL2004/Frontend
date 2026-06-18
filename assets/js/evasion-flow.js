@@ -443,6 +443,13 @@
     if (evBlock) evBlock.classList.toggle('ev-off', !isFormal);
     var evHint = $('lavEvidenceHint');
     if (evHint) evHint.hidden = isFormal;
+    // 자동 코칭도 재구성(고급) 전용 — 기본 ON 유지, 기본 피하기에선 잠금·시각 비활성
+    var ac = $('lavAutoCoach');
+    if (ac) ac.disabled = !isFormal;
+    var acBlock = $('lavAutoCoachBlock');
+    if (acBlock) acBlock.classList.toggle('ev-off', !isFormal);
+    var acHint = $('lavAutoCoachHint');
+    if (acHint) acHint.hidden = isFormal;
   };
 
   window.lavEvidenceChange = function () {
@@ -467,11 +474,13 @@
     var tone = document.querySelector('input[name="lavTone"]:checked');
     var len = document.querySelector('input[name="lavLen"]:checked');
     var ev = $('lavEvidence');
+    var ac = $('lavAutoCoach');
     return {
       tone: tone ? tone.value : 'blog',
       length: len ? len.value : 'compact',
       memo: collectMemo(),
-      evidence: !!(ev && ev.checked)
+      evidence: !!(ev && ev.checked),
+      autoCoach: !!(ac && ac.checked && !ac.disabled)   // 자동 코칭(재구성 전용·기본 ON) — 시작 시 입장 자동 도출
     };
   }
 
@@ -485,6 +494,7 @@
       var rows = [];
       rows.push(['방식', s.tone === 'formal' ? '고급 피하기 — 논문·격식체' : '기본 피하기 — 블로그·SNS·과제']);
       if (s.tone === 'formal') rows.push(['분량', s.length === 'keep' ? '분량 유지' : '컴팩트(~60%)']);
+      if (s.tone === 'formal') rows.push(['자동 코칭', s.autoCoach ? '켬 — 글의 관점을 살려 탐지율↓ 확률을 높여요' : '끔']);
       rows.push(['경험 메모', s.memo ? '입력함 · 글에 자연스럽게 녹여요' : '없음 (적으면 탐지율↓)']);
       rows.push(['근거 보강', s.tone === 'formal' ? (s.evidence ? '켬 — 검색 후 검수·승인' : '끔') : '기본 피하기에선 사용 안 함']);
       sum.innerHTML = rows.map(function (r) {
@@ -1238,7 +1248,7 @@
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, idToken: idToken, evidence: !!s.evidence, memo: s.memo || '', lang: evDetectLang(text), length: s.length || 'keep' })
+          body: JSON.stringify({ text: text, idToken: idToken, evidence: !!s.evidence, memo: s.memo || '', autoCoach: !!s.autoCoach, lang: evDetectLang(text), length: s.length || 'keep' })
         }).then(parseTransformStart);
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
