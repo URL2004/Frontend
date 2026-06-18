@@ -2468,7 +2468,9 @@ window.loadAdminRefundList = async () =>{
  let html = '<div class="gp-admin-refund-list">';
  for (const item of items) {
  const o = item.data;
- const date = o.refundRequestedAt ? new Date(o.refundRequestedAt.toDate()).toLocaleString('ko-KR') : '';
+ const requestedDate = o.refundRequestedAt ? new Date(o.refundRequestedAt.toDate()).toLocaleString('ko-KR') : '';
+ const paidMs = o.createdAt?.toMillis?.() || o.approvedAt?.toMillis?.() || o.requestedAt?.toMillis?.() || 0;
+ const paidDate = paidMs ? new Date(paidMs).toLocaleString('ko-KR') : '';
  let userEmail = o.uid;
  let userCredits = 0;
  try {
@@ -2497,7 +2499,8 @@ window.loadAdminRefundList = async () =>{
  <div class="gp-admin-refund-top">
  <div class="gp-admin-refund-who">
  <strong>${escapeHtml(userEmail)}<span class="gp-admin-refund-tag">${isSub ? '구독' : '크레딧'}</span></strong>
- <span>${(o.amount||0).toLocaleString()}원 · ${itemLabel} · ${date}</span>
+ <span>${(o.amount||0).toLocaleString()}원 · ${itemLabel}</span>
+ <span>결제 ${escapeHtml(paidDate || '-')} · 환불요청 ${escapeHtml(requestedDate || '-')}</span>
  </div>
  <div class="gp-admin-refund-actions">
  <button class="gp-admin-btn-approve" onclick="window.approveRefund('${item.id}','${item.kind}')">승인</button>
