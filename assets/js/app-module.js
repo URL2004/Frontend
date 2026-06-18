@@ -2683,6 +2683,63 @@ function adminSetMessage(id, text, type) {
  el.style.color = type === 'error' ? 'var(--red)' : type === 'success' ? 'var(--green)' : 'var(--text3)';
 }
 
+function adminRenderCreditAudit(audit) {
+ if (!audit) return '';
+ const paidCredits = adminNumber(audit.paidOrphanDebitCredits);
+ const paidCount = adminNumber(audit.paidOrphanDebitCount);
+ const prePaidCredits = adminNumber(audit.prePaidOrphanDebitCredits);
+ const orphanDebits = Array.isArray(audit.orphanDebits) ? audit.orphanDebits : [];
+ const hasPaidIssue = paidCredits > 0;
+ const rows = orphanDebits.slice(0, 5).map(d => {
+  const scope = d.isAfterFirstPaid ? '유료' : '결제 전';
+  const dup = d.duplicateHint ? ' · 중복 의심' : '';
+  return `
+   <div class="gp-admin-audit-row">
+    <span>${escapeHtml(adminDateText(d.createdAtMs))}</span>
+    <strong>${escapeHtml(adminHistoryLabel(d))}</strong>
+    <b>-${adminNumber(d.used).toLocaleString('ko-KR')}크레딧</b>
+    <em>${scope}${dup}</em>
+   </div>`;
+ }).join('');
+ const restoreBtn = hasPaidIssue
+  ? `<button type="button" class="gp-admin-mini-btn" onclick="adminPrefillCreditRestore(${paidCredits})">복구 입력 채우기</button>`
+  : '';
+ const subText = hasPaidIssue
+  ? `결제 이후 차감 ${paidCount.toLocaleString('ko-KR')}건이 저장된 결과와 매칭되지 않습니다.`
+  : '결제 이후 결과 없는 차감은 발견되지 않았습니다.';
+ const preText = prePaidCredits > 0
+  ? `<span>결제 전 미매칭 ${prePaidCredits.toLocaleString('ko-KR')}크레딧 별도</span>`
+  : '';
+ const metaHtml = `${preText}${restoreBtn}`.trim();
+ return `
+  <div class="gp-admin-audit ${hasPaidIssue ? 'is-warn' : 'is-ok'}">
+   <div class="gp-admin-audit-head">
+    <div>
+     <strong>${hasPaidIssue ? '결과 없는 유료 차감' : '차감-결과 대조 정상'}</strong>
+     <span>${escapeHtml(subText)}</span>
+    </div>
+    <div class="gp-admin-audit-total">
+     <b>${paidCredits.toLocaleString('ko-KR')}</b><span>크레딧</span>
+    </div>
+   </div>
+   ${metaHtml ? `<div class="gp-admin-audit-meta">${metaHtml}</div>` : ''}
+   ${rows ? `<div class="gp-admin-audit-rows">${rows}</div>` : ''}
+  </div>`;
+}
+
+window.adminPrefillCreditRestore = function(credits) {
+ const amount = adminNumber(credits);
+ if (amount <= 0) return;
+ const signEl = document.getElementById('adminCreditSign');
+ const amountEl = document.getElementById('adminCreditAmount');
+ const reasonEl = document.getElementById('adminCreditReason');
+ if (signEl) signEl.value = '1';
+ if (amountEl) amountEl.value = String(amount);
+ if (reasonEl) reasonEl.value = `결과 저장 없는 유료 차감 ${amount.toLocaleString('ko-KR')}크레딧 복구`;
+ adminSetMessage('adminCreditAdjustMsg', '복구 수량을 채웠습니다. 사유 확인 후 적용하세요.', 'info');
+ if (amountEl) amountEl.focus();
+};
+
 function adminRenderUserBundle(data) {
  const user = data.user || {};
  const resultEl = document.getElementById('adminUserResult');
@@ -2694,6 +2751,7 @@ function adminRenderUserBundle(data) {
  const sub = user.subscription || null;
  const coupon = user.coupon || null;
  const hist = data.creditHistory || [];
+ const auditHtml = adminRenderCreditAudit(data.creditAudit);
  const historyHtml = hist.length
   ? hist.slice(0, 6).map(h => `
     <div class="gp-admin-ledger-row">
@@ -2722,6 +2780,7 @@ function adminRenderUserBundle(data) {
       <div class="gp-admin-fig"><span>구독</span><strong>${sub ? escapeHtml((SUB_TIER_LABELS[sub.tier] || sub.tier || '-')) : '없음'}</strong></div>
       <div class="gp-admin-fig"><span>쿠폰 잔여</span><strong>${coupon ? `${adminNumber(coupon.remaining).toLocaleString('ko-KR')} / ${adminNumber(coupon.granted).toLocaleString('ko-KR')}` : '없음'}</strong></div>
     </div>
+    ${auditHtml}
     <div>
       <div class="gp-admin-ledger-head">최근 크레딧 내역</div>
       <div class="gp-admin-ledger">${historyHtml}</div>

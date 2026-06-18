@@ -16236,6 +16236,24 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-ledger-row span{display:block;color:var(--admin-text3);margin-top:1px;font-size:11px;}
 .gp-admin-ledger-row > div:last-child{text-align:right;font-weight:800;}
 
+/* 차감-결과 대조 */
+.gp-admin-audit{border:1px solid var(--admin-border);border-radius:8px;padding:10px 12px;background:var(--admin-soft);display:flex;flex-direction:column;gap:8px;}
+.gp-admin-audit.is-warn{border-color:#efc8a0;background:#fff8ef;}
+.gp-admin-audit.is-ok{border-color:#dbe6d4;background:#f7fbf5;}
+.gp-admin-audit-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.gp-admin-audit-head strong{display:block;font-size:13px;color:var(--admin-text);font-weight:800;}
+.gp-admin-audit-head span{display:block;margin-top:2px;font-size:11px;color:var(--admin-text3);}
+.gp-admin-audit-total{text-align:right;white-space:nowrap;}
+.gp-admin-audit-total b{display:block;font-size:18px;line-height:1;color:var(--admin-red);}
+.gp-admin-audit.is-ok .gp-admin-audit-total b{color:var(--admin-green);}
+.gp-admin-audit-total span{font-size:10px;color:var(--admin-text3);}
+.gp-admin-audit-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:11px;color:var(--admin-text3);}
+.gp-admin-audit-rows{border-top:1px solid var(--admin-line);padding-top:6px;display:flex;flex-direction:column;gap:4px;}
+.gp-admin-audit-row{display:grid;grid-template-columns:minmax(110px,1fr) minmax(80px,1.2fr) auto auto;align-items:center;gap:8px;font-size:11px;}
+.gp-admin-audit-row span,.gp-admin-audit-row em{color:var(--admin-text3);font-style:normal;}
+.gp-admin-audit-row strong{color:var(--admin-text2);font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gp-admin-audit-row b{color:var(--admin-red);font-weight:800;white-space:nowrap;}
+
 /* 결제건/환불 */
 .gp-admin-order-list{display:flex;flex-direction:column;gap:8px;}
 .gp-admin-order{border:1px solid var(--admin-border);border-radius:8px;overflow:hidden;}
@@ -16359,6 +16377,11 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
  /* 크레딧 조정: 부호+수량 한 줄, 적용 버튼은 아래 전체폭 */
  .gp-admin-adjust-row{grid-template-columns:auto minmax(0,1fr);}
  .gp-admin-adjust-row .gp-admin-primary{grid-column:1 / -1;}
+ /* 차감-결과 대조 */
+ .gp-admin-audit-head{flex-direction:column;gap:6px;}
+ .gp-admin-audit-total{text-align:left;}
+ .gp-admin-audit-row{grid-template-columns:1fr auto;}
+ .gp-admin-audit-row span,.gp-admin-audit-row em{grid-column:1 / -1;}
  /* 결제건: 정보 위, 버튼 아래 전체폭 */
  .gp-admin-order-row{flex-direction:column;align-items:stretch;gap:8px;}
  .gp-admin-order-row .gp-admin-danger{width:100%;justify-content:center;}
