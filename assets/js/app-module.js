@@ -3024,6 +3024,7 @@ window.adminSearchUser = async function(quiet) {
   window._adminSelectedUser = data.user;
   if (input) input.value = data.user.uid || raw;
   adminSetMessage('adminCreditAdjustMsg', '', 'info');
+  adminSetMessage('adminUserNotifyMsg', '', 'info');
   adminRenderUserBundle(data);
   window.loadAdminUserLog(data.user.uid);
   if (!quiet && window.gpTrack) window.gpTrack('admin_user_search');
@@ -3163,7 +3164,7 @@ window.adminCopyText = function(btn) {
  }).catch(() => alert('복사 실패'));
 };
 
-// ===== 관리자: 작업 모니터 (transformJobs) =====
+// ===== 관리자: 작업 모니터 (transformJobArchive) =====
 const ADMIN_JOB_STATUS = {
  queued: { l: '대기 중', c: 'wait' },
  running: { l: '진행 중', c: 'run' },
@@ -3173,16 +3174,33 @@ const ADMIN_JOB_STATUS = {
  blocked: { l: '차단', c: 'err' },
  cancelled: { l: '취소', c: 'muted' }
 };
+window._adminJobsPager = { key: '', page: 0, cursors: [0], nextCursorMs: null, hasMore: false };
 
-window.loadAdminJobs = async function() {
+window.loadAdminJobs = async function(direction) {
  if (!window.isAdmin()) return;
  const el = document.getElementById('adminJobsBody');
  if (!el) return;
  const filter = document.getElementById('adminJobsFilter')?.value || 'issues';
  const hours = parseInt(document.getElementById('adminJobsHours')?.value, 10) || 24;
+ const key = `${filter}|${hours}`;
+ const prevState = window._adminJobsPager || { key: '', page: 0, cursors: [0] };
+ let cursors = prevState.key === key ? (prevState.cursors || [0]).slice() : [0];
+ let page = prevState.key === key ? adminNumber(prevState.page) : 0;
+ if (direction === 'next') {
+  if (!prevState.nextCursorMs) return;
+  page += 1;
+  cursors[page] = prevState.nextCursorMs;
+ } else if (direction === 'prev') {
+  page = Math.max(0, page - 1);
+ } else {
+  page = 0;
+  cursors = [0];
+ }
+ const cursorMs = cursors[page] || 0;
  el.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
  try {
-  const data = await adminPost('/admin/jobs', { filter, hours, limit: 200 });
+  const data = await adminPost('/admin/jobs', { filter, hours, limit: 25, cursorMs });
+  window._adminJobsPager = { key, page, cursors, nextCursorMs: data.nextCursorMs || null, hasMore: !!data.hasMore };
   window._adminJobs = data;
   renderAdminJobs(data);
  } catch (e) {
@@ -3190,13 +3208,25 @@ window.loadAdminJobs = async function() {
  }
 };
 
+function adminJobsPagerHtml(data) {
+ const st = window._adminJobsPager || { page: 0, hasMore: false };
+ if (!st.page && !data.hasMore) return '';
+ return `
+  <div class="gp-admin-pager gp-admin-jobs-pager">
+    <button type="button" onclick="loadAdminJobs('prev')" ${st.page <= 0 ? 'disabled' : ''}>이전</button>
+    <span>${adminNumber(st.page) + 1}페이지${data.hasMore ? '' : ' · 끝'}</span>
+    <button type="button" onclick="loadAdminJobs('next')" ${data.hasMore ? '' : 'disabled'}>다음</button>
+  </div>`;
+}
+
 function renderAdminJobs(data) {
  const el = document.getElementById('adminJobsBody');
  if (!el) return;
  const cnt = document.getElementById('adminJobsCount');
- if (cnt) cnt.textContent = data.count ? String(data.count) : '';
+ const st = window._adminJobsPager || { page: 0 };
+ if (cnt) cnt.textContent = data.count ? `${data.count}${data.hasMore ? '+' : ''} · ${adminNumber(st.page) + 1}p` : '';
  if (!data.rows || !data.rows.length) {
-  el.innerHTML = '<div class="gp-admin-empty">해당 조건의 작업이 없습니다.</div>';
+  el.innerHTML = '<div class="gp-admin-empty">해당 조건의 작업이 없습니다.</div>' + adminJobsPagerHtml(data);
   return;
  }
  const charged = data.chargedCount || 0;
@@ -3222,7 +3252,8 @@ function renderAdminJobs(data) {
   <div class="gp-admin-table-wrap"><table class="gp-admin-table gp-admin-jobs-table">
    <thead><tr><th></th><th>사용자</th><th>상태</th><th>차감</th><th class="num">크레딧</th><th>단계</th><th>시각</th><th></th></tr></thead>
    <tbody>${rows}</tbody>
-  </table></div>`;
+  </table></div>
+  ${adminJobsPagerHtml(data)}`;
 }
 
 window.adminJobsToggleAll = function(cb) {
@@ -3253,6 +3284,29 @@ window.adminNotifyAffected = async function() {
   else alert(`${data.sent}/${data.total}명에게 알림 발송 완료`);
  } catch (e) {
   alert(e.message || '알림 발송에 실패했습니다.');
+ }
+};
+
+window.adminNotifySelectedUser = async function() {
+ const user = window._adminSelectedUser;
+ if (!user || !user.uid) { alert('먼저 사용자를 검색해서 선택하세요.'); return; }
+ const who = user.email || user.name || user.uid;
+ const defMsg = '운영팀 안내입니다. 확인이 필요한 내용이 있어 알림을 보냈습니다.';
+ const message = window.gpPrompt
+  ? await window.gpPrompt({ title: '사용자 알림', message: `${who} 사용자에게 인앱 알림을 보냅니다.`, placeholder: '알림 메시지', defaultValue: defMsg, confirmText: '발송', required: true })
+  : prompt('알림 메시지', defMsg);
+ if (!message || message.trim().length < 2) return;
+ try {
+  const data = await adminPost('/admin/notify-users', {
+   uids: [user.uid],
+   title: '운영팀 안내',
+   message: message.trim(),
+   clientId: 'admin_user_notice_' + user.uid.slice(0, 8) + '_' + Date.now()
+  });
+  adminSetMessage('adminUserNotifyMsg', `${data.sent}/${data.total}명에게 알림을 보냈습니다.`, 'success');
+  if (window.gpToast) window.gpToast('사용자에게 알림을 보냈어요.', { type: 'success', title: '알림 발송' });
+ } catch (e) {
+  adminSetMessage('adminUserNotifyMsg', e.message || '알림 발송에 실패했습니다.', 'error');
  }
 };
 
