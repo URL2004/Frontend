@@ -443,14 +443,14 @@
     if (evBlock) evBlock.classList.toggle('ev-off', !isFormal);
     var evHint = $('lavEvidenceHint');
     if (evHint) evHint.hidden = isFormal;
-    // 자동 코칭도 재구성(고급) 전용 — 기본 ON 유지, 기본 피하기에선 잠금·시각 비활성
+    // ★ 자동 코칭은 기본/고급 둘 다 적용(2026-06-18: 해요체 캐주얼 글에서 안 뜨던 문제 수정) — 잠금·비활성 제거.
     var ac = $('lavAutoCoach');
-    if (ac) ac.disabled = !isFormal;
+    if (ac) ac.disabled = false;
     var acBlock = $('lavAutoCoachBlock');
-    if (acBlock) acBlock.classList.toggle('ev-off', !isFormal);
+    if (acBlock) acBlock.classList.remove('ev-off');
     var acHint = $('lavAutoCoachHint');
-    if (acHint) acHint.hidden = isFormal;
-    window.lavAutoCoachChange();   // 메모칸 가시성 동기화(자동 ON=숨김 / blog·자동OFF=노출) + 형식이면 후보 프리페치
+    if (acHint) acHint.hidden = true;
+    window.lavAutoCoachChange();   // 메모칸 가시성 동기화(자동 ON=숨김 / 자동OFF=노출) + 후보 프리페치
   };
 
   window.lavEvidenceChange = function () {
@@ -509,11 +509,13 @@
   };
   function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   var _coachRenderGen = 0;
-  // 시작 확인 모달에 추천 픽(입장·경험) 체크박스 렌더 — 자동 코칭 ON(고급)일 때만. 관점은 기본 체크, 경험은 해제.
+  // 시작 확인 모달에 추천 픽(입장·경험) 체크박스 렌더 — 자동 코칭 ON이면(기본/고급 둘 다). 관점은 기본 체크, 경험은 해제.
+  //   ★2026-06-18: 해요체 캐주얼 글(기본 피하기)에서 자동코칭 픽이 안 뜨던 문제 — 'formal 전용' 게이트 제거.
+  //   메모 경로(collectMemo→memo)는 blog(runShortJob)·formal 둘 다 전송하므로 픽이 양쪽에 적용된다.
   function renderCoachPicks(s) {
     var wrap = $('lavCoachPicks'), list = $('lavCoachPicksList');
     if (!wrap || !list) return;
-    if (!(s.tone === 'formal' && s.autoCoach)) { wrap.hidden = true; return; }
+    if (!s.autoCoach) { wrap.hidden = true; return; }
     wrap.hidden = false;
     list.innerHTML = '<div class="lav-coach-picks-loading">추천 불러오는 중…</div>';
     var src = $('lavInput'); var text = src ? src.value : '';
@@ -832,6 +834,7 @@
     var text = (src ? src.value : '').trim();
     if (!text) { if (src) src.focus(); return; }
     pendingPolish = true;
+    var cp = $('lavCoachPicks'); if (cp) cp.hidden = true;   // 다듬기(최소수정)는 코칭 픽 없음 — 모달 재사용 시 직전 잔여 숨김
     var ttl = document.querySelector('.lav-confirm-title');
     if (ttl) ttl.textContent = '과제 어투로 다듬을까요?';
     var sum = $('lavConfirmSummary');

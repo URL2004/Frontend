@@ -284,10 +284,10 @@
              </div>
            </div>
 
-           <!-- 경험·관점 입력: 자동 코칭(추천 받아 고르기) ↔ 직접 메모. 자동 ON이면 메모칸 숨김(가독성). -->
-           <div class="lav-set-block ev-off" id="lavAutoCoachBlock">
+           <!-- 경험·관점 입력: 자동 코칭(추천 받아 고르기) ↔ 직접 메모. 자동 ON이면 메모칸 숨김(가독성). 기본/고급 둘 다. -->
+           <div class="lav-set-block" id="lavAutoCoachBlock">
              <label class="lav-toggle">
-               <input type="checkbox" id="lavAutoCoach" checked disabled onchange="lavAutoCoachChange()">
+               <input type="checkbox" id="lavAutoCoach" checked onchange="lavAutoCoachChange()">
                <span class="lav-toggle-track" aria-hidden="true"><i></i></span>
                <span class="lav-toggle-text">
                  <b>자동 코칭 · 추천</b>
