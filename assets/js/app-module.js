@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, EmailAuthProvider, signInWithPopup, signOut, onAuthStateChanged, deleteUser, reauthenticateWithPopup, reauthenticateWithCredential, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, EmailAuthProvider, signInWithPopup, signOut, onAuthStateChanged, deleteUser, reauthenticateWithPopup, reauthenticateWithCredential, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, orderBy, query, where, limit, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
@@ -40,6 +40,7 @@ const auth = getAuth(fbapp); window._fbAuth = auth;
 const db = getFirestore(fbapp);
 const storage = getStorage(fbapp);
 const provider = new GoogleAuthProvider();
+setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Firebase auth persistence setup failed:', e));
 
 // 추천 링크: ?ref= 파라미터 저장
 (function() {

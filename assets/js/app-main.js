@@ -506,6 +506,8 @@ function refreshProTab() {
 window.refreshProTab = refreshProTab;
 
 async function runProAnalysis() {
+ if (window.authReady) { try { await window.authReady; } catch(e) {} }
+ if (!window.CU && window._fbAuth && window._fbAuth.currentUser) window.CU = window._fbAuth.currentUser;
  if (!window.CU) { showScreen('login'); return; }
  const sub = window.SUB;
  const tier = window.PRO_STATE.selectedTier;
@@ -886,6 +888,8 @@ async function runChunkedText(fullText, opts) {
 }
 
 async function runAnalysis() {
+ if (window.authReady) { try { await window.authReady; } catch(e) {} }
+ if (!window.CU && window._fbAuth && window._fbAuth.currentUser) window.CU = window._fbAuth.currentUser;
  if (!window.CU) {
  if (window.gpTrack) window.gpTrack('login_required', { source: 'analysis' });
  alert('로그인 후 무료로 체험해보세요!');

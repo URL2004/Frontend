@@ -190,7 +190,7 @@
     async function runDetect(paid) {
       show('analyzing');
       var idToken = null;
-      try { if (window.CU && window.CU.getIdToken) idToken = await window.CU.getIdToken(); } catch (e) { /* 비로그인 — 무료 감지는 IP 기준 한도 */ }
+      try { idToken = await evGetIdToken(true); } catch (e) { /* 비로그인 — 무료 감지는 IP 기준 한도 */ }
       var minWait = new Promise(function (r) { setTimeout(r, 900); });
       try {
         var resP = fetch(window.apiUrl('/detect-report'), {
@@ -205,7 +205,7 @@
         // 무료 한도 소진 → 유료 감지 안내(확인 후 paid:true로 재요청)
         if (res.status === 402 && d && d.code === 'FREE_EXHAUSTED') {
           window.lavFlowReset();
-          if (!window.CU) { alert('오늘 무료 감지(' + d.freeCap + '회)를 다 썼어요. 유료 감지는 로그인이 필요해요.'); return; }
+          if (!idToken) { alert('오늘 무료 감지(' + d.freeCap + '회)를 다 썼어요. 유료 감지는 로그인이 필요해요.'); return; }
           var ok = window.gpConfirm
             ? await window.gpConfirm({ title: '오늘 무료 감지를 다 썼어요', message: '무료 ' + d.freeCap + '회를 모두 사용했어요.\n이 글을 ' + d.cost + '크레딧으로 감지할까요? (100자당 1크레딧)', confirmText: d.cost + '크레딧으로 감지' })
             : confirm('무료 감지를 다 썼어요. ' + d.cost + '크레딧으로 감지할까요?');
@@ -700,7 +700,11 @@
     try { if (window.authReady) await window.authReady; } catch (e) {}
     try {
       // forceRefresh=true → 만료된 토큰을 강제 갱신(긴 작업 폴링 중 401 복구용).
-      if (window.CU && window.CU.getIdToken) return await window.CU.getIdToken(!!forceRefresh);
+      var user = window.CU || (window._fbAuth && window._fbAuth.currentUser);
+      if (user && user.getIdToken) {
+        if (!window.CU) window.CU = user;
+        return await user.getIdToken(!!forceRefresh);
+      }
     } catch (e) {}
     return '';
   }
@@ -826,7 +830,7 @@
     var gen = ++pollGen;
     (async function () {
       var idToken = '';
-      try { if (window.CU && window.CU.getIdToken) idToken = await window.CU.getIdToken(); } catch (e) { /* 비로그인 — 서버가 401 안내 */ }
+      try { idToken = await evGetIdToken(true); } catch (e) { /* 비로그인 — 서버가 401 안내 */ }
       try {
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
@@ -1328,7 +1332,7 @@
     var gen = ++pollGen;
     (async function () {
       var idToken = '';
-      try { if (window.CU && window.CU.getIdToken) idToken = await window.CU.getIdToken(); } catch (e) { /* 비로그인 — 서버가 401 안내 */ }
+      try { idToken = await evGetIdToken(true); } catch (e) { /* 비로그인 — 서버가 401 안내 */ }
       try {
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
