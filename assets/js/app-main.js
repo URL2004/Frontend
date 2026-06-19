@@ -506,9 +506,8 @@ function refreshProTab() {
 window.refreshProTab = refreshProTab;
 
 async function runProAnalysis() {
- if (window.authReady) { try { await window.authReady; } catch(e) {} }
- if (!window.CU && window._fbAuth && window._fbAuth.currentUser) window.CU = window._fbAuth.currentUser;
- if (!window.CU) { showScreen('login'); return; }
+ const authUser = await getCurrentAuthUser(8000);
+ if (!authUser) { showScreen('login'); return; }
  const sub = window.SUB;
  const tier = window.PRO_STATE.selectedTier;
  if (!sub || !tier) { alert('쿠폰을 선택해주세요.'); return; }
@@ -525,7 +524,7 @@ async function runProAnalysis() {
  btn.disabled = true; btn.textContent = '처리 중...'; btn.style.opacity = '.7';
 
  try {
-   const idToken = await window.CU.getIdToken();
+   const idToken = await authUser.getIdToken(true);
    const runLang = autoLangForText(text, selectedLang);
    const res = await callAnalyzeApi({
      mode: apiMode,
@@ -766,6 +765,35 @@ function autoLangForText(text, fallback) {
  return fallback || 'ko';
 }
 
+async function getCurrentAuthUser(timeoutMs) {
+ if (typeof window.waitForAuthUser === 'function') {
+  try {
+   const waited = await window.waitForAuthUser(timeoutMs == null ? 8000 : timeoutMs);
+   if (waited && waited.getIdToken) return waited;
+  } catch (_) {}
+ }
+ const deadline = Date.now() + (timeoutMs == null ? 8000 : timeoutMs);
+ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+ try {
+  if (window.authPersistenceReady) await Promise.race([window.authPersistenceReady, wait(500)]);
+  if (window.authReady) await Promise.race([window.authReady, wait(1000)]);
+ } catch (_) {}
+ while (Date.now() < deadline) {
+  const user = window.CU || (window._fbAuth && window._fbAuth.currentUser);
+  if (user && user.getIdToken) {
+   window.CU = user;
+   return user;
+  }
+  await wait(150);
+ }
+ const user = window.CU || (window._fbAuth && window._fbAuth.currentUser);
+ if (user && user.getIdToken) {
+  window.CU = user;
+  return user;
+ }
+ return null;
+}
+
 async function callAnalyzeApi(payload, opts) {
  opts = opts || {};
  var maxRetries = (opts.maxRetries == null) ? 1 : opts.maxRetries;
@@ -780,7 +808,10 @@ async function callAnalyzeApi(payload, opts) {
   try {
    res = await fetch(window.apiUrl('/analyze'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign(
+     { 'Content-Type': 'application/json' },
+     payload.idToken ? { Authorization: 'Bearer ' + payload.idToken } : {}
+    ),
     body: JSON.stringify({
      mode: payload.mode,
      text: payload.text,
@@ -888,9 +919,8 @@ async function runChunkedText(fullText, opts) {
 }
 
 async function runAnalysis() {
- if (window.authReady) { try { await window.authReady; } catch(e) {} }
- if (!window.CU && window._fbAuth && window._fbAuth.currentUser) window.CU = window._fbAuth.currentUser;
- if (!window.CU) {
+ const authUser = await getCurrentAuthUser(8000);
+ if (!authUser) {
  if (window.gpTrack) window.gpTrack('login_required', { source: 'analysis' });
  alert('로그인 후 무료로 체험해보세요!');
  showScreen('login');
@@ -1025,7 +1055,7 @@ async function runAnalysis() {
  try {
  let data;
  const currentMode = mode === 'detect' ? 'detect' : 'humanize';
- const idToken = await window.CU.getIdToken();
+ const idToken = await authUser.getIdToken(true);
 
  // PDF는 첨부 시 브라우저(pdf.js)에서 텍스트로 추출돼 입력창에 채워지므로(extractAndFillFromPdf),
  // 여기서는 항상 텍스트 경로로 처리한다. (서버 /analyze-pdf 호출 분기는 미사용이라 제거됨)

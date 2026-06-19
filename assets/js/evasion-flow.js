@@ -694,13 +694,28 @@
   }
 
   async function evGetIdToken(forceRefresh) {
-    for (var i = 0; i < 20 && !window.authReady; i++) {
-      await new Promise(function (ok) { setTimeout(ok, 100); });
+    function sleep(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+    for (var i = 0; i < 20 && !window.authReady && !window._fbAuth; i++) {
+      await sleep(100);
     }
-    try { if (window.authReady) await window.authReady; } catch (e) {}
+    try {
+      if (window.authPersistenceReady) await Promise.race([window.authPersistenceReady, sleep(500)]);
+      if (window.authReady) await Promise.race([window.authReady, sleep(1000)]);
+    } catch (e) {}
+    if (typeof window.waitForAuthUser === 'function') {
+      try {
+        var waited = await window.waitForAuthUser(forceRefresh ? 8000 : 3500);
+        if (waited && waited.getIdToken) return await waited.getIdToken(!!forceRefresh);
+      } catch (e) {}
+    }
     try {
       // forceRefresh=true → 만료된 토큰을 강제 갱신(긴 작업 폴링 중 401 복구용).
       var user = window.CU || (window._fbAuth && window._fbAuth.currentUser);
+      var deadline = Date.now() + (forceRefresh ? 8000 : 3500);
+      while (!(user && user.getIdToken) && Date.now() < deadline) {
+        await sleep(150);
+        user = window.CU || (window._fbAuth && window._fbAuth.currentUser);
+      }
       if (user && user.getIdToken) {
         if (!window.CU) window.CU = user;
         return await user.getIdToken(!!forceRefresh);
@@ -832,6 +847,11 @@
       var idToken = '';
       try { idToken = await evGetIdToken(true); } catch (e) { /* 비로그인 — 서버가 401 안내 */ }
       try {
+        if (!idToken) {
+          var authErr = new Error('로그인 상태를 확인할 수 없어요. 다시 로그인한 뒤 이어서 시도해 주세요.');
+          authErr.httpStatus = 401;
+          throw authErr;
+        }
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
@@ -1043,6 +1063,14 @@
     stopFormalTicker();
     if (err && err.httpStatus === 409) {
       try { if (await recoverActiveTransformJob()) return; } catch (e) { /* 기존 안내로 폴백 */ }
+    }
+    if (err && err.httpStatus === 401) {
+      clearJobRef();
+      var authMsg = (err && err.message) || '로그인이 필요해요.';
+      if (window.gpToast) window.gpToast(authMsg, { type: 'error', title: '로그인 확인 필요' });
+      else alert(authMsg);
+      if (typeof showScreen === 'function') showScreen('login');
+      return;
     }
     var msg = (err && err.message) ? err.message : '처리 중 오류가 발생했어요.';
     // 작업 시작 실패는 차감 전 단계 — "차감 없음" 안심 문구로 결제·환불 문의 감소
@@ -1273,6 +1301,11 @@
     armCancelWindow(0);
     var gen = ++pollGen;
     evGetIdToken().then(function (idToken) {
+      if (!idToken) {
+        var authErr = new Error('로그인 상태를 확인할 수 없어요. 다시 로그인한 뒤 이어서 시도해 주세요.');
+        authErr.httpStatus = 401;
+        throw authErr;
+      }
       return fetch(window.apiUrl('/transform/' + jid + '/accept-fallback'), {
         method: 'POST', headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }), body: JSON.stringify({})
       });
@@ -1289,7 +1322,12 @@
       pollTransform(jid, gen);
     }).catch(function (e) {
       var msg = (e && e.message) || '처리 요청에 실패했어요. 다시 시도해 주세요.';
-      if (e && e.httpStatus === 402) {   // 잔액 부족(주로 사전확인 후 다른 탭에서 소진된 레이스) — 충전 안내
+      if (e && e.httpStatus === 401) {
+        if (window.gpToast) window.gpToast(msg, { type: 'error', title: '로그인 확인 필요' });
+        else alert(msg);
+        if (typeof showScreen === 'function') showScreen('login');
+        return;
+      } else if (e && e.httpStatus === 402) {   // 잔액 부족(주로 사전확인 후 다른 탭에서 소진된 레이스) — 충전 안내
         var go2 = window.gpConfirm
           ? window.gpConfirm({ title: '크레딧이 부족해요', message: msg, confirmText: '충전하러 가기' })
           : Promise.resolve(confirm(msg + '\n충전 페이지로 이동할까요?'));
@@ -1334,6 +1372,11 @@
       var idToken = '';
       try { idToken = await evGetIdToken(true); } catch (e) { /* 비로그인 — 서버가 401 안내 */ }
       try {
+        if (!idToken) {
+          var authErr = new Error('로그인 상태를 확인할 수 없어요. 다시 로그인한 뒤 이어서 시도해 주세요.');
+          authErr.httpStatus = 401;
+          throw authErr;
+        }
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)

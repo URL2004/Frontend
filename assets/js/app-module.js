@@ -40,7 +40,8 @@ const auth = getAuth(fbapp); window._fbAuth = auth;
 const db = getFirestore(fbapp);
 const storage = getStorage(fbapp);
 const provider = new GoogleAuthProvider();
-setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Firebase auth persistence setup failed:', e));
+const authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Firebase auth persistence setup failed:', e));
+window.authPersistenceReady = authPersistenceReady;
 
 // 추천 링크: ?ref= 파라미터 저장
 (function() {
@@ -50,7 +51,40 @@ setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Firebase 
 })();
 
 let _authResolve;
+let _authReadySettled = false;
 window.authReady = new Promise(resolve => { _authResolve = resolve; });
+function settleAuthReady() {
+ if (_authReadySettled) return;
+ _authReadySettled = true;
+ _authResolve();
+}
+function wait(ms) {
+ return new Promise(resolve => setTimeout(resolve, ms));
+}
+window.waitForAuthUser = async function(timeoutMs) {
+ const deadline = Date.now() + (timeoutMs == null ? 8000 : timeoutMs);
+ try { await Promise.race([authPersistenceReady, wait(500)]); } catch (_) {}
+ while (Date.now() < deadline) {
+  const user = window.CU || auth.currentUser;
+  if (user && user.getIdToken) {
+   CU = user;
+   window.CU = user;
+   return user;
+  }
+  if (window.authReady && !_authReadySettled) {
+   try { await Promise.race([window.authReady, wait(250)]); } catch (_) {}
+  } else {
+   await wait(120);
+  }
+ }
+ const user = window.CU || auth.currentUser;
+ if (user && user.getIdToken) {
+  CU = user;
+  window.CU = user;
+  return user;
+ }
+ return null;
+};
 window._fbDb = db;
 window._fbGetDoc = getDoc;
 window._fbDoc = doc;
@@ -68,21 +102,32 @@ window.isAdmin = () =>CU && !!ADMIN_ROLES[CU.uid];
 window.getAdminName = () =>CU && ADMIN_ROLES[CU.uid] ? ADMIN_ROLES[CU.uid].name : null;
 
 onAuthStateChanged(auth, async u =>{
- if (u) {
- CU = u; window.CU = u; await loadUser(u);
- showScreen('app');
- window.updateAuthUI(true);
- if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });
+ try {
+  if (u) {
+  CU = u; window.CU = u; await loadUser(u);
+  showScreen('app');
+  window.updateAuthUI(true);
+  if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });
+  }
+  else {
+  CU = null; window.CU = null;
+  if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications([]);
+  showScreen('app');
+  if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });
+  else switchTab('main');
+  window.updateAuthUI(false);
+  }
+ } catch (e) {
+  console.error('auth state handling failed:', e);
+  if (u) {
+   CU = u;
+   window.CU = u;
+   showScreen('app');
+   window.updateAuthUI(true);
+  }
+ } finally {
+  settleAuthReady();
  }
- else {
- CU = null; window.CU = null;
- if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications([]);
- showScreen('app');
- if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });
- else switchTab('main');
- window.updateAuthUI(false);
- }
- _authResolve();
 });
 
 // 운영 알림 중계(문의·가입·초대) — fire-and-forget, 사용자 흐름 절대 안 막음. 백엔드 /events가 미설정이면 즉시 종료됨.
