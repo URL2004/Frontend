@@ -80,9 +80,12 @@
   function applyDiag(d) {
     lastDiag = d;
     var unfit = !!(d.restructureUnfit || d.resumeLike);   // 자소서·생기부·탐구문·짧고추상 → 재구성 부적합
+    var hasAdv = !!d.advisory && !unfit;                  // 회피 난이도 안내(STEM 스펙·구조화 보고서) — 소프트, 자소서 안내가 우선
     var rn = $('lavResumeNote');
     if (rn) { rn.hidden = !unfit; if (unfit && d.restructureUnfitReason) rn.textContent = d.restructureUnfitReason; }   // 명확한 사유 노출
-    var fdn = $('lavFactDenseNote'); if (fdn) fdn.hidden = !(d.factDense && !unfit);   // 연도·수치 빼곡 → 재구성 시 사실오류 위험 안내
+    var adv = $('lavAdvisoryNote');
+    if (adv) { adv.hidden = !hasAdv; var at = $('lavAdvisoryText'); if (hasAdv && at) at.textContent = d.advisory; }
+    var fdn = $('lavFactDenseNote'); if (fdn) fdn.hidden = !(d.factDense && !unfit && !hasAdv);   // 연도·수치 빼곡 안내(advisory 있으면 중복이라 숨김)
     if ($('lavDiagGrade')) $('lavDiagGrade').textContent = d.grade;
     if ($('lavDiagTitle')) $('lavDiagTitle').textContent = d.title;
     if ($('lavDiagDesc')) $('lavDiagDesc').textContent = d.desc;
@@ -192,8 +195,8 @@
       try {
         var resP = fetch(window.apiUrl('/detect-report'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, idToken: idToken, paid: !!paid, requestId: reqId })
+          headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
+          body: JSON.stringify({ text: text, paid: !!paid, requestId: reqId })
         });
         var out = await Promise.all([resP, minWait]);
         var res = out[0];
@@ -827,8 +830,8 @@
       try {
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text), idToken: idToken })
+          headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
+          body: JSON.stringify({ text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text) })
         }).then(parseTransformStart);
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
@@ -1329,8 +1332,8 @@
       try {
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text, idToken: idToken, evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: s.length || 'keep' })
+          headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
+          body: JSON.stringify({ text: text, evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: s.length || 'keep' })
         }).then(parseTransformStart);
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
