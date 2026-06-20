@@ -2736,6 +2736,16 @@ function adminSetMessage(id, text, type) {
  el.style.color = type === 'error' ? 'var(--red)' : type === 'success' ? 'var(--green)' : 'var(--text3)';
 }
 
+function adminPagerHtml(page, pageCount, total, fnName) {
+ if (pageCount <= 1) return '';
+ return `
+  <div class="gp-admin-pager">
+   <button type="button" class="gp-admin-mini-btn" ${page <= 1 ? 'disabled' : ''} onclick="${fnName}(${page - 1})">이전</button>
+   <span>${page.toLocaleString('ko-KR')} / ${pageCount.toLocaleString('ko-KR')} · 총 ${total.toLocaleString('ko-KR')}건</span>
+   <button type="button" class="gp-admin-mini-btn" ${page >= pageCount ? 'disabled' : ''} onclick="${fnName}(${page + 1})">다음</button>
+  </div>`;
+}
+
 function adminRenderCreditAudit(audit) {
  if (!audit) return '';
  const paidCredits = adminNumber(audit.paidOrphanDebitCredits);
@@ -2745,9 +2755,16 @@ function adminRenderCreditAudit(audit) {
  const handledCredits = adminNumber(audit.handledOrphanDebitCredits);
  const orphanDebits = Array.isArray(audit.orphanDebits) ? audit.orphanDebits : [];
  const hasPaidIssue = paidCredits > 0;
- const visibleDebits = orphanDebits.slice(0, 5);
- window._adminOrphanDebitRows = visibleDebits;
+ const pageSize = 25;
+ const totalRows = orphanDebits.length;
+ const pageCount = Math.max(1, Math.ceil(totalRows / pageSize));
+ const page = Math.min(Math.max(parseInt(window._adminAuditPage || 1, 10) || 1, 1), pageCount);
+ window._adminAuditPage = page;
+ window._adminOrphanDebitRows = orphanDebits;
+ const start = (page - 1) * pageSize;
+ const visibleDebits = orphanDebits.slice(start, start + pageSize);
  const rows = visibleDebits.map((d, i) => {
+  const rowIndex = start + i;
   const scope = d.isAfterFirstPaid ? '유료' : '결제 전';
   const dup = d.duplicateHint ? ' · 중복 의심' : '';
   const handled = d.handled === true;
@@ -2762,8 +2779,8 @@ function adminRenderCreditAudit(audit) {
    : '';
   const actions = (!handled && d.isAfterFirstPaid)
    ? `<div class="gp-admin-audit-actions">
-       <button type="button" class="gp-admin-mini-btn" onclick="adminResolveOrphanDebit(${i},'restore')">크레딧 환급</button>
-       <button type="button" class="gp-admin-mini-btn" onclick="adminResolveOrphanDebit(${i},'mark')">처리완료 표시</button>
+       <button type="button" class="gp-admin-mini-btn" onclick="adminResolveOrphanDebit(${rowIndex},'restore')">크레딧 환급</button>
+       <button type="button" class="gp-admin-mini-btn" onclick="adminResolveOrphanDebit(${rowIndex},'mark')">처리완료 표시</button>
       </div>`
    : '';
   return `
@@ -2787,7 +2804,11 @@ function adminRenderCreditAudit(audit) {
  const handledText = handledCount > 0
   ? `<span>처리완료 ${handledCredits.toLocaleString('ko-KR')}크레딧</span>`
   : '';
- const metaHtml = `${preText}${handledText}`.trim();
+ const pageText = totalRows > 0
+  ? `<span>목록 ${Math.min(start + 1, totalRows).toLocaleString('ko-KR')}-${Math.min(start + pageSize, totalRows).toLocaleString('ko-KR')} / ${totalRows.toLocaleString('ko-KR')}건</span>`
+  : '';
+ const metaHtml = `${preText}${handledText}${pageText}`.trim();
+ const pagerHtml = adminPagerHtml(page, pageCount, totalRows, 'adminSetAuditPage');
  return `
   <div class="gp-admin-audit ${hasPaidIssue ? 'is-warn' : 'is-ok'}">
    <div class="gp-admin-audit-head">
@@ -2800,9 +2821,14 @@ function adminRenderCreditAudit(audit) {
     </div>
    </div>
    ${metaHtml ? `<div class="gp-admin-audit-meta">${metaHtml}</div>` : ''}
-   ${rows ? `<div class="gp-admin-audit-rows">${rows}</div>` : ''}
+   ${rows ? `<div class="gp-admin-audit-rows">${rows}</div>${pagerHtml}` : ''}
   </div>`;
 }
+
+window.adminSetAuditPage = function(page) {
+ window._adminAuditPage = parseInt(page, 10) || 1;
+ if (window._adminSelectedBundle) adminRenderUserBundle(window._adminSelectedBundle);
+};
 
 window.adminPrefillCreditRestore = function(credits) {
  const amount = adminNumber(credits);
@@ -2891,13 +2917,25 @@ function adminRenderUserBundle(data) {
  const ordersEl = document.getElementById('adminUserOrders');
  if (uidEl) uidEl.textContent = user.uid ? 'UID ' + user.uid.slice(0, 8) : '';
  if (!resultEl || !ordersEl) return;
+ if (window._adminUserPagerUid !== user.uid) {
+  window._adminUserPagerUid = user.uid;
+  window._adminAuditPage = 1;
+  window._adminLedgerPage = 1;
+ }
 
  const sub = user.subscription || null;
  const coupon = user.coupon || null;
  const hist = data.creditHistory || [];
  const auditHtml = adminRenderCreditAudit(data.creditAudit);
+ const ledgerPageSize = 30;
+ const ledgerTotal = hist.length;
+ const ledgerPageCount = Math.max(1, Math.ceil(ledgerTotal / ledgerPageSize));
+ const ledgerPage = Math.min(Math.max(parseInt(window._adminLedgerPage || 1, 10) || 1, 1), ledgerPageCount);
+ window._adminLedgerPage = ledgerPage;
+ const ledgerStart = (ledgerPage - 1) * ledgerPageSize;
+ const ledgerRows = hist.slice(ledgerStart, ledgerStart + ledgerPageSize);
  const historyHtml = hist.length
-  ? hist.slice(0, 6).map(h => `
+  ? ledgerRows.map(h => `
     <div class="gp-admin-ledger-row">
       <div>
         <strong>${escapeHtml(adminHistoryLabel(h))}</strong>
@@ -2908,7 +2946,11 @@ function adminRenderUserBundle(data) {
         <span>잔여 ${adminNumber(h.remaining).toLocaleString('ko-KR')}</span>
       </div>
     </div>`).join('')
-  : '<div class="gp-admin-empty gp-admin-empty-compact">최근 크레딧 내역이 없습니다.</div>';
+  : '<div class="gp-admin-empty gp-admin-empty-compact">크레딧 내역이 없습니다.</div>';
+ const ledgerPagerHtml = adminPagerHtml(ledgerPage, ledgerPageCount, ledgerTotal, 'adminSetLedgerPage');
+ const ledgerRange = ledgerTotal > 0
+  ? `${Math.min(ledgerStart + 1, ledgerTotal).toLocaleString('ko-KR')}-${Math.min(ledgerStart + ledgerPageSize, ledgerTotal).toLocaleString('ko-KR')} / ${ledgerTotal.toLocaleString('ko-KR')}건`
+  : '0건';
 
  resultEl.innerHTML = `
   <div class="gp-admin-user-summary">
@@ -2926,8 +2968,9 @@ function adminRenderUserBundle(data) {
     </div>
     ${auditHtml}
     <div>
-      <div class="gp-admin-ledger-head">최근 크레딧 내역</div>
-      <div class="gp-admin-ledger">${historyHtml}</div>
+      <div class="gp-admin-ledger-head">전체 크레딧 내역 <span>${ledgerRange}</span></div>
+      <div class="gp-admin-ledger is-paged">${historyHtml}</div>
+      ${ledgerPagerHtml}
     </div>
   </div>`;
 
@@ -2993,6 +3036,11 @@ function adminRenderUserBundle(data) {
    </div>`;
  }).join('') + '</div>';
 }
+
+window.adminSetLedgerPage = function(page) {
+ window._adminLedgerPage = parseInt(page, 10) || 1;
+ if (window._adminSelectedBundle) adminRenderUserBundle(window._adminSelectedBundle);
+};
 
 // 결제건 환불 계산(백엔드 processRefund 미러, 누적 부분환불 반영) — {amount, credits} 또는 null
 function adminComputeRefund(order, mode, customAmount) {
