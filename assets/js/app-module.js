@@ -2696,6 +2696,10 @@ function adminHistoryLabel(h) {
 }
 
 function adminHistoryAmountHtml(h) {
+ const type = String(h?.type || '');
+ if (type.endsWith('_restore')) {
+  return `<span style="color:var(--green);">+${Math.abs(adminNumber(h.used)).toLocaleString('ko-KR')}</span>`;
+ }
  if (h.type === 'admin_adjust') {
   const amount = adminNumber(h.amount);
   const color = amount >= 0 ? 'var(--green)' : 'var(--red)';
@@ -2737,29 +2741,53 @@ function adminRenderCreditAudit(audit) {
  const paidCredits = adminNumber(audit.paidOrphanDebitCredits);
  const paidCount = adminNumber(audit.paidOrphanDebitCount);
  const prePaidCredits = adminNumber(audit.prePaidOrphanDebitCredits);
+ const handledCount = adminNumber(audit.handledOrphanDebitCount);
+ const handledCredits = adminNumber(audit.handledOrphanDebitCredits);
  const orphanDebits = Array.isArray(audit.orphanDebits) ? audit.orphanDebits : [];
  const hasPaidIssue = paidCredits > 0;
- const rows = orphanDebits.slice(0, 5).map(d => {
+ const visibleDebits = orphanDebits.slice(0, 5);
+ window._adminOrphanDebitRows = visibleDebits;
+ const rows = visibleDebits.map((d, i) => {
   const scope = d.isAfterFirstPaid ? '유료' : '결제 전';
   const dup = d.duplicateHint ? ' · 중복 의심' : '';
+  const handled = d.handled === true;
+  const restoredCredits = adminNumber(d.restoredCredits);
+  const resolutionText = handled
+   ? (d.resolution === 'manual_handled'
+     ? '처리완료 표시'
+     : `처리완료 · +${restoredCredits.toLocaleString('ko-KR')}크레딧`)
+   : `${scope}${dup}`;
+  const hint = !handled && d.manualRestoreHint
+   ? `<span class="gp-admin-audit-hint">같은 금액 수동 조정 가능성 · ${escapeHtml(adminDateText(d.manualRestoreHint.createdAtMs))} · +${adminNumber(d.manualRestoreHint.amount).toLocaleString('ko-KR')}</span>`
+   : '';
+  const actions = (!handled && d.isAfterFirstPaid)
+   ? `<div class="gp-admin-audit-actions">
+       <button type="button" class="gp-admin-mini-btn" onclick="adminResolveOrphanDebit(${i},'restore')">크레딧 환급</button>
+       <button type="button" class="gp-admin-mini-btn" onclick="adminResolveOrphanDebit(${i},'mark')">처리완료 표시</button>
+      </div>`
+   : '';
   return `
-   <div class="gp-admin-audit-row">
+   <div class="gp-admin-audit-row ${handled ? 'is-handled' : ''}">
     <span>${escapeHtml(adminDateText(d.createdAtMs))}</span>
     <strong>${escapeHtml(adminHistoryLabel(d))}</strong>
     <b>-${adminNumber(d.used).toLocaleString('ko-KR')}크레딧</b>
-    <em>${scope}${dup}</em>
+    <em>${escapeHtml(resolutionText)}</em>
+    ${actions}
+    ${hint}
    </div>`;
  }).join('');
- const restoreBtn = hasPaidIssue
-  ? `<button type="button" class="gp-admin-mini-btn" onclick="adminPrefillCreditRestore(${paidCredits})">복구 입력 채우기</button>`
-  : '';
  const subText = hasPaidIssue
-  ? `결제 이후 차감 ${paidCount.toLocaleString('ko-KR')}건이 저장된 결과와 매칭되지 않습니다.`
+  ? `미처리 유료 차감 ${paidCount.toLocaleString('ko-KR')}건이 저장된 결과와 매칭되지 않습니다.`
+  : handledCount > 0
+  ? `미처리 유료 차감은 없고, 처리완료 ${handledCount.toLocaleString('ko-KR')}건이 기록되어 있습니다.`
   : '결제 이후 결과 없는 차감은 발견되지 않았습니다.';
  const preText = prePaidCredits > 0
   ? `<span>결제 전 미매칭 ${prePaidCredits.toLocaleString('ko-KR')}크레딧 별도</span>`
   : '';
- const metaHtml = `${preText}${restoreBtn}`.trim();
+ const handledText = handledCount > 0
+  ? `<span>처리완료 ${handledCredits.toLocaleString('ko-KR')}크레딧</span>`
+  : '';
+ const metaHtml = `${preText}${handledText}`.trim();
  return `
   <div class="gp-admin-audit ${hasPaidIssue ? 'is-warn' : 'is-ok'}">
    <div class="gp-admin-audit-head">
@@ -2787,6 +2815,73 @@ window.adminPrefillCreditRestore = function(credits) {
  if (reasonEl) reasonEl.value = `결과 저장 없는 유료 차감 ${amount.toLocaleString('ko-KR')}크레딧 복구`;
  adminSetMessage('adminCreditAdjustMsg', '복구 수량을 채웠습니다. 사유 확인 후 적용하세요.', 'info');
  if (amountEl) amountEl.focus();
+};
+
+window.adminResolveOrphanDebit = async function(index, action) {
+ const user = window._adminSelectedUser;
+ const debit = (window._adminOrphanDebitRows || [])[index];
+ const mode = action === 'mark' ? 'mark' : 'restore';
+ if (!user || !user.uid || !debit) {
+  alert('사용자와 차감 항목을 다시 선택해주세요.');
+  return;
+ }
+ const credits = adminNumber(debit.used);
+ const title = mode === 'mark' ? '처리완료로 표시할까요?' : '크레딧을 환급할까요?';
+ const defaultReason = mode === 'mark'
+  ? `결과 저장 없는 유료 차감 ${credits.toLocaleString('ko-KR')}크레딧 수동 처리완료 표시`
+  : `결과 저장 없는 유료 차감 ${credits.toLocaleString('ko-KR')}크레딧 환급`;
+ let reason = defaultReason;
+ if (mode === 'mark') {
+  reason = window.gpPrompt
+   ? await window.gpPrompt({
+     title,
+     message: '이미 수동으로 복구한 차감이면 크레딧 변동 없이 처리완료 표시만 남깁니다.',
+     placeholder: '처리 사유',
+     defaultValue: defaultReason,
+     confirmText: '표시하기',
+     required: true
+    })
+   : prompt('처리 사유', defaultReason);
+  if (!reason || reason.trim().length < 2) return;
+ } else {
+  const hint = debit.manualRestoreHint
+   ? `\n\n주의: 같은 금액의 관리자 조정 가능성이 있습니다.\n${adminDateText(debit.manualRestoreHint.createdAtMs)} · +${adminNumber(debit.manualRestoreHint.amount).toLocaleString('ko-KR')}크레딧`
+   : '';
+  const ok = window.gpConfirm
+   ? await window.gpConfirm({
+     title,
+     message: `${user.email || user.uid}\n+${credits.toLocaleString('ko-KR')}크레딧이 실제로 추가되고 이 차감은 처리완료로 표시됩니다.${hint}`,
+     confirmText: '환급 처리',
+     danger: false
+    })
+   : confirm(`${user.email || user.uid}에게 +${credits}크레딧을 환급하고 처리완료로 표시할까요?${hint}`);
+  if (!ok) return;
+ }
+
+ adminSetMessage('adminCreditAdjustMsg', '결과 없는 차감 처리 중...', 'info');
+ try {
+  const data = await adminPost('/admin/resolve-orphan-debit', {
+   uid: user.uid,
+   creditHistoryId: debit.id,
+   action: mode,
+   reason: reason.trim()
+  });
+  const msg = data.alreadyHandled
+   ? '이미 처리완료로 표시된 차감입니다.'
+   : mode === 'mark'
+   ? '처리완료 표시를 남겼습니다.'
+   : `환급 완료: ${adminNumber(data.before).toLocaleString('ko-KR')} → ${adminNumber(data.after).toLocaleString('ko-KR')}크레딧`;
+  adminSetMessage('adminCreditAdjustMsg', msg, 'success');
+  if (window.CU && user.uid === window.CU.uid && typeof data.after === 'number') {
+   window.UC = data.after;
+   if (typeof window.updateCreditUI === 'function') window.updateCreditUI();
+  }
+  await window.adminSearchUser(true);
+  await window.loadAllCreditHistory();
+ } catch (e) {
+  adminSetMessage('adminCreditAdjustMsg', e.message || '결과 없는 차감 처리에 실패했습니다.', 'error');
+  alert(e.message || '결과 없는 차감 처리에 실패했습니다.');
+ }
 };
 
 function adminRenderUserBundle(data) {
@@ -3474,13 +3569,16 @@ window.loadCreditHistory = async () =>{
  const isReferral = h.type === 'referral';
  const isCoupon = h.type === 'coupon_redeem';
  const isAdminAdjust = h.type === 'admin_adjust';
- const typeTxt = isCharge ? '충전' : isRefund ? '환불' : isReferral ? '친구 추천' : isCoupon ? '쿠폰' : isAdminAdjust ? '관리자 조정' : h.type === 'detect' ? 'AI 감지' : adminHistoryLabel(h);
+ const isRestore = String(h.type || '').endsWith('_restore');
+ const typeTxt = isCharge ? '충전' : isRefund ? '환불' : isReferral ? '친구 추천' : isCoupon ? '쿠폰' : isAdminAdjust ? '관리자 조정' : isRestore ? adminHistoryLabel(h) : h.type === 'detect' ? 'AI 감지' : adminHistoryLabel(h);
  const amountTxt = isCharge || isReferral || isCoupon
  ? `<div style="color:var(--green);font-weight:600;">+${h.amount} 크레딧</div>`
  : isRefund
  ? `<div style="color:var(--yellow);font-weight:600;">${h.amount} 크레딧 (환불)</div>`
  : isAdminAdjust
  ? `<div style="color:${(Number(h.amount)||0) >= 0 ? 'var(--green)' : 'var(--red)'};font-weight:600;">${(Number(h.amount)||0) > 0 ? '+' : ''}${Number(h.amount)||0} 크레딧</div>`
+ : isRestore
+ ? `<div style="color:var(--green);font-weight:600;">+${Math.abs(Number(h.used)||0)} 크레딧 (복구)</div>`
  : `<div style="color:var(--red);font-weight:600;">-${h.used} 크레딧</div>`;
  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;">
  <div>
