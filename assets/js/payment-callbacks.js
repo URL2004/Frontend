@@ -84,12 +84,12 @@
     } else if (data.error === "이미 처리된 결제입니다.") {
       history.replaceState({}, '', location.pathname);
     } else {
-      if (window.gpToast) window.gpToast('충전 실패: ' + (data.error || '알 수 없는 오류'), { type: 'error' });
-      else alert('충전 실패: ' + (data.error || '알 수 없는 오류'));
+      if (window.gpToast) window.gpToast('충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 카카오톡으로 문의해 주세요.', { type: 'error' });
+      else alert('충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 카카오톡으로 문의해 주세요.');
     }
   } catch(err) {
-    if (window.gpToast) window.gpToast('네트워크 오류: ' + err.message, { type: 'error' });
-    else alert('네트워크 오류: ' + err.message);
+    if (window.gpToast) window.gpToast('결제 확인 중 통신이 끊겼어요. 결제는 안전하니, 잠시 후 새로고침하면 자동으로 처리돼요.', { type: 'error' });
+    else alert('결제 확인 중 통신이 끊겼어요. 결제는 안전하니, 잠시 후 새로고침하면 자동으로 처리돼요.');
   }
 
   // 24시간 지난 localStorage 항목 정리
@@ -185,7 +185,7 @@
           message: '구독이 시작됐어요. Pro 탭에서 바로 사용할 수 있습니다.',
           action: { tab: 'pro' }
         }, { persist: true });
-      } else alert('구독이 시작되었습니다! Pro 탭에서 바로 사용해보세요.');
+      } else alert('구독이 시작됐어요! Pro 탭에서 바로 사용해 보세요.');
       switchTab('pro');
     } else {
       localStorage.removeItem(dedupKey);
@@ -194,7 +194,7 @@
     }
   } catch(err) {
     localStorage.removeItem(dedupKey);
-    if (window.gpToast) window.gpToast('네트워크 오류: ' + err.message, { type: 'error' });
-    else alert('네트워크 오류: ' + err.message);
+    if (window.gpToast) window.gpToast('구독 결제 확인 중 통신이 끊겼어요. 결제는 안전하니, 잠시 후 새로고침하면 다시 확인돼요.', { type: 'error' });
+    else alert('구독 결제 확인 중 통신이 끊겼어요. 결제는 안전하니, 잠시 후 새로고침하면 다시 확인돼요.');
   }
 })();

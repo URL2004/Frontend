@@ -221,7 +221,7 @@
            <!-- 자소서·이력 유형 안내(재구성 부적합) -->
            <div class="lav-resume-note" id="lavResumeNote" hidden>
              <strong>자기소개서·이력 유형의 글로 보여요.</strong>
-             이런 글은 <b>‘AI 티 줄이기’의 고급 피하기(재구성)와 맞지 않습니다</b> — 재구성은 시사·논증 글을 칼럼으로 바꾸는 기능이라, 자소서에 쓰면 글을 비평하듯 뒤집어 의미가 틀어져요. <b>과제 어투로 다듬기</b>를 권장하고, 회피가 필요하면 <b>기본 피하기</b>만 사용하세요.
+             자기소개서는 <b>‘고급 피하기’와 잘 안 맞아요</b> — 고급 피하기는 시사·논증 글을 칼럼처럼 다시 쓰는 기능이라, 자소서에 쓰면 내용이 비틀려요. <b>과제 어투로 다듬기</b>를 권하고, AI 티를 줄이려면 <b>기본 피하기</b>만 쓰세요.
            </div>
 
            <!-- 회피 난이도 사전 안내(STEM 실험·방법론 보고서 / 구조화 데이터 보고서) — 소프트(진행 가능), 솔직한 고지 -->
@@ -251,7 +251,7 @@
                <span class="lav-purpose-ico reduce" aria-hidden="true"><span class="material-symbols-outlined">shield</span></span>
                <strong>AI 티 줄이기</strong>
                <p>사람이 쓴 글에 가깝게 어투·구조를 재구성해요. 카피킬러 등 외부 검사 통과가 목적이면 이걸 고르세요.</p>
-               <em class="lav-purpose-band">AI 티를 낮추는 재구성</em>
+               <em class="lav-purpose-band">AI 티를 낮추는 다시쓰기</em>
                <span class="lav-purpose-caveat strong">탐지 결과는 글·외부 검사기에 따라 달라지며 보장하지 않아요</span>
              </button>
            </div>
@@ -283,7 +283,7 @@
            </div>
 
            <div class="lav-set-block" id="lavLenBlock" hidden>
-             <div class="lav-set-label"><strong>분량</strong><span>재구성에서만 선택</span></div>
+             <div class="lav-set-label"><strong>분량</strong><span>고급 피하기에서만 선택</span></div>
              <div class="lav-radio-row">
                <label class="lav-radio"><input type="radio" name="lavLen" value="compact" checked><span>컴팩트<i>원문의 약 60% · 더 낮은 탐지율</i></span></label>
                <label class="lav-radio"><input type="radio" name="lavLen" value="keep"><span>분량 유지<i>원문 길이에 가깝게</i></span></label>
@@ -335,7 +335,7 @@
                <span class="lav-toggle-track" aria-hidden="true"><i></i></span>
                <span class="lav-toggle-text">
                  <b>근거 보강 <u class="only">고급 피하기 전용</u></b>
-                 <i>주제와 맞는 실제 자료(통계·연구·기관)를 찾아 인용해요. 검수 후 승인한 것만 사용합니다.<span class="hl">재구성 효과의 핵심 레버 — 끄면 효과가 크게 떨어져요(실측).</span></i>
+                 <i>주제와 맞는 실제 자료(통계·연구·기관)를 찾아 인용해요. 검수 후 승인한 것만 사용합니다.<span class="hl">‘고급 피하기’에서 효과를 크게 높여 주는 기능이라, 끄면 효과가 많이 줄어요.</span></i>
                </span>
              </label>
              <p class="lav-evidence-note" id="lavEvidenceNote" hidden>근거 검색에 8~12분이 걸리고, 검수 단계가 추가돼요.</p>
@@ -366,7 +366,7 @@
            <div class="lav-approve" id="lavApprove" hidden>
              <div class="lav-approve-head">
                <strong id="lavApproveCount">검수할 근거</strong>
-               <span>승인한 자료만 인용해요. 미승인 자료는 엔진이 차단합니다. ★많이 승인할수록 시간이 길어지고 사실 보존 검증이 빡빡해져요 — 핵심 10~15건 승인을 권장해요.</span>
+               <span>승인한 자료만 인용해요. 승인하지 않은 자료는 자동으로 빠져요. 많이 승인할수록 시간이 오래 걸리니, 핵심 10~15건만 승인하길 권해요.</span>
              </div>
              <div class="lav-approve-list" id="lavApproveList"></div>
              <div class="lav-approve-actions">
@@ -379,12 +379,12 @@
          <!-- 4.5) 차단 → 동의 기반 재시도/보존형 받기 -->
          <section class="lav-flow-card lav-blocked" data-flow="blocked" hidden>
            <div class="lav-blocked-head">
-             <strong>회피 변환이 잠깐 멈췄어요</strong>
+             <strong>‘AI 티 줄이기’를 잠깐 멈췄어요</strong>
              <span class="lav-blocked-free">크레딧 차감 없음</span>
            </div>
            <p id="lavBlockedReason" class="lav-blocked-reason">원문에 없는 내용이 생기거나 사실이 빠질 위험이 있어 안전하게 멈췄어요. 없는 사실은 만들지 않아요.</p>
            <div id="lavBlockedAbstract" class="lav-blocked-abstract" hidden>
-             <div class="lav-blocked-abstract-title">이 부분이 추상적이라 회피가 어려워요</div>
+             <div class="lav-blocked-abstract-title">이 부분이 두루뭉술해서 AI 티 줄이기가 어려워요</div>
              <ul id="lavBlockedAbstractList" class="lav-blocked-abstract-list"></ul>
              <div class="lav-blocked-abstract-tip">위 내용과 관련된 <b>실제 경험·사례·수치</b>를 경험 메모에 적고 다시 도전하면, 그 부분을 구체적으로 바꿔 더 잘 통과돼요.</div>
            </div>
@@ -405,11 +405,11 @@
              </div>
              <div class="lav-done-score" id="lavDoneScoreWrap">
                <b id="lavDoneScore">—</b>
-               <em>탐지 회피 난이도</em>
+               <em>AI 티 줄이기 난이도</em>
              </div>
            </div>
            <div class="lav-fallback-banner" id="lavFallbackBanner" hidden style="margin:0 0 12px;padding:10px 12px;border-radius:10px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.32);font-size:12.5px;line-height:1.55;">
-             <strong style="color:#d9920a;">보존형으로 처리됐어요</strong> <span id="lavFallbackMsg" style="color:var(--text3,#6b7280);"></span>
+             <strong style="color:#d9920a;">‘그대로 다듬기’로 처리됐어요</strong> <span id="lavFallbackMsg" style="color:var(--text3,#6b7280);"></span>
            </div>
            <div class="lav-trust" id="lavTrust">
              <span class="lav-trust-badge ok">날조 0건</span>
@@ -490,7 +490,7 @@
      </div>
      <div class="gp-paper-score">
        <div>
-         <span>AI 티 감지</span>
+         <span>AI 작성 확률</span>
          <strong class="bad">86%</strong>
          <b>→</b>
          <strong class="good">14%</strong>
@@ -630,7 +630,7 @@
    <div class="gp-compare-grid">
      <article class="gp-detect-card before">
        <div class="gp-card-kicker">휴머나이징 전</div>
-       <span>AI 탐지 확률</span>
+       <span>AI 작성 확률</span>
        <strong>92%</strong>
        <div class="gp-meter"><i style="width:92%"></i></div>
        <ul>
@@ -642,7 +642,7 @@
      <div class="gp-compare-arrow">›</div>
      <article class="gp-detect-card after">
        <div class="gp-card-kicker">휴머나이징 후</div>
-       <span>AI 탐지 확률</span>
+       <span>AI 작성 확률</span>
        <strong>7%</strong>
        <div class="gp-meter"><i style="width:7%"></i></div>
        <ul>

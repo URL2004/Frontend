@@ -179,7 +179,7 @@
     var src = $('lavInput');
     var text = src ? src.value : '';
     if (text.length < 100) {   // 글자수 통일: 공백 포함 기준(표시 카운트와 동일)
-      alert('AI 감지를 하려면 최소 100자가 필요해요.');
+      alert('AI 감지는 100자 이상부터 할 수 있어요. (지금 ' + text.length + '자)');
       if (src) src.focus();
       return;
     }
@@ -239,7 +239,7 @@
         if (d.charged) {
           window.UC = Math.max(0, (window.UC || 0) - d.charged);
           if (typeof window.updateCreditUI === 'function') window.updateCreditUI();
-          if (window.gpToast) window.gpToast(d.charged + '크레딧이 차감됐어요.', { type: 'info' });
+          if (window.gpToast) window.gpToast(d.charged + '크레딧을 사용했어요. (남은 크레딧 ' + (window.UC || 0) + ')', { type: 'info' });
         }
         renderReport(d);
         cameFromReport = true;
@@ -667,7 +667,7 @@
     var jobId = pendingApproval.jobId;
     pendingApproval = null;
     var ap = $('lavApprove'); if (ap) ap.hidden = true;
-    if ($('lavStepSlot')) $('lavStepSlot').textContent = '승인 ' + ids.length + '건으로 재구성 중';
+    if ($('lavStepSlot')) $('lavStepSlot').textContent = '승인한 자료 ' + ids.length + '건으로 글 다시 쓰는 중';
     var idToken = await evGetIdToken();
     fetch(window.apiUrl('/transform/' + jobId + '/approve'), {
       method: 'POST',
@@ -1006,7 +1006,7 @@
         e.activeStatus = b.activeStatus || '';
         throw e;
       }
-      if (!res.ok || !b || !b.ok) throw new Error('작업 시작에 실패했어요.');
+      if (!res.ok || !b || !b.ok) throw new Error('시작하지 못했어요. 잠시 후 다시 눌러주세요. (크레딧은 차감되지 않았어요)');
       return b;
     });
   }
@@ -1200,7 +1200,7 @@
       var isFb = !!(st.result && st.result.preservationFallback);
       lavFbBanner.hidden = !isFb;
       if (isFb && $('lavFallbackMsg')) {
-        $('lavFallbackMsg').textContent = st.note || '고급 변환이 원문 보존 기준을 통과하지 못해, 원문을 최대한 보존하는 방식으로 변환했어요.';
+        $('lavFallbackMsg').textContent = st.note || '고급 피하기가 원문을 너무 많이 바꿔서, 대신 원문을 최대한 살려 다듬었어요.';
       }
     }
     // ── '예상 AI 탐지율 %' 표기 제거(2026-06-15) ──────────────────────────────
@@ -1220,8 +1220,8 @@
     }
     var doneNote = $('lavDoneNote');
     if (doneNote) doneNote.textContent = st.mode === 'polish'
-      ? 'AI로 쓴 글을 과제체로 다듬었어요. 탐지 회피용이 아니라 어투·완성도 정리이고, 원문의 사실·분량은 그대로 보존했어요.'
-      : '탐지율은 글·탐지기에 따라 크게 달라서 수치로 약속하지 않아요. 정확한 결과는 직접 탐지기로 확인해 주세요. 높게 나오면 경험 메모를 더해 다시 돌려보세요.';
+      ? '과제 어투로 다듬었어요. 사실과 분량은 원문 그대로 두고 문장만 정리했어요. (AI 티 줄이기와는 다른 기능이에요)'
+      : '탐지율은 글과 검사 도구에 따라 달라서 수치로 약속하기는 어려워요. 우리 AI 감지나 외부 검사로 직접 확인해 보고, 높게 나오면 경험 메모를 더 채워 다시 돌려보세요.';
     if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
     lavSaveToLibrary(label, st.result && st.result.outputText, grade ? grade + '등급' : '');
     notifyJobDone(st, label);
@@ -1373,7 +1373,7 @@
     armCancelWindow(0);   // 방금 시작 — 30초 취소 창 열기
     var bare = currentBareLen();
     var estSec = Math.max(240, Math.min(2700, Math.round(bare / 4) + (s.evidence ? 480 : 0)));   // 서버 공식과 동일
-    formalStop = startJobTicker(estSec, s.evidence ? '실제 근거 검색·재구성 중' : '글을 다시 쓰는 중');
+    formalStop = startJobTicker(estSec, s.evidence ? '자료 찾아서 글 다시 쓰는 중' : '글을 다시 쓰는 중');
     var gen = ++pollGen;
     (async function () {
       var idToken = '';

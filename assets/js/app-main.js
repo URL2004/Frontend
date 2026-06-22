@@ -686,7 +686,7 @@ async function extractAndFillFromPdf(file) {
  try {
   const text = await extractPdfText(file);
   if (!text || text.length < 5) {
-   alert('이 PDF에서 텍스트를 추출할 수 없어요.\n스캔된 이미지 PDF이거나 보호된 파일일 수 있어요.');
+   alert('이 PDF에서는 글자를 읽어올 수 없어요.\n스캔 이미지나 보호된 파일일 수 있으니, 텍스트를 직접 복사해 붙여넣어 주세요.');
    clearPDF();
    return;
   }
@@ -1030,8 +1030,8 @@ async function runAnalysis() {
     ];
  const tailMsgs = [
   '거의 완료...',
-  'AI 패턴 우회 중...',
-  '문장 흐름 재구성 중...',
+  '사람이 쓴 듯 자연스럽게 다듬는 중...',
+  '문장을 자연스럽게 고치는 중...',
   '어휘 다양성 검증 중...',
   '마지막 다듬는 중...',
   '거의 다 됐어요...'
@@ -1200,7 +1200,7 @@ function renderDetect(r) {
  bc = 'danger';
  bl = ' 위험';
  mainMsg = 'AI가 작성한 글일 가능성이 높아요';
- subMsg = 'AI 작성 특유의 패턴이 뚜렷하게 감지됩니다. 그대로 제출하면 탐지될 가능성이 매우 높습니다. 지금 바로 휴머나이저로 변환하세요.';
+ subMsg = 'AI가 쓴 글에서 자주 보이는 패턴이 보여요. 그대로 내면 AI 글로 보일 가능성이 높아요. ‘AI 티 줄이기’로 한 번 다듬어 보세요.';
  }
 
  const gaugeColor = bc === 'safe' ? '#36d39b' : bc === 'caution' ? '#f4b454' : '#ff6d78';
@@ -1344,7 +1344,7 @@ async function payToss(amount, credits, name, plan) {
  }
 
  // 오결제 방지: 결제 전 1회 확인 + 환불/차감 정책 명시(실수 클릭·기대 불일치 환불 감소)
- const confirmMsg = `${Number(credits).toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매합니다.\n\n· 작업이 실패하면 크레딧은 차감되지 않아요.\n· 환불은 미사용 크레딧만 가능하고, 이미 사용한 크레딧은 환불되지 않아요.`;
+ const confirmMsg = `${Number(credits).toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n\n· 작업이 실패하면 크레딧은 차감되지 않아요.\n· 환불은 미사용 크레딧만 가능하고, 이미 사용한 크레딧은 환불되지 않아요.`;
  const buyOk = window.gpConfirm
   ? await window.gpConfirm({ title: '구매를 진행할까요?', message: confirmMsg, confirmText: '구매하기' })
   : confirm(`${Number(credits).toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n· 작업 실패 시 크레딧 차감 없음\n· 미사용 크레딧만 환불 가능`);
@@ -1423,7 +1423,7 @@ function switchPricingTab(t) {
   if (heroTitle && heroDesc) {
     if (isCredit) {
       heroTitle.textContent = '지금 충전하고 바로 사용하세요';
-      heroDesc.innerHTML = '구매한 크레딧은 <strong>소멸 없이 계속</strong> 쓸 수 있어요. 탐지는 100자당 1크레딧, 휴머나이징은 최소 10크레딧부터 사용해요.';
+      heroDesc.innerHTML = '구매한 크레딧은 <strong>소멸 없이 계속</strong> 쓸 수 있어요. AI 감지는 100자당 1크레딧, AI 티 줄이기는 최소 10크레딧부터 써요.';
     } else {
       heroTitle.textContent = 'Pro 정기 구독으로 더 저렴하게';
       heroDesc.innerHTML = '글자 한도 내 월 50회 또는 무제한. <strong>매달 자동 결제</strong>되며 언제든 해지할 수 있어요.';
