@@ -101,6 +101,20 @@ const ADMIN_ROLES = {
 window.isAdmin = () =>CU && !!ADMIN_ROLES[CU.uid];
 window.getAdminName = () =>CU && ADMIN_ROLES[CU.uid] ? ADMIN_ROLES[CU.uid].name : null;
 
+function retryPendingPaymentCallback(reason) {
+ setTimeout(() => {
+  try {
+   if (typeof window.processPendingPaymentCallback !== 'function') return;
+   const p = window.processPendingPaymentCallback({ reason });
+   if (p && typeof p.catch === 'function') {
+    p.catch(e => console.warn('pending payment callback retry failed:', e));
+   }
+  } catch (e) {
+   console.warn('pending payment callback retry failed:', e);
+  }
+ }, 0);
+}
+
 onAuthStateChanged(auth, async u =>{
  try {
   if (u) {
@@ -108,6 +122,7 @@ onAuthStateChanged(auth, async u =>{
   showScreen('app');
   window.updateAuthUI(true);
   if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });
+  retryPendingPaymentCallback('auth_state');
   }
   else {
   CU = null; window.CU = null;
@@ -124,6 +139,7 @@ onAuthStateChanged(auth, async u =>{
    window.CU = u;
    showScreen('app');
    window.updateAuthUI(true);
+   retryPendingPaymentCallback('auth_state_fallback');
   }
  } finally {
   settleAuthReady();

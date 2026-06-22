@@ -1337,11 +1337,12 @@ function maintenancePreviewQuery() {
 }
 
 async function payToss(amount, credits, name, plan) {
- if (!window.CU) {
-  if (window.gpTrack) window.gpTrack('login_required', { source: 'payment', value: amount, currency: 'KRW' });
-  alert('로그인이 필요합니다.');
-  return;
- }
+  if (!window.CU) {
+   if (window.gpTrack) window.gpTrack('login_required', { source: 'payment', value: amount, currency: 'KRW' });
+   if (window.gpTrackPaymentError) window.gpTrackPaymentError('checkout_login_required', { checkoutType: 'credits', amount, credits, plan });
+   alert('로그인이 필요합니다.');
+   return;
+  }
 
  // 오결제 방지: 결제 전 1회 확인 + 환불/차감 정책 명시(실수 클릭·기대 불일치 환불 감소)
  const confirmMsg = `${Number(credits).toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n\n· 작업이 실패하면 크레딧은 차감되지 않아요.\n· 환불은 미사용 크레딧만 가능하고, 이미 사용한 크레딧은 환불되지 않아요.`;
@@ -1369,15 +1370,20 @@ async function payToss(amount, credits, name, plan) {
 
   // 1. 테스트 키 대신 주신 'API 개별 연동' 라이브 클라이언트 키 적용
   const clientKey = window.APP_CONFIG.TOSS_CLIENT_KEY;
-  if (!clientKey) { alert('결제는 운영 환경에서만 사용할 수 있어요.'); return; }
+  if (!clientKey) {
+   if (window.gpTrackPaymentError) window.gpTrackPaymentError('checkout_client_key_missing', { checkoutType: 'credits', amount, credits, plan });
+   alert('결제는 운영 환경에서만 사용할 수 있어요.');
+   return;
+  }
   const tp = TossPayments(clientKey);
+  const orderId = 'order_' + Date.now();
 
- try {
- await tp.requestPayment('카드', { 
- amount: amount, 
- orderId: 'order_' + Date.now(), 
- orderName: name + ' ' + credits + '크레딧',
- customerName: window.CU.displayName,
+  try {
+  await tp.requestPayment('카드', {
+  amount: amount,
+  orderId: orderId,
+  orderName: name + ' ' + credits + '크레딧',
+  customerName: window.CU.displayName,
  // 2. 결제 성공/실패 시 돌아올 URL 설정
  successUrl: `${window.location.origin + window.location.pathname}?credits=${credits}&plan=${encodeURIComponent(plan||'')}&uid=${encodeURIComponent(window.CU.uid)}${maintenancePreviewQuery()}`,
  failUrl: location.origin + location.pathname + '?fail=1' + maintenancePreviewQuery()
@@ -1389,9 +1395,16 @@ async function payToss(amount, credits, name, plan) {
   currency: 'KRW',
   code: e.code || '',
   message: String(e.message || '').slice(0, 120)
- });
- if(e.code !== 'USER_CANCEL') alert('결제 오류: ' + e.message);
- }
+  });
+  if (window.gpTrackPaymentError) window.gpTrackPaymentError('request_payment_failed', {
+   checkoutType: 'credits',
+   amount,
+   credits,
+   plan,
+   orderId
+  }, e);
+  if(e.code !== 'USER_CANCEL') alert('결제 오류: ' + e.message);
+  }
 }
 
 // 가격 페이지 내부 탭 전환 (크레딧 / 정기구독)
@@ -1516,7 +1529,11 @@ async function payTossSubscription(tier) {
    alert('정기 구독은 현재 결제 시스템 검수 중입니다.\n검수 완료 즉시 안내드릴게요.');
    return;
  }
- if (!window.CU) { alert('로그인이 필요합니다.'); return; }
+ if (!window.CU) {
+   if (window.gpTrackPaymentError) window.gpTrackPaymentError('subscription_login_required', { checkoutType: 'subscription', tier });
+   alert('로그인이 필요합니다.');
+   return;
+ }
  const info = SUB_PLAN_INFO[tier];
  if (!info) return;
 
@@ -1534,7 +1551,15 @@ async function payTossSubscription(tier) {
  });
 
   const clientKey = window.APP_CONFIG.TOSS_CLIENT_KEY;
-  if (!clientKey) { alert('정기 구독 결제는 운영 환경에서만 사용할 수 있어요.'); return; }
+  if (!clientKey) {
+   if (window.gpTrackPaymentError) window.gpTrackPaymentError('subscription_client_key_missing', {
+    checkoutType: 'subscription',
+    tier,
+    amount: info.amount
+   });
+   alert('정기 구독 결제는 운영 환경에서만 사용할 수 있어요.');
+   return;
+  }
   const tp = TossPayments(clientKey);
  const customerKey = 'cust_' + window.CU.uid;
 
@@ -1550,8 +1575,13 @@ async function payTossSubscription(tier) {
     value: info.amount,
     currency: 'KRW',
     code: e.code || '',
-    message: String(e.message || '').slice(0, 120)
+   message: String(e.message || '').slice(0, 120)
    });
+   if (window.gpTrackPaymentError) window.gpTrackPaymentError('request_billing_auth_failed', {
+    checkoutType: 'subscription',
+    tier,
+    amount: info.amount
+   }, e);
    if (e.code !== 'USER_CANCEL') alert('결제 오류: ' + e.message);
  }
 }
@@ -1769,5 +1799,26 @@ window.addEventListener('load',()=>{
  if(p.get('success')==='1') {
  history.replaceState({},'',location.pathname);
  }
- if(p.get('fail')==='1') { alert('결제가 취소됐어요.'); history.replaceState({},'',location.pathname); }
+ if(p.get('fail')==='1') {
+  if (window.gpTrackPaymentError) window.gpTrackPaymentError('fail_redirect', {
+   checkoutType: 'credits',
+   code: p.get('code') || '',
+   message: p.get('message') || '',
+   orderId: p.get('orderId') || '',
+   amount: p.get('amount') || ''
+  });
+  alert('결제가 취소됐어요.');
+  history.replaceState({},'',location.pathname);
+ }
+ if(p.get('subfail')==='1') {
+  if (window.gpTrackPaymentError) window.gpTrackPaymentError('subscription_fail_redirect', {
+   checkoutType: 'subscription',
+   code: p.get('code') || '',
+   message: p.get('message') || '',
+   orderId: p.get('orderId') || '',
+   amount: p.get('amount') || ''
+  });
+  alert('구독 결제가 취소됐어요.');
+  history.replaceState({},'',location.pathname);
+ }
 });

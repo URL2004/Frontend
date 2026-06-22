@@ -1,7 +1,7 @@
 ﻿(function () {
   // 파셜은 동기 XHR로 로드되어 브라우저 휴리스틱 캐시에 잡히기 쉽다.
   // UI 버전이 바뀔 때마다 올려서 강제로 새 파일을 받게 한다.
-  var ASSET_V = 'lav-138';   // ★ L-01: 자산 버전(lav-138)과 일치 — 파셜 stale 캐시 방지
+  var ASSET_V = 'lav-140';   // ★ L-01: 자산 버전(lav-140)과 일치 — 파셜 stale 캐시 방지
   var partials = [
     '/partials/login-screen.html',
     '/partials/app-shell-start.html',
@@ -44,8 +44,6 @@
   root.insertAdjacentHTML('beforeend', partials.map(loadPartial).join('\n'));
   window.PAGE_PARTIALS = partials;
 })();
-
-
 
 
 
