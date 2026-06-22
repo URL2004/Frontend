@@ -460,6 +460,9 @@
     if (acBlock) acBlock.classList.remove('ev-off');
     var acHint = $('lavAutoCoachHint');
     if (acHint) acHint.hidden = true;
+    // CTA 보조문(예상 시간·비용)을 어투에 맞춰 갱신 — 기본=시간·최소단가 / 고급=길이별 정액
+    var ctaMeta = $('lavCtaMeta');
+    if (ctaMeta) ctaMeta.textContent = isFormal ? '예상 길이별 200~600크레딧' : '예상 1~3분 · 최소 10크레딧';
     window.lavAutoCoachChange();   // 메모칸 가시성 동기화(자동 ON=숨김 / 자동OFF=노출) + 후보 프리페치
   };
 

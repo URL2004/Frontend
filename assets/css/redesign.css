@@ -14461,6 +14461,43 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 #mainContent[data-main-design="lavender"] .lav-flow-edit{display:inline;margin-left:9px;padding:0;border:0;border-radius:0;background:none;color:#5a5bd8;font-size:12.5px;font-weight:700;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#c9cbf2;vertical-align:baseline;}
 #mainContent[data-main-design="lavender"] .lav-flow-edit:hover{background:none;color:#3a3bb0;text-decoration-color:#3a3bb0;}
 
+/* ───────── lavender v64: AI 티 줄이기 설정 화면 정리(칩·뱃지·불릿·CTA 보조문) ───────── */
+/* 어투 카드 선택 표시: 우상단 체크 원(선택 카드만) */
+#mainContent[data-main-design="lavender"] .lav-tone-opt{position:relative;}
+#mainContent[data-main-design="lavender"] .lav-tone-opt:has(input:checked)::after{
+ content:"";position:absolute;top:12px;right:12px;width:20px;height:20px;border-radius:50%;
+ background:#5a5bd8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/12px no-repeat;
+}
+/* 제목 옆 보조 뱃지: 추천(라벤더 강조) / 고급 전용·선택 불가(회색) — 토글 제목에도 적용 */
+#mainContent[data-main-design="lavender"] .lav-toggle-text b u{
+ text-decoration:none;font-size:10.5px;font-weight:800;color:#6a7188;background:#f1f2f8;
+ border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:1px;white-space:nowrap;
+}
+#mainContent[data-main-design="lavender"] .lav-tone-body b u.rec,
+#mainContent[data-main-design="lavender"] .lav-toggle-text b u.rec{color:#4b4cc6;background:#ececfb;}
+/* '현재 선택 불가' 뱃지 — 고급 카드가 잠겼을 때만 노출 */
+#mainContent[data-main-design="lavender"] .lav-tone-body b u.lock-tag{display:none;}
+#mainContent[data-main-design="lavender"] .lav-tone-opt.is-locked .lav-tone-body b u.lock-tag{display:inline-block;}
+/* 잠금 카드: 완전 흐림(.45) 대신 읽히는 수준 — 뱃지+클릭차단(base의 pointer-events:none)으로 비활성 전달 */
+#mainContent[data-main-design="lavender"] .lav-tone-opt.is-locked{opacity:.72;}
+/* 단가·시간 칩(어투 카드 하단) */
+#mainContent[data-main-design="lavender"] em.lav-tone-chips{display:flex;flex-wrap:wrap;gap:6px;}
+#mainContent[data-main-design="lavender"] em.lav-tone-chips span{
+ font-size:11px;font-weight:600;color:#6a7188;background:#eef0f7;border-radius:7px;padding:3px 9px;
+}
+/* 토글 설명: 핵심 강조(.hl)는 불릿 줄, 보조(.sub)는 회색 아래줄 */
+#mainContent[data-main-design="lavender"] .lav-toggle-text i .hl{position:relative;padding-left:13px;}
+#mainContent[data-main-design="lavender"] .lav-toggle-text i .hl::before{content:"";position:absolute;left:2px;top:7px;width:5px;height:5px;border-radius:50%;background:#5a5bd8;}
+#mainContent[data-main-design="lavender"] .lav-toggle-text i .sub{display:block;margin-top:3px;color:#9098ab;font-weight:500;}
+/* CTA: 라벨 가운데 + 예상 시간·비용 우측 정렬 */
+#mainContent[data-main-design="lavender"] .lav-flow-cta-split{position:relative;text-align:center;}
+#mainContent[data-main-design="lavender"] .lav-flow-cta-split small{position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:600;opacity:.74;}
+/* 좁은 화면: 라벨과 겹치지 않게 보조문을 라벨 아래로 내려 가운데 정렬 */
+@media (max-width:560px){
+ #mainContent[data-main-design="lavender"] .lav-flow-cta-split{display:flex;flex-direction:column;gap:2px;padding-top:9px;padding-bottom:9px;}
+ #mainContent[data-main-design="lavender"] .lav-flow-cta-split small{position:static;transform:none;opacity:.74;}
+}
+
 /* ───────── lavender v63: 충전 카드 = 사이버 카드(uiverse cowardly-eagle-56 이식) ─────────
    다크 네이비-바이올렛 카드 + 9분할 호버 트래커 3D 틸트 + 스캔라인·사이버라인·코너 브래킷·글레어·파티클.
    원본 네온 그린(#00ffaa)은 우리 라벤더(#7c6bff)–블루(#5bbdff) 팔레트로 치환.
