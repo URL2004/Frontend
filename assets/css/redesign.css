@@ -14480,6 +14480,9 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 #mainContent[data-main-design="lavender"] .lav-tone-opt.is-locked .lav-tone-body b u.lock-tag{display:inline-block;}
 /* 잠금 카드: 완전 흐림(.45) 대신 읽히는 수준 — 뱃지+클릭차단(base의 pointer-events:none)으로 비활성 전달 */
 #mainContent[data-main-design="lavender"] .lav-tone-opt.is-locked{opacity:.72;}
+/* 탐지율 편차 안내(기본·고급 공통) — 효과를 확정형으로 보이지 않게(정직 고지) */
+#mainContent[data-main-design="lavender"] .lav-tone-variance{margin:11px 0 0;padding:9px 12px;border-radius:9px;background:#f6f7fb;border:1px solid #eceef5;font-size:11.5px;line-height:1.55;color:#6a7188;font-weight:500;}
+#mainContent[data-main-design="lavender"] .lav-tone-variance b{color:#4b4cc6;font-weight:700;}
 /* 단가·시간 칩(어투 카드 하단) */
 #mainContent[data-main-design="lavender"] em.lav-tone-chips{display:flex;flex-wrap:wrap;gap:6px;}
 #mainContent[data-main-design="lavender"] em.lav-tone-chips span{
