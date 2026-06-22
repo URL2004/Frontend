@@ -1,5 +1,18 @@
 let mode='detect', dark=true, tab='main', humanizeMode='assignment', selectedLang='ko';
 window.mode='detect';
+const SHORT_HUMANIZE_MIN_CREDITS = 10;
+function shortHumanizeCredit(len) {
+ const n = Math.max(0, Number(len) || 0);
+ return n > 0 ? Math.max(SHORT_HUMANIZE_MIN_CREDITS, Math.ceil(n / 100) * 2) : 0;
+}
+function creditNeededForText(text, apiMode) {
+ const len = (text || '').length;
+ if (!len) return 0;
+ return apiMode === 'detect' ? Math.ceil(len / 100) : shortHumanizeCredit(len);
+}
+function currentCreditMode() {
+ return mode === 'detect' ? 'detect' : 'humanize';
+}
 const ROUTE_TABS = ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','history','pro'];
 const ROUTE_PATHS = {
  main: '/',
@@ -585,7 +598,7 @@ function updateCount(el) {
  autoResize(el);
  updateHint();
  updateSendBtn();
- const needed=Math.ceil(el.value.length/100);
+ const needed=creditNeededForText(el.value, currentCreditMode());
  const b=document.getElementById('lowbanner');
 
  // 로그인된 상태(window.CU가 있을 때)에서만 크레딧 부족 배너를 띄우도록 수정!
@@ -594,9 +607,10 @@ function updateCount(el) {
 }
 function updateHint() {
  const t=document.getElementById('inputText').value;
- const n=Math.ceil(t.length/100);
+ const creditMode = currentCreditMode();
+ const n=creditNeededForText(t, creditMode);
  const el=document.getElementById('chint');
- if(el) el.textContent=t.length>0?n+'크레딧 소모 예정':'100자당 1크레딧';
+ if(el) el.textContent=t.length>0?n+'크레딧 소모 예정':(creditMode === 'detect' ? '100자당 1크레딧' : '최소 10크레딧 · 100자당 2크레딧');
 }
 // pdf.js lazy loader — 첨부 시점에 1회만 로드
 let pdfJsPromise = null;
@@ -877,7 +891,7 @@ async function runChunkedText(fullText, opts) {
  var chunks = splitByBoundary(fullText, 4500, 5500);
  var results = [];
  var prevTail = '';
- var doneNeeded = 0;  // 차감 정합용 — 서버 청크별 차감 공식(ceil(len/100))을 그대로 누적
+ var doneNeeded = 0;  // 차감 정합용 — 서버 청크별 차감 공식을 그대로 누적
  for (var i = 0; i < chunks.length; i++) {
   // 청크 진행 표시 (별도 element — setInterval의 가짜 단계 메시지와 분리)
   if (chunks.length > 1) {
@@ -912,7 +926,7 @@ async function runChunkedText(fullText, opts) {
    throw err;
   }
   results.push(body.result);
-  doneNeeded += Math.ceil(chunks[i].length / 100);
+  doneNeeded += creditNeededForText(chunks[i], opts.mode);
   prevTail = chunks[i].slice(-200);
  }
  return { ok: true, result: combineChunkResults(results, opts.mode) };
@@ -930,13 +944,14 @@ async function runAnalysis() {
  if (!text) { alert('텍스트를 입력하거나 PDF를 첨부해주세요.'); return; }
  if (text.length < 20) { alert('20자 이상 입력해주세요.'); return; }
 
- // ★ 긴 글 사전 차감 정합(P0-3): 청크 분할 시 서버는 청크별 ceil(len/100)을 각각 차감하므로,
- //   단순 ceil(전체/100)이 아니라 청크 합계로 선검증해야 "99%에서 크레딧 부족"으로 중간 중단되던 민원(#120)을 막는다.
+ // ★ 긴 글 사전 차감 정합(P0-3): 청크 분할 시 서버는 청크별 과금 공식을 각각 적용하므로,
+ //   단순 전체 길이 계산이 아니라 청크 합계로 선검증해야 "99%에서 크레딧 부족"으로 중간 중단되던 민원(#120)을 막는다.
+ const precheckMode = mode === 'detect' ? 'detect' : 'humanize';
  let needed;
  if (text.length > 5500) {
-  needed = splitByBoundary(text, 4500, 5500).reduce(function (s, c) { return s + Math.ceil(c.length / 100); }, 0);
+  needed = splitByBoundary(text, 4500, 5500).reduce(function (s, c) { return s + creditNeededForText(c, precheckMode); }, 0);
  } else {
- needed = Math.ceil(text.length / 100);
+ needed = creditNeededForText(text, precheckMode);
  }
  if (window.UP !== 'unlimited' && (window.UC || 0) < needed) {
  const ok = window.gpConfirm
@@ -1408,7 +1423,7 @@ function switchPricingTab(t) {
   if (heroTitle && heroDesc) {
     if (isCredit) {
       heroTitle.textContent = '지금 충전하고 바로 사용하세요';
-      heroDesc.innerHTML = '구매한 크레딧은 <strong>소멸 없이 계속</strong> 쓸 수 있어요. 100자당 1크레딧 · 소수점 차감 없음';
+      heroDesc.innerHTML = '구매한 크레딧은 <strong>소멸 없이 계속</strong> 쓸 수 있어요. 탐지는 100자당 1크레딧, 휴머나이징은 최소 10크레딧부터 사용해요.';
     } else {
       heroTitle.textContent = 'Pro 정기 구독으로 더 저렴하게';
       heroDesc.innerHTML = '글자 한도 내 월 50회 또는 무제한. <strong>매달 자동 결제</strong>되며 언제든 해지할 수 있어요.';
@@ -1571,7 +1586,7 @@ function showPolicy(type) {
 1. 서비스는 AI 글 탐지 및 텍스트 변환 기능을 제공합니다.
 2. 이용자는 Google 또는 카카오 계정을 통해 가입할 수 있습니다.
 3. 서비스 이용을 위해 크레딧이 필요하며, 신규 가입 시 10크레딧이 무료로 지급됩니다.
-4. 크레딧 소비 기준은 100자당 1크레딧이며, 서비스 정책에 따라 변경될 수 있습니다. 변경 시 사전 공지합니다.
+4. 크레딧 소비 기준은 기능별로 다르며, AI 감지는 100자당 1크레딧, 일반 휴머나이징은 최소 10크레딧 및 100자당 2크레딧 기준으로 차감됩니다. 고급 재구성 등 일부 기능은 별도 고지된 정액 기준을 따릅니다. 기준 변경 시 사전 공지합니다.
 
 제3조 (크레딧 및 결제)
 1. 크레딧은 유료 결제 또는 무료 지급을 통해 획득할 수 있습니다.
@@ -1674,7 +1689,7 @@ function showPolicy(type) {
 1. 크레딧 환불 정책
 - 구매 후 7일 이내 환불을 요청할 수 있으며, 사용한 크레딧은 환불액에서 제외됩니다.
 - 무료로 지급된 크레딧은 환불 대상이 아닙니다.
-- 크레딧 소비 기준은 100자당 1크레딧이며, 소비된 크레딧은 환불되지 않습니다.
+- 크레딧 소비 기준은 기능별 안내를 따르며, 소비된 크레딧은 환불되지 않습니다.
 
 2. 구독 플랜 환불 정책
 - 구독 후 7일 이내 환불을 요청할 수 있으며, 해당 사이클 쿠폰을 사용하지 않은 경우 전액 환불 가능합니다.

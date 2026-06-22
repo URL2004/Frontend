@@ -1,6 +1,10 @@
 ﻿/* 회피 모드 워크스페이스 — P0 정적 목업 (더미 데이터, 백엔드 미연결) */
 (function () {
   function $(id) { return document.getElementById(id); }
+  var SHORT_HUMANIZE_MIN_CREDITS = 10;
+  function shortHumanizeCredit(len) {
+    return Math.max(SHORT_HUMANIZE_MIN_CREDITS, Math.ceil((Number(len) || 0) / 100) * 2);
+  }
 
   // Before/After 러너: proof 블록이 화면에 들어올 때 1회 달리기 재생(스크롤 밖에서 끝나버리는 문제 해결)
   function initProofRunner() {
@@ -584,7 +588,7 @@
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
       }).join('');
     }
-    // 과금(서버와 동일): 블로그=100자당 2크레딧, 재구성=건당 정액(무근거 200·근거 300).
+    // 과금(서버와 동일): 기본 피하기=최소 10크레딧 + 100자당 2크레딧, 재구성=건당 정액.
     var src = $('lavInput');
     var len = src ? src.value.length : 0;
     var credit, time;
@@ -594,7 +598,7 @@
       credit = ([200, 400, 600][tier] + (s.evidence ? 100 : 0)) + ' 크레딧';
       time = len <= 10000 ? '5~25분' : (len <= 20000 ? '20~50분' : '40~90분');
     } else {
-      credit = Math.max(2, Math.ceil(len / 100) * 2) + ' 크레딧';
+      credit = shortHumanizeCredit(len) + ' 크레딧';
       time = '약 1~3분';
     }
     if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = credit;
@@ -892,7 +896,7 @@
     }
     var subP = $('lavConfirmSub'); if (subP) subP.hidden = true;   // 과제 다듬기는 탐지율과 무관
     var len = src ? src.value.length : 0;   // 글자수 통일: 공백 포함
-    if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = Math.max(1, Math.ceil(len / 100)) + ' 크레딧';
+    if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = shortHumanizeCredit(len) + ' 크레딧';
     if ($('lavConfirmTime')) $('lavConfirmTime').textContent = '약 1~3분';
     var modal = $('lavConfirmModal');
     if (modal) modal.hidden = false;
