@@ -2224,6 +2224,8 @@ window.saveHistory = async (type, inputText, detectResult, humanResult, credits)
  };
  if (detectResult) {
   data.probability = typeof detectResult.probability === 'number' ? detectResult.probability : null;
+  if (typeof detectResult.rawProbability === 'number') data.rawProbability = detectResult.rawProbability;
+  if (detectResult.probabilityCalibration) data.probabilityCalibration = detectResult.probabilityCalibration;
   data.summary = detectResult.summary || '';
   data.detail = detectResult.detail || '';
  }
@@ -3147,6 +3149,85 @@ async function adminRunRefund(i, body) {
  }
 }
 
+function adminDetectCalibrationExample(cfg) {
+ cfg = cfg || {};
+ const raw = 80;
+ const factor = Number(cfg.factor) || 0;
+ const maxReduction = Number(cfg.maxReduction) || 0;
+ const floor = Number(cfg.floor) || 0;
+ const adjusted = Math.max(floor, raw - Math.min(maxReduction, Math.round(raw * factor)));
+ return `예시: 원점수 ${raw}% → 표시 ${Math.round(adjusted)}%`;
+}
+
+function adminSetDetectCalibrationForm(cfg) {
+ cfg = cfg || {};
+ const enabled = document.getElementById('adminDetectCalEnabled');
+ const limit = document.getElementById('adminDetectCalLimit');
+ const factor = document.getElementById('adminDetectCalFactor');
+ const maxReduction = document.getElementById('adminDetectCalMaxReduction');
+ const floor = document.getElementById('adminDetectCalFloor');
+ const source = document.getElementById('adminDetectCalSource');
+ if (enabled) enabled.checked = cfg.enabled === true;
+ if (limit) limit.value = cfg.limit == null ? '' : String(cfg.limit);
+ if (factor) factor.value = cfg.factor == null ? '' : String(cfg.factor);
+ if (maxReduction) maxReduction.value = cfg.maxReduction == null ? '' : String(cfg.maxReduction);
+ if (floor) floor.value = cfg.floor == null ? '' : String(cfg.floor);
+ if (source) source.textContent = cfg.source || '-';
+ adminSetMessage('adminDetectCalMsg', adminDetectCalibrationExample(cfg), 'info');
+}
+
+function adminReadDetectCalibrationForm() {
+ const num = (id) => Number(document.getElementById(id)?.value);
+ return {
+  enabled: document.getElementById('adminDetectCalEnabled')?.checked === true,
+  limit: num('adminDetectCalLimit'),
+  factor: num('adminDetectCalFactor'),
+  maxReduction: num('adminDetectCalMaxReduction'),
+  floor: num('adminDetectCalFloor')
+ };
+}
+
+window.loadAdminDetectCalibration = async function() {
+ if (!window.isAdmin()) return;
+ const msg = document.getElementById('adminDetectCalMsg');
+ if (msg) msg.textContent = '불러오는 중...';
+ try {
+  const data = await adminPost('/admin/detect-calibration', {});
+  adminSetDetectCalibrationForm(data.config || {});
+ } catch (e) {
+  adminSetMessage('adminDetectCalMsg', e.message || '감지 보정 설정을 불러오지 못했습니다.', 'error');
+ }
+};
+
+window.adminSaveDetectCalibration = async function() {
+ if (!window.isAdmin()) return;
+ const cfg = adminReadDetectCalibrationForm();
+ if (!Number.isFinite(cfg.limit) || cfg.limit < 1 || cfg.limit > 100) {
+  adminSetMessage('adminDetectCalMsg', '최근 작업 조회 수는 1~100 사이여야 합니다.', 'error');
+  return;
+ }
+ if (!Number.isFinite(cfg.factor) || cfg.factor < 0 || cfg.factor > 0.4) {
+  adminSetMessage('adminDetectCalMsg', '보정 비율은 0~0.4 사이여야 합니다.', 'error');
+  return;
+ }
+ if (!Number.isFinite(cfg.maxReduction) || cfg.maxReduction < 0 || cfg.maxReduction > 30) {
+  adminSetMessage('adminDetectCalMsg', '최대 감산은 0~30 사이여야 합니다.', 'error');
+  return;
+ }
+ if (!Number.isFinite(cfg.floor) || cfg.floor < 0 || cfg.floor > 100) {
+  adminSetMessage('adminDetectCalMsg', '최저 표시값은 0~100 사이여야 합니다.', 'error');
+  return;
+ }
+ adminSetMessage('adminDetectCalMsg', '저장 중...', 'info');
+ try {
+  const data = await adminPost('/admin/update-detect-calibration', { config: cfg });
+  adminSetDetectCalibrationForm(data.config || cfg);
+  adminSetMessage('adminDetectCalMsg', '저장 완료 · ' + adminDetectCalibrationExample(data.config || cfg), 'success');
+ } catch (e) {
+  adminSetMessage('adminDetectCalMsg', e.message || '감지 보정 설정 저장에 실패했습니다.', 'error');
+ }
+};
+
 window.loadAdminPage = async function() {
  const el = document.getElementById('adminContent');
  if (!el) return;
@@ -3174,6 +3255,7 @@ window.loadAdminPage = async function() {
  }
  await Promise.allSettled([
   window.loadAdminOverview(),
+  window.loadAdminDetectCalibration(),
   window.loadAdminJobs(),
   window.loadAdminRefundList(),
   window.loadAllCreditHistory(),
@@ -3311,6 +3393,7 @@ window.renderAdminUserLog = function() {
        <div class="gp-admin-log-meta">
          <span class="gp-admin-log-badge ${ti.cls}">${escapeHtml(ti.label)}</span>
          ${adminProbBadge(it.probability)}
+         ${it.calibrated ? '<span class="gp-admin-log-badge">보정</span>' : ''}
          <span class="gp-admin-log-date">${escapeHtml(adminDateText(it.createdAtMs))}</span>
          <span class="gp-admin-log-sub">${escapeHtml(lenInfo)} · ${adminNumber(it.credits)}크레딧</span>
        </div>
@@ -3347,7 +3430,14 @@ window.adminToggleLogItem = async function(id) {
   let html = '';
   html += block('입력 원문', it.inputText, true);
   if (it.type === 'detect') {
-   if (typeof it.probability === 'number') html += `<div class="gp-admin-log-block"><div class="gp-admin-log-block-head"><span>AI 탐지 확률</span></div><div class="gp-admin-log-text">${Math.round(it.probability)}%</div></div>`;
+   if (typeof it.probability === 'number') {
+    const cal = it.probabilityCalibration || {};
+    const raw = typeof it.rawProbability === 'number' ? Math.round(it.rawProbability) : null;
+    const note = raw !== null && raw !== Math.round(it.probability)
+     ? `<div style="margin-top:6px;color:var(--text3);font-size:12px;">원점수 ${raw}% · ${escapeHtml(cal.reason || 'test calibration')}</div>`
+     : '';
+    html += `<div class="gp-admin-log-block"><div class="gp-admin-log-block-head"><span>AI 탐지 확률</span></div><div class="gp-admin-log-text">${Math.round(it.probability)}%${note}</div></div>`;
+   }
    html += block('탐지 요약', it.summary, false);
    html += block('탐지 상세', it.detail, true);
   } else {

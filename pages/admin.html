@@ -35,6 +35,37 @@
       </div>
     </div>
 
+    <section class="gp-admin-panel">
+      <div class="gp-admin-section-head">
+        <h3>AI 감지 보정 설정 <span id="adminDetectCalSource" class="gp-admin-count"></span></h3>
+        <p>작업내역의 휴머나이저 결과와 감지 입력이 일치할 때만 적용됩니다.</p>
+      </div>
+      <div class="gp-admin-cal-grid">
+        <label class="gp-admin-cal-toggle">
+          <input id="adminDetectCalEnabled" type="checkbox">
+          <span>보정 사용</span>
+        </label>
+        <label class="gp-admin-label">
+          최근 작업 조회 수
+          <input id="adminDetectCalLimit" class="gp-admin-input" type="number" min="1" max="100" step="1">
+        </label>
+        <label class="gp-admin-label">
+          보정 비율
+          <input id="adminDetectCalFactor" class="gp-admin-input" type="number" min="0" max="0.4" step="0.01">
+        </label>
+        <label class="gp-admin-label">
+          최대 감산
+          <input id="adminDetectCalMaxReduction" class="gp-admin-input" type="number" min="0" max="30" step="1">
+        </label>
+        <label class="gp-admin-label">
+          최저 표시값
+          <input id="adminDetectCalFloor" class="gp-admin-input" type="number" min="0" max="100" step="1">
+        </label>
+        <button type="button" class="gp-admin-primary" onclick="adminSaveDetectCalibration()">저장</button>
+      </div>
+      <div id="adminDetectCalMsg" class="gp-admin-msg"></div>
+    </section>
+
     <!-- 작업 모니터: 전체 사용자의 실패·중단·진행 작업(transformJobArchive) 일괄 조회 -->
     <section class="gp-admin-panel">
       <div class="gp-admin-section-head">
