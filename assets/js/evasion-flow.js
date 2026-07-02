@@ -559,17 +559,32 @@
       }).join('');
     });
   }
+  function lavIsAdmin() {
+    return typeof window.isAdmin === 'function' && window.isAdmin();
+  }
+  function renderBasicExperimentToggle(s) {
+    var panel = $('lavBasicExperimentPanel');
+    var input = $('lavBasicExperiment');
+    var showPanel = lavIsAdmin() && s && s.tone === 'blog';
+    if (input) {
+      input.disabled = !showPanel;
+      input.checked = false;
+    }
+    if (panel) panel.hidden = !showPanel;
+  }
   function currentSettings() {
     var tone = document.querySelector('input[name="lavTone"]:checked');
     var len = document.querySelector('input[name="lavLen"]:checked');
     var ev = $('lavEvidence');
     var ac = $('lavAutoCoach');
+    var be = $('lavBasicExperiment');
     return {
       tone: tone ? tone.value : 'blog',
       length: len ? len.value : 'compact',
       memo: collectMemo(),
       evidence: !!(ev && ev.checked),
-      autoCoach: !!(ac && ac.checked && !ac.disabled)   // 자동 코칭(재구성 전용·기본 ON) — 시작 시 입장 자동 도출
+      autoCoach: !!(ac && ac.checked && !ac.disabled),   // 자동 코칭(재구성 전용·기본 ON) — 시작 시 입장 자동 도출
+      basicExperiment: !!(be && be.checked && !be.disabled && lavIsAdmin())
     };
   }
 
@@ -578,6 +593,7 @@
     var ttl = document.querySelector('.lav-confirm-title');
     if (ttl) ttl.textContent = '이 설정으로 시작할까요?';
     var s = currentSettings();
+    renderBasicExperimentToggle(s);
     renderCoachPicks(s);   // 자동 코칭 ON(고급)이면 추천 픽 체크박스 표시(시작 직전 선택)
     var sum = $('lavConfirmSummary');
     if (sum) {
@@ -859,10 +875,12 @@
           authErr.httpStatus = 401;
           throw authErr;
         }
+        var body = { text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text) };
+        if (mode === 'blog' && s && s.basicExperiment === true) body.basicExperiment = true;
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
-          body: JSON.stringify({ text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text) })
+          body: JSON.stringify(body)
         }).then(parseTransformStart);
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
@@ -887,6 +905,8 @@
     if (!text) { if (src) src.focus(); return; }
     pendingPolish = true;
     var cp = $('lavCoachPicks'); if (cp) cp.hidden = true;   // 다듬기(최소수정)는 코칭 픽 없음 — 모달 재사용 시 직전 잔여 숨김
+    var bp = $('lavBasicExperimentPanel'); if (bp) bp.hidden = true;
+    var bi = $('lavBasicExperiment'); if (bi) { bi.checked = false; bi.disabled = true; }
     lavStartBtnState(false);   // 코칭 잠금이 남아있을 수 있으니 시작 버튼 활성화 보장
     var ttl = document.querySelector('.lav-confirm-title');
     if (ttl) ttl.textContent = '과제 어투로 다듬을까요?';

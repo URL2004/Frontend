@@ -12951,6 +12951,17 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 .lav-confirm-summary li + li{border-top:1px solid #f3f4fa;}
 .lav-confirm-summary li span{color:#8a91a3;font-weight:600;flex:0 0 auto;}
 .lav-confirm-summary li b{color:#1a1f2e;font-weight:700;text-align:right;}
+.lav-admin-test-toggle{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:-4px 0 14px;padding:11px 12px;border:1px solid #dfe3f2;border-radius:8px;background:#f8f9fd;}
+.lav-admin-test-toggle[hidden]{display:none;}
+.lav-admin-test-check{display:flex;align-items:flex-start;gap:9px;min-width:0;cursor:pointer;}
+.lav-admin-test-check input{flex:0 0 auto;width:16px;height:16px;margin-top:2px;accent-color:#5a5bd8;}
+.lav-admin-test-check b{display:block;color:#1a1f2e;font-size:13px;font-weight:800;line-height:1.35;}
+.lav-admin-test-check i{display:block;margin-top:2px;color:#6a7184;font-size:11.5px;font-style:normal;font-weight:500;line-height:1.45;word-break:keep-all;}
+.lav-admin-test-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 auto;margin-top:1px;color:#5a5bd8;cursor:help;outline:none;}
+.lav-admin-test-tip > span{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid #c8c9f5;border-radius:50%;background:#f3f4ff;color:#4b4cc6;font-size:11px;font-weight:900;line-height:1;}
+.lav-admin-test-tip em{position:absolute;right:-6px;bottom:calc(100% + 9px);z-index:20;width:max-content;max-width:250px;padding:8px 10px;border:1px solid #202743;background:#202743;color:#fff;border-radius:8px;box-shadow:0 12px 30px rgba(25,31,53,.18);font-size:12px;font-style:normal;font-weight:700;line-height:1.45;white-space:normal;word-break:keep-all;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(4px);transition:opacity .14s ease,transform .14s ease,visibility .14s ease;}
+.lav-admin-test-tip em::after{content:"";position:absolute;right:10px;bottom:-5px;width:9px;height:9px;background:#202743;border-right:1px solid #202743;border-bottom:1px solid #202743;transform:rotate(45deg);}
+.lav-admin-test-tip:hover em,.lav-admin-test-tip:focus em,.lav-admin-test-tip:focus-within em{opacity:1;visibility:visible;transform:translateY(0);}
 /* 자동 코칭 추천 픽(시작 직전 선택) */
 .lav-coach-picks{margin:14px 0 4px;}
 .lav-coach-picks-head{display:flex;flex-direction:column;gap:2px;margin-bottom:9px;}
@@ -16231,12 +16242,6 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 @media(max-width:980px){.gp-admin-cal-grid{grid-template-columns:1fr 1fr;}.gp-admin-cal-toggle,.gp-admin-cal-grid .gp-admin-primary{height:auto;min-height:38px;}}
 @media(max-width:560px){.gp-admin-cal-grid{grid-template-columns:1fr;}.gp-admin-tip-pop{left:auto;right:-6px;max-width:min(260px,calc(100vw - 42px));transform:translate(0,4px);}.gp-admin-tip:hover .gp-admin-tip-pop,.gp-admin-tip:focus .gp-admin-tip-pop,.gp-admin-tip:focus-within .gp-admin-tip-pop{transform:translate(0,0);}.gp-admin-tip-pop::after{left:auto;right:10px;transform:rotate(45deg);}}
 
-/* 기본 피하기 개발테스트 */
-.gp-admin-exp-grid{display:grid;grid-template-columns:auto minmax(240px,1fr) auto;gap:10px 14px;align-items:center;}
-.gp-admin-exp-copy{display:flex;flex-direction:column;gap:2px;min-width:0;padding:9px 12px;border:1px solid var(--admin-line);border-radius:8px;background:var(--admin-soft);}
-.gp-admin-exp-copy b{font-size:12px;color:var(--admin-text);font-weight:800;}
-.gp-admin-exp-copy span{font-size:12px;color:var(--admin-text3);line-height:1.45;word-break:keep-all;}
-@media(max-width:760px){.gp-admin-exp-grid{grid-template-columns:1fr;align-items:stretch;}.gp-admin-exp-grid .gp-admin-primary{min-height:38px;}}
 
 /* 사용자 요약(플랫 수치) */
 .gp-admin-user-summary{display:flex;flex-direction:column;gap:12px;}
