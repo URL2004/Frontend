@@ -37,6 +37,24 @@
 
     <section class="gp-admin-panel">
       <div class="gp-admin-section-head">
+        <h3>휴머나이징 보존형 테스트</h3>
+        <p>운영 기능에 덮지 않고, 관리자 전용 테스트 페이지에서 새 엔진 분기를 확인합니다.</p>
+      </div>
+      <div class="gp-admin-exp-grid">
+        <div class="gp-admin-exp-copy">
+          <b>테스트 범위</b>
+          <span>기본 피하기, 과제 어투로 다듬기, 고급 피하기를 preserve-lab 프로필로 무차감 테스트합니다.</span>
+        </div>
+        <div class="gp-admin-exp-copy">
+          <b>적용 방식</b>
+          <span>저위험 원문 보호, 프록시 악화 되돌림, 표면 지표 악화 되돌림을 테스트 결과에만 적용합니다.</span>
+        </div>
+        <button type="button" class="gp-admin-primary" onclick="openAdminHumanizeLab()">테스트 페이지 열기</button>
+      </div>
+    </section>
+
+    <section class="gp-admin-panel">
+      <div class="gp-admin-section-head">
         <h3>AI 감지 보정 설정 <span id="adminDetectCalSource" class="gp-admin-count"></span></h3>
         <p>작업내역의 휴머나이저 결과와 감지 입력이 일치할 때만 적용됩니다. 체크와 숫자 변경은 저장 후 반영됩니다.</p>
       </div>
@@ -94,6 +112,31 @@
         <button type="button" class="gp-admin-primary" onclick="adminSaveDetectCalibration()">저장</button>
       </div>
       <div id="adminDetectCalMsg" class="gp-admin-msg"></div>
+    </section>
+
+    <section class="gp-admin-panel">
+      <div class="gp-admin-section-head">
+        <h3>기본 피하기 개발테스트 <span id="adminBasicExpSource" class="gp-admin-count"></span></h3>
+        <p>실기능을 덮지 않고, 저장 후 기본 피하기에만 문체 안정화 프로필을 적용합니다.</p>
+      </div>
+      <div class="gp-admin-exp-grid">
+        <div class="gp-admin-cal-toggle">
+          <label class="gp-admin-cal-check">
+            <input id="adminBasicExpEnabled" type="checkbox">
+            <span>개발테스트 사용</span>
+          </label>
+          <span class="gp-admin-tip" tabindex="0" aria-label="켜고 저장하면 기본 피하기에만 테스트 프로필이 적용됩니다. 관리자만 이 설정을 볼 수 있습니다." onclick="event.preventDefault();event.stopPropagation();">
+            <span class="gp-admin-tip-icon">?</span>
+            <span class="gp-admin-tip-pop" role="tooltip">켜고 저장하면 기본 피하기에만 테스트 프로필이 적용됩니다. 관리자만 이 설정을 볼 수 있습니다.</span>
+          </span>
+        </div>
+        <div class="gp-admin-exp-copy">
+          <b>적용 내용</b>
+          <span>원문 인칭 유지, 말투 통일, 짧은 문장 과다 완화, 1문장 문단 연속 정리</span>
+        </div>
+        <button type="button" class="gp-admin-primary" onclick="adminSaveBasicHumanizeExperiment()">저장</button>
+      </div>
+      <div id="adminBasicExpMsg" class="gp-admin-msg"></div>
     </section>
 
     <!-- 작업 모니터: 전체 사용자의 실패·중단·진행 작업(transformJobArchive) 일괄 조회 -->

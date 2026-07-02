@@ -16152,7 +16152,8 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
  --admin-text:#1a1f2e;--admin-text2:#5a6175;--admin-text3:#969cad;--admin-blue:#5a5bd8;--admin-red:#d94a3a;--admin-green:#2f9654;--admin-amber:#c4861a;
  color:var(--admin-text);font-family:var(--font);
 }
-#mainContent[data-main-design="lavender"] #adminContent{
+#mainContent[data-main-design="lavender"] #adminContent,
+#mainContent[data-main-design="lavender"] #adminHumanizeLabContent{
  min-height:calc(100vh - 64px);background:transparent;
  --surface:#fff;--surface2:#f4f5fa;--border:#e6e8f1;--text:#1a1f2e;--text2:#5a6175;--text3:#969cad;
  --blue:#5a5bd8;--red:#d94a3a;--green:#2f9654;--yellow:#c4861a;
@@ -16193,6 +16194,7 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-input-sm{padding:7px 9px;font-size:12px;width:auto;}
 .gp-admin-primary{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--admin-blue);background:var(--admin-blue);color:#fff;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:800;font-family:var(--font);cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s;}
 .gp-admin-primary:hover{background:#4a4cc4;border-color:#4a4cc4;}
+.gp-admin-primary:disabled{cursor:not-allowed;opacity:.55;background:#8c8de5;border-color:#8c8de5;}
 .gp-admin-danger{display:inline-flex;align-items:center;gap:5px;border:1px solid #ecc4bd;background:#fff;color:var(--admin-red);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s;}
 .gp-admin-danger:hover{background:#fdf3f1;border-color:#e3a89f;}
 .gp-admin-danger:disabled{cursor:not-allowed;opacity:.45;background:#f7f8fb;color:#9aa0b4;border-color:#e6e8f1;}
@@ -16232,6 +16234,31 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-tip:hover .gp-admin-tip-pop,.gp-admin-tip:focus .gp-admin-tip-pop,.gp-admin-tip:focus-within .gp-admin-tip-pop{opacity:1;visibility:visible;transform:translate(-50%,0);}
 @media(max-width:980px){.gp-admin-cal-grid{grid-template-columns:1fr 1fr;}.gp-admin-cal-toggle,.gp-admin-cal-grid .gp-admin-primary{height:auto;min-height:38px;}}
 @media(max-width:560px){.gp-admin-cal-grid{grid-template-columns:1fr;}.gp-admin-tip-pop{left:auto;right:-6px;max-width:min(260px,calc(100vw - 42px));transform:translate(0,4px);}.gp-admin-tip:hover .gp-admin-tip-pop,.gp-admin-tip:focus .gp-admin-tip-pop,.gp-admin-tip:focus-within .gp-admin-tip-pop{transform:translate(0,0);}.gp-admin-tip-pop::after{left:auto;right:10px;transform:rotate(45deg);}}
+
+/* 기본 피하기 개발테스트 */
+.gp-admin-exp-grid{display:grid;grid-template-columns:auto minmax(240px,1fr) auto;gap:10px 14px;align-items:center;}
+.gp-admin-exp-copy{display:flex;flex-direction:column;gap:2px;min-width:0;padding:9px 12px;border:1px solid var(--admin-line);border-radius:8px;background:var(--admin-soft);}
+.gp-admin-exp-copy b{font-size:12px;color:var(--admin-text);font-weight:800;}
+.gp-admin-exp-copy span{font-size:12px;color:var(--admin-text3);line-height:1.45;word-break:keep-all;}
+@media(max-width:760px){.gp-admin-exp-grid{grid-template-columns:1fr;align-items:stretch;}.gp-admin-exp-grid .gp-admin-primary{min-height:38px;}}
+
+/* 관리자 휴머나이징 실험실 */
+.gp-admin-lab-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+.gp-admin-lab-toolbar{display:grid;grid-template-columns:minmax(150px,.7fr) minmax(120px,.55fr) minmax(220px,1.6fr);gap:10px;margin-bottom:12px;}
+.gp-admin-lab-text textarea,.gp-admin-lab-output textarea{width:100%;resize:vertical;line-height:1.65;font-size:13px;}
+.gp-admin-lab-text span,.gp-admin-lab-output span{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.gp-admin-lab-text em{font-style:normal;color:var(--admin-text3);font-size:11px;font-weight:700;}
+.gp-admin-lab-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.gp-admin-lab-actions .gp-admin-msg{display:inline-flex;align-items:center;min-height:34px;}
+.gp-admin-msg.info{color:var(--admin-blue);}
+.gp-admin-msg.success{color:var(--admin-green);font-weight:800;}
+.gp-admin-msg.error{color:var(--admin-red);font-weight:800;}
+.gp-admin-lab-result-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:14px;align-items:stretch;}
+.gp-admin-lab-meta{display:flex;flex-direction:column;gap:10px;min-width:0;}
+.gp-admin-lab-chips{display:flex;flex-wrap:wrap;gap:6px;min-height:26px;}
+.gp-admin-lab-chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;background:#eef0ff;color:var(--admin-blue);font-size:11px;font-weight:800;}
+.gp-admin-lab-json{flex:1;min-height:260px;max-height:520px;overflow:auto;margin:0;border:1px solid var(--admin-line);border-radius:8px;background:#111827;color:#e5e7eb;padding:12px;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word;}
+@media(max-width:900px){.gp-admin-lab-toolbar,.gp-admin-lab-result-grid{grid-template-columns:1fr;}.gp-admin-lab-head-actions{justify-content:flex-start;}}
 
 
 /* 사용자 요약(플랫 수치) */

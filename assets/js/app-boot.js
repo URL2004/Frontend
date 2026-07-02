@@ -1,10 +1,10 @@
-﻿(function () {
+(function () {
   if (window.GP_MAINTENANCE_BLOCKED) {
     document.documentElement.classList.add('design-ready');
     return;
   }
 
-  var v = 'lav-140';
+  var v = 'lav-141';
   function script(src, attrs) {
     attrs = attrs || '';
     document.write('<script ' + attrs + ' src="' + src + '"><\/script>');

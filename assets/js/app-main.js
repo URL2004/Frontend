@@ -13,7 +13,7 @@ function creditNeededForText(text, apiMode) {
 function currentCreditMode() {
  return mode === 'detect' ? 'detect' : 'humanize';
 }
-const ROUTE_TABS = ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','history','pro'];
+const ROUTE_TABS = ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','adminHumanizeLab','history','pro'];
 const ROUTE_PATHS = {
  main: '/',
  pricing: '/pricing',
@@ -26,6 +26,7 @@ const ROUTE_PATHS = {
  notice: '/notice',
  mypage: '/mypage',
  admin: '/admin',
+ adminHumanizeLab: '/admin-humanize-lab',
  history: '/history',
  pro: '/pro'
 };
@@ -42,6 +43,7 @@ const PATH_ROUTES = {
  '/notice': 'notice',
  '/mypage': 'mypage',
  '/admin': 'admin',
+ '/admin-humanize-lab': 'adminHumanizeLab',
  '/history': 'history',
  '/pro': 'pro'
 };
@@ -89,6 +91,10 @@ faq: {
  admin: {
   title: '관리자 · 교수님 피하기',
   description: '교수님 피하기 관리자 운영 페이지입니다.'
+ },
+ adminHumanizeLab: {
+  title: '휴머나이징 테스트 · 교수님 피하기 관리자',
+  description: '관리자 전용 휴머나이징 보존형 테스트 페이지입니다.'
  },
  history: {
   title: '이용 기록 · 교수님 피하기',
@@ -159,6 +165,7 @@ function runRouteSideEffects(t) {
  if (t === 'community' && typeof window.loadPosts === 'function') window.loadPosts();
  if (t === 'qna' && typeof window.loadQuestions === 'function') window.loadQuestions();
  if (t === 'admin' && typeof window.loadAdminPage === 'function') window.loadAdminPage();
+ if (t === 'adminHumanizeLab' && typeof window.loadAdminHumanizeLab === 'function') window.loadAdminHumanizeLab();
 }
 
 function applyRouteFromUrl(opts) {
@@ -171,6 +178,10 @@ function applyRouteFromUrl(opts) {
  }
  if (routeTab === 'admin') {
   openAdminPage();
+  return;
+ }
+ if (routeTab === 'adminHumanizeLab') {
+  openAdminHumanizeLab();
   return;
  }
  if (routeTab === 'pro') {
@@ -376,6 +387,22 @@ function openAdminPage() {
  tryLoad(10);
 }
 window.openAdminPage = openAdminPage;
+function openAdminHumanizeLab() {
+ if (!window.CU) { showScreen('login'); return; }
+ if (typeof window.isAdmin === 'function' && !window.isAdmin()) {
+  if (window.gpToast) window.gpToast('관리자 권한이 필요합니다.', { type: 'error', title: '접근 제한' });
+  else alert('관리자 권한이 필요합니다.');
+  openMyPage();
+  return;
+ }
+ switchTab('adminHumanizeLab');
+ var tryLoad = function(tries) {
+  if (typeof window.loadAdminHumanizeLab === 'function') { window.loadAdminHumanizeLab(); }
+  else if (tries > 0) { setTimeout(function(){ tryLoad(tries-1); }, 200); }
+ };
+ tryLoad(10);
+}
+window.openAdminHumanizeLab = openAdminHumanizeLab;
 function switchTab(t, opts) {
  opts = opts || {};
  t = normalizeRouteTab(t);
@@ -383,7 +410,7 @@ function switchTab(t, opts) {
  document.querySelectorAll('.ntab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.mnav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.snav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
- ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','history','pro'].forEach(n=>{
+ ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','adminHumanizeLab','history','pro'].forEach(n=>{
  const el = document.getElementById(n+'Content');
  if (el) el.style.display = n===t ? 'block' : 'none';
  });

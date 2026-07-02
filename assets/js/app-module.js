@@ -3228,6 +3228,278 @@ window.adminSaveDetectCalibration = async function() {
  }
 };
 
+function adminSetBasicHumanizeExperimentForm(cfg) {
+ cfg = cfg || {};
+ const enabled = document.getElementById('adminBasicExpEnabled');
+ const source = document.getElementById('adminBasicExpSource');
+ if (enabled) enabled.checked = cfg.enabled === true;
+ if (source) source.textContent = cfg.source || '-';
+ adminSetMessage('adminBasicExpMsg', cfg.enabled ? '현재 켜짐 · 기본 피하기에 개발테스트 프로필이 적용됩니다.' : '현재 꺼짐 · 기본 피하기는 기존 운영 프로필을 사용합니다.', 'info');
+}
+
+function adminReadBasicHumanizeExperimentForm() {
+ return {
+  enabled: document.getElementById('adminBasicExpEnabled')?.checked === true
+ };
+}
+
+window.loadAdminBasicHumanizeExperiment = async function() {
+ if (!window.isAdmin()) return;
+ const msg = document.getElementById('adminBasicExpMsg');
+ if (msg) msg.textContent = '불러오는 중...';
+ try {
+  const data = await adminPost('/admin/basic-humanize-experiment', {});
+  adminSetBasicHumanizeExperimentForm(data.config || {});
+ } catch (e) {
+  adminSetMessage('adminBasicExpMsg', e.message || '기본 피하기 개발테스트 설정을 불러오지 못했습니다.', 'error');
+ }
+};
+
+window.adminSaveBasicHumanizeExperiment = async function() {
+ if (!window.isAdmin()) return;
+ const cfg = adminReadBasicHumanizeExperimentForm();
+ adminSetMessage('adminBasicExpMsg', '저장 중...', 'info');
+ try {
+  const data = await adminPost('/admin/update-basic-humanize-experiment', { config: cfg });
+  adminSetBasicHumanizeExperimentForm(data.config || cfg);
+  adminSetMessage('adminBasicExpMsg', cfg.enabled ? '저장 완료 · 개발테스트 적용 중' : '저장 완료 · 개발테스트 꺼짐', 'success');
+ } catch (e) {
+  adminSetMessage('adminBasicExpMsg', e.message || '기본 피하기 개발테스트 설정 저장에 실패했습니다.', 'error');
+ }
+};
+
+let adminLabPollToken = 0;
+
+function adminLabSetStatus(text, type) {
+ const el = document.getElementById('adminLabStatus');
+ if (!el) return;
+ el.textContent = text || '';
+ el.className = 'gp-admin-msg' + (type ? ' ' + type : '');
+}
+
+function adminLabSetBusy(busy) {
+ const buttons = [document.getElementById('adminLabRunBtn'), document.getElementById('adminLabHeaderRunBtn')].filter(Boolean);
+ buttons.forEach(btn => {
+  btn.disabled = !!busy;
+  btn.textContent = busy ? '테스트 진행 중...' : '보존형 테스트 실행';
+ });
+}
+
+function adminLabModeLabel(mode) {
+ if (mode === 'blog') return '기본 피하기';
+ if (mode === 'polish') return '과제 어투로 다듬기';
+ return '고급 피하기';
+}
+
+function adminLabReadForm() {
+ const text = (document.getElementById('adminLabInput')?.value || '').trim();
+ const mode = document.getElementById('adminLabMode')?.value || 'blog';
+ const lang = document.getElementById('adminLabLang')?.value || 'ko';
+ const memo = (document.getElementById('adminLabMemo')?.value || '').trim();
+ return { text, mode, lang, memo };
+}
+
+function adminLabRenderChips(items) {
+ const wrap = document.getElementById('adminLabMetaChips');
+ if (!wrap) return;
+ wrap.innerHTML = '';
+ (items || []).filter(Boolean).forEach(txt => {
+  const chip = document.createElement('span');
+  chip.className = 'gp-admin-lab-chip';
+  chip.textContent = txt;
+  wrap.appendChild(chip);
+ });
+}
+
+function adminLabRenderResult(st) {
+ const result = (st && st.result) || {};
+ const out = document.getElementById('adminLabOutput');
+ if (out) out.value = result.outputText || '';
+ const jobId = document.getElementById('adminLabJobId');
+ if (jobId) jobId.textContent = st.jobId ? '#' + String(st.jobId).slice(0, 6).toUpperCase() : '';
+ const lab = result.preserveLab || {};
+ const gates = lab.gates || {};
+ const ckReasons = (gates.ck && gates.ck.reasons) || [];
+ const surfaceReasons = (gates.surface && gates.surface.reasons) || [];
+ adminLabRenderChips([
+  '모드 ' + adminLabModeLabel(st.mode || 'formal'),
+  '프로필 ' + (result.styleProfile || 'preserve_lab'),
+  lab.path ? '경로 ' + lab.path : '',
+  lab.strength ? '강도 ' + lab.strength : '',
+  result.compressionFallback ? '압축 폴백' : '',
+  result.chunkCount != null ? '청크 ' + result.chunkCount : '',
+  result.fallbackCount ? '청크 폴백 ' + result.fallbackCount : '',
+  ckReasons.length ? 'CK 되돌림 ' + ckReasons.length : '',
+  surfaceReasons.length ? '표면 게이트 ' + surfaceReasons.length : ''
+ ]);
+ const meta = {
+  status: st.status,
+  mode: st.mode,
+  stage: st.stage,
+  result: {
+   styleProfile: result.styleProfile,
+   adminHumanizeLab: result.adminHumanizeLab,
+   compressionFallback: result.compressionFallback,
+   chunkCount: result.chunkCount,
+   fallbackCount: result.fallbackCount,
+   preserveLab: result.preserveLab,
+   floorReport: result.floorReport
+  },
+  note: st.note || ''
+ };
+ const pre = document.getElementById('adminLabMetaJson');
+ if (pre) pre.textContent = JSON.stringify(meta, null, 2);
+}
+
+async function adminLabToken(force) {
+ if (!window.CU || !window.isAdmin()) throw new Error('관리자 권한이 필요합니다.');
+ return await window.CU.getIdToken(!!force);
+}
+
+async function adminLabPoll(jobId, tokenId) {
+ let idToken = await adminLabToken(false);
+ const deadline = Date.now() + 6 * 3600 * 1000;
+ while (Date.now() < deadline && tokenId === adminLabPollToken) {
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  let res = await fetch(window.apiUrl('/transform/' + jobId), {
+   headers: { Authorization: 'Bearer ' + idToken }
+  });
+  if (res.status === 401) {
+   idToken = await adminLabToken(true);
+   res = await fetch(window.apiUrl('/transform/' + jobId), {
+    headers: { Authorization: 'Bearer ' + idToken }
+   });
+  }
+  const st = await res.json().catch(() => ({}));
+  st.jobId = jobId;
+  if (!res.ok || st.error && !st.status) throw new Error(st.error || '작업 상태를 불러오지 못했습니다.');
+  if (st.status === 'queued') {
+   adminLabSetStatus(`대기 중 · ${st.queuePosition || '-'}번째`, 'info');
+   continue;
+  }
+  if (st.status === 'running') {
+   adminLabSetStatus(st.stage || '처리 중...', 'info');
+   continue;
+  }
+  if (st.status === 'done') {
+   adminLabRenderResult(st);
+   adminLabSetStatus('완료', 'success');
+   adminLabSetBusy(false);
+   return;
+  }
+  if (st.status === 'blocked') {
+   adminLabRenderResult(st);
+   adminLabSetStatus(st.reason || '게이트에 차단되었습니다.', 'error');
+   adminLabSetBusy(false);
+   return;
+  }
+  if (st.status === 'error' || st.status === 'cancelled') {
+   throw new Error(st.error || '작업이 중단되었습니다.');
+  }
+ }
+ throw new Error('작업이 예상보다 오래 걸립니다. 잠시 후 다시 확인해 주세요.');
+}
+
+window.adminHumanizeLabCount = function() {
+ const text = document.getElementById('adminLabInput')?.value || '';
+ const el = document.getElementById('adminLabInputCount');
+ if (el) el.textContent = `${text.length.toLocaleString('ko-KR')}자`;
+};
+
+window.adminHumanizeLabClear = function() {
+ adminLabPollToken++;
+ const input = document.getElementById('adminLabInput');
+ const output = document.getElementById('adminLabOutput');
+ const memo = document.getElementById('adminLabMemo');
+ if (input) input.value = '';
+ if (output) output.value = '';
+ if (memo) memo.value = '';
+ const pre = document.getElementById('adminLabMetaJson');
+ if (pre) pre.textContent = '{}';
+ const jobId = document.getElementById('adminLabJobId');
+ if (jobId) jobId.textContent = '';
+ adminLabRenderChips([]);
+ adminLabSetStatus('', '');
+ adminLabSetBusy(false);
+ window.adminHumanizeLabCount();
+};
+
+window.adminHumanizeLabCopy = async function() {
+ const text = document.getElementById('adminLabOutput')?.value || '';
+ if (!text) return;
+ await navigator.clipboard.writeText(text);
+ if (window.gpToast) window.gpToast('결과를 복사했습니다.', { type: 'success', title: '복사 완료' });
+ else alert('복사했습니다.');
+};
+
+window.adminHumanizeLabRun = async function() {
+ if (!window.CU || !window.isAdmin()) {
+  adminLabSetStatus('관리자 권한이 필요합니다.', 'error');
+  return;
+ }
+ const form = adminLabReadForm();
+ const minLen = form.mode === 'formal' ? 200 : 50;
+ if (form.text.length < minLen) {
+  adminLabSetStatus(`이 모드는 최소 ${minLen}자가 필요합니다.`, 'error');
+  return;
+ }
+ adminLabPollToken++;
+ const tokenId = adminLabPollToken;
+ adminLabSetBusy(true);
+ adminLabSetStatus('작업 시작 중...', 'info');
+ const out = document.getElementById('adminLabOutput');
+ if (out) out.value = '';
+ adminLabRenderChips(['시작 준비']);
+ try {
+  const idToken = await adminLabToken(true);
+  const res = await fetch(window.apiUrl('/transform'), {
+   method: 'POST',
+   headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+   body: JSON.stringify({
+    text: form.text,
+    mode: form.mode,
+    lang: form.lang,
+    memo: form.memo,
+    adminHumanizeLab: true,
+    humanizeExperiment: true,
+    evidence: false,
+    length: 'keep'
+   })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.error || '테스트 작업을 시작하지 못했습니다.');
+  const jobId = data.jobId;
+  const jobEl = document.getElementById('adminLabJobId');
+  if (jobEl && jobId) jobEl.textContent = '#' + String(jobId).slice(0, 6).toUpperCase();
+  adminLabSetStatus(data.job && data.job.status === 'queued' ? '대기열에 들어갔습니다.' : '처리 중...', 'info');
+  await adminLabPoll(jobId, tokenId);
+ } catch (e) {
+  if (tokenId === adminLabPollToken) {
+   adminLabSetStatus(e.message || '테스트 실행에 실패했습니다.', 'error');
+   adminLabSetBusy(false);
+  }
+ }
+};
+
+window.loadAdminHumanizeLab = async function() {
+ const el = document.getElementById('adminHumanizeLabContent');
+ if (!el) return;
+ el.style.display = 'block';
+ window.scrollTo(0, 0);
+ const gate = document.getElementById('adminLabGateMsg');
+ if (!window.CU) {
+  if (gate) { gate.hidden = false; gate.textContent = '로그인이 필요합니다.'; }
+  showScreen('login');
+  return;
+ }
+ if (!window.isAdmin()) {
+  if (gate) { gate.hidden = false; gate.textContent = '관리자 권한이 필요합니다.'; }
+  return;
+ }
+ if (gate) { gate.hidden = true; gate.textContent = ''; }
+ window.adminHumanizeLabCount();
+};
+
 window.loadAdminPage = async function() {
  const el = document.getElementById('adminContent');
  if (!el) return;
@@ -3256,6 +3528,7 @@ window.loadAdminPage = async function() {
  await Promise.allSettled([
  window.loadAdminOverview(),
  window.loadAdminDetectCalibration(),
+ window.loadAdminBasicHumanizeExperiment(),
   window.loadAdminJobs(),
   window.loadAdminRefundList(),
   window.loadAllCreditHistory(),
