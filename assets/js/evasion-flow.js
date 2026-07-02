@@ -104,9 +104,11 @@
     var src = $('lavInput');
     var text = src ? src.value : '';
     cameFromReport = false;   // 진단 경유 동선 — 설정 화면 뒤로가기는 방법선택으로
-    // ★ 코칭 픽 조기 프리페치(2026-06-18): /coach-suggest가 ~9초 걸려, 확인창에서야 받으면 "불러오는 중"이 길어
-    //   사용자가 못 보고 시작을 누른다. 진단 단계(가장 이른 시점)에 미리 받아 캐시 → 확인창 열 땐 즉시 표시.
-    try { if (text && text.trim().replace(/\s/g, '').length >= 80) fetchCoach(text); } catch (e) { }
+    // ★ 코칭 픽 조기 프리페치: 자동 코칭을 사용자가 켠 경우에만 비용을 쓰고 후보를 캐시한다.
+    try {
+      var ac = $('lavAutoCoach');
+      if (ac && ac.checked && !ac.disabled && text && text.trim().replace(/\s/g, '').length >= 80) fetchCoach(text);
+    } catch (e) { }
     show('analyzing');
     var minWait = new Promise(function (r) { setTimeout(r, 900); });   // 스피너 최소 노출(즉답이면 화면이 깜빡임)
     console.info('[evasion] API_BASE =', window.apiBase ? window.apiBase() : '?');
@@ -358,7 +360,7 @@
         var banner = document.createElement('div');
         banner.className = 'lav-rep-coach';
         var bt = document.createElement('b');
-        bt.textContent = '탐지율 내리려면 → 경험 메모 ' + bf.join(' · ');
+        bt.textContent = '글을 더 구체적으로 만들려면 → 경험 메모 ' + bf.join(' · ');
         var bw = document.createElement('span');
         bw.textContent = ' 를 채우세요. (' + d.coach.map(function (c) { return c.why; }).join(' / ') + ')';
         banner.appendChild(bt); banner.appendChild(bw);
@@ -548,7 +550,7 @@
     b.disabled = !!loading;
     b.textContent = loading ? '추천 불러오는 중…' : '시작하기';
   }
-  // 시작 확인 모달에 추천 픽(입장·경험) 체크박스 렌더 — 자동 코칭 ON이면(기본/고급 둘 다). 관점은 기본 체크, 경험은 해제.
+  // 시작 확인 모달에 추천 픽(입장·경험) 체크박스 렌더 — 자동 코칭 ON이면(기본/고급 둘 다).
   //   ★2026-06-18: 해요체 캐주얼 글(기본 피하기)에서 자동코칭 픽이 안 뜨던 문제 — 'formal 전용' 게이트 제거.
   //   메모 경로(collectMemo→memo)는 blog(runShortJob)·formal 둘 다 전송하므로 픽이 양쪽에 적용된다.
   //   ★★2026-06-18(사장님 지적): 확인창이 먼저 뜨고 픽이 ~9초 뒤 채워져, 그 빈 순간에 사용자가 "코칭 안 되네" 하고
@@ -570,7 +572,7 @@
       done = true;
       if (gen !== _coachRenderGen) return;   // 더 최신 요청 있으면 무시
       lavStartBtnState(false);               // 로딩 끝 → 시작 가능
-      var items = ((d.stances || []).map(function (x) { return { text: x.text, tag: '관점', pre: true }; }))
+      var items = ((d.stances || []).map(function (x) { return { text: x.text, tag: '관점', pre: false }; }))
         .concat((d.experiences || []).map(function (x) { return { text: x.text, tag: '경험', pre: false }; }));
       if (!items.length) { wrap.hidden = true; return; }
       list.innerHTML = items.map(function (it) {
@@ -596,7 +598,7 @@
       length: len ? len.value : 'compact',
       memo: basicReport ? '' : collectMemo(),
       evidence: !!(ev && ev.checked),
-      autoCoach: !basicReport && !!(ac && ac.checked && !ac.disabled)   // 자동 코칭(재구성 전용·기본 ON) — 시작 시 입장 자동 도출
+      autoCoach: !basicReport && !!(ac && ac.checked && !ac.disabled)   // 자동 코칭 — 사용자가 켠 경우에만 추천 후보를 표시
     };
   }
 
@@ -614,7 +616,7 @@
       if (s.tone === 'formal') rows.push(['분량', s.length === 'keep' ? '분량 유지' : '컴팩트(~60%)']);
       // 자동 코칭 ON이면 위 추천 픽 섹션이 입력을 대신함 → 메모 행 생략(중복·혼동 방지)
       if (s.tone === 'blog' && s.basicStyle === 'report') rows.push(['추가 메모', '사용 안 함 · 원문 중심']);
-      else if (!(s.tone === 'formal' && s.autoCoach)) rows.push(['경험 메모', s.memo ? '입력함 · 글에 자연스럽게 녹여요' : '없음 (적으면 탐지율↓)']);
+      else if (!(s.tone === 'formal' && s.autoCoach)) rows.push(['경험 메모', s.memo ? '입력함 · 글에 자연스럽게 녹여요' : '없음']);
       rows.push(['근거 보강', s.tone === 'formal' ? (s.evidence ? '켬 — 검색 후 검수·승인' : '끔') : '기본 피하기에선 사용 안 함']);
       sum.innerHTML = rows.map(function (r) {
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
@@ -1252,7 +1254,7 @@
     var doneNote = $('lavDoneNote');
     if (doneNote) doneNote.textContent = st.mode === 'polish'
       ? '과제 어투로 다듬었어요. 사실과 분량은 원문 그대로 두고 문장만 정리했어요. (AI 티 줄이기와는 다른 기능이에요)'
-      : '탐지율은 글과 검사 도구에 따라 달라서 수치로 약속하기는 어려워요. 우리 AI 감지나 외부 검사로 직접 확인해 보고, 높게 나오면 경험 메모를 더 채워 다시 돌려보세요.';
+      : '검사 결과는 글과 도구에 따라 달라서 수치로 약속하기는 어려워요. 결과가 만족스럽지 않으면 실제 경험이나 구체 사례를 더해 다시 정리해 보세요.';
     if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
     lavSaveToLibrary(label, st.result && st.result.outputText, grade ? grade + '등급' : '');
     notifyJobDone(st, label);

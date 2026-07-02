@@ -301,11 +301,11 @@
            <!-- 경험·관점 입력: 자동 코칭(추천 받아 고르기) ↔ 직접 메모. 자동 ON이면 메모칸 숨김(가독성). 기본/고급 둘 다. -->
            <div class="lav-set-block" id="lavAutoCoachBlock">
              <label class="lav-toggle">
-               <input type="checkbox" id="lavAutoCoach" checked onchange="lavAutoCoachChange()">
+               <input type="checkbox" id="lavAutoCoach" onchange="lavAutoCoachChange()">
                <span class="lav-toggle-track" aria-hidden="true"><i></i></span>
                <span class="lav-toggle-text">
-                 <b>자동 코칭 <u class="rec">추천</u></b>
-                 <i>시작 전에 원문과 어울리는 문장·경험을 추천해요. 고르기만 하면 글에 자연스럽게 반영합니다.<span class="hl">탐지율을 낮출 가능성을 높여요.</span><span class="sub">없는 경험은 만들어 넣지 않아요.</span></i>
+                 <b>자동 코칭</b>
+                 <i>시작 전에 원문과 어울리는 관점·경험 후보를 추천해요. 실제로 반영할 항목만 직접 선택합니다.<span class="sub">없는 경험은 선택하지 않는 방식이에요.</span></i>
                </span>
              </label>
              <p class="lav-memo-toggle-hint" id="lavMemoToggleHint"><button type="button" class="lav-linkbtn" onclick="lavMemoManual()">경험 메모 직접 입력</button></p>
