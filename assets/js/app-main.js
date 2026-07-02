@@ -76,7 +76,7 @@ faq: {
  },
  qna: {
   title: '문의하기 · 교수님 피하기',
-  description: '교수님 피하기 1:1 문의 — 결제·계정·오류 등 개인 문의는 여기서 남기거나 카카오톡으로 연락주세요.'
+  description: '교수님 피하기 1:1 문의 — 결제·계정·오류 등 개인 문의를 남기고 답변을 확인하세요.'
  },
  notice: {
   title: '공지사항 · 교수님 피하기',
@@ -1323,14 +1323,6 @@ function dlOut() {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function openKakaoInquiry() {
-  if (window.gpTrack) window.gpTrack('contact_click', { channel: 'kakao' });
-  const url = window.APP_CONFIG && window.APP_CONFIG.KAKAO_INQUIRY_URL;
-  if (url) window.open(url, '_blank', 'noopener,noreferrer');
-  else alert('카카오톡 문의 주소가 설정되지 않았어요. 고객센터 이메일(aqua0661123@naver.com)로 문의해주세요.');
-}
-window.openKakaoInquiry = openKakaoInquiry;
-
 function maintenancePreviewQuery() {
   if (!window.GP_MAINTENANCE_BYPASSED || !window.APP_CONFIG?.MAINTENANCE_PREVIEW_KEY) return '';
   return '&preview_key=' + encodeURIComponent(window.APP_CONFIG.MAINTENANCE_PREVIEW_KEY);
@@ -1603,7 +1595,7 @@ function showPolicy(type) {
 
  if (type === 'company') {
  title.textContent = '회사 정보 · 사업자 정보';
- body.innerHTML = '상호명: 지피코리아(gpkorea)<br>대표자: 윤동민<br>개인정보보호책임자: 윤동민<br>사업자등록번호: 213-11-67637<br>통신판매업 신고번호: 2024-인천연수구-4281<br>사업장 주소: 인천광역시 연수구 랜드마크로360번길 40, 108동 3201호<br>이메일: aqua0661123@naver.com<br>고객센터: 카카오톡 문의 · 운영시간 09:00 ~ 23:59<br><br><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2131167637" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;">▸ 통신판매사업자 정보 확인 (공정거래위원회)</a>';
+ body.innerHTML = '상호명: 지피코리아(gpkorea)<br>대표자: 윤동민<br>개인정보보호책임자: 윤동민<br>사업자등록번호: 213-11-67637<br>통신판매업 신고번호: 2024-인천연수구-4281<br>사업장 주소: 인천광역시 연수구 랜드마크로360번길 40, 108동 3201호<br>이메일: aqua0661123@naver.com<br>고객센터: 이메일 문의 · 운영시간 09:00 ~ 23:59<br><br><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2131167637" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;">▸ 통신판매사업자 정보 확인 (공정거래위원회)</a>';
  return;
  }
 
@@ -1703,7 +1695,7 @@ function showPolicy(type) {
 - 성명: 윤동민
 - 직책: 대표
 - 이메일: aqua0661123@naver.com
-- 문의: 카카오톡 문의 또는 고객센터 이메일
+- 문의: 고객센터 이메일
 
 8. 개인정보 침해 신고
 개인정보 침해 관련 신고·상담은 아래 기관에 문의하실 수 있습니다.
@@ -1727,7 +1719,7 @@ function showPolicy(type) {
 - 월 구독의 경우 당월 환불만 가능하며, 익월 자동결제는 해지 신청으로 중단할 수 있습니다.
 
 3. 환불 신청 방법
-- 마이페이지의 환불하기 메뉴 또는 카카오톡 문의/고객센터 이메일(aqua0661123@naver.com)로 환불 신청
+- 마이페이지의 환불하기 메뉴 또는 고객센터 이메일(aqua0661123@naver.com)로 환불 신청
 - 신청 시 아래 정보를 기재해 주세요.
   · 주문번호 및 결제일
   · 환불 사유

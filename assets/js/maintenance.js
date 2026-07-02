@@ -39,7 +39,6 @@
   function render() {
     var root = document.getElementById('page-root');
     if (!root) return;
-    var inquiry = config.KAKAO_INQUIRY_URL || 'https://open.kakao.com/o/s3Jegizi';
     var message = config.MAINTENANCE_MESSAGE || '더 안정적인 결제와 변환 환경을 적용하고 있어요. 점검이 끝나면 바로 다시 이용할 수 있습니다.';
     document.documentElement.classList.add('design-ready');
     document.body.classList.add('gp-maintenance-body');
@@ -50,8 +49,8 @@
           '<p class="gp-maintenance-kicker">서비스 점검 중</p>' +
           '<h1 id="gpMaintenanceTitle">잠시만 기다려 주세요.</h1>' +
           '<p class="gp-maintenance-copy">' + esc(message) + '</p>' +
-          '<a class="gp-maintenance-kakao" href="' + esc(inquiry) + '" target="_blank" rel="noopener noreferrer">카카오톡 문의하기</a>' +
-          '<p class="gp-maintenance-note">이미 결제했거나 작업 결과 확인이 필요한 경우 카카오톡으로 문의해 주세요.</p>' +
+          '<a class="gp-maintenance-email" href="mailto:aqua0661123@naver.com">이메일 문의하기</a>' +
+          '<p class="gp-maintenance-note">이미 결제했거나 작업 결과 확인이 필요한 경우 고객센터 이메일로 문의해 주세요.</p>' +
         '</section>' +
       '</main>';
   }

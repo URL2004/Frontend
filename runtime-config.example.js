@@ -6,7 +6,6 @@ window.APP_RUNTIME_CONFIG = {
   API_BASE: 'https://your-staging-backend.onrender.com',
   GA_MEASUREMENT_ID: 'G-4FVJBV5FDJ',
   TOSS_CLIENT_KEY: 'test_ck_replace_me',
-  KAKAO_INQUIRY_URL: 'https://open.kakao.com/o/s3Jegizi',
   FIREBASE: {
     apiKey: 'replace_me',
     authDomain: 'replace_me.firebaseapp.com',

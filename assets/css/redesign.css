@@ -14756,41 +14756,6 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  .lav-flow-cta,.lav-flow-cta::before{transition:none !important;}
 }
 
-/* ───────── lavender v66: 우측 하단 카카오 1:1 문의 플로팅 CTA ─────────
-   카카오 브랜드(노랑 #FEE500 + 갈색 글자)로 즉시 인지. #appScreen 안이라 로그인 화면 자동 비표시.
-   데스크톱 우하단, 모바일은 하단 네비(z 1000) 위로 올림. */
-.gp-kakao-fab{
- position:fixed;
- right:24px;
- bottom:24px;
- z-index:999;
- display:inline-flex;
- align-items:center;
- gap:8px;
- height:52px;
- padding:0 20px 0 15px;
- border:0;
- border-radius:999px;
- background:#FEE500;
- color:#3a1d1d;
- font-size:14px;
- font-weight:800;
- letter-spacing:-.2px;
- cursor:pointer;
- box-shadow:0 10px 26px rgba(60,45,0,.24);
- transition:transform .16s ease,box-shadow .16s ease;
-}
-.gp-kakao-fab:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(60,45,0,.32);}
-.gp-kakao-fab:active{transform:translateY(0) scale(.97);}
-.gp-kakao-fab-ic{width:24px;height:24px;fill:#3a1d1d;flex-shrink:0;}
-@media(max-width:600px){
- /* 모바일 하단 네비(약 60px) 위로 — 라벨 빼고 아이콘만 원형으로 컴팩트 */
- .gp-kakao-fab{bottom:74px;right:16px;height:50px;width:50px;padding:0;justify-content:center;}
- .gp-kakao-fab-tx{display:none;}
-}
-@media (prefers-reduced-motion:reduce){
- .gp-kakao-fab{transition:none !important;}
-}
 /* Global feedback: toast, confirm/prompt modal, notification center */
 .gp-toast-root{
   position:fixed;
@@ -15321,7 +15286,7 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
   line-height:1.65;
   word-break:keep-all;
 }
-.gp-maintenance-kakao{
+.gp-maintenance-email{
   display:inline-flex;
   align-items:center;
   justify-content:center;
@@ -15336,7 +15301,7 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
   font-weight:850;
   box-shadow:0 12px 28px rgba(85,87,210,.22);
 }
-.gp-maintenance-kakao:hover{
+.gp-maintenance-email:hover{
   background:#4648bf;
 }
 .gp-maintenance-note{
@@ -15673,37 +15638,19 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 #mainContent[data-main-design="lavender"] .gp-faq-ask strong{display:block;font-size:15.5px;font-weight:800;color:#1a1f2e;}
 #mainContent[data-main-design="lavender"] .gp-faq-ask span{display:block;margin-top:3px;font-size:13px;color:#5d6477;}
 #mainContent[data-main-design="lavender"] .gp-faq-ask-btns{display:flex;gap:10px;flex-shrink:0;}
-#mainContent[data-main-design="lavender"] .gp-faq-ask-kakao{
- height:44px;padding:0 18px;border:0;border-radius:11px;cursor:pointer;
- background:#FEE500;color:#3a1d1d;font-size:13.5px;font-weight:800;
-}
 #mainContent[data-main-design="lavender"] .gp-faq-ask-go{
  height:44px;padding:0 18px;border:0;border-radius:11px;cursor:pointer;
  background:#5a5bd8;color:#fff;font-size:13.5px;font-weight:700;
 }
 #mainContent[data-main-design="lavender"] .gp-faq-ask-go:hover{background:#4a4bc0;}
 
-/* 문의하기: 카카오 빠른 채널 카드 */
-#mainContent[data-main-design="lavender"] .gp-inq-quick{
- margin:0 0 16px;padding:16px 18px;border-radius:14px;
- background:#fffbe6;border:1px solid #f4e9a8;
- display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
-}
-#mainContent[data-main-design="lavender"] .gp-inq-quick strong{display:block;font-size:14px;font-weight:700;color:#5a4b00;}
-#mainContent[data-main-design="lavender"] .gp-inq-quick span{display:block;margin-top:2px;font-size:12.5px;color:#8a7a3a;}
-#mainContent[data-main-design="lavender"] .gp-inq-quick button{
- height:44px;padding:0 18px;border:0;border-radius:11px;cursor:pointer;flex-shrink:0;
- background:#FEE500;color:#3a1d1d;font-size:13.5px;font-weight:800;
-}
 #mainContent[data-main-design="lavender"] .gp-inq-list-head{
  margin:18px 0 12px;font-size:14px;font-weight:800;color:#1a1f2e;
 }
 @media(max-width:600px){
- #mainContent[data-main-design="lavender"] .gp-faq-ask,
- #mainContent[data-main-design="lavender"] .gp-inq-quick{flex-direction:column;align-items:stretch;}
+ #mainContent[data-main-design="lavender"] .gp-faq-ask{flex-direction:column;align-items:stretch;}
  #mainContent[data-main-design="lavender"] .gp-faq-ask-btns{flex-direction:column;}
- #mainContent[data-main-design="lavender"] .gp-faq-ask-btns button,
- #mainContent[data-main-design="lavender"] .gp-inq-quick button{width:100%;}
+ #mainContent[data-main-design="lavender"] .gp-faq-ask-btns button{width:100%;}
 }
 
 

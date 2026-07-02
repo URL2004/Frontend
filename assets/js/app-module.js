@@ -1447,7 +1447,7 @@ window.loadQuestions = async (sort) =>{
  if (!el) return;
  if (!CU) {
   // 1:1 문의는 로그인 필요 — 공개 게시판이 아니므로 데모 목록 대신 로그인 유도
-  el.innerHTML = '<div class="qna-empty">로그인하면 1:1 문의를 남기고 답변을 확인할 수 있어요.<br>급하면 우측 하단 카카오톡 문의를 이용해 주세요.</div>';
+  el.innerHTML = '<div class="qna-empty">로그인하면 1:1 문의를 남기고 답변을 확인할 수 있어요.</div>';
   return;
  }
  el.innerHTML = '<div class="qna-empty">불러오는 중...</div>';
