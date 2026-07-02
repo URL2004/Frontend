@@ -3228,6 +3228,46 @@ window.adminSaveDetectCalibration = async function() {
  }
 };
 
+function adminSetBasicHumanizeExperimentForm(cfg) {
+ cfg = cfg || {};
+ const enabled = document.getElementById('adminBasicExpEnabled');
+ const source = document.getElementById('adminBasicExpSource');
+ if (enabled) enabled.checked = cfg.enabled === true;
+ if (source) source.textContent = cfg.source || '-';
+ adminSetMessage('adminBasicExpMsg', cfg.enabled ? '현재 켜짐 · 기본 피하기에 개발테스트 프로필이 적용됩니다.' : '현재 꺼짐 · 기본 피하기는 기존 운영 프로필을 사용합니다.', 'info');
+}
+
+function adminReadBasicHumanizeExperimentForm() {
+ return {
+  enabled: document.getElementById('adminBasicExpEnabled')?.checked === true
+ };
+}
+
+window.loadAdminBasicHumanizeExperiment = async function() {
+ if (!window.isAdmin()) return;
+ const msg = document.getElementById('adminBasicExpMsg');
+ if (msg) msg.textContent = '불러오는 중...';
+ try {
+  const data = await adminPost('/admin/basic-humanize-experiment', {});
+  adminSetBasicHumanizeExperimentForm(data.config || {});
+ } catch (e) {
+  adminSetMessage('adminBasicExpMsg', e.message || '기본 피하기 개발테스트 설정을 불러오지 못했습니다.', 'error');
+ }
+};
+
+window.adminSaveBasicHumanizeExperiment = async function() {
+ if (!window.isAdmin()) return;
+ const cfg = adminReadBasicHumanizeExperimentForm();
+ adminSetMessage('adminBasicExpMsg', '저장 중...', 'info');
+ try {
+  const data = await adminPost('/admin/update-basic-humanize-experiment', { config: cfg });
+  adminSetBasicHumanizeExperimentForm(data.config || cfg);
+  adminSetMessage('adminBasicExpMsg', cfg.enabled ? '저장 완료 · 개발테스트 적용 중' : '저장 완료 · 개발테스트 꺼짐', 'success');
+ } catch (e) {
+  adminSetMessage('adminBasicExpMsg', e.message || '기본 피하기 개발테스트 설정 저장에 실패했습니다.', 'error');
+ }
+};
+
 window.loadAdminPage = async function() {
  const el = document.getElementById('adminContent');
  if (!el) return;
@@ -3256,6 +3296,7 @@ window.loadAdminPage = async function() {
  await Promise.allSettled([
   window.loadAdminOverview(),
   window.loadAdminDetectCalibration(),
+  window.loadAdminBasicHumanizeExperiment(),
   window.loadAdminJobs(),
   window.loadAdminRefundList(),
   window.loadAllCreditHistory(),
