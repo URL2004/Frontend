@@ -3279,9 +3279,11 @@ function adminLabSetStatus(text, type) {
 
 function adminLabSetBusy(busy) {
  const buttons = [document.getElementById('adminLabRunBtn'), document.getElementById('adminLabHeaderRunBtn')].filter(Boolean);
+ const profile = document.getElementById('adminLabProfile')?.value || 'preserve_lab';
+ const idleText = profile === 'final_report_engine' ? '최종보고서 엔진 테스트 실행' : '보존형 테스트 실행';
  buttons.forEach(btn => {
   btn.disabled = !!busy;
-  btn.textContent = busy ? '테스트 진행 중...' : '보존형 테스트 실행';
+  btn.textContent = busy ? '테스트 진행 중...' : idleText;
  });
 }
 
@@ -3291,12 +3293,18 @@ function adminLabModeLabel(mode) {
  return '고급 피하기';
 }
 
+function adminLabProfileLabel(profile) {
+ if (profile === 'final_report_engine' || profile === 'report_engine' || profile === 'final_report') return '최종 개선보고서 엔진';
+ return '보존형 실험 엔진';
+}
+
 function adminLabReadForm() {
  const text = (document.getElementById('adminLabInput')?.value || '').trim();
+ const profile = document.getElementById('adminLabProfile')?.value || 'preserve_lab';
  const mode = document.getElementById('adminLabMode')?.value || 'blog';
  const lang = document.getElementById('adminLabLang')?.value || 'ko';
  const memo = (document.getElementById('adminLabMemo')?.value || '').trim();
- return { text, mode, lang, memo };
+ return { text, profile, mode, lang, memo };
 }
 
 function adminLabRenderChips(items) {
@@ -3317,15 +3325,20 @@ function adminLabRenderResult(st) {
  if (out) out.value = result.outputText || '';
  const jobId = document.getElementById('adminLabJobId');
  if (jobId) jobId.textContent = st.jobId ? '#' + String(st.jobId).slice(0, 6).toUpperCase() : '';
- const lab = result.preserveLab || {};
- const gates = lab.gates || {};
+ const engineMeta = result.finalReportEngine || result.preserveLab || result.humanizeMeta || {};
+ const profile = result.adminLabProfile || result.styleProfile || engineMeta.profile || 'preserve_lab';
+ const gates = engineMeta.gates || result.humanizeMeta?.gates || {};
  const ckReasons = (gates.ck && gates.ck.reasons) || [];
  const surfaceReasons = (gates.surface && gates.surface.reasons) || [];
+ const riskFlags = engineMeta.riskFlags || result.humanizeMeta?.riskFlags || [];
  adminLabRenderChips([
+  '엔진 ' + adminLabProfileLabel(profile),
   '모드 ' + adminLabModeLabel(st.mode || 'formal'),
-  '프로필 ' + (result.styleProfile || 'preserve_lab'),
-  lab.path ? '경로 ' + lab.path : '',
-  lab.strength ? '강도 ' + lab.strength : '',
+  '프로필 ' + (result.styleProfile || profile),
+  engineMeta.path ? '경로 ' + engineMeta.path : '',
+  engineMeta.strength ? '강도 ' + engineMeta.strength : '',
+  engineMeta.decision ? '판단 ' + engineMeta.decision : '',
+  riskFlags.length ? '위험 플래그 ' + riskFlags.length : '',
   result.compressionFallback ? '압축 폴백' : '',
   result.chunkCount != null ? '청크 ' + result.chunkCount : '',
   result.fallbackCount ? '청크 폴백 ' + result.fallbackCount : '',
@@ -3338,11 +3351,14 @@ function adminLabRenderResult(st) {
   stage: st.stage,
   result: {
    styleProfile: result.styleProfile,
+   adminLabProfile: result.adminLabProfile,
    adminHumanizeLab: result.adminHumanizeLab,
    compressionFallback: result.compressionFallback,
    chunkCount: result.chunkCount,
    fallbackCount: result.fallbackCount,
    preserveLab: result.preserveLab,
+   finalReportEngine: result.finalReportEngine,
+   humanizeMeta: result.humanizeMeta,
    floorReport: result.floorReport
   },
   note: st.note || ''
@@ -3432,6 +3448,12 @@ window.adminHumanizeLabCopy = async function() {
  else alert('복사했습니다.');
 };
 
+window.adminHumanizeLabSyncProfile = function() {
+ adminLabSetBusy(false);
+ const profile = document.getElementById('adminLabProfile')?.value || 'preserve_lab';
+ adminLabRenderChips(['엔진 ' + adminLabProfileLabel(profile)]);
+};
+
 window.adminHumanizeLabRun = async function() {
  if (!window.CU || !window.isAdmin()) {
   adminLabSetStatus('관리자 권한이 필요합니다.', 'error');
@@ -3457,6 +3479,7 @@ window.adminHumanizeLabRun = async function() {
    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
    body: JSON.stringify({
     text: form.text,
+    adminLabProfile: form.profile,
     mode: form.mode,
     lang: form.lang,
     memo: form.memo,
@@ -3497,6 +3520,7 @@ window.loadAdminHumanizeLab = async function() {
   return;
  }
  if (gate) { gate.hidden = true; gate.textContent = ''; }
+ window.adminHumanizeLabSyncProfile();
  window.adminHumanizeLabCount();
 };
 
