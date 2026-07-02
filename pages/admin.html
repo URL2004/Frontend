@@ -38,27 +38,57 @@
     <section class="gp-admin-panel">
       <div class="gp-admin-section-head">
         <h3>AI 감지 보정 설정 <span id="adminDetectCalSource" class="gp-admin-count"></span></h3>
-        <p>작업내역의 휴머나이저 결과와 감지 입력이 일치할 때만 적용됩니다.</p>
+        <p>작업내역의 휴머나이저 결과와 감지 입력이 일치할 때만 적용됩니다. 체크와 숫자 변경은 저장 후 반영됩니다.</p>
       </div>
       <div class="gp-admin-cal-grid">
-        <label class="gp-admin-cal-toggle">
-          <input id="adminDetectCalEnabled" type="checkbox">
-          <span>보정 사용</span>
-        </label>
+        <div class="gp-admin-cal-toggle">
+          <label class="gp-admin-cal-check">
+            <input id="adminDetectCalEnabled" type="checkbox">
+            <span>보정 사용</span>
+          </label>
+          <span class="gp-admin-tip" tabindex="0" aria-label="켜고 저장해야 적용됩니다. 꺼두면 감지 원점수를 그대로 보여줍니다." onclick="event.preventDefault();event.stopPropagation();">
+            <span class="gp-admin-tip-icon">?</span>
+            <span class="gp-admin-tip-pop" role="tooltip">켜고 저장해야 적용됩니다. 꺼두면 감지 원점수를 그대로 보여줍니다.</span>
+          </span>
+        </div>
         <label class="gp-admin-label">
-          최근 작업 조회 수
+          <span class="gp-admin-label-title">
+            최근 작업 조회 수
+            <span class="gp-admin-tip" tabindex="0" aria-label="감지 입력과 같은 휴머나이징 결과를 최근 작업내역 몇 건 안에서 찾을지 정합니다. 보통 50이면 충분합니다.">
+              <span class="gp-admin-tip-icon">?</span>
+              <span class="gp-admin-tip-pop" role="tooltip">감지 입력과 같은 휴머나이징 결과를 최근 작업내역 몇 건 안에서 찾을지 정합니다. 보통 50이면 충분합니다.</span>
+            </span>
+          </span>
           <input id="adminDetectCalLimit" class="gp-admin-input" type="number" min="1" max="100" step="1">
         </label>
         <label class="gp-admin-label">
-          보정 비율
+          <span class="gp-admin-label-title">
+            보정 비율
+            <span class="gp-admin-tip" tabindex="0" aria-label="원점수에서 줄일 비율입니다. 예를 들어 0.15는 80점 기준 최대 12점 감산 후보입니다.">
+              <span class="gp-admin-tip-icon">?</span>
+              <span class="gp-admin-tip-pop" role="tooltip">원점수에서 줄일 비율입니다. 예: 0.15는 80점 기준 최대 12점 감산 후보입니다.</span>
+            </span>
+          </span>
           <input id="adminDetectCalFactor" class="gp-admin-input" type="number" min="0" max="0.4" step="0.01">
         </label>
         <label class="gp-admin-label">
-          최대 감산
+          <span class="gp-admin-label-title">
+            최대 감산
+            <span class="gp-admin-tip" tabindex="0" aria-label="한 번에 줄일 수 있는 최대 폭입니다. 비율 계산값이 커도 이 값보다 더 줄지 않습니다.">
+              <span class="gp-admin-tip-icon">?</span>
+              <span class="gp-admin-tip-pop" role="tooltip">한 번에 줄일 수 있는 최대 폭입니다. 비율 계산값이 커도 이 값보다 더 줄지 않습니다.</span>
+            </span>
+          </span>
           <input id="adminDetectCalMaxReduction" class="gp-admin-input" type="number" min="0" max="30" step="1">
         </label>
         <label class="gp-admin-label">
-          최저 표시값
+          <span class="gp-admin-label-title">
+            최저 표시값
+            <span class="gp-admin-tip" tabindex="0" aria-label="보정 후에도 이 점수 아래로 내려가지 않게 막는 하한선입니다.">
+              <span class="gp-admin-tip-icon">?</span>
+              <span class="gp-admin-tip-pop" role="tooltip">보정 후에도 이 점수 아래로 내려가지 않게 막는 하한선입니다.</span>
+            </span>
+          </span>
           <input id="adminDetectCalFloor" class="gp-admin-input" type="number" min="0" max="100" step="1">
         </label>
         <button type="button" class="gp-admin-primary" onclick="adminSaveDetectCalibration()">저장</button>

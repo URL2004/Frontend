@@ -16273,8 +16273,16 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 /* AI 감지 보정 설정 */
 .gp-admin-cal-grid{display:grid;grid-template-columns:auto repeat(4,minmax(110px,1fr)) auto;gap:10px;align-items:end;}
 .gp-admin-cal-toggle{display:flex;align-items:center;gap:8px;height:38px;color:var(--admin-text2);font-size:13px;font-weight:800;white-space:nowrap;}
+.gp-admin-cal-check{display:inline-flex;align-items:center;gap:8px;cursor:pointer;}
 .gp-admin-cal-toggle input{width:16px;height:16px;accent-color:var(--admin-blue);}
+.gp-admin-label-title{display:inline-flex;align-items:center;gap:5px;min-width:0;}
+.gp-admin-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:0 0 auto;color:var(--admin-blue);cursor:help;outline:none;}
+.gp-admin-tip-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border:1px solid #c8c9f5;border-radius:50%;background:#f3f4ff;color:var(--admin-blue);font-size:11px;font-weight:900;line-height:1;}
+.gp-admin-tip-pop{position:absolute;left:50%;bottom:calc(100% + 9px);z-index:20;width:max-content;max-width:260px;padding:8px 10px;border:1px solid #202743;background:#202743;color:#fff;border-radius:8px;box-shadow:0 12px 30px rgba(25,31,53,.18);font-size:12px;font-weight:700;line-height:1.45;white-space:normal;word-break:keep-all;opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,4px);transition:opacity .14s ease,transform .14s ease,visibility .14s ease;}
+.gp-admin-tip-pop::after{content:"";position:absolute;left:50%;bottom:-5px;width:9px;height:9px;background:#202743;border-right:1px solid #202743;border-bottom:1px solid #202743;transform:translateX(-50%) rotate(45deg);}
+.gp-admin-tip:hover .gp-admin-tip-pop,.gp-admin-tip:focus .gp-admin-tip-pop,.gp-admin-tip:focus-within .gp-admin-tip-pop{opacity:1;visibility:visible;transform:translate(-50%,0);}
 @media(max-width:980px){.gp-admin-cal-grid{grid-template-columns:1fr 1fr;}.gp-admin-cal-toggle,.gp-admin-cal-grid .gp-admin-primary{height:auto;min-height:38px;}}
+@media(max-width:560px){.gp-admin-cal-grid{grid-template-columns:1fr;}.gp-admin-tip-pop{left:auto;right:-6px;max-width:min(260px,calc(100vw - 42px));transform:translate(0,4px);}.gp-admin-tip:hover .gp-admin-tip-pop,.gp-admin-tip:focus .gp-admin-tip-pop,.gp-admin-tip:focus-within .gp-admin-tip-pop{transform:translate(0,0);}.gp-admin-tip-pop::after{left:auto;right:10px;transform:rotate(45deg);}}
 
 /* 사용자 요약(플랫 수치) */
 .gp-admin-user-summary{display:flex;flex-direction:column;gap:12px;}
