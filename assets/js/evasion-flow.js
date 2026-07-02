@@ -441,6 +441,10 @@
   window.lavToneChange = function () {
     var formal = document.querySelector('input[name="lavTone"]:checked');
     var isFormal = formal && formal.value === 'formal';
+    var basicStyle = currentBasicStyle();
+    var isReportBasic = !isFormal && basicStyle === 'report';
+    var styleBlock = $('lavBasicStyleBlock');
+    if (styleBlock) styleBlock.hidden = !!isFormal;
     var lenBlock = $('lavLenBlock');
     if (lenBlock) lenBlock.hidden = !isFormal;
     // 근거 보강은 고급 피하기(재구성) 전용 — 엔진이 blog 경로 미지원이라 기본 피하기에선 기능·시각 모두 잠금
@@ -453,17 +457,33 @@
     if (evBlock) evBlock.classList.toggle('ev-off', !isFormal);
     var evHint = $('lavEvidenceHint');
     if (evHint) evHint.hidden = isFormal;
-    // ★ 자동 코칭은 기본/고급 둘 다 적용(2026-06-18: 해요체 캐주얼 글에서 안 뜨던 문제 수정) — 잠금·비활성 제거.
+    // ★ 자동 코칭은 블로그 말투/고급에서만 적용. 과제·보고서 말투는 원문 인칭·사실 보존을 위해 끈다.
     var ac = $('lavAutoCoach');
-    if (ac) ac.disabled = false;
+    if (ac) {
+      ac.disabled = isReportBasic;
+      if (isReportBasic) ac.checked = false;
+    }
     var acBlock = $('lavAutoCoachBlock');
-    if (acBlock) acBlock.classList.remove('ev-off');
+    if (acBlock) {
+      acBlock.hidden = isReportBasic;
+      acBlock.classList.remove('ev-off');
+    }
     var acHint = $('lavAutoCoachHint');
     if (acHint) acHint.hidden = true;
+    if (isReportBasic) {
+      var memoBlock = $('lavMemoBlock');
+      if (memoBlock) memoBlock.hidden = true;
+      var memoHint = $('lavMemoToggleHint');
+      if (memoHint) memoHint.hidden = true;
+    }
     // CTA 보조문(예상 시간·비용)을 어투에 맞춰 갱신 — 기본=시간·최소단가 / 고급=길이별 정액
     var ctaMeta = $('lavCtaMeta');
-    if (ctaMeta) ctaMeta.textContent = isFormal ? '예상 길이별 200~600크레딧' : '예상 1~3분 · 최소 10크레딧';
-    window.lavAutoCoachChange();   // 메모칸 가시성 동기화(자동 ON=숨김 / 자동OFF=노출) + 후보 프리페치
+    if (ctaMeta) ctaMeta.textContent = isFormal ? '예상 길이별 200~600크레딧' : (isReportBasic ? '예상 1~3분 · 과제/보고서 말투' : '예상 1~3분 · 블로그 말투');
+    if (!isReportBasic) window.lavAutoCoachChange();   // 메모칸 가시성 동기화(자동 ON=숨김 / 자동OFF=노출) + 후보 프리페치
+  };
+
+  window.lavBasicStyleChange = function () {
+    if (window.lavToneChange) window.lavToneChange();
   };
 
   window.lavEvidenceChange = function () {
@@ -559,32 +579,24 @@
       }).join('');
     });
   }
-  function lavIsAdmin() {
-    return typeof window.isAdmin === 'function' && window.isAdmin();
-  }
-  function renderBasicExperimentToggle(s) {
-    var panel = $('lavBasicExperimentPanel');
-    var input = $('lavBasicExperiment');
-    var showPanel = lavIsAdmin() && s && s.tone === 'blog';
-    if (input) {
-      input.disabled = !showPanel;
-      input.checked = false;
-    }
-    if (panel) panel.hidden = !showPanel;
+  function currentBasicStyle() {
+    var style = document.querySelector('input[name="lavBasicStyle"]:checked');
+    return style ? style.value : 'blog';
   }
   function currentSettings() {
     var tone = document.querySelector('input[name="lavTone"]:checked');
     var len = document.querySelector('input[name="lavLen"]:checked');
     var ev = $('lavEvidence');
     var ac = $('lavAutoCoach');
-    var be = $('lavBasicExperiment');
+    var basicStyle = tone && tone.value === 'blog' ? currentBasicStyle() : null;
+    var basicReport = basicStyle === 'report';
     return {
       tone: tone ? tone.value : 'blog',
+      basicStyle: basicStyle || 'blog',
       length: len ? len.value : 'compact',
-      memo: collectMemo(),
+      memo: basicReport ? '' : collectMemo(),
       evidence: !!(ev && ev.checked),
-      autoCoach: !!(ac && ac.checked && !ac.disabled),   // 자동 코칭(재구성 전용·기본 ON) — 시작 시 입장 자동 도출
-      basicExperiment: !!(be && be.checked && !be.disabled && lavIsAdmin())
+      autoCoach: !basicReport && !!(ac && ac.checked && !ac.disabled)   // 자동 코칭(재구성 전용·기본 ON) — 시작 시 입장 자동 도출
     };
   }
 
@@ -593,15 +605,16 @@
     var ttl = document.querySelector('.lav-confirm-title');
     if (ttl) ttl.textContent = '이 설정으로 시작할까요?';
     var s = currentSettings();
-    renderBasicExperimentToggle(s);
     renderCoachPicks(s);   // 자동 코칭 ON(고급)이면 추천 픽 체크박스 표시(시작 직전 선택)
     var sum = $('lavConfirmSummary');
     if (sum) {
       var rows = [];
-      rows.push(['방식', s.tone === 'formal' ? '고급 피하기 — 논문·격식체' : '기본 피하기 — 블로그·SNS·과제']);
+      rows.push(['방식', s.tone === 'formal' ? '고급 피하기 — 논문·격식체' : '기본 피하기']);
+      if (s.tone === 'blog') rows.push(['문체', s.basicStyle === 'report' ? '과제/보고서 말투' : '블로그 말투']);
       if (s.tone === 'formal') rows.push(['분량', s.length === 'keep' ? '분량 유지' : '컴팩트(~60%)']);
       // 자동 코칭 ON이면 위 추천 픽 섹션이 입력을 대신함 → 메모 행 생략(중복·혼동 방지)
-      if (!(s.tone === 'formal' && s.autoCoach)) rows.push(['경험 메모', s.memo ? '입력함 · 글에 자연스럽게 녹여요' : '없음 (적으면 탐지율↓)']);
+      if (s.tone === 'blog' && s.basicStyle === 'report') rows.push(['추가 메모', '사용 안 함 · 원문 중심']);
+      else if (!(s.tone === 'formal' && s.autoCoach)) rows.push(['경험 메모', s.memo ? '입력함 · 글에 자연스럽게 녹여요' : '없음 (적으면 탐지율↓)']);
       rows.push(['근거 보강', s.tone === 'formal' ? (s.evidence ? '켬 — 검색 후 검수·승인' : '끔') : '기본 피하기에선 사용 안 함']);
       sum.innerHTML = rows.map(function (r) {
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
@@ -876,7 +889,7 @@
           throw authErr;
         }
         var body = { text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text) };
-        if (mode === 'blog' && s && s.basicExperiment === true) body.basicExperiment = true;
+        if (mode === 'blog') body.basicStyle = (s && s.basicStyle === 'report') ? 'report' : 'blog';
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
@@ -905,8 +918,6 @@
     if (!text) { if (src) src.focus(); return; }
     pendingPolish = true;
     var cp = $('lavCoachPicks'); if (cp) cp.hidden = true;   // 다듬기(최소수정)는 코칭 픽 없음 — 모달 재사용 시 직전 잔여 숨김
-    var bp = $('lavBasicExperimentPanel'); if (bp) bp.hidden = true;
-    var bi = $('lavBasicExperiment'); if (bi) { bi.checked = false; bi.disabled = true; }
     lavStartBtnState(false);   // 코칭 잠금이 남아있을 수 있으니 시작 버튼 활성화 보장
     var ttl = document.querySelector('.lav-confirm-title');
     if (ttl) ttl.textContent = '과제 어투로 다듬을까요?';
