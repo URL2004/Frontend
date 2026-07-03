@@ -3273,7 +3273,14 @@ const adminGptReasoningValues = ['low', 'medium', 'high'];
 function adminGptSetValue(id, value) {
  const el = document.getElementById(id);
  if (!el) return;
- el.value = value == null ? '' : String(value);
+ const v = value == null ? '' : String(value);
+ if (el.tagName === 'SELECT' && v && !Array.from(el.options).some(opt => opt.value === v)) {
+  const opt = document.createElement('option');
+  opt.value = v;
+  opt.textContent = v + ' (저장값)';
+  el.appendChild(opt);
+ }
+ el.value = v;
 }
 
 function adminGptSetChecked(id, value) {
@@ -3296,7 +3303,7 @@ function adminSetGptRuntimeForm(cfg) {
  if (source) source.textContent = cfg.source || '-';
 
  adminGptSetValue('adminGptActiveProvider', cfg.activeProvider || 'gpt');
- adminGptSetValue('adminGptFallbackProvider', cfg.fallbackProvider || 'claude');
+ adminGptSetValue('adminGptFallbackProvider', cfg.fallbackProvider || 'gpt');
  adminGptSetChecked('adminGptShadowMode', cfg.shadowMode === true);
 
  adminGptSetValue('adminGptModelHumanizePrimary', models.humanizePrimary || 'gpt-5.4-mini');
@@ -3312,20 +3319,20 @@ function adminSetGptRuntimeForm(cfg) {
  adminGptSetValue('adminGptReasonHumanize', adminGptReasoning(reasoning.humanize, 'low'));
  adminGptSetValue('adminGptReasonFactDense', adminGptReasoning(reasoning.factDense, 'medium'));
  adminGptSetValue('adminGptReasonEscalation', adminGptReasoning(reasoning.escalation, 'medium'));
- adminGptSetValue('adminGptReasonJudge', adminGptReasoning(reasoning.judge, 'low'));
- adminGptSetValue('adminGptReasonRepair', adminGptReasoning(reasoning.repair, 'low'));
+ adminGptSetValue('adminGptReasonJudge', adminGptReasoning(reasoning.judge, 'medium'));
+ adminGptSetValue('adminGptReasonRepair', adminGptReasoning(reasoning.repair, 'medium'));
  adminGptSetValue('adminGptReasonClassify', adminGptReasoning(reasoning.classify, 'low'));
  adminGptSetValue('adminGptReasonDetect', adminGptReasoning(reasoning.detect, 'low'));
  adminGptSetValue('adminGptReasonEvidenceSearch', adminGptReasoning(reasoning.evidenceSearch, 'medium'));
 
  adminGptSetChecked('adminGptCacheEnabled', cache.enabled !== false);
- adminGptSetValue('adminGptCachePrefix', cache.keyPrefix || 'gp-prod');
+ adminGptSetValue('adminGptCachePrefix', cache.keyPrefix || 'gp-v9-cksafe-ko-p20260704');
  adminGptSetValue('adminGptCacheRetention', cache.retention || '');
 
  adminGptSetChecked('adminGptEscalationEnabled', escalation.enabled !== false);
- adminGptSetValue('adminGptEscLongTextChars', escalation.longTextChars || 10000);
- adminGptSetValue('adminGptEscProtectedTermThreshold', escalation.protectedTermThreshold || 40);
- adminGptSetValue('adminGptEscPatchTargetThreshold', escalation.patchTargetThreshold || 12);
+ adminGptSetValue('adminGptEscLongTextChars', escalation.longTextChars || 9000);
+ adminGptSetValue('adminGptEscProtectedTermThreshold', escalation.protectedTermThreshold || 35);
+ adminGptSetValue('adminGptEscPatchTargetThreshold', escalation.patchTargetThreshold || 24);
 
  const active = cfg.activeProvider === 'claude' ? 'Claude 운영 중' : 'GPT 운영 중';
  const cacheLabel = cache.enabled === false ? '캐싱 꺼짐' : '캐싱 켜짐';
@@ -3343,7 +3350,7 @@ function adminReadGptRuntimeForm() {
  };
  return {
   activeProvider: value('adminGptActiveProvider', 'gpt'),
-  fallbackProvider: value('adminGptFallbackProvider', 'claude'),
+  fallbackProvider: value('adminGptFallbackProvider', 'gpt'),
   shadowMode: document.getElementById('adminGptShadowMode')?.checked === true,
   models: {
    humanizePrimary: value('adminGptModelHumanizePrimary', 'gpt-5.4-mini'),
@@ -3360,22 +3367,22 @@ function adminReadGptRuntimeForm() {
    humanize: value('adminGptReasonHumanize', 'low'),
    factDense: value('adminGptReasonFactDense', 'medium'),
    escalation: value('adminGptReasonEscalation', 'medium'),
-   judge: value('adminGptReasonJudge', 'low'),
-   repair: value('adminGptReasonRepair', 'low'),
+   judge: value('adminGptReasonJudge', 'medium'),
+   repair: value('adminGptReasonRepair', 'medium'),
    classify: value('adminGptReasonClassify', 'low'),
    detect: value('adminGptReasonDetect', 'low'),
    evidenceSearch: value('adminGptReasonEvidenceSearch', 'medium')
   },
   cache: {
    enabled: document.getElementById('adminGptCacheEnabled')?.checked !== false,
-   keyPrefix: value('adminGptCachePrefix', 'gp-prod'),
+   keyPrefix: value('adminGptCachePrefix', 'gp-v9-cksafe-ko-p20260704'),
    retention: value('adminGptCacheRetention', '')
   },
   escalation: {
    enabled: document.getElementById('adminGptEscalationEnabled')?.checked !== false,
-   longTextChars: num('adminGptEscLongTextChars', 10000),
-   protectedTermThreshold: num('adminGptEscProtectedTermThreshold', 40),
-   patchTargetThreshold: num('adminGptEscPatchTargetThreshold', 12)
+   longTextChars: num('adminGptEscLongTextChars', 9000),
+   protectedTermThreshold: num('adminGptEscProtectedTermThreshold', 35),
+   patchTargetThreshold: num('adminGptEscPatchTargetThreshold', 24)
   }
  };
 }
