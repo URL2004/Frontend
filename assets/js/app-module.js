@@ -3268,6 +3268,174 @@ window.adminSaveBasicHumanizeExperiment = async function() {
  }
 };
 
+const adminGptReasoningValues = ['low', 'medium', 'high'];
+
+function adminGptSetValue(id, value) {
+ const el = document.getElementById(id);
+ if (!el) return;
+ el.value = value == null ? '' : String(value);
+}
+
+function adminGptSetChecked(id, value) {
+ const el = document.getElementById(id);
+ if (el) el.checked = value === true;
+}
+
+function adminGptReasoning(value, fallback) {
+ const v = String(value || '').toLowerCase();
+ return adminGptReasoningValues.includes(v) ? v : fallback;
+}
+
+function adminSetGptRuntimeForm(cfg) {
+ cfg = cfg || {};
+ const models = cfg.models || {};
+ const reasoning = cfg.reasoning || {};
+ const cache = cfg.cache || {};
+ const escalation = cfg.escalation || {};
+ const source = document.getElementById('adminGptRuntimeSource');
+ if (source) source.textContent = cfg.source || '-';
+
+ adminGptSetValue('adminGptActiveProvider', cfg.activeProvider || 'gpt');
+ adminGptSetValue('adminGptFallbackProvider', cfg.fallbackProvider || 'claude');
+ adminGptSetChecked('adminGptShadowMode', cfg.shadowMode === true);
+
+ adminGptSetValue('adminGptModelHumanizePrimary', models.humanizePrimary || 'gpt-5.4-mini');
+ adminGptSetValue('adminGptModelHumanizeEscalation', models.humanizeEscalation || 'gpt-5.4');
+ adminGptSetValue('adminGptModelJudge', models.judge || 'gpt-5.4-mini');
+ adminGptSetValue('adminGptModelRepair', models.repair || 'gpt-5.4-mini');
+ adminGptSetValue('adminGptModelClassify', models.classify || 'gpt-5.4-nano');
+ adminGptSetValue('adminGptModelDetect', models.detect || 'gpt-5.4-mini');
+ adminGptSetValue('adminGptModelDetectEscalation', models.detectEscalation || 'gpt-5.4');
+ adminGptSetValue('adminGptModelEvidenceSearch', models.evidenceSearch || 'gpt-5.4-mini');
+ adminGptSetValue('adminGptModelEvidenceEscalation', models.evidenceEscalation || 'gpt-5.4');
+
+ adminGptSetValue('adminGptReasonHumanize', adminGptReasoning(reasoning.humanize, 'low'));
+ adminGptSetValue('adminGptReasonFactDense', adminGptReasoning(reasoning.factDense, 'medium'));
+ adminGptSetValue('adminGptReasonEscalation', adminGptReasoning(reasoning.escalation, 'medium'));
+ adminGptSetValue('adminGptReasonJudge', adminGptReasoning(reasoning.judge, 'low'));
+ adminGptSetValue('adminGptReasonRepair', adminGptReasoning(reasoning.repair, 'low'));
+ adminGptSetValue('adminGptReasonClassify', adminGptReasoning(reasoning.classify, 'low'));
+ adminGptSetValue('adminGptReasonDetect', adminGptReasoning(reasoning.detect, 'low'));
+ adminGptSetValue('adminGptReasonEvidenceSearch', adminGptReasoning(reasoning.evidenceSearch, 'medium'));
+
+ adminGptSetChecked('adminGptCacheEnabled', cache.enabled !== false);
+ adminGptSetValue('adminGptCachePrefix', cache.keyPrefix || 'gp-prod');
+ adminGptSetValue('adminGptCacheRetention', cache.retention || '');
+
+ adminGptSetChecked('adminGptEscalationEnabled', escalation.enabled !== false);
+ adminGptSetValue('adminGptEscLongTextChars', escalation.longTextChars || 10000);
+ adminGptSetValue('adminGptEscProtectedTermThreshold', escalation.protectedTermThreshold || 40);
+ adminGptSetValue('adminGptEscPatchTargetThreshold', escalation.patchTargetThreshold || 12);
+
+ const active = cfg.activeProvider === 'claude' ? 'Claude 운영 중' : 'GPT 운영 중';
+ const cacheLabel = cache.enabled === false ? '캐싱 꺼짐' : '캐싱 켜짐';
+ adminSetMessage('adminGptRuntimeMsg', `${active} · ${models.humanizePrimary || 'gpt-5.4-mini'} · ${cacheLabel}`, 'info');
+}
+
+function adminReadGptRuntimeForm() {
+ const value = (id, fallback) => {
+  const raw = document.getElementById(id)?.value;
+  return raw == null || String(raw).trim() === '' ? fallback : String(raw).trim();
+ };
+ const num = (id, fallback) => {
+  const n = Number(document.getElementById(id)?.value);
+  return Number.isFinite(n) ? n : fallback;
+ };
+ return {
+  activeProvider: value('adminGptActiveProvider', 'gpt'),
+  fallbackProvider: value('adminGptFallbackProvider', 'claude'),
+  shadowMode: document.getElementById('adminGptShadowMode')?.checked === true,
+  models: {
+   humanizePrimary: value('adminGptModelHumanizePrimary', 'gpt-5.4-mini'),
+   humanizeEscalation: value('adminGptModelHumanizeEscalation', 'gpt-5.4'),
+   judge: value('adminGptModelJudge', 'gpt-5.4-mini'),
+   repair: value('adminGptModelRepair', 'gpt-5.4-mini'),
+   classify: value('adminGptModelClassify', 'gpt-5.4-nano'),
+   detect: value('adminGptModelDetect', 'gpt-5.4-mini'),
+   detectEscalation: value('adminGptModelDetectEscalation', 'gpt-5.4'),
+   evidenceSearch: value('adminGptModelEvidenceSearch', 'gpt-5.4-mini'),
+   evidenceEscalation: value('adminGptModelEvidenceEscalation', 'gpt-5.4')
+  },
+  reasoning: {
+   humanize: value('adminGptReasonHumanize', 'low'),
+   factDense: value('adminGptReasonFactDense', 'medium'),
+   escalation: value('adminGptReasonEscalation', 'medium'),
+   judge: value('adminGptReasonJudge', 'low'),
+   repair: value('adminGptReasonRepair', 'low'),
+   classify: value('adminGptReasonClassify', 'low'),
+   detect: value('adminGptReasonDetect', 'low'),
+   evidenceSearch: value('adminGptReasonEvidenceSearch', 'medium')
+  },
+  cache: {
+   enabled: document.getElementById('adminGptCacheEnabled')?.checked !== false,
+   keyPrefix: value('adminGptCachePrefix', 'gp-prod'),
+   retention: value('adminGptCacheRetention', '')
+  },
+  escalation: {
+   enabled: document.getElementById('adminGptEscalationEnabled')?.checked !== false,
+   longTextChars: num('adminGptEscLongTextChars', 10000),
+   protectedTermThreshold: num('adminGptEscProtectedTermThreshold', 40),
+   patchTargetThreshold: num('adminGptEscPatchTargetThreshold', 12)
+  }
+ };
+}
+
+window.loadAdminGptRuntimeConfig = async function() {
+ if (!window.isAdmin()) return;
+ const msg = document.getElementById('adminGptRuntimeMsg');
+ if (msg) msg.textContent = '불러오는 중...';
+ try {
+  const data = await adminPost('/admin/gpt-runtime-config', {});
+  adminSetGptRuntimeForm(data.config || {});
+ } catch (e) {
+  adminSetMessage('adminGptRuntimeMsg', e.message || '운영 LLM 설정을 불러오지 못했습니다.', 'error');
+ }
+};
+
+window.adminSaveGptRuntimeConfig = async function() {
+ if (!window.isAdmin()) return;
+ const cfg = adminReadGptRuntimeForm();
+ adminSetMessage('adminGptRuntimeMsg', '저장 중...', 'info');
+ try {
+  const data = await adminPost('/admin/update-gpt-runtime-config', { config: cfg });
+  adminSetGptRuntimeForm(data.config || cfg);
+  adminSetMessage('adminGptRuntimeMsg', `저장 완료 · ${data.config?.activeProvider || cfg.activeProvider} 활성`, 'success');
+ } catch (e) {
+  adminSetMessage('adminGptRuntimeMsg', e.message || '운영 LLM 설정 저장에 실패했습니다.', 'error');
+ }
+};
+
+window.adminRollbackGptRuntimeToClaude = async function() {
+ if (!window.isAdmin()) return;
+ const cfg = adminReadGptRuntimeForm();
+ cfg.activeProvider = 'claude';
+ cfg.fallbackProvider = 'gpt';
+ adminSetMessage('adminGptRuntimeMsg', 'Claude로 롤백 저장 중...', 'info');
+ try {
+  const data = await adminPost('/admin/update-gpt-runtime-config', { config: cfg });
+  adminSetGptRuntimeForm(data.config || cfg);
+  adminSetMessage('adminGptRuntimeMsg', 'Claude 롤백 저장 완료', 'success');
+ } catch (e) {
+  adminSetMessage('adminGptRuntimeMsg', e.message || 'Claude 롤백 저장에 실패했습니다.', 'error');
+ }
+};
+
+window.adminTestGptRuntimeConfig = async function() {
+ if (!window.isAdmin()) return;
+ const cfg = adminReadGptRuntimeForm();
+ const task = document.getElementById('adminGptTestTask')?.value || 'judge';
+ adminSetMessage('adminGptRuntimeMsg', '테스트 호출 중...', 'info');
+ try {
+  const data = await adminPost('/admin/test-gpt-runtime-config', { config: cfg, task });
+  const result = data.result || {};
+  const model = result.selectedModel || data.selectedModel || cfg.models.humanizePrimary;
+  const ok = result.ok === false ? '실패' : '성공';
+  adminSetMessage('adminGptRuntimeMsg', `테스트 ${ok} · ${task} · ${model}`, ok === '성공' ? 'success' : 'error');
+ } catch (e) {
+  adminSetMessage('adminGptRuntimeMsg', e.message || 'GPT 런타임 테스트 호출에 실패했습니다.', 'error');
+ }
+};
+
 let adminLabPollToken = 0;
 
 function adminLabSetStatus(text, type) {
@@ -3280,7 +3448,7 @@ function adminLabSetStatus(text, type) {
 function adminLabSetBusy(busy) {
  const buttons = [document.getElementById('adminLabRunBtn'), document.getElementById('adminLabHeaderRunBtn')].filter(Boolean);
  const profile = document.getElementById('adminLabProfile')?.value || 'preserve_lab';
- const idleText = profile === 'final_report_engine' ? '최종보고서 엔진 테스트 실행' : '보존형 테스트 실행';
+ const idleText = profile === 'gpt_engine' ? 'GPT 전용 엔진 테스트 실행' : profile === 'final_report_engine' ? '최종보고서 엔진 테스트 실행' : '보존형 테스트 실행';
  buttons.forEach(btn => {
   btn.disabled = !!busy;
   btn.textContent = busy ? '테스트 진행 중...' : idleText;
@@ -3294,6 +3462,7 @@ function adminLabModeLabel(mode) {
 }
 
 function adminLabProfileLabel(profile) {
+ if (profile === 'gpt_engine' || profile === 'gpt_prod') return 'GPT 전용 엔진';
  if (profile === 'final_report_engine' || profile === 'report_engine' || profile === 'final_report') return '최종 개선보고서 엔진';
  return '보존형 실험 엔진';
 }
@@ -3551,6 +3720,7 @@ window.loadAdminPage = async function() {
  }
  await Promise.allSettled([
  window.loadAdminOverview(),
+ window.loadAdminGptRuntimeConfig(),
  window.loadAdminDetectCalibration(),
  window.loadAdminBasicHumanizeExperiment(),
   window.loadAdminJobs(),

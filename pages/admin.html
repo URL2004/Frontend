@@ -55,6 +55,82 @@
 
     <section class="gp-admin-panel">
       <div class="gp-admin-section-head">
+        <h3>운영 LLM 설정 <span id="adminGptRuntimeSource" class="gp-admin-count"></span></h3>
+        <p>운영 엔진을 GPT 또는 Claude로 전환하고, GPT 모델·reasoning·캐싱·승격 정책을 저장합니다.</p>
+      </div>
+      <div class="gp-admin-exp-grid">
+        <label class="gp-admin-label">
+          <span>활성 엔진</span>
+          <select id="adminGptActiveProvider" class="gp-admin-input gp-admin-select">
+            <option value="gpt">GPT</option>
+            <option value="claude">Claude</option>
+          </select>
+        </label>
+        <label class="gp-admin-label">
+          <span>긴급 폴백</span>
+          <select id="adminGptFallbackProvider" class="gp-admin-input gp-admin-select">
+            <option value="claude">Claude</option>
+            <option value="gpt">GPT</option>
+          </select>
+        </label>
+        <label class="gp-admin-cal-check">
+          <input id="adminGptShadowMode" type="checkbox">
+          <span>섀도우 모드</span>
+        </label>
+
+        <label class="gp-admin-label"><span>기본 변환 모델</span><input id="adminGptModelHumanizePrimary" class="gp-admin-input" type="text"></label>
+        <label class="gp-admin-label"><span>승격 변환 모델</span><input id="adminGptModelHumanizeEscalation" class="gp-admin-input" type="text"></label>
+        <label class="gp-admin-label"><span>판정 모델</span><input id="adminGptModelJudge" class="gp-admin-input" type="text"></label>
+        <label class="gp-admin-label"><span>수리 모델</span><input id="adminGptModelRepair" class="gp-admin-input" type="text"></label>
+        <label class="gp-admin-label"><span>분류 모델</span><input id="adminGptModelClassify" class="gp-admin-input" type="text"></label>
+        <label class="gp-admin-label"><span>감지 모델</span><input id="adminGptModelDetect" class="gp-admin-input" type="text"></label>
+        <label class="gp-admin-label"><span>감지 승격 모델</span><input id="adminGptModelDetectEscalation" class="gp-admin-input" type="text"></label>
+        <label class="gp-admin-label"><span>근거검색 모델</span><input id="adminGptModelEvidenceSearch" class="gp-admin-input" type="text"></label>
+        <label class="gp-admin-label"><span>근거검색 승격 모델</span><input id="adminGptModelEvidenceEscalation" class="gp-admin-input" type="text"></label>
+
+        <label class="gp-admin-label"><span>변환 reasoning</span><select id="adminGptReasonHumanize" class="gp-admin-input gp-admin-select"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+        <label class="gp-admin-label"><span>고위험 reasoning</span><select id="adminGptReasonFactDense" class="gp-admin-input gp-admin-select"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+        <label class="gp-admin-label"><span>승격 reasoning</span><select id="adminGptReasonEscalation" class="gp-admin-input gp-admin-select"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+        <label class="gp-admin-label"><span>판정 reasoning</span><select id="adminGptReasonJudge" class="gp-admin-input gp-admin-select"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+        <label class="gp-admin-label"><span>수리 reasoning</span><select id="adminGptReasonRepair" class="gp-admin-input gp-admin-select"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+        <label class="gp-admin-label"><span>분류 reasoning</span><select id="adminGptReasonClassify" class="gp-admin-input gp-admin-select"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+        <label class="gp-admin-label"><span>감지 reasoning</span><select id="adminGptReasonDetect" class="gp-admin-input gp-admin-select"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+        <label class="gp-admin-label"><span>근거검색 reasoning</span><select id="adminGptReasonEvidenceSearch" class="gp-admin-input gp-admin-select"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+
+        <label class="gp-admin-cal-check">
+          <input id="adminGptCacheEnabled" type="checkbox">
+          <span>프롬프트 캐싱</span>
+        </label>
+        <label class="gp-admin-label"><span>캐시 키 prefix</span><input id="adminGptCachePrefix" class="gp-admin-input" type="text"></label>
+        <label class="gp-admin-label"><span>캐시 retention</span><input id="adminGptCacheRetention" class="gp-admin-input" type="text" placeholder="비워두면 기본값"></label>
+
+        <label class="gp-admin-cal-check">
+          <input id="adminGptEscalationEnabled" type="checkbox">
+          <span>mini 실패 시 승격</span>
+        </label>
+        <label class="gp-admin-label"><span>긴 글 기준</span><input id="adminGptEscLongTextChars" class="gp-admin-input" type="number" min="1000" max="100000" step="500"></label>
+        <label class="gp-admin-label"><span>보호표현 기준</span><input id="adminGptEscProtectedTermThreshold" class="gp-admin-input" type="number" min="1" max="500" step="1"></label>
+        <label class="gp-admin-label"><span>패치 대상 기준</span><input id="adminGptEscPatchTargetThreshold" class="gp-admin-input" type="number" min="1" max="100" step="1"></label>
+
+        <label class="gp-admin-label">
+          <span>테스트 호출</span>
+          <select id="adminGptTestTask" class="gp-admin-input gp-admin-select">
+            <option value="judge">judge</option>
+            <option value="detect">detect</option>
+            <option value="repair">repair</option>
+            <option value="evidence">evidence</option>
+            <option value="humanize">humanize</option>
+          </select>
+        </label>
+        <button type="button" class="gp-admin-primary" onclick="adminSaveGptRuntimeConfig()">저장</button>
+        <button type="button" class="gp-admin-refresh" onclick="adminTestGptRuntimeConfig()">테스트 호출</button>
+        <button type="button" class="gp-admin-refresh" onclick="adminRollbackGptRuntimeToClaude()">Claude 긴급 롤백</button>
+      </div>
+      <div id="adminGptRuntimeMsg" class="gp-admin-msg"></div>
+    </section>
+
+    <section class="gp-admin-panel">
+      <div class="gp-admin-section-head">
         <h3>AI 감지 보정 설정 <span id="adminDetectCalSource" class="gp-admin-count"></span></h3>
         <p>작업내역의 휴머나이저 결과와 감지 입력이 일치할 때만 적용됩니다. 체크와 숫자 변경은 저장 후 반영됩니다.</p>
       </div>

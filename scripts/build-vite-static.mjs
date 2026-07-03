@@ -72,7 +72,6 @@ window.APP_RUNTIME_CONFIG = {
   TOSS_CLIENT_KEY: ${literal(process.env.VITE_TOSS_CLIENT_KEY || '')},
   KAKAO_JS_KEY: ${literal(process.env.VITE_KAKAO_JS_KEY || '')},
   KAKAO_REST_KEY: ${literal(process.env.VITE_KAKAO_REST_KEY || '')},
-  KAKAO_INQUIRY_URL: ${literal(process.env.VITE_KAKAO_INQUIRY_URL || 'https://open.kakao.com/o/s3Jegizi')},
   MAINTENANCE_MODE: ${literal(process.env.VITE_MAINTENANCE_MODE || '')},
   MAINTENANCE_PREVIEW_KEY: ${literal(process.env.VITE_MAINTENANCE_PREVIEW_KEY || '')},
   MAINTENANCE_MESSAGE: ${literal(process.env.VITE_MAINTENANCE_MESSAGE || '')}${firebaseLine}
