@@ -3510,6 +3510,7 @@ function adminLabRenderDiff(compare) {
  const para = compare.paragraphs || {};
  const sent = compare.sentences || {};
  const q = compare.niklQualityTest || {};
+ const official = q.official || {};
  const keyword = compare.keywords || {};
  const added = (keyword.added || []).slice(0, 10).map(escapeHtml).join(', ');
  const removed = (keyword.removed || []).slice(0, 10).map(escapeHtml).join(', ');
@@ -3527,6 +3528,7 @@ function adminLabRenderDiff(compare) {
     <span class="gp-admin-lab-diff-pill">문단 변화 ${pct(para.changedRatio)}</span>
     <span class="gp-admin-lab-diff-pill">문장 변화 ${pct(sent.changedRatio)}</span>
     ${q.niklRiskDelta != null ? `<span class="gp-admin-lab-diff-pill">품질 위험 변화 ${Number(q.niklRiskDelta).toFixed(3)}</span>` : ''}
+    ${official.riskDelta != null ? `<span class="gp-admin-lab-diff-pill">공식자료 위험 변화 ${Number(official.riskDelta).toFixed(3)}</span>` : ''}
     ${q.action ? `<span class="gp-admin-lab-diff-pill">판정 ${escapeHtml(q.action)}</span>` : ''}
   </div>
   ${added || removed ? `<div class="gp-admin-lab-diff-list">${added ? `<div>ON에서 추가된 표현: ${added}</div>` : ''}${removed ? `<div>ON에서 줄거나 빠진 표현: ${removed}</div>` : ''}</div>` : ''}
