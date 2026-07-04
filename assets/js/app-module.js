@@ -3268,7 +3268,7 @@ window.adminSaveBasicHumanizeExperiment = async function() {
  }
 };
 
-const adminGptReasoningValues = ['low', 'medium', 'high'];
+const adminGptReasoningValues = ['none', 'low', 'medium', 'high', 'xhigh', 'minimal', 'default'];
 
 function adminGptSetValue(id, value) {
  const el = document.getElementById(id);
@@ -3309,6 +3309,7 @@ function adminSetGptRuntimeForm(cfg) {
  adminGptSetValue('adminGptModelHumanizePrimary', models.humanizePrimary || 'gpt-5.4-mini');
  adminGptSetValue('adminGptModelHumanizeEscalation', models.humanizeEscalation || 'gpt-5.4');
  adminGptSetValue('adminGptModelJudge', models.judge || 'gpt-5.4-mini');
+ adminGptSetValue('adminGptModelJudgeEscalation', models.judgeEscalation || 'gpt-5.4');
  adminGptSetValue('adminGptModelRepair', models.repair || 'gpt-5.4-mini');
  adminGptSetValue('adminGptModelClassify', models.classify || 'gpt-5.4-nano');
  adminGptSetValue('adminGptModelDetect', models.detect || 'gpt-5.4-mini');
@@ -3356,6 +3357,7 @@ function adminReadGptRuntimeForm() {
    humanizePrimary: value('adminGptModelHumanizePrimary', 'gpt-5.4-mini'),
    humanizeEscalation: value('adminGptModelHumanizeEscalation', 'gpt-5.4'),
    judge: value('adminGptModelJudge', 'gpt-5.4-mini'),
+   judgeEscalation: value('adminGptModelJudgeEscalation', 'gpt-5.4'),
    repair: value('adminGptModelRepair', 'gpt-5.4-mini'),
    classify: value('adminGptModelClassify', 'gpt-5.4-nano'),
    detect: value('adminGptModelDetect', 'gpt-5.4-mini'),
