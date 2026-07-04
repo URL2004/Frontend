@@ -3482,7 +3482,8 @@ function adminLabReadForm() {
  const mode = document.getElementById('adminLabMode')?.value || 'blog';
  const lang = document.getElementById('adminLabLang')?.value || 'ko';
  const memo = (document.getElementById('adminLabMemo')?.value || '').trim();
- return { text, profile, mode, lang, memo };
+ const niklQualityTest = document.getElementById('adminLabNiklQualityTest')?.checked === true;
+ return { text, profile, mode, lang, memo, niklQualityTest };
 }
 
 function adminLabRenderChips(items) {
@@ -3497,10 +3498,53 @@ function adminLabRenderChips(items) {
  });
 }
 
+function adminLabRenderDiff(compare) {
+ const el = document.getElementById('adminLabDiffSummary');
+ if (!el) return;
+ if (!compare || compare.enabled !== true) {
+  el.hidden = true;
+  el.innerHTML = '';
+  return;
+ }
+ const len = compare.length || {};
+ const para = compare.paragraphs || {};
+ const sent = compare.sentences || {};
+ const q = compare.niklQualityTest || {};
+ const keyword = compare.keywords || {};
+ const added = (keyword.added || []).slice(0, 10).map(escapeHtml).join(', ');
+ const removed = (keyword.removed || []).slice(0, 10).map(escapeHtml).join(', ');
+ const pct = v => `${Math.round((Number(v) || 0) * 100)}%`;
+ const signed = v => {
+  const n = Number(v) || 0;
+  return `${n > 0 ? '+' : ''}${n.toLocaleString('ko-KR')}`;
+ };
+ el.hidden = false;
+ el.innerHTML = `
+  <b>OFF/ON 비교</b>
+  <div class="gp-admin-lab-diff-row">
+    <span class="gp-admin-lab-diff-pill">길이 ${signed(len.delta)}자</span>
+    <span class="gp-admin-lab-diff-pill">문단 ${signed(para.delta)}</span>
+    <span class="gp-admin-lab-diff-pill">문단 변화 ${pct(para.changedRatio)}</span>
+    <span class="gp-admin-lab-diff-pill">문장 변화 ${pct(sent.changedRatio)}</span>
+    ${q.niklRiskDelta != null ? `<span class="gp-admin-lab-diff-pill">품질 위험 변화 ${Number(q.niklRiskDelta).toFixed(3)}</span>` : ''}
+    ${q.action ? `<span class="gp-admin-lab-diff-pill">판정 ${escapeHtml(q.action)}</span>` : ''}
+  </div>
+  ${added || removed ? `<div class="gp-admin-lab-diff-list">${added ? `<div>ON에서 추가된 표현: ${added}</div>` : ''}${removed ? `<div>ON에서 줄거나 빠진 표현: ${removed}</div>` : ''}</div>` : ''}
+ `;
+}
+
 function adminLabRenderResult(st) {
  const result = (st && st.result) || {};
  const out = document.getElementById('adminLabOutput');
  if (out) out.value = result.outputText || '';
+ const baselineWrap = document.getElementById('adminLabBaselineWrap');
+ const baselineOut = document.getElementById('adminLabBaselineOutput');
+ const baselineText = result.baselineOutputText || '';
+ if (baselineWrap) baselineWrap.hidden = !baselineText;
+ if (baselineOut) baselineOut.value = baselineText;
+ const outputLabel = document.getElementById('adminLabOutputLabel');
+ if (outputLabel) outputLabel.textContent = baselineText ? '테스트 결과 ON' : '결과문';
+ adminLabRenderDiff(result.niklQualityCompare);
  const jobId = document.getElementById('adminLabJobId');
  if (jobId) jobId.textContent = st.jobId ? '#' + String(st.jobId).slice(0, 6).toUpperCase() : '';
  const engineMeta = result.finalReportEngine || result.preserveLab || result.humanizeMeta || {};
@@ -3517,6 +3561,8 @@ function adminLabRenderResult(st) {
   engineMeta.strength ? '강도 ' + engineMeta.strength : '',
   engineMeta.decision ? '판단 ' + engineMeta.decision : '',
   riskFlags.length ? '위험 플래그 ' + riskFlags.length : '',
+  result.niklQualityCompare ? '국어원식 비교 ON' : '',
+  result.niklQualityTest?.action ? '국어원식 ' + result.niklQualityTest.action : '',
   result.compressionFallback ? '압축 폴백' : '',
   result.chunkCount != null ? '청크 ' + result.chunkCount : '',
   result.fallbackCount ? '청크 폴백 ' + result.fallbackCount : '',
@@ -3537,6 +3583,10 @@ function adminLabRenderResult(st) {
    preserveLab: result.preserveLab,
    finalReportEngine: result.finalReportEngine,
    humanizeMeta: result.humanizeMeta,
+   niklQualityTest: result.niklQualityTest,
+   niklQualityCompare: result.niklQualityCompare,
+   baselineHumanizeMeta: result.baselineHumanizeMeta,
+   baselineFloorReport: result.baselineFloorReport,
    floorReport: result.floorReport
   },
   note: st.note || ''
@@ -3604,9 +3654,17 @@ window.adminHumanizeLabClear = function() {
  adminLabPollToken++;
  const input = document.getElementById('adminLabInput');
  const output = document.getElementById('adminLabOutput');
+ const baselineOutput = document.getElementById('adminLabBaselineOutput');
+ const baselineWrap = document.getElementById('adminLabBaselineWrap');
+ const diff = document.getElementById('adminLabDiffSummary');
+ const outputLabel = document.getElementById('adminLabOutputLabel');
  const memo = document.getElementById('adminLabMemo');
  if (input) input.value = '';
  if (output) output.value = '';
+ if (baselineOutput) baselineOutput.value = '';
+ if (baselineWrap) baselineWrap.hidden = true;
+ if (diff) { diff.hidden = true; diff.innerHTML = ''; }
+ if (outputLabel) outputLabel.textContent = '결과문';
  if (memo) memo.value = '';
  const pre = document.getElementById('adminLabMetaJson');
  if (pre) pre.textContent = '{}';
@@ -3646,10 +3704,18 @@ window.adminHumanizeLabRun = async function() {
  adminLabPollToken++;
  const tokenId = adminLabPollToken;
  adminLabSetBusy(true);
- adminLabSetStatus('작업 시작 중...', 'info');
+ adminLabSetStatus(form.niklQualityTest ? '작업 시작 중... OFF/ON 비교를 위해 2회 실행합니다.' : '작업 시작 중...', 'info');
  const out = document.getElementById('adminLabOutput');
  if (out) out.value = '';
- adminLabRenderChips(['시작 준비']);
+ const baselineOut = document.getElementById('adminLabBaselineOutput');
+ const baselineWrap = document.getElementById('adminLabBaselineWrap');
+ const diff = document.getElementById('adminLabDiffSummary');
+ const outputLabel = document.getElementById('adminLabOutputLabel');
+ if (baselineOut) baselineOut.value = '';
+ if (baselineWrap) baselineWrap.hidden = true;
+ if (diff) { diff.hidden = true; diff.innerHTML = ''; }
+ if (outputLabel) outputLabel.textContent = '결과문';
+ adminLabRenderChips(['시작 준비', form.niklQualityTest ? '국어원식 비교 ON' : '']);
  try {
   const idToken = await adminLabToken(true);
   const res = await fetch(window.apiUrl('/transform'), {
@@ -3662,6 +3728,7 @@ window.adminHumanizeLabRun = async function() {
     lang: form.lang,
     memo: form.memo,
     adminHumanizeLab: true,
+    niklQualityTest: form.niklQualityTest,
     humanizeExperiment: true,
     evidence: false,
     length: 'keep'

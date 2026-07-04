@@ -16245,6 +16245,8 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 /* 관리자 휴머나이징 실험실 */
 .gp-admin-lab-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
 .gp-admin-lab-toolbar{display:grid;grid-template-columns:minmax(170px,.85fr) minmax(150px,.7fr) minmax(120px,.55fr) minmax(220px,1.6fr);gap:10px;margin-bottom:12px;}
+.gp-admin-lab-options{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:-2px 0 12px;color:var(--admin-text2);font-size:13px;font-weight:800;}
+.gp-admin-lab-check input{width:16px;height:16px;accent-color:var(--admin-blue);}
 .gp-admin-lab-text textarea,.gp-admin-lab-output textarea{width:100%;resize:vertical;line-height:1.65;font-size:13px;}
 .gp-admin-lab-text span,.gp-admin-lab-output span{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .gp-admin-lab-text em{font-style:normal;color:var(--admin-text3);font-size:11px;font-weight:700;}
@@ -16254,6 +16256,12 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-msg.success{color:var(--admin-green);font-weight:800;}
 .gp-admin-msg.error{color:var(--admin-red);font-weight:800;}
 .gp-admin-lab-result-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);gap:14px;align-items:stretch;}
+.gp-admin-lab-outputs{display:flex;flex-direction:column;gap:10px;min-width:0;}
+.gp-admin-lab-diff{border:1px solid var(--admin-line);border-radius:8px;background:var(--admin-soft);padding:10px 12px;color:var(--admin-text2);font-size:12px;line-height:1.55;}
+.gp-admin-lab-diff b{display:block;color:var(--admin-text);font-size:12px;margin-bottom:6px;}
+.gp-admin-lab-diff-row{display:flex;gap:8px;flex-wrap:wrap;margin:5px 0;}
+.gp-admin-lab-diff-pill{display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border-radius:999px;background:#fff;border:1px solid var(--admin-line);font-weight:800;color:var(--admin-text2);}
+.gp-admin-lab-diff-list{margin-top:6px;color:var(--admin-text3);word-break:keep-all;}
 .gp-admin-lab-meta{display:flex;flex-direction:column;gap:10px;min-width:0;}
 .gp-admin-lab-chips{display:flex;flex-wrap:wrap;gap:6px;min-height:26px;}
 .gp-admin-lab-chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;background:#eef0ff;color:var(--admin-blue);font-size:11px;font-weight:800;}
