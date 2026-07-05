@@ -47,6 +47,14 @@
           <span>메모</span>
           <input id="adminLabMemo" class="gp-admin-input" type="text" maxlength="2000" placeholder="선택 사항: 실제 근거나 유지할 말투">
         </label>
+        <label class="gp-admin-cal-check gp-admin-lab-check">
+          <input id="adminLabLayoutNlpTest" type="checkbox">
+          <span>문서 형태 복원 NLP 테스트</span>
+          <span class="gp-admin-tip" tabindex="0" aria-label="운영 기능에는 적용하지 않고 이 테스트 결과에만 KSS, Kiwi, PyKoSpacing 기반 문장 분리와 띄어쓰기 복원 후보를 적용합니다. 설치되지 않은 라이브러리는 자동으로 건너뛰고 메타에 표시합니다." onclick="event.preventDefault();event.stopPropagation();">
+            <span class="gp-admin-tip-icon">?</span>
+            <span class="gp-admin-tip-pop" role="tooltip">운영 기능에는 적용하지 않고 이 테스트 결과에만 KSS, Kiwi, PyKoSpacing 기반 문장 분리와 띄어쓰기 복원 후보를 적용합니다. 설치되지 않은 라이브러리는 자동으로 건너뛰고 메타에 표시합니다.</span>
+          </span>
+        </label>
       </div>
       <div class="gp-admin-lab-options">
         <label class="gp-admin-cal-check gp-admin-lab-check">

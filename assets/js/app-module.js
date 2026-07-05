@@ -3488,7 +3488,8 @@ function adminLabReadForm() {
  const lang = document.getElementById('adminLabLang')?.value || 'ko';
  const memo = (document.getElementById('adminLabMemo')?.value || '').trim();
  const niklQualityTest = document.getElementById('adminLabNiklQualityTest')?.checked === true;
- return { text, profile, mode, lang, memo, niklQualityTest };
+ const layoutNlpTest = document.getElementById('adminLabLayoutNlpTest')?.checked === true;
+ return { text, profile, mode, lang, memo, niklQualityTest, layoutNlpTest };
 }
 
 function adminLabRenderChips(items) {
@@ -3517,12 +3518,19 @@ function adminLabRenderDiff(compare) {
  const q = compare.niklQualityTest || {};
  const official = q.official || {};
  const qp = compare.qualityPattern || {};
+ const layout = compare.layoutFormat || {};
  const keyword = compare.keywords || {};
  const added = (keyword.added || []).slice(0, 10).map(escapeHtml).join(', ');
  const removed = (keyword.removed || []).slice(0, 10).map(escapeHtml).join(', ');
  const increased = (qp.increasedPatterns || []).slice(0, 5).map(p => escapeHtml(p.label || p.id || '')).filter(Boolean).join(', ');
  const reduced = (qp.reducedPatterns || []).slice(0, 5).map(p => escapeHtml(p.label || p.id || '')).filter(Boolean).join(', ');
  const labels = compare.labels || {};
+ const layoutEngines = layout.engines || {};
+ const engineStatus = name => {
+  const e = layoutEngines[name] || {};
+  if (!layout.enabled) return '';
+  return `${name} ${e.ok ? 'ON' : 'OFF'}`;
+ };
  const pct = v => `${Math.round((Number(v) || 0) * 100)}%`;
  const signed = v => {
   const n = Number(v) || 0;
@@ -3550,12 +3558,22 @@ function adminLabRenderDiff(compare) {
     ${qp.protectedTermLossCount ? `<span class="gp-admin-lab-diff-pill">보호표현 손실 ${Number(qp.protectedTermLossCount || 0)}</span>` : ''}
     ${qp.grammarHardError?.introduced ? `<span class="gp-admin-lab-diff-pill">문법 hard error</span>` : ''}
     ${qp.externalApiHintsUsed ? `<span class="gp-admin-lab-diff-pill">외부 API 힌트 사용</span>` : ''}
+    ${layout.enabled ? `<span class="gp-admin-lab-diff-pill">레이아웃 ${layout.outputChanged ? '변경' : '유지'}</span>` : ''}
+    ${layout.post?.profile ? `<span class="gp-admin-lab-diff-pill">형태 ${escapeHtml(layout.post.profile)}</span>` : ''}
+    ${layout.post?.needScore != null ? `<span class="gp-admin-lab-diff-pill">형태 필요도 ${Number(layout.post.needScore).toFixed(3)}</span>` : ''}
+    ${layout.enabled ? `<span class="gp-admin-lab-diff-pill">${escapeHtml(engineStatus('kss'))}</span>` : ''}
+    ${layout.enabled ? `<span class="gp-admin-lab-diff-pill">${escapeHtml(engineStatus('kiwipiepy'))}</span>` : ''}
+    ${layout.enabled ? `<span class="gp-admin-lab-diff-pill">${escapeHtml(engineStatus('pykospacing'))}</span>` : ''}
   </div>
   ${added || removed ? `<div class="gp-admin-lab-diff-list">${added ? `<div>ON에서 추가된 표현: ${added}</div>` : ''}${removed ? `<div>ON에서 줄거나 빠진 표현: ${removed}</div>` : ''}</div>` : ''}
   ${qp.enabled && (reduced || increased || (qp.warnings || []).length) ? `<div class="gp-admin-lab-diff-list">
     ${reduced ? `<div>줄어든 품질 패턴: ${reduced}</div>` : ''}
     ${increased ? `<div>늘어난 품질 패턴: ${increased}</div>` : ''}
     ${(qp.warnings || []).length ? `<div>감사 경고: ${(qp.warnings || []).slice(0, 8).map(escapeHtml).join(', ')}</div>` : ''}
+  </div>` : ''}
+  ${layout.enabled ? `<div class="gp-admin-lab-diff-list">
+    <div>입력 복원: ${layout.inputChanged ? '적용' : '변경 없음'} · 출력 후처리: ${layout.outputChanged ? '적용' : '변경 없음'}</div>
+    ${layout.post?.after ? `<div>줄/문단 변화: ${Number(layout.post.before?.lines || 0)}→${Number(layout.post.after?.lines || 0)}줄, ${Number(layout.post.before?.paragraphs || 0)}→${Number(layout.post.after?.paragraphs || 0)}문단</div>` : ''}
   </div>` : ''}
  `;
 }
@@ -3571,7 +3589,12 @@ function adminLabRenderResult(st) {
  if (baselineOut) baselineOut.value = baselineText;
  const outputLabel = document.getElementById('adminLabOutputLabel');
  if (outputLabel) outputLabel.textContent = baselineText ? '테스트 결과 ON' : '결과문';
- adminLabRenderDiff(result.qualityPatternCompare || result.niklQualityCompare);
+ const diffCompare = result.qualityPatternCompare || result.layoutFormatCompare || result.niklQualityCompare;
+ if (diffCompare && result.layoutFormatCompare?.layoutFormat && !diffCompare.layoutFormat) {
+  adminLabRenderDiff({ ...diffCompare, layoutFormat: result.layoutFormatCompare.layoutFormat });
+ } else {
+  adminLabRenderDiff(diffCompare);
+ }
  const jobId = document.getElementById('adminLabJobId');
  if (jobId) jobId.textContent = st.jobId ? '#' + String(st.jobId).slice(0, 6).toUpperCase() : '';
  const engineMeta = result.finalReportEngine || result.preserveLab || result.humanizeMeta || {};
@@ -3592,6 +3615,10 @@ function adminLabRenderResult(st) {
   result.niklQualityTest?.action ? '국어원식 ' + result.niklQualityTest.action : '',
   result.qualityPatternCompare ? '품질 패턴 비교 ON' : '',
   result.qualityPatternLab?.action ? '품질 패턴 ' + result.qualityPatternLab.action : '',
+  result.layoutFormatCompare ? '문서 형태 비교 ON' : '',
+  result.layoutFormat?.post?.applied ? '문서 형태 후처리 적용' : '',
+  result.layoutFormat?.post?.nlp?.sentenceEngine ? '문장분리 ' + result.layoutFormat.post.nlp.sentenceEngine : '',
+  result.layoutFormat?.post?.nlp?.spacingEngine ? '띄어쓰기 ' + result.layoutFormat.post.nlp.spacingEngine : '',
   result.externalApiHintsUsed ? '외부 API 힌트 사용' : '',
   result.protectedTermReport?.lossCount ? '보호표현 손실 ' + result.protectedTermReport.lossCount : '',
   result.grammarHardError?.introduced ? '문법 hard error' : '',
@@ -3620,6 +3647,9 @@ function adminLabRenderResult(st) {
    niklQualityCompare: result.niklQualityCompare,
    qualityPatternLab: result.qualityPatternLab,
    qualityPatternCompare: result.qualityPatternCompare,
+   layoutNlpTest: result.layoutNlpTest,
+   layoutFormat: result.layoutFormat,
+   layoutFormatCompare: result.layoutFormatCompare,
    qualityProfileBefore: result.qualityProfileBefore,
    qualityProfileAfter: result.qualityProfileAfter,
    patternDelta: result.patternDelta,
@@ -3748,7 +3778,7 @@ window.adminHumanizeLabRun = async function() {
  adminLabPollToken++;
  const tokenId = adminLabPollToken;
  adminLabSetBusy(true);
- const forceCompare = form.profile === 'ko_quality_pattern_lab';
+ const forceCompare = form.profile === 'ko_quality_pattern_lab' || form.layoutNlpTest;
  adminLabSetStatus((form.niklQualityTest || forceCompare) ? '작업 시작 중... OFF/ON 비교를 위해 2회 실행합니다.' : '작업 시작 중...', 'info');
  const out = document.getElementById('adminLabOutput');
  if (out) out.value = '';
@@ -3760,7 +3790,7 @@ window.adminHumanizeLabRun = async function() {
  if (baselineWrap) baselineWrap.hidden = true;
  if (diff) { diff.hidden = true; diff.innerHTML = ''; }
  if (outputLabel) outputLabel.textContent = '결과문';
- adminLabRenderChips(['시작 준비', form.niklQualityTest ? '국어원식 비교 ON' : '', forceCompare ? '품질 패턴 비교 ON' : '']);
+ adminLabRenderChips(['시작 준비', form.niklQualityTest ? '국어원식 비교 ON' : '', form.profile === 'ko_quality_pattern_lab' ? '품질 패턴 비교 ON' : '', form.layoutNlpTest ? '문서 형태 NLP ON' : '']);
  try {
   const idToken = await adminLabToken(true);
   const res = await fetch(window.apiUrl('/transform'), {
@@ -3774,6 +3804,7 @@ window.adminHumanizeLabRun = async function() {
     memo: form.memo,
     adminHumanizeLab: true,
     niklQualityTest: form.niklQualityTest,
+    layoutNlpTest: form.layoutNlpTest,
     humanizeExperiment: true,
     evidence: false,
     length: 'keep'
