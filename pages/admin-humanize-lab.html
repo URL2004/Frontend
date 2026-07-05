@@ -25,6 +25,7 @@
             <option value="preserve_lab">보존형 실험 엔진</option>
             <option value="final_report_engine">최종 개선보고서 엔진(API)</option>
             <option value="gpt_engine">GPT 전용 엔진(API)</option>
+            <option value="ko_quality_pattern_lab">한국어 품질 패턴 엔진 v1</option>
           </select>
         </label>
         <label class="gp-admin-label">
@@ -51,9 +52,9 @@
         <label class="gp-admin-cal-check gp-admin-lab-check">
           <input id="adminLabNiklQualityTest" type="checkbox">
           <span>국립국어원식 한국어 품질 테스트</span>
-          <span class="gp-admin-tip" tabindex="0" aria-label="운영 기능에는 적용하지 않고 이 테스트 결과에만 로컬 품질 힌트와 메타를 붙입니다. 외부 API 호출은 하지 않습니다." onclick="event.preventDefault();event.stopPropagation();">
+          <span class="gp-admin-tip" tabindex="0" aria-label="운영 기능에는 적용하지 않고 이 테스트 결과에만 로컬 품질 힌트와 메타를 붙입니다. API 키가 있으면 국립국어원 외부 API 힌트도 함께 조회합니다. 품질 패턴 엔진 v1은 이 비교를 기본으로 켭니다." onclick="event.preventDefault();event.stopPropagation();">
             <span class="gp-admin-tip-icon">?</span>
-            <span class="gp-admin-tip-pop" role="tooltip">운영 기능에는 적용하지 않고 이 테스트 결과에만 로컬 품질 힌트와 메타를 붙입니다. 외부 API 호출은 하지 않습니다.</span>
+            <span class="gp-admin-tip-pop" role="tooltip">운영 기능에는 적용하지 않고 이 테스트 결과에만 로컬 품질 힌트와 메타를 붙입니다. API 키가 있으면 국립국어원 외부 API 힌트도 함께 조회합니다. 품질 패턴 엔진 v1은 이 비교를 기본으로 켭니다.</span>
           </span>
         </label>
       </div>

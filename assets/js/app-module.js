@@ -3457,7 +3457,11 @@ function adminLabSetStatus(text, type) {
 function adminLabSetBusy(busy) {
  const buttons = [document.getElementById('adminLabRunBtn'), document.getElementById('adminLabHeaderRunBtn')].filter(Boolean);
  const profile = document.getElementById('adminLabProfile')?.value || 'preserve_lab';
- const idleText = profile === 'gpt_engine' ? 'GPT 전용 엔진 테스트 실행' : profile === 'final_report_engine' ? '최종보고서 엔진 테스트 실행' : '보존형 테스트 실행';
+ const idleText = profile === 'ko_quality_pattern_lab'
+  ? '한국어 품질 패턴 엔진 테스트 실행'
+  : profile === 'gpt_engine'
+   ? 'GPT 전용 엔진 테스트 실행'
+   : profile === 'final_report_engine' ? '최종보고서 엔진 테스트 실행' : '보존형 테스트 실행';
  buttons.forEach(btn => {
   btn.disabled = !!busy;
   btn.textContent = busy ? '테스트 진행 중...' : idleText;
@@ -3471,6 +3475,7 @@ function adminLabModeLabel(mode) {
 }
 
 function adminLabProfileLabel(profile) {
+ if (profile === 'ko_quality_pattern_lab' || profile === 'quality_pattern_lab') return '한국어 품질 패턴 엔진 v1';
  if (profile === 'gpt_engine' || profile === 'gpt_prod') return 'GPT 전용 엔진';
  if (profile === 'final_report_engine' || profile === 'report_engine' || profile === 'final_report') return '최종 개선보고서 엔진';
  return '보존형 실험 엔진';
@@ -3511,17 +3516,26 @@ function adminLabRenderDiff(compare) {
  const sent = compare.sentences || {};
  const q = compare.niklQualityTest || {};
  const official = q.official || {};
+ const qp = compare.qualityPattern || {};
  const keyword = compare.keywords || {};
  const added = (keyword.added || []).slice(0, 10).map(escapeHtml).join(', ');
  const removed = (keyword.removed || []).slice(0, 10).map(escapeHtml).join(', ');
+ const increased = (qp.increasedPatterns || []).slice(0, 5).map(p => escapeHtml(p.label || p.id || '')).filter(Boolean).join(', ');
+ const reduced = (qp.reducedPatterns || []).slice(0, 5).map(p => escapeHtml(p.label || p.id || '')).filter(Boolean).join(', ');
+ const labels = compare.labels || {};
  const pct = v => `${Math.round((Number(v) || 0) * 100)}%`;
  const signed = v => {
   const n = Number(v) || 0;
   return `${n > 0 ? '+' : ''}${n.toLocaleString('ko-KR')}`;
  };
+ const signedFixed = v => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '';
+  return `${n > 0 ? '+' : ''}${n.toFixed(3)}`;
+ };
  el.hidden = false;
- el.innerHTML = `
-  <b>OFF/ON 비교</b>
+  el.innerHTML = `
+  <b>OFF/ON 비교${labels.baseline || labels.test ? ` · ${escapeHtml(labels.baseline || 'OFF')} vs ${escapeHtml(labels.test || 'ON')}` : ''}</b>
   <div class="gp-admin-lab-diff-row">
     <span class="gp-admin-lab-diff-pill">길이 ${signed(len.delta)}자</span>
     <span class="gp-admin-lab-diff-pill">문단 ${signed(para.delta)}</span>
@@ -3530,8 +3544,19 @@ function adminLabRenderDiff(compare) {
     ${q.niklRiskDelta != null ? `<span class="gp-admin-lab-diff-pill">품질 위험 변화 ${Number(q.niklRiskDelta).toFixed(3)}</span>` : ''}
     ${official.riskDelta != null ? `<span class="gp-admin-lab-diff-pill">공식자료 위험 변화 ${Number(official.riskDelta).toFixed(3)}</span>` : ''}
     ${q.action ? `<span class="gp-admin-lab-diff-pill">판정 ${escapeHtml(q.action)}</span>` : ''}
+    ${qp.enabled ? `<span class="gp-admin-lab-diff-pill">패턴 위험 ${signedFixed(qp.riskDelta)}</span>` : ''}
+    ${qp.enabled ? `<span class="gp-admin-lab-diff-pill">감소 ${Number(qp.reducedCount || 0)} / 증가 ${Number(qp.increasedCount || 0)}</span>` : ''}
+    ${qp.action ? `<span class="gp-admin-lab-diff-pill">감사 ${escapeHtml(qp.action)}</span>` : ''}
+    ${qp.protectedTermLossCount ? `<span class="gp-admin-lab-diff-pill">보호표현 손실 ${Number(qp.protectedTermLossCount || 0)}</span>` : ''}
+    ${qp.grammarHardError?.introduced ? `<span class="gp-admin-lab-diff-pill">문법 hard error</span>` : ''}
+    ${qp.externalApiHintsUsed ? `<span class="gp-admin-lab-diff-pill">외부 API 힌트 사용</span>` : ''}
   </div>
   ${added || removed ? `<div class="gp-admin-lab-diff-list">${added ? `<div>ON에서 추가된 표현: ${added}</div>` : ''}${removed ? `<div>ON에서 줄거나 빠진 표현: ${removed}</div>` : ''}</div>` : ''}
+  ${qp.enabled && (reduced || increased || (qp.warnings || []).length) ? `<div class="gp-admin-lab-diff-list">
+    ${reduced ? `<div>줄어든 품질 패턴: ${reduced}</div>` : ''}
+    ${increased ? `<div>늘어난 품질 패턴: ${increased}</div>` : ''}
+    ${(qp.warnings || []).length ? `<div>감사 경고: ${(qp.warnings || []).slice(0, 8).map(escapeHtml).join(', ')}</div>` : ''}
+  </div>` : ''}
  `;
 }
 
@@ -3546,7 +3571,7 @@ function adminLabRenderResult(st) {
  if (baselineOut) baselineOut.value = baselineText;
  const outputLabel = document.getElementById('adminLabOutputLabel');
  if (outputLabel) outputLabel.textContent = baselineText ? '테스트 결과 ON' : '결과문';
- adminLabRenderDiff(result.niklQualityCompare);
+ adminLabRenderDiff(result.qualityPatternCompare || result.niklQualityCompare);
  const jobId = document.getElementById('adminLabJobId');
  if (jobId) jobId.textContent = st.jobId ? '#' + String(st.jobId).slice(0, 6).toUpperCase() : '';
  const engineMeta = result.finalReportEngine || result.preserveLab || result.humanizeMeta || {};
@@ -3565,6 +3590,11 @@ function adminLabRenderResult(st) {
   riskFlags.length ? '위험 플래그 ' + riskFlags.length : '',
   result.niklQualityCompare ? '국어원식 비교 ON' : '',
   result.niklQualityTest?.action ? '국어원식 ' + result.niklQualityTest.action : '',
+  result.qualityPatternCompare ? '품질 패턴 비교 ON' : '',
+  result.qualityPatternLab?.action ? '품질 패턴 ' + result.qualityPatternLab.action : '',
+  result.externalApiHintsUsed ? '외부 API 힌트 사용' : '',
+  result.protectedTermReport?.lossCount ? '보호표현 손실 ' + result.protectedTermReport.lossCount : '',
+  result.grammarHardError?.introduced ? '문법 hard error' : '',
   result.compressionFallback ? '압축 폴백' : '',
   result.chunkCount != null ? '청크 ' + result.chunkCount : '',
   result.fallbackCount ? '청크 폴백 ' + result.fallbackCount : '',
@@ -3586,7 +3616,19 @@ function adminLabRenderResult(st) {
    finalReportEngine: result.finalReportEngine,
    humanizeMeta: result.humanizeMeta,
    niklQualityTest: result.niklQualityTest,
+   niklQuality: result.niklQuality,
    niklQualityCompare: result.niklQualityCompare,
+   qualityPatternLab: result.qualityPatternLab,
+   qualityPatternCompare: result.qualityPatternCompare,
+   qualityProfileBefore: result.qualityProfileBefore,
+   qualityProfileAfter: result.qualityProfileAfter,
+   patternDelta: result.patternDelta,
+   auditTrail: result.auditTrail,
+   protectedTermReport: result.protectedTermReport,
+   claimStrengthDrift: result.claimStrengthDrift,
+   rhetoricalInsertion: result.rhetoricalInsertion,
+   grammarHardError: result.grammarHardError,
+   externalApiHintsUsed: result.externalApiHintsUsed,
    baselineHumanizeMeta: result.baselineHumanizeMeta,
    baselineFloorReport: result.baselineFloorReport,
    floorReport: result.floorReport
@@ -3706,7 +3748,8 @@ window.adminHumanizeLabRun = async function() {
  adminLabPollToken++;
  const tokenId = adminLabPollToken;
  adminLabSetBusy(true);
- adminLabSetStatus(form.niklQualityTest ? '작업 시작 중... OFF/ON 비교를 위해 2회 실행합니다.' : '작업 시작 중...', 'info');
+ const forceCompare = form.profile === 'ko_quality_pattern_lab';
+ adminLabSetStatus((form.niklQualityTest || forceCompare) ? '작업 시작 중... OFF/ON 비교를 위해 2회 실행합니다.' : '작업 시작 중...', 'info');
  const out = document.getElementById('adminLabOutput');
  if (out) out.value = '';
  const baselineOut = document.getElementById('adminLabBaselineOutput');
@@ -3717,7 +3760,7 @@ window.adminHumanizeLabRun = async function() {
  if (baselineWrap) baselineWrap.hidden = true;
  if (diff) { diff.hidden = true; diff.innerHTML = ''; }
  if (outputLabel) outputLabel.textContent = '결과문';
- adminLabRenderChips(['시작 준비', form.niklQualityTest ? '국어원식 비교 ON' : '']);
+ adminLabRenderChips(['시작 준비', form.niklQualityTest ? '국어원식 비교 ON' : '', forceCompare ? '품질 패턴 비교 ON' : '']);
  try {
   const idToken = await adminLabToken(true);
   const res = await fetch(window.apiUrl('/transform'), {
