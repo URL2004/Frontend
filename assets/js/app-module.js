@@ -1131,7 +1131,7 @@ window.loadPosts = async (sort) =>{
   if (fs) fs.style.display = 'none';
   if (ps) ps.style.display = 'none';
   window._cachedPosts = [
-   { id:'demo-post-1', demo:true, category:'블로그 작성 꿀팁', title:'AI 탐지 안전하게 피하는 블로그 글 작성 루틴', body:'저는 이렇게 쓰면 대부분 자연스럽게 나왔어요. 구성부터 문장 리듬까지 실제 루틴을 공유합니다.', authorName:'익명', createdAt:_mockDate(0), views:1246, likes:[1,2,3,4,5], commentCount:34 },
+   { id:'demo-post-1', demo:true, category:'블로그 작성 꿀팁', title:'AI 티 안 나게, 자연스러운 블로그 글 쓰는 루틴', body:'저는 이렇게 쓰면 대부분 자연스럽게 나왔어요. 구성부터 문장 리듬까지 실제 루틴을 공유합니다.', authorName:'익명', createdAt:_mockDate(0), views:1246, likes:[1,2,3,4,5], commentCount:34 },
    { id:'demo-post-2', demo:true, category:'논문', title:'서론과 결론에서 AI 냄새 줄이는 방법', body:'교수님들이 특히 어색하게 보는 부분이 서론과 결론이더라고요. 제가 효과 봤던 표현 방식 정리해봤습니다.', authorName:'석문대생', createdAt:_mockDate(0), views:973, likes:[1,2,3,4], commentCount:22 },
    { id:'demo-post-3', demo:true, category:'자소서 조언', title:'자소서 문항별 구조 추천, 경험 기반', body:'항목별로 어떤 흐름이 설득력 있는지 막막하신 분들께 도움이 되길 바랍니다.', authorName:'취준러', createdAt:_mockDate(1), views:861, likes:[1,2,3], commentCount:18 },
    { id:'demo-post-4', demo:true, category:'글쓰기 팁', title:'문장 다양하게 쓰는 7가지 표현 패턴', body:'같은 내용도 더 자연스럽고 사람답게 쓰는 방법을 정리했어요.', authorName:'익명', createdAt:_mockDate(1), views:752, likes:[1,2], commentCount:11 },
@@ -2715,7 +2715,7 @@ function adminHistoryTypeText(type) {
   coupon_redeem: '쿠폰',
   detect: 'AI 감지',
   humanize: '휴머나이저',
-  restructure: '고급 피하기(재구성)',
+  restructure: '고급 휴머나이징(재구성)',
   admin_adjust: '관리자 조정'
  })[type] || '기타';
 }
@@ -2729,9 +2729,9 @@ function adminHistoryLabel(h) {
   return adminHistoryTypeText(type.slice(0, -8)) + ' 복구';
  }
  if (type === 'humanize') {
-  if (h.fallback) return '고급 피하기 → 보존형 폴백';
+  if (h.fallback) return '고급 휴머나이징 → 보존형 폴백';
   switch (h.mode) {
-   case 'blog': return '기본 피하기(블로그)';
+   case 'blog': return '기본 휴머나이징(블로그)';
    case 'polish':
    case 'assignment': return '다듬기(보존형)';
    case 'thesis': return '다듬기(논문)';
@@ -2740,7 +2740,7 @@ function adminHistoryLabel(h) {
   }
  }
  if (type === 'restructure') {
-  return '고급 피하기(재구성)' + (h.evidence ? ' + 근거' : '');
+  return '고급 휴머나이징(재구성)' + (h.evidence ? ' + 근거' : '');
  }
  return adminHistoryTypeText(type);
 }

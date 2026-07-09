@@ -75,8 +75,8 @@
     var len = (text || '').replace(/\s/g, '').length;
     // 백엔드 BLOG_BAND/POLISH_BAND/RESTRUCTURE_BAND와 동일한 보수 표기(/diagnose 실패 시 폴백)
     if (len < 400) return { grade: 'A', bands: { polish: '30~55%', blog: '30~45%', restructure: '35~60%' }, title: '구체적 정보가 충분한 글이에요', desc: '사례·수치가 풍부해, 다듬기만으로도 자연스럽게 마무리할 수 있어요.' };
-    if (len < 1200) return { grade: 'B', bands: { polish: '60~85%', blog: '35~50%', restructure: '35~60%' }, title: '추상과 구체가 섞인 글이에요', desc: '일부 문단은 일반론에 가까워요. 회피 모드로 더 사람답게 만들 수 있어요.' };
-    return { grade: 'C', bands: { polish: '85%+', blog: '40~55%', restructure: '35~60%' }, title: '추상적 일반론 비중이 높은 글이에요', desc: '구체적 사례·수치가 적어, 그대로 제출하면 AI 탐지 위험이 높습니다. 어떻게 할지 골라주세요.' };
+    if (len < 1200) return { grade: 'B', bands: { polish: '60~85%', blog: '35~50%', restructure: '35~60%' }, title: '추상과 구체가 섞인 글이에요', desc: '일부 문단은 일반론에 가까워요. 휴머나이징으로 더 사람답게 만들 수 있어요.' };
+    return { grade: 'C', bands: { polish: '85%+', blog: '40~55%', restructure: '35~60%' }, title: '추상적 일반론 비중이 높은 글이에요', desc: '구체적 사례·수치가 적어, AI가 쓴 글처럼 보이기 쉬워요. 어떻게 할지 골라주세요.' };
   }
 
   var lastDiag = null;   // 결과 화면의 예상 밴드 표기에 재사용
@@ -611,13 +611,13 @@
     var sum = $('lavConfirmSummary');
     if (sum) {
       var rows = [];
-      rows.push(['방식', s.tone === 'formal' ? '고급 피하기 — 논문·격식체' : '기본 피하기']);
+      rows.push(['방식', s.tone === 'formal' ? '고급 휴머나이징 — 논문·격식체' : '기본 휴머나이징']);
       if (s.tone === 'blog') rows.push(['문체', s.basicStyle === 'report' ? '과제/보고서 말투' : '블로그 말투']);
       if (s.tone === 'formal') rows.push(['분량', s.length === 'keep' ? '분량 유지' : '컴팩트(~60%)']);
       // 자동 코칭 ON이면 위 추천 픽 섹션이 입력을 대신함 → 메모 행 생략(중복·혼동 방지)
       if (s.tone === 'blog' && s.basicStyle === 'report') rows.push(['추가 메모', '사용 안 함 · 원문 중심']);
       else if (!(s.tone === 'formal' && s.autoCoach)) rows.push(['경험 메모', s.memo ? '입력함 · 글에 자연스럽게 녹여요' : '없음']);
-      rows.push(['근거 보강', s.tone === 'formal' ? (s.evidence ? '켬 — 검색 후 검수·승인' : '끔') : '기본 피하기에선 사용 안 함']);
+      rows.push(['근거 보강', s.tone === 'formal' ? (s.evidence ? '켬 — 검색 후 검수·승인' : '끔') : '기본 휴머나이징에선 사용 안 함']);
       sum.innerHTML = rows.map(function (r) {
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
       }).join('');
@@ -928,7 +928,7 @@
       sum.innerHTML =
         '<li><span>방식</span><b>과제 어투로 다듬기</b></li>' +
         '<li><span>원문 보존</span><b>사실·분량 그대로 (재작성 아님)</b></li>' +
-        '<li><span>용도</span><b>어투·완성도 정리 (탐지 회피용 아님)</b></li>';
+        '<li><span>용도</span><b>어투·완성도 정리 (AI 티 줄이기 아님)</b></li>';
     }
     var subP = $('lavConfirmSub'); if (subP) subP.hidden = true;   // 과제 다듬기는 탐지율과 무관
     var len = src ? src.value.length : 0;   // 글자수 통일: 공백 포함
@@ -1233,7 +1233,7 @@
       var isFb = !!(st.result && st.result.preservationFallback);
       lavFbBanner.hidden = !isFb;
       if (isFb && $('lavFallbackMsg')) {
-        $('lavFallbackMsg').textContent = st.note || '고급 피하기가 원문을 너무 많이 바꿔서, 대신 원문을 최대한 살려 다듬었어요.';
+        $('lavFallbackMsg').textContent = st.note || '고급 휴머나이징이 원문을 너무 많이 바꿔서, 대신 원문을 최대한 살려 다듬었어요.';
       }
     }
     // ── '예상 AI 탐지율 %' 표기 제거(2026-06-15) ──────────────────────────────
@@ -1277,7 +1277,7 @@
       if (paras.length) {
         var title = abEl.querySelector('.lav-blocked-abstract-title');
         var tip = abEl.querySelector('.lav-blocked-abstract-tip');
-        if (title) title.textContent = showLost ? '이 사실·수치가 빠져 차단됐어요' : '이 부분이 추상적이라 회피가 어려워요';
+        if (title) title.textContent = showLost ? '이 사실·수치가 빠져 차단됐어요' : '이 부분이 추상적이라 자연스럽게 바꾸기 어려워요';
         if (tip) tip.innerHTML = showLost
           ? '사실·수치가 많은 글은 <b>문단을 짧게 나누거나</b>, 해당 부분은 원문 표현을 더 유지해서 다시 도전해 주세요.'
           : '위 내용과 관련된 <b>실제 경험·사례·수치</b>를 경험 메모에 적고 다시 도전하면, 그 부분을 구체적으로 바꿔 더 잘 통과돼요.';

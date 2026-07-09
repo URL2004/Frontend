@@ -214,26 +214,26 @@
              <span class="lav-diag-grade" id="lavDiagGrade">C</span>
              <div class="lav-diag2-text">
                <strong id="lavDiagTitle">추상적 일반론 비중이 높은 글이에요</strong>
-               <p id="lavDiagDesc">구체적 사례·수치가 적어, 그대로 제출하면 AI 탐지 위험이 높습니다.</p>
+               <p id="lavDiagDesc">구체적 사례·수치가 적어, AI가 쓴 글처럼 보이기 쉬워요.</p>
              </div>
            </div>
 
            <!-- 자소서·이력 유형 안내(재구성 부적합) -->
            <div class="lav-resume-note" id="lavResumeNote" hidden>
              <strong>자기소개서·이력 유형의 글로 보여요.</strong>
-             자기소개서는 <b>‘고급 피하기’와 잘 안 맞아요</b> — 고급 피하기는 시사·논증 글을 칼럼처럼 다시 쓰는 기능이라, 자소서에 쓰면 내용이 비틀려요. <b>과제 어투로 다듬기</b>를 권하고, AI 티를 줄이려면 <b>기본 피하기</b>만 쓰세요.
+             자기소개서는 <b>‘고급 휴머나이징’과 잘 안 맞아요</b> — 고급 휴머나이징은 시사·논증 글을 칼럼처럼 다시 쓰는 기능이라, 자소서에 쓰면 내용이 비틀려요. <b>과제 어투로 다듬기</b>를 권하고, AI 티를 줄이려면 <b>기본 휴머나이징</b>만 쓰세요.
            </div>
 
            <!-- 회피 난이도 사전 안내(STEM 실험·방법론 보고서 / 구조화 데이터 보고서) — 소프트(진행 가능), 솔직한 고지 -->
            <div class="lav-resume-note" id="lavAdvisoryNote" hidden>
-             <strong>⚗️ AI 검출을 낮추기 어려운 유형의 글이에요.</strong>
+             <strong>⚗️ AI 티를 줄이기 어려운 유형의 글이에요.</strong>
              <span id="lavAdvisoryText"></span>
            </div>
 
            <!-- 연도·수치·인용 빼곡한 글(격식논문·보고서) — 자유 재구성 시 사실 오류 위험 -->
            <div class="lav-resume-note" id="lavFactDenseNote" hidden>
              <strong>연도·수치·인용이 많은 글이에요.</strong>
-             이런 글을 <b>고급 피하기(재구성)로 자유 재구성하면 연도·통계가 바뀌거나 빠질 위험이 큽니다</b>(예: 2023→2022, 수치 누락). 사실을 원문 그대로 지키는 <b>과제 어투로 다듬기</b>를 권장해요. 재구성을 꼭 쓰려면 결과의 연도·수치를 한 번 더 확인하세요.
+             이런 글을 <b>고급 휴머나이징(재구성)으로 자유 재구성하면 연도·통계가 바뀌거나 빠질 위험이 큽니다</b>(예: 2023→2022, 수치 누락). 사실을 원문 그대로 지키는 <b>과제 어투로 다듬기</b>를 권장해요. 재구성을 꼭 쓰려면 결과의 연도·수치를 한 번 더 확인하세요.
            </div>
 
            <!-- ② 목적 선택 — 2갈래로 명확하게 -->
@@ -244,7 +244,7 @@
                <strong>과제 어투로 다듬기</strong>
                <p>AI로 쓴 초안을 대학 과제체로 매끄럽게 정리해요. 사실·분량은 그대로 두고 문장만 다듬어요.</p>
                <em class="lav-purpose-band quiet">어투·완성도 정리</em>
-               <span class="lav-purpose-caveat">탐지 회피용은 아니에요</span>
+               <span class="lav-purpose-caveat">AI 티 줄이기용은 아니에요</span>
              </button>
              <button type="button" class="lav-purpose-opt accent" onclick="lavFlowGo('reduce')">
                <span class="lav-purpose-reco">추천</span>
@@ -252,7 +252,7 @@
                <strong>AI 티 줄이기</strong>
                <p>사람이 쓴 글에 가깝게 말투와 구조를 다시 다듬어요. AI 티를 줄이는 게 목적이면 이걸 고르세요.</p>
                <em class="lav-purpose-band">AI 티를 낮추는 다시쓰기</em>
-               <span class="lav-purpose-caveat strong">탐지 결과는 글·외부 검사기에 따라 달라지며 보장하지 않아요</span>
+               <span class="lav-purpose-caveat strong">AI 티 지수는 글·외부 검사기에 따라 달라지며 보장값이 아니에요</span>
              </button>
            </div>
          </section>
@@ -265,7 +265,7 @@
                <label class="lav-tone-opt">
                  <input type="radio" name="lavTone" value="blog" checked onchange="lavToneChange()">
                  <span class="lav-tone-body">
-                   <b>기본 피하기 <u class="rec">추천</u></b>
+                   <b>기본 휴머나이징 <u class="rec">추천</u></b>
                    <i>빠르고 저렴하게 AI 티를 줄여요. 글 목적에 맞춰 블로그 말투와 과제/보고서 말투를 고를 수 있어요.</i>
                    <em class="lav-tone-chips"><span>1~3분</span><span>최소 10크레딧</span><span>100자당 2크레딧</span></em>
                  </span>
@@ -273,27 +273,27 @@
                <label class="lav-tone-opt">
                  <input type="radio" name="lavTone" value="formal" onchange="lavToneChange()">
                  <span class="lav-tone-body">
-                   <b>고급 피하기 <u class="lock-tag">현재 선택 불가</u></b>
+                   <b>고급 휴머나이징 <u class="lock-tag">현재 선택 불가</u></b>
                    <i>격식 문체(한다체)는 유지하면서 글 구조를 칼럼처럼 다시 써요.<span class="hl">근거 보강을 켜면 효과가 더 커져요.</span></i>
                    <em class="lav-tone-chips"><span>길이별 200~600크레딧</span><span>근거 사용 시 +100</span></em>
                  </span>
                </label>
              </div>
              <div class="lav-basic-style" id="lavBasicStyleBlock">
-               <div class="lav-set-label"><strong>기본 피하기 문체</strong><span>글 목적에 맞게 선택</span></div>
+               <div class="lav-set-label"><strong>기본 휴머나이징 문체</strong><span>글 목적에 맞게 선택</span></div>
                <div class="lav-radio-row">
                  <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="blog" checked onchange="lavBasicStyleChange()"><span>블로그 말투<i>후기·업체 포스팅·홍보글에 맞게 부드럽게 연결</i></span></label>
                  <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="report" onchange="lavBasicStyleChange()"><span>과제/보고서 말투<i>현장 기록·설명문처럼 사실과 문단 흐름을 차분하게 정리</i></span></label>
                </div>
              </div>
-             <p class="lav-tone-variance">다듬은 뒤 AI 탐지율은 글에 따라 <b>20~80%</b>로 편차가 커요 — 두 방식 모두 누구에게나 같은 결과를 보장하진 않아요.</p>
-             <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>자기소개서·이력 유형이라 <b>고급 피하기(재구성)를 잠갔어요</b> — 자소서엔 맞지 않거든요. <b>기본 피하기</b>로 자연스럽게 바꾸거나, 뒤로 가서 <b>과제 어투로 다듬기</b>를 선택하세요.</p>
+             <p class="lav-tone-variance">다듬은 뒤 AI 티 지수는 글에 따라 <b>20~80%</b>로 편차가 커요 — 두 방식 모두 누구에게나 같은 결과를 보장하진 않아요.</p>
+             <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>자기소개서·이력 유형이라 <b>고급 휴머나이징(재구성)을 잠갔어요</b> — 자소서엔 맞지 않거든요. <b>기본 휴머나이징</b>으로 자연스럽게 바꾸거나, 뒤로 가서 <b>과제 어투로 다듬기</b>를 선택하세요.</p>
            </div>
 
            <div class="lav-set-block" id="lavLenBlock" hidden>
-             <div class="lav-set-label"><strong>분량</strong><span>고급 피하기에서만 선택</span></div>
+             <div class="lav-set-label"><strong>분량</strong><span>고급 휴머나이징에서만 선택</span></div>
              <div class="lav-radio-row">
-               <label class="lav-radio"><input type="radio" name="lavLen" value="compact" checked><span>컴팩트<i>원문의 약 60% · 더 낮은 탐지율</i></span></label>
+               <label class="lav-radio"><input type="radio" name="lavLen" value="compact" checked><span>컴팩트<i>원문의 약 60% · 더 낮은 AI 티 지수</i></span></label>
                <label class="lav-radio"><input type="radio" name="lavLen" value="keep"><span>분량 유지<i>원문 길이에 가깝게</i></span></label>
              </div>
            </div>
@@ -309,7 +309,7 @@
                </span>
              </label>
              <p class="lav-memo-toggle-hint" id="lavMemoToggleHint"><button type="button" class="lav-linkbtn" onclick="lavMemoManual()">경험 메모 직접 입력</button></p>
-             <p class="lav-evidence-hint" id="lavAutoCoachHint" hidden>‘고급 피하기’를 선택하면 켤 수 있어요.</p>
+             <p class="lav-evidence-hint" id="lavAutoCoachHint" hidden>‘고급 휴머나이징’을 선택하면 켤 수 있어요.</p>
            </div>
 
            <div class="lav-set-block" id="lavMemoBlock" hidden>
@@ -342,12 +342,12 @@
                <input type="checkbox" id="lavEvidence" onchange="lavEvidenceChange()" disabled>
                <span class="lav-toggle-track" aria-hidden="true"><i></i></span>
                <span class="lav-toggle-text">
-                 <b>근거 보강 <u class="only">고급 피하기 전용</u></b>
-                 <i>주제와 맞는 실제 자료(통계·연구·기관)를 찾아 인용해요. 검수 후 승인한 것만 사용합니다.<span class="hl">‘고급 피하기’에서 효과를 크게 높여 주는 기능이라, 끄면 효과가 많이 줄어요.</span></i>
+                 <b>근거 보강 <u class="only">고급 휴머나이징 전용</u></b>
+                 <i>주제와 맞는 실제 자료(통계·연구·기관)를 찾아 인용해요. 검수 후 승인한 것만 사용합니다.<span class="hl">‘고급 휴머나이징’에서 효과를 크게 높여 주는 기능이라, 끄면 효과가 많이 줄어요.</span></i>
                </span>
              </label>
              <p class="lav-evidence-note" id="lavEvidenceNote" hidden>근거 검색에 8~12분이 걸리고, 검수 단계가 추가돼요.</p>
-             <p class="lav-evidence-hint" id="lavEvidenceHint">‘고급 피하기’를 선택하면 켤 수 있어요.</p>
+             <p class="lav-evidence-hint" id="lavEvidenceHint">‘고급 휴머나이징’을 선택하면 켤 수 있어요.</p>
            </div>
 
            <button type="button" class="lav-flow-cta lav-flow-cta-split" onclick="lavOpenConfirm()"><span>AI 티 줄이기 시작</span><small id="lavCtaMeta">예상 1~3분 · 최소 10크레딧</small></button>
@@ -425,7 +425,7 @@
              <span class="lav-trust-badge ok">수치·출처 일치</span>
              <span class="lav-trust-badge ok">검증 통과</span>
            </div>
-           <p class="lav-done-note" id="lavDoneNote" style="margin:2px 0 12px;font-size:12.5px;line-height:1.5;color:var(--text3);">예상치예요. 글의 구체성·길이·주제에 따라 탐지율은 달라질 수 있어요. 결과가 만족스럽지 않으면 경험 메모를 더해 다시 돌려보세요.</p>
+           <p class="lav-done-note" id="lavDoneNote" style="margin:2px 0 12px;font-size:12.5px;line-height:1.5;color:var(--text3);">예상치예요. 글의 구체성·길이·주제에 따라 AI 티 지수는 달라질 수 있어요. 결과가 만족스럽지 않으면 경험 메모를 더해 다시 돌려보세요.</p>
            <div class="lav-done-body lav-collapse" id="lavDoneBody"></div>
            <button type="button" class="lav-collapse-toggle" id="lavDoneToggle" onclick="lavToggleCollapse('lavDoneBody',this)" aria-expanded="false" hidden><span>펼쳐보기</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
            <div class="lav-done-actions">
@@ -465,8 +465,8 @@
    <section class="gp-hero">
      <div class="gp-hero-copy">
        <p class="gp-eyebrow">제출 전, 한 번 더 확인</p>
-       <h1>교수님 피하기로<br><span>AI 탐지 걱정 끝.</span></h1>
-       <p class="gp-hero-sub">AI 감지부터 자연스러운 휴머나이징까지, 당신의 글을 더 안전하고 자연스럽게.</p>
+       <h1>AI 티 나는 글,<br><span>사람답게.</span></h1>
+       <p class="gp-hero-sub">무료 AI 감지부터 자연스러운 휴머나이징까지, 당신의 글을 더 자연스럽게.</p>
        <div class="gp-hero-actions">
          <button type="button" class="gp-hero-primary" onclick="document.getElementById('inputText').focus()">지금 무료로 시작</button>
          <button type="button" class="gp-hero-secondary" onclick="setMainDesign('paper')">
@@ -632,8 +632,8 @@
 
  <section class="gp-section gp-compare">
    <div class="gp-section-head">
-     <h2>AI 탐지, 이렇게 달라집니다</h2>
-     <p>교수님 피하기로 더 자연스럽고 안전하게</p>
+     <h2>휴머나이징, 문장이 이렇게 달라집니다</h2>
+     <p>교수님 피하기로 더 자연스럽고 사람답게</p>
    </div>
    <div class="gp-compare-grid">
      <article class="gp-detect-card before">
@@ -668,8 +668,8 @@
    </div>
    <div class="gp-steps">
      <article><span>01</span><strong>텍스트 입력</strong><p>검사할 텍스트를 붙여넣거나 파일을 업로드하세요.</p></article>
-     <article><span>02</span><strong>AI 검사 &amp; 분석</strong><p>AI 탐지 확률과 상세 분석 결과를 빠르게 확인합니다.</p></article>
-     <article><span>03</span><strong>휴머나이징 적용</strong><p>자연스럽게 다듬어진 결과로 더 안전하게 제출하세요.</p></article>
+     <article><span>02</span><strong>AI 검사 &amp; 분석</strong><p>AI 티 지수와 상세 분석 결과를 빠르게 확인합니다.</p></article>
+     <article><span>03</span><strong>휴머나이징 적용</strong><p>자연스럽게 다듬어진 결과로 자신 있게 제출하세요.</p></article>
    </div>
  </section>
 
@@ -681,7 +681,7 @@
      <article><span>AI</span><strong>AI 문체 패턴 분석</strong><p>추상성·반복·정형성 등 AI가 남기는 문체 신호를 문단별로 짚어드립니다.</p></article>
      <article><span>WR</span><strong>자연스러운 휴머나이징</strong><p>문맥을 이해한 문장 재구성으로 인간의 글과 유사하게 다듬습니다.</p></article>
       <article><span>PR</span><strong>학습 사용 없음</strong><p>입력한 글은 서비스 처리와 사용자 보관함 제공 목적에만 사용되며 외부 학습에 쓰지 않습니다.</p></article>
-     <article><span>AC</span><strong>빠르고 정확한 결과</strong><p>몇 초 안에 AI 탐지 확률과 상세 분석 결과를 제공합니다.</p></article>
+     <article><span>AC</span><strong>빠르고 정확한 결과</strong><p>몇 초 안에 AI 티 지수와 상세 분석 결과를 제공합니다.</p></article>
      <article><span>AR</span><strong>결과 보관 &amp; 관리</strong><p>검사 기록과 결과를 한곳에서 보관하고 언제든 다시 확인할 수 있습니다.</p></article>
      <article><span>KR</span><strong>학생·취업 준비생 맞춤</strong><p>과제, 자기소개서, 논문 등 다양한 상황에 최적화된 지원을 제공합니다.</p></article>
    </div>
@@ -694,11 +694,11 @@
    <div class="faq-list">
     <div class="faq-item">
      <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>교수님 피하기는 어떤 서비스인가요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-     <div class="faq-a">AI로 작성한 글의 탐지 가능성을 확인하고, 더 자연스러운 문장으로 다듬는 서비스입니다.</div>
+     <div class="faq-a">AI로 쓴 티가 나는지 확인하고, 더 자연스러운 문장으로 다듬는 서비스입니다.</div>
     </div>
     <div class="faq-item">
      <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>결과는 얼마나 정확한가요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-     <div class="faq-a">주요 AI 탐지 패턴을 기준으로 분석하지만 모든 외부 감지기를 100% 보장하지는 않습니다. 변환 후 재검사를 권장합니다.</div>
+     <div class="faq-a">주요 AI 패턴을 기준으로 분석하지만 모든 외부 검사 결과를 100% 보장하지는 않습니다. 변환 후 재검사를 권장합니다.</div>
     </div>
     <div class="faq-item">
      <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>휴머나이징 후에도 제 글의 의미가 유지되나요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
