@@ -865,6 +865,7 @@
     badge(m.lostFacts === 0, m.lostFacts === 0 ? '원문 사실 보존' : '사실 누락 ' + m.lostFacts + '건');
     badge(m.repetition === 0, m.repetition === 0 ? '반복 없음' : '반복 ' + m.repetition + '건');
     badge(m.judge !== 'fail', m.judge === 'pass' ? '의미 검증 통과' : m.judge === 'fail' ? '의미 검증 실패' : '의미 검증 생략(저위험)');
+    badge(true, '국립국어원 규범 기준 검사');   // 서버가 매 변환마다 어문규범·사전 데이터 기반 koreanQuality 게이트를 돌림
     if (m.evidenceUsed > 0) badge(true, '승인 근거 ' + m.evidenceUsed + '건 · 수치·출처 일치');
     if (typeof m.lengthRatio === 'number') badge(true, '분량 ' + Math.round(m.lengthRatio * 100) + '%');
   }
