@@ -35,7 +35,16 @@
       </div>
     </div>
 
-    <section class="gp-admin-panel">
+    <!-- 탭: 섹션이 계속 늘며 세로 스크롤이 과도해져, 성격별로 나눠 한 번에 한 그룹만 보여준다 -->
+    <nav class="gp-admin-tabs" id="adminTabs" aria-label="관리자 섹션 탭">
+      <button type="button" class="gp-admin-tab active" data-tab="ops" onclick="adminSwitchTab('ops')">운영 현황</button>
+      <button type="button" class="gp-admin-tab" data-tab="users" onclick="adminSwitchTab('users')">사용자</button>
+      <button type="button" class="gp-admin-tab" data-tab="ledger" onclick="adminSwitchTab('ledger')">크레딧 원장</button>
+      <button type="button" class="gp-admin-tab" data-tab="coupons" onclick="adminSwitchTab('coupons')">쿠폰</button>
+      <button type="button" class="gp-admin-tab" data-tab="settings" onclick="adminSwitchTab('settings')">설정·실험</button>
+    </nav>
+
+    <section class="gp-admin-panel" data-admin-tab="settings">
       <div class="gp-admin-section-head">
         <h3>휴머나이징 보존형 테스트</h3>
         <p>운영 기능에 덮지 않고, 관리자 전용 테스트 페이지에서 새 엔진 분기를 확인합니다.</p>
@@ -53,7 +62,7 @@
       </div>
     </section>
 
-    <section class="gp-admin-panel">
+    <section class="gp-admin-panel" data-admin-tab="settings">
       <div class="gp-admin-section-head">
         <h3>운영 LLM 설정 <span id="adminGptRuntimeSource" class="gp-admin-count"></span></h3>
         <p>운영 엔진을 GPT 또는 Claude로 전환하고, GPT 모델·reasoning·캐싱·승격 정책을 저장합니다.</p>
@@ -131,7 +140,7 @@
       <div id="adminGptRuntimeMsg" class="gp-admin-msg"></div>
     </section>
 
-    <section class="gp-admin-panel">
+    <section class="gp-admin-panel" data-admin-tab="settings">
       <div class="gp-admin-section-head">
         <h3>AI 감지 보정 설정 <span id="adminDetectCalSource" class="gp-admin-count"></span></h3>
         <p>작업내역의 휴머나이저 결과와 감지 입력이 일치할 때만 적용됩니다. 체크와 숫자 변경은 저장 후 반영됩니다.</p>
@@ -192,7 +201,7 @@
       <div id="adminDetectCalMsg" class="gp-admin-msg"></div>
     </section>
 
-    <section class="gp-admin-panel">
+    <section class="gp-admin-panel" data-admin-tab="settings">
       <div class="gp-admin-section-head">
         <h3>기본 피하기 개발테스트 <span id="adminBasicExpSource" class="gp-admin-count"></span></h3>
         <p>실기능을 덮지 않고, 저장 후 기본 피하기에만 문체 안정화 프로필을 적용합니다.</p>
@@ -218,7 +227,7 @@
     </section>
 
     <!-- 작업 모니터: 전체 사용자의 실패·중단·진행 작업(transformJobArchive) 일괄 조회 -->
-    <section class="gp-admin-panel">
+    <section class="gp-admin-panel" data-admin-tab="ops">
       <div class="gp-admin-section-head">
         <h3>작업 모니터 <span id="adminJobsCount" class="gp-admin-count"></span></h3>
         <div class="gp-admin-filter-row">
@@ -244,7 +253,7 @@
     </section>
 
     <!-- 사용자 워크스페이스: 검색 → 요약 + 크레딧 조정 + 환불을 한 화면에 -->
-    <section class="gp-admin-panel gp-admin-ws">
+    <section class="gp-admin-panel gp-admin-ws" data-admin-tab="users">
       <div class="gp-admin-section-head">
         <h3>사용자 관리</h3>
         <span id="adminSelectedUid" class="gp-admin-muted"></span>
@@ -287,7 +296,7 @@
       </div>
     </section>
 
-    <section class="gp-admin-panel">
+    <section class="gp-admin-panel" data-admin-tab="users">
       <div class="gp-admin-section-head">
         <h3>작업 기록 <span id="adminUserLogCount" class="gp-admin-count"></span></h3>
         <p>선택 사용자의 탐지 · 휴머나이징 · 재구성 로그 (원문·결과·탐지 전체)</p>
@@ -297,7 +306,7 @@
       </div>
     </section>
 
-    <section class="gp-admin-panel">
+    <section class="gp-admin-panel" data-admin-tab="ops">
       <div class="gp-admin-section-head">
         <h3>환불 요청 <span id="adminRefundCount" class="gp-admin-count" hidden></span></h3>
         <p>고객이 요청한 환불 처리</p>
@@ -307,7 +316,7 @@
       </div>
     </section>
 
-    <section class="gp-admin-panel">
+    <section class="gp-admin-panel" data-admin-tab="ledger">
       <div class="gp-admin-section-head">
         <h3>전체 크레딧 원장 <span id="adminHistoryCount" class="gp-admin-count"></span></h3>
       </div>
@@ -324,7 +333,7 @@
       </div>
     </section>
 
-    <div class="gp-admin-grid">
+    <div class="gp-admin-grid" data-admin-tab="coupons">
       <section class="gp-admin-panel">
         <div class="gp-admin-section-head">
           <h3>쿠폰 발급</h3>

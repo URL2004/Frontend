@@ -16137,6 +16137,15 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
  font-weight:600;
 }
 
+/* 내정보 리스트 더보기/접기 버튼 — 목록이 전부 펼쳐져 스크롤이 길어지는 것 방지 */
+.gp-more-btn{
+ display:block;width:100%;margin-top:12px;padding:10px;
+ background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+ color:var(--text);font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;
+ transition:border-color .15s;
+}
+.gp-more-btn:hover{border-color:var(--text3);}
+
 /* ───────── lavender v107: 관리자 전용 운영 페이지 ───────── */
 .gp-mypage-admin-entry{
  margin-top:28px;padding:16px;border:1px solid #dfe1f1;background:#fff;border-radius:8px;
@@ -16176,6 +16185,17 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-ov-item strong{font-size:19px;font-weight:800;color:var(--admin-text);letter-spacing:-.01em;line-height:1.1;}
 .gp-admin-ov-item strong.gp-admin-ov-warn{color:var(--admin-amber);}
 .gp-admin-ov-item em{font-size:11px;font-style:normal;color:var(--admin-text3);}
+
+/* ── 탭: 섹션 누적으로 세로 스크롤이 길어지는 것 방지 — 한 번에 한 그룹만 표시 ── */
+.gp-admin-tabs{display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px;margin-bottom:6px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.gp-admin-tabs::-webkit-scrollbar{display:none;}
+.gp-admin-tab{flex-shrink:0;border:1px solid var(--admin-border);background:var(--admin-surface);color:var(--admin-text2);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:border-color .15s,color .15s,background .15s;}
+.gp-admin-tab:hover{border-color:#cbcef0;color:var(--admin-blue);}
+.gp-admin-tab.active{background:var(--admin-blue);border-color:var(--admin-blue);color:#fff;}
+
+/* ── 긴 목록은 패널 안에서만 스크롤 (페이지 전체가 늘어나지 않게) ── */
+#adminUserLog .gp-admin-log-list{max-height:62vh;overflow-y:auto;overscroll-behavior:contain;padding-right:2px;}
+#adminRefundList .gp-admin-refund-list{max-height:62vh;overflow-y:auto;overscroll-behavior:contain;}
 
 /* ── 섹션 패널(플랫) ── */
 .gp-admin-panel{background:var(--admin-surface);border:1px solid var(--admin-border);border-radius:10px;padding:16px 18px;margin-bottom:14px;}

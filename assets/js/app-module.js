@@ -1803,6 +1803,15 @@ window.delNotice = async (id) =>{
 };
 
 // ===== MY PAGE =====
+// 리스트 더보기/접기 공용 토글 — 내정보 화면의 목록들이 전부 펼쳐져 스크롤이 과도해지는 것 방지
+window.gpToggleMore = function(hiddenId, btn, moreText) {
+ const h = document.getElementById(hiddenId);
+ if (!h || !btn) return;
+ const expanded = h.style.display !== 'none';
+ h.style.display = expanded ? 'none' : 'block';
+ btn.textContent = expanded ? moreText : '접기';
+};
+
 window.loadMyPage = async () =>{
  if (!CU) return;
  const el = document.getElementById('mypageContent');
@@ -1820,6 +1829,20 @@ window.loadMyPage = async () =>{
  postSnap.forEach(d => myPosts.push({id:d.id,...d.data()}));
  myPosts.sort((a,b)=>(b.createdAt?.toDate()||0)-(a.createdAt?.toDate()||0));
  const bookmarks = u.bookmarks || [];
+ const renderMyPost = p => {
+ const date=p.createdAt?new Date(p.createdAt.toDate()).toLocaleDateString('ko-KR'):'';
+ return '<div class="pitem" onclick="switchTab(\'community\');setTimeout(()=>viewPost(\''+p.id+'\'),100)">'
+ +'<div class="pttl">'+escapeHtml(p.title)+'</div>'
+ +'<div class="pmeta"><span>'+date+'</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'+(p.views||0)+'</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'+(p.commentCount||0)+'</span></div></div>';
+ };
+ const myPostsHiddenRows = myPosts.slice(5).map(renderMyPost).join('');
+ const myPostsHtml = myPosts.length===0
+ ? '<div style="text-align:center;padding:24px;color:var(--text3);">작성한 글이 없어요</div>'
+ : myPosts.slice(0,5).map(renderMyPost).join('')
+  + (myPostsHiddenRows
+   ? '<div id="myPostsHidden" style="display:none;">'+myPostsHiddenRows+'</div>'
+    +'<button id="myPostsToggle" type="button" class="gp-more-btn" onclick="gpToggleMore(\'myPostsHidden\',this,\'더보기 ('+(myPosts.length-5)+'건)\')">더보기 ('+(myPosts.length-5)+'건)</button>'
+   : '');
  el.innerHTML =
  '<div class="shell"><div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:20px;">'
  +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">'
@@ -1856,13 +1879,7 @@ window.loadMyPage = async () =>{
  +'</div></div>'
  +'<div id="subManageCard" style="margin-bottom:20px;"></div>'
  +'<div style="font-size:15px;font-weight:700;margin-bottom:12px;">내가 쓴 글 ('+myPosts.length+')</div>'
- +(myPosts.length===0?'<div style="text-align:center;padding:24px;color:var(--text3);">작성한 글이 없어요</div>'
- :myPosts.map(p=>{
- const date=p.createdAt?new Date(p.createdAt.toDate()).toLocaleDateString('ko-KR'):'';
- return '<div class="pitem" onclick="switchTab(\'community\');setTimeout(()=>viewPost(\''+p.id+'\'),100)">'
- +'<div class="pttl">'+escapeHtml(p.title)+'</div>'
- +'<div class="pmeta"><span>'+date+'</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'+(p.views||0)+'</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'+(p.commentCount||0)+'</span></div></div>';
- }).join(''))
+ +myPostsHtml
  +'<div style="font-size:15px;font-weight:700;margin:20px 0 12px;">알림</div>'
  +'<div id="notifList"><div style="text-align:center;padding:24px;color:var(--text3);">불러오는 중...</div></div>'
  +'<div style="margin-top:28px;"><div style="font-size:15px;font-weight:700;margin-bottom:12px;">결제 내역 / 환불</div><div id="orderHistoryList"><div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div></div></div>'
@@ -2053,7 +2070,7 @@ window.loadNotifications = async () =>{
  if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications(items);
  if (!el) return;
  if (!items.length) { el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3)">새 알림이 없어요</div>'; return; }
- el.innerHTML = items.map(n=>{
+ const renderNotif = n=>{
  const date=n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):'';
  const borderColor = n.read ? 'var(--border)' : 'var(--blue)';
  const fontWeight = n.read ? '400' : '600';
@@ -2063,7 +2080,16 @@ window.loadNotifications = async () =>{
  return '<div style="background:var(--surface);border:1px solid '+borderColor+';border-radius:var(--rs);padding:14px;margin-bottom:8px;cursor:pointer;" onclick="markRead(\''+jsAttr(n.id)+'\');'+action+'">'
  +'<div style="font-size:13px;font-weight:'+fontWeight+';">'+escapeHtml(n.message)+'</div>'
  +'<div style="font-size:12px;color:var(--text3);margin-top:4px;">'+date+'</div></div>';
- }).join('');
+ };
+ // markRead가 재렌더해도 펼침 상태(_notifShowAll)는 유지된다
+ const showAll = window._notifShowAll === true;
+ let html = (showAll ? items : items.slice(0,10)).map(renderNotif).join('');
+ if (items.length > 10) {
+  html += showAll
+   ? '<button type="button" class="gp-more-btn" onclick="window._notifShowAll=false;loadNotifications()">접기</button>'
+   : '<button type="button" class="gp-more-btn" onclick="window._notifShowAll=true;loadNotifications()">더보기 ('+(items.length-10)+'건)</button>';
+ }
+ el.innerHTML = html;
  } catch(e) {
   if (el) el.innerHTML='<div style="color:var(--red)">불러오기 실패</div>';
  }
@@ -2378,7 +2404,7 @@ window.loadOrderHistory = async () =>{
  return;
  }
  const statusMap = { paid:'결제 완료', refund_requested:'환불 심사중', partially_refunded:'부분 환불', refunded:'환불 완료', refund_rejected:'환불 거절', failed:'결제 실패' };
- el.innerHTML = all.slice(0,30).map(item =>{
+ const orderRows = all.slice(0,30).map(item =>{
  const o = item.data;
  const ts = o.createdAt?.toMillis?.() || o.approvedAt?.toMillis?.() || o.requestedAt?.toMillis?.() || 0;
  const date = ts ? new Date(ts).toLocaleString('ko-KR') : '';
@@ -2397,7 +2423,13 @@ window.loadOrderHistory = async () =>{
  </div>
  <div style="font-weight:600;color:${statusColor};font-size:12px;">${statusTxt}</div>
 </div>`;
- }).join('');
+ });
+ const orderHidden = orderRows.slice(5).join('');
+ el.innerHTML = orderRows.slice(0,5).join('')
+ + (orderHidden
+  ? '<div id="orderHistHidden" style="display:none;">'+orderHidden+'</div>'
+   +'<button type="button" class="gp-more-btn" onclick="gpToggleMore(\'orderHistHidden\',this,\'더보기 ('+(orderRows.length-5)+'건)\')">더보기 ('+(orderRows.length-5)+'건)</button>'
+  : '');
  } catch(e) {
  console.log('결제 내역 로드 실패:', e);
  el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">결제 내역이 없어요</div>';
@@ -3457,7 +3489,9 @@ function adminLabSetStatus(text, type) {
 function adminLabSetBusy(busy) {
  const buttons = [document.getElementById('adminLabRunBtn'), document.getElementById('adminLabHeaderRunBtn')].filter(Boolean);
  const profile = document.getElementById('adminLabProfile')?.value || 'preserve_lab';
- const idleText = profile === 'ko_quality_pattern_lab'
+ const idleText = profile === 'copykiller_naturalness_lab'
+  ? '카피킬러 자연성 테스트 실행'
+  : profile === 'ko_quality_pattern_lab'
   ? '한국어 품질 패턴 엔진 테스트 실행'
   : profile === 'gpt_engine'
    ? 'GPT 전용 엔진 테스트 실행'
@@ -3475,6 +3509,7 @@ function adminLabModeLabel(mode) {
 }
 
 function adminLabProfileLabel(profile) {
+ if (profile === 'copykiller_naturalness_lab' || profile === 'ck_naturalness_lab' || profile === 'naturalness_lab') return '카피킬러 자연성 테스트 모드';
  if (profile === 'ko_quality_pattern_lab' || profile === 'quality_pattern_lab') return '한국어 품질 패턴 엔진 v1';
  if (profile === 'gpt_engine' || profile === 'gpt_prod') return 'GPT 전용 엔진';
  if (profile === 'final_report_engine' || profile === 'report_engine' || profile === 'final_report') return '최종 개선보고서 엔진';
@@ -3518,12 +3553,15 @@ function adminLabRenderDiff(compare) {
  const q = compare.niklQualityTest || {};
  const official = q.official || {};
  const qp = compare.qualityPattern || {};
+ const natural = compare.naturalness || {};
  const layout = compare.layoutFormat || {};
  const keyword = compare.keywords || {};
  const added = (keyword.added || []).slice(0, 10).map(escapeHtml).join(', ');
  const removed = (keyword.removed || []).slice(0, 10).map(escapeHtml).join(', ');
  const increased = (qp.increasedPatterns || []).slice(0, 5).map(p => escapeHtml(p.label || p.id || '')).filter(Boolean).join(', ');
  const reduced = (qp.reducedPatterns || []).slice(0, 5).map(p => escapeHtml(p.label || p.id || '')).filter(Boolean).join(', ');
+ const naturalIncreased = (natural.increasedPatterns || []).slice(0, 5).map(p => escapeHtml(p.label || p.id || '')).filter(Boolean).join(', ');
+ const naturalReduced = (natural.reducedPatterns || []).slice(0, 5).map(p => escapeHtml(p.label || p.id || '')).filter(Boolean).join(', ');
  const labels = compare.labels || {};
  const layoutEngines = layout.engines || {};
  const engineStatus = name => {
@@ -3555,6 +3593,10 @@ function adminLabRenderDiff(compare) {
     ${qp.enabled ? `<span class="gp-admin-lab-diff-pill">패턴 위험 ${signedFixed(qp.riskDelta)}</span>` : ''}
     ${qp.enabled ? `<span class="gp-admin-lab-diff-pill">감소 ${Number(qp.reducedCount || 0)} / 증가 ${Number(qp.increasedCount || 0)}</span>` : ''}
     ${qp.action ? `<span class="gp-admin-lab-diff-pill">감사 ${escapeHtml(qp.action)}</span>` : ''}
+    ${natural.enabled ? `<span class="gp-admin-lab-diff-pill">자연성 위험 ${signedFixed(natural.riskDelta)}</span>` : ''}
+    ${natural.enabled ? `<span class="gp-admin-lab-diff-pill">자연성 감소 ${Number(natural.reducedCount || 0)} / 증가 ${Number(natural.increasedCount || 0)}</span>` : ''}
+    ${natural.action ? `<span class="gp-admin-lab-diff-pill">자연성 감사 ${escapeHtml(natural.action)}</span>` : ''}
+    ${natural.protectedTermLossCount ? `<span class="gp-admin-lab-diff-pill">자연성 보호표현 손실 ${Number(natural.protectedTermLossCount || 0)}</span>` : ''}
     ${qp.protectedTermLossCount ? `<span class="gp-admin-lab-diff-pill">보호표현 손실 ${Number(qp.protectedTermLossCount || 0)}</span>` : ''}
     ${qp.grammarHardError?.introduced ? `<span class="gp-admin-lab-diff-pill">문법 hard error</span>` : ''}
     ${qp.externalApiHintsUsed ? `<span class="gp-admin-lab-diff-pill">외부 API 힌트 사용</span>` : ''}
@@ -3570,6 +3612,11 @@ function adminLabRenderDiff(compare) {
     ${reduced ? `<div>줄어든 품질 패턴: ${reduced}</div>` : ''}
     ${increased ? `<div>늘어난 품질 패턴: ${increased}</div>` : ''}
     ${(qp.warnings || []).length ? `<div>감사 경고: ${(qp.warnings || []).slice(0, 8).map(escapeHtml).join(', ')}</div>` : ''}
+  </div>` : ''}
+  ${natural.enabled && (naturalReduced || naturalIncreased || (natural.warnings || []).length) ? `<div class="gp-admin-lab-diff-list">
+    ${naturalReduced ? `<div>줄어든 자연성 위험: ${naturalReduced}</div>` : ''}
+    ${naturalIncreased ? `<div>늘어난 자연성 위험: ${naturalIncreased}</div>` : ''}
+    ${(natural.warnings || []).length ? `<div>자연성 감사 경고: ${(natural.warnings || []).slice(0, 8).map(escapeHtml).join(', ')}</div>` : ''}
   </div>` : ''}
   ${layout.enabled ? `<div class="gp-admin-lab-diff-list">
     <div>입력 복원: ${layout.inputChanged ? '적용' : '변경 없음'} · 출력 후처리: ${layout.outputChanged ? '적용' : '변경 없음'}</div>
@@ -3589,7 +3636,7 @@ function adminLabRenderResult(st) {
  if (baselineOut) baselineOut.value = baselineText;
  const outputLabel = document.getElementById('adminLabOutputLabel');
  if (outputLabel) outputLabel.textContent = baselineText ? '테스트 결과 ON' : '결과문';
- const diffCompare = result.qualityPatternCompare || result.layoutFormatCompare || result.niklQualityCompare;
+ const diffCompare = result.naturalnessCompare || result.qualityPatternCompare || result.layoutFormatCompare || result.niklQualityCompare;
  if (diffCompare && result.layoutFormatCompare?.layoutFormat && !diffCompare.layoutFormat) {
   adminLabRenderDiff({ ...diffCompare, layoutFormat: result.layoutFormatCompare.layoutFormat });
  } else {
@@ -3615,6 +3662,8 @@ function adminLabRenderResult(st) {
   result.niklQualityTest?.action ? '국어원식 ' + result.niklQualityTest.action : '',
   result.qualityPatternCompare ? '품질 패턴 비교 ON' : '',
   result.qualityPatternLab?.action ? '품질 패턴 ' + result.qualityPatternLab.action : '',
+  result.naturalnessCompare ? '자연성 비교 ON' : '',
+  result.naturalnessLab?.action ? '자연성 ' + result.naturalnessLab.action : '',
   result.layoutFormatCompare ? '문서 형태 비교 ON' : '',
   result.layoutFormat?.post?.applied ? '문서 형태 후처리 적용' : '',
   result.layoutFormat?.post?.nlp?.sentenceEngine ? '문장분리 ' + result.layoutFormat.post.nlp.sentenceEngine : '',
@@ -3647,6 +3696,13 @@ function adminLabRenderResult(st) {
    niklQualityCompare: result.niklQualityCompare,
    qualityPatternLab: result.qualityPatternLab,
    qualityPatternCompare: result.qualityPatternCompare,
+   naturalnessLab: result.naturalnessLab,
+   naturalnessCompare: result.naturalnessCompare,
+   naturalnessProfileBefore: result.naturalnessProfileBefore,
+   naturalnessProfileAfter: result.naturalnessProfileAfter,
+   naturalnessDelta: result.naturalnessDelta,
+   naturalnessAuditTrail: result.naturalnessAuditTrail,
+   naturalnessProtectedTermReport: result.naturalnessProtectedTermReport,
    layoutNlpTest: result.layoutNlpTest,
    layoutFormat: result.layoutFormat,
    layoutFormatCompare: result.layoutFormatCompare,
@@ -3778,7 +3834,7 @@ window.adminHumanizeLabRun = async function() {
  adminLabPollToken++;
  const tokenId = adminLabPollToken;
  adminLabSetBusy(true);
- const forceCompare = form.profile === 'ko_quality_pattern_lab' || form.layoutNlpTest;
+ const forceCompare = form.profile === 'ko_quality_pattern_lab' || form.profile === 'copykiller_naturalness_lab' || form.layoutNlpTest;
  adminLabSetStatus((form.niklQualityTest || forceCompare) ? '작업 시작 중... OFF/ON 비교를 위해 2회 실행합니다.' : '작업 시작 중...', 'info');
  const out = document.getElementById('adminLabOutput');
  if (out) out.value = '';
@@ -3790,7 +3846,7 @@ window.adminHumanizeLabRun = async function() {
  if (baselineWrap) baselineWrap.hidden = true;
  if (diff) { diff.hidden = true; diff.innerHTML = ''; }
  if (outputLabel) outputLabel.textContent = '결과문';
- adminLabRenderChips(['시작 준비', form.niklQualityTest ? '국어원식 비교 ON' : '', form.profile === 'ko_quality_pattern_lab' ? '품질 패턴 비교 ON' : '', form.layoutNlpTest ? '문서 형태 NLP ON' : '']);
+ adminLabRenderChips(['시작 준비', form.niklQualityTest ? '국어원식 비교 ON' : '', form.profile === 'ko_quality_pattern_lab' ? '품질 패턴 비교 ON' : '', form.profile === 'copykiller_naturalness_lab' ? '자연성 비교 ON' : '', form.layoutNlpTest ? '문서 형태 NLP ON' : '']);
  try {
   const idToken = await adminLabToken(true);
   const res = await fetch(window.apiUrl('/transform'), {
@@ -3845,6 +3901,19 @@ window.loadAdminHumanizeLab = async function() {
  window.adminHumanizeLabCount();
 };
 
+// 관리자 탭: 섹션이 누적되며 세로 스크롤이 과도해져, 성격별 그룹만 표시 (선택은 세션 유지)
+window.adminSwitchTab = function(tab) {
+ const valid = ['ops', 'users', 'ledger', 'coupons', 'settings'];
+ if (!valid.includes(tab)) tab = 'ops';
+ try { sessionStorage.setItem('gpAdminTab', tab); } catch (e) {}
+ document.querySelectorAll('#adminContent [data-admin-tab]').forEach(s => {
+  s.style.display = s.dataset.adminTab === tab ? '' : 'none';
+ });
+ document.querySelectorAll('#adminTabs .gp-admin-tab').forEach(b => {
+  b.classList.toggle('active', b.dataset.tab === tab);
+ });
+};
+
 window.loadAdminPage = async function() {
  const el = document.getElementById('adminContent');
  if (!el) return;
@@ -3870,6 +3939,9 @@ window.loadAdminPage = async function() {
   gate.hidden = true;
   gate.textContent = '';
  }
+ let savedTab = 'ops';
+ try { savedTab = sessionStorage.getItem('gpAdminTab') || 'ops'; } catch (e) {}
+ window.adminSwitchTab(savedTab);
  await Promise.allSettled([
  window.loadAdminOverview(),
  window.loadAdminGptRuntimeConfig(),
@@ -4180,6 +4252,7 @@ window.adminJobsToggleAll = function(cb) {
 window.adminOpenUser = function(uid) {
  const i = document.getElementById('adminUserQuery');
  if (i) i.value = uid;
+ window.adminSwitchTab('users');
  window.adminSearchUser();
  const ws = document.querySelector('.gp-admin-ws');
  if (ws) ws.scrollIntoView({ behavior: 'smooth', block: 'start' });
