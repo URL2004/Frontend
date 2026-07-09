@@ -1622,7 +1622,7 @@ function showPolicy(type) {
 
  if (type === 'company') {
  title.textContent = '회사 정보 · 사업자 정보';
- body.innerHTML = '상호명: 지피코리아(gpkorea)<br>대표자: 윤동민<br>개인정보보호책임자: 윤동민<br>사업자등록번호: 213-11-67637<br>통신판매업 신고번호: 2024-인천연수구-4281<br>사업장 주소: 인천광역시 연수구 랜드마크로360번길 40, 108동 3201호<br>이메일: aqua0661123@naver.com<br>고객센터: 이메일 문의 · 운영시간 09:00 ~ 23:59<br><br><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2131167637" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;">▸ 통신판매사업자 정보 확인 (공정거래위원회)</a>';
+ body.innerHTML = '상호명: 지피코리아(gpkorea)<br>대표자: 윤동민<br>개인정보보호책임자: 윤동민<br>사업자등록번호: 213-11-67637<br>통신판매업 신고번호: 2024-인천연수구-4281<br>사업장 주소: 인천광역시 연수구 랜드마크로360번길 40, 108동 3201호<br>이메일: aqua0661123@naver.com<br>고객센터: 이메일 문의 · 운영시간 09:00 ~ 23:59<br><br>본 서비스는 국립국어원 공공저작물(공공언어 용어 목록 · 어문규범 규정 · 말뭉치 통계, 공공누리 제1유형)과 표준국어대사전 · 우리말샘 · 온용어 오픈 API를 활용해 결과 품질을 검증합니다.<br><br><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2131167637" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;">▸ 통신판매사업자 정보 확인 (공정거래위원회)</a>';
  return;
  }
 
