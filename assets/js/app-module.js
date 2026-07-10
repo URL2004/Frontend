@@ -2307,6 +2307,9 @@ window.loadHistory = async () =>{
  ${p !== undefined ? `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:600;color:${badgeColor}">${badgeLabel} · ${p}%</span>` : ''}`;
  } else {
  resultBadge = `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:600;background:rgba(30,142,62,.1);color:var(--green)">휴머나이저</span>`;
+ if (h.qualityStatus === 'needs_review') {
+  resultBadge += `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:700;background:rgba(245,158,11,.12);color:#a36b00">확인 필요</span>`;
+ }
  }
 
  // 상세 내용 (탐지: summary+detail / 휴머나이저: outputText+humanSummary)
@@ -2322,7 +2325,16 @@ window.loadHistory = async () =>{
  <div style="font-size:13px;color:var(--text2);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${h.detail}</div>
 </div>` : ''}`;
  } else {
+ const qualityCodes = Array.isArray(h.qualityWarningCodes) ? h.qualityWarningCodes : [];
+ const qualityMessages = qualityCodes.map(historyQualityWarningMessage).filter(Boolean).slice(0, 8);
+ const qualityHtml = h.qualityStatus === 'needs_review' || qualityMessages.length
+  ? `<div style="margin-top:12px;padding:11px 13px;border-radius:10px;border:1px solid rgba(245,158,11,.32);background:rgba(245,158,11,.08);color:#80580b;font-size:13px;line-height:1.65;">
+      <b style="display:block;margin-bottom:4px;color:#a36b00;">원문과 확인이 필요해요</b>
+      ${qualityMessages.length ? `<ul style="margin:0;padding-left:18px;">${qualityMessages.map(function(message){ return `<li>${escapeHtml(message)}</li>`; }).join('')}</ul>` : '제출 전에 결과를 원문과 한 번 대조해 주세요.'}
+     </div>`
+  : '';
  detailHtml = `
+ ${qualityHtml}
  ${h.outputText ? `<div style="margin-top:12px;">
  <div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:4px;">변환 결과</div>
  <div style="font-size:14px;color:var(--text);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.8;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${h.outputText}</div>
@@ -2353,6 +2365,26 @@ window.loadHistory = async () =>{
  el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--red)">불러오기 실패</div>';
  }
 };
+
+function historyQualityWarningMessage(code) {
+ const messages = {
+  semantic_omission: '원문 내용 일부가 축약됐을 수 있어요.',
+  lost_facts: '원문의 수치·기관·사실 일부가 누락됐을 수 있어요.',
+  novelty: '원문에 없는 수치·기관·사실이 추가됐을 수 있어요.',
+  semantic_addition: '원문에 없는 내용이 추가됐을 가능성이 있어요.',
+  semantic_distortion: '원문의 의미 일부가 달라졌을 가능성이 있어요.',
+  semantic_judge_uncertain: '자동 의미 심사가 불확실해 직접 확인이 필요해요.',
+  speaker_injected: '원문에 없던 화자가 추가됐을 수 있어요.',
+  speaker_removed: '원문의 화자가 결과에서 사라졌을 수 있어요.',
+  register_shift: '원문의 종결 말투가 달라졌을 수 있어요.',
+  protected_term_loss: '보호해야 할 명칭이나 표현 일부가 누락됐을 수 있어요.',
+  structure_lock_loss: '목차·참고문헌·제목 구조 일부가 달라졌을 수 있어요.',
+  list_structure_changed: '목록 항목 일부가 합쳐지거나 누락됐을 수 있어요.',
+  quote_count_changed: '직접 인용의 개수가 달라졌을 수 있어요.',
+  polish_edit_range: '보존형 윤문의 권장 편집 범위를 넘었을 수 있어요.'
+ };
+ return messages[String(code || '')] || (code ? '품질 확인 항목: ' + String(code) : '');
+}
 
 window.openHistory = (el) =>{
  const detail = el.querySelector('.history-detail');
