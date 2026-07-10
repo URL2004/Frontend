@@ -1256,9 +1256,33 @@
     if (doneNote) doneNote.textContent = st.mode === 'polish'
       ? '과제 어투로 다듬었어요. 사실과 분량은 원문 그대로 두고 문장만 정리했어요. (AI 티 줄이기와는 다른 기능이에요)'
       : '검사 결과는 글과 도구에 따라 달라서 수치로 약속하기는 어려워요. 결과가 만족스럽지 않으면 실제 경험이나 구체 사례를 더해 다시 정리해 보세요.';
+    renderQualityWarnings(st.result || {});
     if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
     lavSaveToLibrary(label, st.result && st.result.outputText, grade ? grade + '등급' : '');
     notifyJobDone(st, label);
+  }
+
+  function renderQualityWarnings(result) {
+    var wrap = $('lavQualityWarning');
+    var list = $('lavQualityWarningList');
+    if (!wrap || !list) return;
+    list.innerHTML = '';
+    var warnings = Array.isArray(result.qualityWarnings) ? result.qualityWarnings : [];
+    var needsReview = result.qualityStatus === 'needs_review';
+    if (!needsReview && !warnings.length) {
+      wrap.hidden = true;
+      return;
+    }
+    var messages = warnings.map(function (item) {
+      return item && item.message ? String(item.message) : '';
+    }).filter(Boolean).slice(0, 8);
+    if (!messages.length) messages.push('자동 품질 점검에서 확인할 항목이 있어요. 제출 전에 원문과 한 번 대조해 주세요.');
+    messages.forEach(function (message) {
+      var li = document.createElement('li');
+      li.textContent = message;
+      list.appendChild(li);
+    });
+    wrap.hidden = false;
   }
 
   // ── 차단 화면(2026-06-15): 자동 폴백 대신 "왜 막혔나 + 재시도/보존형/취소"를 사용자가 고르게 한다 ──

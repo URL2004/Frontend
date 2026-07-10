@@ -12884,6 +12884,20 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 }
 .lav-trust-badge.ok{background:#e6f6ee;color:#177a4c;}
 .lav-trust-badge.ok::before{content:"✓";font-weight:800;}
+.lav-quality-warning{
+ margin:0 0 14px;
+ padding:13px 15px;
+ border:1px solid rgba(217,146,10,.34);
+ border-radius:11px;
+ background:#fff8e8;
+ color:#71500d;
+ font-size:12.5px;
+ line-height:1.58;
+}
+.lav-quality-warning[hidden]{display:none!important;}
+.lav-quality-warning strong{display:block;margin-bottom:6px;color:#9a6500;font-size:13px;font-weight:800;}
+.lav-quality-warning ul{margin:0;padding-left:18px;}
+.lav-quality-warning li+li{margin-top:3px;}
 .lav-done-body{
  padding:16px;
  border:1px solid #eef0f7;
