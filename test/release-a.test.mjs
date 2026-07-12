@@ -17,12 +17,18 @@ test('브라우저 휴머나이징 호출은 /transform job으로만 실행된�
 });
 
 test('기본·고급 설명은 변환 세기가 아닌 검증 범위를 구분한다', async () => {
-  const html = await read('pages/main.html');
-  assert.match(html, /차이는 변환 세기가 아니라 검증 범위예요/u);
-  assert.match(html, /모든 글의 의미를 정밀 검증/u);
-  assert.match(html, /엔진이 원문 장르를 먼저 판별/u);
-  assert.doesNotMatch(html, /칼럼처럼 다시 써요/u);
-  assert.doesNotMatch(html, /원문의 약 60%/u);
+  const [main, guide, faq] = await Promise.all([
+    read('pages/main.html'),
+    read('pages/guide.html'),
+    read('pages/faq.html')
+  ]);
+  assert.match(main, /차이는 변환 세기가 아니라 검증 범위예요/u);
+  assert.match(main, /모든 글의 의미를 정밀 검증/u);
+  assert.match(main, /엔진이 원문 장르를 먼저 판별/u);
+  assert.match(guide, /고급은 더 강하게 바꾸는 재시도 모드가 아니므로/u);
+  assert.match(faq, /고급은 더 많이 바꾸는 모드가 아니며/u);
+  const copy = `${main}\n${guide}\n${faq}`;
+  assert.doesNotMatch(copy, /칼럼처럼 다시 써요|원문의 약 60%|격식 유지·문장 새로 짜기|어투와 구조를 다시 짜서 가장 자연스러운/u);
 });
 
 test('이용 기록의 사용자·모델 문자열은 HTML 삽입 전에 escape된다', async () => {

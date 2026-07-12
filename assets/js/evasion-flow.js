@@ -1195,7 +1195,7 @@
       var isFb = !!(st.result && st.result.preservationFallback);
       lavFbBanner.hidden = !isFb;
       if (isFb && $('lavFallbackMsg')) {
-        $('lavFallbackMsg').textContent = st.note || '고급 휴머나이징이 원문을 너무 많이 바꿔서, 대신 원문을 최대한 살려 다듬었어요.';
+        $('lavFallbackMsg').textContent = st.note || '고급 검증에서 원문 보존 기준을 통과하지 못해, 대신 원문을 최대한 살린 결과를 준비했어요.';
       }
     }
     // ── '예상 AI 탐지율 %' 표기 제거(2026-06-15) ──────────────────────────────
