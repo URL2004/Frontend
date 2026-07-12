@@ -16511,3 +16511,58 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
  .gp-admin-log-head{flex-wrap:wrap;}
  .gp-admin-log-text{max-height:240px;}
 }
+
+/* ───────── lavender v108: 방법선택·AI티줄이기 설정 화면 단순화 ─────────
+   사장님 요청(2026-07-12): 설명 텍스트가 겹겹이 쌓여 복잡해 보임 → 필수 설정만 펼쳐 보이게.
+   - 방법선택: 목적 카드를 아이콘+제목 한 줄 헤더로 압축, 주의문구는 카드 하단 풋노트
+   - 회피설정: 경험·관점(자동 코칭+메모 4칸)은 <details> 아코디언으로 접고, 잠긴 근거 보강은 한 줄로 축소 */
+
+/* 방법선택: 목적 카드 — 아이콘+제목+성격칩을 한 줄 헤더로 */
+.lav-purpose-head{display:flex;align-items:center;gap:12px;margin-bottom:11px;}
+.lav-purpose-head .lav-purpose-ico{margin-bottom:0;flex:0 0 auto;}
+.lav-purpose-t{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;}
+.lav-purpose-t strong{font-size:15.5px;line-height:1.25;}
+.lav-purpose-t .lav-purpose-band{padding:3px 9px;font-size:11px;}
+.lav-purpose-opt p{margin:0 0 11px;}
+.lav-purpose-caveat{margin-top:0;padding-top:9px;border-top:1px dashed #e8eaf3;}
+.lav-purpose-opt.accent .lav-purpose-head{padding-right:48px;}   /* 추천 배지 자리 */
+
+/* 회피설정: 선택 옵션 아코디언(경험·관점 넣기) — 틴트 카드로 강조(필수 설정=평평한 행, 추천 옵션=카드).
+   ★ border 명시: details는 형제 중 유일한 details라 .lav-set-block:first-of-type(border-top:0)에 걸린다 */
+.lav-set-block.lav-opt-acc{padding:0;margin:4px 0 14px;border:1px solid #d6d7f3;border-radius:13px;background:#f8f8ff;}
+.lav-opt-acc > summary{list-style:none;display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:15px 16px;cursor:pointer;}
+.lav-opt-acc > summary::-webkit-details-marker{display:none;}
+.lav-acc-main{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+.lav-acc-main strong{color:#1a1f2e;font-size:14.5px;font-weight:700;}
+.lav-acc-opt{padding:3px 9px;border-radius:999px;background:#5a5bd8;color:#fff;font-size:10.5px;font-style:normal;font-weight:800;white-space:nowrap;letter-spacing:.02em;}
+.lav-acc-desc{flex:1 1 100%;order:4;margin-top:5px;color:#5d6477;font-size:12.5px;font-weight:500;line-height:1.6;}
+.lav-acc-desc b{color:#4b4cc6;font-weight:700;}
+.lav-acc-chev{flex:0 0 18px;width:18px;height:18px;margin-left:auto;fill:none;stroke:#8a91a3;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .18s ease;}
+.lav-opt-acc[open] > summary .lav-acc-chev{transform:rotate(180deg);}
+.lav-opt-acc > summary:hover .lav-acc-main strong{color:#4b4cc6;}
+.lav-acc-body{padding:2px 16px 16px;}
+.lav-acc-body #lavMemoBlock{margin-top:16px;padding-top:16px;border-top:1px dashed #dcdef0;}
+.lav-acc-body .lav-memo-toggle-hint{margin:8px 0 0 54px;}
+
+/* 회피설정: 근거 보강도 옵션 카드 — 잠금(ev-off)은 흐린 점선 카드+설명 접힘, 고급에선 틴트 카드+상세 설명 */
+#lavEvidenceBlock{padding:15px 16px;margin:0 0 4px;border:1px solid #d6d7f3;border-radius:13px;background:#f8f8ff;}
+#lavEvidenceBlock.ev-off{background:#fafbfd;border:1px dashed #e2e5f0;}
+.lav-set-block.ev-off .lav-toggle-text i{display:none;}
+
+/* 어투 카드·근거 보강 설명: 문장별 줄 나눔 + 점 마커(자세하되 읽기 쉽게).
+   보라 강조줄(.hl)의 색·굵기는 기존 lavender 규칙(#mainContent[...] i .hl)이 담당 */
+.lav-tone-body i .ln,
+.lav-toggle-text i .ln{display:block;position:relative;padding-left:11px;margin-top:4px;}
+.lav-tone-body i .ln:first-child,
+.lav-toggle-text i .ln:first-child{margin-top:0;}
+.lav-tone-body i .ln::before,
+.lav-toggle-text i .ln::before{content:"";position:absolute;left:1px;top:7px;width:4px;height:4px;border-radius:50%;background:#c3c7d9;}
+.lav-tone-body i .ln.hl::before,
+.lav-toggle-text i .ln.hl::before{background:#5a5bd8;}
+
+@media(max-width:560px){
+ .lav-opt-acc > summary{padding:14px;}
+ .lav-acc-body{padding:2px 14px 14px;}
+ .lav-acc-body .lav-memo-toggle-hint{margin-left:0;}
+ #lavEvidenceBlock{padding:14px;}
+}

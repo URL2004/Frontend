@@ -470,6 +470,9 @@
       acBlock.hidden = isReportBasic;
       acBlock.classList.remove('ev-off');
     }
+    // 경험·관점 아코디언(래퍼) — 과제/보고서 말투에선 내부(코칭·메모)가 전부 잠기므로 통째로 숨김
+    var persBlock = $('lavPersonalBlock');
+    if (persBlock) persBlock.hidden = isReportBasic;
     var acHint = $('lavAutoCoachHint');
     if (acHint) acHint.hidden = true;
     if (isReportBasic) {
@@ -1296,6 +1299,10 @@
   // 경험 메모 넣고 다시 — 설정 화면으로 돌아가 메모칸에 포커스(원문은 lavInput에 유지 → 재제출 시 새 작업)
   window.lavBlockedRetryMemo = function () {
     show('reduce');
+    // 접힌 아코디언을 펼치고, 자동 코칭이 켜져 있으면 꺼서 메모칸을 노출
+    var pers = $('lavPersonalBlock');
+    if (pers) pers.open = true;
+    if (window.lavMemoManual) window.lavMemoManual();
     var memo = $('lavMemoExp');
     if (memo) { try { memo.focus(); } catch (e) { } try { memo.scrollIntoView({ block: 'center' }); } catch (e) { } }
   };
