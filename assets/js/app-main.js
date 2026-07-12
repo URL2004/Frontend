@@ -461,6 +461,8 @@ function setProMode(m) {
    btn.style.color = active ? '#fff' : 'var(--text2)';
    btn.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
  });
+ var ta = document.getElementById('proInputText');
+ if (ta) updateProCount(ta);
 }
 
 function selectProCoupon(tier) {
@@ -487,7 +489,11 @@ function updateProCount(el) {
  if (cc) cc.textContent = el.value.length.toLocaleString() + '자';
  const tier = window.PRO_STATE.selectedTier;
  const btn = document.getElementById('proRunBtn');
- const can = !!tier && el.value.trim().length >= 5 && (window.COUPON?.remaining > 0 || tier === 'unlimited');
+ const proMode = window.PRO_STATE.mode;
+ const minLen = proMode === 'detect' ? 5 : transformMinLength(publicTransformMode(proMode));
+ const can = !!tier && el.value.trim().length >= minLen && (window.COUPON?.remaining > 0 || tier === 'unlimited');
+ const hint = document.getElementById('proHint');
+ if (hint) hint.textContent = '쿠폰 1회 사용 · 최소 ' + minLen.toLocaleString() + '자';
  if (btn) {
    btn.disabled = !can;
    btn.style.opacity = can ? '1' : '.5';
@@ -559,21 +565,32 @@ async function runProAnalysis() {
  const mode = window.PRO_STATE.mode;
  const apiMode = mode === 'detect' ? 'detect' : 'humanize';
  const humanizeMode = mode === 'detect' ? null : mode;
+ const publicMode = mode === 'detect' ? null : publicTransformMode(mode);
+ const minLen = mode === 'detect' ? 5 : transformMinLength(publicMode);
+ if (text.length < minLen) { alert('이 모드는 최소 ' + minLen.toLocaleString() + '자부터 이용할 수 있어요.'); return; }
 
  const btn = document.getElementById('proRunBtn');
  btn.disabled = true; btn.textContent = '처리 중...'; btn.style.opacity = '.7';
 
  try {
-   const idToken = await authUser.getIdToken(true);
    const runLang = autoLangForText(text, selectedLang);
-   const res = await callAnalyzeApi({
-     mode: apiMode,
-     text,
-     humanizeMode,
-     lang: runLang,
-     idToken,
-     billingMode: 'coupon'
-   });
+   const res = apiMode === 'detect'
+    ? await callAnalyzeApi({
+       mode: 'detect',
+       text,
+       humanizeMode: null,
+       lang: runLang,
+       idToken: await authUser.getIdToken(true),
+       billingMode: 'coupon'
+      })
+    : await callTransformJob({
+       authUser,
+       text,
+       humanizeMode: publicMode,
+       lang: runLang,
+       billingMode: 'coupon',
+       basicStyle: publicMode === 'blog' ? 'blog' : undefined
+      });
    if (res.error) throw new Error(res.error);
    if (!res.ok) throw new Error('처리 실패');
    renderProResult(res.result, apiMode);
@@ -837,6 +854,9 @@ async function getCurrentAuthUser(timeoutMs) {
 
 async function callAnalyzeApi(payload, opts) {
  opts = opts || {};
+ if (payload.mode !== 'detect') {
+  throw new Error('휴머나이징은 새 변환 작업 경로를 이용해야 합니다.');
+ }
  var maxRetries = (opts.maxRetries == null) ? 1 : opts.maxRetries;
  var timeoutMs = opts.timeoutMs || 300000;
  var delay = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
@@ -898,6 +918,99 @@ async function callAnalyzeApi(payload, opts) {
   if (!body || !body.ok) throw new Error('처리 중 오류가 발생했습니다.');
   return body;
  }
+}
+
+// 휴머나이징은 /transform job 하나로 통일한다. 구형 화면의 assignment/resume/thesis는
+// 공개 formal 모드로, blog는 blog로 명시 매핑한다. /analyze는 detect 전용이다.
+function publicTransformMode(humanizeModeValue) {
+ var value = String(humanizeModeValue || '').toLowerCase();
+ if (value === 'blog') return 'blog';
+ if (value === 'polish' || value === 'preserve') return 'polish';
+ return 'formal';
+}
+
+function transformMinLength(transformMode) {
+ return transformMode === 'formal' ? 200 : 50;
+}
+
+function transformCreditNeeded(text, transformMode) {
+ var len = String(text || '').length;
+ if (transformMode === 'formal') {
+  return len <= 10000 ? 200 : (len <= 20000 ? 400 : 600);
+ }
+ return shortHumanizeCredit(len);
+}
+
+async function transformFetchJson(authUser, path, init, forceRefresh) {
+ var token = await authUser.getIdToken(forceRefresh === true);
+ var options = Object.assign({}, init || {});
+ options.headers = Object.assign({}, options.headers || {}, { Authorization: 'Bearer ' + token });
+ var response = await fetch(window.apiUrl(path), options);
+ var body = null;
+ try { body = await response.json(); } catch (_) {}
+ if (response.status === 401 && forceRefresh !== true) {
+  return transformFetchJson(authUser, path, init, true);
+ }
+ if (!response.ok || (body && body.error)) {
+  var error = new Error((body && body.error) || '변환 요청을 처리하지 못했습니다.');
+  error.code = body && body.code;
+  error.status = response.status;
+  error.body = body;
+  throw error;
+ }
+ return body || {};
+}
+
+async function callTransformJob(payload) {
+ var authUser = payload.authUser;
+ if (!authUser || typeof authUser.getIdToken !== 'function') throw new Error('로그인이 필요합니다.');
+ var transformMode = publicTransformMode(payload.humanizeMode || payload.mode);
+ var minLen = transformMinLength(transformMode);
+ var text = String(payload.text || '').trim();
+ if (text.length < minLen) throw new Error('이 모드는 최소 ' + minLen + '자부터 변환할 수 있어요.');
+ var start = await transformFetchJson(authUser, '/transform', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+   text: text,
+   mode: transformMode,
+   lang: payload.lang || 'ko',
+   billingMode: payload.billingMode === 'coupon' ? 'coupon' : 'credit',
+   basicStyle: transformMode === 'blog' ? (payload.basicStyle === 'report' ? 'report' : 'blog') : undefined,
+   evidence: false
+  })
+ }, false);
+ var jobId = start.jobId;
+ if (!jobId) throw new Error('작업 번호를 받지 못했습니다.');
+ var deadline = Date.now() + 6 * 60 * 60 * 1000;
+ while (Date.now() < deadline) {
+  await new Promise(function(resolve){ setTimeout(resolve, 2500); });
+  var current = await transformFetchJson(authUser, '/transform/' + encodeURIComponent(jobId), { method: 'GET' }, false);
+  var progress = document.getElementById('progStatus');
+  if (progress && current.stage) progress.textContent = current.stage;
+  if (current.status === 'done') {
+   return {
+    ok: true,
+    result: current.result || {},
+    historySaved: true,
+    jobId: jobId,
+    needed: Number(start.job && start.job.needed) || Number(current.needed) || 0,
+    billingMode: start.job && start.job.billingMode || payload.billingMode || 'credit'
+   };
+  }
+  if (current.status === 'blocked') {
+   var blocked = new Error(current.reason || current.error || '원문 보존 기준을 통과하지 못해 결과를 전달하지 않았어요.');
+   blocked.code = 'transform_blocked';
+   blocked.body = current;
+   throw blocked;
+  }
+  if (current.status === 'error') throw new Error(current.error || '변환 중 오류가 발생했습니다.');
+  if (current.status === 'cancelled') throw new Error('변환 작업이 취소됐습니다.');
+  if (current.status === 'awaiting_approval') {
+   throw new Error('이 작업은 근거 승인이 필요합니다. 새 변환 화면에서 계속해 주세요.');
+  }
+ }
+ throw new Error('처리 시간이 길어지고 있어요. 작업 결과는 이용 기록에서 확인해 주세요.');
 }
 
 function combineChunkResults(results, apiMode) {
@@ -970,15 +1083,22 @@ async function runAnalysis() {
  const text = document.getElementById('inputText').value.trim();
  if (!text) { alert('텍스트를 입력하거나 PDF를 첨부해주세요.'); return; }
  if (text.length < 20) { alert('20자 이상 입력해주세요.'); return; }
+ const selectedTransformMode = mode === 'detect' ? null : publicTransformMode(humanizeMode);
+ if (selectedTransformMode) {
+  const minLen = transformMinLength(selectedTransformMode);
+  if (text.length < minLen) { alert('이 모드는 최소 ' + minLen.toLocaleString() + '자부터 변환할 수 있어요.'); return; }
+ }
 
  // ★ 긴 글 사전 차감 정합(P0-3): 청크 분할 시 서버는 청크별 과금 공식을 각각 적용하므로,
  //   단순 전체 길이 계산이 아니라 청크 합계로 선검증해야 "99%에서 크레딧 부족"으로 중간 중단되던 민원(#120)을 막는다.
  const precheckMode = mode === 'detect' ? 'detect' : 'humanize';
  let needed;
- if (text.length > 5500) {
+ if (mode !== 'detect') {
+  needed = transformCreditNeeded(text, selectedTransformMode);
+ } else if (text.length > 5500) {
   needed = splitByBoundary(text, 4500, 5500).reduce(function (s, c) { return s + creditNeededForText(c, precheckMode); }, 0);
  } else {
- needed = creditNeededForText(text, precheckMode);
+  needed = creditNeededForText(text, precheckMode);
  }
  if (window.UP !== 'unlimited' && (window.UC || 0) < needed) {
  const ok = window.gpConfirm
@@ -1003,22 +1123,22 @@ async function runAnalysis() {
  const lsBtn = document.getElementById('lsSendBtn');
  if (lsBtn) { lsBtn.disabled = true; lsBtn.style.opacity = '.4'; lsBtn.style.cursor = 'not-allowed'; }
 
- // 분석 중 새로고침/이탈 경고 (실수로 결과 잃지 않도록)
+ // 감지는 동기 요청이라 이탈 시 결과가 사라진다. 휴머나이징은 서버 job으로 계속 진행되고 이용 기록에 남는다.
  const onLeave = (e) => { e.preventDefault(); e.returnValue = '분석이 진행 중입니다. 떠나면 결과가 사라져요.'; return e.returnValue; };
- window.addEventListener('beforeunload', onLeave);
+ if (mode === 'detect') window.addEventListener('beforeunload', onLeave);
 
  // 입력 길이 + 모드 기반 예상 처리 시간 추정
  const estSec = (() => {
-  const len = text.length;
-  const chunks = len > 5500 ? Math.ceil(len / 5500) : 1;
-  // humanize: 웹검색 ~12s + 메인 ~18s + 2-pass refine ~17s + 검증/네트워크 ~3s
-  const humanizePerChunk = 50;
-  const perChunk = (mode === 'detect') ? 10 : humanizePerChunk;
-  const base = (mode === 'detect') ? 2 : 3;
-  return chunks * perChunk + base;
+  const len = text.replace(/\s/g, '').length;
+  if (mode === 'detect') return (text.length > 5500 ? Math.ceil(text.length / 5500) : 1) * 10 + 2;
+  return selectedTransformMode === 'formal'
+   ? Math.max(240, Math.min(5400, Math.round(len / 4)))
+   : Math.max(90, Math.min(1200, Math.round(len / 12)));
  })();
- const hintHtml = `<div class="prog-hint">예상 처리 시간: 약 ${estSec}초. 페이지를 닫지 말아주세요.</div>
-  <div class="prog-warn">중간에 새로고침하면 크레딧이 차감된 채 결과를 받지 못할 수 있어요.</div>`;
+ const hintHtml = mode === 'detect'
+  ? `<div class="prog-hint">예상 처리 시간: 약 ${estSec}초. 페이지를 닫지 말아주세요.</div>`
+  : `<div class="prog-hint">예상 처리 시간: 약 ${Math.max(1, Math.ceil(estSec / 60))}분. 창을 닫아도 서버에서 계속 처리됩니다.</div>
+     <div class="prog-warn">완료된 결과는 이용 기록에서 다시 확인할 수 있어요.</div>`;
  document.getElementById('result').innerHTML = `<div class="progress-overlay" id="progressOverlay">
   <div class="prog-pct" id="progPct">0%</div>
   <div class="prog-status" id="progStatus">준비 중...</div>
@@ -1045,10 +1165,10 @@ async function runAnalysis() {
 
  const stages = (mode !== 'detect')
   ? [
-      { at: 0, msg: '텍스트 분석 중...' },
-      { at: 15, msg: '웹에서 참고 자료 검색 중...' },
-      { at: 35, msg: '자연스러운 표현으로 변환 중...' },
-      { at: 60, msg: '문체 다듬는 중...' }
+      { at: 0, msg: '원문 장르와 구조를 확인하는 중...' },
+      { at: 15, msg: '화자와 중요 사실을 보호하는 중...' },
+      { at: 35, msg: '문장 흐름을 자연스럽게 다듬는 중...' },
+      { at: 60, msg: '의미와 사실을 검증하는 중...' }
     ]
   : [
       { at: 0, msg: '텍스트 분석 중...' },
@@ -1113,7 +1233,16 @@ async function runAnalysis() {
   useWebSearch: false
  };
 
- if (text.length > 5500) {
+ if (apiMode !== 'detect') {
+  data = await callTransformJob({
+   authUser: authUser,
+   text: text,
+   humanizeMode: selectedTransformMode,
+   lang: runLang,
+   billingMode: 'credit',
+   basicStyle: selectedTransformMode === 'blog' ? 'blog' : undefined
+  });
+ } else if (text.length > 5500) {
   // 내부 자동 분할 — 유저 노출 없음
   data = await runChunkedText(text, commonOpts);
  } else {
@@ -1121,7 +1250,8 @@ async function runAnalysis() {
  }
 
  // 서버가 이미 Firestore 크레딧을 차감했으므로 UI만 낙관적 업데이트
- if (window.UP !== 'unlimited') { window.UC = Math.max(0, (window.UC || 0) - needed); updateCreditUI(); }
+ const chargedNeeded = Number(data.needed) || needed;
+ if (window.UP !== 'unlimited') { window.UC = Math.max(0, (window.UC || 0) - chargedNeeded); updateCreditUI(); }
 
  // 서버가 단일 호출 결과를 이미 저장했으면(historySaved) 중복 저장하지 않는다.
  // 청크(>5500자)·구형 서버 응답은 historySaved가 없어 기존대로 클라가 저장(폴백).
@@ -1131,7 +1261,7 @@ async function runAnalysis() {
   text,
   mode === 'detect' ? data.result : null,
   mode !== 'detect' ? data.result : null,
-  needed
+  chargedNeeded
   );
  }
  if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory();
@@ -1149,7 +1279,7 @@ async function runAnalysis() {
   chars: _chars,
   lang: runLang,
   pdf: false,
-  credits_used: needed,
+  credits_used: chargedNeeded,
   traffic_source: _ts
  });
 
@@ -1635,7 +1765,7 @@ function showPolicy(type) {
 1. 서비스는 AI 작성 여부 진단(AI 감지) 및 텍스트 휴머나이징(문장 다듬기·재작성) 기능을 제공합니다.
 2. 이용자는 Google 또는 카카오 계정을 통해 가입할 수 있습니다.
 3. 서비스 이용을 위해 크레딧이 필요하며, 신규 가입 시 10크레딧이 무료로 지급됩니다.
-4. 크레딧 소비 기준은 기능별로 다르며, AI 감지는 100자당 1크레딧, 일반 휴머나이징은 최소 10크레딧 및 100자당 2크레딧 기준으로 차감됩니다. 고급 재구성 등 일부 기능은 별도 고지된 정액 기준을 따릅니다. 기준 변경 시 사전 공지합니다.
+4. 크레딧 소비 기준은 기능별로 다르며, AI 감지는 100자당 1크레딧, 기본 휴머나이징은 최소 10크레딧 및 100자당 2크레딧 기준으로 차감됩니다. 모든 문서에 의미 검증을 수행하는 고급 휴머나이징은 별도 고지된 길이별 정액 기준을 따릅니다. 기준 변경 시 사전 공지합니다.
 
 제3조 (크레딧 및 결제)
 1. 크레딧은 유료 결제 또는 무료 지급을 통해 획득할 수 있습니다.

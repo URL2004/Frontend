@@ -1349,7 +1349,7 @@ window.viewPost = async (postId) =>{
  ch += '</div>';
  dv.innerHTML += ch;
  document.getElementById('curPostId').value = postId;
- } catch(e) { dv.innerHTML='<div style="color:var(--red)">불러오기 실패: '+e.message+'</div>'; }
+ } catch(e) { dv.innerHTML='<div style="color:var(--red)">불러오기 실패: '+escapeHtml(e.message || '')+'</div>'; }
 };
 
 window.submitComment = async (postId) =>{
@@ -1890,7 +1890,7 @@ window.loadMyPage = async () =>{
  await window.loadOrderHistory();
  await window.loadCreditHistory();
  window.renderSubManage(u);
- } catch(e) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">불러오기 실패: '+e.message+'</div>'; }
+ } catch(e) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">불러오기 실패: '+escapeHtml(e.message || '')+'</div>'; }
 };
 
 // 마이페이지 정기결제 관리 카드 렌더
@@ -2294,11 +2294,20 @@ window.loadHistory = async () =>{
  const date = h.createdAt ? new Date(h.createdAt.toDate()).toLocaleString('ko-KR') : '';
  const isDetect = h.type === 'detect';
  const preview = h.inputText ? h.inputText.substring(0, 60) + (h.inputText.length >60 ? '...' : '') : '';
+ const safeDate = escapeHtml(date);
+ const safePreview = escapeHtml(preview);
+ const safeInputText = escapeHtml(h.inputText || '');
+ const safeSummary = escapeHtml(h.summary || '');
+ const safeDetail = escapeHtml(h.detail || '');
+ const safeOutputText = escapeHtml(h.outputText || '');
+ const safeHumanSummary = escapeHtml(h.humanSummary || '');
+ const safeCredits = Math.max(0, Number(h.credits) || 0).toLocaleString('ko-KR');
 
  // 탐지 결과 배지
  let resultBadge = '';
  if (isDetect) {
- const p = h.probability;
+ const rawProbability = Number(h.probability);
+ const p = Number.isFinite(rawProbability) ? Math.max(0, Math.min(100, rawProbability)) : undefined;
  let badgeColor, badgeLabel;
  if (p <= 20) { badgeColor = 'var(--green)'; badgeLabel = ' 안전'; }
  else if (p <= 49) { badgeColor = 'var(--yellow)'; badgeLabel = ' 조심'; }
@@ -2316,13 +2325,13 @@ window.loadHistory = async () =>{
  let detailHtml = '';
  if (isDetect) {
  detailHtml = `
- ${h.summary ? `<div style="margin-top:12px;">
+ ${safeSummary ? `<div style="margin-top:12px;">
  <div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:4px;">요약</div>
- <div style="font-size:14px;color:var(--text2);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.7;">${h.summary}</div>
+ <div style="font-size:14px;color:var(--text2);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;">${safeSummary}</div>
 </div>` : ''}
- ${h.detail ? `<div style="margin-top:10px;">
+ ${safeDetail ? `<div style="margin-top:10px;">
  <div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:4px;">상세 분석</div>
- <div style="font-size:13px;color:var(--text2);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${h.detail}</div>
+ <div style="font-size:13px;color:var(--text2);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${safeDetail}</div>
 </div>` : ''}`;
  } else {
  const qualityCodes = Array.isArray(h.qualityWarningCodes) ? h.qualityWarningCodes : [];
@@ -2335,28 +2344,28 @@ window.loadHistory = async () =>{
   : '';
  detailHtml = `
  ${qualityHtml}
- ${h.outputText ? `<div style="margin-top:12px;">
+ ${safeOutputText ? `<div style="margin-top:12px;">
  <div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:4px;">변환 결과</div>
- <div style="font-size:14px;color:var(--text);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.8;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${h.outputText}</div>
+ <div style="font-size:14px;color:var(--text);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.8;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${safeOutputText}</div>
 </div>` : ''}
- ${h.humanSummary ? `<div style="margin-top:10px;">
+ ${safeHumanSummary ? `<div style="margin-top:10px;">
  <div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:4px;">변환 요약</div>
- <div style="font-size:13px;color:var(--text2);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.7;">${h.humanSummary}</div>
+ <div style="font-size:13px;color:var(--text2);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;">${safeHumanSummary}</div>
 </div>` : ''}`;
  }
 
  return `<div class="history-item" onclick="openHistory(this)">
  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${resultBadge}</div>
- <span style="font-size:12px;color:var(--text3);">${date} · ${h.credits}크레딧</span>
+ <span style="font-size:12px;color:var(--text3);">${safeDate} · ${safeCredits}크레딧</span>
 </div>
- <div class="history-preview" style="margin-top:8px;font-size:14px;color:var(--text2);">${preview}</div>
+ <div class="history-preview" style="margin-top:8px;font-size:14px;color:var(--text2);">${safePreview}</div>
  <div class="history-detail" style="display:none;margin-top:12px;">
  <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
  <button onclick="closeHistory(event,this)" style="padding:5px 14px;border-radius:50px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:var(--font);font-size:12px;cursor:pointer;">닫기</button>
 </div>
  <div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:6px;">입력 텍스트</div>
- <div style="font-size:14px;color:var(--text);background:var(--surface2);padding:12px;border-radius:var(--rs);line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${h.inputText || ''}</div>
+ <div style="font-size:14px;color:var(--text);background:var(--surface2);padding:12px;border-radius:var(--rs);line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${safeInputText}</div>
  ${detailHtml}
 </div>
 </div>`;
@@ -2768,12 +2777,12 @@ function adminHistoryTypeText(type) {
   coupon_redeem: '쿠폰',
   detect: 'AI 감지',
   humanize: '휴머나이저',
-  restructure: '고급 휴머나이징(재구성)',
+  restructure: '고급 휴머나이징(정밀 검증)',
   admin_adjust: '관리자 조정'
  })[type] || '기타';
 }
 
-// 정확한 작업명: type + mode(+evidence/fallback)로 "다듬기 / 기본 피하기 / 고급 재구성 / 근거" 까지 구분.
+// 정확한 작업명: type + mode(+evidence/fallback)로 "다듬기 / 기본 / 고급 정밀 검증 / 근거"까지 구분.
 // 차감 doc에 mode가 기록된 신규 건만 세분화되고, mode 없는 구 데이터는 기존 라벨로 폴백한다.
 function adminHistoryLabel(h) {
  h = h || {};
@@ -2793,7 +2802,7 @@ function adminHistoryLabel(h) {
   }
  }
  if (type === 'restructure') {
-  return '고급 휴머나이징(재구성)' + (h.evidence ? ' + 근거' : '');
+  return '고급 휴머나이징(정밀 검증)' + (h.evidence ? ' + 근거' : '');
  }
  return adminHistoryTypeText(type);
 }
@@ -3387,10 +3396,6 @@ function adminSetGptRuntimeForm(cfg) {
  const source = document.getElementById('adminGptRuntimeSource');
  if (source) source.textContent = cfg.source || '-';
 
- adminGptSetValue('adminGptActiveProvider', cfg.activeProvider || 'gpt');
- adminGptSetValue('adminGptFallbackProvider', cfg.fallbackProvider || 'gpt');
- adminGptSetChecked('adminGptShadowMode', cfg.shadowMode === true);
-
  adminGptSetValue('adminGptModelHumanizePrimary', models.humanizePrimary || 'gpt-5.4-mini');
  adminGptSetValue('adminGptModelHumanizeEscalation', models.humanizeEscalation || 'gpt-5.4');
  adminGptSetValue('adminGptModelJudge', models.judge || 'gpt-5.4-mini');
@@ -3420,7 +3425,7 @@ function adminSetGptRuntimeForm(cfg) {
  adminGptSetValue('adminGptEscProtectedTermThreshold', escalation.protectedTermThreshold || 35);
  adminGptSetValue('adminGptEscPatchTargetThreshold', escalation.patchTargetThreshold || 24);
 
- const active = cfg.activeProvider === 'claude' ? 'Claude 운영 중' : 'GPT 운영 중';
+ const active = cfg.activeProvider === 'gpt' ? 'GPT 운영 중' : '공급자 설정 오류';
  const cacheLabel = cache.enabled === false ? '캐싱 꺼짐' : '캐싱 켜짐';
  adminSetMessage('adminGptRuntimeMsg', `${active} · ${models.humanizePrimary || 'gpt-5.4-mini'} · ${cacheLabel}`, 'info');
 }
@@ -3435,9 +3440,7 @@ function adminReadGptRuntimeForm() {
   return Number.isFinite(n) ? n : fallback;
  };
  return {
-  activeProvider: value('adminGptActiveProvider', 'gpt'),
-  fallbackProvider: value('adminGptFallbackProvider', 'gpt'),
-  shadowMode: document.getElementById('adminGptShadowMode')?.checked === true,
+  activeProvider: 'gpt',
   models: {
    humanizePrimary: value('adminGptModelHumanizePrimary', 'gpt-5.4-mini'),
    humanizeEscalation: value('adminGptModelHumanizeEscalation', 'gpt-5.4'),
@@ -3496,21 +3499,6 @@ window.adminSaveGptRuntimeConfig = async function() {
   adminSetMessage('adminGptRuntimeMsg', `저장 완료 · ${data.config?.activeProvider || cfg.activeProvider} 활성`, 'success');
  } catch (e) {
   adminSetMessage('adminGptRuntimeMsg', e.message || '운영 LLM 설정 저장에 실패했습니다.', 'error');
- }
-};
-
-window.adminRollbackGptRuntimeToClaude = async function() {
- if (!window.isAdmin()) return;
- const cfg = adminReadGptRuntimeForm();
- cfg.activeProvider = 'claude';
- cfg.fallbackProvider = 'gpt';
- adminSetMessage('adminGptRuntimeMsg', 'Claude로 롤백 저장 중...', 'info');
- try {
-  const data = await adminPost('/admin/update-gpt-runtime-config', { config: cfg });
-  adminSetGptRuntimeForm(data.config || cfg);
-  adminSetMessage('adminGptRuntimeMsg', 'Claude 롤백 저장 완료', 'success');
- } catch (e) {
-  adminSetMessage('adminGptRuntimeMsg', e.message || 'Claude 롤백 저장에 실패했습니다.', 'error');
  }
 };
 
@@ -4470,23 +4458,28 @@ window.loadCreditHistory = async () =>{
  const isAdminAdjust = h.type === 'admin_adjust';
  const isRestore = String(h.type || '').endsWith('_restore');
  const typeTxt = isCharge ? '충전' : isRefund ? '환불' : isReferral ? '친구 추천' : isCoupon ? '쿠폰' : isAdminAdjust ? '관리자 조정' : isRestore ? adminHistoryLabel(h) : h.type === 'detect' ? 'AI 감지' : adminHistoryLabel(h);
+ const safeTypeTxt = escapeHtml(typeTxt);
+ const safeDate = escapeHtml(date);
+ const amount = adminNumber(h.amount);
+ const used = adminNumber(h.used);
+ const remaining = adminNumber(h.remaining);
  const amountTxt = isCharge || isReferral || isCoupon
- ? `<div style="color:var(--green);font-weight:600;">+${h.amount} 크레딧</div>`
+ ? `<div style="color:var(--green);font-weight:600;">+${amount.toLocaleString('ko-KR')} 크레딧</div>`
  : isRefund
- ? `<div style="color:var(--yellow);font-weight:600;">${h.amount} 크레딧 (환불)</div>`
+ ? `<div style="color:var(--yellow);font-weight:600;">${amount.toLocaleString('ko-KR')} 크레딧 (환불)</div>`
  : isAdminAdjust
- ? `<div style="color:${(Number(h.amount)||0) >= 0 ? 'var(--green)' : 'var(--red)'};font-weight:600;">${(Number(h.amount)||0) > 0 ? '+' : ''}${Number(h.amount)||0} 크레딧</div>`
+ ? `<div style="color:${amount >= 0 ? 'var(--green)' : 'var(--red)'};font-weight:600;">${amount > 0 ? '+' : ''}${amount.toLocaleString('ko-KR')} 크레딧</div>`
  : isRestore
- ? `<div style="color:var(--green);font-weight:600;">+${Math.abs(Number(h.used)||0)} 크레딧 (복구)</div>`
- : `<div style="color:var(--red);font-weight:600;">-${h.used} 크레딧</div>`;
+ ? `<div style="color:var(--green);font-weight:600;">+${Math.abs(used).toLocaleString('ko-KR')} 크레딧 (복구)</div>`
+ : `<div style="color:var(--red);font-weight:600;">-${Math.abs(used).toLocaleString('ko-KR')} 크레딧</div>`;
  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;">
  <div>
- <div style="font-weight:600;color:var(--text);">${typeTxt}</div>
- <div style="color:var(--text3);font-size:12px;margin-top:2px;">${date}</div>
+ <div style="font-weight:600;color:var(--text);">${safeTypeTxt}</div>
+ <div style="color:var(--text3);font-size:12px;margin-top:2px;">${safeDate}</div>
 </div>
  <div style="text-align:right;">
  ${amountTxt}
- <div style="color:var(--text3);font-size:12px;">잔여 ${h.remaining} 크레딧</div>
+ <div style="color:var(--text3);font-size:12px;">잔여 ${remaining.toLocaleString('ko-KR')} 크레딧</div>
 </div>
 </div>`;
  };
@@ -4563,7 +4556,7 @@ window.loadAllCreditHistory = async () =>{
  window.renderAdminHistory();
  } catch(e) {
  console.log('전체 사용자 내역 로드 실패:', e);
- el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">불러오기 실패: ${e.message}</div>`;
+ el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">불러오기 실패: ${escapeHtml(e.message || '')}</div>`;
  }
 };
 
@@ -4707,7 +4700,7 @@ window.loadSidebarHistory = async () => {
       const badge = isDetect
         ? `<span style="font-size:10px;color:var(--blue);font-weight:600;">감지</span>`
         : `<span style="font-size:10px;color:var(--green);font-weight:600;">휴머나이징</span>`;
-      const preview = (h.inputText || '내용 없음').replace(/\s+/g,' ').trim().slice(0, 18);
+      const preview = escapeHtml((h.inputText || '내용 없음').replace(/\s+/g,' ').trim().slice(0, 18));
       return `<button class="sidebar-hist-item" onclick="switchTab('history');loadHistory()">
         <div style="display:flex;flex-direction:column;gap:2px;overflow:hidden;">
           ${badge}

@@ -32,7 +32,7 @@
 
   var STEP_LABEL = {
     analyzing: '분석', report: 'AI 감지 보고서', choose: '방법 선택', reduce: 'AI 티 줄이기 설정',
-    job: '재구성 중', blocked: '다시 도전', done: '완료'
+    job: '휴머나이징 중', blocked: '다시 도전', done: '완료'
   };
 
   // 입력 화면 → 워크스페이스 화면 전환(페이지 전환)
@@ -587,7 +587,7 @@
   }
   function currentSettings() {
     var tone = document.querySelector('input[name="lavTone"]:checked');
-    var len = document.querySelector('input[name="lavLen"]:checked');
+    var len = document.querySelector('input[name="lavLen"]');
     var ev = $('lavEvidence');
     var ac = $('lavAutoCoach');
     var basicStyle = tone && tone.value === 'blog' ? currentBasicStyle() : null;
@@ -595,7 +595,7 @@
     return {
       tone: tone ? tone.value : 'blog',
       basicStyle: basicStyle || 'blog',
-      length: len ? len.value : 'compact',
+      length: len ? len.value : 'keep',
       memo: basicReport ? '' : collectMemo(),
       evidence: !!(ev && ev.checked),
       autoCoach: !basicReport && !!(ac && ac.checked && !ac.disabled)   // 자동 코칭 — 사용자가 켠 경우에만 추천 후보를 표시
@@ -611,9 +611,9 @@
     var sum = $('lavConfirmSummary');
     if (sum) {
       var rows = [];
-      rows.push(['방식', s.tone === 'formal' ? '고급 휴머나이징 — 논문·격식체' : '기본 휴머나이징']);
+      rows.push(['방식', s.tone === 'formal' ? '고급 휴머나이징 — 전 문서 의미 검증' : '기본 휴머나이징 — 장르 자동 맞춤']);
       if (s.tone === 'blog') rows.push(['문체', s.basicStyle === 'report' ? '과제/보고서 말투' : '블로그 말투']);
-      if (s.tone === 'formal') rows.push(['분량', s.length === 'keep' ? '분량 유지' : '컴팩트(~60%)']);
+      if (s.tone === 'formal') rows.push(['분량', '원문에 가깝게 유지']);
       // 자동 코칭 ON이면 위 추천 픽 섹션이 입력을 대신함 → 메모 행 생략(중복·혼동 방지)
       if (s.tone === 'blog' && s.basicStyle === 'report') rows.push(['추가 메모', '사용 안 함 · 원문 중심']);
       else if (!(s.tone === 'formal' && s.autoCoach)) rows.push(['경험 메모', s.memo ? '입력함 · 글에 자연스럽게 녹여요' : '없음']);
@@ -766,45 +766,6 @@
     var headers = Object.assign({}, extra || {});
     if (idToken) headers.Authorization = 'Bearer ' + idToken;
     return headers;
-  }
-
-  // ── P2 실연결: 블로그 어투 회피 = /analyze(engine:floorV2, mode:blog) ──────────
-  function callEvasionApi(payload, extCtrl) {
-    var ctrl = extCtrl || new AbortController();
-    var timedOut = false;
-    // 타임아웃은 글 길이 비례(실측: 2.3K자≈2.5분, 9K자≈13분 — API 레이트리밋 구간 포함). 진짜 hang만 차단.
-    var bare = (payload.text || '').replace(/\s/g, '').length;
-    var timeoutMs = Math.min(20 * 60000, Math.max(6 * 60000, bare * 120));
-    var timer = setTimeout(function () { timedOut = true; ctrl.abort(); }, timeoutMs);
-    return fetch(window.apiUrl('/analyze'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mode: 'humanize',
-        engine: 'floorV2',
-        text: payload.text,
-        humanizeMode: payload.humanizeMode || 'blog',
-        lang: payload.lang || evDetectLang(payload.text),
-        idToken: payload.idToken || '',
-        userNotes: payload.userNotes || '',
-        billingMode: payload.billingMode || 'credit',
-        requestId: payload.requestId || undefined,
-        useWebSearch: false
-      }),
-      signal: ctrl.signal
-    }).then(function (res) {
-      return res.json().catch(function () { return null; }).then(function (b) {
-        if (b && b.error) throw new Error(b.error);
-        if (!res.ok || !b || !b.ok) throw new Error('처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
-        return b;
-      });
-    }).catch(function (e) {
-      // AbortError 원문("signal is aborted without reason")은 사용자에게 무의미 → 사람 말로.
-      if (timedOut || (e && e.name === 'AbortError')) {
-        throw new Error('서버 처리가 길어져 요청을 중단했어요. 크레딧은 차감되지 않았어요. 글을 더 짧게 나눠 다시 시도해주세요.');
-      }
-      throw e;
-    }).finally(function () { clearTimeout(timer); });
   }
 
   function setJobSteps(active) {
@@ -1225,7 +1186,7 @@
       label = '보존형';
       renderBadges({ metrics: st.result && st.result.metrics });
     } else {
-      label = '재구성';
+      label = '고급 휴머나이징';
       renderBadges({ metrics: st.result && st.result.metrics });
     }
     // 보존형 폴백 안내 배너(정직 표기) — 일반 결과에선 항상 숨김으로 리셋
@@ -1425,13 +1386,13 @@
   function runFormalEvasion(s) {
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
-    if ($('lavJobTitle')) $('lavJobTitle').textContent = '글을 다시 쓰고 있어요';
+    if ($('lavJobTitle')) $('lavJobTitle').textContent = '의미를 검증하며 다듬고 있어요';
     if ($('lavJobId')) $('lavJobId').textContent = '';
     show('job');
     armCancelWindow(0);   // 방금 시작 — 30초 취소 창 열기
     var bare = currentBareLen();
     var estSec = Math.max(240, Math.min(2700, Math.round(bare / 4) + (s.evidence ? 480 : 0)));   // 서버 공식과 동일
-    formalStop = startJobTicker(estSec, s.evidence ? '자료 찾아서 글 다시 쓰는 중' : '글을 다시 쓰는 중');
+    formalStop = startJobTicker(estSec, s.evidence ? '승인할 근거를 찾는 중' : '의미·구조를 검증하는 중');
     var gen = ++pollGen;
     (async function () {
       var idToken = '';
@@ -1445,7 +1406,7 @@
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
-          body: JSON.stringify({ text: text, evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: s.length || 'keep' })
+          body: JSON.stringify({ text: text, mode: 'formal', evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: 'keep' })
         }).then(parseTransformStart);
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);

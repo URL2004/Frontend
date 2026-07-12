@@ -222,7 +222,7 @@
            <!-- 자소서·이력 유형 안내(재구성 부적합) -->
            <div class="lav-resume-note" id="lavResumeNote" hidden>
              <strong>자기소개서·이력 유형의 글로 보여요.</strong>
-             자기소개서는 <b>‘고급 휴머나이징’과 잘 안 맞아요</b> — 고급 휴머나이징은 시사·논증 글을 칼럼처럼 다시 쓰는 기능이라, 자소서에 쓰면 내용이 비틀려요. <b>과제 어투로 다듬기</b>를 권하고, AI 티를 줄이려면 <b>기본 휴머나이징</b>만 쓰세요.
+             이 유형은 원문의 경험·성과·1인칭을 지키는 것이 가장 중요해요. <b>기본 휴머나이징</b>에도 자소서 보존 규칙과 의미 검증이 적용되므로 기본을 권장합니다. AI 티를 줄이는 목적이 아니라 맞춤법과 연결만 고치려면 <b>과제 어투로 다듬기</b>를 선택하세요.
            </div>
 
            <!-- 회피 난이도 사전 안내(STEM 실험·방법론 보고서 / 구조화 데이터 보고서) — 소프트(진행 가능), 솔직한 고지 -->
@@ -234,7 +234,7 @@
            <!-- 연도·수치·인용 빼곡한 글(격식논문·보고서) — 자유 재구성 시 사실 오류 위험 -->
            <div class="lav-resume-note" id="lavFactDenseNote" hidden>
              <strong>연도·수치·인용이 많은 글이에요.</strong>
-             이런 글을 <b>고급 휴머나이징(재구성)으로 자유 재구성하면 연도·통계가 바뀌거나 빠질 위험이 큽니다</b>(예: 2023→2022, 수치 누락). 사실을 원문 그대로 지키는 <b>과제 어투로 다듬기</b>를 권장해요. 재구성을 꼭 쓰려면 결과의 연도·수치를 한 번 더 확인하세요.
+             기본과 고급 모두 원문의 수치·기관·인용을 보호합니다. <b>고급 휴머나이징</b>은 모든 글에 의미 검증을 추가하므로 긴 보고서·논문에 더 적합해요. 다만 자동 검증도 완벽하지 않으니 제출 전 핵심 수치와 인용은 원문과 한 번 대조해 주세요.
            </div>
 
            <!-- ② 목적 선택 — 2갈래로 명확하게 -->
@@ -251,8 +251,8 @@
                <span class="lav-purpose-reco">추천</span>
                <span class="lav-purpose-ico reduce" aria-hidden="true"><span class="material-symbols-outlined">shield</span></span>
                <strong>AI 티 줄이기</strong>
-               <p>사람이 쓴 글에 가깝게 말투와 구조를 다시 다듬어요. AI 티를 줄이는 게 목적이면 이걸 고르세요.</p>
-               <em class="lav-purpose-band">AI 티를 낮추는 다시쓰기</em>
+               <p>원문의 장르·화자·사실을 지키면서 반복 표현과 지나치게 균일한 문장 흐름을 자연스럽게 다듬어요.</p>
+               <em class="lav-purpose-band">장르를 보존하는 휴머나이징</em>
                <span class="lav-purpose-caveat strong">AI 티 지수는 글·외부 검사기에 따라 달라지며 보장값이 아니에요</span>
              </button>
            </div>
@@ -261,42 +261,40 @@
          <!-- 회피 설정 -->
          <section class="lav-flow-card lav-reduce" data-flow="reduce" hidden>
            <div class="lav-set-block">
-             <div class="lav-set-label"><strong>어투</strong><span>결과를 가장 크게 바꾸는 설정이에요</span></div>
+             <div class="lav-set-label"><strong>처리 방식</strong><span>글의 길이와 검증 필요성에 맞게 선택하세요</span></div>
              <div class="lav-tone-grid">
                <label class="lav-tone-opt">
                  <input type="radio" name="lavTone" value="blog" checked onchange="lavToneChange()">
                  <span class="lav-tone-body">
                    <b>기본 휴머나이징 <u class="rec">추천</u></b>
-                   <i>빠르고 저렴하게 AI 티를 줄여요. 글 목적에 맞춰 블로그 말투와 과제/보고서 말투를 고를 수 있어요.</i>
-                   <em class="lav-tone-chips"><span>1~3분</span><span>최소 10크레딧</span><span>100자당 2크레딧</span></em>
+                   <i>원문의 장르·말투·사실을 유지하면서 어색한 표현, 반복, 문장 흐름을 필요한 만큼 다듬어요.<span class="hl">모든 결과를 기본 감사하고, 위험 신호가 있는 글은 의미까지 검증합니다.</span></i>
+                   <em class="lav-tone-chips"><span>일반 글 추천</span><span>1~3분</span><span>최소 10크레딧</span><span>100자당 2크레딧</span></em>
                  </span>
                </label>
                <label class="lav-tone-opt">
                  <input type="radio" name="lavTone" value="formal" onchange="lavToneChange()">
                  <span class="lav-tone-body">
                    <b>고급 휴머나이징 <u class="lock-tag">현재 선택 불가</u></b>
-                   <i>격식 문체(한다체)는 유지하면서 글 구조를 칼럼처럼 다시 써요.<span class="hl">근거 보강을 켜면 효과가 더 커져요.</span></i>
-                   <em class="lav-tone-chips"><span>길이별 200~600크레딧</span><span>근거 사용 시 +100</span></em>
+                   <i>기본의 장르·화자·사실 보존에 더해 <b>모든 글의 의미를 정밀 검증</b>해요.<span class="hl">긴 논문·보고서·복잡한 구조에 적합하며, 필요한 경우 승인한 근거만 보강할 수 있어요.</span></i>
+                   <em class="lav-tone-chips"><span>긴 글·복잡한 글 추천</span><span>모든 글 의미 검증</span><span>200~600크레딧</span><span>근거 사용 시 +100</span></em>
                  </span>
                </label>
              </div>
              <div class="lav-basic-style" id="lavBasicStyleBlock">
-               <div class="lav-set-label"><strong>기본 휴머나이징 문체</strong><span>글 목적에 맞게 선택</span></div>
+               <div class="lav-set-label"><strong>문체 보조 힌트</strong><span>엔진이 원문 장르를 먼저 판별하고, 애매할 때만 참고해요</span></div>
                <div class="lav-radio-row">
-                 <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="blog" checked onchange="lavBasicStyleChange()"><span>블로그 말투<i>후기·업체 포스팅·홍보글에 맞게 부드럽게 연결</i></span></label>
-                 <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="report" onchange="lavBasicStyleChange()"><span>과제/보고서 말투<i>현장 기록·설명문처럼 사실과 문단 흐름을 차분하게 정리</i></span></label>
+                 <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="blog" checked onchange="lavBasicStyleChange()"><span>블로그·후기에 가까워요<i>친근하되 과장하지 않고 자연스럽게 연결</i></span></label>
+                 <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="report" onchange="lavBasicStyleChange()"><span>과제·보고서에 가까워요<i>격식과 항목 구조를 유지하며 차분하게 정리</i></span></label>
                </div>
              </div>
-             <p class="lav-tone-variance">다듬은 뒤 AI 티 지수는 글에 따라 <b>20~80%</b>로 편차가 커요 — 두 방식 모두 누구에게나 같은 결과를 보장하진 않아요.</p>
-             <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>자기소개서·이력 유형이라 <b>고급 휴머나이징(재구성)을 잠갔어요</b> — 자소서엔 맞지 않거든요. <b>기본 휴머나이징</b>으로 자연스럽게 바꾸거나, 뒤로 가서 <b>과제 어투로 다듬기</b>를 선택하세요.</p>
+             <p class="lav-tone-variance"><b>차이는 변환 세기가 아니라 검증 범위예요.</b> 기본도 원문 장르와 사실을 보존하고, 고급은 모든 문서에 의미 검증과 선택적 근거 보강을 추가합니다. 외부 검사 점수는 글과 검사기에 따라 달라지며 보장되지 않아요.</p>
+             <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>이 글은 개인 경험·관찰을 그대로 지키는 것이 중요해요. <b>기본 휴머나이징에도 해당 장르 보존 규칙과 의미 검증이 적용</b>되어 고급의 추가 비용 대비 차이가 작으므로 기본을 권장합니다.</p>
            </div>
 
            <div class="lav-set-block" id="lavLenBlock" hidden>
-             <div class="lav-set-label"><strong>분량</strong><span>고급 휴머나이징에서만 선택</span></div>
-             <div class="lav-radio-row">
-               <label class="lav-radio"><input type="radio" name="lavLen" value="compact" checked><span>컴팩트<i>원문의 약 60% · 더 낮은 AI 티 지수</i></span></label>
-               <label class="lav-radio"><input type="radio" name="lavLen" value="keep"><span>분량 유지<i>원문 길이에 가깝게</i></span></label>
-             </div>
+             <input type="hidden" name="lavLen" value="keep">
+             <div class="lav-set-label"><strong>결과 분량</strong><span>원문에 가깝게 유지</span></div>
+             <p class="lav-tone-variance">고급 휴머나이징은 요약·분량 축소 기능이 아니에요. 의미와 구조를 지키기 위해 원문 길이에 가깝게 다듬습니다.</p>
            </div>
 
            <!-- 경험·관점 입력: 자동 코칭(추천 받아 고르기) ↔ 직접 메모. 자동 ON이면 메모칸 숨김(가독성). 기본/고급 둘 다. -->
@@ -344,7 +342,7 @@
                <span class="lav-toggle-track" aria-hidden="true"><i></i></span>
                <span class="lav-toggle-text">
                  <b>근거 보강 <u class="only">고급 휴머나이징 전용</u></b>
-                 <i>주제와 맞는 실제 자료(통계·연구·기관)를 찾아 인용해요. 검수 후 승인한 것만 사용합니다.<span class="hl">‘고급 휴머나이징’에서 효과를 크게 높여 주는 기능이라, 끄면 효과가 많이 줄어요.</span></i>
+                 <i>주제와 맞는 자료 후보(통계·연구·기관)를 찾아 보여 드려요. <b>직접 승인한 자료만</b> 결과에 사용할 수 있습니다.<span class="hl">원문에 이미 근거가 충분하다면 켜지 않아도 돼요. 검사 점수를 낮추기 위한 필수 기능은 아닙니다.</span></i>
                </span>
              </label>
              <p class="lav-evidence-note" id="lavEvidenceNote" hidden>근거 검색에 8~12분이 걸리고, 검수 단계가 추가돼요.</p>
@@ -359,16 +357,16 @@
            <div class="lav-job-head">
              <span class="lav-spinner" aria-hidden="true"></span>
              <div>
-               <strong id="lavJobTitle">글을 다시 쓰고 있어요</strong>
+               <strong id="lavJobTitle">원문을 보존하며 다듬고 있어요</strong>
                <p>창을 닫아도 작업은 계속돼요. 새로고침하면 진행 중인 작업으로 다시 들어옵니다.</p>
              </div>
              <span class="lav-job-id" id="lavJobId"></span>
              <button type="button" class="lav-job-cancel" id="lavJobCancel" onclick="lavCancelJob()" hidden>중단</button>
            </div>
            <ol class="lav-steps" id="lavSteps">
-             <li class="done"><i></i>구조 계획</li>
-             <li class="active"><i></i><span id="lavStepSlot">문단 재작성 3 / 7</span></li>
-             <li><i></i>사실·날조 검증</li>
+             <li class="done"><i></i>장르·구조 판별</li>
+             <li class="active"><i></i><span id="lavStepSlot">문장 흐름 다듬는 중</span></li>
+             <li><i></i>의미·사실 검증</li>
              <li><i></i>마감 정리</li>
            </ol>
 
