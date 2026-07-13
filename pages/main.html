@@ -234,7 +234,7 @@
            <!-- 연도·수치·인용 빼곡한 글(격식논문·보고서) — 자유 재구성 시 사실 오류 위험 -->
            <div class="lav-resume-note" id="lavFactDenseNote" hidden>
              <strong>연도·수치·인용이 많은 글이에요.</strong>
-             기본과 고급 모두 원문의 수치·기관·인용을 보호합니다. <b>고급 휴머나이징</b>은 모든 글에 의미 검증을 추가하므로 긴 보고서·논문에 더 적합해요. 다만 자동 검증도 완벽하지 않으니 제출 전 핵심 수치와 인용은 원문과 한 번 대조해 주세요.
+             기본과 고급 모두 원문의 수치·기관·인용을 보호합니다. <b>고급 휴머나이징</b>은 문장을 더 넓게 재구성하면서 모든 글에 의미 검증을 적용하므로 긴 보고서·논문에 더 적합해요. 다만 자동 검증도 완벽하지 않으니 제출 전 핵심 수치와 인용은 원문과 한 번 대조해 주세요.
            </div>
 
            <!-- ② 목적 선택 — 2갈래로 명확하게(아이콘+제목 한 줄, 설명 1줄, 주의문구는 풋노트) -->
@@ -276,8 +276,8 @@
                  <span class="lav-tone-body">
                    <b>기본 휴머나이징 <u class="rec">추천</u></b>
                    <i>
-                     <span class="ln">원문의 장르·말투·사실을 유지하면서 어색한 표현, 반복, 문장 흐름을 필요한 만큼 다듬어요.</span>
-                     <span class="ln hl">모든 결과를 기본 감사하고, 위험 신호가 있는 글은 의미까지 검증합니다.</span>
+                     <span class="ln">원문의 장르·말투·사실을 지키면서 반복·상투어·균일한 흐름이 있는 문장을 눈에 띄게 다시 구성해요.</span>
+                     <span class="ln hl">일반 글에 맞는 체감 강도로 변환하고, 위험 신호가 있는 글은 의미까지 검증합니다.</span>
                    </i>
                    <em class="lav-tone-chips"><span>일반 글 추천</span><span>1~3분</span><span>최소 10크레딧</span><span>100자당 2크레딧</span></em>
                  </span>
@@ -287,7 +287,7 @@
                  <span class="lav-tone-body">
                    <b>고급 휴머나이징 <u class="lock-tag">현재 선택 불가</u></b>
                    <i>
-                     <span class="ln">기본의 장르·화자·사실 보존에 더해 모든 글의 의미를 정밀 검증해요.</span>
+                     <span class="ln">기본보다 더 넓은 범위의 문장을 재구성하고, 모든 글의 의미·사실·구조를 정밀 검증해요.</span>
                      <span class="ln hl">긴 논문·보고서·복잡한 구조에 적합하며, 필요한 경우 승인한 근거만 보강할 수 있어요.</span>
                    </i>
                    <em class="lav-tone-chips"><span>긴 글·복잡한 글 추천</span><span>모든 글 의미 검증</span><span>200~600크레딧</span><span>근거 사용 시 +100</span></em>
@@ -301,14 +301,14 @@
                  <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="report" onchange="lavBasicStyleChange()"><span>과제·보고서에 가까워요<i>격식과 항목 구조를 유지하며 차분하게 정리</i></span></label>
                </div>
              </div>
-             <p class="lav-tone-variance"><b>차이는 변환 세기가 아니라 검증 범위예요.</b> 기본도 원문 장르와 사실을 보존하고, 고급은 모든 문서에 의미 검증과 선택적 근거 보강을 추가합니다. 외부 검사 점수는 글과 검사기에 따라 달라지며 보장되지 않아요.</p>
-             <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>이 글은 개인 경험·관찰을 그대로 지키는 것이 중요해요. <b>기본 휴머나이징에도 해당 장르 보존 규칙과 의미 검증이 적용</b>되어 고급의 추가 비용 대비 차이가 작으므로 기본을 권장합니다.</p>
+             <p class="lav-tone-variance"><b>기본은 눈에 띄는 재구성, 고급은 더 넓은 재구성과 전 문서 검증이에요.</b> 두 모드 모두 원문 장르·화자·사실을 지키며, 외부 검사 점수는 글과 검사기에 따라 달라져 보장되지 않아요.</p>
+             <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>이 글은 개인 경험·관찰을 그대로 지키는 것이 중요해요. <b>기본 휴머나이징에도 해당 장르 보존 규칙과 의미 검증이 적용</b>됩니다. 고급은 더 넓게 재구성하므로 이 유형에는 기본을 권장합니다.</p>
            </div>
 
            <div class="lav-set-block" id="lavLenBlock" hidden>
              <input type="hidden" name="lavLen" value="keep">
              <div class="lav-set-label"><strong>결과 분량</strong><span>원문에 가깝게 유지</span></div>
-             <p class="lav-tone-variance">고급 휴머나이징은 요약·분량 축소 기능이 아니에요. 의미와 구조를 지키기 위해 원문 길이에 가깝게 다듬습니다.</p>
+             <p class="lav-tone-variance">고급 휴머나이징은 요약·분량 축소 기능이 아니에요. 의미와 구조를 지키면서 원문 길이에 가깝게 다시 구성합니다.</p>
            </div>
 
            <!-- 선택 옵션: 경험·관점 넣기(자동 코칭 ↔ 직접 메모) — 접힌 아코디언, 펼치면 상세 -->
