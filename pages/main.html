@@ -276,10 +276,10 @@
                  <span class="lav-tone-body">
                    <b>기본 휴머나이징 <u class="rec">추천</u></b>
                    <i>
-                     <span class="ln">원문의 장르·말투·사실을 지키면서 반복·상투어·균일한 흐름이 있는 문장을 눈에 띄게 다시 구성해요.</span>
-                     <span class="ln hl">일반 글에 맞는 체감 강도로 변환하고, 위험 신호가 있는 글은 의미까지 검증합니다.</span>
+                     <span class="ln">원문의 장르·말투·사실을 지키면서 AI식 반복·상투어·균일한 흐름이 두드러진 문장을 다시 구성해요.</span>
+                     <span class="ln hl">이미 자연스러운 문장은 덜 바꾸고, 위험 신호가 많을수록 더 넓게 손보며 필요하면 의미까지 검증해요.</span>
                    </i>
-                   <em class="lav-tone-chips"><span>일반 글 추천</span><span>1~3분</span><span>최소 10크레딧</span><span>100자당 2크레딧</span></em>
+                   <em class="lav-tone-chips"><span>일반 글 추천</span><span>길이별 시간 계산</span><span>최소 10크레딧</span><span>100자당 2크레딧</span></em>
                  </span>
                </label>
                <label class="lav-tone-opt">
@@ -287,21 +287,21 @@
                  <span class="lav-tone-body">
                    <b>고급 휴머나이징 <u class="lock-tag">현재 선택 불가</u></b>
                    <i>
-                     <span class="ln">기본보다 더 넓은 범위의 문장을 재구성하고, 모든 글의 의미·사실·구조를 정밀 검증해요.</span>
-                     <span class="ln hl">긴 논문·보고서·복잡한 구조에 적합하며, 필요한 경우 승인한 근거만 보강할 수 있어요.</span>
+                     <span class="ln">기본보다 더 많은 문장을 재구성하고, 모든 글의 의미·사실·구조를 한 번 더 검증해요.</span>
+                     <span class="ln hl">긴 논문·보고서처럼 구조가 복잡한 글에 적합하고, 직접 승인한 근거만 추가할 수 있어요.</span>
                    </i>
                    <em class="lav-tone-chips"><span>긴 글·복잡한 글 추천</span><span>모든 글 의미 검증</span><span>200~600크레딧</span><span>근거 사용 시 +100</span></em>
                  </span>
                </label>
              </div>
              <div class="lav-basic-style" id="lavBasicStyleBlock">
-               <div class="lav-set-label"><strong>문체 보조 힌트</strong><span>엔진이 원문 장르를 먼저 판별하고, 애매할 때만 참고해요</span></div>
+               <div class="lav-set-label"><strong>문체 보조 힌트</strong><span>장르 판별과 별개로 단어 선택과 문장 연결의 친근함·격식을 조정해요</span></div>
                <div class="lav-radio-row">
-                 <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="blog" checked onchange="lavBasicStyleChange()"><span>블로그·후기에 가까워요<i>친근하되 과장하지 않고 자연스럽게 연결</i></span></label>
-                 <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="report" onchange="lavBasicStyleChange()"><span>과제·보고서에 가까워요<i>격식과 항목 구조를 유지하며 차분하게 정리</i></span></label>
+                 <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="blog" checked onchange="lavBasicStyleChange()"><span>블로그·후기에 가까워요<i>원문 말투를 지키며 단어와 연결을 조금 더 친근하게</i></span></label>
+                 <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="report" onchange="lavBasicStyleChange()"><span>과제·보고서에 가까워요<i>원문 구조와 종결체를 지키며 격식과 정확성을 유지</i></span></label>
                </div>
              </div>
-             <p class="lav-tone-variance"><b>기본은 눈에 띄는 재구성, 고급은 더 넓은 재구성과 전 문서 검증이에요.</b> 두 모드 모두 원문 장르·화자·사실을 지키며, 외부 검사 점수는 글과 검사기에 따라 달라져 보장되지 않아요.</p>
+             <p class="lav-tone-variance"><b>기본은 원문 상태에 따라 변환 강도가 달라지고, 고급은 더 넓게 재구성하며 모든 글을 의미 검증해요.</b> 두 모드 모두 장르·화자·사실을 보호하지만, 경고가 표시되면 원문과 대조해 주세요. 외부 검사 점수는 보장되지 않아요.</p>
              <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>이 글은 개인 경험·관찰을 그대로 지키는 것이 중요해요. <b>기본 휴머나이징에도 해당 장르 보존 규칙과 의미 검증이 적용</b>됩니다. 고급은 더 넓게 재구성하므로 이 유형에는 기본을 권장합니다.</p>
            </div>
 
@@ -315,7 +315,7 @@
            <details class="lav-set-block lav-opt-acc" id="lavPersonalBlock">
              <summary class="lav-acc-sum">
                <span class="lav-acc-main"><strong>내 경험·관점 넣기</strong><em class="lav-acc-opt">추천</em></span>
-               <span class="lav-acc-desc">AI는 직접 겪은 경험이 없어요 — 그래서 검사기는 <b>경험·구체적 사례·수치가 없는 글부터 의심</b>해요. 아는 내용 한두 줄만 넣어도 결과가 훨씬 사람다워져요.</span>
+               <span class="lav-acc-desc">직접 겪은 경험이나 확인한 사례를 적어주면 추상적인 문장을 더 구체적으로 다듬는 데 도움이 돼요. <b>실제로 아는 내용만</b> 한두 줄 적어주세요.</span>
                <svg class="lav-acc-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
              </summary>
              <div class="lav-acc-body">
@@ -325,7 +325,7 @@
                    <span class="lav-toggle-track" aria-hidden="true"><i></i></span>
                    <span class="lav-toggle-text">
                      <b>자동 코칭</b>
-                     <i>시작 전에 원문과 어울리는 관점·경험 후보를 추천해요. 실제로 반영할 항목만 직접 고르면 돼요 — 없는 경험은 안 고르면 그만이에요.</i>
+                     <i>시작 전에 원문과 어울리는 관점·경험 후보를 보여줘요. 실제 내 생각이나 경험에 맞는 항목만 고르면 글에 반영돼요.</i>
                    </span>
                  </label>
                  <p class="lav-memo-toggle-hint" id="lavMemoToggleHint"><button type="button" class="lav-linkbtn" onclick="lavMemoManual()">경험 메모 직접 입력</button></p>
@@ -333,22 +333,22 @@
                </div>
 
                <div id="lavMemoBlock" hidden>
-                 <p class="lav-memo-intro">아는 칸만 적으면 돼요 — 비워도 진행됩니다. <b>적어주신 범위 안에서만</b> 쓰고, 없는 사실은 지어내지 않아요.</p>
+                 <p class="lav-memo-intro">아는 칸만 적으면 되고, 모두 비워도 진행할 수 있어요. <b>적어주신 내용만 추가 정보로 사용해요.</b></p>
 
                  <div class="lav-memo-field">
-                   <div class="lav-memo-flabel is-key"><b>① 직접 겪은 일·경험</b><span>가장 강력 — AI는 경험이 없거든요</span></div>
+                   <div class="lav-memo-flabel is-key"><b>① 직접 겪은 일·경험</b><span>실제로 겪은 내용만 입력</span></div>
                    <textarea class="lav-memo" id="lavMemoExp" rows="2" placeholder="예) 작년 여름 ○○기관에서 3주간 봉사하며 ~한 점을 직접 봤다"></textarea>
                  </div>
                  <div class="lav-memo-field">
-                   <div class="lav-memo-flabel"><b>② 구체적인 사례·예시</b><span>‘구체적 근거 부족’ 신호를 낮춰요</span></div>
+                   <div class="lav-memo-flabel"><b>② 구체적인 사례·예시</b><span>추상적인 문장을 구체화할 때 참고</span></div>
                    <textarea class="lav-memo" id="lavMemoCase" rows="2" placeholder="예) 우리 팀은 ~방식을 도입해 처리 시간을 절반으로 줄였다"></textarea>
                  </div>
                  <div class="lav-memo-field">
-                   <div class="lav-memo-flabel"><b>③ 정확히 아는 수치·출처</b><span>숫자가 들어가면 의심이 크게 내려가요</span></div>
+                   <div class="lav-memo-flabel"><b>③ 정확히 아는 수치·출처</b><span>직접 확인할 수 있는 정보만 입력</span></div>
                    <textarea class="lav-memo" id="lavMemoNum" rows="2" placeholder="예) 본문의 ○○% 수치는 내가 읽은 △△ 보고서 기준이다"></textarea>
                  </div>
                  <div class="lav-memo-field">
-                   <div class="lav-memo-flabel"><b>④ 내 생각·입장</b><span>‘무견해·판단 회피’ 신호를 없애요</span></div>
+                   <div class="lav-memo-flabel"><b>④ 내 생각·입장</b><span>글에 분명히 드러내고 싶은 내 판단</span></div>
                    <textarea class="lav-memo" id="lavMemoView" rows="2" placeholder="예) 나는 이 문제의 핵심이 ~라고 본다 / ~점이 가장 중요하다고 생각한다"></textarea>
                  </div>
                </div>
@@ -364,16 +364,16 @@
                  <b>근거 보강 <u class="only">고급 전용</u></b>
                  <i>
                    <span class="ln">주제와 맞는 자료 후보(통계·연구·기관)를 찾아 보여 드려요. 직접 승인한 자료만 결과에 사용합니다.</span>
-                   <span class="ln">막연한 주장에 실제 출처·수치가 붙으면 글의 구체성이 확 올라가 훨씬 사람이 쓴 글처럼 읽혀요.</span>
-                   <span class="ln hl">고급 휴머나이징 효과를 크게 높여 주는 옵션이에요 — 원문에 이미 근거가 충분하다면 켜지 않아도 돼요.</span>
+                   <span class="ln">근거가 부족한 주장을 보완할 때만 사용하고, 승인하지 않은 자료는 글에 넣지 않아요.</span>
+                   <span class="ln hl">원문에 근거가 충분하면 켜지 않아도 돼요. 외부 검사 점수 개선을 보장하는 옵션은 아니에요.</span>
                  </i>
                </span>
              </label>
-             <p class="lav-evidence-note" id="lavEvidenceNote" hidden>근거 검색에 8~12분이 걸리고, 검수 단계가 추가돼요.</p>
+             <p class="lav-evidence-note" id="lavEvidenceNote" hidden>검색과 검수 단계가 추가되어 기본 예상 시간보다 약 8분 이상 더 걸릴 수 있어요.</p>
              <p class="lav-evidence-hint" id="lavEvidenceHint">‘고급 휴머나이징’을 선택하면 켤 수 있어요.</p>
            </div>
 
-           <button type="button" class="lav-flow-cta lav-flow-cta-split" onclick="lavOpenConfirm()"><span>AI 티 줄이기 시작</span><small id="lavCtaMeta">예상 1~3분 · 최소 10크레딧</small></button>
+           <button type="button" class="lav-flow-cta lav-flow-cta-split" onclick="lavOpenConfirm()"><span>AI 티 줄이기 시작</span><small id="lavCtaMeta">입력 길이에 따라 시간·비용 계산</small></button>
          </section>
 
          <!-- 4) 작업 상태 -->

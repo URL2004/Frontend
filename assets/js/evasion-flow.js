@@ -5,6 +5,22 @@
   function shortHumanizeCredit(len) {
     return Math.max(SHORT_HUMANIZE_MIN_CREDITS, Math.ceil((Number(len) || 0) / 100) * 2);
   }
+  function bareLength(text) {
+    return String(text || '').replace(/\s/g, '').length;
+  }
+  function shortEstimateSec(text) {
+    return Math.max(90, Math.min(1200, Math.round(bareLength(text) / 12)));
+  }
+  function formalEstimateSec(text, evidence) {
+    return Math.max(240, Math.min(5400, Math.round(bareLength(text) / 4) + (evidence ? 480 : 0)));
+  }
+  function estimateTimeLabel(seconds) {
+    return '약 ' + Math.max(1, Math.round((Number(seconds) || 0) / 60)) + '분';
+  }
+  function formalCredit(len, evidence) {
+    var tier = Number(len) <= 10000 ? 0 : (Number(len) <= 20000 ? 1 : 2);
+    return [200, 400, 600][tier] + (evidence ? 100 : 0);
+  }
 
   // Before/After 러너: proof 블록이 화면에 들어올 때 1회 달리기 재생(스크롤 밖에서 끝나버리는 문제 해결)
   function initProofRunner() {
@@ -440,6 +456,21 @@
     });
   }
 
+  function updateCtaMeta() {
+    var ctaMeta = $('lavCtaMeta');
+    if (!ctaMeta) return;
+    var tone = document.querySelector('input[name="lavTone"]:checked');
+    var formal = tone && tone.value === 'formal';
+    var src = $('lavInput');
+    var text = src ? src.value : '';
+    var evidence = !!($('lavEvidence') && $('lavEvidence').checked && !$('lavEvidence').disabled);
+    if (formal) {
+      ctaMeta.textContent = estimateTimeLabel(formalEstimateSec(text, evidence)) + ' · ' + formalCredit(text.length, evidence) + '크레딧';
+    } else {
+      ctaMeta.textContent = estimateTimeLabel(shortEstimateSec(text)) + ' · ' + shortHumanizeCredit(text.length) + '크레딧';
+    }
+  }
+
   window.lavToneChange = function () {
     var formal = document.querySelector('input[name="lavTone"]:checked');
     var isFormal = formal && formal.value === 'formal';
@@ -481,9 +512,8 @@
       var memoHint = $('lavMemoToggleHint');
       if (memoHint) memoHint.hidden = true;
     }
-    // CTA 보조문(예상 시간·비용)을 어투에 맞춰 갱신 — 기본=시간·최소단가 / 고급=길이별 정액
-    var ctaMeta = $('lavCtaMeta');
-    if (ctaMeta) ctaMeta.textContent = isFormal ? '예상 길이별 200~600크레딧' : (isReportBasic ? '예상 1~3분 · 과제/보고서 말투' : '예상 1~3분 · 블로그 말투');
+    // 서버와 같은 길이 계산식으로 예상 시간·크레딧을 표시한다. 대기열 시간은 별도다.
+    updateCtaMeta();
     if (!isReportBasic) window.lavAutoCoachChange();   // 메모칸 가시성 동기화(자동 ON=숨김 / 자동OFF=노출) + 후보 프리페치
   };
 
@@ -495,6 +525,7 @@
     var on = $('lavEvidence') && $('lavEvidence').checked;
     var note = $('lavEvidenceNote');
     if (note) note.hidden = !on;
+    updateCtaMeta();
   };
 
   // ★ 경험 메모 4칸(직접경험·사례·수치·내생각) → 한 줄에 한 가지씩 합쳐 memo 문자열로(엔진은 줄 단위로 녹임).
@@ -627,16 +658,15 @@
     }
     // 과금(서버와 동일): 기본 피하기=최소 10크레딧 + 100자당 2크레딧, 재구성=건당 정액.
     var src = $('lavInput');
-    var len = src ? src.value.length : 0;
+    var text = src ? src.value : '';
+    var len = text.length;
     var credit, time;
     if (s.tone === 'formal') {
-      // 길이 구간 정액(서버와 동일): ~1만 200 · ~2만 400 · ~3만 600, 근거 시 +100
-      var tier = len <= 10000 ? 0 : (len <= 20000 ? 1 : 2);
-      credit = ([200, 400, 600][tier] + (s.evidence ? 100 : 0)) + ' 크레딧';
-      time = len <= 10000 ? '5~25분' : (len <= 20000 ? '20~50분' : '40~90분');
+      credit = formalCredit(len, s.evidence) + ' 크레딧';
+      time = estimateTimeLabel(formalEstimateSec(text, s.evidence)) + ' · 대기 제외';
     } else {
       credit = shortHumanizeCredit(len) + ' 크레딧';
-      time = '약 1~3분';
+      time = estimateTimeLabel(shortEstimateSec(text)) + ' · 대기 제외';
     }
     if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = credit;
     if ($('lavConfirmTime')) $('lavConfirmTime').textContent = time;
@@ -844,7 +874,7 @@
     show('job');
     armCancelWindow(0);   // 방금 시작 — 30초 취소 창 열기
     var bare = text.replace(/\s/g, '').length;
-    formalStop = startJobTicker(Math.max(90, Math.min(1200, bare / 12)), '문장 다듬는 중');
+    formalStop = startJobTicker(shortEstimateSec(text), '문장 다듬는 중');
     var gen = ++pollGen;
     (async function () {
       var idToken = '';
@@ -898,7 +928,7 @@
     var subP = $('lavConfirmSub'); if (subP) subP.hidden = true;   // 과제 다듬기는 탐지율과 무관
     var len = src ? src.value.length : 0;   // 글자수 통일: 공백 포함
     if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = shortHumanizeCredit(len) + ' 크레딧';
-    if ($('lavConfirmTime')) $('lavConfirmTime').textContent = '약 1~3분';
+    if ($('lavConfirmTime')) $('lavConfirmTime').textContent = estimateTimeLabel(shortEstimateSec(text)) + ' · 대기 제외';
     var modal = $('lavConfirmModal');
     if (modal) modal.hidden = false;
   };
@@ -930,7 +960,7 @@
   function stopFormalTicker() { if (formalStop) { formalStop(); formalStop = null; } }
   function currentBareLen() {
     var src = $('lavInput');
-    return (src ? src.value : '').replace(/\s/g, '').length;
+    return bareLength(src ? src.value : '');
   }
   function notifyJobDone(st, label) {
     if (!window.gpNotify || !st || !st.jobId) return;
@@ -1397,8 +1427,7 @@
     if ($('lavJobId')) $('lavJobId').textContent = '';
     show('job');
     armCancelWindow(0);   // 방금 시작 — 30초 취소 창 열기
-    var bare = currentBareLen();
-    var estSec = Math.max(240, Math.min(2700, Math.round(bare / 4) + (s.evidence ? 480 : 0)));   // 서버 공식과 동일
+    var estSec = formalEstimateSec(text, s.evidence);   // 서버 공식과 동일
     formalStop = startJobTicker(estSec, s.evidence ? '승인할 근거를 찾는 중' : '의미·구조를 검증하는 중');
     var gen = ++pollGen;
     (async function () {

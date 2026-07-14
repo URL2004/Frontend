@@ -96,7 +96,7 @@ const ADMIN_ROLES = {
  'nC90IyjgaIZ8Z0JTABMTiyQHF9g1': { name:'운영자', label:'운영자' },
  'qa0iQAeVmMOxoy6Vg5ENTRKk0Vm2': { name:'관리자', label:'관리자' },
  'upyxtXMQEgQXfqTUWPrf6QS9EqE2': { name:'개발자', label:'개발자' },
- '9i6YA66mpXSBcpPJqNmJQ5jnJsT2': { name:'박도현', label:'관리자' }
+ '9i6YA66mpXSBcpPJqNmJQ5jnJsT2': { name:'관리자', label:'관리자' }
 };
 window.isAdmin = () =>CU && !!ADMIN_ROLES[CU.uid];
 window.getAdminName = () =>CU && ADMIN_ROLES[CU.uid] ? ADMIN_ROLES[CU.uid].name : null;
@@ -1844,7 +1844,9 @@ window.loadMyPage = async () =>{
     +'<button id="myPostsToggle" type="button" class="gp-more-btn" onclick="gpToggleMore(\'myPostsHidden\',this,\'더보기 ('+(myPosts.length-5)+'건)\')">더보기 ('+(myPosts.length-5)+'건)</button>'
    : '');
  el.innerHTML =
- '<div class="shell"><div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:20px;">'
+ '<div class="shell">'
+ +(window.isAdmin() ? '<div class="gp-mypage-admin-entry"><div><div class="gp-mypage-admin-title">관리자 페이지</div><div class="gp-mypage-admin-sub">환불, 크레딧, 쿠폰, 사용자 원장을 별도 화면에서 처리합니다.</div></div><button type="button" onclick="openAdminPage()">관리자 페이지 열기</button></div>' : '')
+ +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:20px;">'
  +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">'
  +'<div style="width:56px;height:56px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;">'
  +'<svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" width="32" height="32" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
@@ -1884,7 +1886,6 @@ window.loadMyPage = async () =>{
  +'<div id="notifList"><div style="text-align:center;padding:24px;color:var(--text3);">불러오는 중...</div></div>'
  +'<div style="margin-top:28px;"><div style="font-size:15px;font-weight:700;margin-bottom:12px;">결제 내역 / 환불</div><div id="orderHistoryList"><div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div></div></div>'
  +'<div style="margin-top:28px;"><div style="font-size:15px;font-weight:700;margin-bottom:12px;">크레딧 사용 내역</div><div id="creditHistoryList"><div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div></div></div>'
- +(window.isAdmin() ? '<div class="gp-mypage-admin-entry"><div><div class="gp-mypage-admin-title">관리자 페이지</div><div class="gp-mypage-admin-sub">환불, 크레딧, 쿠폰, 사용자 원장을 별도 화면에서 처리합니다.</div></div><button type="button" onclick="openAdminPage()">관리자 페이지 열기</button></div>' : '')
  +'</div>';
  await loadNotifications();
  await window.loadOrderHistory();
@@ -4064,7 +4065,7 @@ window.adminSearchUser = async function(quiet) {
 };
 
 // ===== 관리자: 사용자 작업 기록 =====
-window._adminUserLog = { uid: null, items: [], nextCursorMs: null, loading: false };
+window._adminUserLog = { uid: null, items: [], page: 0, cursors: [0], nextCursorMs: null, loading: false };
 
 const ADMIN_LOG_TYPE = {
  detect: { label: '탐지', cls: 'detect' },
@@ -4080,48 +4081,84 @@ function adminProbBadge(p) {
  return `<span class="gp-admin-log-prob ${cls}">AI ${v}%</span>`;
 }
 
-window.loadAdminUserLog = async function(uid, append) {
+window.loadAdminUserLog = async function(uid, direction) {
  const el = document.getElementById('adminUserLog');
  if (!el || !uid) return;
  const st = window._adminUserLog;
  if (st.loading) return;
- st.loading = true;
- if (!append) {
-  st.uid = uid; st.items = []; st.nextCursorMs = null;
-  el.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
+ const sameUser = st.uid === uid;
+ let cursors = sameUser ? (st.cursors || [0]).slice() : [0];
+ let page = sameUser ? adminNumber(st.page) : 0;
+ if (direction === 'next') {
+  if (!st.nextCursorMs) return;
+  page += 1;
+  cursors[page] = st.nextCursorMs;
+ } else if (direction === 'prev') {
+  page = Math.max(0, page - 1);
+ } else {
+  page = 0;
+  cursors = [0];
  }
+ const cursorMs = cursors[page] || 0;
+ st.loading = true;
+ el.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
  try {
-  const data = await adminPost('/admin/user-history', { uid, limit: 20, cursorMs: append ? st.nextCursorMs : 0 });
-  st.items = st.items.concat(data.items || []);
-  st.nextCursorMs = data.nextCursorMs || null;
+  const data = await adminPost('/admin/user-history', { uid, limit: 20, cursorMs });
+  window._adminUserLog = {
+   uid,
+   items: data.items || [],
+   page,
+   cursors,
+   nextCursorMs: data.nextCursorMs || null,
+   loading: true
+  };
   window.renderAdminUserLog();
+  if (direction === 'next' || direction === 'prev') {
+   const panel = el.closest('.gp-admin-panel');
+   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+   if (panel) panel.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  }
  } catch (e) {
-  if (!append) el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">${escapeHtml(e.message)}</div>`;
+  el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">${escapeHtml(e.message)}</div>`;
  } finally {
-  st.loading = false;
+  window._adminUserLog.loading = false;
  }
 };
+
+function adminUserLogPagerHtml() {
+ const st = window._adminUserLog;
+ if (!st.page && !st.nextCursorMs) return '';
+ return `
+  <div class="gp-admin-pager gp-admin-user-log-pager">
+    <button type="button" onclick="loadAdminUserLog(window._adminUserLog.uid, 'prev')" ${st.page <= 0 ? 'disabled' : ''}>이전</button>
+    <span>${adminNumber(st.page) + 1}페이지${st.nextCursorMs ? '' : ' · 끝'}</span>
+    <button type="button" onclick="loadAdminUserLog(window._adminUserLog.uid, 'next')" ${st.nextCursorMs ? '' : 'disabled'}>다음</button>
+  </div>`;
+}
 
 window.renderAdminUserLog = function() {
  const el = document.getElementById('adminUserLog');
  if (!el) return;
  const st = window._adminUserLog;
  const cntEl = document.getElementById('adminUserLogCount');
- if (cntEl) cntEl.textContent = st.items.length ? (st.items.length + (st.nextCursorMs ? '+' : '')) : '';
+ if (cntEl) cntEl.textContent = st.items.length
+  ? `${st.items.length}${st.nextCursorMs ? '+' : ''}건 · ${adminNumber(st.page) + 1}p`
+  : '';
  if (!st.items.length) {
-  el.innerHTML = '<div class="gp-admin-empty">작업 기록이 없습니다.</div>';
+  el.innerHTML = '<div class="gp-admin-empty">작업 기록이 없습니다.</div>' + adminUserLogPagerHtml();
   return;
  }
  const rows = st.items.map(it => {
   const ti = adminLogTypeInfo(it.type);
   const isDetect = it.type === 'detect';
+  const itemId = jsAttr(it.id);
   const preview = isDetect ? (it.summaryPreview || it.inputPreview) : (it.outputPreview || it.inputPreview);
   const lenInfo = isDetect
    ? `입력 ${adminNumber(it.inputLen).toLocaleString('ko-KR')}자`
    : `입력 ${adminNumber(it.inputLen).toLocaleString('ko-KR')}자 → 결과 ${adminNumber(it.outputLen).toLocaleString('ko-KR')}자`;
   return `
    <div class="gp-admin-log-item">
-     <div class="gp-admin-log-head" onclick="adminToggleLogItem('${jsAttr(it.id)}')">
+     <div class="gp-admin-log-head" id="logHead-${itemId}" role="button" tabindex="0" aria-expanded="false" aria-controls="logDetail-${itemId}" onclick="adminToggleLogItem('${itemId}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();adminToggleLogItem('${itemId}');}">
        <div class="gp-admin-log-meta">
          <span class="gp-admin-log-badge ${ti.cls}">${escapeHtml(ti.label)}</span>
          ${adminProbBadge(it.probability)}
@@ -4129,25 +4166,29 @@ window.renderAdminUserLog = function() {
          <span class="gp-admin-log-date">${escapeHtml(adminDateText(it.createdAtMs))}</span>
          <span class="gp-admin-log-sub">${escapeHtml(lenInfo)} · ${adminNumber(it.credits)}크레딧</span>
        </div>
-       <span class="gp-admin-log-toggle" id="logToggle-${jsAttr(it.id)}">자세히 ▾</span>
+       <span class="gp-admin-log-toggle" id="logToggle-${itemId}">자세히 ▾</span>
      </div>
      <div class="gp-admin-log-preview">${escapeHtml(preview) || '<span class="gp-admin-muted">내용 없음</span>'}</div>
-     <div class="gp-admin-log-detail" id="logDetail-${jsAttr(it.id)}" hidden></div>
+     <div class="gp-admin-log-detail" id="logDetail-${itemId}" hidden></div>
    </div>`;
  }).join('');
- const more = st.nextCursorMs
-  ? `<button type="button" class="gp-admin-mini-btn gp-admin-log-more" onclick="loadAdminUserLog(window._adminUserLog.uid, true)">더 보기</button>`
-  : '';
- el.innerHTML = `<div class="gp-admin-log-list">${rows}</div>${more}`;
+ el.innerHTML = `<div class="gp-admin-log-list">${rows}</div>${adminUserLogPagerHtml()}`;
 };
 
 window.adminToggleLogItem = async function(id) {
  const box = document.getElementById('logDetail-' + id);
  const toggle = document.getElementById('logToggle-' + id);
+ const head = document.getElementById('logHead-' + id);
  if (!box) return;
- if (!box.hidden) { box.hidden = true; if (toggle) toggle.textContent = '자세히 ▾'; return; }
+ if (!box.hidden) {
+  box.hidden = true;
+  if (toggle) toggle.textContent = '자세히 ▾';
+  if (head) head.setAttribute('aria-expanded', 'false');
+  return;
+ }
  box.hidden = false;
  if (toggle) toggle.textContent = '접기 ▴';
+ if (head) head.setAttribute('aria-expanded', 'true');
  if (box.dataset.loaded === '1') return;
  box.innerHTML = '<div class="gp-admin-empty gp-admin-empty-compact">불러오는 중...</div>';
  try {
