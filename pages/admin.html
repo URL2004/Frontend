@@ -38,6 +38,7 @@
     <!-- 탭: 섹션이 계속 늘며 세로 스크롤이 과도해져, 성격별로 나눠 한 번에 한 그룹만 보여준다 -->
     <nav class="gp-admin-tabs" id="adminTabs" aria-label="관리자 섹션 탭">
       <button type="button" class="gp-admin-tab active" data-tab="ops" onclick="adminSwitchTab('ops')">운영 현황</button>
+      <button type="button" class="gp-admin-tab" data-tab="quality" onclick="adminSwitchTab('quality')">휴머나이징 품질</button>
       <button type="button" class="gp-admin-tab" data-tab="users" onclick="adminSwitchTab('users')">사용자</button>
       <button type="button" class="gp-admin-tab" data-tab="ledger" onclick="adminSwitchTab('ledger')">크레딧 원장</button>
       <button type="button" class="gp-admin-tab" data-tab="coupons" onclick="adminSwitchTab('coupons')">쿠폰</button>
@@ -233,6 +234,32 @@
       </div>
       <div id="adminJobsBody">
         <div class="gp-admin-empty">불러오는 중...</div>
+      </div>
+    </section>
+
+    <section class="gp-admin-panel gp-admin-quality" data-admin-tab="quality">
+      <div class="gp-admin-section-head">
+        <div>
+          <h3>휴머나이징 품질 관측 <span id="adminQualityCount" class="gp-admin-count"></span></h3>
+          <p>원문·결과 없이 엔진 깊이, 장르 판정, 한국어 교정, 경고 비율만 집계합니다.</p>
+        </div>
+        <div class="gp-admin-filter-row gp-admin-quality-filter">
+          <label class="gp-admin-label" for="adminQualityHours"><span>조회 기간</span></label>
+          <select id="adminQualityHours" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminHumanizeQuality()">
+            <option value="6">최근 6시간</option>
+            <option value="24" selected>최근 24시간</option>
+            <option value="72">최근 3일</option>
+            <option value="168">최근 7일</option>
+            <option value="720">최근 30일</option>
+            <option value="2160">최근 90일</option>
+          </select>
+          <button type="button" class="gp-admin-mini-btn" onclick="loadAdminHumanizeQuality()">새로고침</button>
+        </div>
+      </div>
+      <div id="adminHumanizeQualityBody" aria-live="polite">
+        <div class="gp-admin-quality-skeleton" aria-label="품질 통계를 불러오는 중">
+          <span></span><span></span><span></span><span></span>
+        </div>
       </div>
     </section>
 

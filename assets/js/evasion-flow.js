@@ -619,6 +619,33 @@
     var style = document.querySelector('input[name="lavBasicStyle"]:checked');
     return style ? style.value : 'blog';
   }
+  var DOCUMENT_PROFILE_LABELS = {
+    academic_paper: '논문·학술글',
+    report_assignment: '과제·보고서',
+    student_record_teacher: '세특·교사 관찰 기록',
+    student_self_assessment: '학생 자기평가',
+    resume_application: '자소서·지원서',
+    personal_essay: '개인 에세이',
+    review_blog: '후기·블로그',
+    marketing: '홍보·광고',
+    social: 'SNS 글',
+    mail_notice: '메일·안내문',
+    creative: '시·창작문',
+    general: '일반 글'
+  };
+  function currentDocumentProfile() {
+    var select = $('lavDocumentProfile');
+    var value = select ? String(select.value || '') : '';
+    return DOCUMENT_PROFILE_LABELS[value] ? value : '';
+  }
+  window.lavDocumentProfileChange = function () {
+    var hint = $('lavDocumentProfileHint');
+    var profile = currentDocumentProfile();
+    if (!hint) return;
+    hint.textContent = profile
+      ? '자동 판정이 애매할 때만 이 선택을 사용해요. 원문 장르가 뚜렷하면 안전을 위해 자동 판정을 우선합니다.'
+      : '원문의 구성·어휘·종결체를 보고 엔진이 글 종류를 판별합니다.';
+  };
   function currentSettings() {
     var tone = document.querySelector('input[name="lavTone"]:checked');
     var len = document.querySelector('input[name="lavLen"]');
@@ -629,6 +656,7 @@
     return {
       tone: tone ? tone.value : 'blog',
       basicStyle: basicStyle || 'blog',
+      documentProfile: currentDocumentProfile(),
       length: len ? len.value : 'keep',
       memo: basicReport ? '' : collectMemo(),
       evidence: !!(ev && ev.checked),
@@ -646,6 +674,7 @@
     if (sum) {
       var rows = [];
       rows.push(['방식', s.tone === 'formal' ? '고급 휴머나이징 — 전 문서 의미 검증' : '기본 휴머나이징 — 장르 자동 맞춤']);
+      rows.push(['글 종류', s.documentProfile ? DOCUMENT_PROFILE_LABELS[s.documentProfile] + ' · 애매할 때만 반영' : '자동 판별']);
       if (s.tone === 'blog') rows.push(['문체', s.basicStyle === 'report' ? '과제/보고서 말투' : '블로그 말투']);
       if (s.tone === 'formal') rows.push(['분량', '원문에 가깝게 유지']);
       // 자동 코칭 ON이면 위 추천 픽 섹션이 입력을 대신함 → 메모 행 생략(중복·혼동 방지)
@@ -844,22 +873,26 @@
     if ($('lavStepSlot')) $('lavStepSlot').textContent = '대기 ' + pos + '번째' + (size > 1 ? ' / ' + size + '명' : '') + ' · 예상 ' + wait;
   }
 
-  function renderBadges(fr) {
+  function renderBadges(fr, result) {
     var wrap = $('lavTrust');
     if (!wrap) return;
     wrap.innerHTML = '';
-    function badge(ok, txt) {
+    function badge(state, txt) {
       var s = document.createElement('span');
-      s.className = 'lav-trust-badge' + (ok ? ' ok' : '');
+      s.className = 'lav-trust-badge' + (state === true ? ' ok' : state === false ? ' warn' : '');
       s.textContent = txt;
       wrap.appendChild(s);
     }
     var m = (fr && fr.metrics) || {};
-    badge(m.novelty === 0, m.novelty === 0 ? '날조 0건' : '날조 의심 ' + m.novelty + '건');
-    badge(m.lostFacts === 0, m.lostFacts === 0 ? '원문 사실 보존' : '사실 누락 ' + m.lostFacts + '건');
-    badge(m.repetition === 0, m.repetition === 0 ? '반복 없음' : '반복 ' + m.repetition + '건');
-    badge(m.judge !== 'fail', m.judge === 'pass' ? '의미 검증 통과' : m.judge === 'fail' ? '의미 검증 실패' : '의미 검증 생략(저위험)');
-    badge(true, '국립국어원 규범 기준 검사');   // 서버가 매 변환마다 어문규범·사전 데이터 기반 koreanQuality 게이트를 돌림
+    if (typeof m.novelty === 'number') badge(m.novelty === 0, m.novelty === 0 ? '새 사실 없음' : '새 사실 의심 ' + m.novelty + '건');
+    if (typeof m.lostFacts === 'number') badge(m.lostFacts === 0, m.lostFacts === 0 ? '보호 사실 유지' : '사실 누락 의심 ' + m.lostFacts + '건');
+    if (typeof m.repetition === 'number') badge(m.repetition === 0, m.repetition === 0 ? '신규 반복 없음' : '신규 반복 ' + m.repetition + '건');
+    badge(m.judge === 'pass' ? true : m.judge === 'fail' ? false : null,
+      m.judge === 'pass' ? '의미 검증 통과' : m.judge === 'fail' ? '의미 검증 확인 필요' : '의미 검증 생략(저위험)');
+    var korean = result && result.koreanRefinement;
+    badge(korean && korean.pass === true ? true : korean && korean.pass === false ? false : null,
+      korean && korean.pass === true ? '한국어 표현 점검 완료' : korean && korean.pass === false ? '한국어 표현 확인 필요' : '한국어 표현 점검 미측정');
+    if (result && result.qualityStatus === 'needs_review') badge(false, '원문 대조 필요');
     if (m.evidenceUsed > 0) badge(true, '승인 근거 ' + m.evidenceUsed + '건 · 수치·출처 일치');
     if (typeof m.lengthRatio === 'number') badge(true, '분량 ' + Math.round(m.lengthRatio * 100) + '%');
   }
@@ -886,6 +919,7 @@
           throw authErr;
         }
         var body = { text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text) };
+        if (s && s.documentProfile) body.documentProfile = s.documentProfile;
         if (mode === 'blog') body.basicStyle = (s && s.basicStyle === 'report') ? 'report' : 'blog';
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
@@ -1210,17 +1244,17 @@
     var label;
     if (st.mode === 'blog') {
       label = '블로그';
-      renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics });
+      renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics }, st.result);
     } else if (st.mode === 'polish') {
       label = '다듬기';
-      renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics });
+      renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics }, st.result);
     } else if (st.result && st.result.preservationFallback) {
       // 차단→보존형 폴백: 고급 재구성이 게이트에 막혀 원문 보존형으로 처리된 결과.
       label = '보존형';
-      renderBadges({ metrics: st.result && st.result.metrics });
+      renderBadges({ metrics: st.result && st.result.metrics }, st.result);
     } else {
       label = '고급 휴머나이징';
-      renderBadges({ metrics: st.result && st.result.metrics });
+      renderBadges({ metrics: st.result && st.result.metrics }, st.result);
     }
     // 보존형 폴백 안내 배너(정직 표기) — 일반 결과에선 항상 숨김으로 리셋
     var lavFbBanner = $('lavFallbackBanner');
@@ -1262,7 +1296,22 @@
     if (!wrap || !list) return;
     list.innerHTML = '';
     var warnings = Array.isArray(result.qualityWarnings) ? result.qualityWarnings : [];
+    var sourceWarnings = Array.isArray(result.sourceReviewWarnings) ? result.sourceReviewWarnings : [];
     var needsReview = result.qualityStatus === 'needs_review';
+    var sourceWrap = $('lavSourceReview');
+    var sourceList = $('lavSourceReviewList');
+    if (sourceWrap && sourceList) {
+      sourceList.innerHTML = '';
+      var sourceMessages = sourceWarnings.map(function (item) {
+        return item && item.message ? String(item.message) : '';
+      }).filter(Boolean).slice(0, 8);
+      sourceMessages.forEach(function (message) {
+        var sourceItem = document.createElement('li');
+        sourceItem.textContent = message.replace(/^원문\s*확인:\s*/u, '');
+        sourceList.appendChild(sourceItem);
+      });
+      sourceWrap.hidden = sourceMessages.length === 0;
+    }
     if (!needsReview && !warnings.length) {
       wrap.hidden = true;
       return;
@@ -1442,7 +1491,7 @@
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
-          body: JSON.stringify({ text: text, mode: 'formal', evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: 'keep' })
+          body: JSON.stringify({ text: text, mode: 'formal', evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: 'keep', documentProfile: s.documentProfile || undefined })
         }).then(parseTransformStart);
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);

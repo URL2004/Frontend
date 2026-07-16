@@ -69,6 +69,48 @@ test('관리자 진입점과 사용자 작업 기록의 접기·본문 스크롤
   assert.doesNotMatch(source, /gp-admin-log-more/u);
 });
 
+test('애매한 글 종류 선택은 기본·고급 요청에 전달되고 자동 판별 우선 원칙을 설명한다', async () => {
+  const [main, evasion] = await Promise.all([
+    read('pages/main.html'),
+    read('assets/js/evasion-flow.js')
+  ]);
+  assert.match(main, /id="lavDocumentProfile"/u);
+  assert.match(main, /자동 판별 \(권장\)/u);
+  assert.match(main, /원문에서 장르가 뚜렷하면 안전을 위해 자동 판정을 우선/u);
+  assert.match(evasion, /if \(s && s\.documentProfile\) body\.documentProfile = s\.documentProfile/u);
+  assert.match(evasion, /documentProfile:\s*s\.documentProfile \|\| undefined/u);
+});
+
+test('결과 품질 경고와 원문 검토 알림을 서로 다른 영역에 표시한다', async () => {
+  const [main, evasion] = await Promise.all([
+    read('pages/main.html'),
+    read('assets/js/evasion-flow.js')
+  ]);
+  assert.match(main, /id="lavQualityWarning"[^>]*role="alert"/u);
+  assert.match(main, /id="lavSourceReview"[^>]*role="status"/u);
+  assert.match(evasion, /Array\.isArray\(result\.sourceReviewWarnings\)/u);
+  assert.match(evasion, /한국어 표현 확인 필요/u);
+  assert.doesNotMatch(`${main}\n${evasion}`, /국립국어원 규범 기준 검사/u);
+  const sourceRender = evasion.indexOf("var sourceWrap = $('lavSourceReview')");
+  const qualityEarlyReturn = evasion.indexOf('if (!needsReview && !warnings.length)', sourceRender);
+  assert.ok(sourceRender >= 0 && qualityEarlyReturn > sourceRender, '원문 알림은 결과가 clean이어도 먼저 갱신해야 한다');
+});
+
+test('관리자 품질 탭은 본문 없이 장르 교차표와 깊이·한국어 지표를 조회한다', async () => {
+  const [admin, source] = await Promise.all([
+    read('pages/admin.html'),
+    read('assets/js/app-module.js')
+  ]);
+  assert.match(admin, /data-tab="quality"/u);
+  assert.match(admin, /id="adminHumanizeQualityBody"/u);
+  assert.match(source, /adminPost\('\/admin\/humanize-quality', \{ hours, limit: 2000 \}\)/u);
+  assert.match(source, /requestedModeDocumentProfileEngineQuality/u);
+  assert.match(source, /rhetoricalRemediationCoverage/u);
+  assert.match(source, /koreanRefinementPass/u);
+  const qualityBlock = source.slice(source.indexOf('// ===== 관리자: 휴머나이징 품질 관측'), source.indexOf('window.adminJobsToggleAll'));
+  assert.doesNotMatch(qualityBlock, /inputText|outputText/u);
+});
+
 test('배포 헤더는 프레이밍·MIME 스니핑·객체 삽입을 차단한다', async () => {
   const config = JSON.parse(await read('vercel.json'));
   const headers = new Map((config.headers?.[0]?.headers || []).map(item => [item.key.toLowerCase(), item.value]));

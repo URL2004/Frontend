@@ -3945,7 +3945,7 @@ window.loadAdminHumanizeLab = async function() {
 
 // 관리자 탭: 섹션이 누적되며 세로 스크롤이 과도해져, 성격별 그룹만 표시 (선택은 세션 유지)
 window.adminSwitchTab = function(tab) {
- const valid = ['ops', 'users', 'ledger', 'coupons', 'settings'];
+ const valid = ['ops', 'quality', 'users', 'ledger', 'coupons', 'settings'];
  if (!valid.includes(tab)) tab = 'ops';
  try { sessionStorage.setItem('gpAdminTab', tab); } catch (e) {}
  document.querySelectorAll('#adminContent [data-admin-tab]').forEach(s => {
@@ -3990,6 +3990,7 @@ window.loadAdminPage = async function() {
  window.loadAdminDetectCalibration(),
  window.loadAdminBasicHumanizeExperiment(),
   window.loadAdminJobs(),
+  window.loadAdminHumanizeQuality(),
   window.loadAdminRefundList(),
   window.loadAllCreditHistory(),
   window.loadCouponBatches()
@@ -4325,6 +4326,124 @@ function renderAdminJobs(data) {
    <tbody>${rows}</tbody>
   </table></div>
   ${adminJobsPagerHtml(data)}`;
+}
+
+// ===== 관리자: 휴머나이징 품질 관측(원문·결과 미포함) =====
+const ADMIN_PROFILE_LABELS = {
+ academic_paper: '논문·학술', report_assignment: '과제·보고서',
+ student_record_teacher: '세특·교사 관찰', student_self_assessment: '학생 자기평가',
+ resume_application: '자소서·지원서', personal_essay: '개인 에세이',
+ review_blog: '후기·블로그', marketing: '홍보·광고', social: 'SNS',
+ mail_notice: '메일·안내', creative: '시·창작', general: '일반', unknown: '미분류'
+};
+const ADMIN_MODE_LABELS = { blog: '기본', formal: '고급', polish: '다듬기', assignment: '격식 처리', unknown: '미상' };
+
+function adminQualityLoadingHtml() {
+ return '<div class="gp-admin-quality-skeleton" aria-label="품질 통계를 불러오는 중"><span></span><span></span><span></span><span></span></div>';
+}
+
+function adminQualityPercent(value, signed) {
+ if (value === null || value === undefined || value === '') return '—';
+ const number = Number(value);
+ if (!Number.isFinite(number)) return '—';
+ const percent = number * 100;
+ const prefix = signed && percent > 0 ? '+' : '';
+ return prefix + percent.toFixed(Math.abs(percent) < 10 ? 1 : 0) + '%';
+}
+
+function adminQualityAverage(report, field, signed) {
+ return adminQualityPercent(report?.metrics?.[field]?.average, signed);
+}
+
+function adminQualityStat(label, value, detail, alert) {
+ return `<div class="gp-admin-quality-stat${alert ? ' is-alert' : ''}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><em>${escapeHtml(detail || '')}</em></div>`;
+}
+
+function adminQualityCodeList(title, rows, emptyText) {
+ const items = (Array.isArray(rows) ? rows : []).slice(0, 10);
+ return `<div class="gp-admin-quality-code-group"><h4>${escapeHtml(title)}</h4>${items.length
+  ? '<ol>' + items.map(item => `<li><code>${escapeHtml(item.code || '')}</code><b>${adminNumber(item.count)}</b></li>`).join('') + '</ol>'
+  : `<p>${escapeHtml(emptyText || '기록 없음')}</p>`}</div>`;
+}
+
+window.loadAdminHumanizeQuality = async function() {
+ if (!window.isAdmin()) return;
+ const el = document.getElementById('adminHumanizeQualityBody');
+ if (!el) return;
+ const hours = parseInt(document.getElementById('adminQualityHours')?.value, 10) || 24;
+ el.innerHTML = adminQualityLoadingHtml();
+ try {
+  const data = await adminPost('/admin/humanize-quality', { hours, limit: 2000 });
+  window._adminHumanizeQuality = data;
+  renderAdminHumanizeQuality(data);
+ } catch (e) {
+  el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">${escapeHtml(e.message)}</div>`;
+ }
+};
+
+function renderAdminHumanizeQuality(data) {
+ const el = document.getElementById('adminHumanizeQualityBody');
+ if (!el) return;
+ const report = data?.report;
+ const summary = report?.summary || {};
+ const total = adminNumber(summary.total);
+ const count = document.getElementById('adminQualityCount');
+ if (count) count.textContent = total ? `${total}${data?.truncated ? '+' : ''}건` : '';
+ if (!report || !total) {
+  el.innerHTML = '<div class="gp-admin-empty">선택한 기간에 집계할 휴머나이징 작업이 없습니다.</div>';
+  return;
+ }
+
+ const stats = [
+  adminQualityStat('완료·전체 작업', total.toLocaleString('ko-KR') + '건', data.truncated ? '조회 상한 도달' : '아카이브 기준'),
+  adminQualityStat('검토 필요', adminQualityPercent(summary.needsReviewRate), `${adminNumber(summary.needsReviewCount)}건`, Number(summary.needsReviewRate) > .1),
+  adminQualityStat('차단', adminQualityPercent(summary.blockedRate), `${adminNumber(summary.blockedCount)}건`, Number(summary.blockedRate) > .02),
+  adminQualityStat('평균 실질 편집', adminQualityAverage(report, 'substantiveEditRatio'), '문자 표면 교체 제외'),
+  adminQualityStat('평균 구조 변화', adminQualityAverage(report, 'structuralChangedSentenceRatio'), '절·어순·호흡 기준'),
+  adminQualityStat('정형 표현 개선', adminQualityAverage(report, 'rhetoricalRemediationCoverage'), '원문의 반복 결론·상투 표현 대상'),
+  adminQualityStat('자연성 위험 변화', adminQualityAverage(report, 'naturalnessOverallRiskDelta', true), '0 이하가 개선 방향', Number(report?.metrics?.naturalnessOverallRiskDelta?.average) > 0),
+  adminQualityStat('리듬 균일화 변화', adminQualityAverage(report, 'rhythmUniformityDelta', true), '0 이하가 개선 방향', Number(report?.metrics?.rhythmUniformityDelta?.average) > 0)
+ ].join('');
+
+ const crossRows = (report.requestedModeDocumentProfileEngineQuality || []).slice(0, 60).map(row => `<tr>
+  <td>${escapeHtml(ADMIN_MODE_LABELS[row.requestedMode] || row.requestedMode || '미상')}</td>
+  <td>${escapeHtml(ADMIN_PROFILE_LABELS[row.documentProfile] || row.documentProfile || '미분류')}</td>
+  <td><code>${escapeHtml(row.engineVersion || '미상')}</code></td>
+  <td><span class="gp-admin-quality-status ${row.qualityStatus === 'needs_review' ? 'warn' : row.qualityStatus === 'clean' ? 'clean' : 'muted'}">${row.qualityStatus === 'needs_review' ? '검토 필요' : row.qualityStatus === 'clean' ? '정상' : escapeHtml(row.qualityStatus || '미측정')}</span></td>
+  <td class="num">${adminNumber(row.count)}</td>
+ </tr>`).join('');
+
+ const recentRows = (report.recent || []).slice(0, 80).map(row => `<tr>
+  <td class="muted">${escapeHtml(adminDateText(row.createdAtMs))}</td>
+  <td>${escapeHtml(ADMIN_MODE_LABELS[row.requestedMode] || row.requestedMode || '미상')}</td>
+  <td>${escapeHtml(ADMIN_PROFILE_LABELS[row.documentProfile] || row.documentProfile || '미분류')}</td>
+  <td>${escapeHtml(row.humanizationDeliveryDepthBand || '—')}</td>
+  <td class="num">${adminQualityPercent(row.substantiveEditRatio)}</td>
+  <td class="num">${adminQualityPercent(row.structuralChangedSentenceRatio)}</td>
+  <td>${row.koreanRefinementPass === false
+    ? '<span class="gp-admin-quality-status warn">확인</span>'
+    : row.koreanRefinementPass === true
+      ? '<span class="gp-admin-quality-status clean">통과</span>'
+      : '<span class="gp-admin-quality-status muted">미측정</span>'}</td>
+  <td><span class="gp-admin-quality-status ${row.qualityStatus === 'needs_review' ? 'warn' : row.qualityStatus === 'clean' ? 'clean' : 'muted'}">${row.qualityStatus === 'needs_review' ? '검토 필요' : row.qualityStatus === 'clean' ? '정상' : '미측정'}</span></td>
+ </tr>`).join('');
+
+ el.innerHTML = `
+  <div class="gp-admin-quality-stats">${stats}</div>
+  <div class="gp-admin-quality-section">
+   <div class="gp-admin-quality-section-head"><h4>모드 × 글 종류 × 엔진 × 품질 상태</h4><span>상위 ${Math.min(60, (report.requestedModeDocumentProfileEngineQuality || []).length)}개 조합</span></div>
+   <div class="gp-admin-table-wrap"><table class="gp-admin-table gp-admin-quality-cross"><thead><tr><th>요청</th><th>글 종류</th><th>엔진</th><th>품질</th><th class="num">건수</th></tr></thead><tbody>${crossRows}</tbody></table></div>
+  </div>
+  <div class="gp-admin-quality-codes">
+   ${adminQualityCodeList('결과 품질 경고', report.warningCounts, '결과 경고 없음')}
+   ${adminQualityCodeList('원문 검토 신호', report.sourceReviewWarningCounts, '원문 검토 신호 없음')}
+   ${adminQualityCodeList('한국어 교정 잔여', report.koreanRefinementIssueCounts, '한국어 교정 잔여 없음')}
+   ${adminQualityCodeList('깊이 미달 사유', report.depthReasonCounts, '깊이 미달 없음')}
+  </div>
+  <div class="gp-admin-quality-section">
+   <div class="gp-admin-quality-section-head"><h4>최근 작업</h4><span>본문 없이 관측값만 표시</span></div>
+   <div class="gp-admin-table-wrap"><table class="gp-admin-table gp-admin-quality-recent"><thead><tr><th>시각</th><th>요청</th><th>글 종류</th><th>깊이</th><th class="num">편집</th><th class="num">구조</th><th>한국어</th><th>품질</th></tr></thead><tbody>${recentRows}</tbody></table></div>
+  </div>`;
 }
 
 window.adminJobsToggleAll = function(cb) {
