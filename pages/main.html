@@ -272,9 +272,9 @@
              <div class="lav-set-label"><strong>처리 방식</strong><span>글의 길이와 검증 필요성에 맞게 선택하세요</span></div>
              <div class="lav-tone-grid">
                <label class="lav-tone-opt">
-                 <input type="radio" name="lavTone" value="blog" checked onchange="lavToneChange()">
+                 <input type="radio" name="lavTone" value="blog" checked onchange="lavToneChange(true)">
                  <span class="lav-tone-body">
-                   <b>기본 휴머나이징 <u class="rec">추천</u></b>
+                   <b>기본 휴머나이징 <u class="rec" id="lavBasicRecommended">추천</u></b>
                    <i>
                      <span class="ln">원문의 장르·말투·사실을 지키면서 AI식 반복·상투어·균일한 흐름이 두드러진 문장을 다시 구성해요.</span>
                      <span class="ln hl">이미 자연스러운 문장은 덜 바꾸고, 위험 신호가 많을수록 더 넓게 손보며 필요하면 의미까지 검증해요.</span>
@@ -283,9 +283,9 @@
                  </span>
                </label>
                <label class="lav-tone-opt">
-                 <input type="radio" name="lavTone" value="formal" onchange="lavToneChange()">
+                 <input type="radio" name="lavTone" value="formal" onchange="lavToneChange(true)">
                  <span class="lav-tone-body">
-                   <b>고급 휴머나이징 <u class="lock-tag">현재 선택 불가</u></b>
+                   <b>고급 휴머나이징 <u class="rec" id="lavFormalRecommended" hidden>추천</u><u class="lock-tag">현재 선택 불가</u></b>
                    <i>
                      <span class="ln">기본보다 더 많은 문장을 재구성하고, 모든 글의 의미·사실·구조를 한 번 더 검증해요.</span>
                      <span class="ln hl">긴 논문·보고서처럼 구조가 복잡한 글에 적합하고, 직접 승인한 근거만 추가할 수 있어요.</span>
@@ -321,6 +321,7 @@
                <p id="lavDocumentProfileHint">선택해도 원문에서 장르가 뚜렷하면 안전을 위해 자동 판정을 우선합니다.</p>
              </div>
              <p class="lav-tone-variance"><b>기본은 원문 상태에 따라 변환 강도가 달라지고, 고급은 더 넓게 재구성하며 모든 글을 의미 검증해요.</b> 두 모드 모두 장르·화자·사실을 보호하지만, 경고가 표시되면 원문과 대조해 주세요. 외부 검사 점수는 보장되지 않아요.</p>
+             <p class="lav-tone-advanced-note" id="lavToneAdvancedNote" role="status" hidden><b>이 글에는 고급을 권장해요.</b> <span id="lavToneAdvancedText"></span></p>
              <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>이 글은 개인 경험·관찰을 그대로 지키는 것이 중요해요. <b>기본 휴머나이징에도 해당 장르 보존 규칙과 의미 검증이 적용</b>됩니다. 고급은 더 넓게 재구성하므로 이 유형에는 기본을 권장합니다.</p>
            </div>
 

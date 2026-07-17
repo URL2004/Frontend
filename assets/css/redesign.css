@@ -12856,6 +12856,8 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 .lav-resume-note strong,.lav-resume-note b{color:#b45309;font-weight:700;}
 .lav-tone-resume-note{margin:10px 0 0;padding:10px 13px;border-radius:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.32);font-size:12px;line-height:1.6;color:#8a5a0b;}
 .lav-tone-resume-note b{color:#b45309;font-weight:700;}
+.lav-tone-advanced-note{margin:10px 0 0;padding:10px 13px;border-radius:10px;background:#f4f4fd;border:1px solid #d9daf3;font-size:12px;line-height:1.6;color:#555b73;}
+.lav-tone-advanced-note b{color:#4b4cc6;font-weight:750;}
 .lav-tone-opt.is-locked{opacity:.45;pointer-events:none;}
 
 /* 결과 + 신뢰 배지 */

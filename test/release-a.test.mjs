@@ -81,6 +81,23 @@ test('애매한 글 종류 선택은 기본·고급 요청에 전달되고 자�
   assert.match(evasion, /documentProfile:\s*s\.documentProfile \|\| undefined/u);
 });
 
+test('논문·구조화 보고서 추천은 구형 resumeLike 신호로 고급을 잠그지 않는다', async () => {
+  const [main, evasion] = await Promise.all([
+    read('pages/main.html'),
+    read('assets/js/evasion-flow.js')
+  ]);
+  assert.match(main, /id="lavBasicRecommended"/u);
+  assert.match(main, /id="lavFormalRecommended"[^>]*hidden/u);
+  assert.match(main, /id="lavToneAdvancedNote"[^>]*role="status"[^>]*hidden/u);
+  assert.match(main, /lavToneChange\(true\)/u);
+  assert.match(evasion, /var unfit = d\.restructureUnfit === true/u);
+  assert.match(evasion, /lastDiag\.recommendedMode === 'formal'/u);
+  assert.match(evasion, /formalRadio\.checked = recommendAdvanced/u);
+  assert.match(evasion, /recommendedMode:\s*d\.recommendedMode \|\| 'blog'/u);
+  assert.match(evasion, /실행 전 예상 시간과 크레딧을 확인/u);
+  assert.doesNotMatch(evasion, /restructureUnfit \|\| (?:d|lastDiag)\.resumeLike/u);
+});
+
 test('결과 품질 경고와 원문 검토 알림을 서로 다른 영역에 표시한다', async () => {
   const [main, evasion] = await Promise.all([
     read('pages/main.html'),

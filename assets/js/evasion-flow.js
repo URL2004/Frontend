@@ -96,10 +96,18 @@
   }
 
   var lastDiag = null;   // 결과 화면의 예상 밴드 표기에 재사용
+  var toneSelectionTouched = false;
+
+  function resetToneChoice() {
+    toneSelectionTouched = false;
+    var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');
+    if (blogRadio) blogRadio.checked = true;
+  }
 
   function applyDiag(d) {
     lastDiag = d;
-    var unfit = !!(d.restructureUnfit || d.resumeLike);   // 자소서·생기부·탐구문·짧고추상 → 재구성 부적합
+    // resumeLike는 구형 관측 신호다. 실제 잠금은 v2 장르 판정까지 조정한 canonical 값만 사용한다.
+    var unfit = d.restructureUnfit === true;
     var hasAdv = !!d.advisory && !unfit;                  // 회피 난이도 안내(STEM 스펙·구조화 보고서) — 소프트, 자소서 안내가 우선
     var rn = $('lavResumeNote');
     if (rn) { rn.hidden = !unfit; if (unfit && d.restructureUnfitReason) rn.textContent = d.restructureUnfitReason; }   // 명확한 사유 노출
@@ -119,6 +127,7 @@
   window.lavFlowDiagnose = function () {
     var src = $('lavInput');
     var text = src ? src.value : '';
+    resetToneChoice();
     cameFromReport = false;   // 진단 경유 동선 — 설정 화면 뒤로가기는 방법선택으로
     // ★ 코칭 픽 조기 프리페치: 자동 코칭을 사용자가 켠 경우에만 비용을 쓰고 후보를 캐시한다.
     try {
@@ -142,22 +151,36 @@
   };
 
   window.lavFlowGo = function (name) {
-    if (name === 'reduce') applyResumeLock();   // 자소서·이력이면 재구성(고급) 잠그고 기본 피하기만 허용
+    if (name === 'reduce') applyAdvancedRouting();
     show(name);
     if (name === 'reduce' && window.lavToneChange) window.lavToneChange();   // 분량/근거 블록 동기화
   };
 
-  // 재구성 부적합(자소서·생기부·탐구문·짧고추상) → 재구성(고급) 잠금 + 기본 피하기 강제. 적합하면 원복.
-  function applyResumeLock() {
-    var unfit = !!(lastDiag && (lastDiag.restructureUnfit || lastDiag.resumeLike));
+  // v2 진단 결과에 따라 고급 잠금과 추천 선택을 한 곳에서 동기화한다.
+  // 추천 선택은 설정 화면에 먼저 보여 주며, 실제 실행은 기존 확인 모달을 통과해야 한다.
+  function applyAdvancedRouting() {
+    var unfit = !!(lastDiag && lastDiag.restructureUnfit === true);
+    var recommendAdvanced = !unfit && !!(lastDiag && lastDiag.recommendedMode === 'formal');
     var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
     var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');
     var formalOpt = formalRadio ? formalRadio.closest('.lav-tone-opt') : null;
     if (formalRadio) {
       formalRadio.disabled = unfit;
       if (unfit && formalRadio.checked && blogRadio) blogRadio.checked = true;   // 고급 선택돼 있었으면 기본으로
+      if (!unfit && !toneSelectionTouched) formalRadio.checked = recommendAdvanced;
     }
+    if (!toneSelectionTouched && blogRadio) blogRadio.checked = !recommendAdvanced || unfit;
     if (formalOpt) formalOpt.classList.toggle('is-locked', unfit);
+    var basicRecommended = $('lavBasicRecommended');
+    var formalRecommended = $('lavFormalRecommended');
+    if (basicRecommended) basicRecommended.hidden = recommendAdvanced;
+    if (formalRecommended) formalRecommended.hidden = !recommendAdvanced;
+    var advancedNote = $('lavToneAdvancedNote');
+    var advancedText = $('lavToneAdvancedText');
+    if (advancedNote) advancedNote.hidden = !recommendAdvanced;
+    if (advancedText && recommendAdvanced) {
+      advancedText.textContent = lastDiag.recommendationReason || '긴 논문·구조화 보고서는 고급의 더 넓은 재구성과 전체 문서 검증이 적합해요. 실행 전 예상 시간과 크레딧을 확인해 주세요.';
+    }
     var note = $('lavToneResumeNote');
     if (note) {
       note.hidden = !unfit;
@@ -405,6 +428,7 @@
   // 글은 입력칸(lavInput)에 그대로 남아 있어 같은 글로 바로 진행된다(컨텍스트 바 원문 N자 표기 동일).
   window.lavReportToHumanize = function () {
     window.lavSetMode('humanize');   // 휴머나이저로 "이동" — 모드 상태도 함께 전환(입력 화면 복귀 시 일관)
+    resetToneChoice();
     var d = lastReport;
     if (d) {
       var sol = d.solutions || {};
@@ -412,6 +436,16 @@
         grade: d.grade,
         title: d.title,
         desc: d.summary || '',
+        restructureUnfit: d.restructureUnfit === true,
+        restructureUnfitReason: d.restructureUnfitReason || '',
+        restructureUnfitKind: d.restructureUnfitKind || null,
+        advancedEligible: d.advancedEligible,
+        recommendedMode: d.recommendedMode || 'blog',
+        recommendationCode: d.recommendationCode || null,
+        recommendationReason: d.recommendationReason || '',
+        documentProfile: d.documentProfile || 'unknown',
+        profileConfidence: Number(d.profileConfidence) || 0,
+        routingOverride: d.routingOverride || null,
         bands: {
           polish: sol.polish && sol.polish.band,
           blog: sol.blog && sol.blog.band,
@@ -471,7 +505,8 @@
     }
   }
 
-  window.lavToneChange = function () {
+  window.lavToneChange = function (userInitiated) {
+    if (userInitiated === true) toneSelectionTouched = true;
     var formal = document.querySelector('input[name="lavTone"]:checked');
     var isFormal = formal && formal.value === 'formal';
     var basicStyle = currentBasicStyle();
