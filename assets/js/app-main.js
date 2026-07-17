@@ -933,6 +933,20 @@ function transformMinLength(transformMode) {
  return transformMode === 'formal' ? 200 : 50;
 }
 
+function formalFallbackEstimateRange(text) {
+ var bare = String(text || '').replace(/\s/g, '').length;
+ var round5 = function(seconds) { return Math.ceil(Math.max(0, Number(seconds) || 0) / 300) * 300; };
+ var lowSec = round5(Math.max(240, Math.min(4500, 180 + (bare * 0.08))));
+ var highSec = round5(Math.max(lowSec + 300, Math.min(5400, 360 + (bare * 0.22))));
+ return { lowSec: lowSec, highSec: highSec };
+}
+
+function estimateRangeLabel(range) {
+ var low = Math.max(1, Math.round((Number(range && range.lowSec) || 0) / 60));
+ var high = Math.max(low, Math.round((Number(range && range.highSec) || 0) / 60));
+ return low === high ? '약 ' + high + '분' : '약 ' + low + '~' + high + '분';
+}
+
 function transformCreditNeeded(text, transformMode) {
  var len = String(text || '').length;
  if (transformMode === 'formal') {
@@ -980,6 +994,7 @@ async function callTransformJob(payload) {
    evidence: false
   })
  }, false);
+ if (typeof payload.onEstimate === 'function') payload.onEstimate(start);
  var jobId = start.jobId;
  if (!jobId) throw new Error('작업 번호를 받지 못했습니다.');
  var deadline = Date.now() + 6 * 60 * 60 * 1000;
@@ -1127,17 +1142,25 @@ async function runAnalysis() {
  const onLeave = (e) => { e.preventDefault(); e.returnValue = '분석이 진행 중입니다. 떠나면 결과가 사라져요.'; return e.returnValue; };
  if (mode === 'detect') window.addEventListener('beforeunload', onLeave);
 
- // 입력 길이 + 모드 기반 예상 처리 시간 추정
- const estSec = (() => {
+ // 고급은 완료 시각을 한 점으로 단정하지 않고 범위로 안내한다. 작업 접수 후
+ // 서버의 실제 v2 청크 계산값이 오면 아래 폴백 범위와 진행 기준을 교체한다.
+ const initialEstimate = (() => {
   const len = text.replace(/\s/g, '').length;
-  if (mode === 'detect') return (text.length > 5500 ? Math.ceil(text.length / 5500) : 1) * 10 + 2;
-  return selectedTransformMode === 'formal'
-   ? Math.max(240, Math.min(5400, Math.round(len / 4)))
-   : Math.max(90, Math.min(1200, Math.round(len / 12)));
+  if (mode === 'detect') {
+   const seconds = (text.length > 5500 ? Math.ceil(text.length / 5500) : 1) * 10 + 2;
+   return { highSec: seconds, label: '약 ' + seconds + '초' };
+  }
+  if (selectedTransformMode === 'formal') {
+   const range = formalFallbackEstimateRange(text);
+   return { lowSec: range.lowSec, highSec: range.highSec, label: estimateRangeLabel(range) };
+  }
+  const seconds = Math.max(90, Math.min(1200, Math.round(len / 12)));
+  return { highSec: seconds, label: '약 ' + Math.max(1, Math.ceil(seconds / 60)) + '분' };
  })();
+ const estSec = initialEstimate.highSec;
  const hintHtml = mode === 'detect'
-  ? `<div class="prog-hint">예상 처리 시간: 약 ${estSec}초. 페이지를 닫지 말아주세요.</div>`
-  : `<div class="prog-hint">예상 처리 시간: 약 ${Math.max(1, Math.ceil(estSec / 60))}분. 창을 닫아도 서버에서 계속 처리됩니다.</div>
+  ? `<div class="prog-hint">예상 처리 시간: ${initialEstimate.label}. 페이지를 닫지 말아주세요.</div>`
+  : `<div class="prog-hint">예상 처리 시간: ${initialEstimate.label}. 창을 닫아도 서버에서 계속 처리됩니다.</div>
      <div class="prog-warn">완료된 결과는 이용 기록에서 다시 확인할 수 있어요.</div>`;
  document.getElementById('result').innerHTML = `<div class="progress-overlay" id="progressOverlay">
   <div class="prog-pct" id="progPct">0%</div>
@@ -1186,7 +1209,7 @@ async function runAnalysis() {
  let tailIdx = 0;
  let tick = 0;
  const startMs = Date.now();
- const estimatedMs = estSec * 1000;
+ let estimatedMs = estSec * 1000;
 
  const prog = setInterval(() =>{
   tick++;
@@ -1240,7 +1263,16 @@ async function runAnalysis() {
    humanizeMode: selectedTransformMode,
    lang: runLang,
    billingMode: 'credit',
-   basicStyle: selectedTransformMode === 'blog' ? 'blog' : undefined
+   basicStyle: selectedTransformMode === 'blog' ? 'blog' : undefined,
+   onEstimate: function(start) {
+    if (selectedTransformMode !== 'formal') return;
+    var lowSec = Number(start && (start.estLowSec || start.job && start.job.estLowSec));
+    var highSec = Number(start && (start.estHighSec || start.job && start.job.estHighSec));
+    if (!(lowSec > 0 && highSec >= lowSec)) return;
+    estimatedMs = highSec * 1000;
+    var hint = document.querySelector('.prog-hint');
+    if (hint) hint.textContent = '예상 처리 시간: ' + estimateRangeLabel({ lowSec: lowSec, highSec: highSec }) + '. 창을 닫아도 서버에서 계속 처리됩니다.';
+   }
   });
  } else if (text.length > 5500) {
   // 내부 자동 분할 — 유저 노출 없음

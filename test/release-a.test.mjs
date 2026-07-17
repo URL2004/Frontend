@@ -31,11 +31,30 @@ test('기본·고급 설명은 체감 재구성 범위와 검증 범위를 구�
   assert.match(guide, /대상 문장을 눈에 띄게 다시 구성/u);
   assert.match(faq, /고급은 기본보다 더 넓은 문장 범위를 재구성/u);
   assert.match(evasion, /Math\.max\(90, Math\.min\(1200, Math\.round\(bareLength\(text\) \/ 12\)\)\)/u);
-  assert.match(evasion, /Math\.max\(240, Math\.min\(5400, Math\.round\(bareLength\(text\) \/ 4\)/u);
+  assert.match(evasion, /lastDiag\.advancedTimeEstimate/u);
+  assert.match(evasion, /estimateTimeRangeLabel\(formalEstimateRange\(text, evidence\)\)/u);
+  assert.match(evasion, /estimateRangeFromPayload\(r, estimate\)/u);
+  assert.doesNotMatch(evasion, /function formalEstimateSec/u);
   const copy = `${main}\n${guide}\n${faq}`;
   assert.doesNotMatch(copy, /고급은 더 많이 바꾸는 모드가 아니|고급이 더 강한 재작성 모드는 아닙니다|차이는 변환 세기가 아니라/u);
   assert.doesNotMatch(copy, /칼럼처럼 다시 써요|원문의 약 60%|격식 유지·문장 새로 짜기|어투와 구조를 다시 짜서 가장 자연스러운/u);
   assert.doesNotMatch(main, /검사기는.*의심|숫자가 들어가면 의심이 크게|효과를 크게 높여|훨씬 사람이 쓴 글/u);
+});
+
+test('고급 예상 시간은 서버 청크 범위를 시작·확인·진행 화면에 일관되게 사용한다', async () => {
+  const [appMain, evasion] = await Promise.all([
+    read('assets/js/app-main.js'),
+    read('assets/js/evasion-flow.js')
+  ]);
+  assert.match(evasion, /advancedTimeEstimate/u);
+  assert.match(evasion, /sourceBareLength/u);
+  assert.match(evasion, /estimateTimeRangeLabel\(formalEstimateRange\(text, s\.evidence\)\)/u);
+  assert.match(evasion, /estimateRangeFromPayload\(st,/u);
+  assert.match(evasion, /예상 범위를 지나 계속 처리 중/u);
+  assert.match(appMain, /formalFallbackEstimateRange/u);
+  assert.match(appMain, /start\.estLowSec/u);
+  assert.match(appMain, /start\.estHighSec/u);
+  assert.doesNotMatch(`${appMain}\n${evasion}`, /Math\.round\([^\n]*\/?\s*4\)[^\n]*5400/u);
 });
 
 test('이용 기록의 사용자·모델 문자열은 HTML 삽입 전에 escape된다', async () => {

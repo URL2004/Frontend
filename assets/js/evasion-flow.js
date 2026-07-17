@@ -11,11 +11,49 @@
   function shortEstimateSec(text) {
     return Math.max(90, Math.min(1200, Math.round(bareLength(text) / 12)));
   }
-  function formalEstimateSec(text, evidence) {
-    return Math.max(240, Math.min(5400, Math.round(bareLength(text) / 4) + (evidence ? 480 : 0)));
+  function roundUpFiveMinuteSec(seconds) {
+    return Math.ceil(Math.max(0, Number(seconds) || 0) / 300) * 300;
+  }
+  function formalEstimateRange(text, evidence) {
+    var bare = bareLength(text);
+    var server = lastDiag && lastDiag.advancedTimeEstimate;
+    var serverMatchesText = server
+      && Number(server.sourceBareLength) === bare
+      && Number(server.lowSec) > 0
+      && Number(server.highSec) >= Number(server.lowSec);
+    if (serverMatchesText) {
+      var serverLow = Number(server.lowSec);
+      var serverHigh = Number(server.highSec);
+      if (evidence && server.evidenceIncluded !== true) {
+        serverLow = roundUpFiveMinuteSec(serverLow + 480);
+        serverHigh = roundUpFiveMinuteSec(serverHigh + 480);
+      }
+      return { lowSec: serverLow, highSec: serverHigh, basis: server.basis || 'v2_editable_chunk_range' };
+    }
+    // 진단 API가 잠시 실패한 경우에만 쓰는 보수적 폴백. 한 점을 확정하지 않고
+    // 길이 기반의 넓은 범위를 보여 주며, 실제 시작 응답이 오면 서버 범위로 교체한다.
+    var extra = evidence ? 480 : 0;
+    var low = roundUpFiveMinuteSec(Math.max(240, Math.min(4500, 180 + (bare * 0.08) + extra)));
+    var high = roundUpFiveMinuteSec(Math.max(low + 300, Math.min(5400, 360 + (bare * 0.22) + extra)));
+    return { lowSec: low, highSec: high, basis: 'length_range_fallback' };
   }
   function estimateTimeLabel(seconds) {
     return '약 ' + Math.max(1, Math.round((Number(seconds) || 0) / 60)) + '분';
+  }
+  function estimateTimeRangeLabel(range) {
+    var low = Math.max(1, Math.round((Number(range && range.lowSec) || 0) / 60));
+    var high = Math.max(low, Math.round((Number(range && range.highSec) || 0) / 60));
+    return low === high ? '약 ' + high + '분' : '약 ' + low + '~' + high + '분';
+  }
+  function estimateRangeFromPayload(payload, fallback) {
+    var root = payload || {};
+    var job = root.job || {};
+    var low = Number(root.estLowSec || job.estLowSec);
+    var high = Number(root.estHighSec || job.estHighSec || root.estSec || job.estSec);
+    if (low > 0 && high >= low) {
+      return { lowSec: low, highSec: high, basis: root.estimateBasis || job.estimateBasis || 'server' };
+    }
+    return fallback;
   }
   function formalCredit(len, evidence) {
     var tier = Number(len) <= 10000 ? 0 : (Number(len) <= 20000 ? 1 : 2);
@@ -499,7 +537,7 @@
     var text = src ? src.value : '';
     var evidence = !!($('lavEvidence') && $('lavEvidence').checked && !$('lavEvidence').disabled);
     if (formal) {
-      ctaMeta.textContent = estimateTimeLabel(formalEstimateSec(text, evidence)) + ' · ' + formalCredit(text.length, evidence) + '크레딧';
+      ctaMeta.textContent = estimateTimeRangeLabel(formalEstimateRange(text, evidence)) + ' · ' + formalCredit(text.length, evidence) + '크레딧';
     } else {
       ctaMeta.textContent = estimateTimeLabel(shortEstimateSec(text)) + ' · ' + shortHumanizeCredit(text.length) + '크레딧';
     }
@@ -727,7 +765,7 @@
     var credit, time;
     if (s.tone === 'formal') {
       credit = formalCredit(len, s.evidence) + ' 크레딧';
-      time = estimateTimeLabel(formalEstimateSec(text, s.evidence)) + ' · 대기 제외';
+      time = estimateTimeRangeLabel(formalEstimateRange(text, s.evidence)) + ' · 대기 제외';
     } else {
       credit = shortHumanizeCredit(len) + ' 크레딧';
       time = estimateTimeLabel(shortEstimateSec(text)) + ' · 대기 제외';
@@ -807,7 +845,9 @@
         resumeTransformState(jobId, b.job);
         return;
       }
-      formalStop = startJobTicker(Math.max(240, Math.min(2700, Math.round(currentBareLen() / 4))), '승인 근거로 재구성 중');
+      var input = $('lavInput');
+      var fallbackRange = formalEstimateRange(input ? input.value : '', true);
+      formalStop = startJobTicker(estimateRangeFromPayload(b && b.job, fallbackRange), '승인 근거로 재구성 중');
       return pollTransform(jobId, ++pollGen);
     }).catch(function (err) {
       alert(err && err.message ? err.message : '승인 처리에 실패했어요.');
@@ -875,14 +915,17 @@
   }
 
   // 단일 응답 작업이라 단계는 경과 시간 기반 추정 표시(마지막 단계는 응답 도착 시).
-  // estSec=예상 총 소요(초), initialSec=이미 흐른 시간(재진입 복원용 — 새로고침해도 %가 0부터 다시 안 올라감).
-  function startJobTicker(estSec, label, initialSec) {
+  // estimate는 초 또는 {lowSec, highSec}. initialSec는 재진입 시 이미 흐른 시간이다.
+  function startJobTicker(estimate, label, initialSec) {
     var t0 = initialSec || 0;
     var name = label || '문장 다듬는 중';
-    var est = Math.max(60, estSec || 300);
+    var range = estimate && typeof estimate === 'object' ? estimate : null;
+    var est = Math.max(60, Number(range ? range.highSec : estimate) || 300);
+    var timing = range ? estimateTimeRangeLabel(range) : '예상 ' + Math.round(est / 60) + '분';
     setJobSteps(t0 > est * 0.7 ? 2 : 1);
     var paint = function () {
-      if ($('lavStepSlot')) $('lavStepSlot').textContent = name + ' (' + Math.min(99, Math.round(t0 / est * 100)) + '% · 예상 ' + Math.round(est / 60) + '분)';
+      var timeText = range && t0 > est ? '예상 범위를 지나 계속 처리 중' : timing;
+      if ($('lavStepSlot')) $('lavStepSlot').textContent = name + ' (' + Math.min(99, Math.round(t0 / est * 100)) + '% · ' + timeText + ')';
       if (t0 > est * 0.7) setJobSteps(2);
     };
     paint();
@@ -1027,10 +1070,6 @@
     cancelWindowTimer = setTimeout(function () { btn.hidden = true; cancelWindowTimer = null; }, remainSec * 1000);
   }
   function stopFormalTicker() { if (formalStop) { formalStop(); formalStop = null; } }
-  function currentBareLen() {
-    var src = $('lavInput');
-    return bareLength(src ? src.value : '');
-  }
   function notifyJobDone(st, label) {
     if (!window.gpNotify || !st || !st.jobId) return;
     window.gpNotify({
@@ -1146,8 +1185,11 @@
       return true;
     }
     stopFormalTicker();
-    // 서버 estSec·elapsedSec로 진행률 이어서 표시(새로고침해도 0부터 다시 안 올라감)
-    formalStop = startJobTicker(st.estSec || (isShort ? 180 : 900), isShort ? '문장 다듬는 중' : '재구성 중', st.elapsedSec || 0);
+    // 서버 예상 범위·elapsedSec로 진행률을 이어서 표시한다.
+    var resumeEstimate = isShort
+      ? (st.estSec || 180)
+      : estimateRangeFromPayload(st, formalEstimateRange(($('lavInput') || {}).value || '', false));
+    formalStop = startJobTicker(resumeEstimate, isShort ? '문장 다듬는 중' : '재구성 중', st.elapsedSec || 0);
     pollTransform(jobId, ++pollGen);
     return true;
   }
@@ -1230,7 +1272,10 @@
       }
       if (st.status === 'running') {
         var runningShort = st.mode === 'blog' || st.mode === 'polish';
-        if (!formalStop) formalStop = startJobTicker(st.estSec || (runningShort ? 180 : 900), runningShort ? '문장 다듬는 중' : '재구성 중', st.elapsedSec || 0);
+        var runningEstimate = runningShort
+          ? (st.estSec || 180)
+          : estimateRangeFromPayload(st, formalEstimateRange(($('lavInput') || {}).value || '', false));
+        if (!formalStop) formalStop = startJobTicker(runningEstimate, runningShort ? '문장 다듬는 중' : '재구성 중', st.elapsedSec || 0);
         continue;
       }
       if (st.status === 'awaiting_approval') {
@@ -1511,8 +1556,9 @@
     if ($('lavJobId')) $('lavJobId').textContent = '';
     show('job');
     armCancelWindow(0);   // 방금 시작 — 30초 취소 창 열기
-    var estSec = formalEstimateSec(text, s.evidence);   // 서버 공식과 동일
-    formalStop = startJobTicker(estSec, s.evidence ? '승인할 근거를 찾는 중' : '의미·구조를 검증하는 중');
+    var estimate = formalEstimateRange(text, s.evidence);
+    var stageLabel = s.evidence ? '승인할 근거를 찾는 중' : '의미·구조를 검증하는 중';
+    formalStop = startJobTicker(estimate, stageLabel);
     var gen = ++pollGen;
     (async function () {
       var idToken = '';
@@ -1535,6 +1581,8 @@
           resumeTransformState(r.jobId, r.job);
           return;
         }
+        stopFormalTicker();
+        formalStop = startJobTicker(estimateRangeFromPayload(r, estimate), stageLabel);
         await pollTransform(r.jobId, gen);
       } catch (err) {
         await handleTransformStartError(err, 'reduce');
