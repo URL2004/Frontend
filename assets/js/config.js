@@ -1,5 +1,14 @@
 (function () {
-  var runtime = window.APP_RUNTIME_CONFIG || {};
+  function cleanRuntimeValue(value) {
+    if (typeof value !== 'string') return value;
+    var normalized = value.trim();
+    return /^\[(?:sensitive|redacted)\]$/i.test(normalized) ? '' : normalized;
+  }
+  var runtimeSource = window.APP_RUNTIME_CONFIG || {};
+  var runtime = {};
+  Object.keys(runtimeSource).forEach(function (key) {
+    runtime[key] = cleanRuntimeValue(runtimeSource[key]);
+  });
   var prodApiBase = 'https://ai-backend-3xtk.onrender.com';
   var prodSiteUrl = 'https://gpkorea.ai.kr';
   var prodFirebase = {
