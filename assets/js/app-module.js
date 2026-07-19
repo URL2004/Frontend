@@ -2256,11 +2256,16 @@ window.saveHistory = async (type, inputText, detectResult, humanResult, credits)
   data.summary = detectResult.summary || '';
   data.detail = detectResult.detail || '';
  }
- if (humanResult) {
-  data.outputText = humanResult.outputText || '';
-  data.humanSummary = humanResult.summary || '';
-  data.humanDetail = humanResult.detail || '';
- }
+  if (humanResult) {
+   data.outputText = humanResult.outputText || '';
+   data.humanSummary = humanResult.summary || '';
+   data.humanDetail = humanResult.detail || '';
+   if (['charged', 'waived_quality_shortfall', 'waived_repeat_low_benefit', 'plan_unlimited', 'admin_no_charge'].includes(humanResult.billingDisposition)) {
+    data.billingDisposition = humanResult.billingDisposition;
+   }
+   if (humanResult.qualityStatus === 'needs_review' || humanResult.qualityStatus === 'clean') data.qualityStatus = humanResult.qualityStatus;
+   if (Array.isArray(humanResult.qualityWarnings)) data.qualityWarningCodes = humanResult.qualityWarnings.map(item => item?.code).filter(Boolean).slice(0, 20);
+  }
  try {
   await addDoc(collection(db,'users',CU.uid,'history'), data);
   return true;
@@ -2271,6 +2276,18 @@ window.saveHistory = async (type, inputText, detectResult, humanResult, credits)
   return false;
  }
 };
+
+function historyBillingInfo(disposition, credits) {
+ const chargedCredits = Math.max(0, Number(credits) || 0).toLocaleString('ko-KR');
+ const values = {
+  charged: { short: `${chargedCredits}크레딧 차감`, badge: '차감 완료', waived: false },
+  waived_quality_shortfall: { short: '품질 기준 미달 · 무차감', badge: '품질 미달 무차감', waived: true },
+  waived_repeat_low_benefit: { short: '반복 저효과 · 무차감', badge: '재결제 보호', waived: true },
+  plan_unlimited: { short: '무제한 이용권 처리', badge: '이용권 처리', waived: true },
+  admin_no_charge: { short: '관리자 테스트 · 무차감', badge: '관리자 무차감', waived: true }
+ };
+ return values[disposition] || { short: `${chargedCredits}크레딧`, badge: '', waived: false };
+}
 
 window.loadHistory = async () =>{
  const el = document.getElementById('historyList');
@@ -2303,6 +2320,7 @@ window.loadHistory = async () =>{
  const safeOutputText = escapeHtml(h.outputText || '');
  const safeHumanSummary = escapeHtml(h.humanSummary || '');
  const safeCredits = Math.max(0, Number(h.credits) || 0).toLocaleString('ko-KR');
+ const billingInfo = historyBillingInfo(h.billingDisposition, h.credits);
 
  // 탐지 결과 배지
  let resultBadge = '';
@@ -2317,6 +2335,9 @@ window.loadHistory = async () =>{
  ${p !== undefined ? `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:600;color:${badgeColor}">${badgeLabel} · ${p}%</span>` : ''}`;
  } else {
  resultBadge = `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:600;background:rgba(30,142,62,.1);color:var(--green)">휴머나이저</span>`;
+ if (billingInfo.badge) {
+  resultBadge += `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:650;background:${billingInfo.waived ? 'rgba(91,104,173,.10)' : 'rgba(30,142,62,.08)'};color:${billingInfo.waived ? '#5868a7' : 'var(--green)'}">${escapeHtml(billingInfo.badge)}</span>`;
+ }
  if (h.qualityStatus === 'needs_review') {
   resultBadge += `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:700;background:rgba(245,158,11,.12);color:#a36b00">확인 필요</span>`;
  }
@@ -2358,7 +2379,7 @@ window.loadHistory = async () =>{
  return `<div class="history-item" onclick="openHistory(this)">
  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${resultBadge}</div>
- <span style="font-size:12px;color:var(--text3);">${safeDate} · ${safeCredits}크레딧</span>
+ <span style="font-size:12px;color:var(--text3);">${safeDate} · ${isDetect ? safeCredits + '크레딧' : escapeHtml(billingInfo.short)}</span>
 </div>
  <div class="history-preview" style="margin-top:8px;font-size:14px;color:var(--text2);">${safePreview}</div>
  <div class="history-detail" style="display:none;margin-top:12px;">
@@ -2412,7 +2433,14 @@ function historyQualityWarningMessage(code) {
   line_structure_changed: '원문의 제목·항목 행 또는 줄바꿈 구조가 달라졌을 수 있어요.',
   creative_line_structure: '창작문의 행과 줄바꿈 구조를 확인해야 해요.',
   quote_count_changed: '직접 인용의 개수가 달라졌을 수 있어요.',
-  polish_edit_range: '보존형 윤문의 권장 편집 범위를 넘었을 수 있어요.'
+  polish_edit_range: '보존형 윤문의 권장 편집 범위를 넘었을 수 있어요.',
+  humanization_depth_below_minimum: '휴머나이징 변화량이 목표보다 낮아 결과가 다듬기 수준에 가까울 수 있어요.',
+  humanization_carryover_high: '원문과 실질적으로 같은 문장이 많이 남아 있을 수 있어요.',
+  rhetorical_remediation_incomplete: '반복 결론이나 AI식 담화 골격이 충분히 개선되지 않았을 수 있어요.',
+  engine_phrase_fingerprint: '엔진이 만든 상투 표현이 한 문서에서 반복됐을 수 있어요.',
+  contrast_relation_shift: '부정·배제 관계가 인정·가산 관계로 달라졌을 수 있어요.',
+  ending_style_mixed: '원문에 없던 종결체가 일부 섹션에 섞였을 수 있어요.',
+  resume_claim_omission: '자기소개서의 행동·역량·성과·직무 연결 내용 일부가 누락됐을 수 있어요.'
  };
  return messages[String(code || '')] || (code ? '품질 확인 항목: ' + String(code) : '');
 }
@@ -4154,6 +4182,7 @@ window.renderAdminUserLog = function() {
   const isDetect = it.type === 'detect';
   const itemId = jsAttr(it.id);
   const preview = isDetect ? (it.summaryPreview || it.inputPreview) : (it.outputPreview || it.inputPreview);
+  const billing = historyBillingInfo(it.billingDisposition, it.credits);
   const lenInfo = isDetect
    ? `입력 ${adminNumber(it.inputLen).toLocaleString('ko-KR')}자`
    : `입력 ${adminNumber(it.inputLen).toLocaleString('ko-KR')}자 → 결과 ${adminNumber(it.outputLen).toLocaleString('ko-KR')}자`;
@@ -4162,10 +4191,12 @@ window.renderAdminUserLog = function() {
      <div class="gp-admin-log-head" id="logHead-${itemId}" role="button" tabindex="0" aria-expanded="false" aria-controls="logDetail-${itemId}" onclick="adminToggleLogItem('${itemId}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();adminToggleLogItem('${itemId}');}">
        <div class="gp-admin-log-meta">
          <span class="gp-admin-log-badge ${ti.cls}">${escapeHtml(ti.label)}</span>
-         ${adminProbBadge(it.probability)}
-         ${it.calibrated ? '<span class="gp-admin-log-badge">보정</span>' : ''}
-         <span class="gp-admin-log-date">${escapeHtml(adminDateText(it.createdAtMs))}</span>
-         <span class="gp-admin-log-sub">${escapeHtml(lenInfo)} · ${adminNumber(it.credits)}크레딧</span>
+          ${adminProbBadge(it.probability)}
+          ${it.calibrated ? '<span class="gp-admin-log-badge">보정</span>' : ''}
+          ${!isDetect && billing.badge ? `<span class="gp-admin-log-badge">${escapeHtml(billing.badge)}</span>` : ''}
+          ${!isDetect && it.qualityStatus === 'needs_review' ? '<span class="gp-admin-log-badge warn">검토 필요</span>' : ''}
+          <span class="gp-admin-log-date">${escapeHtml(adminDateText(it.createdAtMs))}</span>
+          <span class="gp-admin-log-sub">${escapeHtml(lenInfo)} · ${isDetect ? adminNumber(it.credits) + '크레딧' : escapeHtml(billing.short)}</span>
        </div>
        <span class="gp-admin-log-toggle" id="logToggle-${itemId}">자세히 ▾</span>
      </div>
@@ -4303,12 +4334,15 @@ function renderAdminJobs(data) {
  }
  const charged = data.chargedCount || 0;
  const rows = data.rows.map(r => {
-  const s = ADMIN_JOB_STATUS[r.status] || { l: r.status || '-', c: 'muted' };
-  return `<tr>
+   const s = ADMIN_JOB_STATUS[r.status] || { l: r.status || '-', c: 'muted' };
+   const billing = historyBillingInfo(r.billingDisposition, r.needed);
+   return `<tr>
     <td><input type="checkbox" class="gp-admin-job-cb" data-uid="${jsAttr(r.uid)}"></td>
     <td>${escapeHtml(r.email || '(이메일 없음)')}<br><span class="muted">${escapeHtml((r.uid || '').slice(0, 8))}</span></td>
     <td><span class="gp-admin-jobst ${s.c}">${escapeHtml(s.l)}</span></td>
-    <td>${r.deducted ? '<span class="gp-admin-neg">⚠ 차감</span>' : '<span class="muted">—</span>'}</td>
+    <td>${r.billingDisposition
+      ? `<span class="${r.deducted ? 'gp-admin-neg' : 'muted'}">${escapeHtml(billing.short)}</span>`
+      : (r.deducted ? '<span class="gp-admin-neg">⚠ 차감</span>' : '<span class="muted">—</span>')}</td>
     <td class="num">${adminNumber(r.needed)}</td>
     <td class="muted">${escapeHtml(r.stage || '')}</td>
     <td class="muted">${escapeHtml(adminDateText(r.createdAtMs))}</td>
@@ -4349,6 +4383,16 @@ function adminQualityPercent(value, signed) {
  const percent = number * 100;
  const prefix = signed && percent > 0 ? '+' : '';
  return prefix + percent.toFixed(Math.abs(percent) < 10 ? 1 : 0) + '%';
+}
+
+function adminQualityDuration(value) {
+ const ms = Number(value);
+ if (!Number.isFinite(ms) || ms < 0) return '—';
+ const seconds = Math.round(ms / 1000);
+ if (seconds < 60) return `${seconds}초`;
+ const minutes = Math.floor(seconds / 60);
+ const remain = seconds % 60;
+ return `${minutes}분${remain ? ` ${remain}초` : ''}`;
 }
 
 function adminQualityAverage(report, field, signed) {
@@ -4394,13 +4438,19 @@ function renderAdminHumanizeQuality(data) {
   return;
  }
 
- const stats = [
-  adminQualityStat('완료·전체 작업', total.toLocaleString('ko-KR') + '건', data.truncated ? '조회 상한 도달' : '아카이브 기준'),
-  adminQualityStat('검토 필요', adminQualityPercent(summary.needsReviewRate), `${adminNumber(summary.needsReviewCount)}건`, Number(summary.needsReviewRate) > .1),
-  adminQualityStat('차단', adminQualityPercent(summary.blockedRate), `${adminNumber(summary.blockedCount)}건`, Number(summary.blockedRate) > .02),
-  adminQualityStat('평균 실질 편집', adminQualityAverage(report, 'substantiveEditRatio'), '문자 표면 교체 제외'),
-  adminQualityStat('평균 구조 변화', adminQualityAverage(report, 'structuralChangedSentenceRatio'), '절·어순·호흡 기준'),
-  adminQualityStat('정형 표현 개선', adminQualityAverage(report, 'rhetoricalRemediationCoverage'), '원문의 반복 결론·상투 표현 대상'),
+  const stats = [
+   adminQualityStat('전체 작업', total.toLocaleString('ko-KR') + '건', `완료 ${adminNumber(summary.completedCount)}건${data.truncated ? ' · 조회 상한 도달' : ''}`),
+   adminQualityStat('검토 필요', adminQualityPercent(summary.needsReviewRate), `${adminNumber(summary.needsReviewCount)}건`, Number(summary.needsReviewRate) > .1),
+   adminQualityStat('차단', adminQualityPercent(summary.blockedRate), `${adminNumber(summary.blockedCount)}건`, Number(summary.blockedRate) > .02),
+   adminQualityStat('깊이 미달', adminQualityPercent(summary.depthBelowMinimumRate), `${adminNumber(summary.depthBelowMinimumCount)} / ${adminNumber(summary.depthApplicableCount)}건`, Number(summary.depthBelowMinimumRate) > .15),
+   adminQualityStat('품질·재결제 무차감', adminQualityPercent(summary.waivedRate), `${adminNumber(summary.waivedCount)}건`, false),
+   adminQualityStat('동일 문장 상한 초과', `${adminNumber(summary.carryoverOverLimitCount)}건`, '일반 산문 정책 기준', adminNumber(summary.carryoverOverLimitCount) > 0),
+   adminQualityStat('섹션 회복 적용', `${adminNumber(summary.sectionRecoveryAppliedCount)}건`, `시도 문서 ${adminNumber(summary.sectionRecoveryAttemptedCount)}건`),
+   adminQualityStat('평균 실질 편집', adminQualityAverage(report, 'substantiveEditRatio'), '문자 표면 교체 제외'),
+   adminQualityStat('평균 동일 문장 잔존', adminQualityAverage(report, 'substantiveCarryoverRatio'), '제목·표·목록·인용 제외'),
+   adminQualityStat('평균 구조 변화', adminQualityAverage(report, 'structuralChangedSentenceRatio'), '절·어순·호흡 기준'),
+   adminQualityStat('정형 표현 개선', adminQualityAverage(report, 'rhetoricalRemediationCoverage'), '원문의 반복 결론·상투 표현 대상'),
+   adminQualityStat('p95 처리 시간', adminQualityDuration(report?.metrics?.processingDurationMs?.p95), '실제 실행 시작~완료'),
   adminQualityStat('자연성 위험 변화', adminQualityAverage(report, 'naturalnessOverallRiskDelta', true), '0 이하가 개선 방향', Number(report?.metrics?.naturalnessOverallRiskDelta?.average) > 0),
   adminQualityStat('리듬 균일화 변화', adminQualityAverage(report, 'rhythmUniformityDelta', true), '0 이하가 개선 방향', Number(report?.metrics?.rhythmUniformityDelta?.average) > 0)
  ].join('');
@@ -4413,19 +4463,28 @@ function renderAdminHumanizeQuality(data) {
   <td class="num">${adminNumber(row.count)}</td>
  </tr>`).join('');
 
- const recentRows = (report.recent || []).slice(0, 80).map(row => `<tr>
+  const recentRows = (report.recent || []).slice(0, 80).map(row => `<tr>
   <td class="muted">${escapeHtml(adminDateText(row.createdAtMs))}</td>
   <td>${escapeHtml(ADMIN_MODE_LABELS[row.requestedMode] || row.requestedMode || '미상')}</td>
   <td>${escapeHtml(ADMIN_PROFILE_LABELS[row.documentProfile] || row.documentProfile || '미분류')}</td>
-  <td>${escapeHtml(row.humanizationDeliveryDepthBand || '—')}</td>
-  <td class="num">${adminQualityPercent(row.substantiveEditRatio)}</td>
-  <td class="num">${adminQualityPercent(row.structuralChangedSentenceRatio)}</td>
+   <td>${escapeHtml(row.humanizationDeliveryDepthBand || '—')}</td>
+   <td class="num">${adminQualityPercent(row.substantiveEditRatio)}</td>
+   <td class="num">${adminQualityPercent(row.substantiveCarryoverRatio)}</td>
+   <td class="num">${adminQualityPercent(row.structuralChangedSentenceRatio)}</td>
+   <td class="num">${adminNumber(row.sectionRecoveryAppliedCount)} / ${adminNumber(row.sectionRecoveryAttemptCount)}</td>
   <td>${row.koreanRefinementPass === false
     ? '<span class="gp-admin-quality-status warn">확인</span>'
     : row.koreanRefinementPass === true
       ? '<span class="gp-admin-quality-status clean">통과</span>'
       : '<span class="gp-admin-quality-status muted">미측정</span>'}</td>
-  <td><span class="gp-admin-quality-status ${row.qualityStatus === 'needs_review' ? 'warn' : row.qualityStatus === 'clean' ? 'clean' : 'muted'}">${row.qualityStatus === 'needs_review' ? '검토 필요' : row.qualityStatus === 'clean' ? '정상' : '미측정'}</span></td>
+   <td><span class="gp-admin-quality-status ${row.qualityStatus === 'needs_review' ? 'warn' : row.qualityStatus === 'clean' ? 'clean' : 'muted'}">${row.qualityStatus === 'needs_review' ? '검토 필요' : row.qualityStatus === 'clean' ? '정상' : '미측정'}</span></td>
+   <td>${escapeHtml(({
+     charged: '차감 완료',
+     waived_quality_shortfall: '품질 미달 무차감',
+     waived_repeat_low_benefit: '재결제 보호',
+     plan_unlimited: '이용권',
+     admin_no_charge: '관리자 무차감'
+    })[row.billingDisposition] || '—')}</td>
  </tr>`).join('');
 
  el.innerHTML = `
@@ -4442,7 +4501,7 @@ function renderAdminHumanizeQuality(data) {
   </div>
   <div class="gp-admin-quality-section">
    <div class="gp-admin-quality-section-head"><h4>최근 작업</h4><span>본문 없이 관측값만 표시</span></div>
-   <div class="gp-admin-table-wrap"><table class="gp-admin-table gp-admin-quality-recent"><thead><tr><th>시각</th><th>요청</th><th>글 종류</th><th>깊이</th><th class="num">편집</th><th class="num">구조</th><th>한국어</th><th>품질</th></tr></thead><tbody>${recentRows}</tbody></table></div>
+    <div class="gp-admin-table-wrap"><table class="gp-admin-table gp-admin-quality-recent"><thead><tr><th>시각</th><th>요청</th><th>글 종류</th><th>깊이</th><th class="num">편집</th><th class="num">동일 잔존</th><th class="num">구조</th><th class="num">섹션 회복</th><th>한국어</th><th>품질</th><th>과금</th></tr></thead><tbody>${recentRows}</tbody></table></div>
   </div>`;
 }
 

@@ -147,6 +147,41 @@ test('관리자 품질 탭은 본문 없이 장르 교차표와 깊이·한국�
   assert.doesNotMatch(qualityBlock, /inputText|outputText/u);
 });
 
+test('효과 제한 입력은 기본·고급에서만 확인하고 서버 409를 일반 작업 충돌과 구분한다', async () => {
+  const [modals, evasion, legacy] = await Promise.all([
+    read('partials/modals.html'),
+    read('assets/js/evasion-flow.js'),
+    read('assets/js/app-main.js')
+  ]);
+  assert.match(modals, /id="lavEffectNotice"[^>]*hidden/u);
+  assert.match(modals, /id="lavEffectNoticeAccepted"/u);
+  assert.match(evasion, /lastDiag\.effectExpectation === 'limited'/u);
+  assert.match(evasion, /if \(mode !== 'polish'\) body\.effectNoticeAccepted/u);
+  assert.match(evasion, /effectNoticeAccepted:\s*!!s\.effectNoticeAccepted/u);
+  const limitedHandler = evasion.indexOf("err.code === 'LIMITED_EFFECT_CONFIRMATION_REQUIRED'");
+  const genericConflict = evasion.indexOf('if (err && err.httpStatus === 409)', limitedHandler + 1);
+  assert.ok(limitedHandler >= 0 && genericConflict > limitedHandler);
+  assert.match(legacy, /effectNoticeAccepted:\s*payload\.effectNoticeAccepted === true/u);
+  assert.match(legacy, /확인하고 진행/u);
+});
+
+test('완료 화면·이용 기록·관리자 관측은 과금 처리 사유와 v2.4.8 지표를 표시한다', async () => {
+  const [main, evasion, module] = await Promise.all([
+    read('pages/main.html'),
+    read('assets/js/evasion-flow.js'),
+    read('assets/js/app-module.js')
+  ]);
+  assert.match(main, /id="lavBillingNotice"[^>]*role="status"/u);
+  assert.match(evasion, /waived_quality_shortfall:\s*'기대했던 휴머나이징 깊이/u);
+  assert.match(evasion, /waived_repeat_low_benefit:\s*'같은 글에서 낮은 효과/u);
+  assert.match(module, /품질 기준 미달 · 무차감/u);
+  assert.match(module, /반복 저효과 · 무차감/u);
+  assert.match(module, /depthBelowMinimumRate/u);
+  assert.match(module, /substantiveCarryoverRatio/u);
+  assert.match(module, /sectionRecoveryAppliedCount/u);
+  assert.match(module, /processingDurationMs/u);
+});
+
 test('배포 헤더는 프레이밍·MIME 스니핑·객체 삽입을 차단한다', async () => {
   const config = JSON.parse(await read('vercel.json'));
   const headers = new Map((config.headers?.[0]?.headers || []).map(item => [item.key.toLowerCase(), item.value]));

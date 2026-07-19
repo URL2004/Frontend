@@ -982,18 +982,35 @@ async function callTransformJob(payload) {
  var minLen = transformMinLength(transformMode);
  var text = String(payload.text || '').trim();
  if (text.length < minLen) throw new Error('이 모드는 최소 ' + minLen + '자부터 변환할 수 있어요.');
- var start = await transformFetchJson(authUser, '/transform', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-   text: text,
-   mode: transformMode,
-   lang: payload.lang || 'ko',
-   billingMode: payload.billingMode === 'coupon' ? 'coupon' : 'credit',
-   basicStyle: transformMode === 'blog' ? (payload.basicStyle === 'report' ? 'report' : 'blog') : undefined,
-   evidence: false
-  })
- }, false);
+ var start;
+ try {
+  start = await transformFetchJson(authUser, '/transform', {
+   method: 'POST',
+   headers: { 'Content-Type': 'application/json' },
+   body: JSON.stringify({
+    text: text,
+    mode: transformMode,
+    lang: payload.lang || 'ko',
+    billingMode: payload.billingMode === 'coupon' ? 'coupon' : 'credit',
+    basicStyle: transformMode === 'blog' ? (payload.basicStyle === 'report' ? 'report' : 'blog') : undefined,
+    evidence: false,
+    effectNoticeAccepted: payload.effectNoticeAccepted === true
+   })
+  }, false);
+ } catch (error) {
+  if (error && error.status === 409 && error.code === 'LIMITED_EFFECT_CONFIRMATION_REQUIRED' && payload.effectNoticeAccepted !== true) {
+   var accepted = window.gpConfirm
+    ? await window.gpConfirm({
+       title: '변화가 작을 수 있는 글이에요',
+       message: '이미 자연스러운 글은 바꿀 대상이 적어 원문의 장르·화자·리듬을 지키는 범위에서만 손봅니다. 안전한 얕은 결과도 정상 과금됩니다.',
+       confirmText: '확인하고 진행'
+      })
+    : confirm('이미 자연스러운 글이라 결과 변화가 작을 수 있어요. 안전한 얕은 결과도 정상 과금됩니다. 계속할까요?');
+   if (!accepted) throw new Error('예상 효과 확인 후 다시 시작해 주세요. 크레딧은 차감되지 않았어요.');
+   return callTransformJob(Object.assign({}, payload, { effectNoticeAccepted: true }));
+  }
+  throw error;
+ }
  if (typeof payload.onEstimate === 'function') payload.onEstimate(start);
  var jobId = start.jobId;
  if (!jobId) throw new Error('작업 번호를 받지 못했습니다.');
@@ -1004,14 +1021,19 @@ async function callTransformJob(payload) {
   var progress = document.getElementById('progStatus');
   if (progress && current.stage) progress.textContent = current.stage;
   if (current.status === 'done') {
-   return {
-    ok: true,
-    result: current.result || {},
-    historySaved: true,
-    jobId: jobId,
-    needed: Number(start.job && start.job.needed) || Number(current.needed) || 0,
-    billingMode: start.job && start.job.billingMode || payload.billingMode || 'credit'
-   };
+    var result = Object.assign({}, current.result || {});
+    result.billingDisposition = current.billingDisposition || result.billingDisposition || '';
+    result.deducted = current.deducted === true;
+    return {
+     ok: true,
+     result: result,
+     historySaved: true,
+     jobId: jobId,
+     needed: Number(start.job && start.job.needed) || Number(current.needed) || 0,
+     billingMode: start.job && start.job.billingMode || payload.billingMode || 'credit',
+     billingDisposition: current.billingDisposition || result.billingDisposition || '',
+     deducted: current.deducted === true
+    };
   }
   if (current.status === 'blocked') {
    var blocked = new Error(current.reason || current.error || '원문 보존 기준을 통과하지 못해 결과를 전달하지 않았어요.');
@@ -1281,8 +1303,11 @@ async function runAnalysis() {
   data = await callAnalyzeApi(Object.assign({ text: text }, commonOpts));
  }
 
- // 서버가 이미 Firestore 크레딧을 차감했으므로 UI만 낙관적 업데이트
- const chargedNeeded = Number(data.needed) || needed;
+ // 서버가 전달한 최종 과금 처리값만 UI에 반영한다. 품질 미달·반복 저효과 무차감 결과를 차감처럼 보이지 않는다.
+ const noChargeDisposition = /^(?:waived_|plan_unlimited|admin_no_charge)/u.test(String(data.billingDisposition || data.result?.billingDisposition || ''));
+ const chargedNeeded = currentMode === 'detect'
+  ? (Number(data.needed) || needed)
+  : (data.deducted === false || noChargeDisposition ? 0 : (Number(data.needed) || needed));
  if (window.UP !== 'unlimited') { window.UC = Math.max(0, (window.UC || 0) - chargedNeeded); updateCreditUI(); }
 
  // 서버가 단일 호출 결과를 이미 저장했으면(historySaved) 중복 저장하지 않는다.
@@ -1451,12 +1476,23 @@ function renderHuman(r) {
  // ★ 고지: '그대로 다듬기'(보존형)는 원문 의미·사실을 유지하는 품질 다듬기라 회피 목적과 구분한다.
  const note = '<div class="sstrip" style="background:var(--surface2,#f6f6f8);color:var(--text3);font-size:12.5px;line-height:1.5;">'
   + '이 결과는 의미·사실을 보존하는 <b>다듬기</b>예요. AI 티를 줄이는 게 목적이라면 휴머나이징(기본·고급) 모드를 이용하세요.</div>';
- document.getElementById('result').innerHTML=
+  const billingLabels = {
+   charged: '크레딧 차감 완료',
+   waived_quality_shortfall: '품질 기준 미달로 크레딧을 차감하지 않았어요.',
+   waived_repeat_low_benefit: '같은 글의 낮은 효과가 반복되어 크레딧을 차감하지 않았어요.',
+   plan_unlimited: '무제한 이용권으로 처리했어요.',
+   admin_no_charge: '관리자 테스트 · 무차감'
+  };
+  const billing = billingLabels[r.billingDisposition] || '';
+  const billingNote = billing
+   ? '<div class="sstrip" style="background:#f5f7ff;color:#4c587f;font-size:12.5px;line-height:1.5;"><b>과금 상태</b> · '+escapeHtml(billing)+'</div>'
+   : '';
+  document.getElementById('result').innerHTML=
  '<div class="rsec"><div class="ocard"><div class="ohd"><span class="olbl">변환 결과</span>'
  +'<button class="cpybtn" id="dlbtn" onclick="dlOut()" style="margin-left:auto;">다운로드</button>'
  +'<button class="cpybtn" id="cpybtn" onclick="cpyOut()" style="margin-left:8px;">복사</button></div>'
  +'<div class="obody" id="outText">'+escapeHtml(r.outputText||'')+'</div></div>'
- +(r.summary?'<div class="sstrip">'+escapeHtml(r.summary)+'</div>':'')+note+'</div>';
+  +(r.summary?'<div class="sstrip">'+escapeHtml(r.summary)+'</div>':'')+billingNote+note+'</div>';
 }
 function renderError(msg) {
  document.getElementById('result').innerHTML=

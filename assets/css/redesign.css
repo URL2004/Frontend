@@ -12915,6 +12915,26 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 .lav-source-review p{margin:0 0 6px;color:#748193;font-size:11.5px;}
 .lav-source-review ul{margin:0;padding-left:18px;}
 .lav-source-review li+li{margin-top:3px;}
+.lav-billing-notice{
+ display:flex;
+ align-items:flex-start;
+ gap:8px;
+ margin:0 0 14px;
+ padding:10px 13px;
+ border:1px solid #dce5df;
+ border-radius:11px;
+ background:#f5faf7;
+ color:#3d6250;
+ font-size:12.5px;
+ font-weight:650;
+ line-height:1.55;
+}
+.lav-billing-notice::before{content:'✓';flex:0 0 auto;color:#2f8a55;font-weight:900;}
+.lav-billing-notice.is-waived{border-color:#d8def4;background:#f5f7ff;color:#4c587f;}
+.lav-billing-notice.is-waived::before{content:'0';display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;background:#e5e9fa;color:#5868a7;font-size:10px;}
+.lav-billing-notice.is-review{border-color:#ead9b9;background:#fff9ed;color:#80580b;}
+.lav-billing-notice.is-review::before{content:'!';color:#a36b00;}
+.lav-billing-notice[hidden]{display:none!important;}
 .lav-done-body{
  padding:16px;
  border:1px solid #eef0f7;
@@ -13023,6 +13043,23 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 .lav-confirm-cost span{display:block;color:#8a91a3;font-size:11.5px;font-weight:600;}
 .lav-confirm-cost b{display:block;margin-top:4px;color:#14182a;font-size:17px;font-weight:800;letter-spacing:-.01em;}
 .lav-confirm-cost-main b{color:#4b4cc6;}
+.lav-effect-notice{
+ display:flex;
+ align-items:flex-start;
+ gap:10px;
+ margin:-3px 0 16px;
+ padding:12px 13px;
+ border:1px solid #ead9b9;
+ border-radius:12px;
+ background:#fff9ed;
+ color:#80580b;
+ cursor:pointer;
+}
+.lav-effect-notice[hidden]{display:none!important;}
+.lav-effect-notice input{width:17px;height:17px;margin:2px 0 0;flex:0 0 auto;accent-color:#8a6415;cursor:pointer;}
+.lav-effect-notice span{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.lav-effect-notice b{font-size:13px;line-height:1.45;color:#704b08;}
+.lav-effect-notice i{font-style:normal;font-size:11.7px;line-height:1.55;color:#8b6a2f;}
 /* 안내: 안심 라인(차감 없음) 강조 + 보조 한 줄 */
 .lav-confirm-note{margin:0 0 18px;color:#8a91a3;font-size:12px;line-height:1.5;font-weight:500;}
 /* 환불 모달(공용 lav-confirm 카드 사용) */

@@ -651,11 +651,38 @@
   };
   function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   var _coachRenderGen = 0;
+  var _coachLoading = false;
   function lavStartBtn() { return $('lavConfirmStartBtn'); }
-  function lavStartBtnState(loading) {   // 픽 로딩 중엔 시작 잠금(빈 창에서 그냥 넘어가는 것 방지)
+  function effectNoticeRequired() {
+    var notice = $('lavEffectNotice');
+    return !!(notice && !notice.hidden);
+  }
+  function updateConfirmStartState() {
     var b = lavStartBtn(); if (!b) return;
-    b.disabled = !!loading;
-    b.textContent = loading ? '추천 불러오는 중…' : '시작하기';
+    var accepted = !effectNoticeRequired() || !!($('lavEffectNoticeAccepted') && $('lavEffectNoticeAccepted').checked);
+    b.disabled = _coachLoading || !accepted;
+    b.textContent = _coachLoading ? '추천 불러오는 중…' : (!accepted ? '위 내용을 확인해 주세요' : '시작하기');
+  }
+  function lavStartBtnState(loading) {   // 픽 로딩 중엔 시작 잠금(빈 창에서 그냥 넘어가는 것 방지)
+    _coachLoading = !!loading;
+    updateConfirmStartState();
+  }
+  window.lavEffectNoticeChange = updateConfirmStartState;
+  function renderEffectNotice(s) {
+    var notice = $('lavEffectNotice');
+    var checkbox = $('lavEffectNoticeAccepted');
+    if (!notice) return;
+    var limited = !pendingPolish
+      && !!s
+      && (s.tone === 'blog' || s.tone === 'formal')
+      && !!lastDiag
+      && lastDiag.effectExpectation === 'limited';
+    notice.hidden = !limited;
+    if (checkbox) checkbox.checked = false;
+    updateConfirmStartState();
+  }
+  function effectNoticeAcceptedForRun() {
+    return !effectNoticeRequired() || !!($('lavEffectNoticeAccepted') && $('lavEffectNoticeAccepted').checked);
   }
   // 시작 확인 모달에 추천 픽(입장·경험) 체크박스 렌더 — 자동 코칭 ON이면(기본/고급 둘 다).
   //   ★2026-06-18: 해요체 캐주얼 글(기본 피하기)에서 자동코칭 픽이 안 뜨던 문제 — 'formal 전용' 게이트 제거.
@@ -743,6 +770,7 @@
     if (ttl) ttl.textContent = '이 설정으로 시작할까요?';
     var s = currentSettings();
     renderCoachPicks(s);   // 자동 코칭 ON(고급)이면 추천 픽 체크박스 표시(시작 직전 선택)
+    renderEffectNotice(s);
     var sum = $('lavConfirmSummary');
     if (sum) {
       var rows = [];
@@ -999,6 +1027,7 @@
         var body = { text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text) };
         if (s && s.documentProfile) body.documentProfile = s.documentProfile;
         if (mode === 'blog') body.basicStyle = (s && s.basicStyle === 'report') ? 'report' : 'blog';
+        if (mode !== 'polish') body.effectNoticeAccepted = !!(s && s.effectNoticeAccepted);
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
@@ -1026,6 +1055,7 @@
     var text = (src ? src.value : '').trim();
     if (!text) { if (src) src.focus(); return; }
     pendingPolish = true;
+    renderEffectNotice({ tone: 'polish' });
     var cp = $('lavCoachPicks'); if (cp) cp.hidden = true;   // 다듬기(최소수정)는 코칭 픽 없음 — 모달 재사용 시 직전 잔여 숨김
     lavStartBtnState(false);   // 코칭 잠금이 남아있을 수 있으니 시작 버튼 활성화 보장
     var ttl = document.querySelector('.lav-confirm-title');
@@ -1138,8 +1168,12 @@
       if (b && b.error) {
         var e = new Error(b.error);
         e.httpStatus = res.status;
+        e.code = b.code || '';
         e.activeJobId = b.activeJobId || '';
         e.activeStatus = b.activeStatus || '';
+        e.effectExpectation = b.effectExpectation || '';
+        e.effectNoticeCode = b.effectNoticeCode || '';
+        e.requiresEffectConfirmation = b.requiresEffectConfirmation === true;
         throw e;
       }
       if (!res.ok || !b || !b.ok) throw new Error('시작하지 못했어요. 잠시 후 다시 눌러주세요. (크레딧은 차감되지 않았어요)');
@@ -1207,6 +1241,18 @@
 
   async function handleTransformStartError(err, fallbackStep) {
     stopFormalTicker();
+    if (err && err.httpStatus === 409 && err.code === 'LIMITED_EFFECT_CONFIRMATION_REQUIRED') {
+      var src = $('lavInput');
+      lastDiag = Object.assign({}, lastDiag || fakeDiagnose(src ? src.value : ''), {
+        effectExpectation: 'limited',
+        effectNoticeCode: err.effectNoticeCode || 'LOW_EXPECTED_EFFECT',
+        requiresEffectConfirmation: true
+      });
+      show(fallbackStep || 'reduce');
+      if (window.gpToast) window.gpToast('변화가 작을 수 있는 글이에요. 예상 효과를 확인하면 진행할 수 있어요.', { type: 'warning', title: '예상 효과 확인' });
+      window.lavOpenConfirm();
+      return;
+    }
     if (err && err.httpStatus === 409) {
       try { if (await recoverActiveTransformJob()) return; } catch (e) { /* 기존 안내로 폴백 */ }
     }
@@ -1364,10 +1410,40 @@
     if (doneNote) doneNote.textContent = st.mode === 'polish'
       ? '과제 어투로 다듬었어요. 사실과 분량은 원문 그대로 두고 문장만 정리했어요. (AI 티 줄이기와는 다른 기능이에요)'
       : '검사 결과는 글과 도구에 따라 달라서 수치로 약속하기는 어려워요. 결과가 만족스럽지 않으면 실제 경험이나 구체 사례를 더해 다시 정리해 보세요.';
+    renderBillingDisposition(st);
     renderQualityWarnings(st.result || {});
     if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
     lavSaveToLibrary(label, st.result && st.result.outputText, grade ? grade + '등급' : '');
     notifyJobDone(st, label);
+  }
+
+  function renderBillingDisposition(st) {
+    var wrap = $('lavBillingNotice');
+    if (!wrap) return;
+    var result = st && st.result || {};
+    var meta = result.engineMeta || st && st.engineMeta || {};
+    var disposition = st && st.billingDisposition || result.billingDisposition || meta.billingDisposition || '';
+    var labels = {
+      charged: '크레딧 차감이 완료됐어요.',
+      waived_quality_shortfall: '기대했던 휴머나이징 깊이에 미치지 못해 크레딧을 차감하지 않았어요.',
+      waived_repeat_low_benefit: '같은 글에서 낮은 효과가 반복되어 이번에는 크레딧을 차감하지 않았어요.',
+      plan_unlimited: '무제한 이용권으로 처리했어요.',
+      admin_no_charge: '관리자 테스트로 처리되어 크레딧을 차감하지 않았어요.'
+    };
+    wrap.className = 'lav-billing-notice';
+    if (!labels[disposition]) {
+      wrap.hidden = true;
+      wrap.textContent = '';
+      return;
+    }
+    if (disposition === 'charged' && st && st.deducted === false) {
+      wrap.textContent = '크레딧 처리 상태를 확인하고 있어요. 이용 기록에서 최종 상태를 확인해 주세요.';
+      wrap.classList.add('is-review');
+    } else {
+      wrap.textContent = labels[disposition];
+      if (disposition !== 'charged') wrap.classList.add('is-waived');
+    }
+    wrap.hidden = false;
   }
 
   function renderQualityWarnings(result) {
@@ -1572,7 +1648,7 @@
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
-          body: JSON.stringify({ text: text, mode: 'formal', evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: 'keep', documentProfile: s.documentProfile || undefined })
+          body: JSON.stringify({ text: text, mode: 'formal', evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: 'keep', documentProfile: s.documentProfile || undefined, effectNoticeAccepted: !!s.effectNoticeAccepted })
         }).then(parseTransformStart);
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
         saveJobRef(r.jobId);
@@ -1592,9 +1668,15 @@
 
   window.lavStartJob = function () {
     var polish = pendingPolish;       // 확인창 닫기 전에 캡처(lavCloseConfirm이 플래그를 비움)
+    var effectNoticeAccepted = effectNoticeAcceptedForRun();
+    if (!polish && !effectNoticeAccepted) {
+      updateConfirmStartState();
+      return;
+    }
     window.lavCloseConfirm();
     if (polish) return runShortJob('polish', null);    // 그대로 다듬기 — 확인 후 시작
     var s = currentSettings();
+    s.effectNoticeAccepted = effectNoticeAccepted;
     if (s.tone === 'blog') return runBlogEvasion(s);   // ★ P2 실연결(블로그 어투)
     return runFormalEvasion(s);                        // ★ P3+P4 실연결(격식 유지 재구성, job+폴링+근거 승인)
   };
