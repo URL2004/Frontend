@@ -125,7 +125,9 @@ test('결과 품질 경고와 원문 검토 알림을 서로 다른 영역에 �
   assert.match(main, /id="lavQualityWarning"[^>]*role="alert"/u);
   assert.match(main, /id="lavSourceReview"[^>]*role="status"/u);
   assert.match(evasion, /Array\.isArray\(result\.sourceReviewWarnings\)/u);
-  assert.match(evasion, /한국어 표현 확인 필요/u);
+  assert.match(evasion, /한국어 표현 확인 권장/u);
+  assert.match(evasion, /완료 · 확인 권장/u);
+  assert.doesNotMatch(evasion, /원문 보존 기준 미통과/u);
   assert.doesNotMatch(`${main}\n${evasion}`, /국립국어원 규범 기준 검사/u);
   const sourceRender = evasion.indexOf("var sourceWrap = $('lavSourceReview')");
   const qualityEarlyReturn = evasion.indexOf('if (!needsReview && !warnings.length)', sourceRender);

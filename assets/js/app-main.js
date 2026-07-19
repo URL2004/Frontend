@@ -1036,7 +1036,7 @@ async function callTransformJob(payload) {
     };
   }
   if (current.status === 'blocked') {
-   var blocked = new Error(current.reason || current.error || '원문 보존 기준을 통과하지 못해 결과를 전달하지 않았어요.');
+   var blocked = new Error(current.reason || current.error || '안전하게 전달할 수 있는 결과를 만들지 못해 작업을 멈췄어요. 크레딧은 차감되지 않았어요.');
    blocked.code = 'transform_blocked';
    blocked.body = current;
    throw blocked;

@@ -2339,7 +2339,7 @@ window.loadHistory = async () =>{
   resultBadge += `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:650;background:${billingInfo.waived ? 'rgba(91,104,173,.10)' : 'rgba(30,142,62,.08)'};color:${billingInfo.waived ? '#5868a7' : 'var(--green)'}">${escapeHtml(billingInfo.badge)}</span>`;
  }
  if (h.qualityStatus === 'needs_review') {
-  resultBadge += `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:700;background:rgba(245,158,11,.12);color:#a36b00">확인 필요</span>`;
+  resultBadge += `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:700;background:rgba(91,104,173,.10);color:#5868a7">완료 · 확인 권장</span>`;
  }
  }
 
@@ -2360,7 +2360,7 @@ window.loadHistory = async () =>{
  const qualityMessages = qualityCodes.map(historyQualityWarningMessage).filter(Boolean).slice(0, 8);
  const qualityHtml = h.qualityStatus === 'needs_review' || qualityMessages.length
   ? `<div style="margin-top:12px;padding:11px 13px;border-radius:10px;border:1px solid rgba(245,158,11,.32);background:rgba(245,158,11,.08);color:#80580b;font-size:13px;line-height:1.65;">
-      <b style="display:block;margin-bottom:4px;color:#a36b00;">원문과 확인이 필요해요</b>
+      <b style="display:block;margin-bottom:4px;color:#5868a7;">완료된 결과의 확인 항목</b>
       ${qualityMessages.length ? `<ul style="margin:0;padding-left:18px;">${qualityMessages.map(function(message){ return `<li>${escapeHtml(message)}</li>`; }).join('')}</ul>` : '제출 전에 결과를 원문과 한 번 대조해 주세요.'}
      </div>`
   : '';
@@ -2418,7 +2418,7 @@ function historyQualityWarningMessage(code) {
   semantic_distortion: '원문의 의미 일부가 달라졌을 가능성이 있어요.',
   semantic_repair_rejected: '자동 수리 결과가 원문 보존 기준을 악화시켜 적용하지 않았어요.',
   semantic_judge_uncertain: '자동 의미 심사가 불확실해 직접 확인이 필요해요.',
-  semantic_review_failed: '자동 의미 심사를 완전히 통과하지 못해 직접 확인이 필요해요.',
+  semantic_review_failed: '자동 의미 심사가 결론을 확정하지 못해 원문 대조를 권장해요.',
   pov: '원문에 없던 화자가 추가됐을 수 있어요.',
   speaker_injected: '원문에 없던 화자가 추가됐을 수 있어요.',
   speaker_removed: '원문의 화자가 결과에서 사라졌을 수 있어요.',

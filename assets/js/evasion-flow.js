@@ -993,12 +993,12 @@
     if (typeof m.novelty === 'number') badge(m.novelty === 0, m.novelty === 0 ? '새 사실 없음' : '새 사실 의심 ' + m.novelty + '건');
     if (typeof m.lostFacts === 'number') badge(m.lostFacts === 0, m.lostFacts === 0 ? '보호 사실 유지' : '사실 누락 의심 ' + m.lostFacts + '건');
     if (typeof m.repetition === 'number') badge(m.repetition === 0, m.repetition === 0 ? '신규 반복 없음' : '신규 반복 ' + m.repetition + '건');
-    badge(m.judge === 'pass' ? true : m.judge === 'fail' ? false : null,
-      m.judge === 'pass' ? '의미 검증 통과' : m.judge === 'fail' ? '의미 검증 확인 필요' : '의미 검증 생략(저위험)');
+    badge(m.judge === 'pass' ? true : null,
+      m.judge === 'pass' ? '의미 검증 완료' : m.judge === 'fail' ? '의미 확인 권장' : '의미 검증 생략(저위험)');
     var korean = result && result.koreanRefinement;
-    badge(korean && korean.pass === true ? true : korean && korean.pass === false ? false : null,
-      korean && korean.pass === true ? '한국어 표현 점검 완료' : korean && korean.pass === false ? '한국어 표현 확인 필요' : '한국어 표현 점검 미측정');
-    if (result && result.qualityStatus === 'needs_review') badge(false, '원문 대조 필요');
+    badge(korean && korean.pass === true ? true : null,
+      korean && korean.pass === true ? '한국어 표현 점검 완료' : korean && korean.pass === false ? '한국어 표현 확인 권장' : '한국어 표현 점검 미측정');
+    if (result && result.qualityStatus === 'needs_review') badge(null, '완료 · 확인 권장');
     if (m.evidenceUsed > 0) badge(true, '승인 근거 ' + m.evidenceUsed + '건 · 수치·출처 일치');
     if (typeof m.lengthRatio === 'number') badge(true, '분량 ' + Math.round(m.lengthRatio * 100) + '%');
   }
@@ -1388,7 +1388,7 @@
       var isFb = !!(st.result && st.result.preservationFallback);
       lavFbBanner.hidden = !isFb;
       if (isFb && $('lavFallbackMsg')) {
-        $('lavFallbackMsg').textContent = st.note || '고급 검증에서 원문 보존 기준을 통과하지 못해, 대신 원문을 최대한 살린 결과를 준비했어요.';
+        $('lavFallbackMsg').textContent = st.note || '고급 결과에 원문 보존 위험이 남아, 대신 원문을 최대한 살린 결과를 준비했어요.';
       }
     }
     // ── '예상 AI 탐지율 %' 표기 제거(2026-06-15) ──────────────────────────────
@@ -1475,7 +1475,7 @@
     var messages = warnings.map(function (item) {
       return item && item.message ? String(item.message) : '';
     }).filter(Boolean).slice(0, 8);
-    if (!messages.length) messages.push('자동 품질 점검에서 확인할 항목이 있어요. 제출 전에 원문과 한 번 대조해 주세요.');
+    if (!messages.length) messages.push('결과는 정상적으로 완료됐어요. 제출 전에 원문과 한 번 대조하면 더 안전해요.');
     messages.forEach(function (message) {
       var li = document.createElement('li');
       li.textContent = message;
@@ -1501,10 +1501,10 @@
       if (paras.length) {
         var title = abEl.querySelector('.lav-blocked-abstract-title');
         var tip = abEl.querySelector('.lav-blocked-abstract-tip');
-        if (title) title.textContent = showLost ? '이 사실·수치가 빠져 차단됐어요' : '이 부분이 추상적이라 자연스럽게 바꾸기 어려워요';
+        if (title) title.textContent = showLost ? '이 사실·수치의 누락 위험이 확인됐어요' : '이 부분이 추상적이라 자연스럽게 바꾸기 어려워요';
         if (tip) tip.innerHTML = showLost
           ? '사실·수치가 많은 글은 <b>문단을 짧게 나누거나</b>, 해당 부분은 원문 표현을 더 유지해서 다시 도전해 주세요.'
-          : '위 내용과 관련된 <b>실제 경험·사례·수치</b>를 경험 메모에 적고 다시 도전하면, 그 부분을 구체적으로 바꿔 더 잘 통과돼요.';
+          : '위 내용과 관련된 <b>실제 경험·사례·수치</b>를 경험 메모에 적고 다시 도전하면, 그 부분을 더 구체적이고 자연스럽게 바꿀 수 있어요.';
         abList.innerHTML = '';
         paras.forEach(function (p) {
           var li = document.createElement('li');
