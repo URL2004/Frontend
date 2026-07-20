@@ -136,6 +136,14 @@
   var lastDiag = null;   // 결과 화면의 예상 밴드 표기에 재사용
   var toneSelectionTouched = false;
 
+  function advancedUnavailable(d) {
+    if (!d) return false;
+    if (d.advancedEligible === false) return true;
+    // 구형 백엔드 응답과의 짧은 배포 순서 호환. v2.4.11부터는
+    // 한국어 장르 판정만으로 고급을 잠그지 않고 advancedEligible을 명시한다.
+    return d.advancedEligible == null && d.restructureUnfit === true;
+  }
+
   function resetToneChoice() {
     toneSelectionTouched = false;
     var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');
@@ -145,7 +153,7 @@
   function applyDiag(d) {
     lastDiag = d;
     // resumeLike는 구형 관측 신호다. 실제 잠금은 v2 장르 판정까지 조정한 canonical 값만 사용한다.
-    var unfit = d.restructureUnfit === true;
+    var unfit = advancedUnavailable(d);
     var hasAdv = !!d.advisory && !unfit;                  // 회피 난이도 안내(STEM 스펙·구조화 보고서) — 소프트, 자소서 안내가 우선
     var rn = $('lavResumeNote');
     if (rn) { rn.hidden = !unfit; if (unfit && d.restructureUnfitReason) rn.textContent = d.restructureUnfitReason; }   // 명확한 사유 노출
@@ -197,7 +205,7 @@
   // v2 진단 결과에 따라 고급 잠금과 추천 선택을 한 곳에서 동기화한다.
   // 추천 선택은 설정 화면에 먼저 보여 주며, 실제 실행은 기존 확인 모달을 통과해야 한다.
   function applyAdvancedRouting() {
-    var unfit = !!(lastDiag && lastDiag.restructureUnfit === true);
+    var unfit = advancedUnavailable(lastDiag);
     var recommendAdvanced = !unfit && !!(lastDiag && lastDiag.recommendedMode === 'formal');
     var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
     var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');
@@ -1475,12 +1483,14 @@
     // 근거 보강 켜고 다시(재구성·미사용 시만)
     var evBtn = $('lavBlockedEvidence');
     if (evBtn) evBtn.hidden = !offer.canEvidence;
-    // 보존형으로 받기(+단가). 폴백 불가(polish 등)면 숨김.
+    // 보존형으로 받기(+단가). 기본 차단 작업에만 노출하며 고급은
+    // 이전 서버·캐시 응답에 fallbackOffer가 남아 있어도 다운그레이드하지 않는다.
     var fbBtn = $('lavBlockedFallback');
     lavBlockedFallbackCredit = offer.fallbackCredit || 0;
     if (fbBtn) {
-      fbBtn.hidden = !offer.fallbackOffer;
-      if (offer.fallbackOffer) {
+      var fallbackAllowed = offer.fallbackOffer === true && st && st.mode === 'blog';
+      fbBtn.hidden = !fallbackAllowed;
+      if (fallbackAllowed) {
         var need = offer.fallbackCredit || 0;
         // 잔액이 단가보다 적으면 버튼에 '충전 필요'를 미리 표시(서버 precheck와 동일 기준 — 클릭 전에 알 수 있게).
         var short = need && window.UP !== 'unlimited' && (window.UC || 0) < need;

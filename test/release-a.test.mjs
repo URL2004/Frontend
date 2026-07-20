@@ -100,7 +100,7 @@ test('애매한 글 종류 선택은 기본·고급 요청에 전달되고 자�
   assert.match(evasion, /documentProfile:\s*s\.documentProfile \|\| undefined/u);
 });
 
-test('논문·구조화 보고서 추천은 구형 resumeLike 신호로 고급을 잠그지 않는다', async () => {
+test('한국어 장르 판정은 고급을 잠그지 않고 고급 차단 작업도 보존형으로 낮추지 않는다', async () => {
   const [main, evasion] = await Promise.all([
     read('pages/main.html'),
     read('assets/js/evasion-flow.js')
@@ -109,12 +109,14 @@ test('논문·구조화 보고서 추천은 구형 resumeLike 신호로 고급�
   assert.match(main, /id="lavFormalRecommended"[^>]*hidden/u);
   assert.match(main, /id="lavToneAdvancedNote"[^>]*role="status"[^>]*hidden/u);
   assert.match(main, /lavToneChange\(true\)/u);
-  assert.match(evasion, /var unfit = d\.restructureUnfit === true/u);
+  assert.match(evasion, /function advancedUnavailable\(d\)/u);
+  assert.match(evasion, /if \(d\.advancedEligible === false\) return true/u);
   assert.match(evasion, /lastDiag\.recommendedMode === 'formal'/u);
   assert.match(evasion, /formalRadio\.checked = recommendAdvanced/u);
   assert.match(evasion, /recommendedMode:\s*d\.recommendedMode \|\| 'blog'/u);
   assert.match(evasion, /실행 전 예상 시간과 크레딧을 확인/u);
   assert.doesNotMatch(evasion, /restructureUnfit \|\| (?:d|lastDiag)\.resumeLike/u);
+  assert.match(evasion, /offer\.fallbackOffer === true && st && st\.mode === 'blog'/u);
 });
 
 test('사용자 완료 화면과 이용 기록에는 내부 품질 경고를 표시하지 않는다', async () => {
