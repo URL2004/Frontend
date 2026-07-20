@@ -422,7 +422,7 @@
         var body = document.createElement('div');
         body.className = 'rp-body';
         var snip = document.createElement('p');
-        snip.textContent = p.snippet + (p.snippet && p.snippet.length >= 90 ? '…' : '');
+        snip.textContent = p.snippet + (p.snippet && p.snippet.length >= 140 ? '…' : '');   // 서버 snippet 상한(140자)과 동기
         var why = document.createElement('em');
         why.textContent = p.reason || '';
         body.appendChild(snip); body.appendChild(why);
