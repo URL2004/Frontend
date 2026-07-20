@@ -441,6 +441,14 @@
             snip.classList.toggle('full', open);   // 2줄 클램프 해제(전문은 줄 수 제한 없이)
             more.textContent = open ? '접기' : '전체보기';
             more.setAttribute('aria-expanded', open ? 'true' : 'false');
+            // 행이 길어지며 목록이 바깥 접힘(340px)을 넘으면 아래 문단이 소리 없이 잘림 —
+            // 전문을 보려는 의도이므로 바깥 접힘은 자동으로 펼치고, 접을 땐 잘림 상태만 재평가
+            var listEl = document.getElementById('lavRepParaList');
+            if (open && listEl && !listEl.classList.contains('expanded') && listEl.scrollHeight > listEl.clientHeight + 6) {
+              window.lavToggleCollapse('lavRepParaList', document.getElementById('lavRepParaToggle'));
+            } else {
+              lavSyncCollapse('lavRepParaList', 'lavRepParaToggle');
+            }
           };
           body.appendChild(more);
         }
