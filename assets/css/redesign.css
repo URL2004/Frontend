@@ -12893,28 +12893,6 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 }
 .lav-trust-badge.ok{background:#e6f6ee;color:#177a4c;}
 .lav-trust-badge.ok::before{content:"✓";font-weight:800;}
-.lav-trust-badge.warn{background:#fbf1dd;color:#9a6408;}
-.lav-trust-badge.warn::before{content:"!";font-weight:900;}
-.lav-quality-warning{
- margin:0 0 14px;
- padding:13px 15px;
- border:1px solid #d8def4;
- border-radius:11px;
- background:#f5f7ff;
- color:#4c587f;
- font-size:12.5px;
- line-height:1.58;
-}
-.lav-quality-warning[hidden]{display:none!important;}
-.lav-quality-warning strong{display:block;margin-bottom:6px;color:#5868a7;font-size:13px;font-weight:800;}
-.lav-quality-warning ul{margin:0;padding-left:18px;}
-.lav-quality-warning li+li{margin-top:3px;}
-.lav-source-review{margin:0 0 14px;padding:12px 15px;border:1px solid #d9e2ec;border-radius:11px;background:#f5f8fb;color:#536273;font-size:12.5px;line-height:1.58;}
-.lav-source-review[hidden]{display:none!important;}
-.lav-source-review strong{display:block;margin-bottom:2px;color:#344455;font-size:13px;font-weight:800;}
-.lav-source-review p{margin:0 0 6px;color:#748193;font-size:11.5px;}
-.lav-source-review ul{margin:0;padding-left:18px;}
-.lav-source-review li+li{margin-top:3px;}
 .lav-billing-notice{
  display:flex;
  align-items:flex-start;

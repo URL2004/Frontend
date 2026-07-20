@@ -1303,7 +1303,7 @@ async function runAnalysis() {
   data = await callAnalyzeApi(Object.assign({ text: text }, commonOpts));
  }
 
- // 서버가 전달한 최종 과금 처리값만 UI에 반영한다. 품질 미달·반복 저효과 무차감 결과를 차감처럼 보이지 않는다.
+ // 서버가 전달한 최종 과금 처리값만 UI에 반영한다. 과거 무차감 기록도 차감처럼 보이지 않는다.
  const noChargeDisposition = /^(?:waived_|plan_unlimited|admin_no_charge)/u.test(String(data.billingDisposition || data.result?.billingDisposition || ''));
  const chargedNeeded = currentMode === 'detect'
   ? (Number(data.needed) || needed)
@@ -1478,8 +1478,8 @@ function renderHuman(r) {
   + '이 결과는 의미·사실을 보존하는 <b>다듬기</b>예요. AI 티를 줄이는 게 목적이라면 휴머나이징(기본·고급) 모드를 이용하세요.</div>';
   const billingLabels = {
    charged: '크레딧 차감 완료',
-   waived_quality_shortfall: '품질 기준 미달로 크레딧을 차감하지 않았어요.',
-   waived_repeat_low_benefit: '같은 글의 낮은 효과가 반복되어 크레딧을 차감하지 않았어요.',
+   waived_quality_shortfall: '과거 무차감 정책으로 처리된 작업이에요.',
+   waived_repeat_low_benefit: '과거 무차감 정책으로 처리된 작업이에요.',
    plan_unlimited: '무제한 이용권으로 처리했어요.',
    admin_no_charge: '관리자 테스트 · 무차감'
   };

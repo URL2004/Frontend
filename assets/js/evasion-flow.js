@@ -990,15 +990,12 @@
       wrap.appendChild(s);
     }
     var m = (fr && fr.metrics) || {};
-    if (typeof m.novelty === 'number') badge(m.novelty === 0, m.novelty === 0 ? '새 사실 없음' : '새 사실 의심 ' + m.novelty + '건');
-    if (typeof m.lostFacts === 'number') badge(m.lostFacts === 0, m.lostFacts === 0 ? '보호 사실 유지' : '사실 누락 의심 ' + m.lostFacts + '건');
-    if (typeof m.repetition === 'number') badge(m.repetition === 0, m.repetition === 0 ? '신규 반복 없음' : '신규 반복 ' + m.repetition + '건');
-    badge(m.judge === 'pass' ? true : null,
-      m.judge === 'pass' ? '의미 검증 완료' : m.judge === 'fail' ? '의미 확인 권장' : '의미 검증 생략(저위험)');
+    if (m.novelty === 0) badge(true, '새 사실 없음');
+    if (m.lostFacts === 0) badge(true, '보호 사실 유지');
+    if (m.repetition === 0) badge(true, '신규 반복 없음');
+    if (m.judge === 'pass') badge(true, '의미 검증 완료');
     var korean = result && result.koreanRefinement;
-    badge(korean && korean.pass === true ? true : null,
-      korean && korean.pass === true ? '한국어 표현 점검 완료' : korean && korean.pass === false ? '한국어 표현 확인 권장' : '한국어 표현 점검 미측정');
-    if (result && result.qualityStatus === 'needs_review') badge(null, '완료 · 확인 권장');
+    if (korean && korean.pass === true) badge(true, '한국어 표현 점검 완료');
     if (m.evidenceUsed > 0) badge(true, '승인 근거 ' + m.evidenceUsed + '건 · 수치·출처 일치');
     if (typeof m.lengthRatio === 'number') badge(true, '분량 ' + Math.round(m.lengthRatio * 100) + '%');
   }
@@ -1411,7 +1408,6 @@
       ? '과제 어투로 다듬었어요. 사실과 분량은 원문 그대로 두고 문장만 정리했어요. (AI 티 줄이기와는 다른 기능이에요)'
       : '검사 결과는 글과 도구에 따라 달라서 수치로 약속하기는 어려워요. 결과가 만족스럽지 않으면 실제 경험이나 구체 사례를 더해 다시 정리해 보세요.';
     renderBillingDisposition(st);
-    renderQualityWarnings(st.result || {});
     if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
     lavSaveToLibrary(label, st.result && st.result.outputText, grade ? grade + '등급' : '');
     notifyJobDone(st, label);
@@ -1425,8 +1421,8 @@
     var disposition = st && st.billingDisposition || result.billingDisposition || meta.billingDisposition || '';
     var labels = {
       charged: '크레딧 차감이 완료됐어요.',
-      waived_quality_shortfall: '기대했던 휴머나이징 깊이에 미치지 못해 크레딧을 차감하지 않았어요.',
-      waived_repeat_low_benefit: '같은 글에서 낮은 효과가 반복되어 이번에는 크레딧을 차감하지 않았어요.',
+      waived_quality_shortfall: '과거 무차감 정책으로 처리된 작업이에요.',
+      waived_repeat_low_benefit: '과거 무차감 정책으로 처리된 작업이에요.',
       plan_unlimited: '무제한 이용권으로 처리했어요.',
       admin_no_charge: '관리자 테스트로 처리되어 크레딧을 차감하지 않았어요.'
     };
@@ -1443,44 +1439,6 @@
       wrap.textContent = labels[disposition];
       if (disposition !== 'charged') wrap.classList.add('is-waived');
     }
-    wrap.hidden = false;
-  }
-
-  function renderQualityWarnings(result) {
-    var wrap = $('lavQualityWarning');
-    var list = $('lavQualityWarningList');
-    if (!wrap || !list) return;
-    list.innerHTML = '';
-    var warnings = Array.isArray(result.qualityWarnings) ? result.qualityWarnings : [];
-    var sourceWarnings = Array.isArray(result.sourceReviewWarnings) ? result.sourceReviewWarnings : [];
-    var needsReview = result.qualityStatus === 'needs_review';
-    var sourceWrap = $('lavSourceReview');
-    var sourceList = $('lavSourceReviewList');
-    if (sourceWrap && sourceList) {
-      sourceList.innerHTML = '';
-      var sourceMessages = sourceWarnings.map(function (item) {
-        return item && item.message ? String(item.message) : '';
-      }).filter(Boolean).slice(0, 8);
-      sourceMessages.forEach(function (message) {
-        var sourceItem = document.createElement('li');
-        sourceItem.textContent = message.replace(/^원문\s*확인:\s*/u, '');
-        sourceList.appendChild(sourceItem);
-      });
-      sourceWrap.hidden = sourceMessages.length === 0;
-    }
-    if (!needsReview && !warnings.length) {
-      wrap.hidden = true;
-      return;
-    }
-    var messages = warnings.map(function (item) {
-      return item && item.message ? String(item.message) : '';
-    }).filter(Boolean).slice(0, 8);
-    if (!messages.length) messages.push('결과는 정상적으로 완료됐어요. 제출 전에 원문과 한 번 대조하면 더 안전해요.');
-    messages.forEach(function (message) {
-      var li = document.createElement('li');
-      li.textContent = message;
-      list.appendChild(li);
-    });
     wrap.hidden = false;
   }
 

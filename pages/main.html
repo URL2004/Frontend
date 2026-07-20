@@ -320,7 +320,7 @@
                </select>
                <p id="lavDocumentProfileHint">선택해도 원문에서 장르가 뚜렷하면 안전을 위해 자동 판정을 우선합니다.</p>
              </div>
-             <p class="lav-tone-variance"><b>기본은 원문 상태에 따라 변환 강도가 달라지고, 고급은 더 넓게 재구성하며 모든 글을 의미 검증해요.</b> 두 모드 모두 장르·화자·사실을 보호하지만, 경고가 표시되면 원문과 대조해 주세요. 외부 검사 점수는 보장되지 않아요.</p>
+             <p class="lav-tone-variance"><b>기본은 원문 상태에 따라 변환 강도가 달라지고, 고급은 더 넓게 재구성하며 모든 글을 의미 검증해요.</b> 두 모드 모두 장르·화자·사실을 보호하며, 외부 검사 점수는 보장되지 않아요.</p>
              <p class="lav-tone-advanced-note" id="lavToneAdvancedNote" role="status" hidden><b>이 글에는 고급을 권장해요.</b> <span id="lavToneAdvancedText"></span></p>
              <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>이 글은 개인 경험·관찰을 그대로 지키는 것이 중요해요. <b>기본 휴머나이징에도 해당 장르 보존 규칙과 의미 검증이 적용</b>됩니다. 고급은 더 넓게 재구성하므로 이 유형에는 기본을 권장합니다.</p>
            </div>
@@ -468,15 +468,6 @@
            </div>
            <p class="lav-done-note" id="lavDoneNote" style="margin:2px 0 12px;font-size:12.5px;line-height:1.5;color:var(--text3);">예상치예요. 글의 구체성·길이·주제에 따라 AI 티 지수는 달라질 수 있어요. 결과가 만족스럽지 않으면 경험 메모를 더해 다시 돌려보세요.</p>
            <div class="lav-billing-notice" id="lavBillingNotice" role="status" hidden></div>
-           <div class="lav-quality-warning" id="lavQualityWarning" role="alert" hidden>
-             <strong>완료된 결과의 확인 항목</strong>
-             <ul id="lavQualityWarningList"></ul>
-           </div>
-           <div class="lav-source-review" id="lavSourceReview" role="status" hidden>
-             <strong>원문에서 확인한 표현</strong>
-             <p>결과 오류가 아니라, 원문에 이미 있던 표현 중 직접 확인하면 좋은 항목이에요.</p>
-             <ul id="lavSourceReviewList"></ul>
-           </div>
            <div class="lav-done-body lav-collapse" id="lavDoneBody"></div>
            <button type="button" class="lav-collapse-toggle" id="lavDoneToggle" onclick="lavToggleCollapse('lavDoneBody',this)" aria-expanded="false" hidden><span>펼쳐보기</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
            <div class="lav-done-actions">

@@ -2281,8 +2281,8 @@ function historyBillingInfo(disposition, credits) {
  const chargedCredits = Math.max(0, Number(credits) || 0).toLocaleString('ko-KR');
  const values = {
   charged: { short: `${chargedCredits}크레딧 차감`, badge: '차감 완료', waived: false },
-  waived_quality_shortfall: { short: '품질 기준 미달 · 무차감', badge: '품질 미달 무차감', waived: true },
-  waived_repeat_low_benefit: { short: '반복 저효과 · 무차감', badge: '재결제 보호', waived: true },
+  waived_quality_shortfall: { short: '과거 정책 · 무차감', badge: '과거 정책 무차감', waived: true },
+  waived_repeat_low_benefit: { short: '과거 정책 · 무차감', badge: '과거 정책 무차감', waived: true },
   plan_unlimited: { short: '무제한 이용권 처리', badge: '이용권 처리', waived: true },
   admin_no_charge: { short: '관리자 테스트 · 무차감', badge: '관리자 무차감', waived: true }
  };
@@ -2338,9 +2338,6 @@ window.loadHistory = async () =>{
  if (billingInfo.badge) {
   resultBadge += `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:650;background:${billingInfo.waived ? 'rgba(91,104,173,.10)' : 'rgba(30,142,62,.08)'};color:${billingInfo.waived ? '#5868a7' : 'var(--green)'}">${escapeHtml(billingInfo.badge)}</span>`;
  }
- if (h.qualityStatus === 'needs_review') {
-  resultBadge += `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:700;background:rgba(91,104,173,.10);color:#5868a7">완료 · 확인 권장</span>`;
- }
  }
 
  // 상세 내용 (탐지: summary+detail / 휴머나이저: outputText+humanSummary)
@@ -2356,16 +2353,7 @@ window.loadHistory = async () =>{
  <div style="font-size:13px;color:var(--text2);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${safeDetail}</div>
 </div>` : ''}`;
  } else {
- const qualityCodes = Array.isArray(h.qualityWarningCodes) ? h.qualityWarningCodes : [];
- const qualityMessages = qualityCodes.map(historyQualityWarningMessage).filter(Boolean).slice(0, 8);
- const qualityHtml = h.qualityStatus === 'needs_review' || qualityMessages.length
-  ? `<div style="margin-top:12px;padding:11px 13px;border-radius:10px;border:1px solid rgba(245,158,11,.32);background:rgba(245,158,11,.08);color:#80580b;font-size:13px;line-height:1.65;">
-      <b style="display:block;margin-bottom:4px;color:#5868a7;">완료된 결과의 확인 항목</b>
-      ${qualityMessages.length ? `<ul style="margin:0;padding-left:18px;">${qualityMessages.map(function(message){ return `<li>${escapeHtml(message)}</li>`; }).join('')}</ul>` : '제출 전에 결과를 원문과 한 번 대조해 주세요.'}
-     </div>`
-  : '';
  detailHtml = `
- ${qualityHtml}
  ${safeOutputText ? `<div style="margin-top:12px;">
  <div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:4px;">변환 결과</div>
  <div style="font-size:14px;color:var(--text);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.8;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${safeOutputText}</div>
@@ -2396,54 +2384,6 @@ window.loadHistory = async () =>{
  el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--red)">불러오기 실패</div>';
  }
 };
-
-function historyQualityWarningMessage(code) {
- const messages = {
-  audit_error: '자동 품질 감사 일부를 실행하지 못해 직접 확인이 필요해요.',
-  semantic_omission: '원문 내용 일부가 축약됐을 수 있어요.',
-  lost_facts: '원문의 수치·기관·사실 일부가 누락됐을 수 있어요.',
-  novelty: '원문에 없는 수치·기관·사실이 추가됐을 수 있어요.',
-  number_changed: '원문의 숫자나 수량 표기 일부가 추가되거나 누락됐을 수 있어요.',
-  length_short: '원문 내용 일부가 축약됐을 수 있어요.',
-  length_overrun: '원문보다 과도하게 늘어난 부분이 있을 수 있어요.',
-  experience_novelty: '원문이나 사용자 메모에 없는 경험이 추가됐을 수 있어요.',
-  fake_ref: '원문에 없는 출처나 참고문헌이 추가됐을 수 있어요.',
-  memo_reuse: '사용자 메모의 같은 내용이 여러 번 반복됐을 수 있어요.',
-  repetition: '유사한 문장이 반복될 수 있어요.',
-  meta_leak: '내부 작업 지시가 결과에 노출됐을 수 있어요.',
-  coined_term: '원문에 없는 용어가 만들어졌을 수 있어요.',
-  anchor_leak: '내부 구조 표식이 결과에 남았을 수 있어요.',
-  section_anchor_loss: '원문의 절 또는 구간 연결 구조 일부가 달라졌을 수 있어요.',
-  semantic_addition: '원문에 없는 내용이 추가됐을 가능성이 있어요.',
-  semantic_distortion: '원문의 의미 일부가 달라졌을 가능성이 있어요.',
-  semantic_repair_rejected: '자동 수리 결과가 원문 보존 기준을 악화시켜 적용하지 않았어요.',
-  semantic_judge_uncertain: '자동 의미 심사가 불확실해 직접 확인이 필요해요.',
-  semantic_review_failed: '자동 의미 심사가 결론을 확정하지 못해 원문 대조를 권장해요.',
-  pov: '원문에 없던 화자가 추가됐을 수 있어요.',
-  speaker_injected: '원문에 없던 화자가 추가됐을 수 있어요.',
-  speaker_removed: '원문의 화자가 결과에서 사라졌을 수 있어요.',
-  register_shift: '원문의 종결 말투가 달라졌을 수 있어요.',
-  protected_term_loss: '보호해야 할 명칭이나 표현 일부가 누락됐을 수 있어요.',
-  structure_lock_loss: '목차·참고문헌·제목 구조 일부가 달라졌을 수 있어요.',
-  unsafe_chunk_boundary: '청크 경계에서 문장이 자연스럽게 이어지지 않을 수 있어요.',
-  list_structure_changed: '목록 항목 일부가 합쳐지거나 누락됐을 수 있어요.',
-  heading_structure_changed: '제목이나 절 구조의 개수가 달라졌을 수 있어요.',
-  paragraph_structure_changed: '문단 수나 문단 구성이 원문과 크게 달라졌을 수 있어요.',
-  sentence_distribution_shift: '원문의 짧고 긴 문장 리듬이 지나치게 평탄해졌을 수 있어요.',
-  line_structure_changed: '원문의 제목·항목 행 또는 줄바꿈 구조가 달라졌을 수 있어요.',
-  creative_line_structure: '창작문의 행과 줄바꿈 구조를 확인해야 해요.',
-  quote_count_changed: '직접 인용의 개수가 달라졌을 수 있어요.',
-  polish_edit_range: '보존형 윤문의 권장 편집 범위를 넘었을 수 있어요.',
-  humanization_depth_below_minimum: '휴머나이징 변화량이 목표보다 낮아 결과가 다듬기 수준에 가까울 수 있어요.',
-  humanization_carryover_high: '원문과 실질적으로 같은 문장이 많이 남아 있을 수 있어요.',
-  rhetorical_remediation_incomplete: '반복 결론이나 AI식 담화 골격이 충분히 개선되지 않았을 수 있어요.',
-  engine_phrase_fingerprint: '엔진이 만든 상투 표현이 한 문서에서 반복됐을 수 있어요.',
-  contrast_relation_shift: '부정·배제 관계가 인정·가산 관계로 달라졌을 수 있어요.',
-  ending_style_mixed: '원문에 없던 종결체가 일부 섹션에 섞였을 수 있어요.',
-  resume_claim_omission: '자기소개서의 행동·역량·성과·직무 연결 내용 일부가 누락됐을 수 있어요.'
- };
- return messages[String(code || '')] || (code ? '품질 확인 항목: ' + String(code) : '');
-}
 
 window.openHistory = (el) =>{
  const detail = el.querySelector('.history-detail');

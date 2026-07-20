@@ -117,21 +117,19 @@ test('논문·구조화 보고서 추천은 구형 resumeLike 신호로 고급�
   assert.doesNotMatch(evasion, /restructureUnfit \|\| (?:d|lastDiag)\.resumeLike/u);
 });
 
-test('결과 품질 경고와 원문 검토 알림을 서로 다른 영역에 표시한다', async () => {
-  const [main, evasion] = await Promise.all([
+test('사용자 완료 화면과 이용 기록에는 내부 품질 경고를 표시하지 않는다', async () => {
+  const [main, evasion, module] = await Promise.all([
     read('pages/main.html'),
-    read('assets/js/evasion-flow.js')
+    read('assets/js/evasion-flow.js'),
+    read('assets/js/app-module.js')
   ]);
-  assert.match(main, /id="lavQualityWarning"[^>]*role="alert"/u);
-  assert.match(main, /id="lavSourceReview"[^>]*role="status"/u);
-  assert.match(evasion, /Array\.isArray\(result\.sourceReviewWarnings\)/u);
-  assert.match(evasion, /한국어 표현 확인 권장/u);
-  assert.match(evasion, /완료 · 확인 권장/u);
+  assert.doesNotMatch(main, /lavQualityWarning|lavSourceReview/u);
+  assert.doesNotMatch(evasion, /renderQualityWarnings|한국어 표현 확인 권장|완료 · 확인 권장/u);
+  const historyBlock = module.slice(module.indexOf('window.loadHistory'), module.indexOf('// --- 환불 시스템 UI ---'));
+  assert.doesNotMatch(historyBlock, /완료된 결과의 확인 항목|historyQualityWarningMessage|완료 · 확인 권장/u);
+  assert.match(evasion, /한국어 표현 점검 완료/u);
   assert.doesNotMatch(evasion, /원문 보존 기준 미통과/u);
   assert.doesNotMatch(`${main}\n${evasion}`, /국립국어원 규범 기준 검사/u);
-  const sourceRender = evasion.indexOf("var sourceWrap = $('lavSourceReview')");
-  const qualityEarlyReturn = evasion.indexOf('if (!needsReview && !warnings.length)', sourceRender);
-  assert.ok(sourceRender >= 0 && qualityEarlyReturn > sourceRender, '원문 알림은 결과가 clean이어도 먼저 갱신해야 한다');
 });
 
 test('관리자 품질 탭은 본문 없이 장르 교차표와 깊이·한국어 지표를 조회한다', async () => {
@@ -174,10 +172,9 @@ test('완료 화면·이용 기록·관리자 관측은 과금 처리 사유와 
     read('assets/js/app-module.js')
   ]);
   assert.match(main, /id="lavBillingNotice"[^>]*role="status"/u);
-  assert.match(evasion, /waived_quality_shortfall:\s*'기대했던 휴머나이징 깊이/u);
-  assert.match(evasion, /waived_repeat_low_benefit:\s*'같은 글에서 낮은 효과/u);
-  assert.match(module, /품질 기준 미달 · 무차감/u);
-  assert.match(module, /반복 저효과 · 무차감/u);
+  assert.match(evasion, /waived_quality_shortfall:\s*'과거 무차감 정책/u);
+  assert.match(evasion, /waived_repeat_low_benefit:\s*'과거 무차감 정책/u);
+  assert.match(module, /과거 정책 · 무차감/u);
   assert.match(module, /depthBelowMinimumRate/u);
   assert.match(module, /substantiveCarryoverRatio/u);
   assert.match(module, /sectionRecoveryAppliedCount/u);
