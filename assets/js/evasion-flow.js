@@ -244,7 +244,7 @@
     else show('choose');
   };
 
-  // ── AI 감지 분리: 무료 감지 → 보고서(전환 퍼널) ──────────────────────────
+  // ── AI 감지 분리: 유료 감지(100자당 1크레딧) → 보고서(휴머나이징 전환 퍼널) ──────────
   var cameFromReport = false;   // 설정 화면 뒤로가기가 보고서로 돌아가게(진단 경유와 동선 구분)
 
   // 실행 모드 토글(컴포저 세그먼트): 전송 버튼은 하나 — 선택된 모드가 lavRun의 동작을 결정.
@@ -274,35 +274,35 @@
       alert('한 번에 최대 30,000자까지 감지할 수 있어요.');
       return;
     }
+    // ★ 무료 제공 제거(사장님 결정 2026-07-20): 감지는 항상 유료(100자당 1크레딧·로그인 필수).
+    //   시작 전에 비용을 고지하고 동의받는다 — 서버도 같은 계약(비로그인 401·잔액 선검증).
+    var cost = Math.ceil(text.length / 100);
+    var preToken = null;
+    try { preToken = await evGetIdToken(true); } catch (e) { /* 비로그인 */ }
+    if (!preToken) { alert('AI 감지는 로그인이 필요해요. 로그인 후 이용해 주세요.'); return; }
+    var agree = window.gpConfirm
+      ? await window.gpConfirm({ title: 'AI 감지', message: '이 글(' + text.length.toLocaleString() + '자) 감지에 ' + cost + '크레딧이 차감돼요. (100자당 1크레딧)', confirmText: cost + '크레딧으로 감지' })
+      : confirm('AI 감지에 ' + cost + '크레딧이 차감돼요. 진행할까요?');
+    if (!agree) return;
     cameFromReport = false;
-    // 멱등키 — 무료 호출과 유료 재요청이 같은 키를 써서 재시도 중복 차감 방지
+    // 멱등키 — 재시도 중복 차감 방지
     var reqId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('det_' + Date.now());
 
-    async function runDetect(paid) {
+    async function runDetect() {
       show('analyzing');
       var idToken = null;
-      try { idToken = await evGetIdToken(true); } catch (e) { /* 비로그인 — 무료 감지는 IP 기준 한도 */ }
+      try { idToken = await evGetIdToken(true); } catch (e) { /* 만료 시 서버가 401 안내 */ }
       var minWait = new Promise(function (r) { setTimeout(r, 900); });
       try {
         var resP = fetch(window.apiUrl('/detect-report'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
-          body: JSON.stringify({ text: text, paid: !!paid, requestId: reqId })
+          body: JSON.stringify({ text: text, requestId: reqId })
         });
         var out = await Promise.all([resP, minWait]);
         var res = out[0];
         var d = await res.json().catch(function () { return null; });
 
-        // 무료 한도 소진 → 유료 감지 안내(확인 후 paid:true로 재요청)
-        if (res.status === 402 && d && d.code === 'FREE_EXHAUSTED') {
-          window.lavFlowReset();
-          if (!idToken) { alert('오늘 무료 감지(' + d.freeCap + '회)를 다 썼어요. 유료 감지는 로그인이 필요해요.'); return; }
-          var ok = window.gpConfirm
-            ? await window.gpConfirm({ title: '오늘 무료 감지를 다 썼어요', message: '무료 ' + d.freeCap + '회를 모두 사용했어요.\n이 글을 ' + d.cost + '크레딧으로 감지할까요? (100자당 1크레딧)', confirmText: d.cost + '크레딧으로 감지' })
-            : confirm('무료 감지를 다 썼어요. ' + d.cost + '크레딧으로 감지할까요?');
-          if (ok) return runDetect(true);
-          return;
-        }
         // 잔액 부족
         if (res.status === 402 && d && d.code === 'INSUFFICIENT_CREDITS') {
           window.lavFlowReset();
@@ -314,7 +314,7 @@
         }
         if (res.status === 401 && d && d.code === 'LOGIN_REQUIRED') {
           window.lavFlowReset();
-          alert('유료 감지는 로그인이 필요해요.');
+          alert('AI 감지는 로그인이 필요해요.');
           return;
         }
         if (!res.ok || !d || !d.ok) {
@@ -322,7 +322,7 @@
           alert((d && d.error) || 'AI 감지에 실패했어요. 잠시 후 다시 시도해 주세요.');
           return;
         }
-        // 성공(무료 or 유료) — 유료면 크레딧 차감 반영
+        // 성공 — 크레딧 차감 반영(unlimited 플랜은 charged 0)
         if (d.charged) {
           window.UC = Math.max(0, (window.UC || 0) - d.charged);
           if (typeof window.updateCreditUI === 'function') window.updateCreditUI();
@@ -340,7 +340,7 @@
       }
     }
 
-    runDetect(false);
+    runDetect();
   };
 
   // ── 게이지 인트로: 화면 공개 후 호 채움(CSS 트랜지션) + 숫자 카운트업(rAF, easeOutCubic 동조) ──
@@ -492,7 +492,7 @@
     }
 
     if ($('lavRepRemain')) {
-      $('lavRepRemain').textContent = 'AI 감지는 무료예요' + (d.remainingToday != null ? ' (오늘 ' + d.remainingToday + '회 남음)' : '') + '.';
+      $('lavRepRemain').textContent = d.charged ? '이번 감지에 ' + d.charged + '크레딧을 사용했어요. (100자당 1크레딧)' : '';
     }
   }
 
