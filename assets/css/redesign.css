@@ -15919,12 +15919,13 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
    필요한 사람은 펼쳐서 전체 보기. 토글은 내용이 접힌 높이를 넘을 때만 JS가 노출. */
 #mainContent[data-main-design="lavender"] .lav-collapse{position:relative;max-height:340px;overflow:hidden;}
 #mainContent[data-main-design="lavender"] .lav-collapse.expanded{max-height:none;overflow:visible;}
-/* 하단 페이드(접힘 상태) — 각 컨테이너 배경색에 맞춤 */
-#mainContent[data-main-design="lavender"] #lavDoneBody.lav-collapse:not(.expanded)::after{
+/* 하단 페이드(접힘+실제 잘림(.clipped) 상태만) — 각 컨테이너 배경색에 맞춤.
+   .clipped 없이 걸면 내용이 340px 안에 다 들어와도 마지막 줄이 뿌옇게 씻겨 보임 */
+#mainContent[data-main-design="lavender"] #lavDoneBody.lav-collapse.clipped:not(.expanded)::after{
  content:"";position:absolute;left:0;right:0;bottom:0;height:72px;pointer-events:none;
  background:linear-gradient(to bottom,rgba(250,251,252,0),#fafbfc);
 }
-#mainContent[data-main-design="lavender"] #lavRepParaList.lav-collapse:not(.expanded)::after{
+#mainContent[data-main-design="lavender"] #lavRepParaList.lav-collapse.clipped:not(.expanded)::after{
  content:"";position:absolute;left:0;right:0;bottom:0;height:64px;pointer-events:none;
  background:linear-gradient(to bottom,rgba(255,255,255,0),#fff);
 }
@@ -15936,6 +15937,9 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  color:#5a5bd8;font-size:13px;font-weight:700;cursor:pointer;
  transition:background .15s ease,border-color .15s ease;
 }
+/* ★ display:flex가 hidden 속성(UA display:none)을 덮어써 내용이 안 넘치는 짧은 보고서에도
+   죽은 '펼쳐보기' 버튼이 보이던 실사고(2026-07-20) — .lav-flow-card[hidden]와 같은 계열. 가드 필수. */
+#mainContent[data-main-design="lavender"] .lav-collapse-toggle[hidden]{display:none !important;}
 #mainContent[data-main-design="lavender"] .lav-collapse-toggle:hover{background:#f3f2fc;border-color:#c4bdf0;}
 #mainContent[data-main-design="lavender"] .lav-collapse-toggle svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease;}
 #mainContent[data-main-design="lavender"] .lav-collapse-toggle.is-open svg{transform:rotate(180deg);}

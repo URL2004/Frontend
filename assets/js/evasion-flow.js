@@ -509,17 +509,42 @@
   };
 
   // ── 결과/보고서 본문 접기(한 화면 미리보기 + 펼쳐보기) ──
+  function lavReducedMotion() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
   window.lavToggleCollapse = function (targetId, btn) {
     var el = document.getElementById(targetId);
     if (!el) return;
+    var from = el.clientHeight;
     var open = el.classList.toggle('expanded');
+    if (!lavReducedMotion() && el.animate) {
+      // max-height none↔340px는 트랜지션이 안 걸리므로 실측 px 두 점을 WAAPI로 보간
+      var to = open ? el.scrollHeight : el.clientHeight;
+      el.style.overflow = 'hidden';
+      var anim = el.animate([{ maxHeight: from + 'px' }, { maxHeight: to + 'px' }], { duration: 300, easing: 'cubic-bezier(.25,.7,.3,1)' });
+      anim.onfinish = anim.oncancel = function () { el.style.overflow = ''; };
+    }
     if (btn) {
       btn.classList.toggle('is-open', open);
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
       var lbl = btn.querySelector('span');
       if (lbl) lbl.textContent = open ? '접기' : '펼쳐보기';
     }
+    // 접기: 본문이 갑자기 짧아지면 사용자가 문서 한참 아래 남으므로 섹션 머리로 시야 복귀
+    if (!open && el.getBoundingClientRect().top < 0) {
+      el.scrollIntoView({ behavior: lavReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+    }
   };
+  var collapseRegistry = [];   // 리사이즈(모바일 회전 등) 시 접힘 초과 여부 재평가용
+  function lavSyncCollapse(targetId, toggleId) {
+    var el = document.getElementById(targetId);
+    var btn = document.getElementById(toggleId);
+    if (!el || !btn) return;
+    var clipped = el.scrollHeight > el.clientHeight + 6;
+    // 접힌 높이를 안 넘으면 토글·하단 페이드 모두 숨김(넘칠 때만 '펼쳐보기' 노출)
+    el.classList.toggle('clipped', clipped || el.classList.contains('expanded'));
+    if (!el.classList.contains('expanded')) btn.hidden = !clipped;
+  }
   function lavInitCollapse(targetId, toggleId) {
     var el = document.getElementById(targetId);
     var btn = document.getElementById(toggleId);
@@ -528,13 +553,22 @@
     btn.classList.remove('is-open');
     btn.setAttribute('aria-expanded', 'false');
     var lbl = btn.querySelector('span'); if (lbl) lbl.textContent = '펼쳐보기';
+    if (!collapseRegistry.some(function (p) { return p[0] === targetId; })) collapseRegistry.push([targetId, toggleId]);
     // 레이아웃 반영(2 rAF) 후, 접힌 높이보다 내용이 길 때만 토글 노출
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
-        btn.hidden = el.scrollHeight <= el.clientHeight + 6;
+        lavSyncCollapse(targetId, toggleId);
       });
     });
   }
+  var collapseResizeTimer = null;
+  window.addEventListener('resize', function () {
+    if (!collapseRegistry.length) return;
+    clearTimeout(collapseResizeTimer);
+    collapseResizeTimer = setTimeout(function () {
+      collapseRegistry.forEach(function (p) { lavSyncCollapse(p[0], p[1]); });
+    }, 150);
+  });
 
   function updateCtaMeta() {
     var ctaMeta = $('lavCtaMeta');
