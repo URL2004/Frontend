@@ -36,7 +36,7 @@
         <li>결제일 전까지 마이페이지에서 언제든 해지할 수 있고, 해지해도 이번 사이클 끝까지 사용 가능합니다.</li>
         <li>결제 실패 시 구독은 자동으로 일시 중단됩니다.</li>
         <li>등록한 카드 정보는 토스페이먼츠가 안전하게 보관하며, 회사는 카드 번호를 저장하지 않습니다.</li>
-        <li><strong style="color:var(--text);">환불</strong>: 결제일로부터 7일 이내 신청할 수 있으며, 사용한 크레딧/쿠폰이 있으면 사용분을 제외하고 환불됩니다.</li>
+        <li><strong style="color:var(--text);">환불</strong>: 결제일로부터 7일 이내 신청할 수 있으며, 미사용 시 전액 환불됩니다. 사용 시 모든 상품을 환불 정산상 월 50회 기준으로 계산해 사용분을 공제합니다.</li>
       </ul>
       <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin-bottom:14px;cursor:pointer;">
         <input type="checkbox" id="subConfirmAgree" onchange="onSubConfirmAgreeChange(this)" style="width:16px;height:16px;cursor:pointer;">
@@ -55,11 +55,11 @@
   <div class="lav-confirm-card">
     <button type="button" class="lav-confirm-x" onclick="document.getElementById('refundModal').style.display='none'" aria-label="닫기">×</button>
     <strong class="lav-confirm-title">환불하기</strong>
-    <p class="lav-refund-lead">환불 요청 전, 사용분을 뺀 <b>예상 환불액</b>을 확인해주세요.</p>
+    <p class="lav-refund-lead">결제 후 7일 이내라면 사용분을 뺀 <b>예상 환불액</b>을 확인하고 요청할 수 있어요.</p>
     <div id="refundModalList" class="lav-refund-list">
       <div class="lav-confirm-empty">불러오는 중...</div>
     </div>
-    <p class="lav-confirm-fine">무료 지급 크레딧은 환불 대상이 아니며, 이미 사용한 크레딧·쿠폰은 환불액에서 제외돼요. 최종 금액은 확인 후 알려드려요.</p>
+    <p class="lav-confirm-fine">무료 지급 크레딧과 이미 사용한 크레딧은 제외돼요. 구독은 환불 정산상 월 50회 기준으로 사용분을 공제하며, 최종 금액은 서버 확인 후 확정돼요.</p>
   </div>
 </div>
 
