@@ -14449,7 +14449,11 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 #mainContent[data-main-design="lavender"] .lav-rep-para.concrete .rp-chip{background:#e7f4ec;color:#2e7d49;}
 #mainContent[data-main-design="lavender"] .rp-body{min-width:0;}
 #mainContent[data-main-design="lavender"] .rp-body p{font-size:13.5px;color:#3c4356;line-height:1.7;margin:0 0 4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-#mainContent[data-main-design="lavender"] .rp-body em{font-style:normal;font-size:12px;color:#8a90a6;line-height:1.6;}
+/* 문단 전체보기(2026-07-20): 전문 표시 시 2줄 클램프 해제 */
+#mainContent[data-main-design="lavender"] .rp-body p.full{display:block;-webkit-line-clamp:unset;overflow:visible;}
+#mainContent[data-main-design="lavender"] .rp-more{display:inline-block;margin:0 0 4px;padding:0;border:0;background:none;color:#5a5bd8;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#c9cbf2;}
+#mainContent[data-main-design="lavender"] .rp-more:hover{color:#3a3bb0;text-decoration-color:#3a3bb0;}
+#mainContent[data-main-design="lavender"] .rp-body em{font-style:normal;font-size:12px;color:#8a90a6;line-height:1.6;display:block;}
 #mainContent[data-main-design="lavender"] .lav-rep-para.abstract_risk .rp-body em{color:#b04a3e;}
 /* 코칭(2026-06-17): 학습 프록시 예측태그→채울 경험 메모 칸 안내 */
 #mainContent[data-main-design="lavender"] .rp-coach{margin-top:6px;font-size:12px;font-weight:700;color:#4b4cc6;background:#f3f2ff;border:1px solid #e6e4fb;border-radius:8px;padding:6px 10px;line-height:1.55;}

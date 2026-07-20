@@ -422,10 +422,29 @@
         var body = document.createElement('div');
         body.className = 'rp-body';
         var snip = document.createElement('p');
-        snip.textContent = p.snippet + (p.snippet && p.snippet.length >= 140 ? '…' : '');   // 서버 snippet 상한(140자)과 동기
+        var full = typeof p.text === 'string' ? p.text : '';   // 서버가 140자 초과 문단에만 전문을 보냄
+        var truncated = full && full.length > (p.snippet || '').length;
+        snip.textContent = p.snippet + (truncated ? '…' : '');
         var why = document.createElement('em');
         why.textContent = p.reason || '';
-        body.appendChild(snip); body.appendChild(why);
+        body.appendChild(snip);
+        if (truncated) {
+          // 문단 전체보기/접기 — 미리보기만으론 어느 대목인지 확인이 안 된다는 사용자 피드백(2026-07-20)
+          var more = document.createElement('button');
+          more.type = 'button';
+          more.className = 'rp-more';
+          more.textContent = '전체보기';
+          more.setAttribute('aria-expanded', 'false');
+          more.onclick = function () {
+            var open = more.classList.toggle('on');
+            snip.textContent = open ? full : p.snippet + '…';
+            snip.classList.toggle('full', open);   // 2줄 클램프 해제(전문은 줄 수 제한 없이)
+            more.textContent = open ? '접기' : '전체보기';
+            more.setAttribute('aria-expanded', open ? 'true' : 'false');
+          };
+          body.appendChild(more);
+        }
+        body.appendChild(why);
         // ★ 문단별 코칭(2026-06-17): 학습된 프록시 예측태그 → 채울 경험 메모 칸 안내
         if (p.coach && p.coach.length) {
           var fset = [];
