@@ -179,7 +179,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   const timeline = admin.slice(admin.indexOf('gp-admin-patch-timeline'));
   assert.ok(timeline.indexOf('v2.5.0') < timeline.indexOf('v2.4.18'));
   assert.match(admin, /휴머나이징 엔진 v2\.5\.0/u);
-  assert.match(admin, /Backend 9cbf480/u);
+  assert.match(admin, /Backend 30706b7/u);
   assert.ok(admin.indexOf('v2.4.18') < admin.indexOf('v2.4.17'));
   assert.ok(admin.indexOf('v2.4.17') < admin.indexOf('v2.4.16'));
   assert.ok(admin.indexOf('v2.4.16') < admin.indexOf('v2.4.15'));
@@ -187,7 +187,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /관리자 실험실과 운영 화면 기반/u);
   assert.match(admin, /2026년 6월/u);
   assert.match(admin, /FLOOR v2 의미 보존 엔진과 운영 저장소 시작/u);
-  assert.match(admin, /운영 Git[\s\S]*606건/u);
+  assert.match(admin, /운영 Git[\s\S]*608건/u);
   assert.match(admin, /GPT·Claude 작업 기록[\s\S]*56개 세션/u);
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
@@ -202,9 +202,9 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-156/u);
-  assert.match(boot, /var v = 'lav-156'/u);
-  assert.match(loader, /var ASSET_V = 'lav-156'/u);
+  assert.match(index, /app-boot\.js\?v=lav-157/u);
+  assert.match(boot, /var v = 'lav-157'/u);
+  assert.match(loader, /var ASSET_V = 'lav-157'/u);
   assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-153/u);
 });
 
