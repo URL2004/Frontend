@@ -49,7 +49,7 @@
     <section class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">23개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">24개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
         <span class="gp-admin-patch-range">2026.06.04 — 07.21</span>
@@ -57,25 +57,42 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-        <strong>휴머나이징 엔진 v2.4.17</strong>
-        <code>c5aa22d</code>
+        <strong>휴머나이징 엔진 v2.4.18</strong>
+        <code>97e657d</code>
         <span>2026.07.21 배포</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="패치노트 검토 범위">
-        <div><dt>운영 Git</dt><dd>592건</dd></div>
-        <div><dt>Backend / Frontend</dt><dd>416 / 176</dd></div>
+        <div><dt>운영 Git</dt><dd>594건</dd></div>
+        <div><dt>Backend / Frontend</dt><dd>417 / 177</dd></div>
         <div><dt>GPT·Claude 작업 기록</dt><dd>56개 세션</dd></div>
         <div><dt>정리 방식</dt><dd>기능 단위 병합</dd></div>
       </dl>
 
       <div class="gp-admin-patch-timeline">
-        <div class="gp-admin-patch-month"><strong>2026년 7월</strong><span>14개 변경 묶음</span></div>
+        <div class="gp-admin-patch-month"><strong>2026년 7월</strong><span>15개 변경 묶음</span></div>
         <details class="gp-admin-patch-release" open>
+          <summary>
+            <span class="gp-admin-patch-version">v2.4.18</span>
+            <span class="gp-admin-patch-title"><b>자소서 문항 경계와 한국어 결합 보강</b><small>2026.07.21 · Backend 97e657d</small></span>
+            <span class="gp-admin-patch-state is-live">운영 중</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area layout">구조</span><span>제목 없이 붙여 넣은 자소서도 완결된 행과 문항 경계를 유지해 성장 과정·경험·장단점·지원 동기·포부가 서로 합쳐지지 않도록 했습니다.</span></li>
+            <li><span class="gp-admin-patch-area korean">한국어</span><span>닫는 홑따옴표 뒤 본문 띄어쓰기, ‘서로 상호작용’ 같은 의미 중복, ‘도움을 받을 수 있게 돕다’ 같은 중복 서술과 어색한 비교절 연결을 점검·수리합니다.</span></li>
+            <li><span class="gp-admin-patch-area genre">장르</span><span>공직 지원서에 새로 생긴 ‘디딤돌’, ‘든든한 동행자’, ‘따뜻한 조력자’ 같은 장식적 결론을 원문의 행동 계획 범위에서 정리합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">의미</span><span>학술·법률·개념 주장은 외부 지식으로 임의 교정하지 않고 원문의 주장과 한정 범위를 유지합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">인용</span><span>한국어 홑따옴표도 인용 내용 보존 감사에 포함하며, ‘…’라는처럼 바로 붙는 조사는 띄어쓰지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">원문 검토</span><span>공직 지원서의 미래 시제, 마감 여유 확보형 약점 보완, 입사·임용 표현은 기관 맥락이 필요하므로 자동 단정 대신 검토 알림으로 안내합니다.</span></li>
+            <li><span class="gp-admin-patch-area korean">오탐</span><span>‘전문가가’를 중복 오타로 오인해 ‘전문가’로 바꾸던 검사를 수정했습니다.</span></li>
+          </ul>
+        </details>
+
+        <details class="gp-admin-patch-release">
           <summary>
             <span class="gp-admin-patch-version">v2.4.17</span>
             <span class="gp-admin-patch-title"><b>무변환 회복과 품질 경고 정교화</b><small>2026.07.21 · Backend c5aa22d</small></span>
-            <span class="gp-admin-patch-state is-live">운영 중</span>
+            <span class="gp-admin-patch-state">배포 완료</span>
           </summary>
           <ul>
             <li><span class="gp-admin-patch-area engine">엔진</span><span>의미 감사 뒤에도 결과가 원문과 같으면 재회복하고, 필요한 경우 상위 모델로 한 번 더 승격하도록 보강했습니다.</span></li>
