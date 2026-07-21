@@ -791,6 +791,8 @@
   var DOCUMENT_PROFILE_LABELS = {
     academic_paper: '논문·학술글',
     report_assignment: '과제·보고서',
+    long_explainer: '전문 설명·장문 해설',
+    clinical_record: '임상·전문 기록',
     legal_contract: '계약서·약관',
     student_record_teacher: '세특·교사 관찰 기록',
     student_self_assessment: '학생 자기평가',

@@ -96,6 +96,8 @@ test('애매한 글 종류 선택은 기본·고급 요청에 전달되고 자�
   assert.match(main, /id="lavDocumentProfile"/u);
   assert.match(main, /자동 판별 \(권장\)/u);
   assert.match(main, /value="legal_contract"[^>]*>계약서·약관</u);
+  assert.match(main, /value="long_explainer"[^>]*>전문 설명·장문 해설</u);
+  assert.match(main, /value="clinical_record"[^>]*>임상·전문 기록</u);
   assert.match(main, /원문에서 장르가 뚜렷하면 안전을 위해 자동 판정을 우선/u);
   assert.match(evasion, /if \(s && s\.documentProfile\) body\.documentProfile = s\.documentProfile/u);
   assert.match(evasion, /documentProfile:\s*s\.documentProfile \|\| undefined/u);
@@ -161,6 +163,11 @@ test('관리자 품질 탭은 본문 없이 장르 교차표와 깊이·한국�
   assert.match(source, /technicalBlockedCount/u);
   assert.match(source, /zeroApprovedChargedCount/u);
   assert.match(source, /effectNoticeCounts/u);
+  assert.match(source, /lexicalTransitionDocumentCount/u);
+  assert.match(source, /lexicalTransitionCounts/u);
+  assert.match(source, /studentRecordFragmentDocumentCount/u);
+  assert.match(source, /functionalGreetingDuplicationDocumentCount/u);
+  assert.match(source, /adjacentSemanticRepetitionDocumentCount/u);
   const qualityBlock = source.slice(source.indexOf('// ===== 관리자: 휴머나이징 품질 관측'), source.indexOf('window.adminJobsToggleAll'));
   assert.doesNotMatch(qualityBlock, /inputText|outputText/u);
 });
@@ -174,11 +181,13 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>패치노트</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 25);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 26);
+  assert.match(admin, /v2\.5\.1/u);
   assert.match(admin, /v2\.5\.0/u);
   const timeline = admin.slice(admin.indexOf('gp-admin-patch-timeline'));
+  assert.ok(timeline.indexOf('v2.5.1') < timeline.indexOf('v2.5.0'));
   assert.ok(timeline.indexOf('v2.5.0') < timeline.indexOf('v2.4.18'));
-  assert.match(admin, /휴머나이징 엔진 v2\.5\.0/u);
+  assert.match(admin, /휴머나이징 엔진 v2\.5\.1/u);
   assert.match(admin, /Backend 30706b7/u);
   assert.ok(admin.indexOf('v2.4.18') < admin.indexOf('v2.4.17'));
   assert.ok(admin.indexOf('v2.4.17') < admin.indexOf('v2.4.16'));

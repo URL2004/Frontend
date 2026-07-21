@@ -4377,6 +4377,7 @@ function renderAdminJobs(data) {
 // ===== 관리자: 휴머나이징 품질 관측(원문·결과 미포함) =====
 const ADMIN_PROFILE_LABELS = {
  academic_paper: '논문·학술', report_assignment: '과제·보고서',
+ long_explainer: '전문 설명·장문 해설', clinical_record: '임상·전문 기록',
  legal_contract: '계약서·약관',
  student_record_teacher: '세특·교사 관찰', student_self_assessment: '학생 자기평가',
  resume_application: '자소서·지원서', personal_essay: '개인 에세이',
@@ -4466,6 +4467,10 @@ function renderAdminHumanizeQuality(data) {
    adminQualityStat('평균 동일 문장 잔존', adminQualityAverage(report, 'substantiveCarryoverRatio'), '제목·표·목록·인용 제외'),
    adminQualityStat('평균 구조 변화', adminQualityAverage(report, 'structuralChangedSentenceRatio'), '절·어순·호흡 기준'),
    adminQualityStat('정형 표현 개선', adminQualityAverage(report, 'rhetoricalRemediationCoverage'), '원문의 반복 결론·상투 표현 대상'),
+   adminQualityStat('반복 어휘 치환', `${adminNumber(summary.lexicalTransitionDocumentCount)}건`, `평균 ${adminNumber(report?.metrics?.lexicalTransitionCount?.average).toFixed(2)}회 · 관측 전용`),
+   adminQualityStat('세특 문장 조각', `${adminNumber(summary.studentRecordFragmentDocumentCount)}건`, '불완전 명사형 문장 잔존'),
+   adminQualityStat('기능문 중복 인사', `${adminNumber(summary.functionalGreetingDuplicationDocumentCount)}건`, '공지·메일 첫 인사 반복'),
+   adminQualityStat('인접 의미 반복', `${adminNumber(summary.adjacentSemanticRepetitionDocumentCount)}건`, '연속 문장·문단의 같은 내용'),
    adminQualityStat('p95 처리 시간', adminQualityDuration(report?.metrics?.processingDurationMs?.p95), '실제 실행 시작~완료'),
   adminQualityStat('자연성 위험 변화', adminQualityAverage(report, 'naturalnessOverallRiskDelta', true), '0 이하가 개선 방향', Number(report?.metrics?.naturalnessOverallRiskDelta?.average) > 0),
   adminQualityStat('리듬 균일화 변화', adminQualityAverage(report, 'rhythmUniformityDelta', true), '0 이하가 개선 방향', Number(report?.metrics?.rhythmUniformityDelta?.average) > 0)
@@ -4515,6 +4520,7 @@ function renderAdminHumanizeQuality(data) {
    ${adminQualityCodeList('전달 결정 사유', report.deliveryReasonCounts, '기술 차단 사유 없음')}
    ${adminQualityCodeList('원문 검토 신호', report.sourceReviewWarningCounts, '원문 검토 신호 없음')}
    ${adminQualityCodeList('한국어 교정 잔여', report.koreanRefinementIssueCounts, '한국어 교정 잔여 없음')}
+   ${adminQualityCodeList('반복 어휘 치환 (관측)', report.lexicalTransitionCounts, '반복 치환 징후 없음')}
    ${adminQualityCodeList('깊이 미달 사유', report.depthReasonCounts, '깊이 미달 없음')}
   </div>
   <div class="gp-admin-quality-section">
