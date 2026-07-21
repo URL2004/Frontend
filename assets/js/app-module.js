@@ -3983,7 +3983,7 @@ window.loadAdminHumanizeLab = async function() {
 
 // 관리자 탭: 섹션이 누적되며 세로 스크롤이 과도해져, 성격별 그룹만 표시 (선택은 세션 유지)
 window.adminSwitchTab = function(tab) {
- const valid = ['ops', 'quality', 'users', 'ledger', 'coupons', 'settings'];
+ const valid = ['ops', 'quality', 'users', 'ledger', 'coupons', 'settings', 'patches'];
  if (!valid.includes(tab)) tab = 'ops';
  try { sessionStorage.setItem('gpAdminTab', tab); } catch (e) {}
  document.querySelectorAll('#adminContent [data-admin-tab]').forEach(s => {
