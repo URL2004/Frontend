@@ -2261,7 +2261,7 @@ window.saveHistory = async (type, inputText, detectResult, humanResult, credits)
    data.outputText = humanResult.outputText || '';
    data.humanSummary = humanResult.summary || '';
    data.humanDetail = humanResult.detail || '';
-   if (['charged', 'waived_quality_shortfall', 'waived_repeat_low_benefit', 'plan_unlimited', 'admin_no_charge'].includes(humanResult.billingDisposition)) {
+   if (['charged', 'plan_unlimited', 'admin_no_charge'].includes(humanResult.billingDisposition)) {
     data.billingDisposition = humanResult.billingDisposition;
    }
    if (humanResult.qualityStatus === 'needs_review' || humanResult.qualityStatus === 'clean') data.qualityStatus = humanResult.qualityStatus;
@@ -3464,9 +3464,8 @@ function adminSetGptRuntimeForm(cfg) {
  adminGptSetValue('adminGptEscProtectedTermThreshold', escalation.protectedTermThreshold || 35);
  adminGptSetValue('adminGptEscPatchTargetThreshold', escalation.patchTargetThreshold || 24);
 
- const active = cfg.activeProvider === 'gpt' ? 'GPT 운영 중' : '공급자 설정 오류';
  const cacheLabel = cache.enabled === false ? '캐싱 꺼짐' : '캐싱 켜짐';
- adminSetMessage('adminGptRuntimeMsg', `${active} · ${models.humanizePrimary || 'gpt-5.4-mini'} · ${cacheLabel}`, 'info');
+ adminSetMessage('adminGptRuntimeMsg', `GPT 운영 중 · ${models.humanizePrimary || 'gpt-5.4-mini'} · ${cacheLabel}`, 'info');
 }
 
 function adminReadGptRuntimeForm() {
@@ -3479,7 +3478,6 @@ function adminReadGptRuntimeForm() {
   return Number.isFinite(n) ? n : fallback;
  };
  return {
-  activeProvider: 'gpt',
   models: {
    humanizePrimary: value('adminGptModelHumanizePrimary', 'gpt-5.4-mini'),
    humanizeEscalation: value('adminGptModelHumanizeEscalation', 'gpt-5.4'),
@@ -3535,7 +3533,7 @@ window.adminSaveGptRuntimeConfig = async function() {
  try {
   const data = await adminPost('/admin/update-gpt-runtime-config', { config: cfg });
   adminSetGptRuntimeForm(data.config || cfg);
-  adminSetMessage('adminGptRuntimeMsg', `저장 완료 · ${data.config?.activeProvider || cfg.activeProvider} 활성`, 'success');
+  adminSetMessage('adminGptRuntimeMsg', 'GPT 운영 설정 저장 완료', 'success');
  } catch (e) {
   adminSetMessage('adminGptRuntimeMsg', e.message || '운영 LLM 설정 저장에 실패했습니다.', 'error');
  }
@@ -4375,6 +4373,7 @@ function renderAdminJobs(data) {
 // ===== 관리자: 휴머나이징 품질 관측(원문·결과 미포함) =====
 const ADMIN_PROFILE_LABELS = {
  academic_paper: '논문·학술', report_assignment: '과제·보고서',
+ legal_contract: '계약서·약관',
  student_record_teacher: '세특·교사 관찰', student_self_assessment: '학생 자기평가',
  resume_application: '자소서·지원서', personal_essay: '개인 에세이',
  review_blog: '후기·블로그', marketing: '홍보·광고', social: 'SNS',
@@ -4451,9 +4450,12 @@ function renderAdminHumanizeQuality(data) {
   const stats = [
    adminQualityStat('전체 작업', total.toLocaleString('ko-KR') + '건', `완료 ${adminNumber(summary.completedCount)}건${data.truncated ? ' · 조회 상한 도달' : ''}`),
    adminQualityStat('검토 필요', adminQualityPercent(summary.needsReviewRate), `${adminNumber(summary.needsReviewCount)}건`, Number(summary.needsReviewRate) > .1),
-   adminQualityStat('차단', adminQualityPercent(summary.blockedRate), `${adminNumber(summary.blockedCount)}건`, Number(summary.blockedRate) > .02),
-   adminQualityStat('깊이 미달', adminQualityPercent(summary.depthBelowMinimumRate), `${adminNumber(summary.depthBelowMinimumCount)} / ${adminNumber(summary.depthApplicableCount)}건`, Number(summary.depthBelowMinimumRate) > .15),
-   adminQualityStat('품질·재결제 무차감', adminQualityPercent(summary.waivedRate), `${adminNumber(summary.waivedCount)}건`, false),
+   adminQualityStat('기술 차단', `${adminNumber(summary.technicalBlockedCount ?? summary.blockedCount)}건`, `전체 상태 차단 ${adminNumber(summary.blockedCount)}건`, Number(summary.technicalBlockedCount ?? summary.blockedCount) > 0),
+   adminQualityStat('효과 제한', `${adminNumber(summary.deliveredLimitedEffectCount ?? summary.limitedEffectCount)}건`, `깊이 목표 미달 ${adminNumber(summary.depthBelowMinimumCount)}건`, false),
+   adminQualityStat('승인 편집 0 과금', `${adminNumber(summary.zeroApprovedChargedCount)}건`, '반드시 0건이어야 함', adminNumber(summary.zeroApprovedChargedCount) > 0),
+   adminQualityStat('모델 전실패', `${adminNumber(summary.allModelFailureCount)}건`, '기술 차단 대상', adminNumber(summary.allModelFailureCount) > 0),
+   adminQualityStat('구조 서명 오류', `${adminNumber(summary.structureSignatureFailureCount)}건`, `절 경로 오류 ${adminNumber(summary.sectionPathErrorDocumentCount)}건`, adminNumber(summary.structureSignatureFailureCount) > 0),
+   adminQualityStat('과거 정책 무차감', adminQualityPercent(summary.waivedRate), `${adminNumber(summary.waivedCount)}건 · 신규 생성 안 함`, false),
    adminQualityStat('동일 문장 상한 초과', `${adminNumber(summary.carryoverOverLimitCount)}건`, '일반 산문 정책 기준', adminNumber(summary.carryoverOverLimitCount) > 0),
    adminQualityStat('섹션 회복 적용', `${adminNumber(summary.sectionRecoveryAppliedCount)}건`, `시도 문서 ${adminNumber(summary.sectionRecoveryAttemptedCount)}건`),
    adminQualityStat('평균 실질 편집', adminQualityAverage(report, 'substantiveEditRatio'), '문자 표면 교체 제외'),
@@ -4477,11 +4479,11 @@ function renderAdminHumanizeQuality(data) {
   <td class="muted">${escapeHtml(adminDateText(row.createdAtMs))}</td>
   <td>${escapeHtml(ADMIN_MODE_LABELS[row.requestedMode] || row.requestedMode || '미상')}</td>
   <td>${escapeHtml(ADMIN_PROFILE_LABELS[row.documentProfile] || row.documentProfile || '미분류')}</td>
-   <td>${escapeHtml(row.humanizationDeliveryDepthBand || '—')}</td>
+   <td><span class="gp-admin-quality-status ${row.effectStatus === 'limited' ? 'warn' : row.effectStatus === 'normal' ? 'clean' : 'muted'}">${row.effectStatus === 'limited' ? '제한' : row.effectStatus === 'normal' ? '정상' : '미측정'}</span></td>
    <td class="num">${adminQualityPercent(row.substantiveEditRatio)}</td>
-   <td class="num">${adminQualityPercent(row.substantiveCarryoverRatio)}</td>
-   <td class="num">${adminQualityPercent(row.structuralChangedSentenceRatio)}</td>
-   <td class="num">${adminNumber(row.sectionRecoveryAppliedCount)} / ${adminNumber(row.sectionRecoveryAttemptCount)}</td>
+   <td class="num">${adminNumber(row.approvedModelChunkCount)} / ${adminNumber(row.editableChunkCount)}</td>
+   <td class="num">${adminNumber(row.modelFailureChunkCount)}</td>
+   <td><span class="gp-admin-quality-status ${row.structureSignaturePass === false ? 'warn' : row.structureSignaturePass === true ? 'clean' : 'muted'}">${row.structureSignaturePass === false ? `오류 ${adminNumber(row.sectionPathErrorCount)}` : row.structureSignaturePass === true ? '통과' : '미측정'}</span></td>
   <td>${row.koreanRefinementPass === false
     ? '<span class="gp-admin-quality-status warn">확인</span>'
     : row.koreanRefinementPass === true
@@ -4505,13 +4507,15 @@ function renderAdminHumanizeQuality(data) {
   </div>
   <div class="gp-admin-quality-codes">
    ${adminQualityCodeList('결과 품질 경고', report.warningCounts, '결과 경고 없음')}
+   ${adminQualityCodeList('변환 효과 알림', report.effectNoticeCounts, '효과 제한 알림 없음')}
+   ${adminQualityCodeList('전달 결정 사유', report.deliveryReasonCounts, '기술 차단 사유 없음')}
    ${adminQualityCodeList('원문 검토 신호', report.sourceReviewWarningCounts, '원문 검토 신호 없음')}
    ${adminQualityCodeList('한국어 교정 잔여', report.koreanRefinementIssueCounts, '한국어 교정 잔여 없음')}
    ${adminQualityCodeList('깊이 미달 사유', report.depthReasonCounts, '깊이 미달 없음')}
   </div>
   <div class="gp-admin-quality-section">
    <div class="gp-admin-quality-section-head"><h4>최근 작업</h4><span>본문 없이 관측값만 표시</span></div>
-    <div class="gp-admin-table-wrap"><table class="gp-admin-table gp-admin-quality-recent"><thead><tr><th>시각</th><th>요청</th><th>글 종류</th><th>깊이</th><th class="num">편집</th><th class="num">동일 잔존</th><th class="num">구조</th><th class="num">섹션 회복</th><th>한국어</th><th>품질</th><th>과금</th></tr></thead><tbody>${recentRows}</tbody></table></div>
+    <div class="gp-admin-table-wrap"><table class="gp-admin-table gp-admin-quality-recent"><thead><tr><th>시각</th><th>요청</th><th>글 종류</th><th>효과</th><th class="num">편집</th><th class="num">승인/편집청크</th><th class="num">모델 실패</th><th>구조</th><th>한국어</th><th>품질</th><th>과금</th></tr></thead><tbody>${recentRows}</tbody></table></div>
   </div>`;
 }
 

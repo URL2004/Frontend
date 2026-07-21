@@ -791,6 +791,7 @@
   var DOCUMENT_PROFILE_LABELS = {
     academic_paper: '논문·학술글',
     report_assignment: '과제·보고서',
+    legal_contract: '계약서·약관',
     student_record_teacher: '세특·교사 관찰 기록',
     student_self_assessment: '학생 자기평가',
     resume_application: '자소서·지원서',
@@ -1240,6 +1241,8 @@
         e.effectExpectation = b.effectExpectation || '';
         e.effectNoticeCode = b.effectNoticeCode || '';
         e.requiresEffectConfirmation = b.requiresEffectConfirmation === true;
+        e.documentProfile = b.documentProfile || '';
+        e.editableChunkCount = Number.isFinite(Number(b.editableChunkCount)) ? Number(b.editableChunkCount) : null;
         throw e;
       }
       if (!res.ok || !b || !b.ok) throw new Error('시작하지 못했어요. 잠시 후 다시 눌러주세요. (크레딧은 차감되지 않았어요)');
@@ -1307,6 +1310,14 @@
 
   async function handleTransformStartError(err, fallbackStep) {
     stopFormalTicker();
+    if (err && err.httpStatus === 422 && err.code === 'NO_EDITABLE_CONTENT') {
+      clearJobRef();
+      show(fallbackStep || 'reduce');
+      var inputNotice = err.message || '변환할 일반 본문을 찾지 못했어요.';
+      if (window.gpToast) window.gpToast(inputNotice, { type: 'warning', title: '입력 내용을 확인해 주세요' });
+      else alert(inputNotice);
+      return;
+    }
     if (err && err.httpStatus === 409 && err.code === 'LIMITED_EFFECT_CONFIRMATION_REQUIRED') {
       var src = $('lavInput');
       lastDiag = Object.assign({}, lastDiag || fakeDiagnose(src ? src.value : ''), {
@@ -1477,9 +1488,36 @@
       ? '과제 어투로 다듬었어요. 사실과 분량은 원문 그대로 두고 문장만 정리했어요. (AI 티 줄이기와는 다른 기능이에요)'
       : '검사 결과는 글과 도구에 따라 달라서 수치로 약속하기는 어려워요. 결과가 만족스럽지 않으면 실제 경험이나 구체 사례를 더해 다시 정리해 보세요.';
     renderBillingDisposition(st);
+    renderResultNotices(st);
     if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
     lavSaveToLibrary(label, st.result && st.result.outputText, grade ? grade + '등급' : '');
     notifyJobDone(st, label);
+  }
+
+  function renderResultNotices(st) {
+    var result = st && st.result || {};
+    var effectWrap = $('lavResultEffectNotice');
+    var qualityWrap = $('lavResultQualityNotice');
+    var effectNotices = Array.isArray(result.effectNotices)
+      ? result.effectNotices
+      : (Array.isArray(st && st.effectNotices) ? st.effectNotices : []);
+    var effectLimited = (result.effectStatus || st && st.effectStatus) === 'limited';
+    if (effectWrap) {
+      effectWrap.hidden = !effectLimited;
+      effectWrap.textContent = effectLimited
+        ? (effectNotices[0] && effectNotices[0].message || '원문을 안전하게 지키느라 바꿀 수 있는 범위가 제한적이었어요.')
+        : '';
+    }
+    var qualityWarnings = Array.isArray(result.qualityWarnings)
+      ? result.qualityWarnings
+      : (Array.isArray(st && st.qualityWarnings) ? st.qualityWarnings : []);
+    var needsReview = (result.qualityStatus || st && st.qualityStatus) === 'needs_review' && qualityWarnings.length > 0;
+    if (qualityWrap) {
+      qualityWrap.hidden = !needsReview;
+      qualityWrap.textContent = needsReview
+        ? (qualityWarnings[0].message || '의미·수치·인용·구조 중 원문과 대조할 부분이 있어요.')
+        : '';
+    }
   }
 
   function renderBillingDisposition(st) {

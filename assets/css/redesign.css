@@ -12893,6 +12893,24 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 }
 .lav-trust-badge.ok{background:#e6f6ee;color:#177a4c;}
 .lav-trust-badge.ok::before{content:"✓";font-weight:800;}
+.lav-result-notice{
+ display:flex;
+ align-items:flex-start;
+ gap:8px;
+ margin:0 0 10px;
+ padding:10px 13px;
+ border:1px solid #e4dfcf;
+ border-radius:11px;
+ background:#fffbf0;
+ color:#76591c;
+ font-size:12.5px;
+ font-weight:650;
+ line-height:1.55;
+}
+.lav-result-notice::before{content:'i';display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:17px;height:17px;margin-top:1px;border-radius:50%;background:#efe4bf;color:#76591c;font:800 11px/1 sans-serif;}
+.lav-result-notice.is-quality{border-color:#ead9d9;background:#fff7f7;color:#7d3e46;}
+.lav-result-notice.is-quality::before{content:'!';background:#f2dddd;color:#8b4048;}
+.lav-result-notice[hidden]{display:none!important;}
 .lav-billing-notice{
  display:flex;
  align-items:flex-start;

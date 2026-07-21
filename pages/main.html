@@ -307,6 +307,7 @@
                  <option value="">자동 판별 (권장)</option>
                  <option value="academic_paper">논문·학술글</option>
                  <option value="report_assignment">과제·보고서</option>
+                 <option value="legal_contract">계약서·약관</option>
                  <option value="student_record_teacher">세특·교사 관찰 기록</option>
                  <option value="student_self_assessment">학생 자기평가</option>
                  <option value="resume_application">자소서·지원서</option>
@@ -467,6 +468,8 @@
              <span class="lav-trust-badge">한국어 표현 점검 대기</span>
            </div>
            <p class="lav-done-note" id="lavDoneNote" style="margin:2px 0 12px;font-size:12.5px;line-height:1.5;color:var(--text3);">예상치예요. 글의 구체성·길이·주제에 따라 AI 티 지수는 달라질 수 있어요. 결과가 만족스럽지 않으면 경험 메모를 더해 다시 돌려보세요.</p>
+           <div class="lav-result-notice is-effect" id="lavResultEffectNotice" role="status" hidden></div>
+           <div class="lav-result-notice is-quality" id="lavResultQualityNotice" role="status" hidden></div>
            <div class="lav-billing-notice" id="lavBillingNotice" role="status" hidden></div>
            <div class="lav-done-body lav-collapse" id="lavDoneBody"></div>
            <button type="button" class="lav-collapse-toggle" id="lavDoneToggle" onclick="lavToggleCollapse('lavDoneBody',this)" aria-expanded="false" hidden><span>펼쳐보기</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>

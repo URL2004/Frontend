@@ -95,9 +95,19 @@ test('애매한 글 종류 선택은 기본·고급 요청에 전달되고 자�
   ]);
   assert.match(main, /id="lavDocumentProfile"/u);
   assert.match(main, /자동 판별 \(권장\)/u);
+  assert.match(main, /value="legal_contract"[^>]*>계약서·약관</u);
   assert.match(main, /원문에서 장르가 뚜렷하면 안전을 위해 자동 판정을 우선/u);
   assert.match(evasion, /if \(s && s\.documentProfile\) body\.documentProfile = s\.documentProfile/u);
   assert.match(evasion, /documentProfile:\s*s\.documentProfile \|\| undefined/u);
+});
+
+test('구조만 있는 입력의 422는 일반 서버 장애가 아니라 입력 안내로 처리한다', async () => {
+  const evasion = await read('assets/js/evasion-flow.js');
+  const handler = evasion.slice(evasion.indexOf('async function handleTransformStartError'), evasion.indexOf('// 폴링:', evasion.indexOf('async function handleTransformStartError')));
+  assert.match(evasion, /e\.documentProfile = b\.documentProfile/u);
+  assert.match(handler, /err\.httpStatus === 422 && err\.code === 'NO_EDITABLE_CONTENT'/u);
+  assert.match(handler, /입력 내용을 확인해 주세요/u);
+  assert.ok(handler.indexOf("NO_EDITABLE_CONTENT") < handler.indexOf('LIMITED_EFFECT_CONFIRMATION_REQUIRED'));
 });
 
 test('한국어 장르 판정은 고급을 잠그지 않고 고급 차단 작업도 보존형으로 낮추지 않는다', async () => {
@@ -119,14 +129,17 @@ test('한국어 장르 판정은 고급을 잠그지 않고 고급 차단 작업
   assert.match(evasion, /offer\.fallbackOffer === true && st && st\.mode === 'blog'/u);
 });
 
-test('사용자 완료 화면과 이용 기록에는 내부 품질 경고를 표시하지 않는다', async () => {
+test('사용자 완료 화면은 실제 품질 경고와 변환 효과 제한을 구분해 표시한다', async () => {
   const [main, evasion, module] = await Promise.all([
     read('pages/main.html'),
     read('assets/js/evasion-flow.js'),
     read('assets/js/app-module.js')
   ]);
-  assert.doesNotMatch(main, /lavQualityWarning|lavSourceReview/u);
-  assert.doesNotMatch(evasion, /renderQualityWarnings|한국어 표현 확인 권장|완료 · 확인 권장/u);
+  assert.match(main, /id="lavResultEffectNotice"[^>]*role="status"[^>]*hidden/u);
+  assert.match(main, /id="lavResultQualityNotice"[^>]*role="status"[^>]*hidden/u);
+  assert.match(evasion, /function renderResultNotices/u);
+  assert.match(evasion, /effectStatus[^\n]*=== 'limited'/u);
+  assert.match(evasion, /qualityStatus[^\n]*=== 'needs_review'/u);
   const historyBlock = module.slice(module.indexOf('window.loadHistory'), module.indexOf('// --- 환불 시스템 UI ---'));
   assert.doesNotMatch(historyBlock, /완료된 결과의 확인 항목|historyQualityWarningMessage|완료 · 확인 권장/u);
   assert.match(evasion, /한국어 표현 점검 완료/u);
@@ -145,6 +158,9 @@ test('관리자 품질 탭은 본문 없이 장르 교차표와 깊이·한국�
   assert.match(source, /requestedModeDocumentProfileEngineQuality/u);
   assert.match(source, /rhetoricalRemediationCoverage/u);
   assert.match(source, /koreanRefinementPass/u);
+  assert.match(source, /technicalBlockedCount/u);
+  assert.match(source, /zeroApprovedChargedCount/u);
+  assert.match(source, /effectNoticeCounts/u);
   const qualityBlock = source.slice(source.indexOf('// ===== 관리자: 휴머나이징 품질 관측'), source.indexOf('window.adminJobsToggleAll'));
   assert.doesNotMatch(qualityBlock, /inputText|outputText/u);
 });
@@ -158,7 +174,10 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>패치노트</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 24);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 25);
+  assert.match(admin, /v2\.5\.0/u);
+  const timeline = admin.slice(admin.indexOf('gp-admin-patch-timeline'));
+  assert.ok(timeline.indexOf('v2.5.0') < timeline.indexOf('v2.4.18'));
   assert.match(admin, /휴머나이징 엔진 v2\.4\.18/u);
   assert.match(admin, /Backend 97e657d/u);
   assert.ok(admin.indexOf('v2.4.18') < admin.indexOf('v2.4.17'));
@@ -183,10 +202,10 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-153/u);
-  assert.match(boot, /var v = 'lav-153'/u);
-  assert.match(loader, /var ASSET_V = 'lav-153'/u);
-  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-152/u);
+  assert.match(index, /app-boot\.js\?v=lav-154/u);
+  assert.match(boot, /var v = 'lav-154'/u);
+  assert.match(loader, /var ASSET_V = 'lav-154'/u);
+  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-153/u);
 });
 
 test('효과 제한 입력은 기본·고급에서만 확인하고 서버 409를 일반 작업 충돌과 구분한다', async () => {
@@ -207,7 +226,7 @@ test('효과 제한 입력은 기본·고급에서만 확인하고 서버 409를
   assert.match(legacy, /확인하고 진행/u);
 });
 
-test('완료 화면·이용 기록·관리자 관측은 과금 처리 사유와 v2.4.8 지표를 표시한다', async () => {
+test('완료 화면·이용 기록·관리자 관측은 과금 처리와 v2.5 전달 지표를 표시한다', async () => {
   const [main, evasion, module] = await Promise.all([
     read('pages/main.html'),
     read('assets/js/evasion-flow.js'),
@@ -217,7 +236,9 @@ test('완료 화면·이용 기록·관리자 관측은 과금 처리 사유와 
   assert.match(evasion, /waived_quality_shortfall:\s*'과거 무차감 정책/u);
   assert.match(evasion, /waived_repeat_low_benefit:\s*'과거 무차감 정책/u);
   assert.match(module, /과거 정책 · 무차감/u);
-  assert.match(module, /depthBelowMinimumRate/u);
+  assert.match(module, /deliveredLimitedEffectCount/u);
+  assert.match(module, /zeroApprovedChargedCount/u);
+  assert.match(module, /structureSignatureFailureCount/u);
   assert.match(module, /substantiveCarryoverRatio/u);
   assert.match(module, /sectionRecoveryAppliedCount/u);
   assert.match(module, /processingDurationMs/u);
