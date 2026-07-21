@@ -202,9 +202,9 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-154/u);
-  assert.match(boot, /var v = 'lav-154'/u);
-  assert.match(loader, /var ASSET_V = 'lav-154'/u);
+  assert.match(index, /app-boot\.js\?v=lav-155/u);
+  assert.match(boot, /var v = 'lav-155'/u);
+  assert.match(loader, /var ASSET_V = 'lav-155'/u);
   assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-153/u);
 });
 
@@ -242,6 +242,8 @@ test('완료 화면·이용 기록·관리자 관측은 과금 처리와 v2.5 �
   assert.match(module, /substantiveCarryoverRatio/u);
   assert.match(module, /sectionRecoveryAppliedCount/u);
   assert.match(module, /processingDurationMs/u);
+  assert.match(module, /gates: Array\.isArray\(st\.gates\)/u);
+  assert.match(module, /gateDetail: st\.gateDetail/u);
 });
 
 test('배포 헤더는 프레이밍·MIME 스니핑·객체 삽입을 차단한다', async () => {

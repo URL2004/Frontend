@@ -3759,6 +3759,10 @@ function adminLabRenderResult(st) {
   status: st.status,
   mode: st.mode,
   stage: st.stage,
+  gates: Array.isArray(st.gates) ? st.gates : [],
+  gateDetail: st.gateDetail || null,
+  deliveryDecision: st.engineMeta?.deliveryDecision || result.engineMeta?.deliveryDecision || result.humanizeMeta?.engineMeta?.deliveryDecision || null,
+  deliveryReasonCodes: st.engineMeta?.deliveryReasonCodes || result.engineMeta?.deliveryReasonCodes || result.humanizeMeta?.engineMeta?.deliveryReasonCodes || [],
   result: {
    styleProfile: result.styleProfile,
    adminLabProfile: result.adminLabProfile,
