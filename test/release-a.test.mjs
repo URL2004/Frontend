@@ -158,14 +158,21 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>패치노트</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 14);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 23);
   assert.match(admin, /휴머나이징 엔진 v2\.4\.17/u);
   assert.match(admin, /Backend c5aa22d/u);
   assert.ok(admin.indexOf('v2.4.17') < admin.indexOf('v2.4.16'));
   assert.ok(admin.indexOf('v2.4.16') < admin.indexOf('v2.4.15'));
   assert.match(admin, /운영 휴머나이징 엔진 v2 구축/u);
   assert.match(admin, /관리자 실험실과 운영 화면 기반/u);
+  assert.match(admin, /2026년 6월/u);
+  assert.match(admin, /FLOOR v2 의미 보존 엔진과 운영 저장소 시작/u);
+  assert.match(admin, /운영 Git[\s\S]*592건/u);
+  assert.match(admin, /GPT·Claude 작업 기록[\s\S]*56개 세션/u);
+  assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
+  assert.match(admin, /실험·후속 대체/u);
   assert.match(styles, /\.gp-admin-patch-release>summary/u);
+  assert.match(styles, /\.gp-admin-patch-audit/u);
   assert.match(styles, /@media\(max-width:700px\)[^{]*\{/u);
 });
 
@@ -175,10 +182,10 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-152/u);
-  assert.match(boot, /var v = 'lav-152'/u);
-  assert.match(loader, /var ASSET_V = 'lav-152'/u);
-  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-151/u);
+  assert.match(index, /app-boot\.js\?v=lav-153/u);
+  assert.match(boot, /var v = 'lav-153'/u);
+  assert.match(loader, /var ASSET_V = 'lav-153'/u);
+  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-152/u);
 });
 
 test('효과 제한 입력은 기본·고급에서만 확인하고 서버 409를 일반 작업 충돌과 구분한다', async () => {

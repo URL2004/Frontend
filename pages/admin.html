@@ -49,10 +49,10 @@
     <section class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">14개 릴리스</span></h3>
-          <p>운영에 반영된 변경만 최신순으로 정리합니다. 미배포 실험과 로컬 전용 도구는 포함하지 않습니다.</p>
+          <h3>운영 패치노트 <span class="gp-admin-count">23개 변경 묶음</span></h3>
+          <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.07.02 — 07.21</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 07.21</span>
       </div>
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
@@ -62,7 +62,15 @@
         <span>2026.07.21 배포</span>
       </div>
 
+      <dl class="gp-admin-patch-audit" aria-label="패치노트 검토 범위">
+        <div><dt>운영 Git</dt><dd>592건</dd></div>
+        <div><dt>Backend / Frontend</dt><dd>416 / 176</dd></div>
+        <div><dt>GPT·Claude 작업 기록</dt><dd>56개 세션</dd></div>
+        <div><dt>정리 방식</dt><dd>기능 단위 병합</dd></div>
+      </dl>
+
       <div class="gp-admin-patch-timeline">
+        <div class="gp-admin-patch-month"><strong>2026년 7월</strong><span>14개 변경 묶음</span></div>
         <details class="gp-admin-patch-release" open>
           <summary>
             <span class="gp-admin-patch-version">v2.4.17</span>
@@ -277,6 +285,151 @@
             <li><span class="gp-admin-patch-area observe">설정</span><span>GPT 작업별 모델·reasoning·캐시·승격 정책과 한국어 품질 패턴을 관리자에서 확인·테스트할 수 있게 했습니다.</span></li>
             <li><span class="gp-admin-patch-area detect">AI 감지</span><span>감지 보정 설정과 최종 보고서 엔진 테스트, 국립국어원 로컬 품질 자원 비교 화면을 추가했습니다.</span></li>
             <li><span class="gp-admin-patch-area frontend">화면</span><span>우회 중심 표현을 휴머나이징 중심으로 개편하고 기본 스타일 선택·관리자 진입·마이페이지 작업 목록을 정리했습니다.</span></li>
+          </ul>
+        </details>
+
+        <div class="gp-admin-patch-month"><strong>2026년 6월</strong><span>9개 변경 묶음</span></div>
+
+        <details class="gp-admin-patch-release">
+          <summary>
+            <span class="gp-admin-patch-version">06.21–22</span>
+            <span class="gp-admin-patch-title"><b>출고 안전과 요금·결과 안내 마감</b><small>2026.06.21–22 · Backend/Frontend</small></span>
+            <span class="gp-admin-patch-state is-foundation">운영 기반</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area safety">출고</span><span>잘린 결과를 탐지하는 truncation guard와 FLOOR 캐시를 추가하고, 불완전한 결과가 정상 완료로 전달되지 않도록 막았습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">인용</span><span>모델이 남긴 URL 추적 흔적은 제거하되 원문 참고문헌과 정상 링크는 보존하도록 분리했습니다.</span></li>
+            <li><span class="gp-admin-patch-area billing">과금</span><span>짧은 휴머나이징의 최소 크레딧을 서버와 화면에 동일하게 표시하고, 인증 복원 뒤 결제 크레딧 확인을 재시도하도록 보강했습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">관측</span><span>클라이언트 결제 오류를 운영 이벤트로 남겨 결제 완료와 크레딧 반영 사이의 문제를 추적할 수 있게 했습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">문구</span><span>검증되지 않은 탐지율·회피율 보장과 고정 수치 표현을 걷어내고 결과 편차와 과금 조건을 사실대로 안내했습니다.</span></li>
+          </ul>
+        </details>
+
+        <details class="gp-admin-patch-release">
+          <summary>
+            <span class="gp-admin-patch-version">06.19–20</span>
+            <span class="gp-admin-patch-title"><b>인증·개인정보·결제 보안과 비용 관측</b><small>2026.06.19–20 · Backend/Frontend</small></span>
+            <span class="gp-admin-patch-state is-foundation">운영 기반</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area security">인증</span><span>휴머나이징과 감지 요청의 인증 토큰을 Authorization 헤더로 옮기고 URL query 폴백을 제거했습니다.</span></li>
+            <li><span class="gp-admin-patch-area security">개인정보</span><span>회원 탈퇴 시 결제 비밀정보와 작성 콘텐츠를 함께 정리하고, 복원된 로그인 세션을 기다린 뒤 작업을 시작하도록 고쳤습니다.</span></li>
+            <li><span class="gp-admin-patch-area billing">결제</span><span>결제 키를 서버 전용 저장소로 분리하고 구독 웹훅·해지 정리·보너스 크레딧 지급 경로를 보강했습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">비용</span><span>판정·수리·근거 검색을 포함한 LLM 사용량과 작업별 예상 비용을 기록하고, 재시도·캐시 토큰 집계를 정리했습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">관리</span><span>사용자 감사 내역을 페이지로 조회하고 결과 없는 크레딧 차감 건의 발견·처리 상태를 추적하도록 추가했습니다.</span></li>
+            <li><span class="gp-admin-patch-area detect">Shadow</span><span>입력 위험도와 대리 지표는 운영 결과를 바꾸지 않는 관측값으로만 기록했습니다. 현재 출고 게이트에는 사용하지 않습니다.</span></li>
+          </ul>
+        </details>
+
+        <details class="gp-admin-patch-release">
+          <summary>
+            <span class="gp-admin-patch-version">06.17–19</span>
+            <span class="gp-admin-patch-title"><b>운영 표본 기반 장르·사실·구조 전수 감사</b><small>2026.06.17–19 · Backend</small></span>
+            <span class="gp-admin-patch-state is-superseded">후속 발전</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area observe">평가</span><span>운영 원문·결과 표본과 88·100개 회귀 사례를 비교해 실제 차단, 날조, 문체 혼합, 구조 손상 원인을 분류했습니다.</span></li>
+            <li><span class="gp-admin-patch-area route">라우팅</span><span>격식체 원문, 과학·기술 보고서, 장문 논문을 보존형 청크 경로로 보내고 영어 입력은 변환 전에 별도 처리했습니다.</span></li>
+            <li><span class="gp-admin-patch-area layout">구조</span><span>목차·참고문헌을 원문 그대로 잠그고 문장 경계 공백, 기술 코드형 토큰, 긴 문단 분할을 복구했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">사실</span><span>부호와 한국식 수량을 다루는 사실 AST를 도입하고, 숫자·출처 쌍과 인용·경험의 신규 생성 여부를 재검사했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">중복</span><span>부정·가능성의 방향이 다른 유사 문장을 삭제하지 않도록 dedupe에 의미 시그니처 보호를 추가했습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">기록</span><span>휴머나이징 이력에 요청 모드를 기록해 이후 모드별 운영 분석이 가능하도록 데이터 공백을 줄였습니다.</span></li>
+          </ul>
+        </details>
+
+        <details class="gp-admin-patch-release">
+          <summary>
+            <span class="gp-admin-patch-version">06.17–18</span>
+            <span class="gp-admin-patch-title"><b>장르 재구성과 사용자 메모·작업 감사</b><small>2026.06.17–18 · Backend/Frontend</small></span>
+            <span class="gp-admin-patch-state is-superseded">후속 발전</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area genre">장르</span><span>격식 보고서형을 포함한 문서 골격과 프로필별 문체를 도입하고, 교과서식 정의문·고립된 경구·불필요한 간접화법을 정리했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">보존</span><span>숫자 재주입, 길이 규율, 메타 토큰 제거, 인접 중복 정리를 거쳐 구조를 바꿔도 원문 사실이 남도록 보강했습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">코칭</span><span>원문에서 도출한 선택 후보와 사용자 경험 메모를 변환에 전달하되, 원문에 없는 경험을 만들지 않도록 제한했습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">화면</span><span>기본·고급 시작 화면에 코칭 선택과 항목별 메모 입력을 연결하고 로딩 중 중복 실행을 막았습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">감사</span><span>변환 작업 아카이브와 결과 없는 차감 탐지를 추가해 작업·청구 대조가 가능해졌습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">검증</span><span>실측에서 악화된 문단 병합 등 후보는 즉시 되돌렸습니다. 이 시기 재구성 규칙은 7월 문서 프로필 엔진으로 후속 대체됐습니다.</span></li>
+          </ul>
+        </details>
+
+        <details class="gp-admin-patch-release">
+          <summary>
+            <span class="gp-admin-patch-version">06.14–16</span>
+            <span class="gp-admin-patch-title"><b>관리자 운영·환불과 장기 작업 복구</b><small>2026.06.14–16 · Backend/Frontend</small></span>
+            <span class="gp-admin-patch-state is-foundation">운영 기반</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area observe">관리</span><span>매출 요약, 사용자 작업·크레딧 이력, 환불 요청과 전액·부분·누적 환불 API 및 관리자 화면을 구축했습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">작업</span><span>변환 작업 대기열, 충돌 시 기존 작업 복원, 서버 재시작 뒤 활성 작업 회복과 완료 결과 영속화를 보강했습니다.</span></li>
+            <li><span class="gp-admin-patch-area security">인증</span><span>장기 폴링 중 토큰이 만료되면 작업 참조를 잃지 않고 인증을 갱신해 같은 작업을 계속 조회하도록 고쳤습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">출고</span><span>무변환·문체 불일치·영어 아티팩트·문장 절단을 검사하고, 프롬프트나 판정 마크다운이 결과에 섞이지 않도록 정리했습니다.</span></li>
+            <li><span class="gp-admin-patch-area route">라우팅</span><span>긴 논문과 각주가 있는 학술문을 청크 경로로 보내고, 재구성에 맞지 않는 글은 과도한 창작 전에 보호했습니다.</span></li>
+            <li><span class="gp-admin-patch-area detect">당시 정책</span><span>AI 감지 무료 횟수와 이후 과금 정책을 도입했습니다. 이 정책과 화면 문구는 7월 운영 정책으로 대체됐습니다.</span></li>
+          </ul>
+        </details>
+
+        <details class="gp-admin-patch-release">
+          <summary>
+            <span class="gp-admin-patch-version">06.13</span>
+            <span class="gp-admin-patch-title"><b>라벤더 제품 화면과 고객지원·운영 셸 구축</b><small>2026.06.13–14 · Frontend/Backend</small></span>
+            <span class="gp-admin-patch-state is-foundation">운영 기반</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area frontend">디자인</span><span>여러 시안을 라벤더 단일 디자인으로 통합하고 초기 화면 깜빡임, 모바일 입력·전송, 버튼·다이얼로그·알림의 일관성을 정리했습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">결과</span><span>AI 감지 보고서와 휴머나이저를 분리하고 긴 결과 접기, 새 글, 로컬 보관함, Markdown 다운로드 흐름을 추가했습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">지원</span><span>공개 Q&amp;A를 FAQ와 계정별 1:1 문의로 분리하고, 본인 문의만 조회하도록 권한과 화면을 함께 맞췄습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">운영</span><span>구조화 로그, 점검 모드, 장애·매출·CS 알림과 관리자 진입·작업 모니터 기반을 마련했습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">정보</span><span>사용 가이드, 약관·정책·사업자정보, SEO 경로, 프리렌더, 파비콘·공유 이미지와 분석 스크립트를 정비했습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">모드</span><span>기본과 다듬기도 비동기 작업으로 전환해 새로고침 뒤 진행 상태와 결과를 복원하도록 연결했습니다.</span></li>
+          </ul>
+        </details>
+
+        <details class="gp-admin-patch-release">
+          <summary>
+            <span class="gp-admin-patch-version">06.11–12</span>
+            <span class="gp-admin-patch-title"><b>진단·비동기 변환과 근거 승인 플랫폼</b><small>2026.06.11–13 · Backend/Frontend</small></span>
+            <span class="gp-admin-patch-state is-foundation">운영 기반</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">API</span><span>진단 API와 비동기 변환 작업을 연결하고, 완료 시점에만 차감하며 차단·취소·결과 없음은 차감하지 않는 기본 구조를 만들었습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">작업</span><span>작업 ID 폴링, 진행 상태, 취소, 새로고침·재방문 복원, 서버 종료 중 작업 보호를 도입했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">근거</span><span>근거 검색 결과를 출처 등급과 수치 충돌로 검토하고, 사용자가 승인한 근거만 변환에 쓰는 대기·승인 흐름을 구축했습니다.</span></li>
+            <li><span class="gp-admin-patch-area billing">한도</span><span>최대 3만 자 입력, 길이 구간별 예상 시간·크레딧과 근거 보강 비용을 서버·화면에 연결했습니다. 세부 단가는 이후 정책에서 조정됐습니다.</span></li>
+            <li><span class="gp-admin-patch-area layout">문단</span><span>모델이 문장마다 줄을 바꾸는 결과를 일반 문단으로 정리하고, 한국어 어절 단위 줄바꿈을 화면에 적용했습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">안내</span><span>가짜 진행률 대신 실제 상태와 예상 범위를 보여 주고, 실패·차단 사유와 다시 시작할 방법을 화면에 표시했습니다.</span></li>
+          </ul>
+        </details>
+
+        <details class="gp-admin-patch-release">
+          <summary>
+            <span class="gp-admin-patch-version">06.07–10</span>
+            <span class="gp-admin-patch-title"><b>자연성·화자·리듬 개선 실험과 안전 채택 규칙</b><small>2026.06.07–10 · Backend</small></span>
+            <span class="gp-admin-patch-state is-experiment">실험·후속 대체</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area safety">근거화</span><span>원문 내부의 구체 표현만 사용해 추상 문장을 보완하고, 사용자 메모는 관련 문단에 한 번만 쓰도록 중복·날조 방지 규칙을 실험했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">경험</span><span>새로운 개인 경험과 행동을 만드는 후보를 감지해 해당 구간만 폐기하고 나머지 안전한 수정은 살리는 세그먼트 가드를 도입했습니다.</span></li>
+            <li><span class="gp-admin-patch-area korean">문체</span><span>원문 높임말·평어와 화자를 감지하고 문장 길이, 문단 호흡, 접속 표현, 압축도를 조절하는 여러 자연성 패스를 비교했습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">채택</span><span>후보가 중복·분량·사실·문체를 악화시키면 이전 안전 결과로 되돌리는 acceptance gate와 결정론 비교기를 추가했습니다.</span></li>
+            <li><span class="gp-admin-patch-area infra">성능</span><span>청크·후처리 병렬화, 재시도 규율, 프롬프트 캐시와 작업별 모델 티어를 검증해 긴 글 처리시간과 비용을 줄였습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">상태</span><span>당시 공급자·대리점수·격식체 1인칭 주입 실험은 현재 GPT v2와 POV 보존 정책으로 대체됐으며 운영 게이트로 사용하지 않습니다.</span></li>
+          </ul>
+        </details>
+
+        <details class="gp-admin-patch-release">
+          <summary>
+            <span class="gp-admin-patch-version">06.04–05</span>
+            <span class="gp-admin-patch-title"><b>FLOOR v2 의미 보존 엔진과 운영 저장소 시작</b><small>2026.06.04–05 · Backend/Frontend</small></span>
+            <span class="gp-admin-patch-state is-superseded">후속 발전</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area infra">기반</span><span>프런트·백엔드 운영 저장소를 새 기준선으로 이전하고 휴머나이징 엔진의 회귀 테스트와 결과 보고 도구를 함께 구성했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">FLOOR</span><span>화자, 길이, 숫자·단위, 영문 약어·고유명사, 결론 방향을 검사하는 결정론 안전 바닥을 전 모드에 적용했습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">장문</span><span>원문 문자 범위를 보존하는 서버 청크 분리·병합과 결론 반복 가드를 만들고 과도하게 긴 문단을 한 번 더 나눴습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">의미</span><span>저비용 위험 선별, 주장 원장, 의미 판정, 국소 수리, 수리 악화 시 이전 결과 복귀로 이어지는 닫힌 루프를 구축했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">중복</span><span>완전·근접 중복과 새 사실·사실 누락을 검사하되 충실한 의역과 정상적인 영어 대문자를 오탐하지 않도록 보정했습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">검증</span><span>장문 블로그·논문·영문·경계 사례와 held-out 의미 판정 세트를 추가해 안전 규칙의 재현율과 오탐을 측정했습니다.</span></li>
           </ul>
         </details>
       </div>
