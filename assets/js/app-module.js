@@ -4286,7 +4286,7 @@ window.adminToggleLogItem = async function(id) {
    : it;
   const block = (label, text, mono) => text
    ? `<div class="gp-admin-log-block">
-        <div class="gp-admin-log-block-head"><span>${escapeHtml(label)}</span><button type="button" class="gp-admin-mini-btn" onclick="adminCopyText(this)" data-copy="${escapeHtml(text)}">복사</button></div>
+        <div class="gp-admin-log-block-head"><span>${escapeHtml(label)}</span><button type="button" class="gp-admin-mini-btn" onclick="adminCopyText(this)">복사</button></div>
         <div class="gp-admin-log-text${mono ? ' mono' : ''}">${escapeHtml(text)}</div>
       </div>`
    : '';
@@ -4315,14 +4315,58 @@ window.adminToggleLogItem = async function(id) {
  }
 };
 
-window.adminCopyText = function(btn) {
- const text = btn?.dataset?.copy || '';
- if (!text) return;
- navigator.clipboard.writeText(text).then(() => {
+function adminLegacyCopy(text) {
+ const textarea = document.createElement('textarea');
+ textarea.value = text;
+ textarea.setAttribute('readonly', '');
+ textarea.setAttribute('aria-hidden', 'true');
+ textarea.style.position = 'fixed';
+ textarea.style.left = '-9999px';
+ textarea.style.top = '0';
+ textarea.style.opacity = '0';
+ textarea.style.pointerEvents = 'none';
+ document.body.appendChild(textarea);
+ textarea.focus();
+ textarea.select();
+ textarea.setSelectionRange(0, text.length);
+ let copied = false;
+ try {
+  copied = document.execCommand('copy');
+ } catch (_) {
+  copied = false;
+ } finally {
+  textarea.remove();
+ }
+ return copied;
+}
+
+async function adminWriteClipboardText(text) {
+ // execCommand는 deprecated지만 일부 브라우저·관리자 환경에서 Clipboard API 권한이
+ // 거부될 때도 실제 버튼 클릭의 사용자 제스처 안에서 안정적으로 동작한다.
+ if (adminLegacyCopy(text)) return;
+ if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+  await navigator.clipboard.writeText(text);
+  return;
+ }
+ throw new Error('CLIPBOARD_UNAVAILABLE');
+}
+
+window.adminCopyText = async function(btn) {
+ const textEl = btn?.closest?.('.gp-admin-log-block')?.querySelector?.('.gp-admin-log-text');
+ const text = textEl?.textContent || '';
+ if (!text) {
+  if (window.gpToast) window.gpToast('복사할 내용이 없습니다.', { type: 'error', title: '복사 실패' });
+  return;
+ }
+ try {
+  await adminWriteClipboardText(text);
   const prev = btn.textContent;
   btn.textContent = '복사됨';
   setTimeout(() => { btn.textContent = prev; }, 1200);
- }).catch(() => alert('복사 실패'));
+ } catch (_) {
+  if (window.gpToast) window.gpToast('브라우저에서 복사를 허용하지 않았습니다.', { type: 'error', title: '복사 실패' });
+  else alert('복사 실패');
+ }
 };
 
 // ===== 관리자: 작업 모니터 (transformJobArchive) =====

@@ -57,8 +57,8 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-        <strong>휴머나이징 엔진 v2.5.1 · 관리자 크레딧 내역 분리</strong>
-        <code>Backend ccfa973 · Frontend admin-credit-ui</code>
+        <strong>휴머나이징 엔진 v2.5.1 · 관리자 내역 화면 보강</strong>
+        <code>Backend ccfa973 · Frontend admin-copy-ui</code>
         <span>2026.07.22 운영 배포</span>
       </div>
 
@@ -74,7 +74,7 @@
         <details class="gp-admin-patch-release" open>
           <summary>
             <span class="gp-admin-patch-version">관리자 Hotfix</span>
-            <span class="gp-admin-patch-title"><b>사용자 크레딧 사용·충전 내역 분리</b><small>2026.07.22 · Backend ccfa973 · Frontend admin-credit-ui</small></span>
+            <span class="gp-admin-patch-title"><b>사용자 크레딧 내역 분리·작업 기록 복사 수정</b><small>2026.07.22 · Backend ccfa973 · Frontend admin-copy-ui</small></span>
             <span class="gp-admin-patch-state is-live">운영 중</span>
           </summary>
           <ul>
@@ -82,6 +82,7 @@
             <li><span class="gp-admin-patch-area billing">충전</span><span>일반 크레딧 충전과 정기결제의 충전 크레딧, 결제 금액, 상태, 일시, 주문번호를 한곳에서 확인하고 목록이 길면 20건씩 이동할 수 있습니다.</span></li>
             <li><span class="gp-admin-patch-area safety">호환</span><span>사용 내역에서 충전 원장 중복을 제거하고, 구형 credits 필드와 신규 paymentKeyPresent 주문을 모두 읽도록 보강했습니다. 사용자별 최근 결제 조회 범위는 각 결제 유형 100건으로 확대했습니다.</span></li>
             <li><span class="gp-admin-patch-area billing">환불</span><span>충전 내역을 페이지로 나눠도 원래 주문과 환불 작업이 정확히 연결되도록 주문 인덱스를 보존했습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">복사</span><span>사용자 작업 기록의 입력 원문·휴머나이징 결과 복사가 브라우저 권한 때문에 실패하던 문제를 수정했습니다. 대용량 HTML 속성 대신 표시 본문을 직접 읽고 호환 복사 방식으로 자동 전환합니다.</span></li>
           </ul>
         </details>
         <details class="gp-admin-patch-release" open>
