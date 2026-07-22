@@ -2312,12 +2312,15 @@ window.loadHistory = async () =>{
  const h = d.data();
  const date = h.createdAt ? new Date(h.createdAt.toDate()).toLocaleString('ko-KR') : '';
  const isDetect = h.type === 'detect';
+ const detectView = isDetect && typeof window.gpNormalizeDetectPresentation === 'function'
+  ? window.gpNormalizeDetectPresentation(h)
+  : h;
  const preview = h.inputText ? h.inputText.substring(0, 60) + (h.inputText.length >60 ? '...' : '') : '';
  const safeDate = escapeHtml(date);
  const safePreview = escapeHtml(preview);
  const safeInputText = escapeHtml(h.inputText || '');
- const safeSummary = escapeHtml(h.summary || '');
- const safeDetail = escapeHtml(h.detail || '');
+ const safeSummary = escapeHtml(detectView.summary || '');
+ const safeDetail = escapeHtml(detectView.detail || '');
  const safeOutputText = escapeHtml(h.outputText || '');
  const safeHumanSummary = escapeHtml(h.humanSummary || '');
  const safeCredits = Math.max(0, Number(h.credits) || 0).toLocaleString('ko-KR');
@@ -2326,7 +2329,7 @@ window.loadHistory = async () =>{
  // 탐지 결과 배지
  let resultBadge = '';
  if (isDetect) {
- const rawProbability = Number(h.probability);
+ const rawProbability = Number(detectView.probability);
  const p = Number.isFinite(rawProbability) ? Math.max(0, Math.min(100, rawProbability)) : undefined;
  let badgeColor, badgeLabel;
  if (p <= 20) { badgeColor = 'var(--green)'; badgeLabel = ' 안전'; }
@@ -4193,7 +4196,10 @@ window.renderAdminUserLog = function() {
   const ti = adminLogTypeInfo(it.type);
   const isDetect = it.type === 'detect';
   const itemId = jsAttr(it.id);
-  const preview = isDetect ? (it.summaryPreview || it.inputPreview) : (it.outputPreview || it.inputPreview);
+  const detectPreview = isDetect && typeof window.gpNormalizeDetectPresentation === 'function'
+   ? window.gpNormalizeDetectPresentation({ probability: it.probability, summary: it.summaryPreview || '' })
+   : null;
+  const preview = isDetect ? (detectPreview?.summary || it.inputPreview) : (it.outputPreview || it.inputPreview);
   const billing = historyBillingInfo(it.billingDisposition, it.credits);
   const lenInfo = isDetect
    ? `입력 ${adminNumber(it.inputLen).toLocaleString('ko-KR')}자`
@@ -4238,6 +4244,9 @@ window.adminToggleLogItem = async function(id) {
  try {
   const data = await adminPost('/admin/user-history-item', { uid: window._adminUserLog.uid, id });
   const it = data.item || {};
+  const detectView = it.type === 'detect' && typeof window.gpNormalizeDetectPresentation === 'function'
+   ? window.gpNormalizeDetectPresentation(it)
+   : it;
   const block = (label, text, mono) => text
    ? `<div class="gp-admin-log-block">
         <div class="gp-admin-log-block-head"><span>${escapeHtml(label)}</span><button type="button" class="gp-admin-mini-btn" onclick="adminCopyText(this)" data-copy="${escapeHtml(text)}">복사</button></div>
@@ -4247,16 +4256,16 @@ window.adminToggleLogItem = async function(id) {
   let html = '';
   html += block('입력 원문', it.inputText, true);
   if (it.type === 'detect') {
-   if (typeof it.probability === 'number') {
+   if (typeof detectView.probability === 'number') {
     const cal = it.probabilityCalibration || {};
     const raw = typeof it.rawProbability === 'number' ? Math.round(it.rawProbability) : null;
-    const note = raw !== null && raw !== Math.round(it.probability)
+    const note = raw !== null && raw !== Math.round(detectView.probability)
      ? `<div style="margin-top:6px;color:var(--text3);font-size:12px;">원점수 ${raw}% · ${escapeHtml(cal.reason || 'test calibration')}</div>`
      : '';
-    html += `<div class="gp-admin-log-block"><div class="gp-admin-log-block-head"><span>AI 탐지 확률</span></div><div class="gp-admin-log-text">${Math.round(it.probability)}%${note}</div></div>`;
+    html += `<div class="gp-admin-log-block"><div class="gp-admin-log-block-head"><span>AI 탐지 확률</span></div><div class="gp-admin-log-text">${Math.round(detectView.probability)}%${note}</div></div>`;
    }
-   html += block('탐지 요약', it.summary, false);
-   html += block('탐지 상세', it.detail, true);
+   html += block('탐지 요약', detectView.summary, false);
+   html += block('탐지 상세', detectView.detail, true);
   } else {
    html += block('결과', it.outputText, true);
    html += block('결과 요약', it.humanSummary, false);

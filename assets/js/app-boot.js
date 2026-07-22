@@ -4,7 +4,7 @@
     return;
   }
 
-  var v = 'lav-157';
+  var v = 'lav-158';
   function script(src, attrs) {
     attrs = attrs || '';
     document.write('<script ' + attrs + ' src="' + src + '"><\/script>');
@@ -12,6 +12,7 @@
 
   script('/assets/js/page-loader.js?v=' + v);
   script('/assets/js/ui-feedback.js?v=' + v);
+  script('/assets/js/detect-presentation.js?v=' + v);
   script('/assets/js/app-main.js?v=' + v);
   script('/assets/js/main-designs.js?v=' + v);
   script('/assets/js/evasion-flow.js?v=' + v);

@@ -379,9 +379,13 @@
   var lastReport = null;   // 보고서 → 휴머나이저 핸드오프용(진단 배너 채움)
 
   function renderReport(d) {
+    if (typeof window.gpNormalizeDetectPresentation === 'function') {
+      d = window.gpNormalizeDetectPresentation(d);
+    }
     lastReport = d;
     var p = d.probability;
-    var sev = p == null ? '' : p >= 70 ? 'bad' : p >= 40 ? 'mid' : 'good';
+    var level = d.riskLevel || (p >= 50 ? 'high' : p >= 21 ? 'moderate' : 'low');
+    var sev = p == null ? '' : level === 'high' ? 'bad' : level === 'moderate' ? 'mid' : 'good';
     if ($('lavRepProb')) $('lavRepProb').textContent = (p == null ? '—' : p);
     var score = $('lavRepScore');
     if (score) score.className = 'lav-rep-hero' + (sev ? ' ' + sev : '');
@@ -399,7 +403,7 @@
     var badge = $('lavRepBadge');
     if (badge) {
       badge.hidden = (p == null);
-      badge.textContent = sev === 'bad' ? 'AI 의심 높음' : sev === 'mid' ? 'AI 의심 중간' : 'AI 의심 낮음';
+      badge.textContent = d.riskLabel || (sev === 'bad' ? 'AI 의심 높음' : sev === 'mid' ? 'AI 의심 중간' : 'AI 의심 낮음');
       badge.className = 'lav-rep-badge' + (sev ? ' ' + sev : '');
     }
     if ($('lavRepTitle')) $('lavRepTitle').textContent = d.title || '분석 결과';

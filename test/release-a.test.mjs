@@ -181,10 +181,12 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>패치노트</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 26);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 27);
+  assert.match(admin, /AI 감지 점수·설명 일관성 보정/u);
   assert.match(admin, /v2\.5\.1/u);
   assert.match(admin, /v2\.5\.0/u);
   const timeline = admin.slice(admin.indexOf('gp-admin-patch-timeline'));
+  assert.ok(timeline.indexOf('감지 Hotfix') < timeline.indexOf('v2.5.1'));
   assert.ok(timeline.indexOf('v2.5.1') < timeline.indexOf('v2.5.0'));
   assert.ok(timeline.indexOf('v2.5.0') < timeline.indexOf('v2.4.18'));
   assert.match(admin, /휴머나이징 엔진 v2\.5\.1/u);
@@ -211,9 +213,9 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-157/u);
-  assert.match(boot, /var v = 'lav-157'/u);
-  assert.match(loader, /var ASSET_V = 'lav-157'/u);
+  assert.match(index, /app-boot\.js\?v=lav-158/u);
+  assert.match(boot, /var v = 'lav-158'/u);
+  assert.match(loader, /var ASSET_V = 'lav-158'/u);
   assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-153/u);
 });
 

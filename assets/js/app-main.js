@@ -614,6 +614,7 @@ function renderProResult(result, apiMode) {
  const wrap = document.getElementById('proResult');
  if (!wrap) return;
  if (apiMode === 'detect') {
+   if (typeof window.gpNormalizeDetectPresentation === 'function') result = window.gpNormalizeDetectPresentation(result);
    const p = (result.probability ?? 0);
    wrap.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;">'
      + '<div style="font-size:13px;color:var(--text3);">AI 작성 가능성</div>'
@@ -1400,24 +1401,25 @@ async function runAnalysis() {
 }
 
 function renderDetect(r) {
+ if (typeof window.gpNormalizeDetectPresentation === 'function') r = window.gpNormalizeDetectPresentation(r);
  const p = r.probability;
  let bc, bl, mainMsg, subMsg;
 
  if (p <= 20) {
  bc = 'safe';
  bl = ' 안전';
- mainMsg = '사람이 쓴 글로 보여요';
- subMsg = 'AI 작성 흔적이 거의 감지되지 않았습니다. 자연스러운 문체와 개인적인 표현이 잘 드러나 있어 사람이 쓴 글처럼 읽힙니다.';
+ mainMsg = 'AI 생성 신호가 낮게 감지됐어요';
+ subMsg = '현재 점수는 낮은 구간입니다. 감지 결과는 문체 패턴에 대한 추정치이며 실제 작성 주체를 확정하지 않습니다.';
  } else if (p <= 49) {
  bc = 'caution';
  bl = ' 조심';
- mainMsg = 'AI 패턴이 일부 감지됐어요';
- subMsg = '일부 AI 특유의 표현이 포함되어 있어 AI가 쓴 글처럼 보일 수 있어요. 휴머나이저로 한 번 더 다듬어보세요.';
+ mainMsg = 'AI 생성 신호가 일부 감지됐어요';
+ subMsg = '일부 정형적인 문체 특징이 관찰됐습니다. 점수와 상세 근거를 함께 참고해 주세요.';
  } else {
  bc = 'danger';
  bl = ' 위험';
- mainMsg = 'AI가 작성한 글일 가능성이 높아요';
- subMsg = 'AI가 쓴 글에서 자주 보이는 패턴이 보여요. 그대로 내면 AI 글로 보일 가능성이 높아요. ‘AI 티 줄이기’로 한 번 다듬어 보세요.';
+ mainMsg = 'AI 생성 신호가 높게 감지됐어요';
+ subMsg = '표시된 문체 특징이 점수를 높인 신호입니다. 이 결과만으로 실제 작성 주체가 확정되는 것은 아닙니다.';
  }
 
  const gaugeColor = bc === 'safe' ? '#36d39b' : bc === 'caution' ? '#f4b454' : '#ff6d78';
