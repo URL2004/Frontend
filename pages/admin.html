@@ -49,7 +49,7 @@
     <section class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">28개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">29개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
         <span class="gp-admin-patch-range">2026.06.04 — 07.22</span>
@@ -57,20 +57,35 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-        <strong>휴머나이징 엔진 v2.5.1 · 관리자 내역 화면 보강</strong>
-        <code>Backend ccfa973 · Frontend admin-copy-ui</code>
+        <strong>휴머나이징 엔진 v2.5.2 · 원문 문단 역할 보존</strong>
+        <code>Backend d0ef190 · Frontend paragraph-role-note</code>
         <span>2026.07.22 운영 배포</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="패치노트 검토 범위">
-        <div><dt>운영 Git</dt><dd>608건</dd></div>
-        <div><dt>Backend / Frontend</dt><dd>426 / 182</dd></div>
+        <div><dt>운영 Git</dt><dd>610건</dd></div>
+        <div><dt>Backend / Frontend</dt><dd>427 / 183</dd></div>
         <div><dt>GPT·Claude 작업 기록</dt><dd>56개 세션</dd></div>
         <div><dt>정리 방식</dt><dd>기능 단위 병합</dd></div>
       </dl>
 
       <div class="gp-admin-patch-timeline">
-        <div class="gp-admin-patch-month"><strong>2026년 7월</strong><span>19개 변경 묶음</span></div>
+        <div class="gp-admin-patch-month"><strong>2026년 7월</strong><span>20개 변경 묶음</span></div>
+        <details class="gp-admin-patch-release" open>
+          <summary>
+            <span class="gp-admin-patch-version">v2.5.2</span>
+            <span class="gp-admin-patch-title"><b>원문 문단 역할·사례 결론 귀속 보존</b><small>2026.07.22 · Backend d0ef190 · Frontend paragraph-role-note</small></span>
+            <span class="gp-admin-patch-state is-live">운영 중</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area layout">문단 구조</span><span>읽기 좋게 나뉜 일반·고급 원문의 문단을 최대 8개로 다시 압축하던 후처리를 제거했습니다. 문단이 3개 이상이면 원문의 주제 역할과 순서를 기준으로 결과 경계를 정렬합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">결론 귀속</span><span>‘이를 통해’, ‘이 과정에서’, ‘현장에서는 … 배웠습니다’ 같은 국소 결론은 바로 앞 사례와 같은 문단에 남기고, 다음 활동·계약·안전 등 새 주제 앞에 붙지 않도록 복원합니다.</span></li>
+            <li><span class="gp-admin-patch-area layout">입력 호환</span><span>빈 줄로 나눈 문단과 워드·입력창에서 완결 문장 뒤 한 줄만 내린 문단을 모두 원문 역할 경계로 인식합니다. 시간·활동 단계가 다른 문단은 서로 합치지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">안전 복원</span><span>모델 문장을 이동하거나 다시 쓰지 않고, 원문 문단과 결과 문장의 순차 유사도를 대조해 빈 줄 위치만 복원합니다. 긴 문단을 나눌 때도 사례와 국소 결론 사이를 피합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">관측</span><span>원문 경계 복원 수, 사례 결론 재귀속 수, 문단 정렬 신뢰도를 원문 없이 운영 메타에 기록합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증</span><span>현장실습형 9문단 강제 병합과 사례 결론이 다음 문단으로 밀리는 회귀 사례를 추가했으며 백엔드 전체 284개 테스트와 production import 검사, 의존성 감사 0건을 통과했습니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary>
             <span class="gp-admin-patch-version">관리자 Hotfix</span>
@@ -104,7 +119,7 @@
           <summary>
             <span class="gp-admin-patch-version">v2.5.1</span>
             <span class="gp-admin-patch-title"><b>최근 50건 기반 장르 라우팅·실효 변화 보강</b><small>2026.07.22 · Backend 19f1598 · Frontend v2.5.1</small></span>
-            <span class="gp-admin-patch-state is-live">운영 중</span>
+            <span class="gp-admin-patch-state is-superseded">v2.5.2로 대체</span>
           </summary>
           <ul>
             <li><span class="gp-admin-patch-area route">라우팅</span><span>논문·과제·전문 설명 단서가 여러 세부 장르에 나뉘어도 장르군에서 먼저 합산해 일반 글로 빠지지 않도록 했습니다. 사진이라는 단어만으로 후기 블로그가 되는 오분류도 제거했습니다.</span></li>
