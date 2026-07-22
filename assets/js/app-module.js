@@ -2869,6 +2869,23 @@ function adminHistoryAmountHtml(h) {
  return `<span style="color:var(--red);">-${adminNumber(h.used)}</span>`;
 }
 
+function adminUsageHistory(data) {
+ const explicit = data && data.creditUsageHistory;
+ const rows = Array.isArray(explicit)
+  ? explicit
+  : (Array.isArray(data && data.creditHistory) ? data.creditHistory : []).filter(h => h && h.type !== 'charge');
+ return rows;
+}
+
+function adminChargeHistory(data) {
+ if (Array.isArray(data && data.chargeHistory)) return data.chargeHistory;
+ return Array.isArray(data && data.orders) ? data.orders : [];
+}
+
+function adminSelectedChargeOrder(index) {
+ return adminChargeHistory(window._adminSelectedBundle)[index];
+}
+
 async function adminPost(path, body) {
  if (!window.CU || !window.isAdmin()) throw new Error('관리자 권한이 필요합니다.');
  const idToken = await window.CU.getIdToken();
@@ -3075,11 +3092,12 @@ function adminRenderUserBundle(data) {
   window._adminUserPagerUid = user.uid;
   window._adminAuditPage = 1;
   window._adminLedgerPage = 1;
+  window._adminChargePage = 1;
  }
 
  const sub = user.subscription || null;
  const coupon = user.coupon || null;
- const hist = data.creditHistory || [];
+ const hist = adminUsageHistory(data);
  const auditHtml = adminRenderCreditAudit(data.creditAudit);
  const ledgerPageSize = 30;
  const ledgerTotal = hist.length;
@@ -3100,7 +3118,7 @@ function adminRenderUserBundle(data) {
         <span>잔여 ${adminNumber(h.remaining).toLocaleString('ko-KR')}</span>
       </div>
     </div>`).join('')
-  : '<div class="gp-admin-empty gp-admin-empty-compact">크레딧 내역이 없습니다.</div>';
+  : '<div class="gp-admin-empty gp-admin-empty-compact">사용 내역이 없습니다.</div>';
  const ledgerPagerHtml = adminPagerHtml(ledgerPage, ledgerPageCount, ledgerTotal, 'adminSetLedgerPage');
  const ledgerRange = ledgerTotal > 0
   ? `${Math.min(ledgerStart + 1, ledgerTotal).toLocaleString('ko-KR')}-${Math.min(ledgerStart + ledgerPageSize, ledgerTotal).toLocaleString('ko-KR')} / ${ledgerTotal.toLocaleString('ko-KR')}건`
@@ -3122,18 +3140,32 @@ function adminRenderUserBundle(data) {
     </div>
     ${auditHtml}
     <div>
-      <div class="gp-admin-ledger-head">전체 크레딧 내역 <span>${ledgerRange}</span></div>
+      <div class="gp-admin-ledger-head">사용 내역 <span>${ledgerRange}</span></div>
+      <div class="gp-admin-ledger-note">크레딧 차감·복구·환불·관리자 조정 기록</div>
       <div class="gp-admin-ledger is-paged">${historyHtml}</div>
       ${ledgerPagerHtml}
     </div>
   </div>`;
 
- const orders = data.orders || [];
+ const orders = adminChargeHistory(data);
  if (!orders.length) {
-  ordersEl.innerHTML = '<div class="gp-admin-empty gp-admin-empty-compact">결제건이 없습니다.</div>';
+  ordersEl.innerHTML = '<div class="gp-admin-empty gp-admin-empty-compact">충전 내역이 없습니다.</div>';
   return;
  }
- ordersEl.innerHTML = '<div class="gp-admin-order-list">' + orders.map((o, i) => {
+ const chargePageSize = 20;
+ const chargePageCount = Math.max(1, Math.ceil(orders.length / chargePageSize));
+ const chargePage = Math.min(Math.max(parseInt(window._adminChargePage || 1, 10) || 1, 1), chargePageCount);
+ window._adminChargePage = chargePage;
+ const chargeStart = (chargePage - 1) * chargePageSize;
+ const chargeRows = orders.slice(chargeStart, chargeStart + chargePageSize);
+ const chargeRange = `${Math.min(chargeStart + 1, orders.length).toLocaleString('ko-KR')}-${Math.min(chargeStart + chargePageSize, orders.length).toLocaleString('ko-KR')} / ${orders.length.toLocaleString('ko-KR')}건`;
+ ordersEl.innerHTML = `
+  <div class="gp-admin-charge-meta">
+   <strong>${chargeRange}</strong>
+   <span>일반 충전·정기결제 및 환불 상태</span>
+  </div>
+  <div class="gp-admin-order-list">` + chargeRows.map((o, i) => {
+  const orderIndex = chargeStart + i;
   const isSub = o.kind === 'subscription';
   const title = isSub
    ? `정기결제 · ${escapeHtml(SUB_TIER_LABELS[o.tier] || o.tier || '-')}`
@@ -3152,25 +3184,25 @@ function adminRenderUserBundle(data) {
   if (!canRefund) {
    actionBtn = `<button type="button" class="gp-admin-danger" disabled title="${escapeHtml(disabledTitle)}">환불</button>`;
   } else if (isSub) {
-   actionBtn = `<button type="button" class="gp-admin-danger" onclick="adminDirectRefund(${i})">전액 환불</button>`;
+   actionBtn = `<button type="button" class="gp-admin-danger" onclick="adminDirectRefund(${orderIndex})">전액 환불</button>`;
   } else {
-   actionBtn = `<button type="button" class="gp-admin-danger" onclick="adminToggleRefund(${i})">환불 ▾</button>`;
+   actionBtn = `<button type="button" class="gp-admin-danger" onclick="adminToggleRefund(${orderIndex})">환불 ▾</button>`;
    panel = `
-     <div class="gp-admin-refund-panel" id="refundPanel-${i}" hidden>
+     <div class="gp-admin-refund-panel" id="refundPanel-${orderIndex}" hidden>
        <div class="gp-admin-refund-modes">
-         <button type="button" class="gp-admin-mode is-active" data-mode="remaining" onclick="adminSetRefundMode(${i},'remaining')">남은건 환불</button>
-         <button type="button" class="gp-admin-mode" data-mode="full" onclick="adminSetRefundMode(${i},'full')">전체 환불</button>
-         <button type="button" class="gp-admin-mode" data-mode="custom" onclick="adminSetRefundMode(${i},'custom')">직접 입력</button>
+         <button type="button" class="gp-admin-mode is-active" data-mode="remaining" onclick="adminSetRefundMode(${orderIndex},'remaining')">남은건 환불</button>
+         <button type="button" class="gp-admin-mode" data-mode="full" onclick="adminSetRefundMode(${orderIndex},'full')">전체 환불</button>
+         <button type="button" class="gp-admin-mode" data-mode="custom" onclick="adminSetRefundMode(${orderIndex},'custom')">직접 입력</button>
        </div>
-       <div class="gp-admin-refund-custom" id="refundCustom-${i}" hidden>
-         <input type="number" class="gp-admin-input gp-admin-input-sm" id="refundAmt-${i}" min="1" max="${remainingMoney}" placeholder="환불 금액" oninput="adminRefundPreview(${i})">
+       <div class="gp-admin-refund-custom" id="refundCustom-${orderIndex}" hidden>
+         <input type="number" class="gp-admin-input gp-admin-input-sm" id="refundAmt-${orderIndex}" min="1" max="${remainingMoney}" placeholder="환불 금액" oninput="adminRefundPreview(${orderIndex})">
          <span>원 · 최대 ${adminMoney(remainingMoney)}</span>
        </div>
-       <input type="text" class="gp-admin-input gp-admin-input-sm" id="refundReason-${i}" maxlength="120" placeholder="환불 사유 (필수)">
-       <div class="gp-admin-refund-preview" id="refundPreview-${i}"></div>
+       <input type="text" class="gp-admin-input gp-admin-input-sm" id="refundReason-${orderIndex}" maxlength="120" placeholder="환불 사유 (필수)">
+       <div class="gp-admin-refund-preview" id="refundPreview-${orderIndex}"></div>
        <div class="gp-admin-refund-go">
-         <button type="button" class="gp-admin-primary" onclick="adminDirectRefund(${i})">환불 진행</button>
-         <button type="button" class="gp-admin-mini-btn" onclick="adminToggleRefund(${i})">닫기</button>
+         <button type="button" class="gp-admin-primary" onclick="adminDirectRefund(${orderIndex})">환불 진행</button>
+         <button type="button" class="gp-admin-mini-btn" onclick="adminToggleRefund(${orderIndex})">닫기</button>
        </div>
      </div>`;
   }
@@ -3188,11 +3220,16 @@ function adminRenderUserBundle(data) {
      </div>
      ${panel}
    </div>`;
- }).join('') + '</div>';
+ }).join('') + `</div>${adminPagerHtml(chargePage, chargePageCount, orders.length, 'adminSetChargePage')}`;
 }
 
 window.adminSetLedgerPage = function(page) {
  window._adminLedgerPage = parseInt(page, 10) || 1;
+ if (window._adminSelectedBundle) adminRenderUserBundle(window._adminSelectedBundle);
+};
+
+window.adminSetChargePage = function(page) {
+ window._adminChargePage = parseInt(page, 10) || 1;
  if (window._adminSelectedBundle) adminRenderUserBundle(window._adminSelectedBundle);
 };
 
@@ -3229,7 +3266,7 @@ function adminRefundMsg(i, text) {
 }
 
 window.adminRefundPreview = function(i) {
- const order = (window._adminSelectedBundle?.orders || [])[i];
+ const order = adminSelectedChargeOrder(i);
  const prev = document.getElementById('refundPreview-' + i);
  if (!order || !prev) return;
  const amtInput = document.getElementById('refundAmt-' + i);
@@ -3254,7 +3291,7 @@ window.adminSetRefundMode = function(i, mode) {
  if (custom) custom.hidden = mode !== 'custom';
  if (mode === 'custom') {
   const amtInput = document.getElementById('refundAmt-' + i);
-  const order = (window._adminSelectedBundle?.orders || [])[i];
+  const order = adminSelectedChargeOrder(i);
   if (amtInput && order && !amtInput.value) {
    const def = adminComputeRefund(order, 'remaining');
    const remaining = adminNumber(order.amount) - adminNumber(order.refundedAmount || order.refundAmount);
@@ -4642,7 +4679,7 @@ window.adminAdjustCredits = async function() {
 };
 
 window.adminDirectRefund = async function(i) {
- const order = (window._adminSelectedBundle?.orders || [])[i];
+ const order = adminSelectedChargeOrder(i);
  if (!order) {
   alert('주문 정보를 찾을 수 없습니다. 사용자를 다시 검색해주세요.');
   return;
