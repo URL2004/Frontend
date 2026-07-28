@@ -4296,8 +4296,19 @@ window.adminToggleLogItem = async function(id) {
    if (typeof detectView.probability === 'number') {
     const cal = it.probabilityCalibration || {};
     const raw = typeof it.rawProbability === 'number' ? Math.round(it.rawProbability) : null;
+    const similarity = Number(cal.matchSimilarity);
+    const lengthRatio = Number(cal.matchLengthRatio);
+    const matchInfo = cal.match === 'near_normalized'
+     ? [
+       '유사 일치',
+       Number.isFinite(similarity) ? `${Math.round(similarity * 1000) / 10}%` : '',
+       Number.isFinite(lengthRatio) ? `길이 ${Math.round(lengthRatio * 1000) / 10}%` : ''
+      ].filter(Boolean).join(' · ')
+     : cal.match === 'exact_normalized'
+       ? '정규화 정확 일치'
+       : '작업내역 일치';
     const note = raw !== null && raw !== Math.round(detectView.probability)
-     ? `<div style="margin-top:6px;color:var(--text3);font-size:12px;">원점수 ${raw}% · ${escapeHtml(cal.reason || 'test calibration')}</div>`
+     ? `<div style="margin-top:6px;color:var(--text3);font-size:12px;">원점수 ${raw}% · ${escapeHtml(matchInfo)}</div>`
      : '';
     html += `<div class="gp-admin-log-block"><div class="gp-admin-log-block-head"><span>AI 탐지 확률</span></div><div class="gp-admin-log-text">${Math.round(detectView.probability)}%${note}</div></div>`;
    }

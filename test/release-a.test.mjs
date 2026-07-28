@@ -88,6 +88,20 @@ test('관리자 진입점과 사용자 작업 기록의 접기·본문 스크롤
   assert.doesNotMatch(source, /gp-admin-log-more/u);
 });
 
+test('AI 감지 보정 화면은 장문 유사 일치와 원점수 매칭 근거를 정확히 표시한다', async () => {
+  const [source, admin] = await Promise.all([
+    read('assets/js/app-module.js'),
+    read('pages/admin.html')
+  ]);
+  assert.match(admin, /장문에서 소폭 수정된 것으로 확인될 때만 적용/u);
+  assert.match(admin, /짧은 글이나 크게 달라진 글에는 유사 일치를 적용하지 않습니다/u);
+  assert.match(source, /cal\.match === 'near_normalized'/u);
+  assert.match(source, /cal\.matchSimilarity/u);
+  assert.match(source, /cal\.matchLengthRatio/u);
+  assert.match(source, /정규화 정확 일치/u);
+  assert.doesNotMatch(source, /cal\.reason \|\| 'test calibration'/u);
+});
+
 test('애매한 글 종류 선택은 기본·고급 요청에 전달되고 자동 판별 우선 원칙을 설명한다', async () => {
   const [main, evasion] = await Promise.all([
     read('pages/main.html'),
@@ -231,9 +245,9 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-162/u);
-  assert.match(boot, /var v = 'lav-162'/u);
-  assert.match(loader, /var ASSET_V = 'lav-162'/u);
+  assert.match(index, /app-boot\.js\?v=lav-163/u);
+  assert.match(boot, /var v = 'lav-163'/u);
+  assert.match(loader, /var ASSET_V = 'lav-163'/u);
   assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-161/u);
 });
 

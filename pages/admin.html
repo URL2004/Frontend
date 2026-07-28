@@ -630,7 +630,7 @@
     <section class="gp-admin-panel" data-admin-tab="settings">
       <div class="gp-admin-section-head">
         <h3>AI 감지 보정 설정 <span id="adminDetectCalSource" class="gp-admin-count"></span></h3>
-        <p>작업내역의 휴머나이저 결과와 감지 입력이 일치할 때만 적용됩니다. 체크와 숫자 변경은 저장 후 반영됩니다.</p>
+        <p>같은 사용자의 최근 휴머나이징 결과와 감지 입력이 같거나, 장문에서 소폭 수정된 것으로 확인될 때만 적용됩니다. 체크와 숫자 변경은 저장 후 반영됩니다.</p>
       </div>
       <div class="gp-admin-cal-grid">
         <div class="gp-admin-cal-toggle">
@@ -646,9 +646,9 @@
         <label class="gp-admin-label">
           <span class="gp-admin-label-title">
             최근 작업 조회 수
-            <span class="gp-admin-tip" tabindex="0" aria-label="감지 입력과 같은 휴머나이징 결과를 최근 작업내역 몇 건 안에서 찾을지 정합니다. 보통 50이면 충분합니다.">
+            <span class="gp-admin-tip" tabindex="0" aria-label="감지 입력과 같거나 소폭 수정된 휴머나이징 결과를 최근 작업내역 몇 건 안에서 찾습니다. 짧은 글이나 크게 달라진 글에는 유사 일치를 적용하지 않습니다.">
               <span class="gp-admin-tip-icon">?</span>
-              <span class="gp-admin-tip-pop" role="tooltip">감지 입력과 같은 휴머나이징 결과를 최근 작업내역 몇 건 안에서 찾을지 정합니다. 보통 50이면 충분합니다.</span>
+              <span class="gp-admin-tip-pop" role="tooltip">감지 입력과 같거나 소폭 수정된 휴머나이징 결과를 최근 작업내역 몇 건 안에서 찾습니다. 짧은 글이나 크게 달라진 글에는 유사 일치를 적용하지 않습니다.</span>
             </span>
           </span>
           <input id="adminDetectCalLimit" class="gp-admin-input" type="number" min="1" max="100" step="1">
