@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, EmailAuthProvider, signInWithPopup, signOut, onAuthStateChanged, deleteUser, reauthenticateWithPopup, reauthenticateWithCredential, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, orderBy, query, where, limit, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
@@ -147,10 +147,11 @@ onAuthStateChanged(auth, async u =>{
 });
 
 // 운영 알림 중계(문의·가입·초대) — fire-and-forget, 사용자 흐름 절대 안 막음. 백엔드 /events가 미설정이면 즉시 종료됨.
-async function gpNotifyEvent(type, data) {
+async function gpNotifyEvent(type, data, actor) {
  try {
-  if (!CU || !CU.getIdToken) return;
-  const idToken = await CU.getIdToken();
+  const user = actor || CU;
+  if (!user || !user.getIdToken) return;
+  const idToken = await user.getIdToken();
   fetch(window.apiUrl('/events'), {
    method: 'POST', headers: { 'Content-Type': 'application/json' },
    body: JSON.stringify({ idToken, type, ...(data || {}) })
@@ -658,49 +659,38 @@ window.updateAuthUI = (isLoggedIn) =>{
  if (isLoggedIn && typeof updateCreditUI === 'function') updateCreditUI();
 };
 
-window.handleKakaoCallback = async () =>{
- const params = new URLSearchParams(location.search);
- const code = params.get('code');
- if (!code) return;
- try {
- const tokenRes = await fetch('https://kauth.kakao.com/oauth/token', {
- method: 'POST',
- headers: {'Content-Type': 'application/x-www-form-urlencoded'},
- body: new URLSearchParams({
- grant_type: 'authorization_code',
- client_id: window.APP_CONFIG.KAKAO_REST_KEY,
- redirect_uri: window.APP_CONFIG.SITE_URL,
- code
- })
+async function signInWithKakaoAccessToken(accessToken) {
+ const token = typeof accessToken === 'string' ? accessToken.trim() : '';
+ if (!token) throw new Error('카카오 인증 토큰이 없습니다.');
+
+ const res = await fetch(window.apiUrl('/kakao-login-v2'), {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ accessToken: token })
  });
- const tokenData = await tokenRes.json();
- if (tokenData.access_token) {
- Kakao.Auth.setAccessToken(tokenData.access_token);
- const userRes = await Kakao.API.request({url: '/v2/user/me'});
- const kakaoId = userRes.id;
- const nickname = userRes.kakao_account?.profile?.nickname || '카카오유저';
- const email = userRes.kakao_account?.email || kakaoId+'@kakao.com';
- const photo = userRes.kakao_account?.profile?.profile_image_url || '';
- const { signInWithCustomToken } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
- const { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
- const auth2 = window._fbAuth;
- const pw = 'kakao_' + kakaoId + '_pw!';
- let user;
- try {
- const uc = await createUserWithEmailAndPassword(auth2, email, pw);
- user = uc.user;
- await updateProfile(user, {displayName: nickname, photoURL: photo});
- } catch(e) {
- if (e.code === 'auth/email-already-in-use') {
- const us = await signInWithEmailAndPassword(auth2, email, pw);
- user = us.user;
- } else throw e;
+ const data = await res.json().catch(() => ({}));
+ if (!res.ok || !data.customToken) {
+  const err = new Error(data.error || '카카오 인증 서버에 연결할 수 없습니다.');
+  err.code = data.code || 'KAKAO_LOGIN_FAILED';
+  throw err;
  }
- await updateDoc(doc(db,'users',user.uid), { kakaoId: String(kakaoId) }).catch(()=>{});
- history.replaceState({}, '', location.pathname);
+
+ await authPersistenceReady.catch(() => {});
+ const credential = await signInWithCustomToken(auth, data.customToken);
+ const profile = data.profile || {};
+ const profilePatch = {};
+ if (profile.nickname && credential.user.displayName !== profile.nickname) profilePatch.displayName = profile.nickname;
+ if (profile.photo && credential.user.photoURL !== profile.photo) profilePatch.photoURL = profile.photo;
+ if (Object.keys(profilePatch).length) await updateProfile(credential.user, profilePatch).catch(() => {});
+
+ if (data.isNewUser) {
+  const trafficSource = localStorage.getItem('traffic_source') || 'direct';
+  if (window.gpTrack) window.gpTrack('sign_up', { method: 'kakao', traffic_source: trafficSource });
+  localStorage.removeItem('traffic_source');
+  gpNotifyEvent('signup', { via: 'kakao' }, credential.user);
  }
- } catch(e) { console.log('카카오 로그인 오류:', e); }
-};
+ return credential.user;
+}
 
 window.kakaoLogin = async () =>{
  if (/KAKAOTALK/i.test(navigator.userAgent)) {
@@ -716,29 +706,8 @@ window.kakaoLogin = async () =>{
  scope: 'profile_nickname,profile_image,account_email'
  });
  });
- const token = authResult.access_token;
- const res = await fetch(window.apiUrl('/kakao-login'), {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ accessToken: token })
- });
- const data = await res.json();
- if (data.error) throw new Error(data.error);
- const { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
- const pw = 'kakao_' + data.kakaoId + '_!@#';
- let user;
- try {
- const uc = await createUserWithEmailAndPassword(window._fbAuth, data.email, pw);
- user = uc.user;
- } catch(e) {
- if (e.code === 'auth/email-already-in-use') {
- const us = await signInWithEmailAndPassword(window._fbAuth, data.email, pw);
- user = us.user;
- } else throw e;
- }
- await updateProfile(user, { displayName: data.nickname, photoURL: data.photo });
- await updateDoc(doc(db,'users',user.uid), { kakaoId: String(data.kakaoId) }).catch(()=>{});
- if (window.gpTrack) window.gpTrack('login', { method: 'kakao' });
+  await signInWithKakaoAccessToken(authResult.access_token);
+  if (window.gpTrack) window.gpTrack('login', { method: 'kakao' });
  } catch(e) {
  if (window.gpTrack) window.gpTrack((e && e.error_code === 'CANCELED') ? 'login_cancel' : 'login_error', { method: 'kakao', message: String(e.message || '').slice(0, 120) });
  if (e && e.error_code !== 'CANCELED') alert('카카오 로그인 실패: ' + (e.message || JSON.stringify(e)));
