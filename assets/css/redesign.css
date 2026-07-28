@@ -16748,3 +16748,57 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
  .lav-acc-body .lav-memo-toggle-hint{margin-left:0;}
  #lavEvidenceBlock{padding:14px;}
 }
+
+/* ───────── lavender v109: 공지 분류·검색·정렬 상태 ───────── */
+.gp-notice-result-status{
+ min-height:24px;
+ padding:3px 18px 10px;
+ color:var(--text3);
+ font-size:12.5px;
+ font-weight:600;
+}
+.gp-notice-empty{
+ display:flex;
+ min-height:150px;
+ align-items:center;
+ justify-content:center;
+ flex-direction:column;
+ gap:7px;
+ padding:32px 18px;
+ border:1px dashed var(--border);
+ border-radius:12px;
+ color:var(--text2);
+ text-align:center;
+ font-size:14px;
+ font-weight:700;
+}
+.gp-notice-empty small{
+ color:var(--text3);
+ font-size:12.5px;
+ font-weight:500;
+}
+.notice-row:focus-visible{
+ outline:3px solid rgba(90,91,216,.2);
+ outline-offset:2px;
+}
+#mainContent[data-main-design="lavender"] #noticeContent .gp-sort-select{
+ display:inline-flex !important;
+ min-height:34px;
+ align-items:center;
+ justify-content:center;
+ padding:0 12px;
+ border:1px solid #e3e5ee !important;
+ border-radius:9px;
+ background:#fff !important;
+ color:#6f7588 !important;
+ white-space:nowrap;
+}
+#mainContent[data-main-design="lavender"] #noticeContent .gp-sort-select:hover{
+ border-color:#c8c5e8 !important;
+ color:#4b4cc6 !important;
+}
+@media(max-width:560px){
+ #noticeContent .gp-table-toolbar{align-items:flex-start;}
+ #noticeContent .gp-sort-select{margin-top:14px;}
+ .gp-notice-result-status{padding-left:14px;padding-right:14px;}
+}
