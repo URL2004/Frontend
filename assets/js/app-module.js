@@ -1705,70 +1705,283 @@ window.delQuestion = async (qid) =>{
 };
 
 // ===== NOTICE =====
+const NOTICE_BASE_ITEMS = [
+ {
+  id: 'humanize-v25',
+  category: '업데이트',
+  title: '휴머나이징 엔진 v2.5 업데이트 — 문단 구조 보존 강화',
+  date: '2026.07.22',
+  views: 1246,
+  body: '원문의 문단 구조와 사례·결론 연결을 유지하면서 문장을 더욱 자연스럽게 다듬도록 분석·재작성 엔진을 강화했습니다. 제목, 표, 목록과 인용 구조도 더욱 안정적으로 보존합니다.'
+ },
+ {
+  id: 'detect-report-launch',
+  category: '업데이트',
+  title: 'AI 감지 보고서 정식 오픈',
+  date: '2026.07.21',
+  views: 2841,
+  body: '글 전체의 AI 의심도와 문단별 문체 특징을 한눈에 확인할 수 있는 AI 감지 보고서를 정식 오픈했습니다. 분석 결과와 주요 근거를 하나의 종합 보고서로 제공합니다.'
+ },
+ {
+  id: 'detect-credit-policy',
+  category: '정책',
+  title: 'AI 감지 크레딧 이용 방식 전환 안내 (100자당 1크레딧)',
+  date: '2026.07.20',
+  views: 3512,
+  body: 'AI 감지는 로그인 후 100자당 1크레딧으로 이용할 수 있습니다. 실행 전에 예상 사용량을 확인할 수 있으며, 정상적으로 결과를 받지 못한 작업은 크레딧이 차감되지 않습니다.'
+ },
+ {
+  id: 'detect-report-preview',
+  category: '업데이트',
+  title: 'AI 감지 보고서 문단별 미리보기·전체보기 개선',
+  date: '2026.07.20',
+  views: 1102,
+  body: '문단별 감지 결과를 짧은 미리보기로 먼저 확인하고 필요한 문단만 펼쳐볼 수 있습니다. 긴 글에서도 전체 흐름과 세부 근거를 빠르게 비교할 수 있도록 보고서 구성을 개선했습니다.'
+ },
+ {
+  id: 'friend-invite-event',
+  category: '이벤트',
+  title: '친구 초대 혜택 안내 — 초대자와 가입자 모두 20크레딧 지급',
+  date: '2026.07.18',
+  views: 2874,
+  body: '초대 링크를 통해 친구가 신규 가입하면 초대자와 가입자에게 각각 20크레딧을 지급합니다. 사이드바의 초대하기 버튼에서 링크를 복사하여 바로 공유할 수 있습니다.'
+ },
+ {
+  id: 'application-genre-quality',
+  category: '업데이트',
+  title: '자소서·지원서 장르 재구성 품질 개선',
+  date: '2026.07.08',
+  views: 1532,
+  body: '성장 과정, 경험, 지원 동기와 포부의 문항 경계를 유지하면서 반복 표현을 줄이도록 자소서·지원서 처리 품질을 개선했습니다.'
+ },
+ {
+  id: 'long-document-performance',
+  category: '업데이트',
+  title: '긴 문서 처리 속도·안정성 개선',
+  date: '2026.07.05',
+  views: 987,
+  body: '긴 문서를 구간별로 안전하게 나누고 순서대로 다시 결합하는 흐름을 보강했습니다. 일시적인 오류가 발생한 구간은 자동으로 재시도하여 작업 중단 가능성을 줄였습니다.'
+ }
+];
+
+const NOTICE_RETIRED_TITLES = new Set([
+ '고급 휴머나이징 정식 출시',
+ '최대 3만 자 장문 지원 시작',
+ '결과 보관함 정식 오픈',
+ '휴머나이징 결과 보관함·작업 복구 안정화',
+ '환불 정책 개정 안내 — 7일 이내 사용량 비례 환불',
+ '서비스 리브랜딩 안내 — AI 휴머나이징으로 새단장'
+]);
+
+const NOTICE_CATEGORIES = ['공지', '업데이트', '점검', '이벤트', '정책'];
+const noticeState = {
+ category: '',
+ query: '',
+ sort: 'desc',
+ items: NOTICE_BASE_ITEMS.map(item => ({ ...item, source: 'local', authorName: '교수님 피하기' })),
+ detail: null
+};
+
+function noticeDateValue(value) {
+ const normalized = String(value || '').replace(/\./g, '-');
+ const parsed = Date.parse(normalized);
+ return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function noticeDateText(value) {
+ if (!value) return '';
+ let date;
+ try {
+  date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
+ } catch (e) {
+  return '';
+ }
+ if (!date || Number.isNaN(date.getTime())) return '';
+ return [
+  date.getFullYear(),
+  String(date.getMonth() + 1).padStart(2, '0'),
+  String(date.getDate()).padStart(2, '0')
+ ].join('.');
+}
+
+function noticeCategoryOf(data) {
+ const explicit = String(data.category || '').trim();
+ if (NOTICE_CATEGORIES.includes(explicit)) return explicit;
+ const title = String(data.title || '');
+ if (/이벤트|초대|혜택|증정/.test(title)) return '이벤트';
+ if (/점검|장애|복구|안정화 완료/.test(title)) return '점검';
+ if (/정책|이용 방식|환불|약관/.test(title)) return '정책';
+ if (/업데이트|개선|강화|업그레이드|리뉴얼|새단장/.test(title)) return '업데이트';
+ return '공지';
+}
+
+function noticeFilteredItems() {
+ const queryText = noticeState.query.toLowerCase();
+ return noticeState.items
+  .filter(item => !noticeState.category || item.category === noticeState.category)
+  .filter(item => {
+   if (!queryText) return true;
+   return [item.title, item.category, item.body].join(' ').toLowerCase().includes(queryText);
+  })
+  .sort((a, b) => {
+   const diff = noticeDateValue(b.date) - noticeDateValue(a.date);
+   return noticeState.sort === 'desc' ? diff : -diff;
+  });
+}
+
+function renderNoticeList() {
+ const el = document.getElementById('noticeList');
+ const status = document.getElementById('noticeResultStatus');
+ if (!el) return;
+ noticeState.detail = null;
+ const items = noticeFilteredItems();
+ if (status) {
+  const scope = noticeState.category || '전체';
+  const suffix = noticeState.query ? ' · 검색 결과' : '';
+  status.textContent = scope + ' ' + items.length.toLocaleString('ko-KR') + '개' + suffix;
+ }
+ if (!items.length) {
+  el.innerHTML = '<div class="gp-notice-empty">조건에 맞는 공지사항이 없습니다.<small>다른 분류를 선택하거나 검색어를 변경하시기 바랍니다.</small></div>';
+  return;
+ }
+ el.innerHTML = items.map((item, index) =>
+  '<div class="gp-board-row notice-row" role="button" tabindex="0" data-notice-index="' + index + '">'
+  + '<div class="gbr-main">'
+  +  '<div class="gbr-ttl">' + escapeHtml(item.title) + '</div>'
+  +  '<div class="gbr-sub"><span class="gbr-cat">' + escapeHtml(item.category) + '</span><span>' + escapeHtml(item.date) + '</span></div>'
+  + '</div>'
+  + '<div class="gbr-stats">' + _gbrStat(_SICO_VIEW, Number(item.views || 0).toLocaleString('ko-KR'), 'views') + '</div>'
+  + '</div>'
+ ).join('');
+ el.querySelectorAll('[data-notice-index]').forEach(row => {
+  const openItem = () => {
+   const index = Number(row.dataset.noticeIndex);
+   if (Number.isInteger(index) && items[index]) renderNoticeDetail(items[index]);
+  };
+  row.addEventListener('click', openItem);
+  row.addEventListener('keydown', event => {
+   if (event.key !== 'Enter' && event.key !== ' ') return;
+   event.preventDefault();
+   openItem();
+  });
+ });
+}
+
+function renderNoticeDetail(item) {
+ const el = document.getElementById('noticeList');
+ const status = document.getElementById('noticeResultStatus');
+ if (!el || !item) return;
+ noticeState.detail = item;
+ if (status) status.textContent = '공지 상세';
+ const canDelete = item.source === 'remote' && window.isAdmin();
+ el.innerHTML =
+  '<button type="button" class="backbtn" id="noticeBackBtn">← 목록으로</button>'
+  + '<div class="pdhd">'
+  + '<div class="pdtitle">' + escapeHtml(item.title) + '</div>'
+  + '<div class="pmeta"><span>' + escapeHtml(item.authorName || '운영자') + '</span><span>' + escapeHtml(item.date || '') + '</span></div>'
+  + (canDelete ? '<div class="pdactions"><button type="button" class="abtn danger" id="noticeDeleteBtn">삭제</button></div>' : '')
+  + '</div>'
+  + '<div class="pdbody" id="nbody">' + escapeHtml(item.body || '').replace(/\n/g, '<br>') + '</div>';
+ const backBtn = document.getElementById('noticeBackBtn');
+ if (backBtn) backBtn.addEventListener('click', renderNoticeList);
+ const deleteBtn = document.getElementById('noticeDeleteBtn');
+ if (deleteBtn) deleteBtn.addEventListener('click', () => window.delNotice(item.id));
+}
+
+window.setNoticeCategory = (category, btn) => {
+ noticeState.category = NOTICE_CATEGORIES.includes(category) ? category : '';
+ document.querySelectorAll('#noticeContent [data-notice-category]').forEach(button => {
+  const active = (button.dataset.noticeCategory || '') === noticeState.category;
+  button.classList.toggle('active', active);
+  button.setAttribute('aria-pressed', String(active));
+ });
+ if (btn) btn.blur();
+ renderNoticeList();
+};
+
+window.applyNoticeFilters = () => {
+ const input = document.getElementById('noticeSearchInput');
+ noticeState.query = input ? input.value.trim() : '';
+ renderNoticeList();
+};
+
+window.toggleNoticeSort = btn => {
+ noticeState.sort = noticeState.sort === 'desc' ? 'asc' : 'desc';
+ if (btn) {
+  const isOldest = noticeState.sort === 'asc';
+  btn.textContent = isOldest ? '오래된순' : '최신순';
+  btn.setAttribute('aria-label', '공지 정렬: ' + btn.textContent);
+  btn.setAttribute('aria-pressed', String(isOldest));
+ }
+ renderNoticeList();
+};
+
+window.backToNoticeList = renderNoticeList;
+
 window.loadNotices = async () =>{
  const adminBtn = document.getElementById('noticeAdminBtn');
  if (adminBtn) {
- if (window.isAdmin()) {
- adminBtn.innerHTML = '<button class="wbtn" onclick="toggleNoticeForm()">공지 작성</button>';
- } else {
- adminBtn.innerHTML = '';
+  if (window.isAdmin()) {
+   adminBtn.innerHTML = '<button class="wbtn" onclick="toggleNoticeForm()">공지 작성</button>';
+  } else {
+   adminBtn.innerHTML = '';
+  }
  }
- }
- const el = document.getElementById('noticeList');
- if (!el) return;
- if (!CU) {
-  const samples = [
-   ['점검','서비스 정기 점검 안내 (05/25)','2024.05.22','1,246'],
-   ['업데이트','AI 감지 알고리즘 v2.3 업데이트 안내','2024.05.20','3,512'],
-   ['이벤트','5월 프리미엄 플랜 20% 할인 이벤트','2024.05.18','2,189'],
-   ['업데이트','대시보드 UI/UX 개선 및 사용성 향상','2024.05.15','1,102'],
-   ['정책','개인정보 처리방침 변경 안내','2024.05.10','1,876'],
-   ['점검','서비스 임시 점검 안내 (완료)','2024.05.06','1,023'],
-   ['업데이트','커뮤니티 기능 개선 및 버그 수정','2024.04.28','1,532'],
-   ['이벤트','친구 초대 이벤트 당첨자 발표','2024.04.20','987']
-  ];
-  el.innerHTML = samples.map(n => '<div class="gp-board-row notice-demo" onclick="showScreen(\'login\')">'
-   + '<div class="gbr-main">'
-   +  '<div class="gbr-ttl">'+escapeHtml(n[1])+'</div>'
-   +  '<div class="gbr-sub"><span class="gbr-cat">'+escapeHtml(n[0])+'</span><span>'+escapeHtml(n[2])+'</span></div>'
-   + '</div>'
-   + '<div class="gbr-stats">'+_gbrStat(_SICO_VIEW, escapeHtml(n[3]), 'views')+'</div>'
-   + '</div>').join('');
-  return;
- }
- el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3)">불러오는 중...</div>';
+ noticeState.items = NOTICE_BASE_ITEMS.map(item => ({ ...item, source: 'local', authorName: '교수님 피하기' }));
+ renderNoticeList();
+ if (!CU) return;
  try {
- const snap = await getDocs(query(collection(db,'notices'), orderBy('createdAt','desc')));
- if (snap.empty) { el.innerHTML='<div style="text-align:center;padding:32px;color:var(--text3)">등록된 공지가 없습니다.</div>'; return; }
- el.innerHTML = snap.docs.map(d =>{
- const n = d.data();
- const date = n.createdAt ? new Date(n.createdAt.toDate()).toLocaleDateString('ko-KR') : '';
- return '<div class="gp-board-row" onclick="viewNotice(\''+d.id+'\')">'
- +'<div class="gbr-main">'
- +'<div class="gbr-ttl">'+escapeHtml(n.title)+'</div>'
- +'<div class="gbr-sub"><span class="gbr-cat">공지</span><span>'+date+'</span></div>'
- +'</div>'
- +'<div class="gbr-stats">'+_gbrStat(_SICO_VIEW, Number(n.views || 0).toLocaleString('ko-KR'), 'views')+'</div>'
- +'</div>';
- }).join('');
- } catch(e) { el.innerHTML='<div style="color:var(--red)">불러오기 실패</div>'; }
+  const snap = await getDocs(query(collection(db,'notices'), orderBy('createdAt','desc')));
+  const remoteItems = snap.docs.map(d => {
+   const n = d.data();
+   const date = noticeDateText(n.createdAt);
+   return {
+    id: d.id,
+    source: 'remote',
+    category: noticeCategoryOf(n),
+    title: String(n.title || '제목 없는 공지'),
+    body: String(n.body || ''),
+    authorName: String(n.authorName || '운영자'),
+    date,
+    views: Number(n.views || 0)
+   };
+  }).filter(item => !NOTICE_RETIRED_TITLES.has(item.title.trim()));
+  const remoteTitles = new Set(remoteItems.map(item => item.title.trim().toLowerCase()));
+  noticeState.items = remoteItems.concat(
+   NOTICE_BASE_ITEMS
+    .filter(item => !remoteTitles.has(item.title.trim().toLowerCase()))
+    .map(item => ({ ...item, source: 'local', authorName: '교수님 피하기' }))
+  );
+  renderNoticeList();
+ } catch(e) {
+  if (window.gpToast) window.gpToast('운영 공지를 불러오지 못해 기본 공지를 표시합니다.', { type: 'info' });
+ }
 };
 
 window.viewNotice = async (id) =>{
- const el = document.getElementById('noticeList');
- const snap = await getDoc(doc(db,'notices',id));
- const n = snap.data();
- const date = n.createdAt ? new Date(n.createdAt.toDate()).toLocaleDateString('ko-KR') : '';
- const isAdm = window.isAdmin();
- el.innerHTML =
- '<button class="backbtn" onclick="loadNotices()">← 목록으로</button>'
- +'<div class="pdhd">'
- +'<div class="pdtitle">'+escapeHtml(n.title)+'</div>'
- +'<div class="pmeta"><span>'+escapeHtml(n.authorName||'운영자')+'</span><span>'+date+'</span></div>'
- +(isAdm ? '<div class="pdactions"><button class="abtn danger" onclick="delNotice(\'' + id + '\')">삭제</button></div>' : '')
- +'</div>'
- +'<div class="pdbody" id="nbody"></div>';
- document.getElementById('nbody').innerHTML = escapeHtml(n.body).replace(/\n/g,'<br>');
+ const cached = noticeState.items.find(item => item.source === 'remote' && item.id === id);
+ if (cached) {
+  renderNoticeDetail(cached);
+  return;
+ }
+ try {
+  const snap = await getDoc(doc(db,'notices',id));
+  const n = snap.data();
+  if (!n) throw new Error('NOTICE_NOT_FOUND');
+  renderNoticeDetail({
+   id,
+   source: 'remote',
+   category: noticeCategoryOf(n),
+   title: String(n.title || '제목 없는 공지'),
+   body: String(n.body || ''),
+   authorName: String(n.authorName || '운영자'),
+   date: noticeDateText(n.createdAt),
+   views: Number(n.views || 0)
+  });
+ } catch (e) {
+  if (window.gpToast) window.gpToast('공지 내용을 불러오지 못했습니다.', { type: 'error' });
+  renderNoticeList();
+ }
 };
 
 window.toggleNoticeForm = () =>{
@@ -1780,14 +1993,17 @@ window.submitNotice = async () =>{
  if (!window.isAdmin()) { alert('관리자만 공지를 작성할 수 있습니다.'); return; }
  const title = document.getElementById('ntitle').value.trim();
  const body = document.getElementById('nbody_input').value.trim();
- if (!title||!body) { alert('제목과 내용을 입력해주세요.'); return; }
+ const categoryEl = document.getElementById('ncategory');
+ const category = categoryEl && NOTICE_CATEGORIES.includes(categoryEl.value) ? categoryEl.value : '공지';
+ if (!title||!body) { alert('제목과 내용을 모두 입력해야 합니다.'); return; }
  const btn = document.getElementById('noticeSubmit');
  btn.disabled=true; btn.textContent='등록 중...';
  try {
  const noticeAuthor = window.getAdminName() || CU.displayName;
- await addDoc(collection(db,'notices'),{ title, body, authorName:noticeAuthor, createdAt:serverTimestamp() });
+ await addDoc(collection(db,'notices'),{ title, body, category, authorName:noticeAuthor, createdAt:serverTimestamp() });
  document.getElementById('ntitle').value='';
  document.getElementById('nbody_input').value='';
+ if (categoryEl) categoryEl.value='공지';
  document.getElementById('noticeWriteForm').style.display='none';
  await window.loadNotices();
  } catch(e) { alert('등록 실패: '+e.message); }
@@ -1796,8 +2012,8 @@ window.submitNotice = async () =>{
 
 window.delNotice = async (id) =>{
  const ok = window.gpConfirm
-  ? await window.gpConfirm({ title: '공지를 삭제할까요?', message: '삭제한 공지는 복구할 수 없어요.', confirmText: '삭제하기', danger: true })
-  : confirm('공지를 삭제하시겠어요?');
+  ? await window.gpConfirm({ title: '공지를 삭제하시겠습니까?', message: '삭제한 공지는 복구할 수 없습니다.', confirmText: '삭제하기', danger: true })
+  : confirm('공지를 삭제하시겠습니까?');
  if (!ok) return;
  await deleteDoc(doc(db,'notices',id));
  await window.loadNotices();

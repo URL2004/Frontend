@@ -3,14 +3,14 @@
   <div class="gp-page-head">
    <div>
     <h2>공지사항</h2>
-    <p>서비스의 최신 소식과 중요한 안내를 확인하세요.</p>
+    <p>서비스의 최신 소식과 중요한 안내를 확인할 수 있습니다.</p>
    </div>
    <div id="noticeAdminBtn"></div>
   </div>
 
   <div class="gp-search">
-   <input type="search" placeholder="공지사항을 검색하세요">
-   <button type="button" aria-label="검색">
+   <input id="noticeSearchInput" data-notice-search="true" type="search" placeholder="공지사항을 검색하세요" oninput="applyNoticeFilters()" onkeydown="if(event.key==='Escape'){this.value='';applyNoticeFilters();}" autocomplete="off">
+   <button type="button" aria-label="검색" onclick="applyNoticeFilters()">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
    </button>
   </div>
@@ -18,25 +18,32 @@
   <div class="gp-notice-featured">
    <article class="gp-notice-card maintenance">
     <div>
-     <span>서비스 리뉴얼</span>
-     <h3>교수님 피하기, 라벤더 톤으로 새단장했어요</h3>
-     <p>메인 작성 화면부터 공지·커뮤니티·문의·마이페이지까지 전체 화면을 더 깔끔하고 편안하게 다시 디자인했어요.</p>
-     <small>2026.06.13</small>
+     <span>신규 기능</span>
+     <h3>AI 감지 보고서를 정식 오픈했습니다</h3>
+     <p>글 전체의 AI 의심도와 문단별 문체 특징을 한눈에 확인할 수 있는 종합 보고서를 제공합니다.</p>
+     <small>2026.07.20</small>
     </div>
     <img loading="lazy" decoding="async" src="/assets/img/notice-maintenance.png" alt="">
    </article>
    <article class="gp-notice-card update">
     <div>
-     <span>엔진 리뉴얼</span>
-     <h3>교수님 피하기 엔진이 더 똑똑해졌어요</h3>
-     <p>문장의 자연스러움과 표현력을 끌어올리도록 분석·재작성 엔진을 새롭게 강화했어요.</p>
-     <small>2026.06.13</small>
+     <span>엔진 업데이트</span>
+     <h3>휴머나이징 엔진이 v2.5로 업그레이드되었습니다</h3>
+     <p>원문의 문단 구조와 사례·결론 연결을 유지하면서 문장을 더욱 자연스럽게 다듬도록 분석·재작성 엔진을 강화했습니다.</p>
+     <small>2026.07.22</small>
     </div>
     <img loading="lazy" decoding="async" src="/assets/img/notice-analytics.png" alt="">
    </article>
   </div>
 
   <div id="noticeWriteForm" style="display:none" class="wform">
+   <select id="ncategory" aria-label="공지 분류">
+    <option value="공지">공지</option>
+    <option value="업데이트">업데이트</option>
+    <option value="점검">점검</option>
+    <option value="이벤트">이벤트</option>
+    <option value="정책">정책</option>
+   </select>
    <input id="ntitle" type="text" placeholder="공지 제목">
    <textarea id="nbody_input" placeholder="공지 내용을 입력하세요..."></textarea>
    <div class="wform-ft">
@@ -50,16 +57,17 @@
 
   <section class="gp-table-panel">
    <div class="gp-table-toolbar">
-    <div class="cat-filter">
-     <button class="cat-fbtn active">전체</button>
-     <button class="cat-fbtn">업데이트</button>
-     <button class="cat-fbtn">점검</button>
-     <button class="cat-fbtn">이벤트</button>
-     <button class="cat-fbtn">정책</button>
+    <div class="cat-filter" role="group" aria-label="공지 분류">
+     <button type="button" class="cat-fbtn active" data-notice-category="" aria-pressed="true" onclick="setNoticeCategory('',this)">전체</button>
+     <button type="button" class="cat-fbtn" data-notice-category="업데이트" aria-pressed="false" onclick="setNoticeCategory('업데이트',this)">업데이트</button>
+     <button type="button" class="cat-fbtn" data-notice-category="점검" aria-pressed="false" onclick="setNoticeCategory('점검',this)">점검</button>
+     <button type="button" class="cat-fbtn" data-notice-category="이벤트" aria-pressed="false" onclick="setNoticeCategory('이벤트',this)">이벤트</button>
+     <button type="button" class="cat-fbtn" data-notice-category="정책" aria-pressed="false" onclick="setNoticeCategory('정책',this)">정책</button>
     </div>
-    <button class="gp-sort-select">최신순</button>
+    <button type="button" id="noticeSortBtn" class="gp-sort-select" aria-label="공지 정렬: 최신순" aria-pressed="false" onclick="toggleNoticeSort(this)">최신순</button>
    </div>
-   <div id="noticeList" class="gp-board-list"></div>
+   <div id="noticeResultStatus" class="gp-notice-result-status" role="status" aria-live="polite"></div>
+   <div id="noticeList" class="gp-board-list" aria-live="polite"></div>
   </section>
  </section>
 </div>

@@ -415,6 +415,7 @@
   document.addEventListener('input', function (event) {
     var input = event.target;
     if (!input.matches || !input.matches('.gp-search input')) return;
+    if (input.hasAttribute('data-notice-search')) return;
     var page = input.closest('[id$="Content"]');
     if (!page) return;
     var q = input.value.trim().toLowerCase();
