@@ -70,7 +70,22 @@
       </dl>
 
       <div class="gp-admin-patch-timeline">
-        <div class="gp-admin-patch-month"><strong>2026년 7월</strong><span>21개 변경 묶음</span></div>
+        <div class="gp-admin-patch-month"><strong>2026년 7월</strong><span>22개 변경 묶음</span></div>
+        <details class="gp-admin-patch-release" open>
+          <summary>
+            <span class="gp-admin-patch-version">GPT-5.6</span>
+            <span class="gp-admin-patch-title"><b>Luna 기본·Terra 승격 전환</b><small>2026.07.31 · Backend/Frontend</small></span>
+            <span class="gp-admin-patch-state is-live">운영 중</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">모델</span><span>기존 GPT-5.4 mini·nano 작업은 gpt-5.6-luna로 통합하고, GPT-5.4 상위 판정·회복·검색 경로는 gpt-5.6-terra로 전환했습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">추론</span><span>일반 변환은 medium, 사실 밀집·승격은 high로 높였습니다. 판정·수리·근거 검색은 medium, 짧은 분류·감지는 low를 유지해 품질과 응답 시간을 역할별로 맞췄습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">호환</span><span>Firestore나 환경변수에 남아 있는 5.4 모델 ID와 구형 기본 추론 프로필도 새 Luna·Terra 설정으로 자동 정규화합니다.</span></li>
+            <li><span class="gp-admin-patch-area billing">비용</span><span>GPT-5.6 표준 단문 입력·캐시 읽기·캐시 쓰기·출력 단가를 운영 비용 추정기에 반영해 작업별 예상 비용이 새 요금과 맞도록 갱신했습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">관리</span><span>관리자 모델 선택지를 Luna·Terra로 교체하고 GPT-5.6이 지원하는 max reasoning까지 선택할 수 있게 했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증</span><span>백엔드 전체 558개와 프런트 30개 자동 테스트, 프런트 프로덕션 빌드 및 정적 설정 검사를 통과했습니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary>
             <span class="gp-admin-patch-version">v2.5.3</span>
@@ -568,7 +583,7 @@
     <section class="gp-admin-panel" data-admin-tab="settings">
       <div class="gp-admin-section-head">
         <h3>운영 LLM 설정 <span id="adminGptRuntimeSource" class="gp-admin-count"></span></h3>
-        <p>운영 GPT 모델·reasoning·캐싱·승격 정책을 저장합니다. 복귀는 검증된 직전 live 배포로 수행합니다.</p>
+        <p>GPT-5.6 Luna 기본·Terra 승격 모델과 작업별 reasoning·캐싱 정책을 저장합니다. 복귀는 검증된 직전 live 배포로 수행합니다.</p>
       </div>
       <div class="gp-admin-exp-grid">
         <div class="gp-admin-label">
@@ -576,25 +591,25 @@
           <strong class="gp-admin-input" style="display:flex;align-items:center;">GPT · v2.5 단일 경로</strong>
         </div>
 
-        <label class="gp-admin-label"><span>기본 변환 모델</span><select id="adminGptModelHumanizePrimary" class="gp-admin-input gp-admin-select"><option value="gpt-5.4-mini">gpt-5.4-mini</option><option value="gpt-5.4">gpt-5.4</option><option value="gpt-5.4-nano">gpt-5.4-nano</option></select></label>
-        <label class="gp-admin-label"><span>승격 변환 모델</span><select id="adminGptModelHumanizeEscalation" class="gp-admin-input gp-admin-select"><option value="gpt-5.4">gpt-5.4</option><option value="gpt-5.4-mini">gpt-5.4-mini</option><option value="gpt-5.4-nano">gpt-5.4-nano</option></select></label>
-        <label class="gp-admin-label"><span>판정 모델</span><select id="adminGptModelJudge" class="gp-admin-input gp-admin-select"><option value="gpt-5.4-mini">gpt-5.4-mini</option><option value="gpt-5.4">gpt-5.4</option><option value="gpt-5.4-nano">gpt-5.4-nano</option></select></label>
-        <label class="gp-admin-label"><span>판정 승격 모델</span><select id="adminGptModelJudgeEscalation" class="gp-admin-input gp-admin-select"><option value="gpt-5.4">gpt-5.4</option><option value="gpt-5.4-mini">gpt-5.4-mini</option><option value="gpt-5.4-nano">gpt-5.4-nano</option></select></label>
-        <label class="gp-admin-label"><span>수리 모델</span><select id="adminGptModelRepair" class="gp-admin-input gp-admin-select"><option value="gpt-5.4-mini">gpt-5.4-mini</option><option value="gpt-5.4">gpt-5.4</option><option value="gpt-5.4-nano">gpt-5.4-nano</option></select></label>
-        <label class="gp-admin-label"><span>분류 모델</span><select id="adminGptModelClassify" class="gp-admin-input gp-admin-select"><option value="gpt-5.4-nano">gpt-5.4-nano</option><option value="gpt-5.4-mini">gpt-5.4-mini</option><option value="gpt-5.4">gpt-5.4</option></select></label>
-        <label class="gp-admin-label"><span>감지 모델</span><select id="adminGptModelDetect" class="gp-admin-input gp-admin-select"><option value="gpt-5.4-mini">gpt-5.4-mini</option><option value="gpt-5.4">gpt-5.4</option><option value="gpt-5.4-nano">gpt-5.4-nano</option></select></label>
-        <label class="gp-admin-label"><span>감지 승격 모델</span><select id="adminGptModelDetectEscalation" class="gp-admin-input gp-admin-select"><option value="gpt-5.4">gpt-5.4</option><option value="gpt-5.4-mini">gpt-5.4-mini</option><option value="gpt-5.4-nano">gpt-5.4-nano</option></select></label>
-        <label class="gp-admin-label"><span>근거검색 모델</span><select id="adminGptModelEvidenceSearch" class="gp-admin-input gp-admin-select"><option value="gpt-5.4-mini">gpt-5.4-mini</option><option value="gpt-5.4">gpt-5.4</option><option value="gpt-5.4-nano">gpt-5.4-nano</option></select></label>
-        <label class="gp-admin-label"><span>근거검색 승격 모델</span><select id="adminGptModelEvidenceEscalation" class="gp-admin-input gp-admin-select"><option value="gpt-5.4">gpt-5.4</option><option value="gpt-5.4-mini">gpt-5.4-mini</option><option value="gpt-5.4-nano">gpt-5.4-nano</option></select></label>
+        <label class="gp-admin-label"><span>기본 변환 모델</span><select id="adminGptModelHumanizePrimary" class="gp-admin-input gp-admin-select"><option value="gpt-5.6-luna">gpt-5.6-luna</option><option value="gpt-5.6-terra">gpt-5.6-terra</option></select></label>
+        <label class="gp-admin-label"><span>승격 변환 모델</span><select id="adminGptModelHumanizeEscalation" class="gp-admin-input gp-admin-select"><option value="gpt-5.6-terra">gpt-5.6-terra</option><option value="gpt-5.6-luna">gpt-5.6-luna</option></select></label>
+        <label class="gp-admin-label"><span>판정 모델</span><select id="adminGptModelJudge" class="gp-admin-input gp-admin-select"><option value="gpt-5.6-luna">gpt-5.6-luna</option><option value="gpt-5.6-terra">gpt-5.6-terra</option></select></label>
+        <label class="gp-admin-label"><span>판정 승격 모델</span><select id="adminGptModelJudgeEscalation" class="gp-admin-input gp-admin-select"><option value="gpt-5.6-terra">gpt-5.6-terra</option><option value="gpt-5.6-luna">gpt-5.6-luna</option></select></label>
+        <label class="gp-admin-label"><span>수리 모델</span><select id="adminGptModelRepair" class="gp-admin-input gp-admin-select"><option value="gpt-5.6-luna">gpt-5.6-luna</option><option value="gpt-5.6-terra">gpt-5.6-terra</option></select></label>
+        <label class="gp-admin-label"><span>분류 모델</span><select id="adminGptModelClassify" class="gp-admin-input gp-admin-select"><option value="gpt-5.6-luna">gpt-5.6-luna</option><option value="gpt-5.6-terra">gpt-5.6-terra</option></select></label>
+        <label class="gp-admin-label"><span>감지 모델</span><select id="adminGptModelDetect" class="gp-admin-input gp-admin-select"><option value="gpt-5.6-luna">gpt-5.6-luna</option><option value="gpt-5.6-terra">gpt-5.6-terra</option></select></label>
+        <label class="gp-admin-label"><span>감지 승격 모델</span><select id="adminGptModelDetectEscalation" class="gp-admin-input gp-admin-select"><option value="gpt-5.6-terra">gpt-5.6-terra</option><option value="gpt-5.6-luna">gpt-5.6-luna</option></select></label>
+        <label class="gp-admin-label"><span>근거검색 모델</span><select id="adminGptModelEvidenceSearch" class="gp-admin-input gp-admin-select"><option value="gpt-5.6-luna">gpt-5.6-luna</option><option value="gpt-5.6-terra">gpt-5.6-terra</option></select></label>
+        <label class="gp-admin-label"><span>근거검색 승격 모델</span><select id="adminGptModelEvidenceEscalation" class="gp-admin-input gp-admin-select"><option value="gpt-5.6-terra">gpt-5.6-terra</option><option value="gpt-5.6-luna">gpt-5.6-luna</option></select></label>
 
-        <label class="gp-admin-label"><span>변환 reasoning</span><select id="adminGptReasonHumanize" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="minimal">minimal</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="default">default</option></select></label>
-        <label class="gp-admin-label"><span>고위험 reasoning</span><select id="adminGptReasonFactDense" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="minimal">minimal</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="default">default</option></select></label>
-        <label class="gp-admin-label"><span>승격 reasoning</span><select id="adminGptReasonEscalation" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="minimal">minimal</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="default">default</option></select></label>
-        <label class="gp-admin-label"><span>판정 reasoning</span><select id="adminGptReasonJudge" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="minimal">minimal</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="default">default</option></select></label>
-        <label class="gp-admin-label"><span>수리 reasoning</span><select id="adminGptReasonRepair" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="minimal">minimal</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="default">default</option></select></label>
-        <label class="gp-admin-label"><span>분류 reasoning</span><select id="adminGptReasonClassify" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="minimal">minimal</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="default">default</option></select></label>
-        <label class="gp-admin-label"><span>감지 reasoning</span><select id="adminGptReasonDetect" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="minimal">minimal</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="default">default</option></select></label>
-        <label class="gp-admin-label"><span>근거검색 reasoning</span><select id="adminGptReasonEvidenceSearch" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="minimal">minimal</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="default">default</option></select></label>
+        <label class="gp-admin-label"><span>변환 reasoning</span><select id="adminGptReasonHumanize" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="max">max</option><option value="default">default</option></select></label>
+        <label class="gp-admin-label"><span>고위험 reasoning</span><select id="adminGptReasonFactDense" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="max">max</option><option value="default">default</option></select></label>
+        <label class="gp-admin-label"><span>승격 reasoning</span><select id="adminGptReasonEscalation" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="max">max</option><option value="default">default</option></select></label>
+        <label class="gp-admin-label"><span>판정 reasoning</span><select id="adminGptReasonJudge" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="max">max</option><option value="default">default</option></select></label>
+        <label class="gp-admin-label"><span>수리 reasoning</span><select id="adminGptReasonRepair" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="max">max</option><option value="default">default</option></select></label>
+        <label class="gp-admin-label"><span>분류 reasoning</span><select id="adminGptReasonClassify" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="max">max</option><option value="default">default</option></select></label>
+        <label class="gp-admin-label"><span>감지 reasoning</span><select id="adminGptReasonDetect" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="max">max</option><option value="default">default</option></select></label>
+        <label class="gp-admin-label"><span>근거검색 reasoning</span><select id="adminGptReasonEvidenceSearch" class="gp-admin-input gp-admin-select"><option value="none">none</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="xhigh">xhigh</option><option value="max">max</option><option value="default">default</option></select></label>
 
         <label class="gp-admin-cal-check">
           <input id="adminGptCacheEnabled" type="checkbox">
@@ -605,7 +620,7 @@
 
         <label class="gp-admin-cal-check">
           <input id="adminGptEscalationEnabled" type="checkbox">
-          <span>mini 실패 시 승격</span>
+          <span>Luna 실패 시 Terra 승격</span>
         </label>
         <label class="gp-admin-label"><span>긴 글 기준</span><input id="adminGptEscLongTextChars" class="gp-admin-input" type="number" min="1000" max="100000" step="500"></label>
         <label class="gp-admin-label"><span>보호표현 기준</span><input id="adminGptEscProtectedTermThreshold" class="gp-admin-input" type="number" min="1" max="500" step="1"></label>

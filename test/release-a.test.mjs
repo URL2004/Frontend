@@ -195,7 +195,9 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>패치노트</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 30);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 31);
+  assert.match(admin, /Luna 기본·Terra 승격 전환/u);
+  assert.match(admin, /2026\.07\.31/u);
   assert.match(admin, /전문 문서 언어 무결성·GPT 캐시 효율화/u);
   assert.match(admin, /Backend 53b67b8 \+ 1f6e010/u);
   assert.match(admin, /휴머나이징 엔진 v2\.5\.3/u);
@@ -207,6 +209,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /v2\.5\.1/u);
   assert.match(admin, /v2\.5\.0/u);
   const timeline = admin.slice(admin.indexOf('gp-admin-patch-timeline'));
+  assert.ok(timeline.indexOf('GPT-5.6') < timeline.indexOf('v2.5.3'));
   assert.ok(timeline.indexOf('v2.5.3') < timeline.indexOf('v2.5.2'));
   assert.ok(timeline.indexOf('v2.5.2') < timeline.indexOf('관리자 Hotfix'));
   assert.ok(timeline.indexOf('관리자 Hotfix') < timeline.indexOf('감지 Hotfix'));
@@ -229,8 +232,8 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
-  assert.equal(releases.length, 30);
-  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 3);
+  assert.equal(releases.length, 31);
+  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 4);
   for (const [, attrs, body] of releases) {
     assert.equal(/\bopen\b/u.test(attrs), /gp-admin-patch-state is-live/u.test(body));
   }
@@ -239,15 +242,32 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(styles, /@media\(max-width:700px\)[^{]*\{/u);
 });
 
+test('관리자 GPT 설정은 Luna 기본·Terra 승격과 GPT-5.6 reasoning을 제공한다', async () => {
+  const [admin, source] = await Promise.all([
+    read('pages/admin.html'),
+    read('assets/js/app-module.js')
+  ]);
+  const settings = admin.slice(admin.indexOf('data-admin-tab="settings"'));
+  assert.match(settings, /id="adminGptModelHumanizePrimary"[\s\S]*?<option value="gpt-5\.6-luna"/u);
+  assert.match(settings, /id="adminGptModelHumanizeEscalation"[\s\S]*?<option value="gpt-5\.6-terra"/u);
+  assert.match(settings, /Luna 실패 시 Terra 승격/u);
+  assert.match(settings, /<option value="max">max<\/option>/u);
+  assert.doesNotMatch(settings, /<option value="gpt-5\.4/u);
+  assert.match(source, /humanizePrimary:\s*value\('adminGptModelHumanizePrimary', 'gpt-5\.6-luna'\)/u);
+  assert.match(source, /humanizeEscalation:\s*value\('adminGptModelHumanizeEscalation', 'gpt-5\.6-terra'\)/u);
+  assert.match(source, /adminGptReasoningValues = \['none', 'low', 'medium', 'high', 'xhigh', 'max', 'default'\]/u);
+  assert.doesNotMatch(source, /gpt-5\.4-(?:mini|nano)|gpt-5\.4'/u);
+});
+
 test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async () => {
   const [index, boot, loader] = await Promise.all([
     read('index.html'),
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-163/u);
-  assert.match(boot, /var v = 'lav-163'/u);
-  assert.match(loader, /var ASSET_V = 'lav-163'/u);
+  assert.match(index, /app-boot\.js\?v=lav-164/u);
+  assert.match(boot, /var v = 'lav-164'/u);
+  assert.match(loader, /var ASSET_V = 'lav-164'/u);
   assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-161/u);
 });
 

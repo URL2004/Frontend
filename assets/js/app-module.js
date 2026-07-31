@@ -3441,7 +3441,7 @@ window.adminSaveBasicHumanizeExperiment = async function() {
  }
 };
 
-const adminGptReasoningValues = ['none', 'low', 'medium', 'high', 'xhigh', 'minimal', 'default'];
+const adminGptReasoningValues = ['none', 'low', 'medium', 'high', 'xhigh', 'max', 'default'];
 
 function adminGptSetValue(id, value) {
  const el = document.getElementById(id);
@@ -3475,20 +3475,20 @@ function adminSetGptRuntimeForm(cfg) {
  const source = document.getElementById('adminGptRuntimeSource');
  if (source) source.textContent = cfg.source || '-';
 
- adminGptSetValue('adminGptModelHumanizePrimary', models.humanizePrimary || 'gpt-5.4-mini');
- adminGptSetValue('adminGptModelHumanizeEscalation', models.humanizeEscalation || 'gpt-5.4');
- adminGptSetValue('adminGptModelJudge', models.judge || 'gpt-5.4-mini');
- adminGptSetValue('adminGptModelJudgeEscalation', models.judgeEscalation || 'gpt-5.4');
- adminGptSetValue('adminGptModelRepair', models.repair || 'gpt-5.4-mini');
- adminGptSetValue('adminGptModelClassify', models.classify || 'gpt-5.4-nano');
- adminGptSetValue('adminGptModelDetect', models.detect || 'gpt-5.4-mini');
- adminGptSetValue('adminGptModelDetectEscalation', models.detectEscalation || 'gpt-5.4');
- adminGptSetValue('adminGptModelEvidenceSearch', models.evidenceSearch || 'gpt-5.4-mini');
- adminGptSetValue('adminGptModelEvidenceEscalation', models.evidenceEscalation || 'gpt-5.4');
+ adminGptSetValue('adminGptModelHumanizePrimary', models.humanizePrimary || 'gpt-5.6-luna');
+ adminGptSetValue('adminGptModelHumanizeEscalation', models.humanizeEscalation || 'gpt-5.6-terra');
+ adminGptSetValue('adminGptModelJudge', models.judge || 'gpt-5.6-luna');
+ adminGptSetValue('adminGptModelJudgeEscalation', models.judgeEscalation || 'gpt-5.6-terra');
+ adminGptSetValue('adminGptModelRepair', models.repair || 'gpt-5.6-luna');
+ adminGptSetValue('adminGptModelClassify', models.classify || 'gpt-5.6-luna');
+ adminGptSetValue('adminGptModelDetect', models.detect || 'gpt-5.6-luna');
+ adminGptSetValue('adminGptModelDetectEscalation', models.detectEscalation || 'gpt-5.6-terra');
+ adminGptSetValue('adminGptModelEvidenceSearch', models.evidenceSearch || 'gpt-5.6-luna');
+ adminGptSetValue('adminGptModelEvidenceEscalation', models.evidenceEscalation || 'gpt-5.6-terra');
 
- adminGptSetValue('adminGptReasonHumanize', adminGptReasoning(reasoning.humanize, 'low'));
- adminGptSetValue('adminGptReasonFactDense', adminGptReasoning(reasoning.factDense, 'medium'));
- adminGptSetValue('adminGptReasonEscalation', adminGptReasoning(reasoning.escalation, 'medium'));
+ adminGptSetValue('adminGptReasonHumanize', adminGptReasoning(reasoning.humanize, 'medium'));
+ adminGptSetValue('adminGptReasonFactDense', adminGptReasoning(reasoning.factDense, 'high'));
+ adminGptSetValue('adminGptReasonEscalation', adminGptReasoning(reasoning.escalation, 'high'));
  adminGptSetValue('adminGptReasonJudge', adminGptReasoning(reasoning.judge, 'medium'));
  adminGptSetValue('adminGptReasonRepair', adminGptReasoning(reasoning.repair, 'medium'));
  adminGptSetValue('adminGptReasonClassify', adminGptReasoning(reasoning.classify, 'low'));
@@ -3505,7 +3505,7 @@ function adminSetGptRuntimeForm(cfg) {
  adminGptSetValue('adminGptEscPatchTargetThreshold', escalation.patchTargetThreshold || 24);
 
  const cacheLabel = cache.enabled === false ? '캐싱 꺼짐' : '캐싱 켜짐';
- adminSetMessage('adminGptRuntimeMsg', `GPT 운영 중 · ${models.humanizePrimary || 'gpt-5.4-mini'} · ${cacheLabel}`, 'info');
+ adminSetMessage('adminGptRuntimeMsg', `GPT 운영 중 · ${models.humanizePrimary || 'gpt-5.6-luna'} · ${cacheLabel}`, 'info');
 }
 
 function adminReadGptRuntimeForm() {
@@ -3519,21 +3519,21 @@ function adminReadGptRuntimeForm() {
  };
  return {
   models: {
-   humanizePrimary: value('adminGptModelHumanizePrimary', 'gpt-5.4-mini'),
-   humanizeEscalation: value('adminGptModelHumanizeEscalation', 'gpt-5.4'),
-   judge: value('adminGptModelJudge', 'gpt-5.4-mini'),
-   judgeEscalation: value('adminGptModelJudgeEscalation', 'gpt-5.4'),
-   repair: value('adminGptModelRepair', 'gpt-5.4-mini'),
-   classify: value('adminGptModelClassify', 'gpt-5.4-nano'),
-   detect: value('adminGptModelDetect', 'gpt-5.4-mini'),
-   detectEscalation: value('adminGptModelDetectEscalation', 'gpt-5.4'),
-   evidenceSearch: value('adminGptModelEvidenceSearch', 'gpt-5.4-mini'),
-   evidenceEscalation: value('adminGptModelEvidenceEscalation', 'gpt-5.4')
+   humanizePrimary: value('adminGptModelHumanizePrimary', 'gpt-5.6-luna'),
+   humanizeEscalation: value('adminGptModelHumanizeEscalation', 'gpt-5.6-terra'),
+   judge: value('adminGptModelJudge', 'gpt-5.6-luna'),
+   judgeEscalation: value('adminGptModelJudgeEscalation', 'gpt-5.6-terra'),
+   repair: value('adminGptModelRepair', 'gpt-5.6-luna'),
+   classify: value('adminGptModelClassify', 'gpt-5.6-luna'),
+   detect: value('adminGptModelDetect', 'gpt-5.6-luna'),
+   detectEscalation: value('adminGptModelDetectEscalation', 'gpt-5.6-terra'),
+   evidenceSearch: value('adminGptModelEvidenceSearch', 'gpt-5.6-luna'),
+   evidenceEscalation: value('adminGptModelEvidenceEscalation', 'gpt-5.6-terra')
   },
   reasoning: {
-   humanize: value('adminGptReasonHumanize', 'low'),
-   factDense: value('adminGptReasonFactDense', 'medium'),
-   escalation: value('adminGptReasonEscalation', 'medium'),
+   humanize: value('adminGptReasonHumanize', 'medium'),
+   factDense: value('adminGptReasonFactDense', 'high'),
+   escalation: value('adminGptReasonEscalation', 'high'),
    judge: value('adminGptReasonJudge', 'medium'),
    repair: value('adminGptReasonRepair', 'medium'),
    classify: value('adminGptReasonClassify', 'low'),
