@@ -195,12 +195,13 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>패치노트</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 31);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 32);
+  assert.match(admin, /휴머나이징 진행 화면 복구·중복 퍼센트 제거/u);
   assert.match(admin, /Luna 기본·Terra 승격 전환/u);
   assert.match(admin, /2026\.07\.31/u);
   assert.match(admin, /전문 문서 언어 무결성·GPT 캐시 효율화/u);
   assert.match(admin, /Backend 53b67b8 \+ 1f6e010/u);
-  assert.match(admin, /휴머나이징 엔진 v2\.5\.3/u);
+  assert.match(admin, /GPT-5\.6 런타임 · 휴머나이징 작업 상태 복구/u);
   assert.match(admin, /원문 문단 역할·사례 결론 귀속 보존/u);
   assert.match(admin, /사용자 크레딧 내역 분리·작업 기록 복사 수정/u);
   assert.match(admin, /AI 감지 점수·설명 일관성 보정/u);
@@ -209,6 +210,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /v2\.5\.1/u);
   assert.match(admin, /v2\.5\.0/u);
   const timeline = admin.slice(admin.indexOf('gp-admin-patch-timeline'));
+  assert.ok(timeline.indexOf('UX Hotfix') < timeline.indexOf('GPT-5.6'));
   assert.ok(timeline.indexOf('GPT-5.6') < timeline.indexOf('v2.5.3'));
   assert.ok(timeline.indexOf('v2.5.3') < timeline.indexOf('v2.5.2'));
   assert.ok(timeline.indexOf('v2.5.2') < timeline.indexOf('관리자 Hotfix'));
@@ -216,7 +218,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.ok(timeline.indexOf('감지 Hotfix') < timeline.indexOf('v2.5.1'));
   assert.ok(timeline.indexOf('v2.5.1') < timeline.indexOf('v2.5.0'));
   assert.ok(timeline.indexOf('v2.5.0') < timeline.indexOf('v2.4.18'));
-  assert.match(admin, /휴머나이징 엔진 v2\.5\.3/u);
+  assert.match(admin, /Frontend active-job-recovery/u);
   assert.match(admin, /Backend [^<]*1f6e010/u);
   assert.match(admin, /Backend d0ef190/u);
   assert.match(admin, /Backend 30706b7/u);
@@ -232,8 +234,8 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
-  assert.equal(releases.length, 31);
-  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 4);
+  assert.equal(releases.length, 32);
+  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 5);
   for (const [, attrs, body] of releases) {
     assert.equal(/\bopen\b/u.test(attrs), /gp-admin-patch-state is-live/u.test(body));
   }
@@ -265,10 +267,36 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-167/u);
-  assert.match(boot, /var v = 'lav-167'/u);
-  assert.match(loader, /var ASSET_V = 'lav-167'/u);
-  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166)/u);
+  assert.match(index, /app-boot\.js\?v=lav-168/u);
+  assert.match(boot, /var v = 'lav-168'/u);
+  assert.match(loader, /var ASSET_V = 'lav-168'/u);
+  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166|167)/u);
+});
+
+test('진행 중 휴머나이징은 어디서든 복귀하고 이전 퍼센트가 새 작업을 덮지 않는다', async () => {
+  const [main, designs, evasion, styles] = await Promise.all([
+    read('pages/main.html'),
+    read('assets/js/main-designs.js'),
+    read('assets/js/evasion-flow.js'),
+    read('assets/css/redesign.css')
+  ]);
+  assert.match(main, /id="lavActiveJob"[\s\S]*?onclick="lavOpenActiveJob\(\)"[\s\S]*?aria-live="polite"/u);
+  assert.ok((designs.match(/window\.lavPrepareNewSentence\(\)/gu) || []).length >= 2);
+  assert.match(evasion, /window\.lavPrepareNewSentence = function/u);
+  assert.match(evasion, /newLabel\.textContent = blocking \? '진행 화면 보기' : '새 문장 시작'/u);
+  assert.match(evasion, /var jobTickerGeneration = 0/u);
+  assert.match(evasion, /function replaceJobTicker\(estimate, label, initialSec\)/u);
+  assert.equal((evasion.match(/formalStop = startJobTicker/gu) || []).length, 1);
+  const poll = evasion.slice(evasion.indexOf('async function pollTransform'), evasion.indexOf('// 완료 렌더', evasion.indexOf('async function pollTransform')));
+  assert.ok(poll.indexOf('st = await pollRes.json()') < poll.indexOf('if (gen !== pollGen) return;', poll.indexOf('st = await pollRes.json()')));
+  assert.match(evasion, /resumeGen !== pollGen/u);
+  assert.match(evasion, /recoverGen !== pollGen/u);
+  assert.match(evasion, /handleTransformStartError\(err, fallbackStep, expectedGen\)/u);
+  assert.ok((evasion.match(/if \(r && r\.jobId\) makeJobCanceller\(r\.jobId\)\(\)/gu) || []).length >= 2);
+  assert.match(evasion, /window\.lavBlockedRetryMemo = function \(\) \{[\s\S]*?clearJobRef\(\);[\s\S]*?clearActiveJobUi\(\);/u);
+  assert.match(evasion, /window\.lavBlockedRetryEvidence = function \(\) \{[\s\S]*?clearJobRef\(\);[\s\S]*?clearActiveJobUi\(\);/u);
+  assert.match(styles, /\.gp-lav-active-job/u);
+  assert.match(styles, /\.gp-lav-new\.is-job-active/u);
 });
 
 test('효과 제한 입력은 기본·고급에서만 확인하고 서버 409를 일반 작업 충돌과 구분한다', async () => {

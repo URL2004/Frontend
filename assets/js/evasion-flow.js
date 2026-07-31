@@ -122,6 +122,8 @@
     // 뒤로 버튼: 방법선택(choose)·회피설정(reduce)·감지 보고서(report)에서 표시. 분석중·작업중·완료에선 숨김.
     var back = document.querySelector('.lav-flow-back');
     if (back) back.style.visibility = (name === 'choose' || name === 'reduce' || name === 'report') ? 'visible' : 'hidden';
+    var edit = document.querySelector('.lav-flow-edit');
+    if (edit) edit.hidden = name === 'analyzing' || name === 'job' || name === 'blocked' || name === 'done';
   }
 
   // 오프라인 폴백 진단: /diagnose 실패 시 입력 길이로 등급만 흉내(서비스 연속성용).
@@ -534,9 +536,14 @@
   };
 
   window.lavFlowReset = function () {
+    if (isBlockingJobStatus(activeJobUi.status) || readJobRef()) {
+      window.lavOpenActiveJob();
+      return false;
+    }
     exitWorkspace();
     var src = $('lavInput');
     if (src) src.focus();
+    return true;
   };
 
   // ── 결과/보고서 본문 접기(한 화면 미리보기 + 펼쳐보기) ──
@@ -938,12 +945,15 @@
     pendingApproval = null;
     var ap = $('lavApprove'); if (ap) ap.hidden = true;
     if ($('lavStepSlot')) $('lavStepSlot').textContent = '승인한 자료 ' + ids.length + '건으로 글 다시 쓰는 중';
+    setActiveJobUi(jobId, 'running', '승인한 근거로 재구성 중');
+    var gen = ++pollGen;
     var idToken = await evGetIdToken();
     fetch(window.apiUrl('/transform/' + jobId + '/approve'), {
       method: 'POST',
       headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),
       body: JSON.stringify({ approved: ids })
     }).then(function (res) { return res.json(); }).then(function (b) {
+      if (gen !== pollGen) return;
       if (b && b.error) throw new Error(b.error);
       if (b && b.job && b.job.status === 'queued') {
         resumeTransformState(jobId, b.job);
@@ -951,9 +961,10 @@
       }
       var input = $('lavInput');
       var fallbackRange = formalEstimateRange(input ? input.value : '', true);
-      formalStop = startJobTicker(estimateRangeFromPayload(b && b.job, fallbackRange), '승인 근거로 재구성 중');
-      return pollTransform(jobId, ++pollGen);
+      replaceJobTicker(estimateRangeFromPayload(b && b.job, fallbackRange), '승인 근거로 재구성 중');
+      return pollTransform(jobId, gen);
     }).catch(function (err) {
+      if (gen !== pollGen) return;
       alert(err && err.message ? err.message : '승인 처리에 실패했어요.');
       show('reduce');
     });
@@ -1021,6 +1032,7 @@
   // 단일 응답 작업이라 단계는 경과 시간 기반 추정 표시(마지막 단계는 응답 도착 시).
   // estimate는 초 또는 {lowSec, highSec}. initialSec는 재진입 시 이미 흐른 시간이다.
   function startJobTicker(estimate, label, initialSec) {
+    var tickerGeneration = jobTickerGeneration;
     var t0 = initialSec || 0;
     var name = label || '문장 다듬는 중';
     var range = estimate && typeof estimate === 'object' ? estimate : null;
@@ -1028,12 +1040,17 @@
     var timing = range ? estimateTimeRangeLabel(range) : '예상 ' + Math.round(est / 60) + '분';
     setJobSteps(t0 > est * 0.7 ? 2 : 1);
     var paint = function () {
+      if (tickerGeneration !== jobTickerGeneration) return;
       var timeText = range && t0 > est ? '예상 범위를 지나 계속 처리 중' : timing;
       if ($('lavStepSlot')) $('lavStepSlot').textContent = name + ' (' + Math.min(99, Math.round(t0 / est * 100)) + '% · ' + timeText + ')';
       if (t0 > est * 0.7) setJobSteps(2);
     };
     paint();
-    var timer = setInterval(function () { t0 += 2; paint(); }, 2000);
+    var timer = setInterval(function () {
+      if (tickerGeneration !== jobTickerGeneration) { clearInterval(timer); return; }
+      t0 += 2;
+      paint();
+    }, 2000);
     return function stop() { clearInterval(timer); };
   }
 
@@ -1045,6 +1062,7 @@
 
   function renderQueuedState(jobId, st) {
     stopFormalTicker();
+    setActiveJobUi(jobId, 'queued', '휴머나이징 대기 중');
     setJobSteps(0);
     var ap = $('lavApprove'); if (ap) ap.hidden = true;
     if ($('lavJobTitle')) $('lavJobTitle').textContent = '대기열에서 기다리고 있어요';
@@ -1081,12 +1099,14 @@
   function runShortJob(mode, s) {
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
+    activeCancel = null;
     if ($('lavJobTitle')) $('lavJobTitle').textContent = '문장을 다듬고 있어요';
     if ($('lavJobId')) $('lavJobId').textContent = '';
+    setActiveJobUi('', 'starting', mode === 'polish' ? '다듬기 시작 중' : '휴머나이징 시작 중');
     show('job');
     armCancelWindow(0);   // 방금 시작 — 30초 취소 창 열기
     var bare = text.replace(/\s/g, '').length;
-    formalStop = startJobTicker(shortEstimateSec(text), '문장 다듬는 중');
+    replaceJobTicker(shortEstimateSec(text), '문장 다듬는 중');
     var gen = ++pollGen;
     (async function () {
       var idToken = '';
@@ -1097,6 +1117,7 @@
           authErr.httpStatus = 401;
           throw authErr;
         }
+        if (gen !== pollGen) return;
         var body = { text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text) };
         if (s && s.documentProfile) body.documentProfile = s.documentProfile;
         if (mode === 'blog') body.basicStyle = (s && s.basicStyle === 'report') ? 'report' : 'blog';
@@ -1106,8 +1127,13 @@
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
           body: JSON.stringify(body)
         }).then(parseTransformStart);
+        if (gen !== pollGen) {
+          if (r && r.jobId) makeJobCanceller(r.jobId)();
+          return;
+        }
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
-        saveJobRef(r.jobId);
+        setActiveJobUi(r.jobId, r.job && r.job.status || 'running', '문장을 다듬는 중');
+        saveJobRef(r.jobId, r.job && r.job.status || 'running');
         activeCancel = makeJobCanceller(r.jobId);
         if (r.job && r.job.status === 'queued') {
           resumeTransformState(r.jobId, r.job);
@@ -1115,7 +1141,8 @@
         }
         await pollTransform(r.jobId, gen);
       } catch (err) {
-        await handleTransformStartError(err, mode === 'polish' ? 'choose' : 'reduce');
+        if (gen !== pollGen) return;
+        await handleTransformStartError(err, mode === 'polish' ? 'choose' : 'reduce', gen);
       }
     })();
   }
@@ -1152,8 +1179,118 @@
   var formalStop = null;   // 진행 ticker 정지 함수
   var activeCancel = null; // 현재 작업 취소 함수(blog=fetch abort, formal=POST /cancel)
   var pollGen = 0;         // 취소·새 작업 시작 시 증가 → 이전 폴링 루프 자연 종료
+  var jobTickerGeneration = 0;   // 이전 작업 타이머가 새 작업 진행률을 덮어쓰지 못하게 하는 화면 세대
+  var activeJobUi = { jobId: '', status: 'idle', label: '' };
   var lavBlockedJobId = null;   // 차단 화면이 띄운 job — '보존형으로 받기'(accept-fallback)에 필요
   var lavBlockedFallbackCredit = 0;   // 보존형 받기 단가 — 클릭 전 잔액(window.UC) 사전확인용
+
+  function isBlockingJobStatus(status) {
+    return ['starting', 'checking', 'queued', 'running', 'awaiting_approval', 'blocked'].indexOf(status) >= 0;
+  }
+
+  function readJobRef() {
+    var ref = null;
+    try { ref = JSON.parse(localStorage.getItem('lavJobRef') || 'null'); } catch (e) { }
+    if (!ref || !ref.jobId) return null;
+    if ((Date.now() - (ref.ts || 0)) > 6 * 3600 * 1000) {
+      clearJobRef();
+      return null;
+    }
+    return ref;
+  }
+
+  function activeJobCopy() {
+    var status = activeJobUi.status;
+    var title = activeJobUi.label || '휴머나이징 진행 중';
+    var meta = activeJobUi.jobId ? '#' + activeJobUi.jobId.slice(0, 6).toUpperCase() + ' · 진행 화면 보기' : '진행 화면 보기';
+    if (status === 'starting') return { title: title || '휴머나이징 시작 중', meta: '작업을 준비하고 있어요' };
+    if (status === 'checking') return { title: '작업 상태 확인 중', meta: meta };
+    if (status === 'queued') return { title: '휴머나이징 대기 중', meta: meta };
+    if (status === 'awaiting_approval') return { title: '근거 승인을 기다려요', meta: meta };
+    if (status === 'blocked') return { title: '작업 확인이 필요해요', meta: '진행 화면에서 선택해 주세요' };
+    if (status === 'done') return { title: '휴머나이징 완료', meta: '결과 보기' };
+    return { title: title, meta: meta };
+  }
+
+  function syncActiveJobIndicator() {
+    var chip = $('lavActiveJob');
+    var visible = activeJobUi.status !== 'idle';
+    var blocking = isBlockingJobStatus(activeJobUi.status);
+    if (chip) {
+      chip.hidden = !visible;
+      if (visible) {
+        chip.dataset.status = activeJobUi.status;
+        chip.classList.toggle('is-active', blocking);
+        var copy = activeJobCopy();
+        if ($('lavActiveJobTitle')) $('lavActiveJobTitle').textContent = copy.title;
+        if ($('lavActiveJobMeta')) $('lavActiveJobMeta').textContent = copy.meta;
+        chip.setAttribute('aria-label', copy.title + '. ' + copy.meta);
+      }
+    }
+    var newButton = document.querySelector('.gp-lav-new');
+    if (newButton) {
+      newButton.classList.toggle('is-job-active', blocking);
+      var newLabel = newButton.querySelector('span');
+      var newKbd = $('lavNewKbd');
+      if (newLabel) newLabel.textContent = blocking ? '진행 화면 보기' : '새 문장 시작';
+      if (newKbd) newKbd.textContent = blocking
+        ? '진행 중'
+        : (navigator.platform && navigator.platform.indexOf('Mac') === -1 ? 'Ctrl N' : '⌘ N');
+    }
+  }
+
+  function setActiveJobUi(jobId, status, label) {
+    // 새 시작 화면은 직전 완료 작업 ID를 물려받지 않는다.
+    // 실제 POST 응답이 도착한 뒤에만 새 jobId를 표시해야 작업 전환이 명확하다.
+    activeJobUi.jobId = status === 'starting' && !jobId
+      ? ''
+      : (jobId || activeJobUi.jobId || '');
+    activeJobUi.status = status || activeJobUi.status || 'checking';
+    activeJobUi.label = label || activeJobUi.label || '';
+    if (activeJobUi.jobId && isBlockingJobStatus(activeJobUi.status)) {
+      saveJobRef(activeJobUi.jobId, activeJobUi.status);
+    }
+    syncActiveJobIndicator();
+  }
+
+  function clearActiveJobUi() {
+    activeJobUi = { jobId: '', status: 'idle', label: '' };
+    syncActiveJobIndicator();
+  }
+
+  window.lavOpenActiveJob = function () {
+    var ref = readJobRef();
+    if (!activeJobUi.jobId && ref) setActiveJobUi(ref.jobId, ref.status || 'checking');
+    if (typeof window.switchTab === 'function') window.switchTab('main');
+    if (activeJobUi.status === 'done') {
+      show('done');
+    } else if (activeJobUi.status === 'blocked') {
+      show('blocked');
+    } else if (isBlockingJobStatus(activeJobUi.status)) {
+      if ($('lavJobTitle') && activeJobUi.status === 'checking') $('lavJobTitle').textContent = '작업 상태를 확인하고 있어요';
+      if ($('lavJobId') && activeJobUi.jobId) $('lavJobId').textContent = '#' + activeJobUi.jobId.slice(0, 6).toUpperCase();
+      show('job');
+    }
+  };
+
+  window.lavPrepareNewSentence = function () {
+    var ref = readJobRef();
+    if (isBlockingJobStatus(activeJobUi.status) || ref) {
+      if (!activeJobUi.jobId && ref) setActiveJobUi(ref.jobId, ref.status || 'checking');
+      window.lavOpenActiveJob();
+      if (window.gpToast) {
+        window.gpToast('진행 중인 작업이 있어요. 완료하거나 중단한 뒤 새 글을 시작할 수 있어요.', {
+          type: 'info',
+          title: '현재 작업으로 돌아왔어요'
+        });
+      }
+      return false;
+    }
+    // 완료 결과를 확인한 뒤 새 글을 시작하는 경우 상단 완료 표시를 함께 정리한다.
+    clearActiveJobUi();
+    return true;
+  };
+
   // ── 30초 취소 창(2026-06-15): 시작 직후 오타·실수만 구제, 후반 취소 악용(LLM 원가만 날리는)은 차단.
   //   job 시작/재진입 시 경과시간 기준으로 남은 창만큼만 '중단' 버튼을 띄우고, 창이 지나면 영구히 숨긴다.
   var cancelWindowTimer = null;
@@ -1172,7 +1309,15 @@
     btn.hidden = false;
     cancelWindowTimer = setTimeout(function () { btn.hidden = true; cancelWindowTimer = null; }, remainSec * 1000);
   }
-  function stopFormalTicker() { if (formalStop) { formalStop(); formalStop = null; } }
+  function stopFormalTicker() {
+    jobTickerGeneration++;
+    if (formalStop) { formalStop(); formalStop = null; }
+  }
+  function replaceJobTicker(estimate, label, initialSec) {
+    stopFormalTicker();
+    formalStop = startJobTicker(estimate, label, initialSec);
+    return formalStop;
+  }
   function notifyJobDone(st, label) {
     if (!window.gpNotify || !st || !st.jobId) return;
     window.gpNotify({
@@ -1209,28 +1354,34 @@
     if (activeCancel) { try { activeCancel(); } catch (e) { } activeCancel = null; }
     stopFormalTicker();
     clearJobRef();
+    clearActiveJobUi();
     if (window.gpToast) window.gpToast('작업을 중단했어요. 크레딧은 차감되지 않았습니다.', { type: 'info' });
     show('reduce');
   };
   // ── P5: jobId 재진입 — 새로고침·재방문 시 진행 중 작업 복원(서버 job은 어차피 계속 돌고 있음) ──
-  function saveJobRef(jobId) { try { localStorage.setItem('lavJobRef', JSON.stringify({ jobId: jobId, ts: Date.now() })); } catch (e) { } }
+  function saveJobRef(jobId, status) {
+    try { localStorage.setItem('lavJobRef', JSON.stringify({ jobId: jobId, status: status || activeJobUi.status || 'checking', ts: Date.now() })); } catch (e) { }
+  }
   function clearJobRef() { try { localStorage.removeItem('lavJobRef'); } catch (e) { } }
   function initJobResume() {
-    var ref = null;
-    try { ref = JSON.parse(localStorage.getItem('lavJobRef') || 'null'); } catch (e) { }
-    if (!ref || !ref.jobId || (Date.now() - (ref.ts || 0)) > 6 * 3600 * 1000) { if (ref) clearJobRef(); return; }
+    var ref = readJobRef();
+    if (!ref) return;
+    var resumeGen = ++pollGen;
+    setActiveJobUi(ref.jobId, ref.status || 'checking');
     evGetIdToken().then(function (idToken) {
       return fetch(window.apiUrl('/transform/' + ref.jobId), { headers: evAuthHeaders(idToken) });
     }).then(function (r) {
       var httpStatus = r.status;
       return r.json().catch(function () { return null; }).then(function (st) { return { httpStatus: httpStatus, st: st }; });
     }).then(function (o) {
+      if (resumeGen !== pollGen) return;   // 확인 중 취소·교체된 작업을 늦은 응답으로 되살리지 않는다.
       // 401(토큰 만료): jobRef를 지우지 않는다 — 다음 로드에 재시도해 진행 중 작업을 복원.
       if (o.httpStatus === 401) return;
       var st = o.st;
-      if (!st || !st.ok) { clearJobRef(); return; }
+      if (!st || !st.ok) { clearJobRef(); clearActiveJobUi(); return; }
       if (resumeTransformState(ref.jobId, st)) return;
-      clearJobRef();   // blocked·error는 복원 의미 없음
+      clearJobRef();
+      clearActiveJobUi();
     }).catch(function () { /* 서버 미접속 — 다음 방문에 재시도 */ });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initJobResume);
@@ -1273,7 +1424,8 @@
       return true;
     }
     if (st.status !== 'running' && st.status !== 'queued' && st.status !== 'awaiting_approval') return false;
-    saveJobRef(jobId);
+    setActiveJobUi(jobId, st.status, st.status === 'queued' ? '휴머나이징 대기 중' : '휴머나이징 진행 중');
+    saveJobRef(jobId, st.status);
     activeCancel = makeJobCanceller(jobId);
     var isShort = st.mode === 'blog' || st.mode === 'polish';
     if ($('lavJobTitle')) $('lavJobTitle').textContent = isShort ? '문장을 다듬고 있어요' : '글을 다시 쓰고 있어요';
@@ -1298,26 +1450,30 @@
     var resumeEstimate = isShort
       ? (st.estSec || 180)
       : estimateRangeFromPayload(st, formalEstimateRange(($('lavInput') || {}).value || '', false));
-    formalStop = startJobTicker(resumeEstimate, isShort ? '문장 다듬는 중' : '재구성 중', st.elapsedSec || 0);
+    replaceJobTicker(resumeEstimate, isShort ? '문장 다듬는 중' : '재구성 중', st.elapsedSec || 0);
     pollTransform(jobId, ++pollGen);
     return true;
   }
 
-  async function recoverActiveTransformJob() {
+  async function recoverActiveTransformJob(recoverGen) {
+    if (recoverGen !== pollGen) return false;
     var idToken = await evGetIdToken(true);
     var res = await fetch(window.apiUrl('/transform/active'), { headers: evAuthHeaders(idToken) });
     if (!res.ok) return false;
     var data = await res.json().catch(function () { return null; });
+    if (recoverGen !== pollGen) return false;
     var job = data && data.job;
     if (!data || !data.ok || !job || !job.id) return false;
     if (window.gpToast) window.gpToast('진행 중이던 작업으로 다시 들어갑니다.', { type: 'info' });
     return resumeTransformState(job.id, job);
   }
 
-  async function handleTransformStartError(err, fallbackStep) {
+  async function handleTransformStartError(err, fallbackStep, expectedGen) {
+    if (expectedGen !== pollGen) return;
     stopFormalTicker();
     if (err && err.httpStatus === 422 && err.code === 'NO_EDITABLE_CONTENT') {
       clearJobRef();
+      clearActiveJobUi();
       show(fallbackStep || 'reduce');
       var inputNotice = err.message || '변환할 일반 본문을 찾지 못했어요.';
       if (window.gpToast) window.gpToast(inputNotice, { type: 'warning', title: '입력 내용을 확인해 주세요' });
@@ -1325,6 +1481,7 @@
       return;
     }
     if (err && err.httpStatus === 409 && err.code === 'LIMITED_EFFECT_CONFIRMATION_REQUIRED') {
+      clearActiveJobUi();
       var src = $('lavInput');
       lastDiag = Object.assign({}, lastDiag || fakeDiagnose(src ? src.value : ''), {
         effectExpectation: 'limited',
@@ -1337,10 +1494,24 @@
       return;
     }
     if (err && err.httpStatus === 409) {
-      try { if (await recoverActiveTransformJob()) return; } catch (e) { /* 기존 안내로 폴백 */ }
+      // 새 요청의 화면 세대를 종료한 뒤 서버의 실제 활성 작업만 한 번 복구한다.
+      var recoverGen = ++pollGen;
+      try { if (await recoverActiveTransformJob(recoverGen)) return; } catch (e) { /* 기존 안내로 폴백 */ }
+      if (recoverGen !== pollGen) return;
+      if (err.activeJobId) {
+        setActiveJobUi(err.activeJobId, 'checking', '진행 중인 작업 확인 중');
+        saveJobRef(err.activeJobId, 'checking');
+        activeCancel = makeJobCanceller(err.activeJobId);
+        replaceJobTicker(300, '진행 중인 작업 확인 중');
+        window.lavOpenActiveJob();
+        pollTransform(err.activeJobId, ++pollGen);
+        return;
+      }
+      clearActiveJobUi();
     }
     if (err && err.httpStatus === 401) {
       clearJobRef();
+      clearActiveJobUi();
       var authMsg = (err && err.message) || '로그인이 필요해요.';
       if (window.gpToast) window.gpToast(authMsg, { type: 'error', title: '로그인 확인 필요' });
       else alert(authMsg);
@@ -1351,6 +1522,7 @@
     // 작업 시작 실패는 차감 전 단계 — "차감 없음" 안심 문구로 결제·환불 문의 감소
     if (!/차감/.test(msg)) msg += '\n\n크레딧은 차감되지 않았어요. (차감은 작업이 완료될 때만 일어나요)';
     alert(msg);
+    clearActiveJobUi();
     show(fallbackStep || 'reduce');
   }
 
@@ -1369,6 +1541,8 @@
         httpStatus = pollRes.status;
         st = await pollRes.json().catch(function () { return null; });
       } catch (e) { continue; }   // 일시 네트워크 오류 — 다음 폴링
+      // fetch가 진행되는 사이 새 작업·복구가 시작됐으면 이 응답은 이전 작업의 낡은 화면 갱신이다.
+      if (gen !== pollGen) return;
 
       // ★ 401(토큰 만료): 긴 작업(10분+) 폴링 중 idToken이 만료된 경우. 작업은 서버에서 계속 돌아
       //   완료되므로 절대 jobRef를 지우지 않는다 — 토큰을 강제 갱신해 폴링을 이어간다.
@@ -1388,27 +1562,38 @@
       // 서버 재시작으로 job이 사라졌는데 화면은 진행률만 계속 올라감).
       if (httpStatus === 404 || st.ok === false || (st.error && !st.status)) {
         stopFormalTicker();
+        activeCancel = null;
         clearJobRef();
+        clearActiveJobUi();
         notifyJobIssue(jobId, st.error || '작업을 찾을 수 없어요. 다시 시도해 주세요.');
         if (!window.gpNotify) alert(st.error || '작업을 찾을 수 없어요. (서버가 재시작됐을 수 있어요) 다시 시도해 주세요.');
         show('choose');
         return;
       }
-      if (st.status === 'cancelled') { stopFormalTicker(); clearJobRef(); return; }
+      if (st.status === 'cancelled') {
+        stopFormalTicker();
+        activeCancel = null;
+        clearJobRef();
+        clearActiveJobUi();
+        show('reduce');
+        return;
+      }
       if (st.status === 'queued') {
         renderQueuedState(jobId, st);
         continue;
       }
       if (st.status === 'running') {
+        setActiveJobUi(jobId, 'running', '휴머나이징 진행 중');
         var runningShort = st.mode === 'blog' || st.mode === 'polish';
         var runningEstimate = runningShort
           ? (st.estSec || 180)
           : estimateRangeFromPayload(st, formalEstimateRange(($('lavInput') || {}).value || '', false));
-        if (!formalStop) formalStop = startJobTicker(runningEstimate, runningShort ? '문장 다듬는 중' : '재구성 중', st.elapsedSec || 0);
+        if (!formalStop) replaceJobTicker(runningEstimate, runningShort ? '문장 다듬는 중' : '재구성 중', st.elapsedSec || 0);
         continue;
       }
       if (st.status === 'awaiting_approval') {
         stopFormalTicker();
+        setActiveJobUi(jobId, 'awaiting_approval', '근거 승인을 기다려요');
         setJobSteps(2);
         if ($('lavStepSlot')) $('lavStepSlot').textContent = '근거 검수 대기 — 승인한 자료만 인용돼요';
         renderApprovalList(st.candidates || [], jobId);
@@ -1417,6 +1602,7 @@
       }
       if (st.status === 'done') {
         stopFormalTicker();
+        activeCancel = null;
         setJobSteps(4);
         st.jobId = jobId;
         renderJobDone(st);
@@ -1437,6 +1623,8 @@
           return;
         }
         clearJobRef();
+        activeCancel = null;
+        clearActiveJobUi();
         notifyJobIssue(jobId, st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
         if (!window.gpNotify) alert(st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
         show(st.mode === 'polish' ? 'choose' : 'reduce');   // 다듬기는 설정 화면이 없음 — 방법 선택으로
@@ -1450,6 +1638,7 @@
 
   // 완료 렌더(폴링·재진입 공용): job mode에 따라 점수·배지·보관함 라벨 분기
   function renderJobDone(st) {
+    if (st && st.jobId) setActiveJobUi(st.jobId, 'done', '휴머나이징 완료');
     var label;
     if (st.mode === 'blog') {
       label = '블로그';
@@ -1558,6 +1747,7 @@
   // ── 차단 화면(2026-06-15): 자동 폴백 대신 "왜 막혔나 + 재시도/보존형/취소"를 사용자가 고르게 한다 ──
   function renderBlockOffer(jobId, st) {
     lavBlockedJobId = jobId;
+    setActiveJobUi(jobId, 'blocked', '작업 확인이 필요해요');
     var offer = (st && st.blockOffer) || {};
     var reasonEl = $('lavBlockedReason');
     if (reasonEl && st && st.reason) reasonEl.textContent = st.reason + ' 크레딧은 차감되지 않았어요.';
@@ -1606,6 +1796,9 @@
 
   // 경험 메모 넣고 다시 — 설정 화면으로 돌아가 메모칸에 포커스(원문은 lavInput에 유지 → 재제출 시 새 작업)
   window.lavBlockedRetryMemo = function () {
+    lavBlockedJobId = null;
+    clearJobRef();
+    clearActiveJobUi();
     show('reduce');
     // 접힌 아코디언을 펼치고, 자동 코칭이 켜져 있으면 꺼서 메모칸을 노출
     var pers = $('lavPersonalBlock');
@@ -1616,6 +1809,9 @@
   };
   // 근거 보강 켜고 다시 — 고급(formal)으로 전환 + 근거 토글 ON
   window.lavBlockedRetryEvidence = function () {
+    lavBlockedJobId = null;
+    clearJobRef();
+    clearActiveJobUi();
     var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
     if (formalRadio) { formalRadio.checked = true; if (window.lavToneChange) window.lavToneChange(); }
     var ev = $('lavEvidence');
@@ -1638,6 +1834,7 @@
       return;
     }
     if ($('lavJobTitle')) $('lavJobTitle').textContent = '원문 보존형으로 처리하고 있어요';
+    setActiveJobUi(jid, 'running', '원문 보존형 처리 중');
     show('job');
     armCancelWindow(0);
     var gen = ++pollGen;
@@ -1651,6 +1848,7 @@
         method: 'POST', headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }), body: JSON.stringify({})
       });
     }).then(function (r) {
+      if (gen !== pollGen) return;
       if (r && !r.ok) {
         // 서버가 막은 경우(잔액 부족 402 등) — 본문의 구체 메시지를 살려 보여준다(일반 실패 문구로 덮지 않음).
         return r.json().catch(function () { return null; }).then(function (b) {
@@ -1659,9 +1857,10 @@
           throw err;
         });
       }
-      saveJobRef(jid);
+      saveJobRef(jid, 'running');
       pollTransform(jid, gen);
     }).catch(function (e) {
+      if (gen !== pollGen) return;
       var msg = (e && e.message) || '처리 요청에 실패했어요. 다시 시도해 주세요.';
       if (e && e.httpStatus === 401) {
         if (window.gpToast) window.gpToast(msg, { type: 'error', title: '로그인 확인 필요' });
@@ -1682,7 +1881,9 @@
   // 취소 — 무과금 종료(차단 job은 그대로 두고 화면만 방법 선택으로)
   window.lavBlockedCancel = function () {
     lavBlockedJobId = null;
+    activeCancel = null;
     clearJobRef();
+    clearActiveJobUi();
     show('choose');
   };
 
@@ -1701,13 +1902,15 @@
   function runFormalEvasion(s) {
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
+    activeCancel = null;
     if ($('lavJobTitle')) $('lavJobTitle').textContent = '의미를 검증하며 다듬고 있어요';
     if ($('lavJobId')) $('lavJobId').textContent = '';
+    setActiveJobUi('', 'starting', '고급 휴머나이징 시작 중');
     show('job');
     armCancelWindow(0);   // 방금 시작 — 30초 취소 창 열기
     var estimate = formalEstimateRange(text, s.evidence);
     var stageLabel = s.evidence ? '승인할 근거를 찾는 중' : '의미·구조를 검증하는 중';
-    formalStop = startJobTicker(estimate, stageLabel);
+    replaceJobTicker(estimate, stageLabel);
     var gen = ++pollGen;
     (async function () {
       var idToken = '';
@@ -1718,28 +1921,36 @@
           authErr.httpStatus = 401;
           throw authErr;
         }
+        if (gen !== pollGen) return;
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
           body: JSON.stringify({ text: text, mode: 'formal', evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: 'keep', documentProfile: s.documentProfile || undefined, effectNoticeAccepted: !!s.effectNoticeAccepted })
         }).then(parseTransformStart);
+        if (gen !== pollGen) {
+          if (r && r.jobId) makeJobCanceller(r.jobId)();
+          return;
+        }
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
-        saveJobRef(r.jobId);
+        setActiveJobUi(r.jobId, r.job && r.job.status || 'running', stageLabel);
+        saveJobRef(r.jobId, r.job && r.job.status || 'running');
         activeCancel = makeJobCanceller(r.jobId);
         if (r.job && r.job.status === 'queued') {
           resumeTransformState(r.jobId, r.job);
           return;
         }
-        stopFormalTicker();
-        formalStop = startJobTicker(estimateRangeFromPayload(r, estimate), stageLabel);
+        replaceJobTicker(estimateRangeFromPayload(r, estimate), stageLabel);
         await pollTransform(r.jobId, gen);
       } catch (err) {
-        await handleTransformStartError(err, 'reduce');
+        if (gen !== pollGen) return;
+        await handleTransformStartError(err, 'reduce', gen);
       }
     })();
   }
 
   window.lavStartJob = function () {
+    // 확인 버튼 연타나 늦게 열린 이전 확인창이 새 작업을 겹쳐 시작하지 못하게 한다.
+    if (typeof window.lavPrepareNewSentence === 'function' && !window.lavPrepareNewSentence()) return;
     var polish = pendingPolish;       // 확인창 닫기 전에 캡처(lavCloseConfirm이 플래그를 비움)
     var effectNoticeAccepted = effectNoticeAcceptedForRun();
     if (!polish && !effectNoticeAccepted) {

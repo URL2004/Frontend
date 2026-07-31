@@ -9610,6 +9610,68 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
  align-items:center;
  gap:10px;
 }
+.gp-lav-active-job{
+ min-width:0;
+ max-width:230px;
+ min-height:44px;
+ display:grid;
+ grid-template-columns:9px minmax(0,1fr) 16px;
+ align-items:center;
+ gap:9px;
+ padding:6px 11px;
+ border:1px solid #dfe2f3;
+ border-radius:12px;
+ background:#fff;
+ color:#30364c;
+ text-align:left;
+ cursor:pointer;
+ box-shadow:none;
+ transition:transform .16s ease,border-color .16s ease,background .16s ease;
+}
+.gp-lav-active-job[hidden]{display:none;}
+.gp-lav-active-job:hover{
+ transform:translateY(-1px);
+ border-color:#c9ccef;
+ background:#fafaff;
+}
+.gp-lav-active-job:focus-visible{
+ outline:3px solid rgba(90,91,216,.24);
+ outline-offset:2px;
+}
+.gp-lav-active-job-dot{
+ width:9px;
+ height:9px;
+ border-radius:50%;
+ background:#5a5bd8;
+}
+.gp-lav-active-job.is-active .gp-lav-active-job-dot{
+ animation:lavActiveJobPulse 1.35s ease-in-out infinite;
+}
+.gp-lav-active-job[data-status="done"] .gp-lav-active-job-dot{background:#278a52;}
+.gp-lav-active-job[data-status="blocked"] .gp-lav-active-job-dot{background:#c47a1f;}
+@keyframes lavActiveJobPulse{
+ 0%,100%{transform:scale(.78);opacity:.55;}
+ 50%{transform:scale(1);opacity:1;}
+}
+.gp-lav-active-job-copy{min-width:0;display:block;}
+.gp-lav-active-job-copy strong,
+.gp-lav-active-job-copy small{
+ display:block;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ white-space:nowrap;
+}
+.gp-lav-active-job-copy strong{font-size:12.5px;line-height:1.35;font-weight:750;color:#24293c;}
+.gp-lav-active-job-copy small{margin-top:1px;font-size:10.5px;line-height:1.3;font-weight:550;color:#70778d;}
+.gp-lav-active-job>svg{
+ width:16px;
+ height:16px;
+ fill:none;
+ stroke:#777e94;
+ stroke-width:1.8;
+ stroke-linecap:round;
+ stroke-linejoin:round;
+}
 .gp-lav-guide{
  display:inline-flex;
  align-items:center;
@@ -11319,6 +11381,18 @@ body[data-main-design="lavender"] #loginScreen .ldesc{
  transform:none;
  background:#e4e3fb;
 }
+.gp-lav-new.is-job-active{
+ background:#f7f7fc;
+ color:#343a52;
+ box-shadow:inset 0 0 0 1px #d9dcea !important;
+}
+.gp-lav-new.is-job-active:hover{
+ background:#eff0f7;
+}
+.gp-lav-new.is-job-active kbd{
+ background:#e4e6f1;
+ color:#555d75;
+}
 .gp-lav-new kbd{
  background:rgba(75,76,198,.12);
  color:#4b4cc6;
@@ -11454,6 +11528,16 @@ body[data-main-design="lavender"] #loginScreen .ldesc{
  .gp-lav-top-right{
   gap:6px;
  }
+ .gp-lav-active-job{
+  max-width:148px;
+  min-height:40px;
+  grid-template-columns:8px minmax(0,1fr);
+  gap:7px;
+  padding:5px 9px;
+ }
+ .gp-lav-active-job>svg{display:none;}
+ .gp-lav-active-job-copy strong{font-size:11.5px;}
+ .gp-lav-active-job-copy small{font-size:10px;}
  .gp-lav-guide{
   display:none;
  }
@@ -11487,6 +11571,10 @@ body[data-main-design="lavender"] #loginScreen .ldesc{
   content:"\2193";
   font-size:16px;
  }
+}
+@media(prefers-reduced-motion:reduce){
+ .gp-lav-active-job,
+ .gp-lav-active-job.is-active .gp-lav-active-job-dot{transition:none;animation:none;}
 }
 
 /* ===== lavender v6: 페이지 템플릿 통일 ===== */

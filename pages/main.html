@@ -91,10 +91,18 @@
    <div class="gp-lav-backdrop" onclick="lavCloseSidebar()" aria-hidden="true"></div>
 
    <main class="gp-lav-main">
-     <header class="gp-lav-top">
-       <button type="button" class="gp-lav-hamburger" onclick="lavToggleSidebar()" aria-label="메뉴 열기"><span></span></button>
-       <div class="gp-lav-top-right">
-         <span class="gp-lav-top-slot" id="lavTopSlot"></span>
+      <header class="gp-lav-top">
+        <button type="button" class="gp-lav-hamburger" onclick="lavToggleSidebar()" aria-label="메뉴 열기"><span></span></button>
+        <div class="gp-lav-top-right">
+          <button type="button" class="gp-lav-active-job" id="lavActiveJob" onclick="lavOpenActiveJob()" hidden>
+            <span class="gp-lav-active-job-dot" aria-hidden="true"></span>
+            <span class="gp-lav-active-job-copy">
+              <strong id="lavActiveJobTitle">휴머나이징 진행 중</strong>
+              <small id="lavActiveJobMeta" aria-live="polite">진행 화면 보기</small>
+            </span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+          <span class="gp-lav-top-slot" id="lavTopSlot"></span>
          <button type="button" class="gp-lav-guide" onclick="switchTab('guide')"><b>?</b><span>사용 가이드</span></button>
          <button type="button" class="gp-lav-bell gp-bell-uiverse" onclick="gpOpenNotificationCenter(event)" aria-label="알림" aria-haspopup="dialog">
            <svg class="gp-bell-icon" viewBox="0 0 448 512" aria-hidden="true">

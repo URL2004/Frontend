@@ -269,6 +269,9 @@
   };
 
   window.lavNewSentence = function () {
+    // 서버 작업이 살아 있는 동안에는 입력·진행 화면을 지우지 않는다.
+    // 진행 화면으로 되돌려 사용자가 같은 작업의 상태를 확인하게 한다.
+    if (typeof window.lavPrepareNewSentence === 'function' && !window.lavPrepareNewSentence()) return;
     // 다른 탭(FAQ·문의·공지 등)에서 눌러도 동작하도록 메인(컴포저)으로 먼저 복귀.
     // 안 그러면 숨겨진 lavInput만 비우고 화면이 안 바뀌어 "안 눌린다"처럼 보임.
     if (typeof window.switchTab === 'function') window.switchTab('main');
@@ -359,6 +362,8 @@
       if (src) src.focus();
       return;
     }
+    // 숨겨진 이전 작업이 있으면 새 진단·변환을 시작하지 않고 기존 진행 화면을 연다.
+    if (typeof window.lavPrepareNewSentence === 'function' && !window.lavPrepareNewSentence()) return;
     // 모드 토글(컴포저 세그먼트): AI 감지 선택 시 무료 감지 보고서로 — 전송 버튼은 하나.
     if (window.lavMode === 'detect' && typeof window.lavDetect === 'function') { window.lavDetect(); return; }
     if (typeof window.lavFlowDiagnose === 'function') { window.lavFlowDiagnose(); return; }
