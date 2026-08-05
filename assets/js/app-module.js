@@ -4730,6 +4730,10 @@ function adminQualityAverage(report, field, signed) {
  return adminQualityPercent(report?.metrics?.[field]?.average, signed);
 }
 
+function adminQualityMetricAverage(metrics, field, signed) {
+ return adminQualityPercent(metrics?.[field]?.average, signed);
+}
+
 function adminQualityStat(label, value, detail, alert) {
  return `<div class="gp-admin-quality-stat${alert ? ' is-alert' : ''}"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><em>${escapeHtml(detail || '')}</em></div>`;
 }
@@ -4769,9 +4773,31 @@ function renderAdminHumanizeQuality(data) {
   return;
  }
 
+ const latest = report.latestEngine;
+ const latestMetrics = latest?.metrics || {};
+ const latestNaturalness = Number(latestMetrics?.naturalnessOverallRiskDelta?.average);
+ const latestRhythm = Number(latestMetrics?.rhythmUniformityDelta?.average);
+ const latestReviewRate = Number(latest?.needsReviewRate);
+ const latestEngineSummary = latest ? `
+  <section class="gp-admin-quality-cohort" aria-label="최신 엔진 품질 표본">
+   <div class="gp-admin-quality-cohort-head">
+    <div><strong>최신 엔진 표본</strong><code>${escapeHtml(latest.engineVersion || '미상')}</code></div>
+    <span>${adminNumber(latest.rowCount)}건${adminNumber(latest.rowCount) < 10 ? ' · 소표본' : ''}</span>
+   </div>
+   <dl>
+    <div class="${latestReviewRate > .1 ? 'is-alert' : ''}"><dt>검토 필요</dt><dd>${adminQualityPercent(latest.needsReviewRate)}</dd><small>${adminNumber(latest.needsReviewCount)}건</small></div>
+    <div><dt>실질 편집</dt><dd>${adminQualityMetricAverage(latestMetrics, 'substantiveEditRatio')}</dd><small>표면 교체 제외</small></div>
+    <div class="${latestNaturalness > 0 ? 'is-alert' : ''}"><dt>자연성 위험</dt><dd>${adminQualityMetricAverage(latestMetrics, 'naturalnessOverallRiskDelta', true)}</dd><small>작업 당시 산식 · 0 이하 개선</small></div>
+    <div class="${latestRhythm > 0 ? 'is-alert' : ''}"><dt>리듬 균일화</dt><dd>${adminQualityMetricAverage(latestMetrics, 'rhythmUniformityDelta', true)}</dd><small>작업 당시 산식 · 0 이하 개선</small></div>
+    <div class="${adminNumber(latest.structureSignatureFailureCount) > 0 ? 'is-alert' : ''}"><dt>구조 서명 오류</dt><dd>${adminNumber(latest.structureSignatureFailureCount)}건</dd><small>최신 엔진만</small></div>
+    <div class="${adminNumber(latest.koreanRefinementFailureCount) > 0 ? 'is-alert' : ''}"><dt>한국어 잔여</dt><dd>${adminNumber(latest.koreanRefinementFailureCount)}건</dd><small>최신 엔진만</small></div>
+   </dl>
+   <p>아래 ‘조회 전체’에는 선택 기간에 실행된 이전 엔진 결과도 함께 포함됩니다. shadow 값은 작업 당시 엔진 산식으로 저장되며, 보정 산식은 v2.5.31 신규 작업부터 반영됩니다. 최신 표본이 10건 미만이면 방향 확인용으로만 보세요.</p>
+  </section>` : '';
+
   const stats = [
-   adminQualityStat('전체 작업', total.toLocaleString('ko-KR') + '건', `완료 ${adminNumber(summary.completedCount)}건${data.truncated ? ' · 조회 상한 도달' : ''}`),
-   adminQualityStat('검토 필요', adminQualityPercent(summary.needsReviewRate), `${adminNumber(summary.needsReviewCount)}건`, Number(summary.needsReviewRate) > .1),
+   adminQualityStat('조회 전체 · 작업', total.toLocaleString('ko-KR') + '건', `완료 ${adminNumber(summary.completedCount)}건${data.truncated ? ' · 조회 상한 도달' : ''}`),
+   adminQualityStat('조회 전체 · 검토 필요', adminQualityPercent(summary.needsReviewRate), `${adminNumber(summary.needsReviewCount)}건 · 엔진 혼합`, Number(summary.needsReviewRate) > .1),
    adminQualityStat('기술 차단', `${adminNumber(summary.technicalBlockedCount ?? summary.blockedCount)}건`, `전체 상태 차단 ${adminNumber(summary.blockedCount)}건`, Number(summary.technicalBlockedCount ?? summary.blockedCount) > 0),
    adminQualityStat('효과 제한', `${adminNumber(summary.deliveredLimitedEffectCount ?? summary.limitedEffectCount)}건`, `깊이 목표 미달 ${adminNumber(summary.depthBelowMinimumCount)}건`, false),
    adminQualityStat('승인 편집 0 과금', `${adminNumber(summary.zeroApprovedChargedCount)}건`, '반드시 0건이어야 함', adminNumber(summary.zeroApprovedChargedCount) > 0),
@@ -4789,8 +4815,8 @@ function renderAdminHumanizeQuality(data) {
    adminQualityStat('기능문 중복 인사', `${adminNumber(summary.functionalGreetingDuplicationDocumentCount)}건`, '공지·메일 첫 인사 반복'),
    adminQualityStat('인접 의미 반복', `${adminNumber(summary.adjacentSemanticRepetitionDocumentCount)}건`, '연속 문장·문단의 같은 내용'),
    adminQualityStat('p95 처리 시간', adminQualityDuration(report?.metrics?.processingDurationMs?.p95), '실제 실행 시작~완료'),
-  adminQualityStat('자연성 위험 변화', adminQualityAverage(report, 'naturalnessOverallRiskDelta', true), '0 이하가 개선 방향', Number(report?.metrics?.naturalnessOverallRiskDelta?.average) > 0),
-  adminQualityStat('리듬 균일화 변화', adminQualityAverage(report, 'rhythmUniformityDelta', true), '0 이하가 개선 방향', Number(report?.metrics?.rhythmUniformityDelta?.average) > 0)
+  adminQualityStat('조회 전체 · 자연성 위험', adminQualityAverage(report, 'naturalnessOverallRiskDelta', true), 'shadow 지표 · 엔진 혼합', Number(report?.metrics?.naturalnessOverallRiskDelta?.average) > 0),
+  adminQualityStat('조회 전체 · 리듬 균일화', adminQualityAverage(report, 'rhythmUniformityDelta', true), 'shadow 지표 · 엔진 혼합', Number(report?.metrics?.rhythmUniformityDelta?.average) > 0)
  ].join('');
 
  const crossRows = (report.requestedModeDocumentProfileEngineQuality || []).slice(0, 60).map(row => `<tr>
@@ -4826,6 +4852,7 @@ function renderAdminHumanizeQuality(data) {
  </tr>`).join('');
 
  el.innerHTML = `
+  ${latestEngineSummary}
   <div class="gp-admin-quality-stats">${stats}</div>
   <div class="gp-admin-quality-section">
    <div class="gp-admin-quality-section-head"><h4>모드 × 글 종류 × 엔진 × 품질 상태</h4><span>상위 ${Math.min(60, (report.requestedModeDocumentProfileEngineQuality || []).length)}개 조합</span></div>

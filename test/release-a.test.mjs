@@ -182,6 +182,9 @@ test('관리자 품질 탭은 본문 없이 장르 교차표와 깊이·한국�
   assert.match(source, /studentRecordFragmentDocumentCount/u);
   assert.match(source, /functionalGreetingDuplicationDocumentCount/u);
   assert.match(source, /adjacentSemanticRepetitionDocumentCount/u);
+  assert.match(source, /report\.latestEngine/u);
+  assert.match(source, /최신 엔진 표본/u);
+  assert.match(source, /조회 전체 · 자연성 위험/u);
   const qualityBlock = source.slice(source.indexOf('// ===== 관리자: 휴머나이징 품질 관측'), source.indexOf('window.adminJobsToggleAll'));
   assert.doesNotMatch(qualityBlock, /inputText|outputText/u);
 });
@@ -195,13 +198,16 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>패치노트</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 32);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 36);
+  assert.match(admin, /실제 30건 기반 품질 오탐·리듬 지표 교정/u);
+  assert.match(admin, /번호형 산문·한국어 회복 안정화/u);
+  assert.match(admin, /Backend 58136f9/u);
   assert.match(admin, /휴머나이징 진행 화면 복구·중복 퍼센트 제거/u);
   assert.match(admin, /Luna 기본·Terra 승격 전환/u);
   assert.match(admin, /2026\.07\.31/u);
   assert.match(admin, /전문 문서 언어 무결성·GPT 캐시 효율화/u);
   assert.match(admin, /Backend 53b67b8 \+ 1f6e010/u);
-  assert.match(admin, /GPT-5\.6 런타임 · 휴머나이징 작업 상태 복구/u);
+  assert.match(admin, /GPT-5\.6 장르·문체·구조 안전망 확장/u);
   assert.match(admin, /원문 문단 역할·사례 결론 귀속 보존/u);
   assert.match(admin, /사용자 크레딧 내역 분리·작업 기록 복사 수정/u);
   assert.match(admin, /AI 감지 점수·설명 일관성 보정/u);
@@ -210,9 +216,13 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /v2\.5\.1/u);
   assert.match(admin, /v2\.5\.0/u);
   const timeline = admin.slice(admin.indexOf('gp-admin-patch-timeline'));
-  assert.ok(timeline.indexOf('UX Hotfix') < timeline.indexOf('GPT-5.6'));
-  assert.ok(timeline.indexOf('GPT-5.6') < timeline.indexOf('v2.5.3'));
-  assert.ok(timeline.indexOf('v2.5.3') < timeline.indexOf('v2.5.2'));
+  assert.ok(timeline.indexOf('v2.5.31') < timeline.indexOf('v2.5.30'));
+  assert.ok(timeline.indexOf('v2.5.30') < timeline.indexOf('v2.5.27–29'));
+  assert.ok(timeline.indexOf('v2.5.27–29') < timeline.indexOf('v2.5.21–26'));
+  assert.ok(timeline.indexOf('v2.5.21–26') < timeline.indexOf('UX Hotfix'));
+  assert.ok(timeline.indexOf('UX Hotfix') < timeline.indexOf('Luna 기본·Terra 승격 전환'));
+  assert.ok(timeline.indexOf('Luna 기본·Terra 승격 전환') < timeline.indexOf('전문 문서 언어 무결성·GPT 캐시 효율화'));
+  assert.ok(timeline.indexOf('전문 문서 언어 무결성·GPT 캐시 효율화') < timeline.indexOf('원문 문단 역할·사례 결론 귀속 보존'));
   assert.ok(timeline.indexOf('v2.5.2') < timeline.indexOf('관리자 Hotfix'));
   assert.ok(timeline.indexOf('관리자 Hotfix') < timeline.indexOf('감지 Hotfix'));
   assert.ok(timeline.indexOf('감지 Hotfix') < timeline.indexOf('v2.5.1'));
@@ -229,15 +239,16 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /관리자 실험실과 운영 화면 기반/u);
   assert.match(admin, /2026년 6월/u);
   assert.match(admin, /FLOOR v2 의미 보존 엔진과 운영 저장소 시작/u);
-  assert.match(admin, /운영 Git[\s\S]*622건/u);
+  assert.match(admin, /운영 Git[\s\S]*658건/u);
   assert.match(admin, /GPT·Claude 작업 기록[\s\S]*56개 세션/u);
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
-  assert.equal(releases.length, 32);
-  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 5);
+  assert.equal(releases.length, 36);
+  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 6);
   for (const [, attrs, body] of releases) {
-    assert.equal(/\bopen\b/u.test(attrs), /gp-admin-patch-state is-live/u.test(body));
+    if (/gp-admin-patch-state is-live/u.test(body)) assert.match(attrs, /\bopen\b/u);
+    if (/gp-admin-patch-state is-superseded/u.test(body)) assert.doesNotMatch(attrs, /\bopen\b/u);
   }
   assert.match(styles, /\.gp-admin-patch-release>summary/u);
   assert.match(styles, /\.gp-admin-patch-audit/u);
