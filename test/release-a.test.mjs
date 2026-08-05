@@ -201,7 +201,8 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 36);
   assert.match(admin, /실제 30건 기반 품질 오탐·리듬 지표 교정/u);
   assert.match(admin, /번호형 산문·한국어 회복 안정화/u);
-  assert.match(admin, /Backend 58136f9/u);
+  assert.match(admin, /Backend 8686ca1/u);
+  assert.match(admin, /Frontend b46cf56/u);
   assert.match(admin, /휴머나이징 진행 화면 복구·중복 퍼센트 제거/u);
   assert.match(admin, /Luna 기본·Terra 승격 전환/u);
   assert.match(admin, /2026\.07\.31/u);
@@ -239,13 +240,13 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /관리자 실험실과 운영 화면 기반/u);
   assert.match(admin, /2026년 6월/u);
   assert.match(admin, /FLOOR v2 의미 보존 엔진과 운영 저장소 시작/u);
-  assert.match(admin, /운영 Git[\s\S]*658건/u);
+  assert.match(admin, /운영 Git[\s\S]*661건/u);
   assert.match(admin, /GPT·Claude 작업 기록[\s\S]*56개 세션/u);
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
   assert.equal(releases.length, 36);
-  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 6);
+  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 5);
   for (const [, attrs, body] of releases) {
     if (/gp-admin-patch-state is-live/u.test(body)) assert.match(attrs, /\bopen\b/u);
     if (/gp-admin-patch-state is-superseded/u.test(body)) assert.doesNotMatch(attrs, /\bopen\b/u);
