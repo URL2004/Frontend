@@ -49,17 +49,17 @@
     <section class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">36개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">37개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 08.05</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 08.07</span>
       </div>
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-        <strong>휴머나이징 v2.5.31 · 품질 오탐·리듬 지표 교정</strong>
-        <code>Backend 8686ca1 · Frontend b46cf56</code>
-        <span>2026.08.05 운영 배포</span>
+        <strong>휴머나이징 v2.5.33 · 구조 복구·지원서 의미 보존</strong>
+        <code>Backend aacf0a7 · Frontend patchnotes-v2.5.33</code>
+        <span>2026.08.07 운영 배포</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="패치노트 검토 범위">
@@ -70,12 +70,29 @@
       </dl>
 
       <div class="gp-admin-patch-timeline">
-        <div class="gp-admin-patch-month"><strong>2026년 8월</strong><span>4개 변경 묶음</span></div>
+        <div class="gp-admin-patch-month"><strong>2026년 8월</strong><span>5개 변경 묶음</span></div>
         <details class="gp-admin-patch-release" open>
+          <summary>
+            <span class="gp-admin-patch-version">v2.5.33</span>
+            <span class="gp-admin-patch-title"><b>보호 구조 복구·지원서 의미 무결성·관측 일치</b><small>2026.08.07 · Backend aacf0a7 · v2.5.32 운영 기준 보강</small></span>
+            <span class="gp-admin-patch-state is-live">운영 중</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area layout">원문 복구</span><span>참고문헌·표·직접 인용처럼 그대로 보존해야 하는 블록이 잘리거나 일부만 남으면 순서와 유사도를 대조해 원문 블록으로 먼저 복원합니다. 복원 여부와 잔존 불일치는 원문 없이 운영 메타에 기록합니다.</span></li>
+            <li><span class="gp-admin-patch-area layout">다열 표</span><span>주변에 표 행이 하나뿐이어도 탭으로 구분된 행은 표로 판정합니다. 빈 셀을 포함한 행별 셀 개수와 열 대응 순서를 감사해 표가 산문으로 합쳐지거나 열 소유권이 바뀌는 문제를 확인합니다.</span></li>
+            <li><span class="gp-admin-patch-area route">지원서</span><span>귀 대학·입학 후·학년별 수강 계획·교수 연구 지도·졸업 후 진로가 결합된 학업계획서를 일반 과제가 아닌 지원서로 우선 분류합니다. 짧은 소제목이 많은 글도 문서 전체의 원래 종결체를 함께 점검합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">의미·화자</span><span>‘배웠다’를 이미 ‘역량을 갖추었다’는 주장으로 강화하거나, 경험 문장의 저는·제가를 지워 수행 주체를 흐리는 변화를 감지해 국소 수리합니다. 강도 이동 문장을 누락처럼 재삽입해 중복시키지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">인용·입력</span><span>라벨 뒤 완결 인용은 편집하지 않고 잠그며, 결과에서 인용부호만 사라진 경우 내용이 유일하게 대응할 때 원문 인용으로 복원합니다. 본문 중간에 섞인 문단 추가·삭제·교체 지시는 코드와 실제 인용을 제외하고 입력에서 분리합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">관측</span><span>운영 엔진과 로컬 재감사가 같은 잠금 제외 분모를 사용하도록 깊이 산식을 통일하고 분모 버전·해시·대상 문장 수를 기록합니다. 실험적인 산문 문단 병합은 코드만 준비하고 운영 기본값은 OFF로 유지합니다.</span></li>
+            <li><span class="gp-admin-patch-area billing">전달 정책</span><span>신규 차단·무차감·과금 변경은 추가하지 않았습니다. 복구 뒤 확인이 필요한 보호 구조·표 문제는 현행처럼 결과를 전달하고 검토 필요 사유로 안내합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증</span><span>참고문헌 절단, 단독·빈 셀 탭 표, 라벨 인용, 편집 지시, 대학 지원서, 종결체, 주장 강도, 화자, depth 분모를 회귀 사례로 고정했습니다. 백엔드 전체 672개 테스트, production import 검사와 운영 의존성 감사 0건을 통과했습니다.</span></li>
+          </ul>
+        </details>
+        <details class="gp-admin-patch-release">
           <summary>
             <span class="gp-admin-patch-version">v2.5.31</span>
             <span class="gp-admin-patch-title"><b>실제 30건 기반 품질 오탐·리듬 지표 교정</b><small>2026.08.05 · Backend 8686ca1 · Frontend b46cf56</small></span>
-            <span class="gp-admin-patch-state is-live">운영 중</span>
+            <span class="gp-admin-patch-state is-superseded">v2.5.33으로 대체</span>
           </summary>
           <ul>
             <li><span class="gp-admin-patch-area observe">실검토</span><span>최근 완료 30건의 원문과 결과를 대조해 최신 v2.5.30 6건과 이전 엔진 24건을 분리했습니다. 기존 운영 산식에서도 최신 표본의 자연성 위험은 평균 1.13%p 개선됐고, 검토 필요 2건은 실제 의미·구조 훼손이 아닌 감사 오탐으로 확인했습니다.</span></li>
