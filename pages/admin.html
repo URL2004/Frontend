@@ -49,17 +49,17 @@
     <section class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">37개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">38개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 08.07</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 08.09</span>
       </div>
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-        <strong>휴머나이징 v2.5.33 · 구조 복구·지원서 의미 보존</strong>
-        <code>Backend aacf0a7 · Frontend patchnotes-v2.5.33</code>
-        <span>2026.08.07 운영 배포</span>
+        <strong>휴머나이징 v2.5.34 · 차단 회복·구조·한국어 무결성</strong>
+        <code>Backend b83f54c · Frontend patchnotes-v2.5.34</code>
+        <span>2026.08.09 운영 배포</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="패치노트 검토 범위">
@@ -70,12 +70,30 @@
       </dl>
 
       <div class="gp-admin-patch-timeline">
-        <div class="gp-admin-patch-month"><strong>2026년 8월</strong><span>5개 변경 묶음</span></div>
+        <div class="gp-admin-patch-month"><strong>2026년 8월</strong><span>6개 변경 묶음</span></div>
         <details class="gp-admin-patch-release" open>
+          <summary>
+            <span class="gp-admin-patch-version">v2.5.34</span>
+            <span class="gp-admin-patch-title"><b>텍스트 거절 회복·문서 구조·의미 관계 보강</b><small>2026.08.09 · Backend b83f54c · v2.5.33 운영 기준 보강</small></span>
+            <span class="gp-admin-patch-state is-live">운영 중</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">차단 회복</span><span>모델이 정상 JSON 안에 거절 안내문을 본문처럼 반환하는 경우를 청크 승인 전에 감지하고 같은 청크를 안전하게 재시도합니다. 원문 자체의 인용·설명에 같은 표현이 있으면 오탐하지 않으며, 운영에서 반복 차단되던 동일 입력은 승인 편집 2/2·모델 실패 0건으로 복구 확인했습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">관측</span><span>텍스트 거절 시도, 영향 청크, 회복·미회복 청크 수를 엔진 메타·작업 이력·품질 집계에 남깁니다. 결과 원문이나 프롬프트는 추가 저장하지 않고 실패와 회복 경로만 집계합니다.</span></li>
+            <li><span class="gp-admin-patch-area layout">구조</span><span>괄호형 번호 소제목, 굵은 마크다운 목록 라벨, 독립 제어 행과 갈라진 제목을 원래 행 경계로 복원합니다. 청크 경계가 마크다운 제목 한가운데를 자르지 않게 하고, <code>1:1</code> 비율과 시각의 콜론을 라벨 구조로 오인하지 않도록 좁혔습니다.</span></li>
+            <li><span class="gp-admin-patch-area korean">한국어·문체</span><span>닫는 인용부호와 <code>라도</code> 같은 조사를 붙여 쓰도록 교정하고, 학술·보고서의 대화형 표현은 직접 인용 밖에서만 전문 문체 수리 대상으로 판단합니다. 정상 인용 내부 표현은 그대로 보존합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">의미·화자</span><span>개인 성찰문의 감정 주체인 ‘나에게’가 사라지는 변화와 정의·선호·연결 관계가 출발점·가산 관계·모호한 지시어 주어로 바뀌는 변화를 잡습니다. 보편 명제의 ‘우리는’은 억지로 보존하지 않되 실제 팀 경험의 화자는 유지합니다.</span></li>
+            <li><span class="gp-admin-patch-area route">지원서</span><span>원문의 핵심 주장이 자연스럽게 의역된 지원서를 누락으로 오인하지 않도록 대응 문장 판정을 보강했습니다. 불필요한 원문 재삽입과 중복 문장을 줄이면서 실제 주장 손실 감사에는 영향을 주지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">중복·상투어</span><span>접속어만 덧붙여 같은 원문 주장을 연속 복제한 짧은 문장은 제한적으로 정리하되, 원문에 존재하는 정상 대조 문장은 보존합니다. 여러 정형 접속어를 새로 누적한 결과만 수리하고 한 번의 자연스러운 연결은 허용합니다.</span></li>
+            <li><span class="gp-admin-patch-area billing">전달·과금</span><span>의미·구조 경고를 신규 차단 사유로 확대하지 않았습니다. 기술적 거절은 결과처럼 전달하지 않고 청크 단계에서 회복하며, 정상 회복 결과는 기존 과금 정책을 그대로 따릅니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증</span><span>반복 차단 사용자 입력을 현재 운영 API로 재검증해 실질 편집 14.33%, 구조·한국어 감사 통과를 확인했습니다. 백엔드 전체 690개 테스트, 배포 전 검사와 운영 의존성 감사 0건을 통과했고 배포 후 오류 로그도 0건이었습니다.</span></li>
+          </ul>
+        </details>
+        <details class="gp-admin-patch-release">
           <summary>
             <span class="gp-admin-patch-version">v2.5.33</span>
             <span class="gp-admin-patch-title"><b>보호 구조 복구·지원서 의미 무결성·관측 일치</b><small>2026.08.07 · Backend aacf0a7 · v2.5.32 운영 기준 보강</small></span>
-            <span class="gp-admin-patch-state is-live">운영 중</span>
+            <span class="gp-admin-patch-state is-superseded">v2.5.34로 대체</span>
           </summary>
           <ul>
             <li><span class="gp-admin-patch-area layout">원문 복구</span><span>참고문헌·표·직접 인용처럼 그대로 보존해야 하는 블록이 잘리거나 일부만 남으면 순서와 유사도를 대조해 원문 블록으로 먼저 복원합니다. 복원 여부와 잔존 불일치는 원문 없이 운영 메타에 기록합니다.</span></li>

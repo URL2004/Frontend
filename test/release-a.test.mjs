@@ -198,7 +198,11 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>패치노트</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 37);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 38);
+  assert.match(admin, /텍스트 거절 회복·문서 구조·의미 관계 보강/u);
+  assert.match(admin, /Backend b83f54c/u);
+  assert.match(admin, /승인 편집 2\/2·모델 실패 0건/u);
+  assert.match(admin, /백엔드 전체 690개 테스트/u);
   assert.match(admin, /보호 구조 복구·지원서 의미 무결성·관측 일치/u);
   assert.match(admin, /Backend aacf0a7/u);
   assert.match(admin, /신규 차단·무차감·과금 변경은 추가하지 않았습니다/u);
@@ -220,6 +224,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /v2\.5\.1/u);
   assert.match(admin, /v2\.5\.0/u);
   const timeline = admin.slice(admin.indexOf('gp-admin-patch-timeline'));
+  assert.ok(timeline.indexOf('v2.5.34') < timeline.indexOf('v2.5.33'));
   assert.ok(timeline.indexOf('v2.5.33') < timeline.indexOf('v2.5.31'));
   assert.ok(timeline.indexOf('v2.5.31') < timeline.indexOf('v2.5.30'));
   assert.ok(timeline.indexOf('v2.5.30') < timeline.indexOf('v2.5.27–29'));
@@ -249,7 +254,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
-  assert.equal(releases.length, 37);
+  assert.equal(releases.length, 38);
   assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 5);
   for (const [, attrs, body] of releases) {
     if (/gp-admin-patch-state is-live/u.test(body)) assert.match(attrs, /\bopen\b/u);
