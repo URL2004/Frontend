@@ -3049,12 +3049,12 @@ function adminHistoryLabel(h) {
   return adminHistoryTypeText(type.slice(0, -8)) + ' 복구';
  }
  if (type === 'humanize') {
-  if (h.fallback) return '고급 휴머나이징 → 보존형 폴백';
+  if (h.fallback) return '기본 휴머나이징 → 원문 보존 다듬기';
   switch (h.mode) {
-   case 'blog': return '기본 휴머나이징(블로그)';
-   case 'polish':
-   case 'assignment': return '다듬기(보존형)';
-   case 'thesis': return '다듬기(논문)';
+   case 'blog': return '기본 휴머나이징';
+   case 'polish': return '원문 보존 다듬기';
+   case 'assignment': return '원문 보존 다듬기(구형 기록)';
+   case 'thesis': return '논문 다듬기(구형 기록)';
    case 'resume': return '다듬기(자소서)';
    default: return '휴머나이저';   // 구 데이터(모드 미기록)
   }
@@ -3623,7 +3623,7 @@ function adminSetBasicHumanizeExperimentForm(cfg) {
  const source = document.getElementById('adminBasicExpSource');
  if (enabled) enabled.checked = cfg.enabled === true;
  if (source) source.textContent = cfg.source || '-';
- adminSetMessage('adminBasicExpMsg', cfg.enabled ? '현재 켜짐 · 기본 피하기에 개발테스트 프로필이 적용됩니다.' : '현재 꺼짐 · 기본 피하기는 기존 운영 프로필을 사용합니다.', 'info');
+ adminSetMessage('adminBasicExpMsg', cfg.enabled ? '현재 켜짐 · 기본 휴머나이징에 개발테스트 프로필이 적용됩니다.' : '현재 꺼짐 · 기본 휴머나이징은 기존 운영 프로필을 사용합니다.', 'info');
 }
 
 function adminReadBasicHumanizeExperimentForm() {
@@ -3640,7 +3640,7 @@ window.loadAdminBasicHumanizeExperiment = async function() {
   const data = await adminPost('/admin/basic-humanize-experiment', {});
   adminSetBasicHumanizeExperimentForm(data.config || {});
  } catch (e) {
-  adminSetMessage('adminBasicExpMsg', e.message || '기본 피하기 개발테스트 설정을 불러오지 못했습니다.', 'error');
+  adminSetMessage('adminBasicExpMsg', e.message || '기본 휴머나이징 개발테스트 설정을 불러오지 못했습니다.', 'error');
  }
 };
 
@@ -3653,7 +3653,7 @@ window.adminSaveBasicHumanizeExperiment = async function() {
   adminSetBasicHumanizeExperimentForm(data.config || cfg);
   adminSetMessage('adminBasicExpMsg', cfg.enabled ? '저장 완료 · 개발테스트 적용 중' : '저장 완료 · 개발테스트 꺼짐', 'success');
  } catch (e) {
-  adminSetMessage('adminBasicExpMsg', e.message || '기본 피하기 개발테스트 설정 저장에 실패했습니다.', 'error');
+  adminSetMessage('adminBasicExpMsg', e.message || '기본 휴머나이징 개발테스트 설정 저장에 실패했습니다.', 'error');
  }
 };
 
@@ -3837,9 +3837,9 @@ function adminLabSetBusy(busy) {
 }
 
 function adminLabModeLabel(mode) {
- if (mode === 'blog') return '기본 피하기';
- if (mode === 'polish') return '과제 어투로 다듬기';
- return '고급 피하기';
+ if (mode === 'blog') return '기본 휴머나이징';
+ if (mode === 'polish') return '원문 보존 다듬기';
+ return '고급 휴머나이징';
 }
 
 function adminLabProfileLabel(profile) {

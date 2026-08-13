@@ -25,10 +25,10 @@ test('기본·고급 설명은 체감 재구성 범위와 검증 범위를 구�
   ]);
   assert.match(main, /이미 자연스러운 문장은 덜 바꾸고, 위험 신호가 많을수록 더 넓게/u);
   assert.match(main, /기본은 원문 상태에 따라 변환 강도가 달라지고/u);
-  assert.match(main, /기본보다 더 많은 문장을 재구성하고, 모든 글의 의미·사실·구조/u);
+  assert.match(main, /기본보다 더 넓은 문장 범위를 재구성하고, 모든 글에 모델 기반 의미·사실·구조 정밀 검증/u);
   assert.match(main, /장르 판별과 별개로 단어 선택과 문장 연결의 친근함·격식/u);
   assert.match(main, /외부 검사 점수는 보장되지 않아요/u);
-  assert.match(guide, /대상 문장을 눈에 띄게 다시 구성/u);
+  assert.match(guide, /AI식 반복과 균일한 흐름을 다시 구성/u);
   assert.match(faq, /고급은 기본보다 더 넓은 문장 범위를 재구성/u);
   assert.match(evasion, /Math\.max\(90, Math\.min\(1200, Math\.round\(bareLength\(text\) \/ 12\)\)\)/u);
   assert.match(evasion, /lastDiag\.advancedTimeEstimate/u);
@@ -39,6 +39,34 @@ test('기본·고급 설명은 체감 재구성 범위와 검증 범위를 구�
   assert.doesNotMatch(copy, /고급은 더 많이 바꾸는 모드가 아니|고급이 더 강한 재작성 모드는 아닙니다|차이는 변환 세기가 아니라/u);
   assert.doesNotMatch(copy, /칼럼처럼 다시 써요|원문의 약 60%|격식 유지·문장 새로 짜기|어투와 구조를 다시 짜서 가장 자연스러운/u);
   assert.doesNotMatch(main, /검사기는.*의심|숫자가 들어가면 의심이 크게|효과를 크게 높여|훨씬 사람이 쓴 글/u);
+});
+
+test('다듬기·기본·고급 명칭과 설명은 선택부터 결과·이력까지 같은 의미를 사용한다', async () => {
+  const [main, guide, faq, evasion, legacy, module, lab] = await Promise.all([
+    read('pages/main.html'),
+    read('pages/guide.html'),
+    read('pages/faq.html'),
+    read('assets/js/evasion-flow.js'),
+    read('assets/js/app-main.js'),
+    read('assets/js/app-module.js'),
+    read('pages/admin-humanize-lab.html')
+  ]);
+  assert.match(main, /원문 보존 다듬기/u);
+  assert.match(main, /원문의 장르와 말투를 유지하면서 비문·띄어쓰기·어색한 연결·중복 표현만 정리/u);
+  assert.match(main, /AI식 반복과 지나치게 균일한 문장 흐름이 있는 부분을 자연스럽게 다시 구성/u);
+  assert.match(evasion, /문체 보조[^\n]+원문 장르 우선/u);
+  assert.match(evasion, /원문 보존 다듬기를 시작할까요/u);
+  assert.match(evasion, /label = '기본 휴머나이징'/u);
+  assert.match(evasion, /label = '원문 보존 다듬기'/u);
+  assert.match(legacy, /requestedMode/u);
+  assert.match(legacy, /<b>고급 휴머나이징<\/b> 결과/u);
+  assert.match(module, /case 'blog': return '기본 휴머나이징'/u);
+  assert.match(module, /case 'polish': return '원문 보존 다듬기'/u);
+  assert.match(lab, /value="polish">원문 보존 다듬기/u);
+  assert.match(guide, /교정만 필요하면 원문 보존 다듬기/u);
+  assert.match(faq, /원문 보존 다듬기와 휴머나이징은 무엇이 다른가요/u);
+  const activeCopy = `${main}\n${guide}\n${faq}\n${evasion}\n${legacy}\n${module}\n${lab}`;
+  assert.doesNotMatch(activeCopy, /과제 어투로 다듬기|기본 휴머나이징\(블로그\)|다듬기\(보존형\)|그대로 다듬기/u);
 });
 
 test('고급 예상 시간은 서버 청크 범위를 시작·확인·진행 화면에 일관되게 사용한다', async () => {
@@ -298,10 +326,10 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-168/u);
-  assert.match(boot, /var v = 'lav-168'/u);
-  assert.match(loader, /var ASSET_V = 'lav-168'/u);
-  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166|167)/u);
+  assert.match(index, /app-boot\.js\?v=lav-169/u);
+  assert.match(boot, /var v = 'lav-169'/u);
+  assert.match(loader, /var ASSET_V = 'lav-169'/u);
+  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166|167|168)/u);
 });
 
 test('진행 중 휴머나이징은 어디서든 복귀하고 이전 퍼센트가 새 작업을 덮지 않는다', async () => {

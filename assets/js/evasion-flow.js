@@ -633,7 +633,7 @@
     if (styleBlock) styleBlock.hidden = !!isFormal;
     var lenBlock = $('lavLenBlock');
     if (lenBlock) lenBlock.hidden = !isFormal;
-    // 근거 보강은 고급 피하기(재구성) 전용 — 엔진이 blog 경로 미지원이라 기본 피하기에선 기능·시각 모두 잠금
+    // 근거 보강은 고급 휴머나이징 전용 — 엔진이 blog 경로 미지원이라 기본 휴머나이징에선 기능·시각 모두 잠금
     var ev = $('lavEvidence');
     if (ev) {
       ev.disabled = !isFormal;
@@ -643,7 +643,7 @@
     if (evBlock) evBlock.classList.toggle('ev-off', !isFormal);
     var evHint = $('lavEvidenceHint');
     if (evHint) evHint.hidden = isFormal;
-    // ★ 자동 코칭은 블로그 말투/고급에서만 적용. 과제·보고서 말투는 원문 인칭·사실 보존을 위해 끈다.
+    // ★ 자동 코칭은 친근한 표현 보조/고급에서만 적용. 격식 표현 보조는 원문 인칭·사실 보존을 위해 끈다.
     var ac = $('lavAutoCoach');
     if (ac) {
       ac.disabled = isReportBasic;
@@ -654,7 +654,7 @@
       acBlock.hidden = isReportBasic;
       acBlock.classList.remove('ev-off');
     }
-    // 경험·관점 아코디언(래퍼) — 과제/보고서 말투에선 내부(코칭·메모)가 전부 잠기므로 통째로 숨김
+    // 경험·관점 아코디언(래퍼) — 격식 표현 보조에서는 내부(코칭·메모)가 전부 잠기므로 통째로 숨김
     var persBlock = $('lavPersonalBlock');
     if (persBlock) persBlock.hidden = isReportBasic;
     var acHint = $('lavAutoCoachHint');
@@ -765,7 +765,7 @@
     return !effectNoticeRequired() || !!($('lavEffectNoticeAccepted') && $('lavEffectNoticeAccepted').checked);
   }
   // 시작 확인 모달에 추천 픽(입장·경험) 체크박스 렌더 — 자동 코칭 ON이면(기본/고급 둘 다).
-  //   ★2026-06-18: 해요체 캐주얼 글(기본 피하기)에서 자동코칭 픽이 안 뜨던 문제 — 'formal 전용' 게이트 제거.
+  //   ★2026-06-18: 해요체 캐주얼 글(기본 휴머나이징)에서 자동코칭 픽이 안 뜨던 문제 — 'formal 전용' 게이트 제거.
   //   메모 경로(collectMemo→memo)는 blog(runShortJob)·formal 둘 다 전송하므로 픽이 양쪽에 적용된다.
   //   ★★2026-06-18(사장님 지적): 확인창이 먼저 뜨고 픽이 ~9초 뒤 채워져, 그 빈 순간에 사용자가 "코칭 안 되네" 하고
   //   바로 시작을 눌러 픽을 건너뛴다. → 픽 로딩 동안 '시작하기' 버튼을 잠그고(추천 불러오는 중…), 픽이 뜨거나
@@ -859,7 +859,7 @@
       var rows = [];
       rows.push(['방식', s.tone === 'formal' ? '고급 휴머나이징 — 전 문서 의미 검증' : '기본 휴머나이징 — 장르 자동 맞춤']);
       rows.push(['글 종류', s.documentProfile ? DOCUMENT_PROFILE_LABELS[s.documentProfile] + ' · 애매할 때만 반영' : '자동 판별']);
-      if (s.tone === 'blog') rows.push(['문체', s.basicStyle === 'report' ? '과제/보고서 말투' : '블로그 말투']);
+      if (s.tone === 'blog') rows.push(['문체 보조', s.basicStyle === 'report' ? '격식 있는 표현 보조 · 원문 장르 우선' : '친근한 표현 보조 · 원문 장르 우선']);
       if (s.tone === 'formal') rows.push(['분량', '원문에 가깝게 유지']);
       // 자동 코칭 ON이면 위 추천 픽 섹션이 입력을 대신함 → 메모 행 생략(중복·혼동 방지)
       if (s.tone === 'blog' && s.basicStyle === 'report') rows.push(['추가 메모', '사용 안 함 · 원문 중심']);
@@ -869,7 +869,7 @@
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
       }).join('');
     }
-    // 과금(서버와 동일): 기본 피하기=최소 10크레딧 + 100자당 2크레딧, 재구성=건당 정액.
+    // 과금(서버와 동일): 기본 휴머나이징=최소 10크레딧 + 100자당 2크레딧, 고급=건당 정액.
     var src = $('lavInput');
     var text = src ? src.value : '';
     var len = text.length;
@@ -1094,19 +1094,21 @@
     if (typeof m.lengthRatio === 'number') badge(true, '분량 ' + Math.round(m.lengthRatio * 100) + '%');
   }
 
-  // ★ short job(2026-06-13): 직접 fetch였던 기본 피하기(blog)·그대로 다듬기(polish)를 /transform job으로 —
-  //   새로고침·창닫기 생존 + lavJobRef 재진입(고급 피하기와 동일). 둘 다 크레딧이 드는 작업이라 생존 필수(사장님 지적).
+  // ★ short job(2026-06-13): 직접 fetch였던 기본 휴머나이징(blog)·원문 보존 다듬기(polish)를 /transform job으로 —
+  //   새로고침·창닫기 생존 + lavJobRef 재진입(고급 휴머나이징과 동일). 둘 다 크레딧이 드는 작업이라 생존 필수(사장님 지적).
   function runShortJob(mode, s) {
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
     activeCancel = null;
-    if ($('lavJobTitle')) $('lavJobTitle').textContent = '문장을 다듬고 있어요';
+    if ($('lavJobTitle')) $('lavJobTitle').textContent = mode === 'polish'
+      ? '원문의 말투와 구조를 지키며 다듬고 있어요'
+      : '원문의 장르를 지키며 문장을 다시 구성하고 있어요';
     if ($('lavJobId')) $('lavJobId').textContent = '';
-    setActiveJobUi('', 'starting', mode === 'polish' ? '다듬기 시작 중' : '휴머나이징 시작 중');
+    setActiveJobUi('', 'starting', mode === 'polish' ? '원문 보존 다듬기 시작 중' : '기본 휴머나이징 시작 중');
     show('job');
     armCancelWindow(0);   // 방금 시작 — 30초 취소 창 열기
     var bare = text.replace(/\s/g, '').length;
-    replaceJobTicker(shortEstimateSec(text), '문장 다듬는 중');
+    replaceJobTicker(shortEstimateSec(text), mode === 'polish' ? '문장 완성도 정리 중' : '기본 휴머나이징 중');
     var gen = ++pollGen;
     (async function () {
       var idToken = '';
@@ -1132,7 +1134,7 @@
           return;
         }
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
-        setActiveJobUi(r.jobId, r.job && r.job.status || 'running', '문장을 다듬는 중');
+        setActiveJobUi(r.jobId, r.job && r.job.status || 'running', mode === 'polish' ? '원문 보존 다듬기 진행 중' : '기본 휴머나이징 진행 중');
         saveJobRef(r.jobId, r.job && r.job.status || 'running');
         activeCancel = makeJobCanceller(r.jobId);
         if (r.job && r.job.status === 'queued') {
@@ -1148,7 +1150,7 @@
   }
   function runBlogEvasion(s) { return runShortJob('blog', s); }
 
-  // 그대로 다듬기(보존형) — 사장님: 바로 실행 말고 확인창부터(과금 있음). 확인 모달 재사용.
+  // 원문 보존 다듬기 — 바로 실행하지 않고 확인창에서 범위와 과금을 먼저 안내한다.
   var pendingPolish = false;
   window.lavRunPolish = function () {
     var src = $('lavInput');
@@ -1159,15 +1161,15 @@
     var cp = $('lavCoachPicks'); if (cp) cp.hidden = true;   // 다듬기(최소수정)는 코칭 픽 없음 — 모달 재사용 시 직전 잔여 숨김
     lavStartBtnState(false);   // 코칭 잠금이 남아있을 수 있으니 시작 버튼 활성화 보장
     var ttl = document.querySelector('.lav-confirm-title');
-    if (ttl) ttl.textContent = '과제 어투로 다듬을까요?';
+    if (ttl) ttl.textContent = '원문 보존 다듬기를 시작할까요?';
     var sum = $('lavConfirmSummary');
     if (sum) {
       sum.innerHTML =
-        '<li><span>방식</span><b>과제 어투로 다듬기</b></li>' +
-        '<li><span>원문 보존</span><b>사실·분량 그대로 (재작성 아님)</b></li>' +
-        '<li><span>용도</span><b>어투·완성도 정리 (AI 티 줄이기 아님)</b></li>';
+        '<li><span>방식</span><b>원문 보존 다듬기</b></li>' +
+        '<li><span>보존 범위</span><b>장르·사실·구조 보존 · 분량 최대한 유지</b></li>' +
+        '<li><span>수정 범위</span><b>맞춤법·문장 연결·중복 표현 정리</b></li>';
     }
-    var subP = $('lavConfirmSub'); if (subP) subP.hidden = true;   // 과제 다듬기는 탐지율과 무관
+    var subP = $('lavConfirmSub'); if (subP) subP.hidden = true;   // 원문 보존 다듬기는 탐지율과 무관
     var len = src ? src.value.length : 0;   // 글자수 통일: 공백 포함
     if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = shortHumanizeCredit(len) + ' 크레딧';
     if ($('lavConfirmTime')) $('lavConfirmTime').textContent = estimateTimeLabel(shortEstimateSec(text)) + ' · 대기 제외';
@@ -1640,16 +1642,17 @@
   function renderJobDone(st) {
     if (st && st.jobId) setActiveJobUi(st.jobId, 'done', '휴머나이징 완료');
     var label;
-    if (st.mode === 'blog') {
-      label = '블로그';
+    var isPreservationFallback = !!(st.result && st.result.preservationFallback);
+    if (isPreservationFallback) {
+      // 기본 휴머나이징에서 사용자가 선택한 원문 보존 다듬기 재처리 결과.
+      label = '원문 보존 다듬기';
+      renderBadges({ metrics: st.result && st.result.metrics }, st.result);
+    } else if (st.mode === 'blog') {
+      label = '기본 휴머나이징';
       renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics }, st.result);
     } else if (st.mode === 'polish') {
-      label = '다듬기';
+      label = '원문 보존 다듬기';
       renderBadges((st.result && st.result.floorReport) || { metrics: st.result && st.result.metrics }, st.result);
-    } else if (st.result && st.result.preservationFallback) {
-      // 차단→보존형 폴백: 고급 재구성이 게이트에 막혀 원문 보존형으로 처리된 결과.
-      label = '보존형';
-      renderBadges({ metrics: st.result && st.result.metrics }, st.result);
     } else {
       label = '고급 휴머나이징';
       renderBadges({ metrics: st.result && st.result.metrics }, st.result);
@@ -1657,10 +1660,9 @@
     // 보존형 폴백 안내 배너(정직 표기) — 일반 결과에선 항상 숨김으로 리셋
     var lavFbBanner = $('lavFallbackBanner');
     if (lavFbBanner) {
-      var isFb = !!(st.result && st.result.preservationFallback);
-      lavFbBanner.hidden = !isFb;
-      if (isFb && $('lavFallbackMsg')) {
-        $('lavFallbackMsg').textContent = st.note || '고급 결과에 원문 보존 위험이 남아, 대신 원문을 최대한 살린 결과를 준비했어요.';
+      lavFbBanner.hidden = !isPreservationFallback;
+      if (isPreservationFallback && $('lavFallbackMsg')) {
+        $('lavFallbackMsg').textContent = st.note || '기본 휴머나이징 결과를 안전하게 전달하기 어려워, 사용자가 선택한 원문 보존 다듬기로 다시 처리했어요.';
       }
     }
     // ── '예상 AI 탐지율 %' 표기 제거(2026-06-15) ──────────────────────────────
@@ -1679,9 +1681,13 @@
       $('lavDoneScore').style.color = GRADE_COLOR[grade];
     }
     var doneNote = $('lavDoneNote');
-    if (doneNote) doneNote.textContent = st.mode === 'polish'
-      ? '과제 어투로 다듬었어요. 사실과 분량은 원문 그대로 두고 문장만 정리했어요. (AI 티 줄이기와는 다른 기능이에요)'
-      : '검사 결과는 글과 도구에 따라 달라서 수치로 약속하기는 어려워요. 결과가 만족스럽지 않으면 실제 경험이나 구체 사례를 더해 다시 정리해 보세요.';
+    if (doneNote) {
+      doneNote.textContent = st.mode === 'polish'
+        ? '원문의 장르·사실·구조를 지키면서 맞춤법과 문장 연결을 정리했어요. 문장을 넓게 다시 쓰는 휴머나이징과는 다른 기능이에요.'
+        : (st.mode === 'formal'
+          ? '고급 휴머나이징과 정밀 검증이 완료됐어요. 제출 전 핵심 수치와 인용은 원문과 한 번 대조해 주세요.'
+          : '기본 휴머나이징이 완료됐어요. 외부 검사 결과는 글과 도구에 따라 달라지며 점수를 보장하지 않아요.');
+    }
     renderBillingDisposition(st);
     renderResultNotices(st);
     if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
@@ -1958,7 +1964,7 @@
       return;
     }
     window.lavCloseConfirm();
-    if (polish) return runShortJob('polish', null);    // 그대로 다듬기 — 확인 후 시작
+    if (polish) return runShortJob('polish', null);    // 원문 보존 다듬기 — 확인 후 시작
     var s = currentSettings();
     s.effectNoticeAccepted = effectNoticeAccepted;
     if (s.tone === 'blog') return runBlogEvasion(s);   // ★ P2 실연결(블로그 어투)

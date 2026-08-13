@@ -1478,9 +1478,17 @@ function renderDetect(r) {
 }
 
 function renderHuman(r) {
- // ★ 고지: '그대로 다듬기'(보존형)는 원문 의미·사실을 유지하는 품질 다듬기라 회피 목적과 구분한다.
+ const resultMode = String(r?.engineMeta?.requestedMode || r?.requestedMode || r?.mode || '').toLowerCase();
+ let noteCopy;
+ if (r?.preservationFallback || resultMode === 'polish') {
+  noteCopy = '이 결과는 원문의 장르·사실·구조를 지키는 <b>원문 보존 다듬기</b>예요. 문장을 넓게 다시 쓰는 휴머나이징과는 다른 기능이에요.';
+ } else if (resultMode === 'formal') {
+  noteCopy = '이 결과는 더 넓은 문장 재구성과 모델 기반 정밀 검증을 적용한 <b>고급 휴머나이징</b> 결과예요.';
+ } else {
+  noteCopy = '이 결과는 원문의 장르·화자·사실을 지키며 대상 문장을 다시 구성한 <b>기본 휴머나이징</b> 결과예요.';
+ }
  const note = '<div class="sstrip" style="background:var(--surface2,#f6f6f8);color:var(--text3);font-size:12.5px;line-height:1.5;">'
-  + '이 결과는 의미·사실을 보존하는 <b>다듬기</b>예요. AI 티를 줄이는 게 목적이라면 휴머나이징(기본·고급) 모드를 이용하세요.</div>';
+  + noteCopy + '</div>';
   const billingLabels = {
    charged: '크레딧 차감 완료',
    waived_quality_shortfall: '과거 무차감 정책으로 처리된 작업이에요.',

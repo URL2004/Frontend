@@ -352,7 +352,7 @@
   };
 
   // 전송 버튼: 회피 모드 인라인 스테퍼 진입(진단 배너부터).
-  // 실제 "그대로 다듬기"는 lavRunHumanize가 기존 분석 파이프라인으로 연결.
+  // 실제 "원문 보존 다듬기"는 lavRunHumanize가 기존 분석 파이프라인으로 연결.
   window.lavRun = function () {
     var src = document.getElementById('lavInput');
     var text = src && src.value.trim() ? src.value : '';

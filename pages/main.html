@@ -230,7 +230,7 @@
            <!-- 자소서·이력 유형 안내(재구성 부적합) -->
            <div class="lav-resume-note" id="lavResumeNote" hidden>
              <strong>자기소개서·이력 유형의 글로 보여요.</strong>
-             이 유형은 원문의 경험·성과·1인칭을 지키는 것이 가장 중요해요. <b>기본 휴머나이징</b>에도 자소서 보존 규칙과 의미 검증이 적용되므로 기본을 권장합니다. AI 티를 줄이는 목적이 아니라 맞춤법과 연결만 고치려면 <b>과제 어투로 다듬기</b>를 선택하세요.
+             이 유형은 원문의 경험·성과·1인칭을 지키는 것이 가장 중요해요. <b>기본 휴머나이징</b>에도 자소서 보존 규칙과 의미 검증이 적용되므로 기본을 권장합니다. AI 티를 줄이는 목적이 아니라 맞춤법과 연결만 고치려면 <b>원문 보존 다듬기</b>를 선택하세요.
            </div>
 
            <!-- 회피 난이도 사전 안내(STEM 실험·방법론 보고서 / 구조화 데이터 보고서) — 소프트(진행 가능), 솔직한 고지 -->
@@ -252,12 +252,12 @@
                <span class="lav-purpose-head">
                  <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">edit_note</span></span>
                  <span class="lav-purpose-t">
-                   <strong>과제 어투로 다듬기</strong>
-                   <em class="lav-purpose-band quiet">어투·완성도 정리</em>
+                   <strong>원문 보존 다듬기</strong>
+                   <em class="lav-purpose-band quiet">맞춤법·문장 완성도 정리</em>
                  </span>
                </span>
-               <p>AI 초안을 대학 과제체로 매끄럽게 정리해요. 사실·분량은 그대로 둬요.</p>
-               <span class="lav-purpose-caveat">AI 티 줄이기용은 아니에요</span>
+               <p>원문의 장르와 말투를 유지하면서 비문·띄어쓰기·어색한 연결·중복 표현만 정리해요.</p>
+               <span class="lav-purpose-caveat">문장을 넓게 다시 쓰는 휴머나이징 기능은 아니에요</span>
              </button>
              <button type="button" class="lav-purpose-opt accent" onclick="lavFlowGo('reduce')">
                <span class="lav-purpose-reco">추천</span>
@@ -268,7 +268,7 @@
                    <em class="lav-purpose-band">장르를 보존하는 휴머나이징</em>
                  </span>
                </span>
-               <p>원문의 장르·화자·사실을 지키면서 반복 표현과 지나치게 균일한 문장 흐름을 자연스럽게 다듬어요.</p>
+               <p>원문의 장르·화자·사실을 지키면서 AI식 반복과 지나치게 균일한 문장 흐름이 있는 부분을 자연스럽게 다시 구성해요.</p>
                <span class="lav-purpose-caveat strong">AI 티 지수는 글·외부 검사기에 따라 달라지며 보장값이 아니에요</span>
              </button>
            </div>
@@ -295,7 +295,7 @@
                  <span class="lav-tone-body">
                    <b>고급 휴머나이징 <u class="rec" id="lavFormalRecommended" hidden>추천</u><u class="lock-tag">현재 선택 불가</u></b>
                    <i>
-                     <span class="ln">기본보다 더 많은 문장을 재구성하고, 모든 글의 의미·사실·구조를 한 번 더 검증해요.</span>
+                     <span class="ln">기본보다 더 넓은 문장 범위를 재구성하고, 모든 글에 모델 기반 의미·사실·구조 정밀 검증을 적용해요.</span>
                      <span class="ln hl">긴 논문·보고서처럼 구조가 복잡한 글에 적합하고, 직접 승인한 근거만 추가할 수 있어요.</span>
                    </i>
                    <em class="lav-tone-chips"><span>긴 글·복잡한 글 추천</span><span>모든 글 의미 검증</span><span>200~600크레딧</span><span>근거 사용 시 +100</span></em>
@@ -441,10 +441,10 @@
          <!-- 4.5) 차단 → 동의 기반 재시도/보존형 받기 -->
          <section class="lav-flow-card lav-blocked" data-flow="blocked" hidden>
            <div class="lav-blocked-head">
-             <strong>‘AI 티 줄이기’를 잠깐 멈췄어요</strong>
+             <strong>전달 가능한 결과를 만들지 못했어요</strong>
              <span class="lav-blocked-free">크레딧 차감 없음</span>
            </div>
-           <p id="lavBlockedReason" class="lav-blocked-reason">원문에 없는 내용이 생기거나 사실이 빠질 위험이 있어 안전하게 멈췄어요. 없는 사실은 만들지 않아요.</p>
+           <p id="lavBlockedReason" class="lav-blocked-reason">모델 응답이나 필수 검사 과정에서 기술 문제가 발생해 작업을 중단했어요. 원문을 확인한 뒤 다시 시도해 주세요.</p>
            <div id="lavBlockedAbstract" class="lav-blocked-abstract" hidden>
              <div class="lav-blocked-abstract-title">이 부분이 두루뭉술해서 AI 티 줄이기가 어려워요</div>
              <ul id="lavBlockedAbstractList" class="lav-blocked-abstract-list"></ul>
@@ -471,7 +471,7 @@
              </div>
            </div>
            <div class="lav-fallback-banner" id="lavFallbackBanner" hidden style="margin:0 0 12px;padding:10px 12px;border-radius:10px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.32);font-size:12.5px;line-height:1.55;">
-             <strong style="color:#d9920a;">‘그대로 다듬기’로 처리됐어요</strong> <span id="lavFallbackMsg" style="color:var(--text3,#6b7280);"></span>
+             <strong style="color:#d9920a;">‘원문 보존 다듬기’로 처리됐어요</strong> <span id="lavFallbackMsg" style="color:var(--text3,#6b7280);"></span>
            </div>
            <div class="lav-trust" id="lavTrust">
              <span class="lav-trust-badge">결과 검증 대기</span>
