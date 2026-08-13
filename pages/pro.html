@@ -6,7 +6,7 @@
     </span>
     <h2>Pro 전용 작업실</h2>
   </div>
-  <p class="gp-pro-desc">쿠폰을 선택하면 해당 글자 한도 내에서 휴머나이저/AI 감지를 사용할 수 있어요. 휴머나이저 결과는 메인 탭과 동일합니다.</p>
+  <p class="gp-pro-desc">쿠폰을 선택하면 쿠폰의 글자 한도 안에서 AI 감지와 휴머나이징을 이용할 수 있어요. 처리 기준과 결과 품질 정책은 메인 화면과 같습니다.</p>
 
   <!-- 구독 정보 카드 -->
   <div id="proSubInfo" class="gp-pro-card gp-pro-subinfo">
@@ -24,7 +24,7 @@
   <div id="proCouponCard" class="gp-pro-card gp-pro-coupons">
     <div class="gp-pro-card-title">보유 쿠폰</div>
     <div id="proCouponList" class="gp-pro-coupon-list"></div>
-    <div id="proCouponEmpty" class="gp-pro-empty" style="display:none;">사용 가능한 쿠폰이 없습니다. 다음 결제일에 갱신됩니다.</div>
+    <div id="proCouponEmpty" class="gp-pro-empty" style="display:none;">지금 사용할 수 있는 쿠폰이 없어요. 구독 중이라면 다음 결제일에 새 쿠폰이 지급됩니다.</div>
   </div>
 
   <!-- 입력/결과 영역 -->
@@ -38,13 +38,13 @@
       </div>
       <div id="proSelectedBadge" class="gp-pro-selected">쿠폰을 선택하세요</div>
     </div>
-    <textarea id="proInputText" placeholder="텍스트를 입력하세요. 쿠폰을 먼저 선택해야 합니다." oninput="updateProCount(this)"></textarea>
+    <textarea id="proInputText" placeholder="먼저 쿠폰을 선택한 뒤 처리할 글을 입력해 주세요." oninput="updateProCount(this)"></textarea>
     <div class="gp-pro-footer">
       <div class="gp-pro-counts">
         <span id="proCcount">0자</span>
         <span id="proHint">쿠폰 1회 사용</span>
       </div>
-      <button id="proRunBtn" onclick="runProAnalysis()" disabled style="opacity:.5;">실행</button>
+      <button id="proRunBtn" onclick="runProAnalysis()" disabled style="opacity:.5;">작업 시작</button>
     </div>
   </div>
 

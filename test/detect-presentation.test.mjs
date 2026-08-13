@@ -19,7 +19,7 @@ test('1% 옆의 높은 가능성 문구를 낮은 구간 설명으로 교정한�
   });
 
   assert.equal(out.riskLevel, 'low');
-  assert.equal(out.riskLabel, 'AI 의심 낮음');
+  assert.equal(out.riskLabel, 'AI 티 지수 낮음');
   assert.match(out.summary, /낮게 감지/);
   assert.doesNotMatch(out.summary + out.detail, /가능성이 (?:매우 )?높/);
 });

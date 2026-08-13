@@ -6,13 +6,13 @@
     <div class="gp-page-head">
      <div>
       <h2>커뮤니티</h2>
-      <p>같이 쓰고, 같이 성장하는 글쓰기 커뮤니티. 경험을 나누고 더 좋은 글을 함께 만들어가요.</p>
+      <p>글을 쓰며 알게 된 방법과 고민을 나누는 공간이에요. 서로의 경험을 참고해 더 나은 글을 만들어 보세요.</p>
      </div>
      <button class="wbtn" onclick="document.getElementById('wform').style.display=document.getElementById('wform').style.display==='none'?'block':'none'">글쓰기</button>
     </div>
 
     <div class="gp-search">
-     <input type="search" placeholder="게시글을 검색해보세요. 예: 자소서, 블로그 팁, 작성자">
+     <input type="search" placeholder="제목·내용·작성자 검색">
      <button type="button" aria-label="검색">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
      </button>
@@ -58,7 +58,7 @@
     <div class="sortbar">
      <button class="sortbtn active" data-sort="latest" onclick="loadPosts('latest')">최신순</button>
      <button class="sortbtn" data-sort="views" onclick="loadPosts('views')">인기순</button>
-     <button class="sortbtn" data-sort="oldest" onclick="loadPosts('oldest')">댓글순</button>
+     <button class="sortbtn" data-sort="oldest" onclick="loadPosts('oldest')">오래된순</button>
     </div>
 
     <!-- 에디터 추천은 aside(우측)로 이동, 이번주 인기글은 제거 — 메인은 글 목록만(혼동 방지, 사장님 지시) -->
@@ -70,7 +70,7 @@
     <article class="gp-visual-card">
      <div>
       <span>오늘의 글쓰기 한 줄</span>
-      <strong>완벽한 글보다,<br>진심이 담긴 글이 오래 남아요.</strong>
+      <strong>완벽하게 쓰려다 멈추기보다,<br>내 경험이 드러나는 한 문장을 먼저 적어 보세요.</strong>
      </div>
      <img loading="lazy" decoding="async" src="/assets/img/community-quill.png" alt="">
     </article>
@@ -82,19 +82,19 @@
     <article class="gp-aside-card">
      <h3>인기 게시글 TOP 5</h3>
      <ol class="gp-rank-list" id="rankList">
-      <li><span>1</span>AI 티 안 나게, 자연스러운 블로그 글 쓰는 루틴 <strong>128</strong></li>
+      <li><span>1</span>블로그 글을 자연스럽게 다듬는 루틴 <strong>128</strong></li>
       <li><span>2</span>교수님이 좋아하는 보고서 작성법 <strong>112</strong></li>
       <li><span>3</span>서론에서 시선 끄는 문장 쓰는 법 <strong>96</strong></li>
-      <li><span>4</span>표절 검사 통과하는 인용/출처 팁 <strong>89</strong></li>
-      <li><span>5</span>AI 냄새 확 줄이는 문장 바꾸기 예시 <strong>77</strong></li>
+      <li><span>4</span>인용과 출처를 정확하게 표시하는 법 <strong>89</strong></li>
+      <li><span>5</span>반복 표현을 줄이는 문장 수정 예시 <strong>77</strong></li>
      </ol>
     </article>
     <article class="gp-aside-card">
      <h3>커뮤니티 가이드</h3>
      <ul class="gp-guide-list">
-      <li><strong>서로 존중하여 소통해요</strong><span>비방, 욕설, 혐오 표현은 금지입니다.</span></li>
-      <li><strong>경험을 공유해요</strong><span>실제 경험담은 모두에게 도움이 됩니다.</span></li>
-      <li><strong>저작권을 지켜주세요</strong><span>타인의 글을 무단 도용하지 말아주세요.</span></li>
+      <li><strong>서로 존중해요</strong><span>비방·욕설·혐오 표현은 사용할 수 없어요.</span></li>
+      <li><strong>직접 겪은 경험을 나눠요</strong><span>구체적인 경험과 시행착오는 다른 사용자에게 큰 도움이 돼요.</span></li>
+      <li><strong>저작권을 지켜요</strong><span>다른 사람의 글이나 자료를 허락 없이 가져오지 마세요.</span></li>
      </ul>
     </article>
     <article class="gp-aside-card">

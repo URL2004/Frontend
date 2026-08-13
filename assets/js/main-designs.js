@@ -320,7 +320,7 @@
   function lavSyncModeUI() {
     var label = document.getElementById('lavModeLabel');
     var btn = label ? label.closest('.gp-lav-mode') : null;
-    if (label) label.textContent = lavState.mode === 'detect' ? 'AI 검사 모드' : '자연화 모드';
+    if (label) label.textContent = lavState.mode === 'detect' ? 'AI 감지 모드' : '휴머나이징 모드';
     if (btn) btn.classList.toggle('detect', lavState.mode === 'detect');
   }
 
@@ -358,7 +358,7 @@
     var text = src && src.value.trim() ? src.value : '';
     if (!text.trim()) { if (src) src.focus(); return; }
     if (text.length > (window.LAV_MAX_CHARS || 30000)) {
-      alert('한 번에 최대 30,000자까지 입력할 수 있어요. 글을 나눠서 시도해주세요.');
+      alert('한 번에 최대 30,000자까지 입력할 수 있어요. 글을 나눠 다시 시도해 주세요.');
       if (src) src.focus();
       return;
     }

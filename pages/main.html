@@ -42,7 +42,7 @@
      </div>
      <button type="button" class="gp-lav-new" onclick="lavNewSentence()">
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-       <span>새 문장 시작</span>
+       <span>새 글 시작</span>
        <kbd id="lavNewKbd">⌘ N</kbd>
      </button>
      <nav class="gp-lav-menu" aria-label="기능 메뉴">
@@ -82,7 +82,7 @@
        </button>
        <button type="button" data-tab="history" onclick="switchTab('history');loadHistory()">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14v15H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
-         <span>히스토리</span>
+         <span>작업 기록</span>
        </button>
        <div id="lavHistSlot" class="gp-lav-hist"></div>
      </nav>
@@ -118,8 +118,8 @@
      <section class="gp-lav-hero">
        <div class="gp-lav-entry" id="lavEntry">
        <h1 class="gp-lav-hero-title"><img src="/assets/img/brand-logo.png" alt="교수님 피하기"></h1>
-       <p class="gp-lav-sub">AI로 작성한 문장을 자연스럽고 사람답게 바꿔드립니다.</p>
-       <p class="gp-lav-nikl">✓ 국립국어원 공공데이터 · 표준국어대사전 기준으로 결과를 검증해요</p>
+       <p class="gp-lav-sub">AI 초안을 원문의 뜻과 장르에 맞게 자연스럽게 다듬어요.</p>
+       <p class="gp-lav-nikl">✓ 국립국어원 공개 어문규범과 로컬 언어 자료를 참고해 한국어 표현을 보조 점검해요</p>
 
        <div class="gp-lav-composer">
          <textarea id="lavInput" rows="5" placeholder="AI 느낌이 나는 문장을 붙여넣어 보세요..." onkeydown="lavComposerKey(event)" oninput="lavSyncCount(this)"></textarea>
@@ -162,7 +162,7 @@
          <section class="lav-flow-card lav-analyzing" data-flow="analyzing" hidden>
            <span class="lav-spinner big" aria-hidden="true"></span>
            <strong>글을 분석하고 있어요</strong>
-           <p>문장 구조와 구체성을 살펴 가장 잘 맞는 방법을 찾는 중이에요.</p>
+           <p>문장 구조와 구체성을 살펴 이 글에 알맞은 처리 방식을 찾고 있어요.</p>
          </section>
 
          <!-- AI 감지 보고서 (유료 100자당 1크레딧 — 휴머나이징 전환 퍼널) -->
@@ -178,7 +178,7 @@
                </svg>
                <div class="g-center">
                  <span class="g-num"><b id="lavRepProb">--</b><i>%</i></span>
-                 <span class="g-cap">AI 작성 확률</span>
+                 <span class="g-cap">AI 티 지수</span>
                </div>
              </div>
              <div class="lav-rep-verdict">
@@ -205,7 +205,7 @@
 
            <!-- ④ 실시간 1문장 미리보기(전환 장치) -->
            <div class="lav-rep-sec lav-rep-example" id="lavRepExample" hidden>
-             <div class="lav-rep-sec-h"><h4>이 문장, 이렇게 바뀌어요</h4><span>가장 AI스러운 문장 1개를 실제로 변환했어요</span></div>
+             <div class="lav-rep-sec-h"><h4>이 문장, 이렇게 바뀌어요</h4><span>AI식 특징이 가장 두드러진 문장 한 개를 미리 다듬었어요</span></div>
              <div class="lav-rep-ba">
                <div class="ba-col before"><span class="ba-tag bad">지금</span><p id="lavRepBefore"></p></div>
                <span class="ba-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h13M12 6l6 6-6 6"/></svg></span>
@@ -477,7 +477,7 @@
              <span class="lav-trust-badge">결과 검증 대기</span>
              <span class="lav-trust-badge">한국어 표현 점검 대기</span>
            </div>
-           <p class="lav-done-note" id="lavDoneNote" style="margin:2px 0 12px;font-size:12.5px;line-height:1.5;color:var(--text3);">예상치예요. 글의 구체성·길이·주제에 따라 AI 티 지수는 달라질 수 있어요. 결과가 만족스럽지 않으면 경험 메모를 더해 다시 돌려보세요.</p>
+           <p class="lav-done-note" id="lavDoneNote" style="margin:2px 0 12px;font-size:12.5px;line-height:1.5;color:var(--text3);">결과에서 뜻·수치·인용이 원문과 같은지 확인해 주세요. 외부 AI 감지 결과는 글과 검사 도구에 따라 달라질 수 있어요.</p>
            <div class="lav-result-notice is-effect" id="lavResultEffectNotice" role="status" hidden></div>
            <div class="lav-result-notice is-quality" id="lavResultQualityNotice" role="status" hidden></div>
            <div class="lav-billing-notice" id="lavBillingNotice" role="status" hidden></div>
@@ -520,8 +520,8 @@
    <section class="gp-hero">
      <div class="gp-hero-copy">
        <p class="gp-eyebrow">제출 전, 한 번 더 확인</p>
-       <h1>AI 티 나는 글,<br><span>사람답게.</span></h1>
-       <p class="gp-hero-sub">AI 감지부터 자연스러운 휴머나이징까지, 당신의 글을 더 자연스럽게.</p>
+       <h1>AI 초안의 어색한 흐름을,<br><span>내 글에 맞게.</span></h1>
+       <p class="gp-hero-sub">AI식 문체 신호를 확인하고 원문의 뜻과 장르를 지키며 자연스럽게 다듬어요.</p>
        <div class="gp-hero-actions">
          <button type="button" class="gp-hero-primary" onclick="document.getElementById('inputText').focus()">지금 시작하기</button>
          <button type="button" class="gp-hero-secondary" onclick="setMainDesign('paper')">
@@ -537,8 +537,8 @@
 
    <section class="gp-paper-demo">
      <div class="gp-paper-demo-head">
-       <strong>실시간 변환 데모</strong>
-       <span><i></i> LIVE</span>
+       <strong>변환 예시</strong>
+       <span><i></i> EXAMPLE</span>
      </div>
      <div class="gp-paper-demo-compare">
        <article class="before">
@@ -548,15 +548,15 @@
        <b aria-hidden="true">→</b>
        <article class="after">
          <span>After</span>
-         <p>이 연구는 여러 요인을 반영해 분석을 진행했습니다. 그 결과는 선행연구와 맥락을 같이하며, 유의미한 시사점을 줍니다.</p>
+         <p>이 연구에서는 여러 요인을 함께 살펴봤습니다. 분석 결과는 선행연구와 비슷한 흐름을 보였지만, 어떤 점이 중요한지는 연구 맥락에 맞춰 구체적으로 설명할 필요가 있습니다.</p>
        </article>
      </div>
      <div class="gp-paper-score">
        <div>
-         <span>AI 작성 확률</span>
-         <strong class="bad">86%</strong>
+         <span>AI 티 지수 예시</span>
+         <strong class="bad">높음</strong>
          <b>→</b>
-         <strong class="good">14%</strong>
+         <strong class="good">낮음</strong>
        </div>
        <div class="gp-paper-scorebar"><i></i><em></em></div>
        <footer><span>변환 전</span><span>변환 후</span></footer>
@@ -631,10 +631,10 @@
    </section>
 
    <div class="gp-stat-row">
-     <div><strong>사실 보존</strong><span>수치·인용 그대로</span><small>원문 사실을 지키며 다시 씁니다</small></div>
-     <div><strong>12만+</strong><span>사용자</span><small>학생들의 선택을 받은 서비스</small></div>
-     <div><strong>320만+</strong><span>변환 문장</span><small>더 자연스러운 글로 재탄생</small></div>
-     <div><strong>4.8/5</strong><span>평점</span><small>실제 사용자 만족도</small></div>
+     <div><strong>사실 보존</strong><span>수치·인용 보호</span><small>원문의 핵심 사실을 감사하고 전달해요</small></div>
+     <div><strong>장르 판별</strong><span>문서별 처리</span><small>과제·자소서·논문·후기를 구분해요</small></div>
+     <div><strong>한국어 점검</strong><span>표현 보정</span><small>맞춤법·띄어쓰기·문장 연결을 살펴봐요</small></div>
+     <div><strong>작업 복구</strong><span>진행 상태 저장</span><small>창을 닫아도 서버에서 작업을 이어가요</small></div>
    </div>
 
    <div class="gp-paper-bottom-grid">
@@ -644,41 +644,41 @@
          <span><b>문맥 유지</b><em>원문의 핵심 의미와 흐름 보존</em></span>
          <span><b>톤 조절</b><em>격식과 친근함을 상황에 맞게</em></span>
          <span><b>학생 글 최적화</b><em>논문, 리포트, 에세이에 맞춘 표현</em></span>
-         <span><b>빠른 결과</b><em>평균 3초 내 변환 완료</em></span>
+         <span><b>작업 이어보기</b><em>창을 닫아도 진행 중인 작업을 다시 확인</em></span>
        </div>
        <button type="button">기능 더 보기 <b>→</b></button>
      </article>
      <article class="gp-paper-review-card">
-       <h3>학생들의 후기</h3>
+       <h3>결과 확인 팁</h3>
        <i aria-hidden="true"></i>
-       <strong>연세대 경영학과 23학번</strong>
-       <p>교수님 피하기 쓰고부터 첨삭 코멘트가 확 줄었어요. 문장 자연스럽다는 피드백을 처음 받았습니다.</p>
-       <span>★★★★★</span>
+       <strong>변환 뒤 원문과 한 번 대조해 주세요</strong>
+       <p>핵심 주장과 수치·기관명·직접 인용이 유지됐는지 확인하면 결과를 더 안전하게 활용할 수 있어요.</p>
+       <span>의미 · 사실 · 구조</span>
        <footer><button type="button">‹</button><em></em><em></em><em></em><button type="button">›</button></footer>
      </article>
      <article class="gp-paper-price-card">
        <h3>요금제</h3>
-       <small>7일 무료 체험</small>
+       <small>사용한 만큼 크레딧 차감</small>
        <div>
-         <span>Free<em>월 10,000자 변환</em><button type="button">시작하기</button></span>
-         <span class="active">Basic<em>₩9,900 /월</em><button type="button">시작하기</button></span>
-         <span>Team<em>₩29,900 /월</em><button type="button">문의하기</button></span>
+         <span>AI 감지<em>100자당 1크레딧</em><button type="button">시작하기</button></span>
+         <span class="active">기본<em>최소 10크레딧</em><button type="button">시작하기</button></span>
+         <span>고급<em>글 길이별 정액</em><button type="button">가격 보기</button></span>
        </div>
-       <p>학생 인증 시 20% 할인 혜택 제공</p>
+       <p>구매한 크레딧은 유효기간 없이 사용할 수 있어요.</p>
      </article>
      <article class="gp-paper-faq-card">
        <h3>자주 묻는 질문</h3>
-       <button type="button">정말 비슷하지 않게 바뀌나요? <b>+</b></button>
+       <button type="button">기본과 고급은 무엇이 다른가요? <b>+</b></button>
        <button type="button">어떤 언어를 지원하나요? <b>+</b></button>
-       <button type="button">제출해도 안전한가요? <b>+</b></button>
-       <button type="button">표절 검사도 통과하나요? <b>+</b></button>
+       <button type="button">원문의 의미와 수치는 유지되나요? <b>+</b></button>
+       <button type="button">외부 검사 점수를 보장하나요? <b>+</b></button>
        <a onclick="switchTab('qna')">더 궁금한 점이 있으신가요?</a>
      </article>
    </div>
 
    <div class="gp-paper-school-strip">
-     <strong>지금 12만+ 학생들이 더 자연스러운 글쓰기를 경험하고 있습니다.</strong>
-     <span>연세대학교</span><span>고려대학교</span><span>서울대학교</span><span>KAIST</span><span>성균관대학교</span><span>한양대학교</span>
+     <strong>글의 종류에 맞는 처리 방식을 선택하세요.</strong>
+     <span>과제·보고서</span><span>자기소개서</span><span>논문·학술글</span><span>후기·블로그</span><span>메일·안내문</span><span>창작문</span>
    </div>
  </div>
 
@@ -688,13 +688,13 @@
  <section class="gp-section gp-compare">
    <div class="gp-section-head">
      <h2>휴머나이징, 문장이 이렇게 달라집니다</h2>
-     <p>교수님 피하기로 더 자연스럽고 사람답게</p>
+     <p>원문의 뜻을 지키면서 반복 표현과 균일한 흐름을 조정해요.</p>
    </div>
    <div class="gp-compare-grid">
      <article class="gp-detect-card before">
        <div class="gp-card-kicker">휴머나이징 전</div>
-       <span>AI 작성 확률</span>
-       <strong>92%</strong>
+       <span>AI 티 지수 예시</span>
+       <strong>높음</strong>
        <div class="gp-meter"><i style="width:92%"></i></div>
        <ul>
          <li>반복적인 표현과 문장 구조 감지</li>
@@ -705,13 +705,13 @@
      <div class="gp-compare-arrow">›</div>
      <article class="gp-detect-card after">
        <div class="gp-card-kicker">휴머나이징 후</div>
-       <span>AI 작성 확률</span>
-       <strong>7%</strong>
+       <span>AI 티 지수 예시</span>
+       <strong>낮음</strong>
        <div class="gp-meter"><i style="width:7%"></i></div>
        <ul>
          <li>자연스러운 문장 흐름</li>
          <li>다양한 어휘와 표현 사용</li>
-         <li>인간이 쓴 글과 유사한 수준</li>
+         <li>원문 장르에 맞는 표현 유지</li>
        </ul>
      </article>
    </div>
@@ -719,12 +719,12 @@
 
  <section class="gp-section">
    <div class="gp-section-head">
-     <h2>3단계로 완성되는 안심 글쓰기</h2>
+     <h2>3단계로 확인하는 글쓰기</h2>
    </div>
    <div class="gp-steps">
      <article><span>01</span><strong>텍스트 입력</strong><p>검사할 텍스트를 붙여넣거나 파일을 업로드하세요.</p></article>
      <article><span>02</span><strong>AI 검사 &amp; 분석</strong><p>AI 티 지수와 상세 분석 결과를 빠르게 확인합니다.</p></article>
-     <article><span>03</span><strong>휴머나이징 적용</strong><p>자연스럽게 다듬어진 결과로 자신 있게 제출하세요.</p></article>
+     <article><span>03</span><strong>휴머나이징 적용</strong><p>결과를 원문과 비교한 뒤 필요한 곳에 활용하세요.</p></article>
    </div>
  </section>
 
@@ -733,12 +733,12 @@
      <h2>교수님 피하기가 특별한 이유</h2>
    </div>
    <div class="gp-feature-grid">
-     <article><span>AI</span><strong>AI 문체 패턴 분석</strong><p>추상성·반복·정형성 등 AI가 남기는 문체 신호를 문단별로 짚어드립니다.</p></article>
-     <article><span>WR</span><strong>자연스러운 휴머나이징</strong><p>문맥을 이해한 문장 재구성으로 인간의 글과 유사하게 다듬습니다.</p></article>
+     <article><span>AI</span><strong>AI 문체 패턴 분석</strong><p>추상성·반복·정형성처럼 AI식 문체로 보일 수 있는 신호를 문단별로 보여 줍니다.</p></article>
+     <article><span>WR</span><strong>자연스러운 휴머나이징</strong><p>원문의 문맥과 장르를 지키면서 반복적이고 균일한 문장 흐름을 다시 구성합니다.</p></article>
       <article><span>PR</span><strong>학습 사용 없음</strong><p>입력한 글은 서비스 처리와 사용자 보관함 제공 목적에만 사용되며 외부 학습에 쓰지 않습니다.</p></article>
-     <article><span>국어</span><strong>국립국어원 데이터 검증</strong><p>표준국어대사전·우리말샘 조회로 용어 표기를 지키고, 어문규범 공공데이터 기준으로 맞춤법 품질을 검사합니다.</p></article>
-     <article><span>AR</span><strong>결과 보관 &amp; 관리</strong><p>검사 기록과 결과를 한곳에서 보관하고 언제든 다시 확인할 수 있습니다.</p></article>
-     <article><span>KR</span><strong>학생·취업 준비생 맞춤</strong><p>과제, 자기소개서, 논문 등 다양한 상황에 최적화된 지원을 제공합니다.</p></article>
+     <article><span>국어</span><strong>한국어 표현 보조 점검</strong><p>국립국어원 공개 어문규범과 로컬 언어 자료를 참고해 맞춤법·띄어쓰기·용어 표기를 살펴봅니다.</p></article>
+     <article><span>AR</span><strong>결과 보관 &amp; 관리</strong><p>검사 기록과 결과를 한곳에서 보관하고 필요할 때 다시 확인할 수 있습니다.</p></article>
+     <article><span>KR</span><strong>글 종류별 처리</strong><p>과제·자기소개서·논문·후기 등 원문의 종류에 맞는 표현과 구조를 우선합니다.</p></article>
    </div>
  </section>
 
@@ -749,15 +749,15 @@
    <div class="faq-list">
     <div class="faq-item">
      <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>교수님 피하기는 어떤 서비스인가요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-     <div class="faq-a">AI로 쓴 티가 나는지 확인하고, 더 자연스러운 문장으로 다듬는 서비스입니다.</div>
+     <div class="faq-a">AI식 문체 신호를 확인하고, 원문의 뜻과 장르를 지키며 문장을 다듬는 서비스입니다.</div>
     </div>
     <div class="faq-item">
      <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>결과는 얼마나 정확한가요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-     <div class="faq-a">주요 AI 패턴을 기준으로 분석하지만 모든 외부 검사 결과를 100% 보장하지는 않습니다. 변환 후 재검사를 권장합니다.</div>
+     <div class="faq-a">AI 감지는 문체 신호를 바탕으로 한 참고 결과이며 작성 여부를 확정하지 않습니다. 외부 검사 도구마다 결과가 다를 수 있어요.</div>
     </div>
     <div class="faq-item">
      <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>휴머나이징 후에도 제 글의 의미가 유지되나요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-     <div class="faq-a">핵심 주장과 논지 흐름은 유지하고, 기계적인 문장 패턴과 반복 표현을 자연스럽게 조정합니다.</div>
+     <div class="faq-a">핵심 주장과 논지 흐름을 보존하도록 감사하고, 반복 표현과 균일한 문장 흐름을 조정합니다. 제출 전에는 핵심 수치와 인용을 원문과 다시 확인해 주세요.</div>
     </div>
     <div class="faq-item">
      <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>제 글이 저장되거나 다른 곳에 사용되나요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>

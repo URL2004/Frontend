@@ -266,7 +266,7 @@ window.redeemCoupon = async function() {
  }
  const code = input.value.trim();
  if (code.replace(/[-\s]/g, '').length !== 12) {
-  msg.style.color = 'var(--red)'; msg.textContent = '쿠폰 코드 12자리를 입력해주세요.'; return;
+  msg.style.color = 'var(--red)'; msg.textContent = '12자리 쿠폰 코드를 입력해 주세요.'; return;
  }
  msg.style.color = 'var(--text3)'; msg.textContent = '적용 중...';
  try {
@@ -304,8 +304,8 @@ window.adminCreateCoupons = async function() {
  const credits = parseInt(credEl.value, 10);
  const count = parseInt(cntEl.value, 10);
  const expiresAt = expEl.value ? new Date(expEl.value + 'T23:59:59').toISOString() : null;
- if (!Number.isInteger(credits) || credits < 1) { msg.style.color = 'var(--red)'; msg.textContent = '크레딧을 올바르게 입력해주세요.'; return; }
- if (!Number.isInteger(count) || count < 1) { msg.style.color = 'var(--red)'; msg.textContent = '개수를 올바르게 입력해주세요.'; return; }
+ if (!Number.isInteger(credits) || credits < 1) { msg.style.color = 'var(--red)'; msg.textContent = '지급할 크레딧을 올바르게 입력해 주세요.'; return; }
+ if (!Number.isInteger(count) || count < 1) { msg.style.color = 'var(--red)'; msg.textContent = '발급할 쿠폰 수를 올바르게 입력해 주세요.'; return; }
  msg.style.color = 'var(--text3)'; msg.textContent = '발급 중...';
  result.innerHTML = '';
  try {
@@ -774,12 +774,12 @@ window.changeNickname = async () =>{
   ? await window.gpPrompt({ title: '닉네임 변경', message: '커뮤니티와 마이페이지에 표시될 이름입니다.', placeholder: '새 닉네임', defaultValue: CU.displayName || '', confirmText: '변경하기', required: true })
   : prompt('새 닉네임을 입력하세요:', CU.displayName);
  if (!newName || newName.trim() === '') return;
- if (newName.trim().length >20) { alert('닉네임은 20자 이내로 입력해주세요.'); return; }
+ if (newName.trim().length >20) { alert('닉네임은 20자 이내로 입력해 주세요.'); return; }
  try {
  await updateProfile(CU, { displayName: newName.trim() });
  await updateDoc(doc(db,'users',CU.uid), { name: newName.trim() });
  document.getElementById('uname').textContent = newName.trim() + '님';
- alert('닉네임이 변경됐어요!');
+ alert('닉네임을 변경했어요.');
  await window.loadMyPage();
  } catch(e) {
  alert('닉네임 변경 실패: ' + e.message);
@@ -802,7 +802,7 @@ window.deleteAccount = async () =>{
      }
      if (sub.status === 'cancelled' && nextMs > Date.now()) {
        const nextDate = new Date(nextMs).toLocaleDateString('ko-KR');
-       alert('해지 예정인 구독이 ' + nextDate + '까지 남아 있습니다.\n잔여 쿠폰을 사용하시거나, 결제 후 7일 이내 미사용이라면 환불 신청 후 다시 시도해주세요.');
+       alert('해지 예정인 구독이 ' + nextDate + '까지 남아 있습니다.\n남은 쿠폰을 사용하거나, 결제 후 7일 이내이고 사용하지 않았다면 환불을 신청한 뒤 다시 시도해 주세요.');
        return;
      }
    }
@@ -850,19 +850,19 @@ window.showReferralPopup = async () => {
   <div style="margin-bottom:16px;">
    <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5" width="56" height="56" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
   </div>
-  <div style="font-size:18px;font-weight:700;margin-bottom:6px;">친구 초대 시 20크레딧 증정!</div>
-  <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">친구가 링크로 가입하면 친구도, 나도<br>각각 <strong style="color:var(--green);">20크레딧</strong>을 드려요</div>
+  <div style="font-size:18px;font-weight:700;margin-bottom:6px;">친구와 함께 20크레딧 받기</div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">초대 링크로 친구가 가입하면 두 사람 모두<br><strong style="color:var(--green);">20크레딧</strong>을 받아요.</div>
   <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;text-align:left;">
    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">크레딧 받는 방법</div>
    <div style="display:flex;flex-direction:column;gap:8px;">
     <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span> 아래 링크를 친구에게 공유하세요.</div>
-    <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span> 친구가 링크로 신규 가입하면 20크레딧을 받아요.</div>
-    <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span> 친구가 신규 가입하면 나도 20크레딧을 받아요.</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span> 친구가 링크로 신규 가입하면 친구에게 20크레딧이 지급됩니다.</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span> 가입이 확인되면 초대한 사람에게도 20크레딧이 지급됩니다.</div>
    </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px;">
    <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${link}</div>
-   <button onclick="navigator.clipboard.writeText('${link}');this.textContent='복사됨!';setTimeout(()=>this.textContent='링크 복사',1500)" style="padding:10px 18px;border-radius:10px;border:none;background:var(--green);color:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">링크 복사</button>
+   <button onclick="navigator.clipboard.writeText('${link}');this.textContent='복사했습니다';setTimeout(()=>this.textContent='링크 복사',1500)" style="padding:10px 18px;border-radius:10px;border:none;background:var(--green);color:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">링크 복사</button>
   </div>
  </div>`;
  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
@@ -1132,10 +1132,10 @@ window.loadPosts = async (sort) =>{
   if (fs) fs.style.display = 'none';
   if (ps) ps.style.display = 'none';
   window._cachedPosts = [
-   { id:'demo-post-1', demo:true, category:'블로그 작성 꿀팁', title:'AI 티 안 나게, 자연스러운 블로그 글 쓰는 루틴', body:'저는 이렇게 쓰면 대부분 자연스럽게 나왔어요. 구성부터 문장 리듬까지 실제 루틴을 공유합니다.', authorName:'익명', createdAt:_mockDate(0), views:1246, likes:[1,2,3,4,5], commentCount:34 },
-   { id:'demo-post-2', demo:true, category:'논문', title:'서론과 결론에서 AI 냄새 줄이는 방법', body:'교수님들이 특히 어색하게 보는 부분이 서론과 결론이더라고요. 제가 효과 봤던 표현 방식 정리해봤습니다.', authorName:'석문대생', createdAt:_mockDate(0), views:973, likes:[1,2,3,4], commentCount:22 },
-   { id:'demo-post-3', demo:true, category:'자소서 조언', title:'자소서 문항별 구조 추천, 경험 기반', body:'항목별로 어떤 흐름이 설득력 있는지 막막하신 분들께 도움이 되길 바랍니다.', authorName:'취준러', createdAt:_mockDate(1), views:861, likes:[1,2,3], commentCount:18 },
-   { id:'demo-post-4', demo:true, category:'글쓰기 팁', title:'문장 다양하게 쓰는 7가지 표현 패턴', body:'같은 내용도 더 자연스럽고 사람답게 쓰는 방법을 정리했어요.', authorName:'익명', createdAt:_mockDate(1), views:752, likes:[1,2], commentCount:11 },
+   { id:'demo-post-1', demo:true, category:'블로그 작성 꿀팁', title:'블로그 글을 자연스럽게 다듬는 루틴', body:'초안을 쓴 뒤 반복 표현과 문장 리듬을 확인하는 순서를 정리했어요.', authorName:'익명', createdAt:_mockDate(0), views:1246, likes:[1,2,3,4,5], commentCount:34 },
+   { id:'demo-post-2', demo:true, category:'논문', title:'서론과 결론의 정형 표현을 줄이는 방법', body:'서론과 결론에서 자주 반복되는 표현을 어떻게 정리했는지 경험을 나눠요.', authorName:'석문대생', createdAt:_mockDate(0), views:973, likes:[1,2,3,4], commentCount:22 },
+   { id:'demo-post-3', demo:true, category:'자소서 조언', title:'경험을 살리는 자소서 문항별 구조', body:'문항마다 어떤 순서로 경험과 판단을 연결하면 좋은지 정리했습니다.', authorName:'취준러', createdAt:_mockDate(1), views:861, likes:[1,2,3], commentCount:18 },
+   { id:'demo-post-4', demo:true, category:'글쓰기 팁', title:'같은 문장 구조의 반복을 줄이는 7가지 방법', body:'내용은 유지하면서 어순과 문장 호흡을 조절한 예시를 모았어요.', authorName:'익명', createdAt:_mockDate(1), views:752, likes:[1,2], commentCount:11 },
    { id:'demo-post-5', demo:true, category:'자유', title:'이번 학기 과제 지옥, 우리 같이 버텨요', body:'다들 뭐 하고 계신가요? 저만 이렇게 바쁜 거 아니죠?', authorName:'익명', createdAt:_mockDate(2), views:630, likes:[1,2], commentCount:29 }
   ];
   window.postPage = 1;
@@ -1188,14 +1188,14 @@ window.loadPosts = async (sort) =>{
  window._cachedPosts = posts;
  if (sortChanged || !window.postPage) window.postPage = 1;
  _renderPostPage();
- } catch(e) { pl.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--red)">불러오기 실패</div>'; }
+ } catch(e) { pl.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--red)">게시글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>'; }
 };
 
 window.submitPost = async () =>{
  if (!CU) { alert('로그인이 필요합니다.'); return; }
  const title = document.getElementById('ptitle').value.trim();
  const body = document.getElementById('pbody').value.trim();
- if (!title||!body) { alert('제목과 내용을 입력해주세요.'); return; }
+ if (!title||!body) { alert('제목과 내용을 모두 입력해 주세요.'); return; }
  
  const files = typeof window.getSelectedFiles === 'function' ? window.getSelectedFiles() : [];
  if (files.length >5) { alert('사진은 최대 5장까지만 가능합니다.'); return; }
@@ -1318,13 +1318,13 @@ window.viewPost = async (postId) =>{
  const cd_date = cd.createdAt?new Date(cd.createdAt.toDate()).toLocaleDateString('ko-KR'):'';
  const isMine = CU && (CU.uid===cd.authorId || window.isAdmin());
  const isReply = cd.isReply || false;
- const replyStyle = isReply ? 'margin-left:20px;border-left:3px solid var(--blue);padding-left:10px;' : '';
+ const replyStyle = isReply ? 'margin-left:20px;padding-left:12px;background:var(--surface2);border-radius:10px;' : '';
  const replyPrefix = isReply ? '↩ ' : '';
  let replyFormHtml = '';
  if (CU && !isReply) {
  replyFormHtml = '<button class="reply-btn" onclick="toggleReplyForm(\''+c.id+'\')">답글 달기</button>'
  +'<div id="replyForm_'+c.id+'" style="display:none;margin-top:8px;">'
- +'<textarea id="reply_'+c.id+'" placeholder="답글을 입력하세요..." rows="2" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text);font-family:var(--font);font-size:13px;resize:vertical;outline:none;display:block;"></textarea>'
+ +'<textarea id="reply_'+c.id+'" placeholder="답글을 입력해 주세요" rows="2" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--rs);background:var(--surface);color:var(--text);font-family:var(--font);font-size:13px;resize:vertical;outline:none;display:block;"></textarea>'
  +'<div class="cwrite-ft" style="margin-top:6px;">'
  +'<label class="anon-label"><input type="checkbox" id="replyAnon_'+c.id+'">익명</label>'
  +'<button class="csubmit" style="font-size:13px;padding:7px 14px;" onclick="submitReply(\''+postId+'\',\''+c.id+'\',\''+jsAttr(cd.authorName)+'\')">등록</button>'
@@ -1350,13 +1350,13 @@ window.viewPost = async (postId) =>{
  ch += '</div>';
  dv.innerHTML += ch;
  document.getElementById('curPostId').value = postId;
- } catch(e) { dv.innerHTML='<div style="color:var(--red)">불러오기 실패: '+escapeHtml(e.message || '')+'</div>'; }
+ } catch(e) { dv.innerHTML='<div style="color:var(--red)">게시글을 불러오지 못했습니다. '+escapeHtml(e.message || '')+'</div>'; }
 };
 
 window.submitComment = async (postId) =>{
  if (!CU) { alert('로그인이 필요합니다.'); return; }
  const body = document.getElementById('cinput').value.trim();
- if (!body) { alert('댓글을 입력해주세요.'); return; }
+ if (!body) { alert('댓글 내용을 입력해 주세요.'); return; }
  const anon = document.getElementById('canon').checked;
  try {
  let anonName = window.getAdminName() || CU.displayName;
@@ -1394,7 +1394,7 @@ window.toggleBm = async (postId) =>{
 };
 
 window.copyLink = (url) =>{
- navigator.clipboard.writeText(url).then(()=>alert('링크가 복사됐어요!'));
+ navigator.clipboard.writeText(url).then(()=>alert('링크를 복사했어요.'));
 };
 
 window.delPost = async (postId) =>{
@@ -1506,7 +1506,7 @@ window.loadQuestions = async (sort) =>{
   const isPerm = /permission|insufficient/i.test(e.message||'');
   el.innerHTML = isPerm
    ? '<div class="qna-empty">작성자와 관리자만 볼 수 있어요.</div>'
-   : '<div class="qna-empty" style="color:var(--red)">불러오기 실패: '+escapeHtml(e.message||'')+'</div>';
+   : '<div class="qna-empty" style="color:var(--red)">문의 목록을 불러오지 못했습니다. '+escapeHtml(e.message||'')+'</div>';
  }
 };
 
@@ -1514,7 +1514,7 @@ window.submitQuestion = async () =>{
  if (!CU) { alert('로그인이 필요합니다.'); return; }
  const title = document.getElementById('qtitle').value.trim();
  const body = document.getElementById('qbody').value.trim();
- if (!title || !body) { alert('제목과 내용을 입력해주세요.'); return; }
+ if (!title || !body) { alert('문의 제목과 내용을 모두 입력해 주세요.'); return; }
  const anon = document.getElementById('qAnon').checked;
  const btn = document.getElementById('qsubmit');
  btn.disabled = true;
@@ -1554,7 +1554,7 @@ window.viewQuestion = async (qid) =>{
  dv.innerHTML = '<div class="qna-empty">불러오는 중...</div>';
  try {
   const snap = await getDoc(doc(db,'qna',qid));
-  if (!snap.exists()) { dv.innerHTML = '<div class="qna-empty">존재하지 않는 질문입니다.</div>'; return; }
+  if (!snap.exists()) { dv.innerHTML = '<div class="qna-empty">삭제되었거나 찾을 수 없는 문의예요.</div>'; return; }
   const q = snap.data();
   const isAdm = window.isAdmin && window.isAdmin();
   const isOwner = CU && CU.uid === q.authorId;
@@ -1605,7 +1605,7 @@ window.viewQuestion = async (qid) =>{
   const isPerm = /permission|insufficient/i.test(e.message||'');
   dv.innerHTML = isPerm
    ? '<div class="qna-empty">작성자와 관리자만 볼 수 있어요.</div>'
-   : '<div class="qna-empty" style="color:var(--red)">불러오기 실패: '+escapeHtml(e.message||'')+'</div>';
+   : '<div class="qna-empty" style="color:var(--red)">문의 내용을 불러오지 못했습니다. '+escapeHtml(e.message||'')+'</div>';
  }
 };
 
@@ -1639,7 +1639,7 @@ window.submitAnswer = async (qid) =>{
  if (!window.isAdmin || !window.isAdmin()) { alert('관리자만 답변할 수 있어요.'); return; }
  const ta = document.getElementById('answerBody');
  const body = ta ? ta.value.trim() : '';
- if (!body) { alert('답변 내용을 입력해주세요.'); return; }
+ if (!body) { alert('답변 내용을 입력해 주세요.'); return; }
  try {
   const answeredBy = (window.getAdminName && window.getAdminName()) || '운영팀';
   await updateDoc(doc(db,'qna',qid), {
@@ -1720,7 +1720,7 @@ const NOTICE_BASE_ITEMS = [
   title: 'AI 감지 보고서 정식 오픈',
   date: '2026.07.21',
   views: 2841,
-  body: '글 전체의 AI 의심도와 문단별 문체 특징을 한눈에 확인할 수 있는 AI 감지 보고서를 정식 오픈했습니다. 분석 결과와 주요 근거를 하나의 종합 보고서로 제공합니다.'
+  body: '글 전체의 AI 티 지수와 문단별 문체 특징을 한눈에 확인할 수 있는 AI 감지 보고서를 정식 오픈했습니다. 분석 결과와 주요 근거를 하나의 종합 보고서로 제공합니다.'
  },
  {
   id: 'detect-credit-policy',
@@ -2108,7 +2108,7 @@ window.loadMyPage = async () =>{
  await window.loadOrderHistory();
  await window.loadCreditHistory();
  window.renderSubManage(u);
- } catch(e) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">불러오기 실패: '+escapeHtml(e.message || '')+'</div>'; }
+ } catch(e) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">작업 기록을 불러오지 못했습니다. '+escapeHtml(e.message || '')+'</div>'; }
 };
 
 // 마이페이지 정기결제 관리 카드 렌더
@@ -2149,7 +2149,7 @@ window.renderSubManage = function(u) {
     actionBtn = '<button onclick="retrySubscription(\''+sub.tier+'\')" style="padding:8px 14px;border-radius:8px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">결제수단 다시 등록</button>';
     pastDueBanner = '<div style="background:rgba(217,48,37,.08);border:1px solid rgba(217,48,37,.3);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">'
       +'<svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" width="22" height="22" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
-      +'<div style="font-size:13px;color:var(--text);"><strong style="color:var(--red);">정기결제에 실패했어요.</strong> 카드 한도·만료 등을 확인하고 결제수단을 다시 등록해주세요. 등록 즉시 결제가 시도됩니다.</div>'
+      +'<div style="font-size:13px;color:var(--text);"><strong style="color:var(--red);">정기 결제를 완료하지 못했습니다.</strong> 카드 한도와 만료일을 확인한 뒤 결제 수단을 다시 등록해 주세요. 등록이 끝나면 결제를 다시 시도합니다.</div>'
       +'</div>';
   } else {
     actionBtn = '<button onclick="switchTab(\'pricing\');setTimeout(()=>{if(window.switchPricingTab)window.switchPricingTab(\'sub\');const s=document.getElementById(\'subscriptionSection\');if(s)s.scrollIntoView({behavior:\'smooth\'});},100);" style="padding:8px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#815df2,#5587f8);color:#fff;font-size:13px;cursor:pointer;">다시 구독하기</button>';
@@ -2309,7 +2309,7 @@ window.loadNotifications = async () =>{
  }
  el.innerHTML = html;
  } catch(e) {
-  if (el) el.innerHTML='<div style="color:var(--red)">불러오기 실패</div>';
+  if (el) el.innerHTML='<div style="color:var(--red)">작업 내용을 불러오지 못했습니다.</div>';
  }
 };
 
@@ -2393,7 +2393,7 @@ window.submitReply = async (postId, commentId, parentAuthorName) =>{
  if (!CU) { alert('로그인이 필요합니다.'); return; }
  const bodyEl = document.getElementById('reply_' + commentId);
  const body = bodyEl ? bodyEl.value.trim() : '';
- if (!body) { alert('답글을 입력해주세요.'); return; }
+ if (!body) { alert('답글 내용을 입력해 주세요.'); return; }
  const anonEl = document.getElementById('replyAnon_' + commentId);
  const anon = anonEl ? anonEl.checked : false;
  let authorName = window.getAdminName() || CU.displayName;
@@ -2601,7 +2601,7 @@ window.loadHistory = async () =>{
 </div>`;
  }).join('');
  } catch(e) {
- el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--red)">불러오기 실패</div>';
+ el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--red)">사용자 정보를 불러오지 못했습니다.</div>';
  }
 };
 
@@ -2830,8 +2830,8 @@ window.requestRefund = async (orderId, kind, estimatedRefundAmount) =>{
   + '최종 금액은 서버가 사용량을 다시 확인해 확정합니다. 환불 사유를 남겨주세요.';
  const reason = window.gpPrompt
   ? await window.gpPrompt({ title: '환불 사유', message: promptMessage, placeholder: '예: 단순 변심 / 중복 결제 / 결과를 받지 못했어요', confirmText: '환불 요청', required: true })
-  : prompt('환불 사유를 입력해주세요:');
- if (!reason || reason.trim().length < 2) { alert('환불 사유를 2자 이상 입력해주세요.'); return; }
+  : prompt('환불 사유를 입력해 주세요:');
+ if (!reason || reason.trim().length < 2) { alert('환불 사유를 2자 이상 입력해 주세요.'); return; }
  try {
  const idToken = await CU.getIdToken();
  const res = await fetch(window.apiUrl('/request-refund'), {
@@ -2965,9 +2965,9 @@ window.approveRefund = async (orderId, kind) =>{
 window.rejectRefund = async (orderId, kind) =>{
  kind = kind || 'order';
  const reason = window.gpPrompt
-  ? await window.gpPrompt({ title: '환불 거절 사유', message: '사용자에게 안내할 사유를 입력해주세요.', placeholder: '거절 사유', confirmText: '거절 처리', required: true })
-  : prompt('거절 사유를 입력해주세요:');
- if (!reason || reason.trim().length < 2) { alert('거절 사유를 2자 이상 입력해주세요.'); return; }
+  ? await window.gpPrompt({ title: '환불 거절 사유', message: '사용자에게 안내할 사유를 입력해 주세요.', placeholder: '거절 사유', confirmText: '거절 처리', required: true })
+  : prompt('거절 사유를 입력해 주세요:');
+ if (!reason || reason.trim().length < 2) { alert('거절 사유를 2자 이상 입력해 주세요.'); return; }
  try {
  const idToken = await CU.getIdToken();
  const res = await fetch(window.apiUrl('/reject-refund'), {
@@ -4987,8 +4987,8 @@ window.adminDirectRefund = async function(i) {
  if (order.kind === 'subscription') {
   const reason = window.gpPrompt
    ? await window.gpPrompt({ title: '직접 환불 사유', message: '고객 요청 없이 바로 전액 환불합니다.', placeholder: '예: 중복 결제 환불', confirmText: '환불 진행', required: true })
-   : prompt('직접 환불 사유를 입력해주세요:');
-  if (!reason || reason.trim().length < 2) { alert('환불 사유를 2자 이상 입력해주세요.'); return; }
+   : prompt('직접 환불 사유를 입력해 주세요:');
+  if (!reason || reason.trim().length < 2) { alert('환불 사유를 2자 이상 입력해 주세요.'); return; }
   const ok = window.gpConfirm
    ? await window.gpConfirm({ title: '전액 환불을 진행할까요?', message: `${order.id} · ${adminMoney(order.amount)}`, confirmText: '환불하기', danger: true })
    : confirm(`${order.id} 정기결제를 전액 환불할까요?`);
@@ -5086,7 +5086,7 @@ window.loadCreditHistory = async () =>{
  });
  }
  } catch(e) {
- el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red)">불러오기 실패</div>';
+ el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red)">크레딧 내역을 불러오지 못했습니다.</div>';
  }
 };
 
@@ -5143,7 +5143,7 @@ window.loadAllCreditHistory = async () =>{
  window.renderAdminHistory();
  } catch(e) {
  console.log('전체 사용자 내역 로드 실패:', e);
- el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">불러오기 실패: ${escapeHtml(e.message || '')}</div>`;
+ el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">품질 지표를 불러오지 못했습니다. ${escapeHtml(e.message || '')}</div>`;
  }
 };
 

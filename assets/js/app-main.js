@@ -48,9 +48,9 @@ const PATH_ROUTES = {
  '/pro': 'pro'
 };
 const ROUTE_META = {
- main: {
+main: {
   title: '교수님 피하기 · AI 휴머나이저',
-  description: 'AI로 쓴 글을 자연스럽고 사람답게 다듬는 AI 휴머나이저, 교수님 피하기입니다. 무료 AI 감지로 내 글을 진단하고, 휴머나이징으로 문장을 사람답게 바꿔보세요.'
+  description: 'AI식 문체 신호를 확인하고 원문의 뜻과 장르를 지키며 문장을 다듬는 AI 휴머나이저, 교수님 피하기입니다.'
  },
  pricing: {
   title: '요금제 · 교수님 피하기',
@@ -62,11 +62,11 @@ community: {
 },
 blog: {
  title: '블로그 · AI 글쓰기 다듬기 가이드 | 교수님 피하기',
- description: 'AI 티 줄이기, 과제 문장 다듬기, 자기소개서와 리포트 표현 개선을 위한 교수님 피하기 블로그 허브입니다.'
+ description: '과제·자기소개서·리포트에서 반복 표현과 균일한 흐름을 점검하는 글쓰기 가이드를 모았습니다.'
 },
 detectReport: {
- title: '무료 AI 감지기 · AI 티 지수 확인 | 교수님 피하기',
- description: '글을 붙여넣고 AI 작성 흔적과 AI 티 나는 문장을 무료로 확인하세요. 결과를 바탕으로 휴머나이징까지 이어갈 수 있습니다.'
+ title: 'AI 감지기 · AI 티 지수 확인 | 교수님 피하기',
+ description: '글을 붙여넣고 AI식 문체 신호가 두드러진 문장을 확인하세요. 결과를 바탕으로 휴머나이징까지 이어갈 수 있습니다.'
 },
 guide: {
  title: '사용 가이드 · 교수님 피하기',
@@ -353,7 +353,7 @@ function copyInviteLink() {
   navigator.clipboard.writeText(text).then(() => {
     if (window.gpTrack) window.gpTrack('invite_copy', { is_logged_in: !!window.CU });
     const btn = document.getElementById('inviteCopyBtn');
-    if (btn) { btn.textContent = '복사됨!'; setTimeout(() => { btn.textContent = '링크 복사'; }, 1500); }
+    if (btn) { btn.textContent = '복사했습니다'; setTimeout(() => { btn.textContent = '링크 복사'; }, 1500); }
   });
 }
 // 모달 바깥 클릭 시 닫기
@@ -556,9 +556,9 @@ async function runProAnalysis() {
  if (!authUser) { showScreen('login'); return; }
  const sub = window.SUB;
  const tier = window.PRO_STATE.selectedTier;
- if (!sub || !tier) { alert('쿠폰을 선택해주세요.'); return; }
+ if (!sub || !tier) { alert('사용할 쿠폰을 선택해 주세요.'); return; }
  const text = document.getElementById('proInputText').value.trim();
- if (text.length < 5) { alert('텍스트가 너무 짧습니다.'); return; }
+ if (text.length < 5) { alert('처리할 글을 5자 이상 입력해 주세요.'); return; }
  const charLimit = (tier === 'unlimited') ? 50000 : parseInt(tier, 10);
  if (text.length > charLimit) { alert(TIER_LABELS[tier] + ' 한도를 초과했습니다.'); return; }
 
@@ -603,7 +603,7 @@ async function runProAnalysis() {
    }
    refreshProTab();
  } catch (e) {
-   alert('오류: ' + (e.message || '알 수 없음'));
+   alert('작업을 완료하지 못했어요. ' + (e.message || '잠시 후 다시 시도해 주세요.'));
  } finally {
    btn.disabled = false; btn.textContent = '실행'; btn.style.opacity = '1';
    updateProCount(document.getElementById('proInputText'));
@@ -701,12 +701,12 @@ function handlePDF(input) {
  // 파일 형식 검증 — accept 속성은 힌트일 뿐, 드래그/모바일에서 우회 가능
  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
  if (!isPdf) {
-  alert('PDF 파일만 첨부할 수 있어요. (선택한 파일: ' + (file.name || '알 수 없음') + ')');
+  alert('PDF 파일만 첨부할 수 있어요. 선택한 파일: ' + (file.name || '파일 이름 없음'));
   input.value = '';
   return;
  }
  if (file.size === 0) {
-  alert('빈 파일이에요. 다른 PDF를 선택해주세요.');
+  alert('내용이 없는 파일이에요. 다른 PDF를 선택해 주세요.');
   input.value = '';
   return;
  }
@@ -743,11 +743,11 @@ async function extractAndFillFromPdf(file) {
   // 글자수/크레딧/배너/전송버튼 갱신
   updateCount(inputText);
   if (text.length < 50) {
-   alert('추출된 텍스트가 ' + text.length + '자로 너무 짧아요. 스캔 PDF일 가능성이 있으니 확인해주세요.');
+   alert('읽어 온 텍스트가 ' + text.length + '자로 너무 짧아요. 스캔 PDF인지 확인해 주세요.');
   }
  } catch (e) {
   console.error('PDF 추출 오류:', e);
-  alert('PDF 처리 중 오류가 발생했어요: ' + (e.message || '알 수 없음'));
+  alert('PDF를 처리하지 못했어요. ' + (e.message || '파일을 확인한 뒤 다시 시도해 주세요.'));
   clearPDF();
  } finally {
   inputText.disabled = false;
@@ -762,7 +762,7 @@ function clearPDF() {
  document.getElementById('pdfInput').value = '';
  inputText.value = '';
  inputText.disabled = false;
- inputText.placeholder = '분석하거나 변환할 텍스트를 입력하세요... (또는 PDF를 첨부하세요)';
+ inputText.placeholder = '분석하거나 다듬을 글을 입력해 주세요. PDF 파일도 첨부할 수 있어요.';
  updateCount(inputText);
 }
 
@@ -899,23 +899,23 @@ async function callAnalyzeApi(payload, opts) {
   if (netErr) {
    if (timedOut) {
     // 타임아웃은 무한정 다시 기다리기보다 즉시 안내 (서버는 abort로 차감 안 함)
-    var te = new Error('서버 응답이 지연돼 요청을 중단했어요. 크레딧은 차감되지 않았어요. 글을 더 짧게 나눠 다시 시도해주세요.');
+    var te = new Error('서버 응답이 지연돼 요청을 중단했어요. 크레딧은 차감되지 않았습니다. 글을 더 짧게 나눠 다시 시도해 주세요.');
     te.code = 'timeout';
     throw te;
    }
    if (attempt < maxRetries) { attempt++; await delay(1500 * attempt); continue; }
-   throw new Error('네트워크 연결이 불안정해요. 잠시 후 다시 시도해주세요.');
+   throw new Error('네트워크 연결이 불안정해요. 잠시 후 다시 시도해 주세요.');
   }
 
   try { body = await res.json(); } catch (e) { body = null; }
 
   if (res.status === 429) {
    if (attempt < maxRetries) { attempt++; await delay(2000 * attempt); continue; }
-   throw new Error((body && body.error) || '요청이 너무 많아요. 잠시 후 다시 시도해주세요.');
+   throw new Error((body && body.error) || '요청이 많아 잠시 기다려야 해요. 잠시 후 다시 시도해 주세요.');
   }
   if (res.status >= 500) {
    if (attempt < maxRetries) { attempt++; await delay(1500 * attempt); continue; }
-   throw new Error((body && body.error) || '서버 오류가 발생했어요. 잠시 후 다시 시도해주세요.');
+   throw new Error((body && body.error) || '서버에서 작업을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.');
   }
   // 400/402 등 — 재시도해도 결과가 안 바뀌는 오류
   if (body && body.error) throw new Error(body.error);
@@ -1117,13 +1117,13 @@ async function runAnalysis() {
  const authUser = await getCurrentAuthUser(8000);
  if (!authUser) {
  if (window.gpTrack) window.gpTrack('login_required', { source: 'analysis' });
- alert('로그인 후 무료로 체험해보세요!');
+ alert('로그인한 뒤 이용해 주세요. 신규 가입 계정에는 10크레딧이 지급됩니다.');
  showScreen('login');
  return;
 }
  const text = document.getElementById('inputText').value.trim();
- if (!text) { alert('텍스트를 입력하거나 PDF를 첨부해주세요.'); return; }
- if (text.length < 20) { alert('20자 이상 입력해주세요.'); return; }
+ if (!text) { alert('처리할 글을 입력하거나 PDF를 첨부해 주세요.'); return; }
+ if (text.length < 20) { alert('20자 이상 입력해 주세요.'); return; }
  const selectedTransformMode = mode === 'detect' ? null : publicTransformMode(humanizeMode);
  if (selectedTransformMode) {
   const minLen = transformMinLength(selectedTransformMode);
@@ -1226,7 +1226,7 @@ async function runAnalysis() {
     ];
  const tailMsgs = [
   '거의 완료...',
-  '사람이 쓴 듯 자연스럽게 다듬는 중...',
+  '원문의 말투에 맞게 다듬는 중...',
   '문장을 자연스럽게 고치는 중...',
   '어휘 다양성 검증 중...',
   '마지막 다듬는 중...',
@@ -1666,7 +1666,7 @@ function switchPricingTab(t) {
   if (heroTitle && heroDesc) {
     if (isCredit) {
       heroTitle.textContent = '지금 충전하고 바로 사용하세요';
-      heroDesc.innerHTML = '구매한 크레딧은 <strong>소멸 없이 계속</strong> 쓸 수 있어요. AI 감지는 100자당 1크레딧, AI 티 줄이기는 최소 10크레딧부터 써요.';
+      heroDesc.innerHTML = '구매한 크레딧은 <strong>유효기간 없이</strong> 사용할 수 있어요. AI 감지는 100자당 1크레딧이며, 휴머나이징은 선택한 모드와 글자 수에 따라 차감돼요.';
     } else {
       heroTitle.textContent = 'Pro 정기 구독으로 더 저렴하게';
       heroDesc.innerHTML = '글자 한도 내 월 50회 또는 무제한. <strong>매달 자동 결제</strong>되며 언제든 해지할 수 있어요.';

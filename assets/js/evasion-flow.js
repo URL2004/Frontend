@@ -130,9 +130,9 @@
   function fakeDiagnose(text) {
     var len = (text || '').replace(/\s/g, '').length;
     // 백엔드 BLOG_BAND/POLISH_BAND/RESTRUCTURE_BAND와 동일한 보수 표기(/diagnose 실패 시 폴백)
-    if (len < 400) return { grade: 'A', bands: { polish: '30~55%', blog: '30~45%', restructure: '35~60%' }, title: '구체적 정보가 충분한 글이에요', desc: '사례·수치가 풍부해, 다듬기만으로도 자연스럽게 마무리할 수 있어요.' };
-    if (len < 1200) return { grade: 'B', bands: { polish: '60~85%', blog: '35~50%', restructure: '35~60%' }, title: '추상과 구체가 섞인 글이에요', desc: '일부 문단은 일반론에 가까워요. 휴머나이징으로 더 사람답게 만들 수 있어요.' };
-    return { grade: 'C', bands: { polish: '85%+', blog: '40~55%', restructure: '35~60%' }, title: '추상적 일반론 비중이 높은 글이에요', desc: '구체적 사례·수치가 적어, AI가 쓴 글처럼 보이기 쉬워요. 어떻게 할지 골라주세요.' };
+    if (len < 400) return { grade: 'A', bands: { polish: '30~55%', blog: '30~45%', restructure: '35~60%' }, title: '구체적인 정보가 충분한 글이에요', desc: '사례와 수치가 구체적이라 필요한 문장만 골라 다듬을 수 있어요.' };
+    if (len < 1200) return { grade: 'B', bands: { polish: '60~85%', blog: '35~50%', restructure: '35~60%' }, title: '구체적인 내용과 일반적인 설명이 섞여 있어요', desc: '일부 문단에서 반복적이거나 추상적인 표현이 보여요. 해당 문장을 중심으로 다시 구성할 수 있어요.' };
+    return { grade: 'C', bands: { polish: '85%+', blog: '40~55%', restructure: '35~60%' }, title: '일반적인 설명의 비중이 높은 글이에요', desc: '구체적인 사례와 수치가 적어 AI식 문체 신호가 두드러질 수 있어요. 원하는 처리 방식을 골라 주세요.' };
   }
 
   var lastDiag = null;   // 결과 화면의 예상 밴드 표기에 재사용
@@ -405,7 +405,7 @@
     var badge = $('lavRepBadge');
     if (badge) {
       badge.hidden = (p == null);
-      badge.textContent = d.riskLabel || (sev === 'bad' ? 'AI 의심 높음' : sev === 'mid' ? 'AI 의심 중간' : 'AI 의심 낮음');
+      badge.textContent = d.riskLabel || (sev === 'bad' ? 'AI 티 지수 높음' : sev === 'mid' ? 'AI 티 지수 중간' : 'AI 티 지수 낮음');
       badge.className = 'lav-rep-badge' + (sev ? ' ' + sev : '');
     }
     if ($('lavRepTitle')) $('lavRepTitle').textContent = d.title || '분석 결과';
@@ -465,7 +465,7 @@
           p.coach.forEach(function (c) { (c.fields || []).forEach(function (f) { if (fset.indexOf(f) < 0) fset.push(f); }); });
           var pc = document.createElement('div');
           pc.className = 'rp-coach';
-          pc.textContent = '💡 경험 메모 ' + fset.join(' · ') + ' 를 채우면 내려가요';
+          pc.textContent = '경험 메모에서 ' + fset.join(' · ') + ' 항목을 채우면 글을 더 구체적으로 다듬을 수 있어요';
           body.appendChild(pc);
         }
         row.appendChild(chip); row.appendChild(body);
@@ -478,9 +478,9 @@
         var banner = document.createElement('div');
         banner.className = 'lav-rep-coach';
         var bt = document.createElement('b');
-        bt.textContent = '글을 더 구체적으로 만들려면 → 경험 메모 ' + bf.join(' · ');
+        bt.textContent = '글을 더 구체적으로 만들려면 경험 메모의 ' + bf.join(' · ') + ' 항목에 실제 내용을 적어 주세요';
         var bw = document.createElement('span');
-        bw.textContent = ' 를 채우세요. (' + d.coach.map(function (c) { return c.why; }).join(' / ') + ')';
+        bw.textContent = '. ' + d.coach.map(function (c) { return c.why; }).join(' / ');
         banner.appendChild(bt); banner.appendChild(bw);
         list.insertBefore(banner, list.firstChild);
       }
@@ -775,7 +775,7 @@
     if (!wrap || !list) { lavStartBtnState(false); return; }
     if (!s.autoCoach) { wrap.hidden = true; lavStartBtnState(false); return; }
     wrap.hidden = false;
-    list.innerHTML = '<div class="lav-coach-picks-loading">당신에게 맞는 관점·경험을 찾고 있어요…</div>';
+    list.innerHTML = '<div class="lav-coach-picks-loading">원문과 어울리는 관점·경험 후보를 찾고 있어요…</div>';
     lavStartBtnState(true);   // 픽 뜰 때까지 시작 잠금
     var src = $('lavInput'); var text = src ? src.value : '';
     var gen = ++_coachRenderGen;

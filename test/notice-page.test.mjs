@@ -12,7 +12,7 @@ test('메인 공지는 세부 개선 대신 격식체로 신규 기능 오픈 �
   );
 
   assert.match(featured, /AI 감지 보고서를 정식 오픈했습니다/u);
-  assert.match(featured, /글 전체의 AI 의심도와 문단별 문체 특징/u);
+  assert.match(featured, /글 전체의 AI 티 지수와 문단별 문체 특징/u);
   assert.doesNotMatch(featured, /정확도 개선/u);
   assert.doesNotMatch(featured, /AI 감지가 크레딧 이용 방식으로 바뀌었어요/u);
   assert.doesNotMatch(featured, /(?:해요|했어요|됐어요|있어요)/u);

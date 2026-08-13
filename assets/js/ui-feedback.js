@@ -138,7 +138,7 @@
     var cancelBtn = root.querySelector('[data-gp-dialog-cancel].gp-dialog-cancel');
     root.classList.toggle('danger', !!opts.danger);
     root.classList.toggle('prompt', !!promptMode);
-    title.textContent = opts.title || (promptMode ? '입력해주세요' : '확인해주세요');
+    title.textContent = opts.title || (promptMode ? '내용을 입력해 주세요' : '내용을 확인해 주세요');
     message.textContent = opts.message || '';
     icon.textContent = opts.icon || (opts.danger ? '!' : promptMode ? '✎' : '?');
     confirmBtn.textContent = opts.confirmText || (promptMode ? '입력 완료' : '확인');
@@ -258,7 +258,7 @@
     var items = combinedItems();
     updateBadge();
     if (!items.length) {
-      list.innerHTML = '<div class="gp-notification-empty"><span class="material-symbols-outlined">notifications</span><b>새 알림이 없어요</b><p>작업 완료, 댓글, 문의 답변이 여기에 쌓입니다.</p></div>';
+      list.innerHTML = '<div class="gp-notification-empty"><span class="material-symbols-outlined">notifications</span><b>새 알림이 없습니다</b><p>작업 완료와 댓글, 문의 답변을 여기에서 확인할 수 있어요.</p></div>';
       return;
     }
     list.innerHTML = items.map(function (n) {

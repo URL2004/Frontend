@@ -95,8 +95,8 @@
           credits,
           endpoint: '/confirm-payment'
         }, e);
-        if (window.gpToast) window.gpToast('로그인 토큰을 가져올 수 없습니다. 다시 로그인해주세요.', { type: 'error' });
-        else alert('로그인 토큰을 가져올 수 없습니다. 다시 로그인해주세요.');
+        if (window.gpToast) window.gpToast('로그인 정보를 확인하지 못했습니다. 다시 로그인해 주세요.', { type: 'error' });
+        else alert('로그인 정보를 확인하지 못했습니다. 다시 로그인해 주세요.');
         return false;
       }
 
@@ -138,7 +138,7 @@
             message: chargedCredits + '크레딧이 충전됐어요. 보유 크레딧을 확인해 주세요.',
             action: { tab: 'pricing' }
           }, { persist: true });
-        } else alert(chargedCredits + '크레딧 충전 완료!');
+        } else alert(chargedCredits + '크레딧이 충전됐습니다.');
         return true;
       }
 
@@ -219,8 +219,8 @@
       tier,
       endpoint: '/subscription/issue-billing-key'
     }, e);
-    if (window.gpToast) window.gpToast('로그인 토큰을 가져올 수 없습니다. 다시 로그인해주세요.', { type: 'error' });
-    else alert('로그인 토큰을 가져올 수 없습니다. 다시 로그인해주세요.');
+    if (window.gpToast) window.gpToast('로그인 정보를 확인하지 못했습니다. 다시 로그인해 주세요.', { type: 'error' });
+    else alert('로그인 정보를 확인하지 못했습니다. 다시 로그인해 주세요.');
     return;
   }
 
