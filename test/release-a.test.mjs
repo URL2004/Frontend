@@ -226,7 +226,14 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>패치노트</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 41);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 44);
+  assert.match(admin, /최종 문서 무결성·안전 후보 원장/u);
+  assert.match(admin, /Backend 6e51d4c/u);
+  assert.match(admin, /첨부 사례 전용 79개를 포함한 백엔드 전체 773개 테스트와 FLOOR 88개 평가/u);
+  assert.match(admin, /프롬프트·감사·수리 계약 중앙화/u);
+  assert.match(admin, /Backend c76cfde/u);
+  assert.match(admin, /고급 서사 재구성·논리 결함·거시 담화 보강/u);
+  assert.match(admin, /Backend d5f0147/u);
   assert.match(admin, /최종 구조 고정점·한국어 감사 정합화/u);
   assert.match(admin, /Backend 699501b/u);
   assert.match(admin, /최종 구조 실패·비멱등·미수렴·문자 내용 변경은 모두 0건/u);
@@ -259,6 +266,9 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /v2\.5\.1/u);
   assert.match(admin, /v2\.5\.0/u);
   const timeline = admin.slice(admin.indexOf('gp-admin-patch-timeline'));
+  assert.ok(timeline.indexOf('v2.5.40') < timeline.indexOf('v2.5.39'));
+  assert.ok(timeline.indexOf('v2.5.39') < timeline.indexOf('v2.5.38'));
+  assert.ok(timeline.indexOf('v2.5.38') < timeline.indexOf('v2.5.37'));
   assert.ok(timeline.indexOf('v2.5.37') < timeline.indexOf('v2.5.36'));
   assert.ok(timeline.indexOf('v2.5.36') < timeline.indexOf('v2.5.35'));
   assert.ok(timeline.indexOf('v2.5.35') < timeline.indexOf('v2.5.34'));
@@ -287,12 +297,13 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /관리자 실험실과 운영 화면 기반/u);
   assert.match(admin, /2026년 6월/u);
   assert.match(admin, /FLOOR v2 의미 보존 엔진과 운영 저장소 시작/u);
-  assert.match(admin, /운영 Git[\s\S]*661건/u);
+  assert.match(admin, /운영 Git[\s\S]*678건/u);
+  assert.match(admin, /Backend \/ Frontend[\s\S]*475 \/ 203/u);
   assert.match(admin, /GPT·Claude 작업 기록[\s\S]*56개 세션/u);
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
-  assert.equal(releases.length, 41);
+  assert.equal(releases.length, 44);
   assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 5);
   for (const [, attrs, body] of releases) {
     if (/gp-admin-patch-state is-live/u.test(body)) assert.match(attrs, /\bopen\b/u);

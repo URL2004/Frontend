@@ -49,33 +49,77 @@
     <section class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">41개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">44개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 08.13</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 08.18</span>
       </div>
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-        <strong>휴머나이징 v2.5.37 · 최종 구조 고정점·한국어 감사 정합화</strong>
-        <code>Backend 699501b · Frontend patchnotes-v2.5.37</code>
-        <span>2026.08.13 운영 배포</span>
+        <strong>휴머나이징 v2.5.40 · 최종 문서 무결성·안전 후보 원장</strong>
+        <code>Backend 6e51d4c · Frontend patchnotes-v2.5.40</code>
+        <span>2026.08.18 운영 배포</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="패치노트 검토 범위">
-        <div><dt>운영 Git</dt><dd>661건</dd></div>
-        <div><dt>Backend / Frontend</dt><dd>464 / 197</dd></div>
+        <div><dt>운영 Git</dt><dd>678건</dd></div>
+        <div><dt>Backend / Frontend</dt><dd>475 / 203</dd></div>
         <div><dt>GPT·Claude 작업 기록</dt><dd>56개 세션</dd></div>
         <div><dt>정리 방식</dt><dd>기능 단위 병합</dd></div>
       </dl>
 
       <div class="gp-admin-patch-timeline">
-        <div class="gp-admin-patch-month"><strong>2026년 8월</strong><span>9개 변경 묶음</span></div>
+        <div class="gp-admin-patch-month"><strong>2026년 8월</strong><span>12개 변경 묶음</span></div>
         <details class="gp-admin-patch-release" open>
+          <summary>
+            <span class="gp-admin-patch-version">v2.5.40</span>
+            <span class="gp-admin-patch-title"><b>최종 문서 무결성·안전 후보 원장</b><small>2026.08.18 · Backend 6e51d4c · 첨부 장문·학술문 결함 재현</small></span>
+            <span class="gp-admin-patch-state is-live">운영 중</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area safety">후보 원장</span><span>의미 심사 이후의 한국어·중복·레이아웃 수리가 안전한 결과를 다시 훼손하면, 화자·구조·한국어·장르 감사를 통과한 이전 체크포인트로 돌아갑니다. 후보 본문은 운영 텔레메트리에 저장하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area layout">절 재삽입</span><span>장문 청크를 합치는 과정에서 앞 절이 뒤 절에 다시 삽입되거나 현재 절의 시작과 이전 절의 끝이 한 문장으로 붙는 현상을 원문 절 순서로 찾아 복구합니다. 정상적인 결론 요약과 원문 자체의 반복은 자동 삭제하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">의미 중복</span><span>하나의 원문 주장을 서로 다른 두 문장으로 연속 의역한 경우에만 중복 문장을 제한적으로 정리합니다. 어휘가 비슷해도 서로 다른 원문 주장에 대응하면 두 문장을 모두 보존합니다.</span></li>
+            <li><span class="gp-admin-patch-area korean">통계 원자</span><span><code>p&lt;.001</code>, <code>β</code>, <code>R²</code>, 신뢰구간처럼 기호와 값이 하나인 통계 표현이 줄바꿈으로 갈라지면 원문의 정확한 표현으로 복원합니다. 날짜·목차 번호는 통계값으로 오인하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">관계 강도</span><span>중립적인 연결을 ‘이를 보완하기 위해’처럼 보완 목적 관계로 바꾸거나, 원문에 없던 ‘일괄적으로·전면적으로·반드시’ 같은 범위 한정을 넣는 변화를 원문 관계로 되돌립니다.</span></li>
+            <li><span class="gp-admin-patch-area billing">전달 정책</span><span>이번 보강으로 신규 차단 사유를 추가하지 않았습니다. 안전한 결정론 복구를 우선하고, 남은 문서 재삽입·통계 무결성 문제는 기존 전달 정책 안에서 구체적인 검토 사유로 기록합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증</span><span>첨부 사례 전용 79개를 포함한 백엔드 전체 773개 테스트와 FLOOR 88개 평가를 모두 통과했습니다. production 의존성 감사·Git 무결성·배포 전 검사를 통과했고 운영 의존성 취약점은 0건입니다.</span></li>
+          </ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary>
+            <span class="gp-admin-patch-version">v2.5.39</span>
+            <span class="gp-admin-patch-title"><b>프롬프트·감사·수리 계약 중앙화</b><small>2026.08.18 · Backend c76cfde · 엔진 단계 간 충돌 제거</small></span>
+            <span class="gp-admin-patch-state is-superseded">v2.5.40으로 대체</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">단일 계약</span><span>의미·수치·화자·구조 보존 우선순위와 장르별 문단 권한을 하나의 서버 계약에서 파생하도록 통일했습니다. 프롬프트와 경계 토큰, 최종 감사가 서로 다른 문단 정책을 요구하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">서버 소유</span><span>모델은 변환된 본문만 반환하고 보호어·위험 판정·편집량 계산은 서버가 담당합니다. 모델 자기보고와 서버 채점이 어긋나 후단 회복이 불필요하게 반복되는 경로를 제거했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">국소 수리</span><span>모든 국소 수리가 공통 계약 검증을 거치며 지정 문장과 허용된 이웃 밖을 바꾸면 후보를 채택하지 않습니다. 원문에 없던 평가 결론과 인접 의미 반복도 실제 대응 문장만 복원합니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">회복 예산</span><span>초기 깊이 회복이 호출 예산을 모두 사용하지 않도록 의미·한국어·구조 후단 수리 몫을 예약합니다. 의미 심사를 받지 않은 후보는 깊이가 높아도 안전 기준선으로 승격하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">충돌 검증</span><span>고급 프롬프트 조립, 출력 스키마, 국소 수리 범위, 누적 깊이 기준선과 호출 예산을 전용 회귀로 고정했습니다. 사용자 모드·과금·차단 정책은 변경하지 않았습니다.</span></li>
+          </ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary>
+            <span class="gp-admin-patch-version">v2.5.38</span>
+            <span class="gp-admin-patch-title"><b>고급 서사 재구성·논리 결함·거시 담화 보강</b><small>2026.08.17 · Backend d5f0147 · 고급 에세이·학술문 정밀 보강</small></span>
+            <span class="gp-admin-patch-state is-superseded">v2.5.39로 대체</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">고급 서사</span><span>개인 에세이와 성찰문에서 사실 순서와 감정 주체는 유지하면서 반복 평가와 문단 역할을 재구성합니다. 안전한 문단 재배치를 최종 레이아웃이 다시 원문 구조로 되돌리지 않도록 했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">논리 결함</span><span>맞춤법 오류가 많아도 주어·서술어 호응과 인과 방향 문제를 표면 윤문으로 덮지 않고 1차 변환에서 함께 다룹니다. 원문부터 있던 불명확한 템플릿 표시는 임의 삭제하지 않고 원문 확인 사유로 분리합니다.</span></li>
+            <li><span class="gp-admin-patch-area korean">한국어·행갈이</span><span>닫는 인용부호 뒤 보조사와 문장부호 앞 공백을 결정론적으로 교정하고, 원문 근거가 있는 단어 중간 줄바꿈만 복원해 정상 문단 경계를 합치지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">거시 담화</span><span>문단 역할 변화와 반복 결론 개선을 문자 편집률과 별도로 측정해 고급 후보 선택에 반영합니다. 문서 전체에서 한 번 달성할 담화 목표를 짧은 청크마다 중복 부과하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">중복·인용</span><span>인접 문장에 새로 복제된 추상 주제와 서술핵은 잡되, 작품명 인용 횟수가 자연스럽게 줄어든 경우를 직접 인용 손실로 오인하지 않습니다.</span></li>
+          </ul>
+        </details>
+        <details class="gp-admin-patch-release">
           <summary>
             <span class="gp-admin-patch-version">v2.5.37</span>
             <span class="gp-admin-patch-title"><b>최종 구조 고정점·한국어 감사 정합화</b><small>2026.08.13 · Backend 699501b · 최근 운영 92쌍 정밀 대조</small></span>
-            <span class="gp-admin-patch-state is-live">운영 중</span>
+            <span class="gp-admin-patch-state is-superseded">v2.5.38로 대체</span>
           </summary>
           <ul>
             <li><span class="gp-admin-patch-area layout">구조 고정점</span><span>표·제목·무번호 소제목·인용·날짜 범위의 원문 슬롯과 앞뒤 구분자를 최종 단계에서 함께 복원합니다. 후단 한국어·공백·리터럴 수리 뒤에도 최대 5회 안에서 내부 수렴하며, 긴 문단 권장치와 실제 구조 무결성을 분리해 정상 결과를 구조 실패로 오인하지 않습니다.</span></li>
