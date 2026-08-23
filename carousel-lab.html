@@ -22,6 +22,7 @@
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
   body {
     background: var(--page);
     color: var(--ink);
@@ -44,6 +45,15 @@
     color: var(--body); font-size: 13.5px; font-weight: 600;
   }
 
+  .mini-btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px;
+    border-radius: 16px; background: var(--panel); border: 1px solid var(--line);
+    color: var(--accent); font-size: 13px; font-weight: 700; cursor: pointer;
+    text-decoration: none; font-family: inherit; letter-spacing: -0.01em;
+  }
+  .mini-btn:hover { background: var(--accent-soft); border-color: #CDC7F2; }
+  .mini-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
   .concept { margin-top: 54px; }
   .concept-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
   .concept-title { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
@@ -57,6 +67,7 @@
     display: inline-flex; align-items: center; height: 32px; padding: 0 14px; border-radius: 16px;
     background: var(--accent-soft); color: var(--accent); font-size: 13.5px; font-weight: 700;
   }
+  .set-zip { margin-left: auto; }
   .concept-pitch { margin: 6px 0 0; font-size: 15.5px; color: var(--body); max-width: 74ch; line-height: 1.6; }
   .concept-tradeoff { margin: 0; font-size: 13.5px; color: var(--muted); max-width: 74ch; line-height: 1.6; }
 
@@ -72,10 +83,18 @@
     border-radius: 18px; overflow: hidden;
     border: 1px solid var(--line);
     box-shadow: 0 14px 34px rgba(50, 46, 110, 0.10);
-    background: #fff;
+    background: #fff; cursor: zoom-in;
   }
-  .card-scale { width: 1080px; height: 1080px; transform: scale(var(--card-scale)); transform-origin: top left; }
-  .card-caption { font-size: 13px; font-weight: 600; color: var(--muted); padding-left: 4px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .card-frame { transition: transform 0.16s ease, box-shadow 0.16s ease; }
+    .card-frame:hover { transform: translateY(-3px); box-shadow: 0 20px 44px rgba(50, 46, 110, 0.16); }
+    .strip { scroll-behavior: smooth; }
+  }
+  .card-scale { width: 1080px; height: 1080px; transform: scale(var(--card-scale)); transform-origin: top left; pointer-events: none; }
+  .card-caption-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 2px; }
+  .card-caption { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .card-actions { display: flex; gap: 8px; }
+  .card-actions .mini-btn { height: 30px; padding: 0 12px; font-size: 12.5px; }
 
   footer.credits {
     margin-top: 70px; padding: 26px 30px; border-radius: 20px;
@@ -86,14 +105,49 @@
   footer.credits p { margin: 0; font-size: 13.5px; color: var(--body); line-height: 1.7; }
   footer.credits .fineprint { color: var(--muted); }
 
+  /* ---------- 라이트박스 ---------- */
+  .lb {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(17, 16, 30, 0.84);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    display: flex; flex-direction: column;
+  }
+  .lb-top {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    padding: 14px 20px;
+  }
+  .lb-title { color: #EDECF7; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+  .lb-actions { display: flex; gap: 8px; }
+  .lb .lb-actions .mini-btn { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.22); color: #EDECF7; }
+  .lb .lb-actions .mini-btn:hover { background: rgba(255,255,255,0.2); }
+  .lb-stage { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; padding: 0 64px 20px; }
+  .lb-stage img {
+    max-width: min(1080px, 100%); max-height: 100%;
+    border-radius: 10px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  }
+  .lb.orig .lb-stage { display: block; text-align: center; }
+  .lb.orig .lb-stage img { max-width: none; max-height: none; width: 1080px; border-radius: 0; }
+  .lb-nav {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    width: 52px; height: 52px; border-radius: 26px; border: 1px solid rgba(255,255,255,0.24);
+    background: rgba(255,255,255,0.10); color: #EDECF7; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .lb-nav:hover { background: rgba(255,255,255,0.2); }
+  .lb-nav:focus-visible { outline: 2px solid #B4A6FF; outline-offset: 2px; }
+  .lb-nav[disabled] { opacity: 0.32; cursor: default; }
+  .lb-prev { left: 14px; }
+  .lb-next { right: 14px; }
+  .lb-count { text-align: center; padding: 0 0 16px; color: #A6A3C2; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+
   @media (max-width: 720px) {
     :root { --card-scale: 0.296; }
     .wrap { padding: 0 18px 70px; }
     .hero { padding: 36px 0 8px; }
     .hero-brand img { width: 176px; }
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .strip { scroll-behavior: smooth; }
+    .set-zip { margin-left: 0; }
+    .lb-stage { padding: 0 10px 16px; }
+    .lb-nav { top: auto; bottom: 52px; }
   }
 </style>
 </head>
@@ -105,11 +159,12 @@
         <span class="hero-date">2026-08-23 · 내부 시안 검토용</span>
       </div>
       <h1>Meta 캐러셀 시안 랩 — <em>5개 방향</em>, 셋트로 비교</h1>
-      <p class="hero-sub">시안마다 카드 5장(후킹 → 진단 → 변환 → 범위 → CTA)이 한 셋트입니다. 각 줄을 옆으로 넘기면 실제 캐러셀처럼 카드가 이어집니다. 모든 시안은 카드 1에 무료 크레딧 배지, 카드 5에 무료 체험 CTA를 공통으로 실었습니다.</p>
+      <p class="hero-sub">시안마다 카드 5장(후킹 → 진단 → 변환 → 범위 → CTA)이 한 셋트입니다. 각 줄을 옆으로 넘기면 실제 캐러셀처럼 카드가 이어지고, 카드를 클릭하면 원본 크기(1080×1080)로 보거나 PNG로 내려받을 수 있습니다.</p>
       <div class="hero-meta">
         <span>배경 — ima2 · gpt-5.6-terra · high</span>
         <span>카피·로고·UI — 직접 조판</span>
         <span>1080×1080 · 카드 25장</span>
+        <span>카드 클릭 → 원본 보기 · 다운로드</span>
       </div>
     </header>
 
@@ -119,13 +174,14 @@
           <span class="concept-key">A</span>
           <h2>클린 스위프</h2>
           <span class="concept-layout">좌측 에디토리얼 조판</span>
+          <a class="mini-btn set-zip" href="/assets/img/carousel-lab/gyopi-carousel-set-a.zip" download="교피-캐러셀-시안A-셋트.zip">셋트 다운로드 ZIP</a>
         </div>
         <p class="concept-pitch">현행 집행 소재의 정제·확대판. 밝은 페이퍼 텍스처와 인디고 모션 스트로크로 브랜드 연속성이 가장 높습니다.</p>
         <p class="concept-tradeoff">트레이드오프 — 새로움·시선 정지력은 다섯 중 가장 약한 안전한 선택.</p>
       </header>
       <div class="strip" role="group" aria-label="클린 스위프 캐러셀 카드 5장">
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F4F4FA; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-a1.png" data-title="시안 A 클린 스위프 — 카드 1 후킹" data-dl="교피-캐러셀-시안A-카드1.png" data-set="A" data-pos="1 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F4F4FA; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-a1.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
   <div style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 488px; background: linear-gradient(180deg, rgba(248,248,252,0.99) 0%, rgba(248,248,252,0.93) 60%, rgba(248,248,252,0) 100%);"></div>
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 68px; top: 38px; width: 240px;">
@@ -139,10 +195,16 @@
   <img src="/assets/img/carousel-lab/mascot.webp" style="position: absolute; left: 375px; top: 505px; width: 660px;">
   <div style="position: absolute; left: 54px; top: 950px; display: inline-flex; align-items: center; gap: 14px; height: 66px; padding: 0 34px; border-radius: 33px; background: rgba(255,255,255,0.92); border: 1px solid rgba(216,211,247,0.9); color: #5556CB; font-size: 25px; font-weight: 600;">넘겨서 작동 방식 확인<svg width="42" height="24" viewBox="0 0 42 24" style="flex-shrink: 0;"><path d="M3 12 H 33 M 26 4 L 35 12 L 26 20" fill="none" stroke="#5556CB" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 1 · 후킹</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 1 · 후킹</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-a1.png" download="교피-캐러셀-시안A-카드1.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F4F4FA; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-a2.png" data-title="시안 A 클린 스위프 — 카드 2 진단" data-dl="교피-캐러셀-시안A-카드2.png" data-set="A" data-pos="2 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F4F4FA; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-a2.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
   <div style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 477px; background: linear-gradient(180deg, rgba(248,248,252,0.99) 0%, rgba(248,248,252,0.93) 60%, rgba(248,248,252,0) 100%);"></div>
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 68px; top: 38px; width: 240px;">
@@ -155,10 +217,16 @@
   <div style="position: absolute; right: 66px; top: 56px; display: flex; gap: 9px; align-items: center;"><div style="width: 13px; height: 13px; border-radius: 7px; background: #C9C6E8;"></div><div style="width: 32px; height: 13px; border-radius: 7px; background: #5A43D6;"></div><div style="width: 13px; height: 13px; border-radius: 7px; background: #C9C6E8;"></div><div style="width: 13px; height: 13px; border-radius: 7px; background: #C9C6E8;"></div><div style="width: 13px; height: 13px; border-radius: 7px; background: #C9C6E8;"></div></div>
   <div style="position: absolute; right: 48px; top: 500px; width: 80px; height: 80px; border-radius: 40px; background: rgba(255,255,255,0.88); border: 1px solid #DDD9F5; box-shadow: 0 10px 24px rgba(53,54,132,0.16); display: flex; align-items: center; justify-content: center;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#5A43D6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 2 · 진단</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 2 · 진단</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-a2.png" download="교피-캐러셀-시안A-카드2.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F4F4FA; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-a3.png" data-title="시안 A 클린 스위프 — 카드 3 변환" data-dl="교피-캐러셀-시안A-카드3.png" data-set="A" data-pos="3 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F4F4FA; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-a3.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
   <div style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 470px; background: linear-gradient(180deg, rgba(248,248,252,0.99) 0%, rgba(248,248,252,0.93) 60%, rgba(248,248,252,0) 100%);"></div>
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 68px; top: 38px; width: 240px;">
@@ -176,10 +244,16 @@
   <div style="position: absolute; right: 48px; top: 500px; width: 80px; height: 80px; border-radius: 40px; background: rgba(255,255,255,0.88); border: 1px solid #DDD9F5; box-shadow: 0 10px 24px rgba(53,54,132,0.16); display: flex; align-items: center; justify-content: center;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#5A43D6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
   <div style="position: absolute; left: 0px; top: 1004px; width: 1080px; text-align: center; font-size: 22px; font-weight: 400; color: #747C90; letter-spacing: -0.01em;">변환 예시 · 결과는 글과 설정에 따라 달라질 수 있어요</div>
 </div></div></div>
-          <div class="card-caption">카드 3 · 변환</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 3 · 변환</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-a3.png" download="교피-캐러셀-시안A-카드3.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F4F4FA; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-a4.png" data-title="시안 A 클린 스위프 — 카드 4 범위" data-dl="교피-캐러셀-시안A-카드4.png" data-set="A" data-pos="4 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F4F4FA; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-a4.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
   <div style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 474px; background: linear-gradient(180deg, rgba(248,248,252,0.99) 0%, rgba(248,248,252,0.93) 60%, rgba(248,248,252,0) 100%);"></div>
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 68px; top: 38px; width: 240px;">
@@ -192,10 +266,16 @@
   <div style="position: absolute; right: 66px; top: 56px; display: flex; gap: 9px; align-items: center;"><div style="width: 13px; height: 13px; border-radius: 7px; background: #C9C6E8;"></div><div style="width: 13px; height: 13px; border-radius: 7px; background: #C9C6E8;"></div><div style="width: 13px; height: 13px; border-radius: 7px; background: #C9C6E8;"></div><div style="width: 32px; height: 13px; border-radius: 7px; background: #5A43D6;"></div><div style="width: 13px; height: 13px; border-radius: 7px; background: #C9C6E8;"></div></div>
   <div style="position: absolute; right: 48px; top: 500px; width: 80px; height: 80px; border-radius: 40px; background: rgba(255,255,255,0.88); border: 1px solid #DDD9F5; box-shadow: 0 10px 24px rgba(53,54,132,0.16); display: flex; align-items: center; justify-content: center;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#5A43D6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 4 · 범위</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 4 · 범위</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-a4.png" download="교피-캐러셀-시안A-카드4.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F4F4FA; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-a5.png" data-title="시안 A 클린 스위프 — 카드 5 CTA" data-dl="교피-캐러셀-시안A-카드5.png" data-set="A" data-pos="5 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F4F4FA; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-a5.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
   <div style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 488px; background: linear-gradient(180deg, rgba(248,248,252,0.99) 0%, rgba(248,248,252,0.93) 60%, rgba(248,248,252,0) 100%);"></div>
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 68px; top: 38px; width: 240px;">
@@ -214,7 +294,13 @@
   <div style="position: absolute; left: 270px; top: 866px; width: 540px; height: 96px; display: flex; align-items: center; justify-content: center; border-radius: 48px; background: #5557D2; box-shadow: 0 10px 26px rgba(53,54,132,0.22); color: #FFFFFF; font-size: 34px; font-weight: 700; letter-spacing: -0.02em;">무료 크레딧 받고 시작하기</div>
   <div style="position: absolute; left: 0px; top: 1008px; width: 1080px; text-align: center; font-size: 22px; font-weight: 400; color: #747C90; letter-spacing: -0.01em;">AI 티 지수는 참고용이며 보장값이 아니에요</div>
 </div></div></div>
-          <div class="card-caption">카드 5 · CTA</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 5 · CTA</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-a5.png" download="교피-캐러셀-시안A-카드5.png">다운로드</a>
+            </span>
+          </div>
         </div>
       </div>
     </section>
@@ -225,13 +311,14 @@
           <span class="concept-key">B</span>
           <h2>미드나잇 포커스</h2>
           <span class="concept-layout">센터 시네마틱 조판</span>
+          <a class="mini-btn set-zip" href="/assets/img/carousel-lab/gyopi-carousel-set-b.zip" download="교피-캐러셀-시안B-셋트.zip">셋트 다운로드 ZIP</a>
         </div>
         <p class="concept-pitch">밝은 피드 사이에서 명도 대비로 스크롤을 세우는 다크 프리미엄. 새벽 마감 정서와 맞닿아 있습니다.</p>
         <p class="concept-tradeoff">트레이드오프 — 실제 서비스 화면(밝은 UI)과 톤 차이가 있습니다.</p>
       </header>
       <div class="strip" role="group" aria-label="미드나잇 포커스 캐러셀 카드 5장">
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #14172A; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-b1.png" data-title="시안 B 미드나잇 포커스 — 카드 1 후킹" data-dl="교피-캐러셀-시안B-카드1.png" data-set="B" data-pos="1 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #14172A; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-b1.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
   <div style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 535px; background: linear-gradient(180deg, rgba(20,23,42,0.99) 0%, rgba(20,23,42,0.93) 60%, rgba(20,23,42,0) 100%);"></div>
   <div style="position: absolute; left: 385px; top: 44px; width: 310px; display: flex; justify-content: center; padding: 11px 0; border-radius: 20px; background: rgba(255,255,255,0.95); box-shadow: 0 8px 26px rgba(0,0,0,0.35);"><img src="/assets/img/carousel-lab/logo.webp" style="width: 216px; display: block;"></div>
@@ -244,10 +331,16 @@
   <div style="position: absolute; left: 0px; top: 435px; width: 1080px; display: flex; justify-content: center; gap: 14px;"><div style="display: inline-flex; align-items: center; height: 54px; padding: 0 28px; border-radius: 27px; background: rgba(124,107,255,0.16); border: 1px solid rgba(154,139,255,0.42); color: #CFC6FF; font-size: 25px; font-weight: 600; letter-spacing: -0.01em;">한국어 AI 감지 &amp; 휴머나이저</div><div style="display: inline-flex; align-items: center; height: 54px; padding: 0 28px; border-radius: 27px; background: rgba(247,199,74,0.16); border: 1px solid rgba(247,199,74,0.45); color: #FFDF8F; font-size: 25px; font-weight: 600; letter-spacing: -0.01em;">가입하면 무료 크레딧 증정</div></div>
   <div style="position: absolute; left: 0px; top: 846px; width: 1080px; display: flex; justify-content: center;"><div style="display: inline-flex; align-items: center; gap: 14px; height: 64px; padding: 0 34px; border-radius: 32px; background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.22); color: #CFC6FF; font-size: 25px; font-weight: 600;">넘겨서 작동 방식 확인<svg width="42" height="24" viewBox="0 0 42 24" style="flex-shrink: 0;"><path d="M3 12 H 33 M 26 4 L 35 12 L 26 20" fill="none" stroke="#CFC6FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div></div>
 </div></div></div>
-          <div class="card-caption">카드 1 · 후킹</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 1 · 후킹</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-b1.png" download="교피-캐러셀-시안B-카드1.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #14172A; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-b2.png" data-title="시안 B 미드나잇 포커스 — 카드 2 진단" data-dl="교피-캐러셀-시안B-카드2.png" data-set="B" data-pos="2 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #14172A; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-b2.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
   <div style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 523px; background: linear-gradient(180deg, rgba(20,23,42,0.99) 0%, rgba(20,23,42,0.93) 60%, rgba(20,23,42,0) 100%);"></div>
   <div style="position: absolute; left: 385px; top: 44px; width: 310px; display: flex; justify-content: center; padding: 11px 0; border-radius: 20px; background: rgba(255,255,255,0.95); box-shadow: 0 8px 26px rgba(0,0,0,0.35);"><img src="/assets/img/carousel-lab/logo.webp" style="width: 216px; display: block;"></div>
@@ -260,10 +353,16 @@
   <div style="position: absolute; left: 0px; top: 423px; width: 1080px; display: flex; justify-content: center; gap: 14px;"><div style="display: inline-flex; align-items: center; height: 54px; padding: 0 28px; border-radius: 27px; background: rgba(124,107,255,0.16); border: 1px solid rgba(154,139,255,0.42); color: #CFC6FF; font-size: 25px; font-weight: 600; letter-spacing: -0.01em;">문체 신호 분석</div></div>
   <div style="position: absolute; right: 44px; top: 496px; width: 82px; height: 82px; border-radius: 41px; background: rgba(124,107,255,0.14); border: 1px solid rgba(154,139,255,0.45); box-shadow: 0 0 34px rgba(124,107,255,0.35); display: flex; align-items: center; justify-content: center;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#B4A6FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 2 · 진단</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 2 · 진단</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-b2.png" download="교피-캐러셀-시안B-카드2.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #14172A; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-b3.png" data-title="시안 B 미드나잇 포커스 — 카드 3 변환" data-dl="교피-캐러셀-시안B-카드3.png" data-set="B" data-pos="3 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #14172A; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-b3.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
   <div style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 520px; background: linear-gradient(180deg, rgba(20,23,42,0.99) 0%, rgba(20,23,42,0.93) 60%, rgba(20,23,42,0) 100%);"></div>
   <div style="position: absolute; left: 385px; top: 44px; width: 310px; display: flex; justify-content: center; padding: 11px 0; border-radius: 20px; background: rgba(255,255,255,0.95); box-shadow: 0 8px 26px rgba(0,0,0,0.35);"><img src="/assets/img/carousel-lab/logo.webp" style="width: 216px; display: block;"></div>
@@ -281,10 +380,16 @@
   <div style="position: absolute; right: 44px; top: 496px; width: 82px; height: 82px; border-radius: 41px; background: rgba(124,107,255,0.14); border: 1px solid rgba(154,139,255,0.45); box-shadow: 0 0 34px rgba(124,107,255,0.35); display: flex; align-items: center; justify-content: center;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#B4A6FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
   <div style="position: absolute; left: 0px; top: 1002px; width: 1080px; text-align: center; font-size: 22px; font-weight: 400; color: #8B90AD; letter-spacing: -0.01em;">변환 예시 · 결과는 글과 설정에 따라 달라질 수 있어요</div>
 </div></div></div>
-          <div class="card-caption">카드 3 · 변환</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 3 · 변환</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-b3.png" download="교피-캐러셀-시안B-카드3.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #14172A; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-b4.png" data-title="시안 B 미드나잇 포커스 — 카드 4 범위" data-dl="교피-캐러셀-시안B-카드4.png" data-set="B" data-pos="4 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #14172A; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-b4.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
   <div style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 521px; background: linear-gradient(180deg, rgba(20,23,42,0.99) 0%, rgba(20,23,42,0.93) 60%, rgba(20,23,42,0) 100%);"></div>
   <div style="position: absolute; left: 385px; top: 44px; width: 310px; display: flex; justify-content: center; padding: 11px 0; border-radius: 20px; background: rgba(255,255,255,0.95); box-shadow: 0 8px 26px rgba(0,0,0,0.35);"><img src="/assets/img/carousel-lab/logo.webp" style="width: 216px; display: block;"></div>
@@ -297,10 +402,16 @@
   <div style="position: absolute; left: 0px; top: 421px; width: 1080px; display: flex; justify-content: center; gap: 14px;"><div style="display: inline-flex; align-items: center; height: 54px; padding: 0 28px; border-radius: 27px; background: rgba(124,107,255,0.16); border: 1px solid rgba(154,139,255,0.42); color: #CFC6FF; font-size: 25px; font-weight: 600; letter-spacing: -0.01em;">의미 · 수치 · 장르 보존 점검</div></div>
   <div style="position: absolute; right: 44px; top: 496px; width: 82px; height: 82px; border-radius: 41px; background: rgba(124,107,255,0.14); border: 1px solid rgba(154,139,255,0.45); box-shadow: 0 0 34px rgba(124,107,255,0.35); display: flex; align-items: center; justify-content: center;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#B4A6FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 4 · 범위</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 4 · 범위</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-b4.png" download="교피-캐러셀-시안B-카드4.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #14172A; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-b5.png" data-title="시안 B 미드나잇 포커스 — 카드 5 CTA" data-dl="교피-캐러셀-시안B-카드5.png" data-set="B" data-pos="5 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #14172A; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-b5.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
   <div style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 535px; background: linear-gradient(180deg, rgba(20,23,42,0.99) 0%, rgba(20,23,42,0.93) 60%, rgba(20,23,42,0) 100%);"></div>
   <div style="position: absolute; left: 385px; top: 44px; width: 310px; display: flex; justify-content: center; padding: 11px 0; border-radius: 20px; background: rgba(255,255,255,0.95); box-shadow: 0 8px 26px rgba(0,0,0,0.35);"><img src="/assets/img/carousel-lab/logo.webp" style="width: 216px; display: block;"></div>
@@ -319,7 +430,13 @@
   <div style="position: absolute; left: 270px; top: 806px; width: 540px; height: 96px; display: flex; align-items: center; justify-content: center; border-radius: 48px; background: #7C6BFF; box-shadow: 0 0 44px rgba(124,107,255,0.5); color: #FFFFFF; font-size: 34px; font-weight: 700; letter-spacing: -0.02em;">무료 크레딧 받고 시작하기</div>
   <div style="position: absolute; left: 0px; top: 1002px; width: 1080px; text-align: center; font-size: 22px; font-weight: 400; color: #8B90AD; letter-spacing: -0.01em;">AI 티 지수는 참고용이며 보장값이 아니에요</div>
 </div></div></div>
-          <div class="card-caption">카드 5 · CTA</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 5 · CTA</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-b5.png" download="교피-캐러셀-시안B-카드5.png">다운로드</a>
+            </span>
+          </div>
         </div>
       </div>
     </section>
@@ -330,13 +447,14 @@
           <span class="concept-key">C</span>
           <h2>빅 타이포</h2>
           <span class="concept-layout">포스터 조판</span>
+          <a class="mini-btn set-zip" href="/assets/img/carousel-lab/gyopi-carousel-set-c.zip" download="교피-캐러셀-시안C-셋트.zip">셋트 다운로드 ZIP</a>
         </div>
         <p class="concept-pitch">카피가 곧 비주얼. 자이언트 카드 번호(01~05)가 캐러셀 진행을 알리고, 축소 썸네일 가독성이 가장 좋습니다.</p>
         <p class="concept-tradeoff">트레이드오프 — 일러스트가 주는 호감 형성 효과는 없습니다.</p>
       </header>
       <div class="strip" role="group" aria-label="빅 타이포 캐러셀 카드 5장">
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FAFAF7; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-c1.png" data-title="시안 C 빅 타이포 — 카드 1 후킹" data-dl="교피-캐러셀-시안C-카드1.png" data-set="C" data-pos="1 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FAFAF7; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-c1.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 68px; top: 38px; width: 225px;">
@@ -350,10 +468,16 @@
   <div style="position: absolute; left: 74px; top: 513px; display: inline-flex; align-items: center; height: 62px; padding: 0 30px; border-radius: 12px; background: #5A43D6; color: #FFFFFF; font-size: 27px; font-weight: 700;">가입하면 무료 크레딧 증정</div>
   <div style="position: absolute; left: 74px; top: 960px; display: inline-flex; align-items: center; gap: 14px; color: #17181D; font-size: 26px; font-weight: 700;">넘겨서 작동 방식 확인<svg width="42" height="24" viewBox="0 0 42 24" style="flex-shrink: 0;"><path d="M3 12 H 33 M 26 4 L 35 12 L 26 20" fill="none" stroke="#5A43D6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 1 · 후킹</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 1 · 후킹</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-c1.png" download="교피-캐러셀-시안C-카드1.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FAFAF7; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-c2.png" data-title="시안 C 빅 타이포 — 카드 2 진단" data-dl="교피-캐러셀-시안C-카드2.png" data-set="C" data-pos="2 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FAFAF7; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-c2.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 68px; top: 38px; width: 225px;">
@@ -366,10 +490,16 @@
   <div style="position: absolute; left: 74px; top: 429px; font-size: 33px; font-weight: 400; color: #565D6B; letter-spacing: -0.015em;">AI 티 지수 · 문단별 진단</div>
   <div style="position: absolute; right: 60px; top: 505px; display: flex; align-items: center; gap: 6px;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#5A43D6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 2 · 진단</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 2 · 진단</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-c2.png" download="교피-캐러셀-시안C-카드2.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FAFAF7; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-c3.png" data-title="시안 C 빅 타이포 — 카드 3 변환" data-dl="교피-캐러셀-시안C-카드3.png" data-set="C" data-pos="3 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FAFAF7; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-c3.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 68px; top: 38px; width: 225px;">
@@ -387,10 +517,16 @@
   </div>
   <div style="position: absolute; left: 74px; top: 1010px; font-size: 22px; color: #8A8F9E;">변환 예시 · 결과는 글과 설정에 따라 달라질 수 있어요</div>
 </div></div></div>
-          <div class="card-caption">카드 3 · 변환</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 3 · 변환</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-c3.png" download="교피-캐러셀-시안C-카드3.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FAFAF7; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-c4.png" data-title="시안 C 빅 타이포 — 카드 4 범위" data-dl="교피-캐러셀-시안C-카드4.png" data-set="C" data-pos="4 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FAFAF7; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-c4.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 68px; top: 38px; width: 225px;">
@@ -403,10 +539,16 @@
   <div style="position: absolute; left: 74px; top: 432px; font-size: 33px; font-weight: 400; color: #565D6B; letter-spacing: -0.015em;">글 종류에 맞게 표현과 구조를 조정</div>
   <div style="position: absolute; right: 60px; top: 505px; display: flex; align-items: center; gap: 6px;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#5A43D6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 4 · 범위</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 4 · 범위</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-c4.png" download="교피-캐러셀-시안C-카드4.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FAFAF7; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-c5.png" data-title="시안 C 빅 타이포 — 카드 5 CTA" data-dl="교피-캐러셀-시안C-카드5.png" data-set="C" data-pos="5 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FAFAF7; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-c5.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 68px; top: 38px; width: 225px;">
@@ -420,7 +562,13 @@
   <div style="position: absolute; left: 74px; top: 515px; width: 600px; height: 104px; display: flex; align-items: center; justify-content: center; border-radius: 16px; background: #17181D; color: #FFFFFF; font-size: 34px; font-weight: 700; letter-spacing: -0.02em;">무료 크레딧 받고 시작하기</div>
   <div style="position: absolute; left: 74px; top: 639px; font-size: 22px; color: #8A8F9E;">AI 티 지수는 참고용이며 보장값이 아니에요</div>
 </div></div></div>
-          <div class="card-caption">카드 5 · CTA</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 5 · CTA</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-c5.png" download="교피-캐러셀-시안C-카드5.png">다운로드</a>
+            </span>
+          </div>
         </div>
       </div>
     </section>
@@ -431,13 +579,14 @@
           <span class="concept-key">D</span>
           <h2>캠퍼스 웜</h2>
           <span class="concept-layout">코믹 스티커 조판</span>
+          <a class="mini-btn set-zip" href="/assets/img/carousel-lab/gyopi-carousel-set-d.zip" download="교피-캐러셀-시안D-셋트.zip">셋트 다운로드 ZIP</a>
         </div>
         <p class="concept-pitch">로고·마스코트와 같은 잉크 아웃라인 리듬. 기울어진 말풍선 스티커와 마커 하이라이트로 대학생 친밀감을 극대화합니다.</p>
         <p class="concept-tradeoff">트레이드오프 — 논문·자소서 등 진지한 글 사용자에게 전문성 인상이 약할 수 있습니다.</p>
       </header>
       <div class="strip" role="group" aria-label="캠퍼스 웜 캐러셀 카드 5장">
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FFF8EF; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-d1.png" data-title="시안 D 캠퍼스 웜 — 카드 1 후킹" data-dl="교피-캐러셀-시안D-카드1.png" data-set="D" data-pos="1 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FFF8EF; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-d1.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 66px; top: 36px; width: 235px;">
@@ -451,10 +600,16 @@
   <div style="position: absolute; left: 70px; top: 1006px; display: flex; gap: 10px;"><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #6C4AE0;"></div><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #FFFFFF;"></div><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #FFFFFF;"></div><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #FFFFFF;"></div><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #FFFFFF;"></div></div>
   <div style="position: absolute; left: 62px; top: 924px; display: inline-flex; align-items: center; gap: 14px; background: #FFFFFF; border: 3px solid #241C14; border-radius: 16px; padding: 12px 24px; transform: rotate(-1.5deg); color: #241C14; font-size: 25px; font-weight: 700; box-shadow: 5px 5px 0 rgba(36,28,20,0.14);">넘겨서 작동 방식 확인<svg width="42" height="24" viewBox="0 0 42 24" style="flex-shrink: 0;"><path d="M3 12 H 33 M 26 4 L 35 12 L 26 20" fill="none" stroke="#6C4AE0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 1 · 후킹</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 1 · 후킹</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-d1.png" download="교피-캐러셀-시안D-카드1.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FFF8EF; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-d2.png" data-title="시안 D 캠퍼스 웜 — 카드 2 진단" data-dl="교피-캐러셀-시안D-카드2.png" data-set="D" data-pos="2 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FFF8EF; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-d2.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 66px; top: 36px; width: 235px;">
@@ -468,10 +623,16 @@
   <div style="position: absolute; left: 70px; top: 1006px; display: flex; gap: 10px;"><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #FFFFFF;"></div><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #6C4AE0;"></div><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #FFFFFF;"></div><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #FFFFFF;"></div><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #FFFFFF;"></div></div>
   <div style="position: absolute; right: 46px; top: 498px; width: 82px; height: 82px; border-radius: 41px; background: #FFFFFF; border: 3px solid #241C14; box-shadow: 5px 5px 0 rgba(36,28,20,0.16); display: flex; align-items: center; justify-content: center;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#6C4AE0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 2 · 진단</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 2 · 진단</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-d2.png" download="교피-캐러셀-시안D-카드2.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FFF8EF; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-d3.png" data-title="시안 D 캠퍼스 웜 — 카드 3 변환" data-dl="교피-캐러셀-시안D-카드3.png" data-set="D" data-pos="3 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FFF8EF; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-d3.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 66px; top: 36px; width: 235px;">
@@ -490,10 +651,16 @@
   <div style="position: absolute; right: 46px; top: 498px; width: 82px; height: 82px; border-radius: 41px; background: #FFFFFF; border: 3px solid #241C14; box-shadow: 5px 5px 0 rgba(36,28,20,0.16); display: flex; align-items: center; justify-content: center;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#6C4AE0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
   <div style="position: absolute; left: 0px; top: 1000px; width: 1080px; text-align: center; font-size: 22px; font-weight: 400; color: #5E5142; letter-spacing: -0.01em;"><span style="display: inline-block; padding: 8px 20px; border-radius: 18px; background: rgba(255,255,255,0.9); color: #5E5142;">변환 예시 · 결과는 글과 설정에 따라 달라질 수 있어요</span></div>
 </div></div></div>
-          <div class="card-caption">카드 3 · 변환</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 3 · 변환</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-d3.png" download="교피-캐러셀-시안D-카드3.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FFF8EF; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-d4.png" data-title="시안 D 캠퍼스 웜 — 카드 4 범위" data-dl="교피-캐러셀-시안D-카드4.png" data-set="D" data-pos="4 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FFF8EF; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-d4.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 66px; top: 36px; width: 235px;">
@@ -507,10 +674,16 @@
   <div style="position: absolute; left: 70px; top: 1006px; display: flex; gap: 10px;"><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #FFFFFF;"></div><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #FFFFFF;"></div><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #FFFFFF;"></div><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #6C4AE0;"></div><div style="width: 16px; height: 16px; border-radius: 8px; border: 3px solid #241C14; background: #FFFFFF;"></div></div>
   <div style="position: absolute; right: 46px; top: 498px; width: 82px; height: 82px; border-radius: 41px; background: #FFFFFF; border: 3px solid #241C14; box-shadow: 5px 5px 0 rgba(36,28,20,0.16); display: flex; align-items: center; justify-content: center;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#6C4AE0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 4 · 범위</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 4 · 범위</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-d4.png" download="교피-캐러셀-시안D-카드4.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FFF8EF; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-d5.png" data-title="시안 D 캠퍼스 웜 — 카드 5 CTA" data-dl="교피-캐러셀-시안D-카드5.png" data-set="D" data-pos="5 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #FFF8EF; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-d5.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 66px; top: 36px; width: 235px;">
@@ -526,7 +699,13 @@
   <div style="position: absolute; left: 70px; top: 580px; width: 560px; height: 104px; display: flex; align-items: center; justify-content: center; border-radius: 18px; background: #6C4AE0; border: 4px solid #241C14; box-shadow: 8px 8px 0 rgba(36,28,20,0.18); transform: rotate(-1deg); color: #FFFFFF; font-size: 33px; font-weight: 800; letter-spacing: -0.02em;">무료 크레딧 받고 시작하기</div>
   <div style="position: absolute; left: 0px; top: 952px; width: 1080px; text-align: center; font-size: 22px; font-weight: 400; color: #5E5142; letter-spacing: -0.01em;"><span style="display: inline-block; padding: 8px 20px; border-radius: 18px; background: rgba(255,255,255,0.9); color: #5E5142;">AI 티 지수는 참고용이며 보장값이 아니에요</span></div>
 </div></div></div>
-          <div class="card-caption">카드 5 · CTA</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 5 · CTA</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-d5.png" download="교피-캐러셀-시안D-카드5.png">다운로드</a>
+            </span>
+          </div>
         </div>
       </div>
     </section>
@@ -537,13 +716,14 @@
           <span class="concept-key">E</span>
           <h2>글래스 프로덕트</h2>
           <span class="concept-layout">UI 카드 조판</span>
+          <a class="mini-btn set-zip" href="/assets/img/carousel-lab/gyopi-carousel-set-e.zip" download="교피-캐러셀-시안E-셋트.zip">셋트 다운로드 ZIP</a>
         </div>
         <p class="concept-pitch">프로스트 유리 패널 안 조판과 상단 스텝 바(1→5)로 제품 실체감과 단계 진행감을 전달합니다.</p>
         <p class="concept-tradeoff">트레이드오프 — 차분한 만큼 1장 후킹 힘은 카피에 의존합니다.</p>
       </header>
       <div class="strip" role="group" aria-label="글래스 프로덕트 캐러셀 카드 5장">
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F2F4FB; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-e1.png" data-title="시안 E 글래스 프로덕트 — 카드 1 후킹" data-dl="교피-캐러셀-시안E-카드1.png" data-set="E" data-pos="1 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F2F4FB; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-e1.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 66px; top: 36px; width: 225px;">
@@ -555,10 +735,16 @@
     <div style="display: flex;"><div style="display: inline-flex; align-items: center; height: 52px; padding: 0 28px; border-radius: 26px; background: rgba(255,241,191,0.92); border: 1px solid #EFD98E; color: #7A5C12; font-size: 24px; font-weight: 600; letter-spacing: -0.01em;">가입하면 무료 크레딧 증정</div></div></div>
   <div style="position: absolute; left: 60px; top: 952px; display: inline-flex; align-items: center; gap: 14px; height: 64px; padding: 0 30px; border-radius: 32px; background: rgba(255,255,255,0.85); border: 1px solid #D9DEF5; color: #4553C9; font-size: 25px; font-weight: 600; box-shadow: 0 10px 26px rgba(83,94,160,0.16);">넘겨서 작동 방식 확인<svg width="42" height="24" viewBox="0 0 42 24" style="flex-shrink: 0;"><path d="M3 12 H 33 M 26 4 L 35 12 L 26 20" fill="none" stroke="#4553C9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 1 · 후킹</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 1 · 후킹</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-e1.png" download="교피-캐러셀-시안E-카드1.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F2F4FB; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-e2.png" data-title="시안 E 글래스 프로덕트 — 카드 2 진단" data-dl="교피-캐러셀-시안E-카드2.png" data-set="E" data-pos="2 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F2F4FB; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-e2.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 66px; top: 36px; width: 225px;">
@@ -569,10 +755,16 @@
     <div style="font-size: 30px; font-weight: 400; color: #46526E; letter-spacing: -0.015em;">AI 티 지수 · 문단별 진단</div></div>
   <div style="position: absolute; right: 46px; top: 500px; width: 82px; height: 82px; border-radius: 41px; background: rgba(255,255,255,0.72); border: 1px solid rgba(255,255,255,0.95); box-shadow: 0 12px 30px rgba(83,94,160,0.22); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#5546D9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 2 · 진단</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 2 · 진단</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-e2.png" download="교피-캐러셀-시안E-카드2.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F2F4FB; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-e3.png" data-title="시안 E 글래스 프로덕트 — 카드 3 변환" data-dl="교피-캐러셀-시안E-카드3.png" data-set="E" data-pos="3 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F2F4FB; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-e3.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 66px; top: 36px; width: 225px;">
@@ -585,10 +777,16 @@
   <div style="position: absolute; right: 46px; top: 500px; width: 82px; height: 82px; border-radius: 41px; background: rgba(255,255,255,0.72); border: 1px solid rgba(255,255,255,0.95); box-shadow: 0 12px 30px rgba(83,94,160,0.22); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#5546D9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
   <div style="position: absolute; left: 0px; top: 1004px; width: 1080px; text-align: center; font-size: 22px; font-weight: 400; color: #8189A0; letter-spacing: -0.01em;">변환 예시 · 결과는 글과 설정에 따라 달라질 수 있어요</div>
 </div></div></div>
-          <div class="card-caption">카드 3 · 변환</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 3 · 변환</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-e3.png" download="교피-캐러셀-시안E-카드3.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F2F4FB; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-e4.png" data-title="시안 E 글래스 프로덕트 — 카드 4 범위" data-dl="교피-캐러셀-시안E-카드4.png" data-set="E" data-pos="4 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F2F4FB; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-e4.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 66px; top: 36px; width: 225px;">
@@ -599,10 +797,16 @@
     <div style="font-size: 30px; font-weight: 400; color: #46526E; letter-spacing: -0.015em;">글 종류에 맞게 표현과 구조를 조정</div></div>
   <div style="position: absolute; right: 46px; top: 500px; width: 82px; height: 82px; border-radius: 41px; background: rgba(255,255,255,0.72); border: 1px solid rgba(255,255,255,0.95); box-shadow: 0 12px 30px rgba(83,94,160,0.22); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center;"><svg width="22" height="34" viewBox="0 0 22 34"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="#5546D9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>
 </div></div></div>
-          <div class="card-caption">카드 4 · 범위</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 4 · 범위</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-e4.png" download="교피-캐러셀-시안E-카드4.png">다운로드</a>
+            </span>
+          </div>
         </div>
-        <div class="card-slot">
-          <div class="card-frame"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F2F4FB; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+        <div class="card-slot" data-img="/assets/img/carousel-lab/card-e5.png" data-title="시안 E 글래스 프로덕트 — 카드 5 CTA" data-dl="교피-캐러셀-시안E-카드5.png" data-set="E" data-pos="5 / 5">
+          <div class="card-frame" data-open="1" title="클릭하면 원본 크기로 봅니다"><div class="card-scale"><div style="position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #F2F4FB; font-family: 'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
   <img src="/assets/img/carousel-lab/bg-e5.webp" style="position: absolute; left: 0px; top: 0px; width: 1080px; height: 1080px; object-fit: cover;">
 
   <img src="/assets/img/carousel-lab/logo.webp" style="position: absolute; left: 66px; top: 36px; width: 225px;">
@@ -619,16 +823,109 @@
 
   <div style="position: absolute; left: 0px; top: 1008px; width: 1080px; text-align: center; font-size: 22px; font-weight: 400; color: #8189A0; letter-spacing: -0.01em;">AI 티 지수는 참고용이며 보장값이 아니에요</div>
 </div></div></div>
-          <div class="card-caption">카드 5 · CTA</div>
+          <div class="card-caption-row">
+            <span class="card-caption">카드 5 · CTA</span>
+            <span class="card-actions">
+              <button type="button" class="mini-btn" data-open="1">확대</button>
+              <a class="mini-btn" href="/assets/img/carousel-lab/card-e5.png" download="교피-캐러셀-시안E-카드5.png">다운로드</a>
+            </span>
+          </div>
         </div>
       </div>
     </section>
 
     <footer class="credits">
       <b>제작 정보</b>
-      <p>베이스 이미지는 ima2-gen(oauth/gpt-5.6-terra, quality high)으로 생성하고, 시안별 카드 1을 레퍼런스로 걸어 셋트 톤을 통일했습니다. 한국어 카피·로고·UI 요소는 전부 생성 후 직접 조판했으며, 카드 3·5에는 고지 문구(변환 예시 안내, AI 티 지수 참고용)를 포함했습니다.</p>
+      <p>베이스 이미지는 ima2-gen(oauth/gpt-5.6-terra, quality high)으로 생성하고, 시안별 카드 1을 레퍼런스로 걸어 셋트 톤을 통일했습니다. 한국어 카피·로고·UI 요소는 전부 생성 후 직접 조판했으며, 카드 3·5에는 고지 문구(변환 예시 안내, AI 티 지수 참고용)를 포함했습니다. 다운로드 PNG는 화면과 동일한 조판을 1080×1080으로 렌더한 파일입니다.</p>
       <p class="fineprint">이 페이지는 내부 시안 검토용 미리보기입니다. 집행 확정 시 최종본은 Pretendard 합성 파이프라인으로 1080×1080 PNG 5장을 렌더해 사용합니다.</p>
     </footer>
   </div>
+
+  <div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="카드 원본 보기">
+    <div class="lb-top">
+      <span class="lb-title" id="lbTitle"></span>
+      <span class="lb-actions">
+        <button type="button" class="mini-btn" id="lbZoom">원본 100%</button>
+        <a class="mini-btn" id="lbDl" download>다운로드</a>
+        <button type="button" class="mini-btn" id="lbClose">닫기 ×</button>
+      </span>
+    </div>
+    <div class="lb-stage" id="lbStage"><img id="lbImg" alt=""></div>
+    <button type="button" class="lb-nav lb-prev" id="lbPrev" aria-label="이전 카드"><svg width="20" height="32" viewBox="0 0 22 34" aria-hidden="true"><path d="M18 4 L 4 17 L 18 30" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+    <button type="button" class="lb-nav lb-next" id="lbNext" aria-label="다음 카드"><svg width="20" height="32" viewBox="0 0 22 34" aria-hidden="true"><path d="M4 4 L 18 17 L 4 30" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+    <div class="lb-count" id="lbCount"></div>
+  </div>
+
+  <script>
+  (function () {
+    var slots = Array.prototype.slice.call(document.querySelectorAll('.card-slot'));
+    var lb = document.getElementById('lb');
+    var img = document.getElementById('lbImg');
+    var title = document.getElementById('lbTitle');
+    var dl = document.getElementById('lbDl');
+    var zoom = document.getElementById('lbZoom');
+    var closeBtn = document.getElementById('lbClose');
+    var prev = document.getElementById('lbPrev');
+    var next = document.getElementById('lbNext');
+    var count = document.getElementById('lbCount');
+    var stage = document.getElementById('lbStage');
+    var cur = -1;
+    var lastFocus = null;
+
+    function sameSet(i, j) {
+      return i >= 0 && j >= 0 && i < slots.length && j < slots.length &&
+        slots[i].dataset.set === slots[j].dataset.set;
+    }
+    function render() {
+      var d = slots[cur].dataset;
+      img.src = d.img;
+      img.alt = d.title;
+      title.textContent = d.title;
+      dl.href = d.img;
+      dl.setAttribute('download', d.dl);
+      count.textContent = d.pos + ' · ' + d.set + ' 셋트';
+      prev.disabled = !sameSet(cur, cur - 1);
+      next.disabled = !sameSet(cur, cur + 1);
+    }
+    function open(i) {
+      cur = i;
+      lastFocus = document.activeElement;
+      lb.classList.remove('orig');
+      zoom.textContent = '원본 100%';
+      render();
+      lb.hidden = false;
+      document.body.style.overflow = 'hidden';
+      closeBtn.focus();
+    }
+    function close() {
+      lb.hidden = true;
+      document.body.style.overflow = '';
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+    function move(step) {
+      if (sameSet(cur, cur + step)) { cur += step; render(); }
+    }
+
+    slots.forEach(function (slot, i) {
+      slot.querySelectorAll('[data-open]').forEach(function (el) {
+        el.addEventListener('click', function () { open(i); });
+      });
+    });
+    closeBtn.addEventListener('click', close);
+    prev.addEventListener('click', function () { move(-1); });
+    next.addEventListener('click', function () { move(1); });
+    zoom.addEventListener('click', function () {
+      var orig = lb.classList.toggle('orig');
+      zoom.textContent = orig ? '화면에 맞춤' : '원본 100%';
+    });
+    stage.addEventListener('click', function (e) { if (e.target === stage) close(); });
+    document.addEventListener('keydown', function (e) {
+      if (lb.hidden) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowLeft') move(-1);
+      else if (e.key === 'ArrowRight') move(1);
+    });
+  })();
+  </script>
 </body>
 </html>
