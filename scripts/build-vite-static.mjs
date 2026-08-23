@@ -10,6 +10,7 @@ const viteScratch = path.join(root, '.vite-static-build');
 const viteOut = path.join(root, '.vite-static-out');
 const staticEntries = [
   'index.html',
+  'carousel-lab.html',
   'assets',
   'pages',
   'partials',
