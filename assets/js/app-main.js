@@ -1971,7 +1971,7 @@ function showPolicy(type) {
   · 토스페이먼츠: 결제 처리 / 대한민국
   · Google Analytics: 방문·이용 통계 분석 / 미국
   · 네이버 애널리틱스 및 네이버 광고: 방문·광고 전환 분석 / 대한민국
-  · Meta Platforms, Inc. (Meta Pixel): 방문·회원가입·기능 완료·결제 광고 전환 분석 / 미국
+  · Meta Platforms, Inc. (Meta Pixel 및 전환 API): 방문·회원가입·기능 완료·결제 광고 전환 분석 / 미국
 
 5. 이용자의 권리
 이용자는 언제든지 아래 권리를 행사할 수 있습니다.

@@ -151,9 +151,12 @@ async function gpNotifyEvent(type, data) {
  try {
   if (!CU || !CU.getIdToken) return;
   const idToken = await CU.getIdToken();
+  const metaContext = window.gpMetaContext && typeof window.gpMetaContext === 'function'
+   ? window.gpMetaContext()
+   : {};
   fetch(window.apiUrl('/events'), {
    method: 'POST', headers: { 'Content-Type': 'application/json' },
-   body: JSON.stringify({ idToken, type, ...(data || {}) })
+   body: JSON.stringify({ idToken, type, ...metaContext, ...(data || {}) })
   }).catch(() => {});
  } catch (_) { /* 알림 실패는 무시 */ }
 }
@@ -169,13 +172,16 @@ async function loadUser(u) {
   : null;
  const newUser = { email:u.email, name:u.displayName, credits:10, plan:'free', refCode:myRefCode, createdAt:new Date().toISOString() };
  if (signupAttribution) newUser.signupAttribution = signupAttribution;
+ const metaSignupEventId = window.gpMetaStableEventId
+  ? window.gpMetaStableEventId('sign_up', u.uid + '|' + newUser.createdAt)
+  : '';
  await setDoc(uRef, newUser);
  window.UC = 10; window.UP = 'free';
  window.SUB = null; window.COUPON = null;
  const trafficSource = localStorage.getItem('traffic_source') || 'direct';
  const signMethod = (u.providerData[0]?.providerId === 'google.com') ? 'google' : (u.email?.includes('@kakao.com')) ? 'kakao' : 'email';
- if (window.gpTrack) window.gpTrack('sign_up', { method: signMethod, traffic_source: trafficSource });
- gpNotifyEvent('signup', { via: signMethod });   // 운영 알림(신규 가입)
+ if (window.gpTrack) window.gpTrack('sign_up', { method: signMethod, traffic_source: trafficSource, meta_event_id: metaSignupEventId });
+ gpNotifyEvent('signup', { via: signMethod, metaEventId: metaSignupEventId });   // 운영 알림 + 서버 전환(신규 가입)
  } else {
  const d = snap.data();
  window.UC = d.credits||0; window.UP = d.plan||'free';

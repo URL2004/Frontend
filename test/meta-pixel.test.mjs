@@ -32,13 +32,14 @@ function loadTracking(url) {
     }
   };
   const document = {
+    cookie: '_fbp=fb.1.1787560000000.testbrowser; _fbc=fb.1.1787560000000.testclick',
     referrer: '',
     title: '교수님 피하기',
     createElement() { return {}; },
     getElementsByTagName() { return [firstScript]; },
     head: { appendChild() {} }
   };
-  const context = { window, document, localStorage, URL, URLSearchParams, Date, JSON, String, Object, Array, Number, Math, encodeURIComponent };
+  const context = { window, document, localStorage, URL, URLSearchParams, Date, JSON, String, Object, Array, Number, Math, encodeURIComponent, decodeURIComponent };
   vm.runInNewContext(trackingSource, context);
   return window;
 }
@@ -77,6 +78,22 @@ test('가입·결제는 Meta 표준 이벤트로 매핑하고 입력 원문은 �
   assert.equal(purchase[0][2].currency, 'KRW');
   assert.equal(purchase[0][2].contents[0].id, 'credits_100');
   assert.equal('input_text' in purchase[0][2], false);
+});
+
+test('브라우저·서버 공통 event_id와 제한된 Meta 컨텍스트를 제공한다', () => {
+  const window = loadTracking('https://gpkorea.ai.kr/?utm_source=meta&utm_content=carousel_a&paymentKey=secret');
+  const eventId = window.gpMetaStableEventId('sign_up', 'uid-1|2026-08-24T10:00:00.000Z');
+  const returned = window.gpTrack('sign_up', { method: 'google', meta_event_id: eventId });
+  const signup = queued(window, 'track', 'CompleteRegistration')[0];
+  assert.equal(returned, eventId);
+  assert.equal(signup[3].eventID, eventId);
+  assert.match(eventId, /^gp_sign_up_[a-f0-9]+$/);
+  const meta = window.gpMetaContext();
+  assert.equal(meta.fbp, 'fb.1.1787560000000.testbrowser');
+  assert.equal(meta.fbc, 'fb.1.1787560000000.testclick');
+  assert.equal(meta.trafficContent, 'carousel_a');
+  assert.equal(meta.sourceUrl, 'https://gpkorea.ai.kr/?utm_source=meta&utm_content=carousel_a');
+  assert.equal(meta.sourceUrl.includes('paymentKey'), false);
 });
 
 test('AI 감지와 휴머나이징 완료는 분리된 맞춤 이벤트로 전송한다', () => {

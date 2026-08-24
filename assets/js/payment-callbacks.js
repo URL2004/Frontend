@@ -109,7 +109,8 @@
           amount: amount,
           customerEmail: userEmail,
           uid: uid,
-          idToken: idToken
+          idToken: idToken,
+          meta: window.gpMetaContext ? window.gpMetaContext() : {}
         })
       });
 
@@ -123,6 +124,7 @@
         const _cred = data.creditAmount || credits;
         if (window.gpTrack) window.gpTrack('purchase', {
           transaction_id: orderId,
+          meta_event_id: 'purchase_' + orderId,
           value: _amt,
           currency: 'KRW',
           items: [{ item_id: _plan || ('credits_' + _cred), item_name: _plan || ('크레딧 ' + _cred), quantity: 1, price: _amt }],
@@ -233,7 +235,8 @@
         customerKey: ck,
         tier,
         customerEmail: window.CU.email || '',
-        customerName: window.CU.displayName || ''
+        customerName: window.CU.displayName || '',
+        meta: window.gpMetaContext ? window.gpMetaContext() : {}
       })
     });
     const data = await res.json();
@@ -241,6 +244,7 @@
       history.replaceState({}, '', location.pathname);
       if (window.gpTrack) window.gpTrack('purchase', {
         transaction_id: data.orderId,
+        meta_event_id: 'purchase_' + data.orderId,
         value: data.amount,
         currency: 'KRW',
         items: [{ item_id: 'sub_' + tier, item_name: 'subscription_' + tier, quantity: 1, price: data.amount }],

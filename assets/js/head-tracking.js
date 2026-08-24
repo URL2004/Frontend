@@ -47,8 +47,22 @@
 
  var metaPixelEnabled = initMetaPixel();
 
- function metaEventId(eventName) {
+ function metaEventId(eventName, preferred) {
+  var supplied = clean(preferred, 180);
+  if (/^[a-z0-9_.:-]{6,180}$/i.test(supplied)) return supplied;
   return 'gp_' + clean(eventName, 40).replace(/[^a-z0-9_]+/gi, '_') + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+ }
+
+ // Server uses the same FNV-1a implementation to deduplicate signup Pixel/CAPI events.
+ function stableMetaEventId(eventName, stableKey) {
+  var name = clean(eventName, 40).replace(/[^a-z0-9_]+/gi, '_') || 'event';
+  var key = String(stableKey == null ? '' : stableKey);
+  var hash = 0x811c9dc5;
+  for (var i = 0; i < key.length; i++) {
+   hash ^= key.charCodeAt(i);
+   hash = Math.imul(hash, 0x01000193);
+  }
+  return 'gp_' + name + '_' + (hash >>> 0).toString(16);
  }
 
  function itemContents(items) {
@@ -97,7 +111,9 @@
  }
 
  function trackMetaEvent(eventName, payload) {
-  if (!metaPixelEnabled || !window.fbq) return;
+  payload = payload || {};
+  var eventID = metaEventId(eventName, payload.meta_event_id || payload.event_id);
+  if (!metaPixelEnabled || !window.fbq) return eventID;
   var standard = {
    sign_up: 'CompleteRegistration',
    select_item: 'ViewContent',
@@ -110,12 +126,15 @@
    humanize_run: 'HumanizeComplete'
   };
   var mapped = standard[eventName] || custom[eventName];
-  if (!mapped) return;
+  if (!mapped) return eventID;
   var command = standard[eventName] ? 'track' : 'trackCustom';
-  window.fbq(command, mapped, metaParams(payload, eventName), { eventID: metaEventId(eventName) });
+  window.fbq(command, mapped, metaParams(payload, eventName), { eventID: eventID });
+  return eventID;
  }
 
  window.gpMetaTrack = trackMetaEvent;
+ window.gpMetaCreateEventId = function (eventName) { return metaEventId(eventName); };
+ window.gpMetaStableEventId = stableMetaEventId;
 
  function clean(value, max) {
   var text = String(value == null ? '' : value).trim();
@@ -234,6 +253,54 @@
   };
  }
 
+ function cookieValue(name) {
+  try {
+   var prefix = name + '=';
+   var parts = String(document.cookie || '').split(';');
+   for (var i = 0; i < parts.length; i++) {
+    var part = parts[i].trim();
+    if (part.indexOf(prefix) === 0) return clean(decodeURIComponent(part.slice(prefix.length)), 300);
+   }
+  } catch (_) {}
+  return '';
+ }
+
+ function metaSourceUrl(value) {
+  try {
+   var parsed = new URL(String(value || ''), window.location.origin);
+   var kept = new URLSearchParams();
+   ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid'].forEach(function (key) {
+    var item = clean(parsed.searchParams.get(key), key === 'fbclid' || key === 'gclid' ? 220 : 150);
+    if (item) kept.set(key, item);
+   });
+   parsed.search = kept.toString();
+   parsed.hash = '';
+   return clean(parsed.toString(), 1000);
+  } catch (_) {
+   return '';
+  }
+ }
+
+ function metaContext() {
+  var snapshot = attributionSnapshot();
+  var last = snapshot.last_touch || {};
+  var fbc = cookieValue('_fbc');
+  if (!fbc && last.fbclid) {
+   var capturedMs = Date.parse(last.captured_at || '') || Date.now();
+   fbc = 'fb.1.' + capturedMs + '.' + clean(last.fbclid, 220);
+  }
+  return {
+   fbp: cookieValue('_fbp'),
+   fbc: fbc,
+   sourceUrl: metaSourceUrl(window.location.href),
+   trafficSource: clean(last.source || 'direct', 100),
+   trafficMedium: clean(last.medium || 'none', 100),
+   trafficCampaign: clean(last.campaign, 150),
+   trafficContent: clean(last.content, 150),
+   trafficTerm: clean(last.term, 150)
+  };
+ }
+
  captureAttribution();
  window.gpAttribution = {
   capture: captureAttribution,
@@ -242,6 +309,7 @@
   getLastTouch: function () { return attributionSnapshot().last_touch; },
   getContext: attributionContext
  };
+ window.gpMetaContext = metaContext;
 
  window.gpTrack = function (eventName, params) {
   if (!eventName) return;
@@ -249,7 +317,7 @@
    app_env: config.APP_ENV || 'production'
   }, attributionContext(), params || {});
   if (measurementId) window.gtag('event', eventName, payload);
-  trackMetaEvent(eventName, payload);
+  return trackMetaEvent(eventName, payload);
  };
 
  window.gpTrackPageView = function (routeTab, title, locationUrl) {
