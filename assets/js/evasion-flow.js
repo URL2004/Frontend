@@ -251,7 +251,9 @@
 
   // 실행 모드 토글(컴포저 세그먼트): 전송 버튼은 하나 — 선택된 모드가 lavRun의 동작을 결정.
   window.lavMode = 'humanize';
-  window.lavSetMode = function (m) {
+  window.lavSetMode = function (m, opts) {
+    opts = opts || {};
+    m = m === 'detect' ? 'detect' : 'humanize';
     window.lavMode = m;
     document.querySelectorAll('.gp-lav-mode button').forEach(function (b) {
       var on = b.getAttribute('data-mode') === m;
@@ -262,6 +264,9 @@
     if (ta) ta.placeholder = m === 'detect'
       ? 'AI가 썼는지 궁금한 글을 붙여넣어 보세요...'
       : 'AI 느낌이 나는 문장을 붙여넣어 보세요...';
+    if (!opts.skipUrl && typeof window.gpSyncProductModeUrl === 'function') {
+      window.gpSyncProductModeUrl(m);
+    }
   };
 
   window.lavDetect = async function () {

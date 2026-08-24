@@ -5,8 +5,8 @@
  </div>
 
  <div class="modetog" style="display:none!important">
-   <button class="mbtn detect active" onclick="setMode('detect')">AI 감지</button>
-   <button class="mbtn human" onclick="setMode('humanize')">휴머나이저</button>
+   <button class="mbtn detect active" onclick="gpApplyProductMode('detect')">AI 감지</button>
+   <button class="mbtn human" onclick="gpApplyProductMode('humanize')">휴머나이저</button>
  </div>
  <div class="humanize-mode-container" id="humanizeOptions" style="display:none!important">
    <div class="mode-tabs-group">
@@ -129,10 +129,10 @@
            </label>
            <span class="gp-lav-count" id="lavCount" aria-live="polite"></span>
            <div class="gp-lav-mode" role="group" aria-label="실행 모드 선택">
-             <button type="button" class="on" data-mode="humanize" onclick="lavSetMode('humanize')" aria-pressed="true">
+             <button type="button" class="on" data-mode="humanize" onclick="gpApplyProductMode('humanize')" aria-pressed="true">
                <span class="material-symbols-outlined" aria-hidden="true">auto_fix_high</span><span class="lbl">휴머나이징</span>
              </button>
-             <button type="button" data-mode="detect" onclick="lavSetMode('detect')" aria-pressed="false" title="100자당 1크레딧">
+             <button type="button" data-mode="detect" onclick="gpApplyProductMode('detect')" aria-pressed="false" title="100자당 1크레딧">
                <span class="material-symbols-outlined" aria-hidden="true">search_insights</span><span class="lbl">AI 감지</span><em>100자 1크레딧</em>
              </button>
            </div>

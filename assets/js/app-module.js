@@ -164,13 +164,17 @@ async function loadUser(u) {
  const snap = await getDoc(uRef);
  if (!snap.exists()) {
  const myRefCode = u.uid.substring(0,8);
- await setDoc(uRef,{ email:u.email, name:u.displayName, credits:10, plan:'free', refCode:myRefCode, createdAt:new Date().toISOString() });
+ const signupAttribution = window.gpAttribution && typeof window.gpAttribution.snapshot === 'function'
+  ? window.gpAttribution.snapshot()
+  : null;
+ const newUser = { email:u.email, name:u.displayName, credits:10, plan:'free', refCode:myRefCode, createdAt:new Date().toISOString() };
+ if (signupAttribution) newUser.signupAttribution = signupAttribution;
+ await setDoc(uRef, newUser);
  window.UC = 10; window.UP = 'free';
  window.SUB = null; window.COUPON = null;
  const trafficSource = localStorage.getItem('traffic_source') || 'direct';
  const signMethod = (u.providerData[0]?.providerId === 'google.com') ? 'google' : (u.email?.includes('@kakao.com')) ? 'kakao' : 'email';
  if (window.gpTrack) window.gpTrack('sign_up', { method: signMethod, traffic_source: trafficSource });
- localStorage.removeItem('traffic_source');
  gpNotifyEvent('signup', { via: signMethod });   // 운영 알림(신규 가입)
  } else {
  const d = snap.data();

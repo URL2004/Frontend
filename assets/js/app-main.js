@@ -133,6 +133,54 @@ function routeUrl(t) {
  return base + (ROUTE_PATHS[t] || '/');
 }
 
+function normalizeProductMode(value) {
+ return String(value || '').toLowerCase() === 'detect' ? 'detect' : 'humanize';
+}
+
+function productModeFromUrl() {
+ const params = new URLSearchParams(window.location.search || '');
+ const requested = String(params.get('mode') || '').toLowerCase();
+ return requested === 'detect' || requested === 'humanize' ? requested : '';
+}
+
+function syncProductModeUrl(productMode) {
+ if (getRouteTab() !== 'main') return;
+ const normalized = normalizeProductMode(productMode);
+ const url = new URL(window.location.href);
+ if (url.searchParams.get('mode') === normalized) return;
+ url.searchParams.set('mode', normalized);
+ window.history.replaceState({ tab: 'main', mode: normalized }, '', url.pathname + url.search + url.hash);
+}
+window.gpSyncProductModeUrl = syncProductModeUrl;
+
+function applyProductMode(productMode, opts) {
+ opts = opts || {};
+ const normalized = normalizeProductMode(productMode);
+ setMode(normalized);
+ if (typeof window.lavSetMode === 'function') {
+  window.lavSetMode(normalized, { skipUrl: true });
+ }
+ if (!opts.skipUrl) syncProductModeUrl(normalized);
+ return normalized;
+}
+window.gpApplyProductMode = applyProductMode;
+
+window.openProductMode = function (productMode) {
+ switchTab('main');
+ const normalized = applyProductMode(productMode);
+ setTimeout(function () {
+  const el = document.getElementById('lavInput') || document.getElementById('inputText');
+  if (el) el.focus();
+ }, 80);
+ return normalized;
+};
+
+function applyLandingProductMode() {
+ const requested = productModeFromUrl();
+ if (!requested || getRouteTab() !== 'main') return;
+ applyProductMode(requested, { skipUrl: true });
+}
+
 function setMeta(selector, content, attrName) {
  const el = document.querySelector(selector);
  if (el) el.setAttribute(attrName || 'content', content);
@@ -189,6 +237,7 @@ function applyRouteFromUrl(opts) {
   return;
  }
  switchTab(routeTab, { skipRoute: true });
+ if (routeTab === 'main') applyLandingProductMode();
  runRouteSideEffects(routeTab);
  if (opts.replace) setRouteUrl(routeTab, true);
 }
