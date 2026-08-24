@@ -1,6 +1,7 @@
 (function () {
  var config = window.APP_CONFIG || {};
  var measurementId = config.GA_MEASUREMENT_ID || '';
+ var metaPixelId = String(config.META_PIXEL_ID || '').trim();
  var lastPageViewKey = '';
  var STORAGE_KEYS = {
   first: 'gp_attribution_first_touch',
@@ -20,6 +21,101 @@
 
  window.dataLayer = window.dataLayer || [];
  window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+
+ function initMetaPixel() {
+  if (!/^\d{8,25}$/.test(metaPixelId)) return false;
+  if (!window.fbq) {
+   var fbq = window.fbq = function () {
+    if (fbq.callMethod) fbq.callMethod.apply(fbq, arguments);
+    else fbq.queue.push(arguments);
+   };
+   if (!window._fbq) window._fbq = fbq;
+   fbq.push = fbq;
+   fbq.loaded = true;
+   fbq.version = '2.0';
+   fbq.queue = [];
+   var script = document.createElement('script');
+   script.async = true;
+   script.src = 'https://connect.facebook.net/en_US/fbevents.js';
+   var firstScript = document.getElementsByTagName('script')[0];
+   if (firstScript && firstScript.parentNode) firstScript.parentNode.insertBefore(script, firstScript);
+   else if (document.head) document.head.appendChild(script);
+  }
+  window.fbq('init', metaPixelId);
+  return true;
+ }
+
+ var metaPixelEnabled = initMetaPixel();
+
+ function metaEventId(eventName) {
+  return 'gp_' + clean(eventName, 40).replace(/[^a-z0-9_]+/gi, '_') + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+ }
+
+ function itemContents(items) {
+  if (!Array.isArray(items)) return [];
+  return items.slice(0, 20).map(function (item) {
+   return {
+    id: clean(item && (item.item_id || item.id), 100),
+    quantity: Math.max(1, Number(item && item.quantity) || 1),
+    item_price: Math.max(0, Number(item && (item.price || item.item_price)) || 0)
+   };
+  }).filter(function (item) { return !!item.id; });
+ }
+
+ function metaParams(payload, eventName) {
+  payload = payload || {};
+  var inferredMode = eventName === 'detect_run' ? 'detect' : (eventName === 'humanize_run' ? 'humanize' : payload.mode);
+  var params = {
+   app_env: clean(payload.app_env || config.APP_ENV || 'production', 30),
+   traffic_source: clean(payload.traffic_source, 100),
+   traffic_medium: clean(payload.traffic_medium, 100),
+   traffic_campaign: clean(payload.traffic_campaign, 150),
+   traffic_content: clean(payload.traffic_content, 150),
+   traffic_term: clean(payload.traffic_term, 150),
+   analysis_mode: clean(payload.analysis_mode || inferredMode, 50),
+   humanize_mode: clean(payload.humanize_mode || (eventName === 'humanize_run' ? payload.mode : ''), 50),
+   method: clean(payload.method, 50)
+  };
+  if (eventName === 'sign_up') {
+   params.content_name = 'account_registration';
+   params.status = true;
+  }
+  if (payload.transaction_id) params.transaction_id = clean(payload.transaction_id, 150);
+  if (Number.isFinite(Number(payload.chars))) params.chars = Math.max(0, Number(payload.chars));
+  if (Number.isFinite(Number(payload.value))) params.value = Math.max(0, Number(payload.value));
+  if (payload.currency) params.currency = clean(payload.currency, 10).toUpperCase();
+  var contents = itemContents(payload.items);
+  if (contents.length) {
+   params.content_type = 'product';
+   params.contents = contents;
+   params.content_ids = contents.map(function (item) { return item.id; });
+  }
+  Object.keys(params).forEach(function (key) {
+   if (params[key] === '' || params[key] == null) delete params[key];
+  });
+  return params;
+ }
+
+ function trackMetaEvent(eventName, payload) {
+  if (!metaPixelEnabled || !window.fbq) return;
+  var standard = {
+   sign_up: 'CompleteRegistration',
+   select_item: 'ViewContent',
+   begin_checkout: 'InitiateCheckout',
+   purchase: 'Purchase'
+  };
+  var custom = {
+   analysis_start: 'AnalysisStart',
+   detect_run: 'DetectComplete',
+   humanize_run: 'HumanizeComplete'
+  };
+  var mapped = standard[eventName] || custom[eventName];
+  if (!mapped) return;
+  var command = standard[eventName] ? 'track' : 'trackCustom';
+  window.fbq(command, mapped, metaParams(payload, eventName), { eventID: metaEventId(eventName) });
+ }
+
+ window.gpMetaTrack = trackMetaEvent;
 
  function clean(value, max) {
   var text = String(value == null ? '' : value).trim();
@@ -148,15 +244,16 @@
  };
 
  window.gpTrack = function (eventName, params) {
-  if (!eventName || !measurementId) return;
+  if (!eventName) return;
   var payload = Object.assign({
    app_env: config.APP_ENV || 'production'
   }, attributionContext(), params || {});
-  window.gtag('event', eventName, payload);
+  if (measurementId) window.gtag('event', eventName, payload);
+  trackMetaEvent(eventName, payload);
  };
 
  window.gpTrackPageView = function (routeTab, title, locationUrl) {
-  if (!measurementId) return;
+  if (!measurementId && !metaPixelEnabled) return;
   var pageLocation = locationUrl || window.location.href;
   var key = String(routeTab || '') + '|' + pageLocation;
   if (key === lastPageViewKey) return;
@@ -164,13 +261,23 @@
   var path;
   try { path = new URL(pageLocation, window.location.origin).pathname; }
   catch (_) { path = window.location.pathname; }
-  window.gtag('event', 'page_view', Object.assign({
+  var payload = Object.assign({
    page_title: title || document.title,
    page_location: pageLocation,
    page_path: path,
    route_tab: routeTab || '',
    app_env: config.APP_ENV || 'production'
-  }, attributionContext()));
+  }, attributionContext());
+  if (measurementId) window.gtag('event', 'page_view', payload);
+  if (metaPixelEnabled && window.fbq) {
+   window.fbq('track', 'PageView', {
+    page_title: clean(payload.page_title, 250),
+    page_path: clean(payload.page_path, 250),
+    route_tab: clean(payload.route_tab, 80),
+    traffic_source: clean(payload.traffic_source, 100),
+    traffic_campaign: clean(payload.traffic_campaign, 150)
+   }, { eventID: metaEventId('page_view') });
+  }
  };
 
  if (measurementId) {

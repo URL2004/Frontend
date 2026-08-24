@@ -5,6 +5,7 @@ window.APP_RUNTIME_CONFIG = {
   SITE_URL: 'https://your-preview.vercel.app',
   API_BASE: 'https://your-staging-backend.onrender.com',
   GA_MEASUREMENT_ID: 'G-4FVJBV5FDJ',
+  META_PIXEL_ID: '1575815300659999',
   TOSS_CLIENT_KEY: 'test_ck_replace_me',
   FIREBASE: {
     apiKey: 'replace_me',

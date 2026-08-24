@@ -71,6 +71,7 @@ window.APP_RUNTIME_CONFIG = {
   APP_ENV: ${literal(process.env.VITE_APP_ENV)},
   SITE_URL: ${literal(process.env.VITE_SITE_URL || '')},
   API_BASE: ${literal(process.env.VITE_API_BASE || '')},
+  META_PIXEL_ID: ${literal(process.env.VITE_META_PIXEL_ID || '')},
   TOSS_CLIENT_KEY: ${literal(process.env.VITE_TOSS_CLIENT_KEY || '')},
   KAKAO_JS_KEY: ${literal(process.env.VITE_KAKAO_JS_KEY || '')},
   KAKAO_REST_KEY: ${literal(process.env.VITE_KAKAO_REST_KEY || '')},
