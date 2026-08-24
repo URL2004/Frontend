@@ -235,3 +235,64 @@ footer.credits .fineprint { color: var(--lab-muted); }
   .lb-stage { padding: 0 10px 16px; }
   .lb-nav { top: auto; bottom: 52px; }
 }
+
+/* ---------- v4.1: 카드 셋트 스트립 + 그룹 툴바 + 토스트 ---------- */
+.deck-strip {
+  display: flex; gap: 12px; align-items: stretch; overflow-x: auto;
+  padding: 4px 2px 12px; margin-bottom: 16px;
+  scrollbar-width: thin; scrollbar-color: #C9C6E8 transparent;
+}
+.deck-item { flex: 0 0 auto; width: 118px; border-radius: 14px; border: 2px solid var(--lab-line); background: #fff; overflow: hidden; }
+.deck-item.is-on { border-color: var(--lab-accent); box-shadow: 0 6px 18px rgba(90, 67, 214, 0.18); }
+.deck-face { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; font-family: inherit; }
+.deck-face canvas { display: block; width: 100%; aspect-ratio: 1 / 1; }
+.deck-face:focus-visible { outline: 2px solid var(--lab-accent); outline-offset: -2px; }
+.deck-bar { display: flex; align-items: center; justify-content: space-between; padding: 5px 6px 5px 9px; border-top: 1px solid var(--lab-line); }
+.deck-bar span { font-size: 11.5px; font-weight: 700; color: var(--lab-body); }
+.deck-item.is-on .deck-bar span { color: var(--lab-accent); }
+.deck-del {
+  width: 20px; height: 20px; border-radius: 10px; border: 0; cursor: pointer;
+  background: #F1F1F7; color: var(--lab-muted); font-size: 13px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; font-family: inherit;
+}
+.deck-del:hover { background: #FBDFDC; color: #B95750; }
+.deck-add {
+  flex: 0 0 auto; width: 118px; border-radius: 14px; cursor: pointer;
+  border: 2px dashed #C9C6E8; background: var(--lab-accent-soft);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  color: var(--lab-accent); font-family: inherit; font-size: 12px; font-weight: 700; text-align: center;
+}
+.deck-add em { display: block; font-style: normal; font-weight: 500; font-size: 11px; color: #8A7DDB; margin-top: 2px; }
+.deck-add .deck-plus { font-size: 26px; line-height: 1; }
+.deck-add:hover { border-color: var(--lab-accent); background: #E6E2FB; }
+.deck-add:focus-visible { outline: 2px solid var(--lab-accent); outline-offset: 2px; }
+
+.tool-groups { display: flex; flex-direction: column; gap: 8px; }
+.tool-group {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  padding: 8px 10px; border: 1px solid var(--lab-line); border-radius: 14px; background: #FCFCFE;
+}
+.tool-label {
+  flex: 0 0 44px; font-size: 12px; font-weight: 800; color: var(--lab-muted);
+  letter-spacing: 0.04em; text-align: center;
+}
+.tool-group .mini-btn { height: 30px; padding: 0 12px; font-size: 12.5px; }
+.tool-color { flex: 0 0 42px; height: 30px; }
+
+.studio-check {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 4px;
+  font-size: 13px; font-weight: 600; color: var(--lab-body); cursor: pointer; user-select: none;
+}
+.studio-check input { accent-color: var(--lab-accent); width: 15px; height: 15px; cursor: pointer; }
+
+.studio-block.is-selection { border-color: #CDC7F2; background: #FAF9FF; }
+.studio-chip.is-danger { color: #B95750; }
+.studio-chip.is-danger:hover { background: #FDEAE8; border-color: #F0C9C4; }
+
+.studio-toast {
+  position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%); z-index: 140;
+  padding: 11px 22px; border-radius: 22px; background: rgba(25, 22, 46, 0.92); color: #fff;
+  font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.25);
+}
+
+.picker-top .studio-check { margin-left: 4px; }

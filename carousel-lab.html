@@ -21,7 +21,7 @@
         <span class="hero-date">2026-08-23 · 내부 시안 검토용</span>
       </div>
       <h1>Meta 캐러셀 시안 랩 — <em>5개 방향</em>, 셋트로 비교</h1>
-      <p class="hero-sub">시안마다 카드 5장(후킹 → 진단 → 변환 → 범위 → CTA)이 한 셋트입니다. 각 줄을 옆으로 넘기면 실제 캐러셀처럼 카드가 이어지고, 카드를 클릭하면 원본 크기(1080×1080)로 보거나 PNG로 내려받을 수 있습니다. 맨 위 제작 도구로 새 카드를 직접 만들 수도 있습니다.</p>
+      <p class="hero-sub">시안마다 카드 5장(후킹 → 진단 → 변환 → 범위 → CTA)이 한 셋트입니다. 각 줄을 옆으로 넘기면 실제 캐러셀처럼 카드가 이어지고, 카드를 클릭하면 원본 크기(1080×1080)로 보거나 PNG로 내려받을 수 있습니다. 맨 위 제작 도구에서는 같은 배경으로 카드를 이어 붙여 나만의 셋트를 만들 수 있습니다.</p>
       <div class="hero-meta">
         <span>배경 — ima2 · gpt-5.6-terra · high</span>
         <span>카피·로고·UI — 직접 조판</span>
@@ -30,46 +30,59 @@
       </div>
     </header>
 
-    <section class="studio" id="studio" aria-label="카드 직접 제작">
+    <section class="studio" id="studio" aria-label="카드 셋트 직접 제작">
       <div class="studio-head">
         <h2>직접 제작</h2>
-        <span class="studio-tag">1080 × 1080</span>
+        <span class="studio-tag">1080 × 1080 · <span id="labDeckCount">1장</span></span>
         <span class="studio-actions">
+          <label class="studio-check"><input type="checkbox" id="labGuides" checked> 여백 가이드</label>
           <button type="button" class="mini-btn" id="labReset">전체 지우기</button>
-          <button type="button" class="mini-btn is-primary" id="labSave">PNG로 저장</button>
+          <button type="button" class="mini-btn" id="labSave">이 카드 PNG</button>
+          <button type="button" class="mini-btn is-primary" id="labSaveAll">셋트 전체 ZIP</button>
         </span>
       </div>
-      <p class="studio-desc">랩에 있는 배경·완성 카드·로고를 불러오거나 내 이미지를 올려 카드를 만듭니다. 글자는 교피 조판 프리셋(검정 헤드라인·보라 강조·칩·CTA)과 다른 스타일 중에 고르고, 드래그로 위치를 잡은 뒤 PNG로 내려받으세요.</p>
+      <p class="studio-desc">아래 시안들처럼 카드 여러 장을 한 셋트로 만듭니다. <b>＋ 카드 추가</b>를 누르면 같은 배경으로 다음 장이 이어지고, 장마다 문구·요소만 바꾸면 캐러셀 한 벌이 완성됩니다.</p>
+
+      <div class="deck-strip" id="labDeck" aria-label="셋트 카드 목록"></div>
 
       <div class="studio-grid">
         <div class="studio-stage-col">
-          <div class="studio-toolbar">
-            <button type="button" class="mini-btn" id="labPickBg">랩 배경 고르기</button>
-            <button type="button" class="mini-btn" id="labUploadBg">배경 업로드</button>
-            <button type="button" class="mini-btn" id="labBgClear">배경 비우기</button>
-            <button type="button" class="mini-btn" id="labPickImg">랩 이미지 넣기</button>
-            <button type="button" class="mini-btn" id="labUploadImg">이미지 업로드</button>
-            <button type="button" class="mini-btn" id="labAddLogo">로고 넣기</button>
-          </div>
-          <div class="studio-toolbar">
-            <button type="button" class="mini-btn" id="labAddText">＋ 헤드라인</button>
-            <button type="button" class="mini-btn" id="labAddAccent">＋ 보라 강조</button>
-            <button type="button" class="mini-btn" id="labAddChip">＋ 크레딧 배지</button>
-            <button type="button" class="mini-btn" id="labAddCta">＋ CTA 버튼</button>
+          <div class="tool-groups">
+            <div class="tool-group">
+              <span class="tool-label">배경</span>
+              <button type="button" class="mini-btn" id="labPickBg">랩에서 고르기</button>
+              <button type="button" class="mini-btn" id="labUploadBg">업로드</button>
+              <input class="studio-input tool-color" type="color" id="labBgColor" value="#FFFFFF" title="바탕색 (배경 이미지가 없을 때)" aria-label="바탕색">
+              <button type="button" class="mini-btn" id="labBgClear">이미지 비우기</button>
+            </div>
+            <div class="tool-group">
+              <span class="tool-label">글자</span>
+              <button type="button" class="mini-btn" id="labAddText">헤드라인</button>
+              <button type="button" class="mini-btn" id="labAddAccent">보라 강조</button>
+              <button type="button" class="mini-btn" id="labAddSub">서브카피</button>
+              <button type="button" class="mini-btn" id="labAddChip">크레딧 배지</button>
+              <button type="button" class="mini-btn" id="labAddCta">CTA 버튼</button>
+            </div>
+            <div class="tool-group">
+              <span class="tool-label">이미지</span>
+              <button type="button" class="mini-btn" id="labPickImg">랩에서 고르기</button>
+              <button type="button" class="mini-btn" id="labUploadImg">업로드</button>
+              <button type="button" class="mini-btn" id="labAddLogo">교피 로고</button>
+            </div>
           </div>
           <div class="studio-stage" id="labStage">
             <canvas id="labCanvas" aria-label="카드 미리보기"></canvas>
             <canvas id="labOverlay" aria-hidden="true"></canvas>
           </div>
-          <p class="studio-hint">요소를 클릭하면 선택됩니다 · 드래그로 이동 · 오른쪽 아래 동그라미를 끌면 크기 조절 · 방향키 1px(Shift 10px) · Delete 삭제. 작업 내용은 이 브라우저에 임시 저장됩니다.</p>
+          <p class="studio-hint">클릭해 선택 → 드래그로 이동 → 오른쪽 아래 <b>○</b>를 끌면 크기 조절 · 방향키 1px(Shift 10px) · Delete 삭제 · 가장자리·중앙에 가까워지면 분홍 선에 자석처럼 붙습니다. 작업은 이 브라우저에 자동 저장됩니다.</p>
           <input type="file" id="labBgFile" accept="image/*" hidden>
           <input type="file" id="labImgFile" accept="image/*" hidden>
         </div>
 
         <div class="studio-panel">
-          <div class="studio-block">
-            <h3>선택한 요소 — <span id="labSelName">선택 없음</span></h3>
-            <p class="studio-empty" id="labNoSel">캔버스에서 요소를 클릭하거나 위 버튼으로 새 요소를 추가하세요.</p>
+          <div class="studio-block is-selection">
+            <h3><span id="labCardNow">카드 1 / 1</span> — <span id="labSelName">선택 없음</span></h3>
+            <p class="studio-empty" id="labNoSel">캔버스에서 요소를 클릭하거나 왼쪽 위 버튼으로 새 요소를 넣으세요.</p>
 
             <div class="studio-rows" id="labTextBlock" hidden>
               <textarea class="studio-area" id="labText" rows="3" placeholder="문구 (줄바꿈 가능)"></textarea>
@@ -79,32 +92,31 @@
               </div>
               <div class="studio-row">
                 <label for="labFont">폰트</label>
-                <select class="studio-select grow" id="labFont"></select>
+                <div class="studio-split">
+                  <select class="studio-select" id="labFont"></select>
+                  <select class="studio-select" id="labWeight" style="flex:0 0 96px" aria-label="굵기"></select>
+                </div>
               </div>
               <div class="studio-row">
                 <label for="labSize">크기</label>
                 <input class="studio-input grow" type="range" id="labSize" min="10" max="140" step="1">
-                <input class="studio-input studio-num" type="number" id="labSizeN" style="flex:0 0 66px" min="8" max="300">
+                <input class="studio-input studio-num" type="number" id="labSizeN" style="flex:0 0 64px" min="8" max="300" aria-label="크기 숫자">
               </div>
               <div class="studio-row">
                 <label for="labSp">자간</label>
                 <input class="studio-input grow" type="range" id="labSp" min="-60" max="60" step="1">
-                <input class="studio-input studio-num" type="number" id="labSpN" style="flex:0 0 66px" min="-60" max="60">
+                <input class="studio-input studio-num" type="number" id="labSpN" style="flex:0 0 64px" min="-60" max="60" aria-label="자간 숫자">
               </div>
               <div class="studio-row">
-                <label for="labColor">색</label>
+                <label for="labColor">색 · 정렬</label>
                 <div class="studio-split">
-                  <input class="studio-input" type="color" id="labColor" style="flex:0 0 60px">
-                  <select class="studio-select" id="labWeight" aria-label="굵기"></select>
+                  <input class="studio-input" type="color" id="labColor" style="flex:0 0 52px" aria-label="글자 색">
+                  <span class="studio-chips">
+                    <button type="button" class="studio-chip" data-align="left">왼쪽</button>
+                    <button type="button" class="studio-chip" data-align="center">가운데</button>
+                    <button type="button" class="studio-chip" data-align="right">오른쪽</button>
+                  </span>
                 </div>
-              </div>
-              <div class="studio-row">
-                <label>정렬</label>
-                <span class="studio-chips">
-                  <button type="button" class="studio-chip" data-align="left">왼쪽</button>
-                  <button type="button" class="studio-chip" data-align="center">가운데</button>
-                  <button type="button" class="studio-chip" data-align="right">오른쪽</button>
-                </span>
               </div>
               <div class="studio-row">
                 <label>효과</label>
@@ -120,8 +132,8 @@
                 <label for="labBox">배경 박스</label>
                 <div class="studio-split">
                   <select class="studio-select" id="labBox"></select>
-                  <input class="studio-input" type="color" id="labFill" style="flex:0 0 52px" aria-label="박스 채우기 색">
-                  <input class="studio-input" type="color" id="labStroke" style="flex:0 0 52px" aria-label="박스 테두리 색">
+                  <input class="studio-input" type="color" id="labFill" style="flex:0 0 52px" title="박스 채우기 색" aria-label="박스 채우기 색">
+                  <input class="studio-input" type="color" id="labStroke" style="flex:0 0 52px" title="박스 테두리 색" aria-label="박스 테두리 색">
                 </div>
               </div>
             </div>
@@ -130,13 +142,13 @@
               <div class="studio-row">
                 <label for="labWidth">너비</label>
                 <input class="studio-input grow" type="range" id="labWidth" min="40" max="1080" step="2">
-                <input class="studio-input studio-num" type="number" id="labWidthN" style="flex:0 0 72px" min="20" max="2000">
+                <input class="studio-input studio-num" type="number" id="labWidthN" style="flex:0 0 72px" min="20" max="2000" aria-label="너비 숫자">
               </div>
             </div>
 
             <div class="studio-rows" id="labCommonBlock" hidden style="margin-top:9px">
               <div class="studio-row">
-                <label for="labX">위치</label>
+                <label for="labX">위치 X·Y</label>
                 <div class="studio-split">
                   <input class="studio-input studio-num" type="number" id="labX" aria-label="가로 위치">
                   <input class="studio-input studio-num" type="number" id="labY" aria-label="세로 위치">
@@ -145,36 +157,31 @@
               <div class="studio-row">
                 <label for="labRot">회전</label>
                 <input class="studio-input grow" type="range" id="labRot" min="-30" max="30" step="0.5">
-                <input class="studio-input studio-num" type="number" id="labRotN" style="flex:0 0 66px" min="-180" max="180" step="0.5">
+                <input class="studio-input studio-num" type="number" id="labRotN" style="flex:0 0 64px" min="-180" max="180" step="0.5" aria-label="회전 숫자">
               </div>
               <div class="studio-row">
                 <label for="labAlpha">투명도</label>
                 <input class="studio-input grow" type="range" id="labAlpha" min="0" max="100" step="1">
+                <span class="studio-num" id="labAlphaN" style="flex:0 0 44px; text-align:right; font-size:12.5px; color:var(--lab-body)">100%</span>
               </div>
               <div class="studio-row">
-                <label>순서</label>
+                <label>요소</label>
                 <span class="studio-chips">
                   <button type="button" class="studio-chip" id="labUp">앞으로</button>
                   <button type="button" class="studio-chip" id="labDown">뒤로</button>
                   <button type="button" class="studio-chip" id="labDup">복제</button>
-                  <button type="button" class="studio-chip" id="labDel">삭제</button>
+                  <button type="button" class="studio-chip is-danger" id="labDel">삭제</button>
                 </span>
               </div>
             </div>
           </div>
 
           <div class="studio-block">
-            <h3>바탕</h3>
-            <div class="studio-row">
-              <label for="labBgColor">바탕색</label>
-              <input class="studio-input" type="color" id="labBgColor" value="#FFFFFF" style="flex:0 0 70px">
-              <span class="studio-empty" style="padding:0">배경 이미지가 없을 때 보이는 색</span>
-            </div>
-          </div>
-
-          <div class="studio-block">
-            <h3>요소 목록</h3>
+            <h3>이 카드의 요소</h3>
             <div class="studio-layers" id="labLayers"></div>
+            <div class="studio-row" style="margin-top:10px">
+              <button type="button" class="mini-btn" id="labDupCard" style="width:100%">이 카드를 복제해 다음 장 만들기</button>
+            </div>
           </div>
         </div>
       </div>
@@ -863,6 +870,8 @@
     </footer>
   </div>
 
+  <div class="studio-toast" id="labToast" hidden></div>
+
   <div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="카드 원본 보기">
     <div class="lb-top">
       <span class="lb-title" id="lbTitle"></span>
@@ -882,6 +891,7 @@
     <div class="picker-box">
       <div class="picker-top">
         <h3 id="labPickerTitle">이미지 고르기</h3>
+        <label class="studio-check" id="labPickerAll"><input type="checkbox"> 셋트 전체 배경에 적용</label>
         <span class="picker-tabs">
           <button type="button" class="studio-chip is-on" data-ptab="bg">배경 25종</button>
           <button type="button" class="studio-chip" data-ptab="card">완성 카드 25종</button>
