@@ -180,6 +180,7 @@
   function padOf(l) {
     if (l.box === 'pill') return { x: l.size * 1.05, y: l.size * 0.5 };
     if (l.box === 'sticker') return { x: l.size * 0.62, y: l.size * 0.45 };
+    if (l.box === 'card') return { x: 48, y: 40 };
     return { x: 0, y: 0 };
   }
   function boundsOf(c, l) {
@@ -238,6 +239,15 @@
       c.strokeStyle = l.stroke || '#241C14';
       c.lineWidth = 4;
       c.stroke();
+    } else if (l.box === 'card') {
+      c.shadowColor = 'rgba(83,94,160,0.22)';
+      c.shadowBlur = 34;
+      c.shadowOffsetY = 14;
+      c.fillStyle = l.fill || '#FFFFFFB8';
+      roundRect(c, b.x, b.y, b.w, b.h, 28);
+      c.fill();
+      c.shadowColor = 'transparent'; c.shadowBlur = 0; c.shadowOffsetY = 0;
+      if (l.stroke) { c.strokeStyle = l.stroke; c.lineWidth = 1.5; c.stroke(); }
     }
 
     applyFont(c, l);
@@ -444,6 +454,13 @@
     add.addEventListener('click', function () { addCard(false); });
     deckBox.appendChild(add);
 
+    var load = document.createElement('button');
+    load.type = 'button';
+    load.className = 'deck-add deck-load';
+    load.innerHTML = '<span class="deck-plus">▤</span><span>시안 불러오기<em>문구 수정 가능</em></span>';
+    load.addEventListener('click', function () { openPicker('template'); });
+    deckBox.appendChild(load);
+
     document.getElementById('labDeckCount').textContent = state.cards.length + '장';
   }
 
@@ -639,7 +656,7 @@
   fillSelect(el.labPreset, PRESET_ORDER.map(function (k) { return { v: k, t: PRESETS[k].label }; }));
   fillSelect(el.labFont, FONTS.map(function (f) { return { v: f.id, t: f.label }; }));
   fillSelect(el.labWeight, [400, 500, 600, 700, 800, 900].map(function (w) { return { v: w, t: w + ' 굵기' }; }));
-  fillSelect(el.labBox, [{ v: 'none', t: '없음' }, { v: 'pill', t: '알약 배경' }, { v: 'sticker', t: '스티커 박스' }]);
+  fillSelect(el.labBox, [{ v: 'none', t: '없음' }, { v: 'pill', t: '알약 배경' }, { v: 'sticker', t: '스티커 박스' }, { v: 'card', t: '카드 패널' }]);
 
   function syncPanel() {
     var l = current();
@@ -785,11 +802,15 @@
   var pickerTab = 'bg';
   var pickerApplyAll = document.getElementById('labPickerAll');
 
+  var tplSetCheck = document.getElementById('labTplSet');
   function openPicker(mode) {
     pickerMode = mode;
-    pickerTab = mode === 'bg' ? 'bg' : 'brand';
-    pickerTitle.textContent = mode === 'bg' ? '배경으로 쓸 이미지' : '카드에 넣을 이미지';
+    pickerTab = mode === 'bg' ? 'bg' : (mode === 'template' ? 'card' : 'brand');
+    pickerTitle.textContent = mode === 'bg' ? '배경으로 쓸 이미지'
+      : (mode === 'template' ? '시안 불러와서 수정하기' : '카드에 넣을 이미지');
     pickerApplyAll.hidden = mode !== 'bg';
+    tplSetCheck.hidden = mode !== 'template';
+    document.querySelector('.picker-tabs').hidden = mode === 'template';
     drawPicker();
     picker.hidden = false;
   }
@@ -802,10 +823,60 @@
     pickerGrid.querySelectorAll('[data-src]').forEach(function (b) {
       b.addEventListener('click', function () {
         var src = b.dataset.src;
-        picker.hidden = false;
-        if (pickerMode === 'bg') setBackground(src, pickerApplyAll.querySelector('input').checked);
-        else addImage(src, src.indexOf('logo') > -1 ? 300 : 620);
         picker.hidden = true;
+        if (pickerMode === 'bg') setBackground(src, pickerApplyAll.querySelector('input').checked);
+        else if (pickerMode === 'template') {
+          var m = src.match(/card-([a-e][1-5])\.png/);
+          if (m) applyTemplate(m[1], tplSetCheck.querySelector('input').checked);
+        } else {
+          addImage(src, src.indexOf('logo') > -1 ? 300 : 620);
+        }
+      });
+    });
+  }
+
+  /* ---------- 시안 템플릿 불러오기 ---------- */
+  var TPL = null;
+  function loadTemplates() {
+    if (TPL) return Promise.resolve(TPL);
+    return fetch(LAB + 'templates.json')
+      .then(function (r) { return r.json(); })
+      .then(function (j) { TPL = (j && j.templates) || {}; return TPL; })
+      .catch(function () { TPL = {}; return TPL; });
+  }
+  function cardFromTemplate(id) {
+    var t = TPL[id];
+    if (!t) return null;
+    var cd = { id: 'C' + (seq++), bgSrc: t.bg ? LAB + t.bg : '', bgColor: t.bgColor || '#FFFFFF', layers: [] };
+    cd.layers = (t.layers || []).map(function (l) {
+      var c = JSON.parse(JSON.stringify(l));
+      c.id = 'L' + (seq++);
+      if (c.type === 'image' && c.src && c.src.indexOf('/') === -1) c.src = LAB + c.src;
+      return c;
+    });
+    return cd;
+  }
+  function applyTemplate(id, wholeSet) {
+    loadTemplates().then(function () {
+      if (!TPL[id]) { toast('시안 정보를 불러오지 못했습니다'); return; }
+      if (wholeSet) {
+        var setKey = TPL[id].set;
+        var ids = Object.keys(TPL).filter(function (k) { return TPL[k].set === setKey; }).sort();
+        var hasWork = state.cards.some(function (c) { return c.layers.length; });
+        if (hasWork && !window.confirm('지금 만들던 카드를 시안 셋트 ' + ids.length + '장으로 교체할까요?')) return;
+        state.cards = ids.map(cardFromTemplate);
+        state.cur = ids.indexOf(id) >= 0 ? ids.indexOf(id) : 0;
+      } else {
+        var cd = cardFromTemplate(id);
+        var curCd = card();
+        if (curCd.layers.length && !window.confirm('현재 카드 내용을 이 시안으로 교체할까요?')) return;
+        state.cards[state.cur] = cd;
+      }
+      state.sel = null;
+      ensureImages().then(function () {
+        syncPanel();
+        render();
+        toast(wholeSet ? '시안 셋트를 불러왔습니다 — 문구를 자유롭게 수정하세요' : '시안 카드를 불러왔습니다 — 문구를 자유롭게 수정하세요');
       });
     });
   }

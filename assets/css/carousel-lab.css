@@ -296,3 +296,8 @@ footer.credits .fineprint { color: var(--lab-muted); }
 }
 
 .picker-top .studio-check { margin-left: 4px; }
+
+/* ---------- v4.2: 시안 템플릿 불러오기 ---------- */
+.deck-load { border-style: solid; background: #fff; }
+.deck-load .deck-plus { font-size: 20px; }
+.deck-load:hover { background: var(--lab-accent-soft); }
