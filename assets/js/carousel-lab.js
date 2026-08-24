@@ -90,11 +90,18 @@
   over.style.pointerEvents = 'none';
 
   var FONTS = [
-    { id: 'pretendard', label: 'Pretendard (교피 기본)', css: "'Pretendard Variable', 'Pretendard', sans-serif" },
-    { id: 'noto', label: 'Noto Sans KR', css: "'Noto Sans KR', sans-serif" },
-    { id: 'blackhan', label: 'Black Han Sans (임팩트)', css: "'Black Han Sans', sans-serif" },
-    { id: 'gothica1', label: 'Gothic A1 (모던)', css: "'Gothic A1', sans-serif" },
-    { id: 'myeongjo', label: 'Nanum Myeongjo (명조)', css: "'Nanum Myeongjo', serif" }
+    { id: 'pretendard', label: 'Pretendard · 교피 기본', css: "'Pretendard Variable', 'Pretendard', sans-serif" },
+    { id: 'noto', label: 'Noto Sans KR · 본문', css: "'Noto Sans KR', sans-serif" },
+    { id: 'gothica1', label: 'Gothic A1 · 모던 고딕', css: "'Gothic A1', sans-serif" },
+    { id: 'plex', label: 'IBM Plex Sans KR · 중립', css: "'IBM Plex Sans KR', sans-serif" },
+    { id: 'blackhan', label: 'Black Han Sans · 임팩트', css: "'Black Han Sans', sans-serif" },
+    { id: 'dohyeon', label: 'Do Hyeon · 굵은 제목', css: "'Do Hyeon', sans-serif" },
+    { id: 'jua', label: 'Jua · 둥근 친근', css: "'Jua', sans-serif" },
+    { id: 'gaegu', label: 'Gaegu · 손글씨 고딕', css: "'Gaegu', cursive" },
+    { id: 'pen', label: 'Nanum Pen · 손글씨', css: "'Nanum Pen Script', cursive" },
+    { id: 'song', label: 'Song Myung · 명조 디스플레이', css: "'Song Myung', serif" },
+    { id: 'myeongjo', label: 'Nanum Myeongjo · 명조', css: "'Nanum Myeongjo', serif" },
+    { id: 'gowun', label: 'Gowun Batang · 부드러운 명조', css: "'Gowun Batang', serif" }
   ];
 
   var PRESETS = {
@@ -109,13 +116,31 @@
     chip:    { label: '칩 · 배지',        size: 25, weight: 600, color: '#4947BC', sp: -0.010, italic: false, box: 'pill', fill: '#F0EEFF', stroke: '#D8D3F7' },
     credit:  { label: '무료 크레딧 배지', size: 25, weight: 700, color: '#7A5C12', sp: -0.010, italic: false, box: 'pill', fill: '#FFF1BF', stroke: '#EFD98E' },
     cta:     { label: 'CTA 버튼',         size: 34, weight: 700, color: '#FFFFFF', sp: -0.020, italic: false, box: 'pill', fill: '#5557D2', stroke: '' },
-    note:    { label: '고지 문구',        size: 22, weight: 400, color: '#747C90', sp: -0.010, italic: false, box: 'none' }
+    note:    { label: '고지 문구',        size: 22, weight: 400, color: '#747C90', sp: -0.010, italic: false, box: 'none' },
+    riso:    { label: 'F 리소 구호체',    size: 92, weight: 400, color: '#241C24', sp: -0.020, italic: false, box: 'none', font: 'blackhan' },
+    risoBlock: { label: 'F 코랄 블록',    size: 92, weight: 400, color: '#FFF8F2', sp: -0.020, italic: false, box: 'pill', fill: '#FF6B4A', stroke: '', font: 'blackhan' },
+    swiss:   { label: 'G 스위스 헤드',    size: 86, weight: 900, color: '#101014', sp: -0.040, italic: false, box: 'none', font: 'gothica1' },
+    swissKicker: { label: 'G 라벨 키커',  size: 23, weight: 600, color: '#5A43D6', sp: 0.140, italic: false, box: 'none', font: 'plex' },
+    clay:    { label: 'H 클레이 헤드',    size: 70, weight: 400, color: '#3B3350', sp: -0.010, italic: false, box: 'none', font: 'jua' },
+    clayPill: { label: 'H 말랑 캡슐',     size: 25, weight: 400, color: '#6C4AE0', sp: -0.005, italic: false, box: 'pill', fill: '#FFFFFF', stroke: '#E4DEFF', font: 'jua' },
+    handwrite: { label: 'I 손글씨 대형',  size: 112, weight: 400, color: '#2B2A33', sp: 0.000, italic: false, box: 'none', font: 'pen' },
+    handmark: { label: 'I 형광펜 손글씨', size: 112, weight: 400, color: '#2B2A33', sp: 0.000, italic: false, box: 'none', font: 'pen', marker: '#FFE86B' },
+    handnote: { label: 'I 노트 메모',     size: 30, weight: 700, color: '#5A5765', sp: 0.000, italic: false, box: 'sticker', fill: '#FFFFFF', stroke: '#2B2A33', font: 'gaegu' },
+    mag:     { label: 'J 매거진 명조',    size: 92, weight: 400, color: '#F3EFE6', sp: -0.010, italic: false, box: 'none', font: 'song' },
+    magAccent: { label: 'J 명조 강조',    size: 92, weight: 400, color: '#9A82FF', sp: -0.010, italic: false, box: 'none', font: 'song' },
+    magKicker: { label: 'J 라틴 키커',    size: 21, weight: 500, color: '#9A82FF', sp: 0.300, italic: false, box: 'none', font: 'plex' }
   };
-  var PRESET_ORDER = ['head', 'accent', 'white', 'glow', 'poster', 'marker', 'sticker', 'sub', 'chip', 'credit', 'cta', 'note'];
+  var PRESET_ORDER = [
+    'head', 'accent', 'white', 'glow', 'poster', 'marker', 'sticker', 'sub', 'chip', 'credit', 'cta', 'note',
+    'riso', 'risoBlock', 'swiss', 'swissKicker', 'clay', 'clayPill', 'handwrite', 'handmark', 'handnote', 'mag', 'magAccent', 'magKicker'
+  ];
 
   var LAB = '/assets/img/carousel-lab/';
-  var KEYS = ['a', 'b', 'c', 'd', 'e'];
-  var SETNAME = { a: 'A 클린 스위프', b: 'B 미드나잇', c: 'C 빅 타이포', d: 'D 캠퍼스 웜', e: 'E 글래스' };
+  var KEYS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
+  var SETNAME = {
+    a: 'A 클린 스위프', b: 'B 미드나잇', c: 'C 빅 타이포', d: 'D 캠퍼스 웜', e: 'E 글래스',
+    f: 'F 리소 프린트', g: 'G 스위스 그리드', h: 'H 클레이 파스텔', i: 'I 손글씨 노트', j: 'J 매거진'
+  };
   var GALLERY = { bg: [], card: [], brand: [] };
   KEYS.forEach(function (k) {
     for (var n = 1; n <= 5; n++) {
@@ -473,7 +498,7 @@
       text: presetId === 'cta' ? '무료 크레딧 받고 시작하기' : (presetId === 'sub' ? '서브 카피를 입력하세요' : '문구를 입력하세요'),
       x: 70, y: 120 + (cd.layers.length % 6) * 40, rot: p.rot || 0,
       size: p.size, weight: p.weight, color: p.color, sp: p.sp, italic: !!p.italic,
-      align: 'left', font: 'pretendard', alpha: 1,
+      align: 'left', font: p.font || 'pretendard', alpha: 1,
       box: p.box || 'none', fill: p.fill || '', stroke: p.stroke || '',
       shadow: p.shadow || '', underline: p.underline || '', glow: p.glow || '', marker: p.marker || '',
       shadowBox: presetId === 'cta'
@@ -744,6 +769,7 @@
     l.box = p.box || 'none'; l.fill = p.fill || ''; l.stroke = p.stroke || '';
     l.shadow = p.shadow || ''; l.underline = p.underline || ''; l.glow = p.glow || ''; l.marker = p.marker || '';
     l.rot = p.rot || 0;
+    if (p.font) l.font = p.font;
     l.shadowBox = el.labPreset.value === 'cta';
     syncPanel();
     render();
@@ -826,7 +852,7 @@
         picker.hidden = true;
         if (pickerMode === 'bg') setBackground(src, pickerApplyAll.querySelector('input').checked);
         else if (pickerMode === 'template') {
-          var m = src.match(/card-([a-e][1-5])\.png/);
+          var m = src.match(/card-([a-j][1-5])\.png/);
           if (m) applyTemplate(m[1], tplSetCheck.querySelector('input').checked);
         } else {
           addImage(src, src.indexOf('logo') > -1 ? 300 : 620);
