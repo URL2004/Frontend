@@ -4,7 +4,7 @@
     return;
   }
 
-  var v = 'lav-173';
+  var v = 'lav-174';
   function script(src, attrs) {
     attrs = attrs || '';
     document.write('<script ' + attrs + ' src="' + src + '"><\/script>');
@@ -16,6 +16,7 @@
   script('/assets/js/app-main.js?v=' + v);
   script('/assets/js/main-designs.js?v=' + v);
   script('/assets/js/evasion-flow.js?v=' + v);
+  script('/assets/js/writing-lab.js?v=' + v);
   script('/assets/js/app-module.js?v=' + v, 'type="module"');
   script('/assets/js/payment-callbacks.js?v=' + v, 'type="module"');
   script('https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js');

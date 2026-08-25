@@ -13,7 +13,7 @@ function creditNeededForText(text, apiMode) {
 function currentCreditMode() {
  return mode === 'detect' ? 'detect' : 'humanize';
 }
-const ROUTE_TABS = ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','adminHumanizeLab','history','pro'];
+const ROUTE_TABS = ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','adminHumanizeLab','history','pro','writingLab'];
 const ROUTE_PATHS = {
  main: '/',
  pricing: '/pricing',
@@ -28,7 +28,8 @@ const ROUTE_PATHS = {
  admin: '/admin',
  adminHumanizeLab: '/admin-humanize-lab',
  history: '/history',
- pro: '/pro'
+ pro: '/pro',
+ writingLab: '/writing-lab'
 };
 const PATH_ROUTES = {
  '/': 'main',
@@ -45,7 +46,8 @@ const PATH_ROUTES = {
  '/admin': 'admin',
  '/admin-humanize-lab': 'adminHumanizeLab',
  '/history': 'history',
- '/pro': 'pro'
+ '/pro': 'pro',
+ '/writing-lab': 'writingLab'
 };
 const ROUTE_META = {
 main: {
@@ -103,6 +105,10 @@ faq: {
  pro: {
   title: 'Pro · 교수님 피하기',
   description: '교수님 피하기 Pro 전용 기능을 이용하세요.'
+ },
+ writingLab: {
+  title: '글쓰기 랩 · 교수님 피하기',
+  description: '내 사실과 경험만으로 자기소개서·블로그·소개 글을 만들고, 휴머나이징과 무날조 검수까지 한 번에 끝내는 글쓰기 랩입니다.'
  }
 };
 
@@ -214,6 +220,7 @@ function runRouteSideEffects(t) {
  if (t === 'qna' && typeof window.loadQuestions === 'function') window.loadQuestions();
  if (t === 'admin' && typeof window.loadAdminPage === 'function') window.loadAdminPage();
  if (t === 'adminHumanizeLab' && typeof window.loadAdminHumanizeLab === 'function') window.loadAdminHumanizeLab();
+ if (t === 'writingLab' && typeof window.loadWritingLab === 'function') window.loadWritingLab();
 }
 
 function applyRouteFromUrl(opts) {
@@ -230,6 +237,10 @@ function applyRouteFromUrl(opts) {
  }
  if (routeTab === 'adminHumanizeLab') {
   openAdminHumanizeLab();
+  return;
+ }
+ if (routeTab === 'writingLab') {
+  openWritingLab();
   return;
  }
  if (routeTab === 'pro') {
@@ -452,6 +463,17 @@ function openAdminHumanizeLab() {
  tryLoad(10);
 }
 window.openAdminHumanizeLab = openAdminHumanizeLab;
+// 글쓰기 랩: 일반 사용자도 쓰는 실운영 페이지(로그인 필수). 관리자 설정 탭의 단독 실행 버튼도 이 함수를 쓴다.
+function openWritingLab() {
+ if (!window.CU) { showScreen('login'); return; }
+ switchTab('writingLab');
+ var tryLoad = function(tries) {
+  if (typeof window.loadWritingLab === 'function') { window.loadWritingLab(); }
+  else if (tries > 0) { setTimeout(function(){ tryLoad(tries-1); }, 200); }
+ };
+ tryLoad(10);
+}
+window.openWritingLab = openWritingLab;
 function switchTab(t, opts) {
  opts = opts || {};
  t = normalizeRouteTab(t);
@@ -459,7 +481,7 @@ function switchTab(t, opts) {
  document.querySelectorAll('.ntab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.mnav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.snav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
- ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','adminHumanizeLab','history','pro'].forEach(n=>{
+ ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','adminHumanizeLab','history','pro','writingLab'].forEach(n=>{
  const el = document.getElementById(n+'Content');
  if (el) el.style.display = n===t ? 'block' : 'none';
  });

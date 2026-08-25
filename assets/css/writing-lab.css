@@ -1,0 +1,115 @@
+/* 글쓰기 랩(2026-08-25) — 장르 생성 → 휴머나이징 → 무날조 검수 위저드.
+   redesign.css(lavender)와 같은 라이트 톤을 쓰되 .gp-wl-* 네임스페이스로 격리해 캐스케이드 충돌을 피한다. */
+.gp-wl-page{max-width:880px;margin:0 auto;padding:28px 18px 80px;color:#232330;}
+.gp-wl-page [hidden]{display:none !important;}
+
+/* 헤더 */
+.gp-wl-head h2{margin:2px 0 6px;font-size:26px;font-weight:900;letter-spacing:-.01em;}
+.gp-wl-head>p{margin:0 0 12px;font-size:14.5px;color:#6a6d80;}
+.gp-wl-kicker{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:#5a5bd8;}
+.gp-wl-trust{font-size:13px;line-height:1.6;color:#4d4f63;background:#eef0fb;border-left:3px solid #5a5bd8;border-radius:0 10px 10px 0;padding:10px 14px;word-break:keep-all;}
+.gp-wl-trust b{color:#4446b8;}
+.gp-wl-admin-badge{display:inline-block;margin-top:10px;font-size:12px;font-weight:800;color:#4446b8;background:#e6e7fa;border:1px solid #cdd0f2;border-radius:999px;padding:3px 12px;}
+
+/* 단계 표시 */
+.gp-wl-steps{display:flex;gap:8px;list-style:none;margin:22px 0 18px;padding:0;flex-wrap:wrap;}
+.gp-wl-steps li{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:#a2a5b8;}
+.gp-wl-steps li span{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#e8e9f2;color:#8a8da0;font-size:12px;}
+.gp-wl-steps li.on{color:#4446b8;}
+.gp-wl-steps li.on span{background:#5a5bd8;color:#fff;}
+.gp-wl-steps li.done{color:#1f7a53;}
+.gp-wl-steps li.done span{background:#2e9e6f;color:#fff;}
+.gp-wl-steps li:not(:last-child)::after{content:"";width:26px;height:1px;background:#dfe1ec;margin-left:8px;}
+
+.gp-wl-q{margin:0 0 12px;font-size:16.5px;font-weight:800;}
+.gp-wl-q small{font-weight:600;font-size:12.5px;color:#8a8da0;}
+.gp-wl-q em{font-style:normal;font-size:12px;color:#8a8da0;font-weight:700;margin-left:6px;}
+
+/* STEP 1 — 장르 선택 */
+.gp-wl-genres{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.gp-wl-genre{position:relative;text-align:left;background:#fff;border:1.5px solid #e3e6f0;border-radius:14px;padding:18px 18px 16px;cursor:pointer;font-family:inherit;transition:border-color .15s,box-shadow .15s,transform .15s;}
+.gp-wl-genre:hover{border-color:#b9bcf0;box-shadow:0 6px 18px rgba(90,91,216,.10);transform:translateY(-1px);}
+.gp-wl-genre:focus-visible{outline:2px solid #5a5bd8;outline-offset:2px;}
+.gp-wl-genre.picked{border-color:#5a5bd8;box-shadow:0 6px 18px rgba(90,91,216,.14);}
+.gp-wl-genre b{display:block;font-size:15.5px;font-weight:800;color:#232330;margin-bottom:5px;}
+.gp-wl-genre span{display:block;font-size:13px;line-height:1.55;color:#6a6d80;word-break:keep-all;}
+.gp-wl-badge{position:absolute;top:14px;right:14px;font-style:normal;font-size:10.5px;font-weight:800;color:#b3403e;background:#fdeaea;border-radius:999px;padding:2px 9px;}
+
+/* STEP 2 — 입력 */
+.gp-wl-back-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;}
+.gp-wl-back{background:none;border:none;color:#6a6d80;font-size:13px;font-weight:700;cursor:pointer;padding:6px 8px;border-radius:8px;font-family:inherit;}
+.gp-wl-back:hover{background:#eef0f6;color:#4446b8;}
+.gp-wl-back:focus-visible{outline:2px solid #5a5bd8;outline-offset:2px;}
+.gp-wl-genre-badge{font-size:12.5px;font-weight:800;color:#4446b8;background:#e6e7fa;border-radius:999px;padding:4px 13px;}
+.gp-wl-field{display:block;margin-bottom:12px;}
+.gp-wl-field>span{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;color:#4d4f63;margin-bottom:6px;}
+.gp-wl-field>span em{font-style:normal;font-size:11.5px;color:#a2a5b8;font-weight:700;}
+.gp-wl-field textarea,.gp-wl-field input,.gp-wl-field select{width:100%;box-sizing:border-box;background:#fff;border:1.5px solid #e3e6f0;border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.6;color:#232330;font-family:inherit;resize:vertical;}
+.gp-wl-field textarea::placeholder,.gp-wl-field input::placeholder{color:#b4b7c6;}
+.gp-wl-field textarea:focus,.gp-wl-field input:focus,.gp-wl-field select:focus{outline:none;border-color:#5a5bd8;box-shadow:0 0 0 3px rgba(90,91,216,.12);}
+.gp-wl-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.gp-wl-facts-head{margin-top:6px;}
+.gp-wl-facts{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f2f3fb;border:1px solid #e0e2f2;border-radius:14px;padding:14px;}
+.gp-wl-facts .gp-wl-field{margin-bottom:0;}
+.gp-wl-more{margin:14px 0;border:1px solid #e3e6f0;border-radius:12px;background:#fff;padding:0 16px;}
+.gp-wl-more summary{cursor:pointer;font-size:13.5px;font-weight:800;color:#4d4f63;padding:13px 0;list-style-position:inside;}
+.gp-wl-more summary small{font-weight:600;color:#a2a5b8;}
+.gp-wl-more[open]{padding-bottom:14px;}
+.gp-wl-more textarea{width:100%;box-sizing:border-box;background:#f8f9fd;border:1.5px solid #e3e6f0;border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.65;color:#4d4f63;font-family:inherit;resize:vertical;}
+.gp-wl-more-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:4px;}
+.gp-wl-runbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:16px;background:#fff;border:1px solid #e3e6f0;border-radius:14px;padding:12px 16px;}
+.gp-wl-quote{font-size:13.5px;color:#4d4f63;}
+.gp-wl-quote b{color:#4446b8;}
+.gp-wl-quote small{color:#a2a5b8;}
+.gp-wl-run{background:#5a5bd8;color:#fff;border:none;border-radius:11px;padding:12px 26px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:background .15s;}
+.gp-wl-run:hover{background:#4446b8;}
+.gp-wl-run:disabled{background:#b9bcf0;cursor:default;}
+.gp-wl-run:focus-visible{outline:2px solid #23233a;outline-offset:2px;}
+.gp-wl-status{min-height:20px;margin-top:10px;font-size:13.5px;font-weight:700;}
+.gp-wl-status.info{color:#4446b8;}
+.gp-wl-status.success{color:#1f7a53;}
+.gp-wl-status.warn{color:#9a6516;}
+.gp-wl-status.error{color:#b3403e;}
+
+/* STEP 3 — 결과 */
+.gp-wl-progress{display:flex;gap:10px;list-style:none;margin:0 0 12px;padding:0;flex-wrap:wrap;}
+.gp-wl-progress li{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:#a2a5b8;background:#fff;border:1px solid #e3e6f0;border-radius:999px;padding:6px 14px;}
+.gp-wl-progress li b{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#e8e9f2;color:#8a8da0;font-size:11px;}
+.gp-wl-progress li.run{color:#4446b8;border-color:#b9bcf0;}
+.gp-wl-progress li.run b{background:#5a5bd8;color:#fff;}
+.gp-wl-progress li.done{color:#1f7a53;border-color:#bfe3d0;}
+.gp-wl-progress li.done b{background:#2e9e6f;color:#fff;}
+.gp-wl-progress li.skip{color:#a2a5b8;text-decoration:line-through;}
+.gp-wl-result-card{background:#fff;border:1.5px solid #e3e6f0;border-radius:14px;padding:16px 18px;margin-top:14px;}
+.gp-wl-result-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.gp-wl-result-head h3{margin:0;}
+.gp-wl-result-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.gp-wl-mini{background:#f2f3fb;border:1px solid #dfe1f0;color:#4446b8;border-radius:9px;padding:7px 14px;font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;}
+.gp-wl-mini:hover{background:#e6e7fa;}
+.gp-wl-mini:focus-visible{outline:2px solid #5a5bd8;outline-offset:2px;}
+.gp-wl-result-card textarea{width:100%;box-sizing:border-box;border:none;background:#f8f9fd;border-radius:10px;padding:12px 14px;font-size:14.5px;line-height:1.75;color:#232330;font-family:inherit;resize:vertical;}
+.gp-wl-result-card textarea:focus{outline:2px solid #b9bcf0;}
+.gp-wl-report{background:#fff;border:1px solid #e3e6f0;border-radius:14px;padding:16px 18px;margin-top:14px;}
+.gp-wl-pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px;}
+.gp-wl-pill{display:inline-flex;align-items:center;min-height:26px;padding:0 11px;border-radius:999px;background:#f2f3f8;border:1px solid #e3e6f0;font-size:12px;font-weight:800;color:#4d4f63;font-variant-numeric:tabular-nums;}
+.gp-wl-pill.ok{background:#e3f2ea;border-color:#bfe3d0;color:#1f7a53;}
+.gp-wl-pill.warn{background:#fdf3e0;border-color:#f0ddb4;color:#9a6516;}
+.gp-wl-pill.bad{background:#fdeaea;border-color:#f2c6c4;color:#b3403e;}
+.gp-wl-report-detail{font-size:13px;color:#4d4f63;line-height:1.7;word-break:keep-all;}
+.gp-wl-report-detail div{margin:5px 0;}
+.gp-wl-report-detail small{color:#a2a5b8;}
+.gp-wl-followups{background:#eef0fb;border:1px solid #dfe1f5;border-radius:14px;padding:16px 18px;margin-top:14px;}
+.gp-wl-followups ul{margin:0;padding-left:20px;font-size:13.5px;line-height:1.75;color:#3f4157;}
+.gp-wl-hint{margin:10px 0 0;font-size:12.5px;color:#6a6d80;}
+
+@media(max-width:760px){
+ .gp-wl-genres,.gp-wl-row2,.gp-wl-facts{grid-template-columns:1fr;}
+ .gp-wl-more-grid{grid-template-columns:1fr 1fr;}
+ .gp-wl-runbar{flex-direction:column;align-items:stretch;text-align:center;}
+ .gp-wl-run{width:100%;}
+ .gp-wl-page{padding:20px 14px 64px;}
+}
+@media(prefers-reduced-motion:reduce){
+ .gp-wl-genre{transition:none;}
+ .gp-wl-genre:hover{transform:none;}
+}

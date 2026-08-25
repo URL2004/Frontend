@@ -1,0 +1,136 @@
+<!-- 글쓰기 랩(2026-08-25): 장르 맞춤 생성 → 휴머나이징 → 무날조 검수 결합 파이프라인.
+     로그인 사용자 대상 실운영 페이지(일반=과금, 관리자=무과금 실험). 로직은 assets/js/writing-lab.js -->
+<div id="writingLabContent" class="gp-wl-root" style="display:none;">
+  <div class="gp-wl-page">
+    <header class="gp-wl-head">
+      <div class="gp-wl-kicker">Writing Lab</div>
+      <h2>글쓰기 랩</h2>
+      <p>내가 가진 사실과 경험만으로 글을 만들고, 휴머나이징과 검수까지 한 번에 끝내요.</p>
+      <div class="gp-wl-trust">이 랩은 글을 지어내지 않아요 — <b>사실 카드에 적은 내용만</b> 본문에 들어가고, 근거 없는 경험·수치는 검수에서 표시됩니다.</div>
+      <div id="wlAdminBadge" class="gp-wl-admin-badge" hidden>관리자 실험 모드 · 무과금</div>
+    </header>
+
+    <ol class="gp-wl-steps" aria-label="진행 단계">
+      <li id="wlStepDot1" class="on"><span>1</span>글 종류</li>
+      <li id="wlStepDot2"><span>2</span>내용 입력</li>
+      <li id="wlStepDot3"><span>3</span>결과</li>
+    </ol>
+
+    <!-- STEP 1: 무엇을 쓸까요 -->
+    <section class="gp-wl-step" data-wl-step="1">
+      <h3 class="gp-wl-q">무엇을 만들까요?</h3>
+      <div class="gp-wl-genres">
+        <button type="button" class="gp-wl-genre" data-genre="resume" onclick="wlPickGenre('resume')">
+          <b>자기소개서</b><i class="gp-wl-badge">취업 시즌</i>
+          <span>문항과 내 경험으로 지원서 답변을 완성해요. 글자수 조건까지 맞춥니다.</span>
+        </button>
+        <button type="button" class="gp-wl-genre" data-genre="review_blog" onclick="wlPickGenre('review_blog')">
+          <b>블로그·후기</b>
+          <span>실제 경험과 정보로 블로그 글을 만들어요. 경험 순서를 지어내지 않아요.</span>
+        </button>
+        <button type="button" class="gp-wl-genre" data-genre="marketing" onclick="wlPickGenre('marketing')">
+          <b>상품·서비스 소개</b>
+          <span>근거 있는 강점만으로 소개 글을 써요. 과장·보장 표현은 걸러냅니다.</span>
+        </button>
+        <button type="button" class="gp-wl-genre" data-genre="general" onclick="wlPickGenre('general')">
+          <b>일반 글</b>
+          <span>설명문·안내문 등 목적이 있는 글을 두괄식으로 정리해요.</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- STEP 2: 내용 입력 -->
+    <section class="gp-wl-step" data-wl-step="2" hidden>
+      <div class="gp-wl-back-row">
+        <button type="button" class="gp-wl-back" onclick="wlGoStep(1)">← 글 종류 다시 선택</button>
+        <span id="wlGenreBadge" class="gp-wl-genre-badge"></span>
+      </div>
+
+      <label class="gp-wl-field">
+        <span id="wlTopicLabel">주제 <em id="wlTopicCount">0자</em></span>
+        <textarea id="wlTopic" rows="2" maxlength="1200" oninput="wlTopicInput()"></textarea>
+      </label>
+
+      <div class="gp-wl-row2">
+        <label class="gp-wl-field"><span id="wlCtx1Label">항목 1</span><input id="wlCtx1" type="text" maxlength="160"></label>
+        <label class="gp-wl-field"><span id="wlCtx2Label">항목 2</span><input id="wlCtx2" type="text" maxlength="160"></label>
+      </div>
+
+      <div class="gp-wl-facts-head">
+        <h3 class="gp-wl-q">사실 카드 <small>— 본문에 들어갈 수 있는 유일한 재료예요. 한 칸만 채워도 시작할 수 있어요.</small></h3>
+      </div>
+      <div class="gp-wl-facts">
+        <label class="gp-wl-field"><span id="wlFactLabel1">직접 겪은 일·경험</span><textarea id="wlFact1" rows="3" maxlength="2000"></textarea></label>
+        <label class="gp-wl-field"><span id="wlFactLabel2">구체적 사례·예시</span><textarea id="wlFact2" rows="3" maxlength="2000"></textarea></label>
+        <label class="gp-wl-field"><span id="wlFactLabel3">정확히 아는 수치·출처</span><textarea id="wlFact3" rows="3" maxlength="2000"></textarea></label>
+        <label class="gp-wl-field"><span id="wlFactLabel4">내 생각·입장</span><textarea id="wlFact4" rows="3" maxlength="2000"></textarea></label>
+      </div>
+
+      <details class="gp-wl-more">
+        <summary>세부 설정 <small>(분량·문체·강조)</small></summary>
+        <div class="gp-wl-more-grid">
+          <label class="gp-wl-field"><span>목표 분량 (선택)</span><input id="wlTargetChars" type="number" min="100" max="3000" placeholder="예: 600" oninput="wlUpdateQuote()"></label>
+          <label class="gp-wl-field"><span>분량 기준</span>
+            <select id="wlCharMode">
+              <option value="with_space">공백 포함</option>
+              <option value="no_space">공백 제외</option>
+              <option value="byte2">바이트(한글 2byte)</option>
+            </select></label>
+          <label class="gp-wl-field"><span>문체</span>
+            <select id="wlTone">
+              <option value="">기본 (글 종류에 맞게)</option>
+              <option value="formal">격식 있게</option>
+              <option value="friendly">친근하게</option>
+            </select></label>
+          <label class="gp-wl-field"><span>휴머나이징</span>
+            <select id="wlHumanize">
+              <option value="auto">자동 적용 (추천)</option>
+              <option value="skip">건너뛰기 — 생성만</option>
+            </select></label>
+        </div>
+        <label class="gp-wl-field"><span>강조하고 싶은 점 (선택)</span><input id="wlEmphasis" type="text" maxlength="300" placeholder="예: 이해관계 조정 역량"></label>
+      </details>
+
+      <div class="gp-wl-runbar">
+        <div class="gp-wl-quote"><span id="wlQuote">예상 크레딧 계산 중...</span></div>
+        <button type="button" id="wlRunBtn" class="gp-wl-run" onclick="wlRun()">글 만들기</button>
+      </div>
+      <div id="wlStatus2" class="gp-wl-status" role="status"></div>
+    </section>
+
+    <!-- STEP 3: 결과 -->
+    <section class="gp-wl-step" data-wl-step="3" hidden>
+      <div class="gp-wl-back-row">
+        <button type="button" class="gp-wl-back" onclick="wlGoStep(2)">← 입력 수정</button>
+        <span id="wlResultGenreBadge" class="gp-wl-genre-badge"></span>
+      </div>
+
+      <ol class="gp-wl-progress">
+        <li id="wlProg1"><b>1</b> 사실 카드로 글 생성</li>
+        <li id="wlProg2"><b>2</b> 내 말투로 휴머나이징</li>
+        <li id="wlProg3"><b>3</b> 무날조·분량 검수</li>
+      </ol>
+      <div id="wlStatus3" class="gp-wl-status" role="status"></div>
+
+      <div class="gp-wl-result-card">
+        <div class="gp-wl-result-head">
+          <h3 class="gp-wl-q">완성된 글 <em id="wlFinalCount"></em></h3>
+          <div class="gp-wl-result-actions">
+            <button type="button" class="gp-wl-mini" onclick="wlCopy()">복사</button>
+            <button type="button" class="gp-wl-mini" onclick="wlDownload()">.txt 저장</button>
+            <button type="button" class="gp-wl-mini" onclick="wlRunAgain()">다시 만들기</button>
+          </div>
+        </div>
+        <textarea id="wlFinal" rows="14" readonly placeholder="여기에 완성된 글이 표시됩니다."></textarea>
+      </div>
+
+      <div id="wlReport" class="gp-wl-report" hidden></div>
+      <div id="wlFollowups" class="gp-wl-followups" hidden></div>
+
+      <details id="wlDraftWrap" class="gp-wl-more" hidden>
+        <summary>휴머나이징 전 초안 보기</summary>
+        <textarea id="wlDraft" rows="10" readonly></textarea>
+      </details>
+    </section>
+  </div>
+</div>
