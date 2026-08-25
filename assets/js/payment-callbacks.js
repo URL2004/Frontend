@@ -54,6 +54,11 @@
     const paidMarker = storageKey ? localStorage.getItem(storageKey) : '';
     if (paidMarker && paidMarker !== '1') {
       history.replaceState({}, '', location.pathname);
+      const knownUser = await getCallbackUser(5000);
+      if (knownUser) await refreshCreditBalance(knownUser.uid);
+      if (typeof window.gpHandleCreditPaymentSuccess === 'function') {
+        await window.gpHandleCreditPaymentSuccess({ orderId, amount: Number(amount) || 0, chargedCredits: credits, data: { recoveredFromMarker: true } });
+      }
       return true;
     }
     if (storageKey && paidMarker === '1') localStorage.removeItem(storageKey);
@@ -117,28 +122,36 @@
       let data = {};
       try { data = await res.json(); } catch (_) {}
       if (res.ok && data.ok) {
+        const conversionMeta = typeof window.gpPendingCheckoutMeta === 'function' ? window.gpPendingCheckoutMeta() : {};
         if (storageKey) localStorage.setItem(storageKey, String(Date.now()));
         history.replaceState({}, '', location.pathname);
         const _amt = Number(amount) || 0;
         const _plan = url.get('plan') || '';
         const _cred = data.creditAmount || credits;
-        if (window.gpTrack) window.gpTrack('purchase', {
+        if (window.gpTrack) window.gpTrack('purchase', Object.assign({}, conversionMeta, {
           transaction_id: orderId,
           meta_event_id: 'purchase_' + orderId,
           value: _amt,
           currency: 'KRW',
           items: [{ item_id: _plan || ('credits_' + _cred), item_name: _plan || ('크레딧 ' + _cred), quantity: 1, price: _amt }],
-          traffic_source: localStorage.getItem('traffic_source') || 'direct'
-        });
+          traffic_source: localStorage.getItem('traffic_source') || 'direct',
+          bonus_credits: Number(data.bonusCredits) || 0,
+          offer_variant: data.experimentVariant || conversionMeta.offer_variant || ''
+        }));
         await refreshCreditBalance(uid);
         const chargedCredits = data.creditAmount || credits;
+        const resumed = typeof window.gpHandleCreditPaymentSuccess === 'function'
+          ? await window.gpHandleCreditPaymentSuccess({ orderId, amount: _amt, chargedCredits, data })
+          : false;
         if (window.gpNotify) {
           window.gpNotify({
             clientId: 'payment_' + orderId,
             type: 'payment',
             title: '충전 완료',
-            message: chargedCredits + '크레딧이 충전됐어요. 보유 크레딧을 확인해 주세요.',
-            action: { tab: 'pricing' }
+            message: resumed
+              ? chargedCredits + '크레딧이 충전되어 방금 작업을 다시 시작했어요.'
+              : chargedCredits + '크레딧이 충전됐어요. 보유 크레딧을 확인해 주세요.',
+            action: { tab: resumed && conversionMeta.pending_action === 'writing_lab_generate' ? 'writingLab' : (resumed ? 'main' : 'pricing') }
           }, { persist: true });
         } else alert(chargedCredits + '크레딧이 충전됐습니다.');
         return true;
@@ -148,6 +161,9 @@
         if (storageKey) localStorage.setItem(storageKey, String(Date.now()));
         await refreshCreditBalance(uid);
         history.replaceState({}, '', location.pathname);
+        if (typeof window.gpHandleCreditPaymentSuccess === 'function') {
+          await window.gpHandleCreditPaymentSuccess({ orderId, amount: Number(amount) || 0, chargedCredits: credits, data: { duplicate: true } });
+        }
         return true;
       }
 

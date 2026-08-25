@@ -4294,13 +4294,85 @@ window.loadAdminPage = async function() {
  window.loadAdminOverview(),
  window.loadAdminGptRuntimeConfig(),
  window.loadAdminDetectCalibration(),
- window.loadAdminBasicHumanizeExperiment(),
+  window.loadAdminBasicHumanizeExperiment(),
+  window.loadAdminWritingPolicies(),
+  window.loadAdminWritingMetrics(),
   window.loadAdminJobs(),
   window.loadAdminHumanizeQuality(),
   window.loadAdminRefundList(),
   window.loadAllCreditHistory(),
   window.loadCouponBatches()
  ]);
+};
+
+window.loadAdminWritingPolicies = async function() {
+ const box = document.getElementById('adminWritingPolicyStatus');
+ if (!box || !window.CU || !window.isAdmin()) return;
+ try {
+  const idToken = await window.CU.getIdToken();
+  const res = await fetch(window.apiUrl('/admin/writing-lab-policies'), {
+   method: 'POST',
+   headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+   body: '{}'
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.error || '정책 팩 상태를 불러오지 못했습니다.');
+  const registry = data.registry || {};
+  const packs = Array.isArray(registry.packs) ? registry.packs : [];
+  box.innerHTML = packs.map(pack => {
+   const status = pack.approved && pack.validation && pack.validation.valid ? '승인·유효' : pack.validation && !pack.validation.valid ? '스키마 오류' : '담당자 승인 대기';
+   const color = status === '승인·유효' ? 'var(--green)' : status === '스키마 오류' ? 'var(--red)' : 'var(--yellow)';
+   const counts = pack.termCounts || {};
+   const approval = pack.approval || {};
+   const sources = (Array.isArray(pack.sources) ? pack.sources : []).map(source => {
+    const url = /^https:\/\/(?:www\.)?(?:law\.go\.kr|ftc\.go\.kr)\//u.test(String(source.url || '')) ? source.url : '';
+    const label = `${source.publisher || '공식 출처'} · ${source.title || ''}`;
+    return url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>` : escapeHtml(label);
+   }).join(' · ');
+   return `<div class="gp-admin-exp-copy"><b>${escapeHtml(pack.domain)} · ${escapeHtml(pack.id)}</b><span style="color:${color};font-weight:700;">${escapeHtml(status)}</span><span>담당자 ${escapeHtml(approval.owner || 'UNASSIGNED')} · 검토일 ${escapeHtml(pack.reviewedAt)} · 출처 확인 ${escapeHtml(pack.sourceCheckedAt || '-')}</span><span>기관 ${adminNumber(counts.institutions)} · 행위 ${adminNumber(counts.treatments)} · 주장 ${adminNumber(counts.claims)} · 차단 ${adminNumber(counts.blockedClaims)}</span>${sources ? `<span>${sources}</span>` : ''}</div>`;
+  }).join('') + `<div class="gp-admin-exp-copy"><b>전체 출시 판정</b><span style="color:${registry.launchEligible ? 'var(--green)' : 'var(--yellow)'};font-weight:700;">${registry.launchEligible ? '정책 팩 출시 가능' : '규제 팩 자동 출시는 보류'}</span><span>${registry.pendingDomains && registry.pendingDomains.length ? '승인 대기: ' + escapeHtml(registry.pendingDomains.join(', ')) : '승인 대기 없음'}</span></div>`;
+ } catch (error) {
+  box.innerHTML = `<span style="color:var(--red);">${escapeHtml(error.message || '정책 팩 상태를 불러오지 못했습니다.')}</span>`;
+ }
+};
+
+window.loadAdminWritingMetrics = async function() {
+ const box = document.getElementById('adminWritingMetrics');
+ if (!box || !window.CU || !window.isAdmin()) return;
+ try {
+  const idToken = await window.CU.getIdToken();
+  const res = await fetch(window.apiUrl('/admin/writing-lab-metrics'), {
+   method: 'POST',
+   headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+   body: JSON.stringify({ days: 14 })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.error || '운영 지표를 불러오지 못했습니다.');
+  const totals = { events: {}, latencyBuckets: {}, latencyTotalMs: 0, latencyCount: 0 };
+  (data.rows || []).forEach(row => {
+   Object.entries(row.events || {}).forEach(([key, value]) => { totals.events[key] = (totals.events[key] || 0) + adminNumber(value); });
+   Object.entries(row.latencyBuckets || {}).forEach(([key, value]) => { totals.latencyBuckets[key] = (totals.latencyBuckets[key] || 0) + adminNumber(value); });
+   totals.latencyTotalMs += adminNumber(row.latencyTotalMs);
+   totals.latencyCount += adminNumber(row.latencyCount);
+  });
+  const ready = adminNumber(totals.events.GENERATE_READY);
+  const failed = adminNumber(totals.events.GENERATE_FAILED);
+  const finalBlocked = adminNumber(totals.events.FINAL_CHECK_BLOCKED);
+  const fallback = adminNumber(totals.events.HUMANIZE_FALLBACK);
+  const within45 = adminNumber(totals.latencyBuckets.lte15s) + adminNumber(totals.latencyBuckets.lte30s) + adminNumber(totals.latencyBuckets.lte45s);
+  const within45Rate = totals.latencyCount ? Math.round(within45 / totals.latencyCount * 1000) / 10 : 0;
+  const averageSec = totals.latencyCount ? Math.round(totals.latencyTotalMs / totals.latencyCount / 100) / 10 : 0;
+  box.innerHTML = [
+   ['공개 초안', ready.toLocaleString('ko-KR') + '건', '서버 Release Gate 통과'],
+   ['생성 실패', failed.toLocaleString('ko-KR') + '건', '과금·성공 한도 미반영'],
+   ['최종 차단', finalBlocked.toLocaleString('ko-KR') + '건', '휴머나이징·수정본 공개 보류'],
+   ['안전 초안 복원', fallback.toLocaleString('ko-KR') + '건', '휴머나이징 결과 대신 이전 후보 사용'],
+   ['생성 평균', averageSec.toLocaleString('ko-KR') + '초', '모델 생성과 초안 검수'],
+   ['45초 이내', within45Rate.toLocaleString('ko-KR') + '%', '목표 p95 판단용 지연 구간']
+  ].map(item => `<div class="gp-admin-exp-copy"><b>${escapeHtml(item[0])}</b><span style="font-weight:800;">${escapeHtml(item[1])}</span><span>${escapeHtml(item[2])}</span></div>`).join('');
+ } catch (error) {
+  box.innerHTML = `<span style="color:var(--red);">${escapeHtml(error.message || '운영 지표를 불러오지 못했습니다.')}</span>`;
+ }
 };
 
 // 관리자: 상단 개요 바 (매출 요약)

@@ -269,7 +269,8 @@
     }
   };
 
-  window.lavDetect = async function () {
+  window.lavDetect = async function (options) {
+    options = options || {};
     var src = $('lavInput');
     var text = src ? src.value : '';
     if (text.length < 100) {   // 글자수 통일: 공백 포함 기준(표시 카운트와 동일)
@@ -287,9 +288,11 @@
     var preToken = null;
     try { preToken = await evGetIdToken(true); } catch (e) { /* 비로그인 */ }
     if (!preToken) { alert('AI 감지는 로그인이 필요해요. 로그인 후 이용해 주세요.'); return; }
-    var agree = window.gpConfirm
-      ? await window.gpConfirm({ title: 'AI 감지', message: '이 글(' + text.length.toLocaleString() + '자) 감지에 ' + cost + '크레딧이 차감돼요. (100자당 1크레딧)', confirmText: cost + '크레딧으로 감지' })
-      : confirm('AI 감지에 ' + cost + '크레딧이 차감돼요. 진행할까요?');
+    var agree = options.resumeAfterPayment === true
+      ? true
+      : (window.gpConfirm
+        ? await window.gpConfirm({ title: 'AI 감지', message: '이 글(' + text.length.toLocaleString() + '자) 감지에 ' + cost + '크레딧이 차감돼요. (100자당 1크레딧)', confirmText: cost + '크레딧으로 감지' })
+        : confirm('AI 감지에 ' + cost + '크레딧이 차감돼요. 진행할까요?'));
     if (!agree) return;
     cameFromReport = false;
     // 멱등키 — 재시도 중복 차감 방지
@@ -313,10 +316,17 @@
         // 잔액 부족
         if (res.status === 402 && d && d.code === 'INSUFFICIENT_CREDITS') {
           window.lavFlowReset();
-          var go = window.gpConfirm
-            ? await window.gpConfirm({ title: '크레딧이 부족해요', message: '이 글 감지에 ' + d.cost + '크레딧이 필요해요. 충전하러 갈까요?', confirmText: '충전하러 가기' })
-            : confirm('크레딧이 부족해요. 충전할까요?');
-          if (go && typeof switchTab === 'function') switchTab('pricing');
+          if (typeof window.gpOpenCreditCheckout === 'function') {
+            await window.gpOpenCreditCheckout({
+              action: 'evasion_detect',
+              source: 'evasion_detect_402',
+              neededCredits: Number(d.cost) || cost,
+              currentCredits: window.UC || 0,
+              payload: { text: text }
+            });
+          } else if (confirm('크레딧이 부족해요. 충전할까요?') && typeof switchTab === 'function') {
+            switchTab('pricing');
+          }
           return;
         }
         if (res.status === 401 && d && d.code === 'LOGIN_REQUIRED') {
@@ -348,6 +358,18 @@
     }
 
     runDetect();
+  };
+
+  window.gpResumeEvasionDetect = function (payload) {
+    payload = payload || {};
+    if (!payload.text) return false;
+    if (typeof window.switchTab === 'function') window.switchTab('main');
+    var input = $('lavInput');
+    if (!input) return false;
+    input.value = payload.text;
+    if (typeof window.lavSetMode === 'function') window.lavSetMode('detect');
+    setTimeout(function () { window.lavDetect({ resumeAfterPayment: true }); }, 120);
+    return true;
   };
 
   // ── 게이지 인트로: 화면 공개 후 호 채움(CSS 트랜지션) + 숫자 카운트업(rAF, easeOutCubic 동조) ──
@@ -1149,6 +1171,7 @@
         await pollTransform(r.jobId, gen);
       } catch (err) {
         if (gen !== pollGen) return;
+        err.gpResumePayload = { flowMode: mode, text: text, settings: s || {} };
         await handleTransformStartError(err, mode === 'polish' ? 'choose' : 'reduce', gen);
       }
     })();
@@ -1407,6 +1430,7 @@
         e.requiresEffectConfirmation = b.requiresEffectConfirmation === true;
         e.documentProfile = b.documentProfile || '';
         e.editableChunkCount = Number.isFinite(Number(b.editableChunkCount)) ? Number(b.editableChunkCount) : null;
+        e.needed = Number.isFinite(Number(b.needed)) ? Number(b.needed) : null;
         throw e;
       }
       if (!res.ok || !b || !b.ok) throw new Error('시작하지 못했어요. 잠시 후 다시 눌러주세요. (크레딧은 차감되지 않았어요)');
@@ -1523,6 +1547,26 @@
       if (window.gpToast) window.gpToast(authMsg, { type: 'error', title: '로그인 확인 필요' });
       else alert(authMsg);
       if (typeof showScreen === 'function') showScreen('login');
+      return;
+    }
+    if (err && err.httpStatus === 402 && typeof window.gpOpenCreditCheckout === 'function') {
+      clearActiveJobUi();
+      show(fallbackStep || 'reduce');
+      var resumePayload = err.gpResumePayload || {};
+      var resumeText = String(resumePayload.text || (($('lavInput') || {}).value || ''));
+      var resumeSettings = resumePayload.settings || {};
+      var resumeMode = resumePayload.flowMode || 'blog';
+      var resumeNeeded = Number(err.needed) || (resumeMode === 'formal'
+        ? formalCredit(resumeText.length, !!resumeSettings.evidence)
+        : shortHumanizeCredit(resumeText.length));
+      await window.gpOpenCreditCheckout({
+        action: 'evasion_transform',
+        source: 'evasion_transform_402',
+        neededCredits: resumeNeeded,
+        currentCredits: window.UC || 0,
+        payload: { text: resumeText, flowMode: resumeMode, settings: resumeSettings }
+      });
+      if (window.gpTrack) window.gpTrack('credit_insufficient', { analysis_mode: resumeMode, needed_credits: resumeNeeded, current_credits: window.UC || 0 });
       return;
     }
     var msg = (err && err.message) ? err.message : '처리 중 오류가 발생했어요.';
@@ -1837,10 +1881,17 @@
     //   서버도 accept-fallback에서 402로 막지만, 여기서 먼저 걸러 헛클릭·헛요청을 줄인다(서버가 최종 권위).
     var need = lavBlockedFallbackCredit || 0;
     if (need && window.UP !== 'unlimited' && (window.UC || 0) < need) {
-      var go = window.gpConfirm
-        ? window.gpConfirm({ title: '크레딧이 부족해요', message: '원문 보존 다듬기로 받으려면 ' + need + '크레딧이 필요해요. 현재 보유 크레딧은 ' + (window.UC || 0) + '크레딧이에요.', confirmText: '충전하러 가기' })
-        : Promise.resolve(confirm('원문 보존 다듬기로 받으려면 ' + need + '크레딧이 필요해요(현재 ' + (window.UC || 0) + '크레딧). 충전 페이지로 이동할까요?'));
-      Promise.resolve(go).then(function (ok) { if (ok && window.switchTab) window.switchTab('pricing'); });
+      if (typeof window.gpOpenCreditCheckout === 'function') {
+        window.gpOpenCreditCheckout({
+          action: 'evasion_fallback',
+          source: 'evasion_fallback_precheck',
+          neededCredits: need,
+          currentCredits: window.UC || 0,
+          payload: { jobId: jid, neededCredits: need }
+        });
+      } else if (confirm('원문 보존 다듬기로 받으려면 ' + need + '크레딧이 필요해요(현재 ' + (window.UC || 0) + '크레딧). 충전 페이지로 이동할까요?') && window.switchTab) {
+        window.switchTab('pricing');
+      }
       if (window.gpTrack) window.gpTrack('credit_insufficient', { analysis_mode: 'fallback', needed_credits: need, current_credits: window.UC || 0 });
       return;
     }
@@ -1879,10 +1930,17 @@
         if (typeof showScreen === 'function') showScreen('login');
         return;
       } else if (e && e.httpStatus === 402) {   // 잔액 부족(주로 사전확인 후 다른 탭에서 소진된 레이스) — 충전 안내
-        var go2 = window.gpConfirm
-          ? window.gpConfirm({ title: '크레딧이 부족해요', message: msg, confirmText: '충전하러 가기' })
-          : Promise.resolve(confirm(msg + '\n충전 페이지로 이동할까요?'));
-        Promise.resolve(go2).then(function (ok) { if (ok && window.switchTab) window.switchTab('pricing'); });
+        if (typeof window.gpOpenCreditCheckout === 'function') {
+          window.gpOpenCreditCheckout({
+            action: 'evasion_fallback',
+            source: 'evasion_fallback_402',
+            neededCredits: need,
+            currentCredits: window.UC || 0,
+            payload: { jobId: jid, neededCredits: need }
+          });
+        } else if (confirm(msg + '\n충전 페이지로 이동할까요?') && window.switchTab) {
+          window.switchTab('pricing');
+        }
       } else if (window.gpToast) {
         window.gpToast(msg, { type: 'error' });
       }
@@ -1954,6 +2012,7 @@
         await pollTransform(r.jobId, gen);
       } catch (err) {
         if (gen !== pollGen) return;
+        err.gpResumePayload = { flowMode: 'formal', text: text, settings: s || {} };
         await handleTransformStartError(err, 'reduce', gen);
       }
     })();
@@ -1974,6 +2033,35 @@
     s.effectNoticeAccepted = effectNoticeAccepted;
     if (s.tone === 'blog') return runBlogEvasion(s);   // ★ P2 실연결(블로그 어투)
     return runFormalEvasion(s);                        // ★ P3+P4 실연결(격식 유지 재구성, job+폴링+근거 승인)
+  };
+
+  window.gpResumeEvasionTransform = function (payload) {
+    payload = payload || {};
+    var text = String(payload.text || '').trim();
+    if (!text) return false;
+    if (typeof window.switchTab === 'function') window.switchTab('main');
+    var input = $('lavInput');
+    if (!input) return false;
+    input.value = text;
+    if (typeof window.lavSetMode === 'function') window.lavSetMode('humanize');
+    var settings = payload.settings || {};
+    setTimeout(function () {
+      if (payload.flowMode === 'formal') runFormalEvasion(settings);
+      else runShortJob(payload.flowMode === 'polish' ? 'polish' : 'blog', settings);
+    }, 120);
+    return true;
+  };
+
+  window.gpResumeEvasionFallback = function (payload) {
+    payload = payload || {};
+    if (!payload.jobId) return false;
+    if (typeof window.switchTab === 'function') window.switchTab('main');
+    lavBlockedJobId = String(payload.jobId);
+    lavBlockedFallbackCredit = Number(payload.neededCredits) || 0;
+    setActiveJobUi(lavBlockedJobId, 'blocked', '원문 보존형 작업 확인');
+    show('blocked');
+    setTimeout(function () { window.lavBlockedAcceptFallback(); }, 120);
+    return true;
   };
 
   window.lavApproveReco = function () { submitApproval('reco'); };
