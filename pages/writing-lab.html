@@ -1,136 +1,236 @@
-<!-- 글쓰기 랩(2026-08-25): 장르 맞춤 생성 → 휴머나이징 → 무날조 검수 결합 파이프라인.
-     로그인 사용자 대상 실운영 페이지(일반=과금, 관리자=무과금 실험). 로직은 assets/js/writing-lab.js -->
+<!-- 글쓰기 랩 v2 — 기존 관리도구의 라벤더 UI를 유지하는 Operate 표면.
+     입력을 해석하게 만들지 않고 장르별 질문, 작성 가능 여부, 근거 검수를 한 흐름으로 연결한다. -->
 <div id="writingLabContent" class="gp-wl-root" style="display:none;">
-  <div class="gp-wl-page">
+  <main class="gp-wl-page" aria-labelledby="wlPageTitle">
     <header class="gp-wl-head">
-      <div class="gp-wl-kicker">Writing Lab</div>
-      <h2>글쓰기 랩</h2>
-      <p>내가 가진 사실과 경험만으로 글을 만들고, 휴머나이징과 검수까지 한 번에 끝내요.</p>
-      <div class="gp-wl-trust">이 랩은 글을 지어내지 않아요 — <b>사실 카드에 적은 내용만</b> 본문에 들어가고, 근거 없는 경험·수치는 검수에서 표시됩니다.</div>
+      <div class="gp-wl-head-copy">
+        <h2 id="wlPageTitle">글쓰기 랩</h2>
+        <p>확인한 사실을 질문에 맞춰 알려주면, 글을 만들고 자연스럽게 다듬은 뒤 근거까지 확인해요.</p>
+      </div>
       <div id="wlAdminBadge" class="gp-wl-admin-badge" hidden>관리자 실험 모드 · 무과금</div>
+      <div class="gp-wl-trust" role="note">
+        <strong>정확한 짧은 글을 우선해요.</strong>
+        <span>정보가 부족하면 억지로 늘리지 않고, 무엇이 부족한지와 가능한 선택지를 먼저 보여드립니다.</span>
+      </div>
     </header>
 
-    <ol class="gp-wl-steps" aria-label="진행 단계">
-      <li id="wlStepDot1" class="on"><span>1</span>글 종류</li>
-      <li id="wlStepDot2"><span>2</span>내용 입력</li>
-      <li id="wlStepDot3"><span>3</span>결과</li>
+    <ol class="gp-wl-steps" aria-label="글 만들기 진행 단계">
+      <li id="wlStepDot1" class="on" aria-current="step"><span>1</span><b>글 선택</b></li>
+      <li id="wlStepDot2"><span>2</span><b>내용 입력</b></li>
+      <li id="wlStepDot3"><span>3</span><b>글 설정</b></li>
+      <li id="wlStepDot4"><span>4</span><b>작성 확인</b></li>
+      <li id="wlStepDot5"><span>5</span><b>결과</b></li>
     </ol>
 
-    <!-- STEP 1: 무엇을 쓸까요 -->
-    <section class="gp-wl-step" data-wl-step="1">
-      <h3 class="gp-wl-q">무엇을 만들까요?</h3>
-      <div class="gp-wl-genres">
+    <section class="gp-wl-step" data-wl-step="1" aria-labelledby="wlGenreTitle">
+      <div class="gp-wl-section-head">
+        <div>
+          <h3 id="wlGenreTitle">어떤 글을 만들까요?</h3>
+          <p>글 종류에 따라 필요한 질문과 검수 기준이 달라져요.</p>
+        </div>
+      </div>
+      <div id="wlGenres" class="gp-wl-genres">
         <button type="button" class="gp-wl-genre" data-genre="resume" onclick="wlPickGenre('resume')">
-          <b>자기소개서</b><i class="gp-wl-badge">취업 시즌</i>
-          <span>문항과 내 경험으로 지원서 답변을 완성해요. 글자수 조건까지 맞춥니다.</span>
+          <b>자기소개서</b><span>문항과 실제 행동을 연결해 지원서 답변을 만들어요.</span>
         </button>
         <button type="button" class="gp-wl-genre" data-genre="review_blog" onclick="wlPickGenre('review_blog')">
-          <b>블로그·후기</b>
-          <span>실제 경험과 정보로 블로그 글을 만들어요. 경험 순서를 지어내지 않아요.</span>
+          <b>블로그·후기</b><span>직접 방문하거나 사용한 정보와 평가만으로 작성해요.</span>
         </button>
         <button type="button" class="gp-wl-genre" data-genre="marketing" onclick="wlPickGenre('marketing')">
-          <b>상품·서비스 소개</b>
-          <span>근거 있는 강점만으로 소개 글을 써요. 과장·보장 표현은 걸러냅니다.</span>
+          <b>상품·서비스 소개</b><span>검증된 기능과 조건으로 소개 문구를 만들어요.</span>
         </button>
         <button type="button" class="gp-wl-genre" data-genre="general" onclick="wlPickGenre('general')">
-          <b>일반 글</b>
-          <span>설명문·안내문 등 목적이 있는 글을 두괄식으로 정리해요.</span>
+          <b>일반 글</b><span>안내문, 이메일, 설명문, 의견문을 목적에 맞게 정리해요.</span>
         </button>
       </div>
+      <div id="wlStatus1" class="gp-wl-status" role="status" aria-live="polite"></div>
     </section>
 
-    <!-- STEP 2: 내용 입력 -->
-    <section class="gp-wl-step" data-wl-step="2" hidden>
+    <section class="gp-wl-step" data-wl-step="2" hidden aria-labelledby="wlInputTitle">
       <div class="gp-wl-back-row">
         <button type="button" class="gp-wl-back" onclick="wlGoStep(1)">← 글 종류 다시 선택</button>
         <span id="wlGenreBadge" class="gp-wl-genre-badge"></span>
       </div>
 
-      <label class="gp-wl-field">
-        <span id="wlTopicLabel">주제 <em id="wlTopicCount">0자</em></span>
-        <textarea id="wlTopic" rows="2" maxlength="1200" oninput="wlTopicInput()"></textarea>
-      </label>
-
-      <div class="gp-wl-row2">
-        <label class="gp-wl-field"><span id="wlCtx1Label">항목 1</span><input id="wlCtx1" type="text" maxlength="160"></label>
-        <label class="gp-wl-field"><span id="wlCtx2Label">항목 2</span><input id="wlCtx2" type="text" maxlength="160"></label>
-      </div>
-
-      <div class="gp-wl-facts-head">
-        <h3 class="gp-wl-q">사실 카드 <small>— 본문에 들어갈 수 있는 유일한 재료예요. 한 칸만 채워도 시작할 수 있어요.</small></h3>
-      </div>
-      <div class="gp-wl-facts">
-        <label class="gp-wl-field"><span id="wlFactLabel1">직접 겪은 일·경험</span><textarea id="wlFact1" rows="3" maxlength="2000"></textarea></label>
-        <label class="gp-wl-field"><span id="wlFactLabel2">구체적 사례·예시</span><textarea id="wlFact2" rows="3" maxlength="2000"></textarea></label>
-        <label class="gp-wl-field"><span id="wlFactLabel3">정확히 아는 수치·출처</span><textarea id="wlFact3" rows="3" maxlength="2000"></textarea></label>
-        <label class="gp-wl-field"><span id="wlFactLabel4">내 생각·입장</span><textarea id="wlFact4" rows="3" maxlength="2000"></textarea></label>
-      </div>
-
-      <details class="gp-wl-more">
-        <summary>세부 설정 <small>(분량·문체·강조)</small></summary>
-        <div class="gp-wl-more-grid">
-          <label class="gp-wl-field"><span>목표 분량 (선택)</span><input id="wlTargetChars" type="number" min="100" max="3000" placeholder="예: 600" oninput="wlUpdateQuote()"></label>
-          <label class="gp-wl-field"><span>분량 기준</span>
-            <select id="wlCharMode">
-              <option value="with_space">공백 포함</option>
-              <option value="no_space">공백 제외</option>
-              <option value="byte2">바이트(한글 2byte)</option>
-            </select></label>
-          <label class="gp-wl-field"><span>문체</span>
-            <select id="wlTone">
-              <option value="">기본 (글 종류에 맞게)</option>
-              <option value="formal">격식 있게</option>
-              <option value="friendly">친근하게</option>
-            </select></label>
-          <label class="gp-wl-field"><span>휴머나이징</span>
-            <select id="wlHumanize">
-              <option value="auto">자동 적용 (추천)</option>
-              <option value="skip">건너뛰기 — 생성만</option>
-            </select></label>
+      <div class="gp-wl-section-head gp-wl-section-head-split">
+        <div>
+          <h3 id="wlInputTitle">글에 넣을 정보를 알려주세요</h3>
+          <p>모르는 내용은 비워도 괜찮아요. 입력하지 않은 내용은 글에 만들지 않습니다.</p>
         </div>
-        <label class="gp-wl-field"><span>강조하고 싶은 점 (선택)</span><input id="wlEmphasis" type="text" maxlength="300" placeholder="예: 이해관계 조정 역량"></label>
+        <label class="gp-wl-subtype">
+          <span>세부 유형</span>
+          <select id="wlSubtype" onchange="wlSubtypeChanged()"></select>
+        </label>
+      </div>
+
+      <nav id="wlQuestionNav" class="gp-wl-question-nav" aria-label="내용 입력 묶음"></nav>
+      <div class="gp-wl-question-stage">
+        <div class="gp-wl-question-intro">
+          <strong id="wlQuestionSectionTitle"></strong>
+          <span id="wlQuestionSectionDescription"></span>
+        </div>
+        <div id="wlDynamicFields" class="gp-wl-fields"></div>
+      </div>
+
+      <details class="gp-wl-notes">
+        <summary>이미 적어둔 메모가 있나요?</summary>
+        <div class="gp-wl-notes-body">
+          <label class="gp-wl-field">
+            <span>메모 붙여넣기 <small>선택</small></span>
+            <textarea id="wlNotes" rows="5" maxlength="5000" placeholder="방문 메모, 지원 경험, 상품 설명 등 기존 내용을 붙여 넣으세요."></textarea>
+          </label>
+          <p>메모의 문장을 바로 사실로 사용하지 않아요. 정보 후보를 찾은 뒤 직접 확인한 항목만 질문 칸에 넣습니다.</p>
+          <button type="button" id="wlExtractBtn" class="gp-wl-secondary" onclick="wlExtractNotes()">메모에서 정보 후보 찾기</button>
+          <div id="wlCandidateList" class="gp-wl-candidates" hidden></div>
+        </div>
       </details>
 
-      <div class="gp-wl-runbar">
-        <div class="gp-wl-quote"><span id="wlQuote">예상 크레딧 계산 중...</span></div>
-        <button type="button" id="wlRunBtn" class="gp-wl-run" onclick="wlRun()">글 만들기</button>
+      <div class="gp-wl-step-actions">
+        <button type="button" id="wlQuestionPrev" class="gp-wl-secondary" onclick="wlQuestionMove(-1)">이전 질문</button>
+        <span id="wlAutosaveNote" class="gp-wl-autosave">이 탭에 임시 저장됩니다.</span>
+        <button type="button" class="gp-wl-text-button" onclick="wlClearDraft()">임시 입력 지우기</button>
+        <button type="button" id="wlQuestionNext" class="gp-wl-primary" onclick="wlQuestionMove(1)">다음 질문</button>
+        <button type="button" id="wlToSettings" class="gp-wl-primary" onclick="wlGoSettings()" hidden>글 설정으로</button>
       </div>
-      <div id="wlStatus2" class="gp-wl-status" role="status"></div>
+      <div id="wlStatus2" class="gp-wl-status" role="status" aria-live="polite"></div>
     </section>
 
-    <!-- STEP 3: 결과 -->
-    <section class="gp-wl-step" data-wl-step="3" hidden>
+    <section class="gp-wl-step" data-wl-step="3" hidden aria-labelledby="wlSettingsTitle">
       <div class="gp-wl-back-row">
-        <button type="button" class="gp-wl-back" onclick="wlGoStep(2)">← 입력 수정</button>
+        <button type="button" class="gp-wl-back" onclick="wlGoStep(2)">← 내용 수정</button>
+        <span id="wlSettingsGenreBadge" class="gp-wl-genre-badge"></span>
+      </div>
+      <div class="gp-wl-section-head">
+        <div>
+          <h3 id="wlSettingsTitle">완성할 글의 조건을 정해요</h3>
+          <p>입력한 정보로 가능한 분량은 다음 단계에서 먼저 확인합니다.</p>
+        </div>
+      </div>
+
+      <div class="gp-wl-settings-grid">
+        <label class="gp-wl-field">
+          <span>목표 분량 <small>선택</small></span>
+          <input id="wlTargetChars" type="number" min="60" max="3000" step="10" placeholder="추천 분량을 자동 계산해요" oninput="wlSettingsChanged()">
+          <small class="gp-wl-help">원하는 글자 수가 없으면 입력 정보를 바탕으로 추천합니다.</small>
+        </label>
+        <label class="gp-wl-field">
+          <span>분량 계산 방식</span>
+          <select id="wlCharMode" onchange="wlSettingsChanged()">
+            <option value="with_space">공백 포함 글자 수</option>
+            <option value="no_space">공백 제외 글자 수</option>
+            <option value="byte2">한글 2byte 기준</option>
+          </select>
+        </label>
+        <label class="gp-wl-field">
+          <span>문체</span>
+          <select id="wlTone" onchange="wlSettingsChanged()">
+            <option value="">글 종류에 맞게</option>
+            <option value="formal">격식 있게</option>
+            <option value="friendly">친근하게</option>
+          </select>
+        </label>
+        <label class="gp-wl-field">
+          <span>자연스럽게 다듬기</span>
+          <select id="wlHumanize" onchange="wlSettingsChanged()">
+            <option value="auto">휴머나이징 적용 · 추천</option>
+            <option value="skip">초안만 만들기</option>
+          </select>
+          <small class="gp-wl-help">기존 휴머나이징 엔진으로 문체를 다듬고 같은 근거로 다시 검사합니다.</small>
+        </label>
+      </div>
+      <label class="gp-wl-field">
+        <span>특히 강조할 점 <small>선택</small></span>
+        <input id="wlEmphasis" type="text" maxlength="300" placeholder="예: 일정 조정에서 내가 직접 한 행동">
+      </label>
+
+      <div class="gp-wl-runbar">
+        <div>
+          <strong>예상 이용 크레딧</strong>
+          <span id="wlQuote">작성 가능 여부를 확인하면 정확한 분량과 비용을 안내해요.</span>
+        </div>
+        <button type="button" id="wlPrepareBtn" class="gp-wl-primary" onclick="wlPrepare()">작성 가능 여부 확인</button>
+      </div>
+      <div id="wlStatus3" class="gp-wl-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="gp-wl-step" data-wl-step="4" hidden aria-labelledby="wlReadinessTitle">
+      <div class="gp-wl-back-row">
+        <button type="button" class="gp-wl-back" onclick="wlGoStep(3)">← 설정 수정</button>
+        <span id="wlReadinessGenreBadge" class="gp-wl-genre-badge"></span>
+      </div>
+      <div id="wlReadinessPanel" class="gp-wl-readiness">
+        <div class="gp-wl-readiness-head">
+          <span id="wlReadinessBadge" class="gp-wl-state-badge"></span>
+          <h3 id="wlReadinessTitle">작성 가능 여부</h3>
+          <p id="wlReadinessSummary"></p>
+        </div>
+        <dl class="gp-wl-readiness-metrics">
+          <div><dt>확인한 정보</dt><dd id="wlReadyFactCount">-</dd></div>
+          <div><dt>정확하게 가능한 분량</dt><dd id="wlReadyRange">-</dd></div>
+          <div><dt>요청한 분량</dt><dd id="wlReadyTarget">-</dd></div>
+          <div><dt>예상 비용</dt><dd id="wlReadyCredits">-</dd></div>
+        </dl>
+        <div class="gp-wl-readiness-columns">
+          <section>
+            <h4>글에 사용할 확인 정보</h4>
+            <ul id="wlConfirmedFacts" class="gp-wl-fact-list"></ul>
+          </section>
+          <section id="wlMissingWrap">
+            <h4>더 알려주면 좋은 내용</h4>
+            <ul id="wlMissingFacts" class="gp-wl-missing-list"></ul>
+          </section>
+        </div>
+        <div id="wlPolicyPanel" class="gp-wl-policy" hidden></div>
+        <div id="wlConflictPanel" class="gp-wl-policy gp-wl-conflicts" hidden></div>
+      </div>
+      <div class="gp-wl-choice-actions" aria-label="작성 방법 선택">
+        <button type="button" id="wlAddFactsBtn" class="gp-wl-secondary" onclick="wlGoStep(2)">정보 더 입력하기</button>
+        <button type="button" id="wlShortBtn" class="gp-wl-secondary" onclick="wlGenerate(true)">지금 정보로 짧게 쓰기</button>
+        <button type="button" id="wlGenerateBtn" class="gp-wl-primary" onclick="wlGenerate(false)">이대로 글 만들기</button>
+        <button type="button" id="wlCancelBtn" class="gp-wl-text-button" onclick="wlGoStep(1)">취소</button>
+      </div>
+      <div id="wlStatus4" class="gp-wl-status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="gp-wl-step" data-wl-step="5" hidden aria-labelledby="wlResultTitle">
+      <div class="gp-wl-back-row">
+        <button type="button" class="gp-wl-back" onclick="wlGoStep(4)">← 작성 확인으로</button>
         <span id="wlResultGenreBadge" class="gp-wl-genre-badge"></span>
       </div>
 
-      <ol class="gp-wl-progress">
-        <li id="wlProg1"><b>1</b> 사실 카드로 글 생성</li>
-        <li id="wlProg2"><b>2</b> 내 말투로 휴머나이징</li>
-        <li id="wlProg3"><b>3</b> 무날조·분량 검수</li>
+      <ol class="gp-wl-progress" aria-label="글 생성 처리 상태">
+        <li id="wlProg1"><b>1</b><span>근거로 초안 구성</span></li>
+        <li id="wlProg2"><b>2</b><span>초안 사실·분량 확인</span></li>
+        <li id="wlProg3"><b>3</b><span>휴머나이징</span></li>
+        <li id="wlProg4"><b>4</b><span>최종 공개 검사</span></li>
       </ol>
-      <div id="wlStatus3" class="gp-wl-status" role="status"></div>
+      <div id="wlStatus5" class="gp-wl-status" role="status" aria-live="polite"></div>
 
-      <div class="gp-wl-result-card">
+      <section class="gp-wl-result" aria-labelledby="wlResultTitle">
         <div class="gp-wl-result-head">
-          <h3 class="gp-wl-q">완성된 글 <em id="wlFinalCount"></em></h3>
+          <div>
+            <span id="wlResultState" class="gp-wl-state-badge">확인 중</span>
+            <h3 id="wlResultTitle">완성된 글 <small id="wlFinalCount"></small></h3>
+          </div>
           <div class="gp-wl-result-actions">
-            <button type="button" class="gp-wl-mini" onclick="wlCopy()">복사</button>
-            <button type="button" class="gp-wl-mini" onclick="wlDownload()">.txt 저장</button>
-            <button type="button" class="gp-wl-mini" onclick="wlRunAgain()">다시 만들기</button>
+            <button type="button" class="gp-wl-secondary gp-wl-small" onclick="wlCopy()">복사</button>
+            <button type="button" class="gp-wl-secondary gp-wl-small" onclick="wlDownload()">.txt 저장</button>
+            <button type="button" class="gp-wl-secondary gp-wl-small" onclick="wlRecheck()">수정본 다시 확인</button>
+            <button type="button" class="gp-wl-secondary gp-wl-small" onclick="wlRunAgain()">다시 만들기</button>
           </div>
         </div>
-        <textarea id="wlFinal" rows="14" readonly placeholder="여기에 완성된 글이 표시됩니다."></textarea>
-      </div>
+        <textarea id="wlFinal" rows="16" placeholder="완성된 글이 여기에 표시됩니다." oninput="wlFinalEdited()"></textarea>
+        <p id="wlEditHint" class="gp-wl-edit-hint">결과를 수정하면 공개 상태가 해제됩니다. 수정 후 다시 확인해 주세요.</p>
+      </section>
 
       <div id="wlReport" class="gp-wl-report" hidden></div>
+      <div id="wlEvidence" class="gp-wl-evidence" hidden></div>
       <div id="wlFollowups" class="gp-wl-followups" hidden></div>
 
-      <details id="wlDraftWrap" class="gp-wl-more" hidden>
-        <summary>휴머나이징 전 초안 보기</summary>
+      <details id="wlDraftWrap" class="gp-wl-draft" hidden>
+        <summary>휴머나이징 전 검증된 초안 보기</summary>
         <textarea id="wlDraft" rows="10" readonly></textarea>
       </details>
     </section>
-  </div>
+  </main>
 </div>

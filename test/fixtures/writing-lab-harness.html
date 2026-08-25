@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Writing Lab v2 QA Harness</title>
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <link rel="stylesheet" href="/assets/css/redesign.css">
+  <link rel="stylesheet" href="/assets/css/writing-lab.css">
+  <style>
+    body{margin:0;background:#f6f6f9;color:#23242c;font-family:Pretendard,"Noto Sans KR",sans-serif;}
+    .qa-banner{position:sticky;top:0;z-index:20;padding:8px 16px;background:#242530;color:#fff;font-size:12px;text-align:center;}
+  </style>
+</head>
+<body>
+  <div class="qa-banner">로컬 QA 전용 · 실제 Writing Lab v2 API 연결</div>
+  <div id="qaMount"></div>
+  <script>
+    window.apiUrl = function (path) { return 'http://127.0.0.1:3102' + path; };
+    window.CU = { getIdToken: async function () { return 'local-qa-token'; } };
+    window.isAdmin = function () { return false; };
+    window.showScreen = function () {};
+    window.gpToast = function (message) {
+      var node = document.createElement('div');
+      node.id = 'qaToast';
+      node.setAttribute('role', 'status');
+      node.textContent = message;
+      document.body.appendChild(node);
+      setTimeout(function () { node.remove(); }, 2500);
+    };
+    (async function () {
+      document.getElementById('qaMount').innerHTML = await fetch('/pages/writing-lab.html').then(function (response) { return response.text(); });
+      var script = document.createElement('script');
+      script.src = '/assets/js/writing-lab.js';
+      script.onload = function () { window.loadWritingLab(); };
+      document.body.appendChild(script);
+    })();
+  </script>
+</body>
+</html>

@@ -486,6 +486,7 @@ function switchTab(t, opts) {
  if (el) el.style.display = n===t ? 'block' : 'none';
  });
  if (t === 'pro' && typeof window.refreshProTab === 'function') window.refreshProTab();
+ if (t === 'pricing' && typeof window.gpRefreshPricingOffer === 'function') window.gpRefreshPricingOffer(false);
  updateRouteMeta(t);
  if (!opts.skipRoute) setRouteUrl(t, opts.replaceRoute);
  if (!opts.skipTrack && typeof window.gpTrackPageView === 'function') window.gpTrackPageView(t, document.title, window.location.href);
@@ -989,7 +990,13 @@ async function callAnalyzeApi(payload, opts) {
    throw new Error((body && body.error) || '서버에서 작업을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.');
   }
   // 400/402 등 — 재시도해도 결과가 안 바뀌는 오류
-  if (body && body.error) throw new Error(body.error);
+  if (body && body.error) {
+   var apiError = new Error(body.error);
+   apiError.status = res.status;
+   apiError.code = body.code || '';
+   apiError.body = body;
+   throw apiError;
+  }
   if (!body || !body.ok) throw new Error('처리 중 오류가 발생했습니다.');
   return body;
  }
@@ -1213,14 +1220,23 @@ async function runAnalysis() {
   needed = creditNeededForText(text, precheckMode);
  }
  if (window.UP !== 'unlimited' && (window.UC || 0) < needed) {
- const ok = window.gpConfirm
-  ? await window.gpConfirm({
-    title: '크레딧이 부족해요',
-    message: '이 글을 변환하려면 ' + needed + '크레딧이 필요합니다. 현재 보유 크레딧은 ' + (window.UC || 0) + '크레딧이에요.',
-    confirmText: '충전하러 가기'
-  })
-  : confirm('이 글을 변환하려면 ' + needed + '크레딧이 필요해요(현재 ' + (window.UC || 0) + '크레딧). 충전 페이지로 이동할까요?');
- if (ok) switchTab('pricing');
+ if (typeof window.gpOpenCreditCheckout === 'function') {
+  await window.gpOpenCreditCheckout({
+   action: 'main_analysis',
+   source: 'main_precheck',
+   neededCredits: needed,
+   currentCredits: window.UC || 0,
+   payload: {
+    text: text,
+    mode: mode === 'detect' ? 'detect' : 'humanize',
+    humanizeMode: humanizeMode || 'assignment',
+    selectedLang: selectedLang || 'ko'
+   }
+  });
+ } else {
+  const ok = confirm('이 글을 변환하려면 ' + needed + '크레딧이 필요해요(현재 ' + (window.UC || 0) + '크레딧). 충전 페이지로 이동할까요?');
+  if (ok) switchTab('pricing');
+ }
  if (window.gpTrack) window.gpTrack('credit_insufficient', {
   analysis_mode: mode === 'detect' ? 'detect' : 'humanize',
   needed_credits: needed,
@@ -1445,6 +1461,21 @@ async function runAnalysis() {
    if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory();
   } catch (_) {}
  } else {
+  if (e && e.status === 402 && typeof window.gpOpenCreditCheckout === 'function') {
+   await window.gpOpenCreditCheckout({
+    action: 'main_analysis',
+    source: 'main_server_precheck',
+    neededCredits: needed,
+    currentCredits: window.UC || 0,
+    payload: {
+     text: text,
+     mode: mode === 'detect' ? 'detect' : 'humanize',
+     humanizeMode: humanizeMode || 'assignment',
+     selectedLang: selectedLang || 'ko'
+    }
+   });
+   return;
+  }
   if (window.gpTrack) window.gpTrack('analysis_error', {
    analysis_mode: mode === 'detect' ? 'detect' : 'humanize',
    message: String(e.message || 'unknown').slice(0, 120),
@@ -1470,6 +1501,25 @@ async function runAnalysis() {
  }, 400);
  }
 }
+
+window.gpResumeMainAnalysis = function (payload) {
+ payload = payload || {};
+ if (!payload.text) return false;
+ switchTab('main');
+ const input = document.getElementById('inputText');
+ if (!input) return false;
+ input.value = payload.text;
+ setMode(payload.mode === 'detect' ? 'detect' : 'humanize');
+ if (payload.mode !== 'detect') {
+  const modeTab = document.querySelector('.mode-tab[data-mode="' + String(payload.humanizeMode || 'assignment').replace(/[^a-z_-]/gi, '') + '"]');
+  if (modeTab) selectHumanizeMode(modeTab);
+ }
+ if (payload.selectedLang === 'en' || payload.selectedLang === 'ko') setLang(payload.selectedLang);
+ input.dispatchEvent(new Event('input', { bubbles: true }));
+ if (typeof updateSendBtn === 'function') updateSendBtn();
+ setTimeout(function () { runAnalysis(); }, 120);
+ return true;
+};
 
 function renderDetect(r) {
  if (typeof window.gpNormalizeDetectPresentation === 'function') r = window.gpNormalizeDetectPresentation(r);
@@ -1637,7 +1687,8 @@ function maintenancePreviewQuery() {
   return '&preview_key=' + encodeURIComponent(window.APP_CONFIG.MAINTENANCE_PREVIEW_KEY);
 }
 
-async function payToss(amount, credits, name, plan) {
+async function payToss(amount, credits, name, plan, checkoutOptions) {
+  checkoutOptions = checkoutOptions || {};
   if (!window.CU) {
    if (window.gpTrack) window.gpTrack('login_required', { source: 'payment', value: amount, currency: 'KRW' });
    if (window.gpTrackPaymentError) window.gpTrackPaymentError('checkout_login_required', { checkoutType: 'credits', amount, credits, plan });
@@ -1646,10 +1697,13 @@ async function payToss(amount, credits, name, plan) {
   }
 
  // 오결제 방지: 결제 전 1회 확인 + 환불/차감 정책 명시(실수 클릭·기대 불일치 환불 감소)
- const confirmMsg = `${Number(credits).toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n\n· 작업이 실패하면 크레딧은 차감되지 않아요.\n· 일반 환불은 결제 후 7일 이내 가능하며, 사용한 크레딧 금액은 제외돼요.`;
- const buyOk = window.gpConfirm
-  ? await window.gpConfirm({ title: '구매를 진행할까요?', message: confirmMsg, confirmText: '구매하기' })
-  : confirm(`${Number(credits).toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n· 작업 실패 시 크레딧 차감 없음\n· 결제 후 7일 이내 사용분 제외 환불`);
+ const shownCredits = Number(checkoutOptions.displayCredits) || Number(credits);
+ const confirmMsg = `${shownCredits.toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n\n· 작업이 실패하면 크레딧은 차감되지 않아요.\n· 일반 환불은 결제 후 7일 이내 가능하며, 사용한 크레딧 금액은 제외돼요.`;
+ const buyOk = checkoutOptions.skipConfirm === true
+  ? true
+  : (window.gpConfirm
+    ? await window.gpConfirm({ title: '구매를 진행할까요?', message: confirmMsg, confirmText: '구매하기' })
+    : confirm(`${shownCredits.toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n· 작업 실패 시 크레딧 차감 없음\n· 결제 후 7일 이내 사용분 제외 환불`));
  if (!buyOk) {
   if (window.gpTrack) window.gpTrack('checkout_cancel', { checkout_type: 'credits', value: amount, currency: 'KRW', code: 'PRE_CONFIRM_CANCEL' });
   return;
@@ -1662,12 +1716,17 @@ async function payToss(amount, credits, name, plan) {
   currency: 'KRW',
   traffic_source: localStorage.getItem('traffic_source') || 'direct'
  });
- if (window.gpTrack) window.gpTrack('begin_checkout', {
+ const pendingMeta = typeof window.gpPendingCheckoutMeta === 'function' ? window.gpPendingCheckoutMeta() : {};
+ if (window.gpTrack) window.gpTrack('begin_checkout', Object.assign({
   items: [{ item_id: 'credits_' + credits, item_name: name + ' ' + credits + '크레딧', quantity: 1, price: amount }],
   value: amount,
   currency: 'KRW',
-  checkout_type: 'credits'
- });
+  checkout_type: 'credits',
+  segment: checkoutOptions.segment || '',
+  offer_variant: checkoutOptions.offerVariant || '',
+  pending_action: checkoutOptions.pendingAction || '',
+  paywall_source: checkoutOptions.source || ''
+ }, pendingMeta));
 
   // 1. 테스트 키 대신 주신 'API 개별 연동' 라이브 클라이언트 키 적용
   const clientKey = window.APP_CONFIG.TOSS_CLIENT_KEY;
@@ -1678,6 +1737,15 @@ async function payToss(amount, credits, name, plan) {
   }
   const tp = TossPayments(clientKey);
   const orderId = 'order_' + Date.now();
+  if (typeof window.gpBindPendingCheckout === 'function') {
+   window.gpBindPendingCheckout(orderId, {
+    amount: Number(amount),
+    credits: Number(credits),
+    displayCredits: shownCredits,
+    segment: checkoutOptions.segment || pendingMeta.segment || '',
+    offerVariant: checkoutOptions.offerVariant || pendingMeta.offer_variant || ''
+   });
+  }
 
   try {
   await tp.requestPayment('카드', {
@@ -1690,6 +1758,7 @@ async function payToss(amount, credits, name, plan) {
  failUrl: location.origin + location.pathname + '?fail=1' + maintenancePreviewQuery()
  });
  } catch(e) {
+ if (typeof window.gpUnbindPendingCheckout === 'function') window.gpUnbindPendingCheckout(orderId);
  if (window.gpTrack) window.gpTrack(e.code === 'USER_CANCEL' ? 'checkout_cancel' : 'checkout_error', {
   checkout_type: 'credits',
   value: amount,
@@ -1707,6 +1776,7 @@ async function payToss(amount, credits, name, plan) {
   if(e.code !== 'USER_CANCEL') alert('결제 오류: ' + e.message);
   }
 }
+window.payToss = payToss;
 
 // 가격 페이지 내부 탭 전환 (크레딧 / 정기구독)
 window.switchPricingTab = switchPricingTab;
