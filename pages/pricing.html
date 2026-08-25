@@ -30,10 +30,17 @@
    <input id="couponInput" maxlength="14" placeholder="쿠폰 코드를 입력하세요" autocomplete="off" oninput="formatCouponInput(this)" onkeydown="if(event.key==='Enter')redeemCoupon()">
    <button onclick="redeemCoupon()">적용</button>
   </div>
-  <div id="couponMsg"></div>
+ <div id="couponMsg"></div>
  </section>
 
  <div id="pricingTabCredit">
+  <section id="gpPricingSegmentPanel" class="gp-pricing-segment" hidden aria-live="polite">
+   <div>
+    <strong id="gpPricingSegmentTitle">내 사용 단계에 맞는 다음 선택</strong>
+    <span id="gpPricingSegmentDesc">사용 내역을 확인해 가장 알맞은 선택을 보여드릴게요.</span>
+   </div>
+   <button id="gpPricingSegmentButton" type="button" onclick="gpPricingSegmentAction()">확인하기</button>
+  </section>
   <div class="plan-grid gp-plan-grid">
    <div class="plan-card" onclick="payToss(2900,110,'크레딧 충전','')">
     <div class="pc-fx" aria-hidden="true"><b class="pc-line l1"></b><b class="pc-line l2"></b><b class="pc-line l3"></b><b class="pc-line l4"></b><b class="pc-corner c1"></b><b class="pc-corner c2"></b><b class="pc-corner c3"></b><b class="pc-corner c4"></b><i class="pc-scan"></i><i class="pc-glare"></i><em class="pc-dot d1"></em><em class="pc-dot d2"></em><em class="pc-dot d3"></em><em class="pc-dot d4"></em><em class="pc-dot d5"></em><em class="pc-dot d6"></em><span class="pc-tr t1"></span><span class="pc-tr t2"></span><span class="pc-tr t3"></span><span class="pc-tr t4"></span><span class="pc-tr t5"></span><span class="pc-tr t6"></span><span class="pc-tr t7"></span><span class="pc-tr t8"></span><span class="pc-tr t9"></span></div>
@@ -43,8 +50,10 @@
     <ul class="plan-feats">
      <li><span>기본 제공</span><strong>100 크레딧</strong></li>
      <li><span>보너스 지급</span><strong>+10 크레딧</strong></li>
+     <li id="gpStarterExperimentBonus" hidden><span>첫 결제 실험 혜택</span><strong>+10 크레딧</strong></li>
     </ul>
-    <div class="gp-plan-total">총 110 크레딧</div>
+    <div class="gp-plan-total" id="gpStarterTotal">총 110 크레딧</div>
+    <p class="gp-plan-use" id="gpStarterUseEstimate">500자 기본 휴머나이징 약 11회 · 1,000자 약 5회</p>
     <button class="plan-btn">충전하기</button>
    </div>
 
@@ -58,6 +67,7 @@
      <li><span>보너스 지급</span><strong>+30 크레딧</strong></li>
     </ul>
     <div class="gp-plan-total">총 330 크레딧</div>
+    <p class="gp-plan-use">500자 기본 휴머나이징 약 33회 · 1,000자 약 16회</p>
     <button class="plan-btn">충전하기</button>
    </div>
 
@@ -72,6 +82,7 @@
      <li><span>보너스 지급</span><strong>+100 크레딧</strong></li>
     </ul>
     <div class="gp-plan-total">총 600 크레딧</div>
+    <p class="gp-plan-use">500자 기본 휴머나이징 약 60회 · 1,000자 약 30회</p>
     <button class="plan-btn">충전하기</button>
    </div>
 
@@ -85,6 +96,7 @@
      <li><span>보너스 지급</span><strong>+300 크레딧</strong></li>
     </ul>
     <div class="gp-plan-total">총 1,300 크레딧</div>
+    <p class="gp-plan-use">500자 기본 휴머나이징 약 130회 · 1,000자 약 65회</p>
     <button class="plan-btn">충전하기</button>
    </div>
 
@@ -99,6 +111,7 @@
      <li><span>보너스 지급</span><strong>+700 크레딧</strong></li>
     </ul>
     <div class="gp-plan-total">총 2,700 크레딧</div>
+    <p class="gp-plan-use">500자 기본 휴머나이징 약 270회 · 1,000자 약 135회</p>
     <button class="plan-btn">충전하기</button>
    </div>
   </div>

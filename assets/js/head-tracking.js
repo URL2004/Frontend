@@ -88,7 +88,11 @@
    traffic_term: clean(payload.traffic_term, 150),
    analysis_mode: clean(payload.analysis_mode || inferredMode, 50),
    humanize_mode: clean(payload.humanize_mode || (eventName === 'humanize_run' ? payload.mode : ''), 50),
-   method: clean(payload.method, 50)
+   method: clean(payload.method, 50),
+   segment: clean(payload.segment, 50),
+   offer_variant: clean(payload.offer_variant, 50),
+   pending_action: clean(payload.pending_action, 64),
+   paywall_source: clean(payload.paywall_source || payload.source, 64)
   };
   if (eventName === 'sign_up') {
    params.content_name = 'account_registration';
@@ -123,7 +127,12 @@
   var custom = {
    analysis_start: 'AnalysisStart',
    detect_run: 'DetectComplete',
-   humanize_run: 'HumanizeComplete'
+   humanize_run: 'HumanizeComplete',
+   paywall_view: 'PaywallView',
+   starter_offer_click: 'StarterOfferClick',
+   job_resumed: 'JobResumed',
+   activation_prompt_click: 'ActivationPromptClick',
+   repurchase_offer_click: 'RepurchaseOfferClick'
   };
   var mapped = standard[eventName] || custom[eventName];
   if (!mapped) return eventID;
