@@ -27,7 +27,7 @@ const ROUTES = [
   {
     out: 'index.html',
     url: '/',
-    partial: 'main.html',
+    partial: 'landing.html',
     title: '교수님 피하기 – AI 휴머나이저 · AI 감지',
     h1: '교수님 피하기 AI 휴머나이저',
     description:
@@ -239,7 +239,8 @@ export async function prerenderSeo({ root, dist }) {
     // 본문 주입: #page-root 바로 뒤에 크롤러용 정적 콘텐츠
     const partialPath = path.join(root, 'pages', route.partial);
     const partialHtml = cleanPartial(await fs.readFile(partialPath, 'utf8'));
-    const h1 = route.url === '/' || !/<h1[\s>]/i.test(partialHtml) ? `<h1>${route.h1}</h1>\n` : '';
+    // 랜딩 파셜은 자체 h1을 가지므로 홈이라고 무조건 덧붙이지 않는다(h1 중복 방지).
+    const h1 = !/<h1[\s>]/i.test(partialHtml) ? `<h1>${route.h1}</h1>\n` : '';
     const seoBlock = `<noscript id="seo-prerender-static" data-seo-route="${route.url}">\n<div id="seo-prerender">\n${h1}${partialHtml}\n</div>\n</noscript>`;
     html = html.replace(
       /(<div id="page-root"><\/div>)/i,
