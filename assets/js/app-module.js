@@ -248,6 +248,9 @@ function updateCreditUI() {
  // 플랜 뱃지 업데이트
  const badge = document.getElementById('userPlanBadge');
  if (badge) badge.textContent = plans[p] || 'Free';
+ // 잔액이 바뀌면 컴포저 예상 비용과 상태별 오퍼도 같이 최신화한다.
+ if (typeof window.lavUpdateEstimate === 'function') window.lavUpdateEstimate();
+ if (typeof window.gpRefreshHeroOffer === 'function') window.gpRefreshHeroOffer(true);
 }
 
  
@@ -775,7 +778,13 @@ window.logout = async () =>{
  const ok = window.gpConfirm
   ? await window.gpConfirm({ title: '로그아웃할까요?', message: '언제든 다시 로그인할 수 있어요.', confirmText: '로그아웃' })
   : confirm('로그아웃 하시겠어요?');
- if(ok) { if (window.gpTrack) window.gpTrack('logout'); await signOut(auth); switchTab('main'); }
+ if(ok) {
+  if (window.gpTrack) window.gpTrack('logout');
+  await signOut(auth);
+  if (typeof window.gpLandingReset === 'function') window.gpLandingReset();
+  switchTab('main');
+  if (typeof window.gpMaybeShowLanding === 'function') window.gpMaybeShowLanding();
+ }
 };
 
 window.changeNickname = async () =>{

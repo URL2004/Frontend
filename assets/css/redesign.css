@@ -17128,3 +17128,147 @@ body.gp-modal-open{overflow:hidden;}
  .gp-credit-checkout-card{animation:none;}
  .gp-credit-checkout-primary{transition:none;}
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   전환 장치 — 상태별 히어로 오퍼(D)와 컴포저 예상 비용(C)
+   라벤더 셸(.gp-lav-page) 안에서만 렌더되므로 별도 디자인 스코프는 두지 않는다.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── D: 상태별 오퍼 ── */
+.gp-lav-offer{
+ width:min(960px,100%);
+ margin:18px auto 0;
+ display:flex;
+ align-items:center;
+ gap:14px;
+ padding:12px 14px 12px 16px;
+ border:1px solid #e4e5f6;
+ border-radius:16px;
+ background:linear-gradient(180deg,#fbfbff,#f5f5fd);
+ text-align:left;
+}
+.gp-lav-offer[hidden]{display:none !important}
+.gp-lav-offer-badge{
+ flex:none;
+ padding:5px 10px;
+ border-radius:999px;
+ background:#5a5bd8;
+ color:#fff;
+ font-size:11.5px;
+ font-weight:700;
+ letter-spacing:-.01em;
+}
+.gp-lav-offer-copy{
+ flex:1 1 auto;
+ min-width:0;
+ display:flex;
+ flex-direction:column;
+ gap:2px;
+}
+.gp-lav-offer-copy strong{
+ font-size:14.5px;
+ font-weight:700;
+ color:#1a1f2e;
+ line-height:1.4;
+}
+.gp-lav-offer-copy span{
+ font-size:12.5px;
+ color:#6b7186;
+ line-height:1.5;
+}
+.gp-lav-offer-cta{
+ flex:none;
+ padding:10px 16px;
+ border:0;
+ border-radius:12px;
+ background:#171a2b;
+ color:#fff;
+ font-size:13px;
+ font-weight:700;
+ cursor:pointer;
+ transition:transform .14s ease,background .14s ease;
+}
+.gp-lav-offer-cta:hover{background:#282c45;transform:translateY(-1px)}
+.gp-lav-offer-cta:focus-visible{outline:2px solid #5a5bd8;outline-offset:2px}
+
+/* ── C: 예상 비용 ── */
+.gp-lav-estimate{
+ width:min(960px,100%);
+ margin:12px auto 0;
+ padding:12px 16px;
+ border:1px solid #e7e9f4;
+ border-radius:16px;
+ background:#fff;
+ text-align:left;
+}
+.gp-lav-estimate[hidden]{display:none !important}
+.gp-lav-estimate.is-short{
+ border-color:#f0d9a8;
+ background:linear-gradient(180deg,#fffdf7,#fffaf0);
+}
+.gp-lav-estimate-row{
+ display:flex;
+ align-items:baseline;
+ flex-wrap:wrap;
+ gap:8px;
+}
+.gp-lav-estimate-mode{
+ padding:4px 9px;
+ border-radius:999px;
+ background:#f1f2fb;
+ color:#4b4fb0;
+ font-size:11.5px;
+ font-weight:700;
+}
+.gp-lav-estimate-cost{
+ font-size:16px;
+ font-weight:800;
+ color:#1a1f2e;
+ letter-spacing:-.01em;
+}
+.gp-lav-estimate-won{
+ font-size:12.5px;
+ color:#8b90a5;
+ font-weight:600;
+}
+.gp-lav-estimate-balance{
+ margin-left:auto;
+ font-size:12.5px;
+ color:#6b7186;
+ font-weight:600;
+}
+.gp-lav-estimate-cta{
+ display:block;
+ width:100%;
+ margin-top:10px;
+ padding:11px 14px;
+ border:0;
+ border-radius:12px;
+ background:#5a5bd8;
+ color:#fff;
+ font-size:13.5px;
+ font-weight:700;
+ cursor:pointer;
+ transition:background .14s ease;
+}
+.gp-lav-estimate-cta[hidden]{display:none !important}
+.gp-lav-estimate-cta:hover{background:#4a4bc4}
+.gp-lav-estimate-cta:focus-visible{outline:2px solid #171a2b;outline-offset:2px}
+.gp-lav-estimate-note{
+ margin:8px 0 0;
+ font-size:12px;
+ line-height:1.55;
+ color:#8b90a5;
+}
+.gp-lav-estimate-note[hidden]{display:none !important}
+
+@media (max-width:720px){
+ .gp-lav-offer{
+  flex-wrap:wrap;
+  gap:10px;
+  padding:14px;
+ }
+ .gp-lav-offer-copy{flex-basis:100%;order:2}
+ .gp-lav-offer-cta{order:3;width:100%}
+ .gp-lav-estimate-balance{margin-left:0;flex-basis:100%}
+}

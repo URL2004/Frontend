@@ -251,6 +251,8 @@ function applyRouteFromUrl(opts) {
  if (routeTab === 'main') applyLandingProductMode();
  runRouteSideEffects(routeTab);
  if (opts.replace) setRouteUrl(routeTab, true);
+ // 비로그인 홈 방문은 앱 화면 대신 랜딩으로 — 판단은 landing.js가 authReady 확정 후에 한다.
+ if (typeof window.gpMaybeShowLanding === 'function') window.gpMaybeShowLanding();
 }
 window.applyRouteFromUrl = applyRouteFromUrl;
 window.addEventListener('DOMContentLoaded', () => applyRouteFromUrl({ replace: true }));

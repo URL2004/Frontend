@@ -342,6 +342,7 @@
     var len = (textarea.value || '').length;
     count.textContent = len ? len.toLocaleString() + ' / 30,000자' : '';
     count.classList.toggle('over', len > window.LAV_MAX_CHARS);
+    if (typeof window.lavUpdateEstimate === 'function') window.lavUpdateEstimate();
   };
 
   window.lavComposerKey = function (event) {

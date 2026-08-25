@@ -121,6 +121,16 @@
        <p class="gp-lav-sub">AI 초안을 원문의 뜻과 장르에 맞게 자연스럽게 다듬어요.</p>
        <p class="gp-lav-nikl">✓ 국립국어원 공개 어문규범과 로컬 언어 자료를 참고해 한국어 표현을 보조 점검해요</p>
 
+       <!-- 상태별 오퍼(D): /checkout-context 세그먼트에 따라 문구·CTA가 바뀐다. 비로그인은 가입 유도. -->
+       <div class="gp-lav-offer" id="lavHeroOffer" role="status" aria-live="polite" hidden>
+         <span class="gp-lav-offer-badge" id="lavHeroOfferBadge"></span>
+         <div class="gp-lav-offer-copy">
+           <strong id="lavHeroOfferTitle"></strong>
+           <span id="lavHeroOfferDesc"></span>
+         </div>
+         <button type="button" class="gp-lav-offer-cta" id="lavHeroOfferCta" onclick="gpHeroOfferAction()"></button>
+       </div>
+
        <div class="gp-lav-composer">
          <textarea id="lavInput" rows="5" placeholder="AI 느낌이 나는 문장을 붙여넣어 보세요..." onkeydown="lavComposerKey(event)" oninput="lavSyncCount(this)"></textarea>
          <div class="gp-lav-composer-bar">
@@ -144,6 +154,19 @@
            </button>
          </div>
        </div>
+       <!-- 예상 비용(C): 붙여넣는 즉시 이 글의 크레딧을 계산해 보여준다.
+            계산식은 evasion-flow.js의 shortHumanizeCredit·감지 단가와 동일한 소스를 쓴다. -->
+       <div class="gp-lav-estimate" id="lavEstimate" hidden>
+         <div class="gp-lav-estimate-row">
+           <span class="gp-lav-estimate-mode" id="lavEstimateMode">기본 휴머나이징</span>
+           <strong class="gp-lav-estimate-cost" id="lavEstimateCost"></strong>
+           <span class="gp-lav-estimate-won" id="lavEstimateWon"></span>
+           <span class="gp-lav-estimate-balance" id="lavEstimateBalance"></span>
+         </div>
+         <button type="button" class="gp-lav-estimate-cta" id="lavEstimateCta" onclick="lavEstimateAction()" hidden></button>
+         <p class="gp-lav-estimate-note" id="lavEstimateNote" hidden></p>
+       </div>
+
 
        <!-- 문장 체험(gp-lav-proof) 블록 제거 — 사장님: 크레딧 들여가며 체험 안 할 것(2026-06-13). 복원 시 git 이력 참조 -->
        </div>
