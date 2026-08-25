@@ -5307,3 +5307,317 @@ window.loadSidebarHistory = async () => {
     }).join('');
   } catch(e) {}
 };
+
+// ── 자소서 생성 랩(글쓰기 랩 실험, 2026-08-24) ─────────────────────────
+// 생성(POST /writing-lab/generate) → 휴머나이징(기존 /transform adminHumanizeLab·gpt_engine 재사용)
+// → 검수(POST /writing-lab/check, 사실 카드 기준 결정론 검사) 체인. 관리자 전용·무과금.
+let wlabPollToken = 0;
+const wlabState = { factsheet: '', form: null };
+
+function wlabEl(id) { return document.getElementById(id); }
+
+function wlabSetStatus(text, type) {
+ const el = wlabEl('wlabStatus');
+ if (!el) return;
+ el.textContent = text || '';
+ el.className = 'gp-admin-msg' + (type ? ' ' + type : '');
+}
+
+function wlabSetBusy(busy) {
+ const btn = wlabEl('wlabRunBtn');
+ if (btn) {
+  btn.disabled = !!busy;
+  btn.textContent = busy ? '실행 중...' : '생성 → 휴머나이징 실행';
+ }
+}
+
+function wlabReadForm() {
+ return {
+  company: (wlabEl('wlabCompany')?.value || '').trim(),
+  role: (wlabEl('wlabRole')?.value || '').trim(),
+  targetChars: Number(wlabEl('wlabTargetChars')?.value) || 0,
+  charLimitMode: wlabEl('wlabCharMode')?.value || 'with_space',
+  question: (wlabEl('wlabQuestion')?.value || '').trim(),
+  emphasis: (wlabEl('wlabEmphasis')?.value || '').trim(),
+  humanizeMode: wlabEl('wlabHumanizeMode')?.value || 'blog',
+  memo: {
+   experience: (wlabEl('wlabMemoExp')?.value || '').trim(),
+   caseExample: (wlabEl('wlabMemoCase')?.value || '').trim(),
+   numbers: (wlabEl('wlabMemoNum')?.value || '').trim(),
+   thoughts: (wlabEl('wlabMemoView')?.value || '').trim()
+  }
+ };
+}
+
+window.adminWritingLabCount = function() {
+ const q = wlabEl('wlabQuestion')?.value || '';
+ const qc = wlabEl('wlabQuestionCount');
+ if (qc) qc.textContent = q.length.toLocaleString('ko-KR') + '자';
+};
+
+function wlabUpdateOutputCounts() {
+ const d = wlabEl('wlabDraft')?.value || '';
+ const f = wlabEl('wlabFinal')?.value || '';
+ const dc = wlabEl('wlabDraftCount');
+ const fc = wlabEl('wlabFinalCount');
+ if (dc) dc.textContent = d ? d.length.toLocaleString('ko-KR') + '자' : '';
+ if (fc) fc.textContent = f ? f.length.toLocaleString('ko-KR') + '자' : '';
+}
+
+// 검수 리포트 한 단계(초안/최종)를 pill + 상세 목록으로 렌더링
+function wlabChecksHtml(title, checks, extras) {
+ if (!checks) return '';
+ const c = checks.counts || {};
+ const lim = checks.limit || {};
+ const nov = checks.experienceNovelty || {};
+ const nums = checks.fabricatedNumberCandidates || [];
+ const cli = checks.cliches || { total: 0, found: [] };
+ const gaps = checks.questionKeywordGaps || [];
+ const followups = (extras && extras.followupQuestions) || [];
+ const usage = (extras && extras.usage) || null;
+ const pill = (text, cls) => '<span class="gp-wlab-pill' + (cls ? ' ' + cls : '') + '">' + escapeHtml(text) + '</span>';
+ const pills = [
+  pill('공백포함 ' + Number(c.withSpace || 0).toLocaleString('ko-KR') + '자'),
+  pill('공백제외 ' + Number(c.noSpace || 0).toLocaleString('ko-KR') + '자'),
+  pill('2byte ' + Number(c.byte2 || 0).toLocaleString('ko-KR'))
+ ];
+ if (lim.applicable) {
+  pills.push(lim.pass
+   ? pill('제한 ' + lim.target + ' 통과 · 사용률 ' + Math.round((lim.usageRatio || 0) * 100) + '%', 'ok')
+   : pill('제한 ' + lim.target + ' 초과 +' + lim.over, 'bad'));
+ }
+ pills.push(nov.candidate ? pill('경험 날조 후보 있음', 'bad') : pill('신규 경험 신호 없음', 'ok'));
+ pills.push(nums.length ? pill('근거 없는 수치 후보 ' + nums.length, 'bad') : pill('수치 전부 사실 카드에 근거', 'ok'));
+ pills.push(cli.total ? pill('상투구 ' + cli.total, 'warn') : pill('상투구 0', 'ok'));
+ if (gaps.length) pills.push(pill('문항 키워드 미반영 후보 ' + gaps.length, 'warn'));
+ const details = [];
+ if (nums.length) details.push('<div>근거 없는 수치 후보: ' + nums.map(escapeHtml).join(', ') + '</div>');
+ if (cli.found && cli.found.length) details.push('<div>상투구: ' + cli.found.map(x => escapeHtml(x.phrase + ' ×' + x.count)).join(', ') + '</div>');
+ if (gaps.length) details.push('<div>문항 키워드 미반영 후보(휴리스틱): ' + gaps.map(escapeHtml).join(', ') + '</div>');
+ if (followups.length) details.push('<div>지원자에게 확인할 질문: ' + followups.map(escapeHtml).join(' / ') + '</div>');
+ if (usage) details.push('<div>생성 비용: ' + escapeHtml(String(usage.model || '')) + ' · 입력 ' + Number(usage.inputTokens || 0).toLocaleString('ko-KR') + ' / 출력 ' + Number(usage.outputTokens || 0).toLocaleString('ko-KR') + ' 토큰 · $' + Number(usage.estimatedUsd || 0).toFixed(4) + ' · ' + (Number(usage.elapsedMs || 0) / 1000).toFixed(1) + '초</div>');
+ return '<div class="gp-wlab-check"><b>' + escapeHtml(title) + '</b><div class="gp-wlab-pills">' + pills.join('') + '</div>' + (details.length ? '<div class="gp-wlab-detail">' + details.join('') + '</div>' : '') + '</div>';
+}
+
+const wlabReportBlocks = { draft: '', final: '' };
+function wlabRenderReport() {
+ const el = wlabEl('wlabReport');
+ if (!el) return;
+ const html = [wlabReportBlocks.draft, wlabReportBlocks.final].filter(Boolean).join('');
+ el.innerHTML = html;
+ el.hidden = !html;
+}
+
+window.adminWritingLabRun = async function() {
+ if (!window.CU || !window.isAdmin()) {
+  wlabSetStatus('관리자 권한이 필요합니다.', 'error');
+  return;
+ }
+ const form = wlabReadForm();
+ if (form.question.length < 5) {
+  wlabSetStatus('자기소개서 문항을 입력해 주세요(5자 이상).', 'error');
+  return;
+ }
+ if (!form.memo.experience && !form.memo.caseExample && !form.memo.numbers && !form.memo.thoughts) {
+  wlabSetStatus('사실 카드를 최소 한 칸은 채워 주세요 — 무날조 생성의 근거입니다.', 'error');
+  return;
+ }
+ wlabPollToken++;
+ const tokenId = wlabPollToken;
+ wlabState.form = form;
+ wlabState.factsheet = '';
+ wlabReportBlocks.draft = '';
+ wlabReportBlocks.final = '';
+ wlabRenderReport();
+ const draftEl = wlabEl('wlabDraft');
+ const finalEl = wlabEl('wlabFinal');
+ if (draftEl) draftEl.value = '';
+ if (finalEl) finalEl.value = '';
+ const jobEl = wlabEl('wlabJobId');
+ if (jobEl) jobEl.textContent = '';
+ wlabUpdateOutputCounts();
+ wlabSetBusy(true);
+ wlabSetStatus('① 사실 카드 기반 생성 중... (수십 초 걸릴 수 있어요)', 'info');
+ try {
+  const idToken = await window.CU.getIdToken(true);
+  const res = await fetch(window.apiUrl('/writing-lab/generate'), {
+   method: 'POST',
+   headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+   body: JSON.stringify({
+    question: form.question,
+    company: form.company,
+    role: form.role,
+    emphasis: form.emphasis,
+    targetChars: form.targetChars || undefined,
+    charLimitMode: form.charLimitMode,
+    memo: form.memo
+   })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.error || '생성에 실패했습니다.');
+  if (tokenId !== wlabPollToken) return;
+  wlabState.factsheet = data.factsheet || '';
+  if (draftEl) draftEl.value = data.draft || '';
+  wlabUpdateOutputCounts();
+  wlabReportBlocks.draft = wlabChecksHtml('① 생성 초안 검수', data.checks, {
+   followupQuestions: data.followupQuestions,
+   usage: data.usage
+  });
+  wlabRenderReport();
+  if (form.humanizeMode === 'skip') {
+   wlabSetStatus('완료 — 생성만 실행했습니다(휴머나이징 건너뜀).', 'success');
+   wlabSetBusy(false);
+   return;
+  }
+  wlabSetStatus('② 휴머나이징 작업 시작 중...', 'info');
+  const res2 = await fetch(window.apiUrl('/transform'), {
+   method: 'POST',
+   headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+   body: JSON.stringify({
+    text: data.draft,
+    mode: form.humanizeMode,
+    adminHumanizeLab: true,
+    adminLabProfile: 'gpt_engine',
+    humanizeExperiment: true,
+    memo: [form.memo.experience, form.memo.caseExample, form.memo.numbers, form.memo.thoughts].filter(Boolean).join('\n').slice(0, 2000),
+    documentProfile: 'resume_application',
+    lang: 'ko',
+    evidence: false,
+    length: 'keep',
+    effectNoticeAccepted: true
+   })
+  });
+  const start = await res2.json().catch(() => ({}));
+  if (!res2.ok || !start.ok) throw new Error(start.error || '휴머나이징 작업을 시작하지 못했습니다. 초안은 위에 남아 있습니다.');
+  if (jobEl && start.jobId) jobEl.textContent = '#' + String(start.jobId).slice(0, 6).toUpperCase();
+  await wlabPoll(start.jobId, tokenId, form);
+ } catch (e) {
+  if (tokenId === wlabPollToken) {
+   wlabSetStatus(e.message || '실행에 실패했습니다.', 'error');
+   wlabSetBusy(false);
+  }
+ }
+};
+
+async function wlabPoll(jobId, tokenId, form) {
+ let idToken = await window.CU.getIdToken(false);
+ const deadline = Date.now() + 2 * 3600 * 1000;
+ while (Date.now() < deadline && tokenId === wlabPollToken) {
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  let res = await fetch(window.apiUrl('/transform/' + jobId), {
+   headers: { Authorization: 'Bearer ' + idToken }
+  });
+  if (res.status === 401) {
+   idToken = await window.CU.getIdToken(true);
+   res = await fetch(window.apiUrl('/transform/' + jobId), {
+    headers: { Authorization: 'Bearer ' + idToken }
+   });
+  }
+  const st = await res.json().catch(() => ({}));
+  if (!res.ok || (st.error && !st.status)) throw new Error(st.error || '작업 상태를 불러오지 못했습니다.');
+  if (st.status === 'queued') {
+   wlabSetStatus('② 휴머나이징 대기 중 · ' + (st.queuePosition || '-') + '번째', 'info');
+   continue;
+  }
+  if (st.status === 'running') {
+   wlabSetStatus('② ' + (st.stage || '휴머나이징 처리 중...'), 'info');
+   continue;
+  }
+  if (st.status === 'done') {
+   const finalText = (st.result && st.result.outputText) || '';
+   const finalEl = wlabEl('wlabFinal');
+   if (finalEl) finalEl.value = finalText;
+   wlabUpdateOutputCounts();
+   wlabSetStatus('③ 최종 결과 검수 중...', 'info');
+   await wlabCheckText(finalText, form, '② 최종 결과 검수 (휴머나이징 후)');
+   wlabSetStatus('완료', 'success');
+   wlabSetBusy(false);
+   return;
+  }
+  if (st.status === 'blocked') {
+   throw new Error((st.reason || '휴머나이징이 안전 게이트에 차단되었습니다.') + ' 초안은 위에 남아 있습니다.');
+  }
+  if (st.status === 'error' || st.status === 'cancelled') {
+   throw new Error(st.error || '휴머나이징 작업이 중단되었습니다. 초안은 위에 남아 있습니다.');
+  }
+ }
+ throw new Error('작업이 예상보다 오래 걸립니다. 잠시 후 다시 확인해 주세요.');
+}
+
+async function wlabCheckText(text, form, title) {
+ if (!text) return;
+ try {
+  const idToken = await window.CU.getIdToken(false);
+  const res = await fetch(window.apiUrl('/writing-lab/check'), {
+   method: 'POST',
+   headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+   body: JSON.stringify({
+    text: text,
+    question: form.question,
+    company: form.company,
+    role: form.role,
+    emphasis: form.emphasis,
+    targetChars: form.targetChars || undefined,
+    charLimitMode: form.charLimitMode,
+    memo: form.memo,
+    factsheet: wlabState.factsheet || undefined
+   })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.ok && data.ok) {
+   wlabReportBlocks.final = wlabChecksHtml(title, data.checks, null);
+   wlabRenderReport();
+  } else {
+   wlabReportBlocks.final = '<div class="gp-wlab-check"><b>' + escapeHtml(title) + '</b><div class="gp-wlab-detail">검수 요청에 실패했습니다: ' + escapeHtml(data.error || String(res.status)) + '</div></div>';
+   wlabRenderReport();
+  }
+ } catch (e) {
+  wlabReportBlocks.final = '<div class="gp-wlab-check"><b>' + escapeHtml(title) + '</b><div class="gp-wlab-detail">검수 중 오류: ' + escapeHtml(e.message || '알 수 없는 오류') + '</div></div>';
+  wlabRenderReport();
+ }
+}
+
+window.adminWritingLabRecheck = async function() {
+ if (!window.CU || !window.isAdmin()) {
+  wlabSetStatus('관리자 권한이 필요합니다.', 'error');
+  return;
+ }
+ const finalText = wlabEl('wlabFinal')?.value || '';
+ const draftText = wlabEl('wlabDraft')?.value || '';
+ const text = finalText || draftText;
+ if (!text) {
+  wlabSetStatus('재검사할 결과가 없습니다.', 'error');
+  return;
+ }
+ const form = wlabState.form || wlabReadForm();
+ wlabSetStatus('재검사 중...', 'info');
+ await wlabCheckText(text, form, finalText ? '② 최종 결과 재검사' : '① 초안 재검사');
+ wlabSetStatus('재검사 완료', 'success');
+};
+
+window.adminWritingLabCopy = async function() {
+ const text = wlabEl('wlabFinal')?.value || wlabEl('wlabDraft')?.value || '';
+ if (!text) return;
+ await navigator.clipboard.writeText(text);
+ if (window.gpToast) window.gpToast('결과를 복사했습니다.', { type: 'success', title: '복사 완료' });
+ else alert('복사했습니다.');
+};
+
+window.adminWritingLabClear = function() {
+ wlabPollToken++;
+ wlabState.factsheet = '';
+ wlabState.form = null;
+ wlabReportBlocks.draft = '';
+ wlabReportBlocks.final = '';
+ ['wlabCompany', 'wlabRole', 'wlabTargetChars', 'wlabQuestion', 'wlabEmphasis', 'wlabMemoExp', 'wlabMemoCase', 'wlabMemoNum', 'wlabMemoView', 'wlabDraft', 'wlabFinal'].forEach(id => {
+  const el = wlabEl(id);
+  if (el) el.value = '';
+ });
+ const jobEl = wlabEl('wlabJobId');
+ if (jobEl) jobEl.textContent = '';
+ wlabRenderReport();
+ wlabUpdateOutputCounts();
+ window.adminWritingLabCount();
+ wlabSetStatus('', '');
+ wlabSetBusy(false);
+};

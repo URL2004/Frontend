@@ -104,5 +104,77 @@
         <button type="button" class="gp-admin-refresh" onclick="adminHumanizeLabCopy()">결과 복사</button>
       </div>
     </section>
+
+    <!-- ── 자소서 생성 랩(글쓰기 랩 실험, 2026-08-24): 생성(Writer) → 휴머나이징(기존 admin lab 경로) → 무날조 검수 체인.
+         운영 기능에는 적용하지 않는 관리자 전용·무과금 실험이다. -->
+    <section class="gp-admin-panel gp-wlab-panel">
+      <div class="gp-admin-section-head">
+        <div>
+          <div class="gp-admin-kicker">Writing Lab 실험</div>
+          <h3>자소서 생성 랩 — 생성 → 휴머나이징 결합</h3>
+        </div>
+        <p>사실 카드에 적힌 경험·수치만으로 문항 답변을 생성하고, 곧바로 휴머나이징과 무날조 검수를 통과시킵니다. 사실 카드에 없는 경험·수치는 날조 후보로 표시됩니다.</p>
+      </div>
+      <div class="gp-wlab-row">
+        <label class="gp-admin-label"><span>회사</span>
+          <input id="wlabCompany" class="gp-admin-input" type="text" maxlength="120" placeholder="예: 우아한형제들"></label>
+        <label class="gp-admin-label"><span>직무</span>
+          <input id="wlabRole" class="gp-admin-input" type="text" maxlength="120" placeholder="예: 서비스 기획 인턴"></label>
+        <label class="gp-admin-label"><span>글자수 제한 (선택)</span>
+          <input id="wlabTargetChars" class="gp-admin-input" type="number" min="100" max="3000" placeholder="예: 600"></label>
+        <label class="gp-admin-label"><span>글자수 기준</span>
+          <select id="wlabCharMode" class="gp-admin-input gp-admin-select">
+            <option value="with_space">공백 포함</option>
+            <option value="no_space">공백 제외</option>
+            <option value="byte2">바이트(한글 2byte)</option>
+          </select></label>
+      </div>
+      <label class="gp-admin-label gp-wlab-question"><span>자기소개서 문항 <em id="wlabQuestionCount">0자</em></span>
+        <textarea id="wlabQuestion" class="gp-admin-input" rows="2" maxlength="1200" placeholder="예: 공동의 목표를 위해 다른 사람과 협업하며 갈등을 조정한 경험을 서술해 주세요. (600자 이내)" oninput="adminWritingLabCount()"></textarea></label>
+      <div class="gp-wlab-memo-head">사실 카드 — 본문에 들어갈 수 있는 유일한 근거입니다. 최소 한 칸은 채워야 생성이 시작됩니다.</div>
+      <div class="gp-wlab-memo-grid">
+        <label class="gp-admin-label"><span>직접 겪은 일·경험</span>
+          <textarea id="wlabMemoExp" class="gp-admin-input" rows="3" maxlength="2000" placeholder="예: 대학교 축제 기획단에서 홍보팀장으로 활동"></textarea></label>
+        <label class="gp-admin-label"><span>구체적 사례·예시</span>
+          <textarea id="wlabMemoCase" class="gp-admin-input" rows="3" maxlength="2000" placeholder="예: 두 팀의 요구를 표로 정리해 절충안을 만들었음"></textarea></label>
+        <label class="gp-admin-label"><span>정확히 아는 수치·출처</span>
+          <textarea id="wlabMemoNum" class="gp-admin-input" rows="3" maxlength="2000" placeholder="예: 부스 방문 전년 대비 40% 증가"></textarea></label>
+        <label class="gp-admin-label"><span>내 생각·입장</span>
+          <textarea id="wlabMemoView" class="gp-admin-input" rows="3" maxlength="2000" placeholder="예: 갈등은 기준을 합의하는 기회라고 생각함"></textarea></label>
+      </div>
+      <div class="gp-wlab-row gp-wlab-row--two">
+        <label class="gp-admin-label"><span>강조할 역량 (선택)</span>
+          <input id="wlabEmphasis" class="gp-admin-input" type="text" maxlength="300" placeholder="예: 이해관계 조정, 데이터 기반 설득"></label>
+        <label class="gp-admin-label"><span>휴머나이징 단계</span>
+          <select id="wlabHumanizeMode" class="gp-admin-input gp-admin-select">
+            <option value="blog">기본 휴머나이징 (빠름)</option>
+            <option value="formal">고급 휴머나이징</option>
+            <option value="skip">건너뛰기 — 생성만</option>
+          </select></label>
+      </div>
+      <div class="gp-admin-lab-actions">
+        <button type="button" id="wlabRunBtn" class="gp-admin-primary" onclick="adminWritingLabRun()">생성 → 휴머나이징 실행</button>
+        <button type="button" class="gp-admin-refresh" onclick="adminWritingLabClear()">초기화</button>
+        <span id="wlabStatus" class="gp-admin-msg"></span>
+      </div>
+    </section>
+
+    <section class="gp-admin-panel gp-wlab-panel">
+      <div class="gp-admin-section-head">
+        <h3>생성 랩 결과 <span id="wlabJobId" class="gp-admin-count"></span></h3>
+        <p>① 생성 초안 → ② 휴머나이징 결과 → ③ 사실 카드 기준 검수 리포트(결정론·무LLM) 순서로 채워집니다.</p>
+      </div>
+      <div class="gp-wlab-result-grid">
+        <label class="gp-admin-label gp-admin-lab-output"><span>① 생성 초안 <em id="wlabDraftCount"></em></span>
+          <textarea id="wlabDraft" class="gp-admin-input" rows="13" readonly></textarea></label>
+        <label class="gp-admin-label gp-admin-lab-output"><span id="wlabFinalLabel">② 최종 결과 (휴머나이징) <em id="wlabFinalCount"></em></span>
+          <textarea id="wlabFinal" class="gp-admin-input" rows="13" readonly></textarea></label>
+      </div>
+      <div id="wlabReport" class="gp-wlab-report" hidden></div>
+      <div class="gp-admin-lab-actions">
+        <button type="button" class="gp-admin-refresh" onclick="adminWritingLabCopy()">최종 결과 복사</button>
+        <button type="button" class="gp-admin-refresh" onclick="adminWritingLabRecheck()">최종 결과 재검사</button>
+      </div>
+    </section>
   </div>
 </div>
