@@ -60,6 +60,136 @@
     return [200, 400, 600][tier] + (evidence ? 100 : 0);
   }
 
+  // ── 예상 비용(C) ─────────────────────────────────────────────────────────────
+  // 붙여넣는 즉시 "이 글이 얼마인지"를 보여준다. 종전에는 회피 설정 화면(lavCtaMeta)에
+  // 도달해야 금액을 처음 봤고, 그 지점에서 잔액이 모자라면 4단계를 투자한 뒤 막혔다.
+  // 단가는 위 shortHumanizeCredit(기본 휴머나이징)·감지 100자당 1크레딧과 같은 소스를 쓴다.
+  var DETECT_MIN_CHARS = 100;
+  var CREDIT_WON = 2900 / 110;   // 스타터 기준 1크레딧 환산가(약 26원)
+  function detectCredit(len) {
+    return Math.ceil((Number(len) || 0) / 100);
+  }
+  function wonLabel(credits) {
+    return '약 ' + (Math.round(credits * CREDIT_WON / 10) * 10).toLocaleString('ko-KR') + '원';
+  }
+  function estimateBalance() {
+    return Math.max(0, Number(window.UC) || 0);
+  }
+  function estimateState() {
+    var src = $('lavInput');
+    var text = src ? src.value : '';
+    var detect = window.lavMode === 'detect';
+    return {
+      text: text,
+      len: text.length,
+      detect: detect,
+      cost: detect ? detectCredit(text.length) : shortHumanizeCredit(text.length)
+    };
+  }
+  function setEstimateText(id, value) {
+    var el = $(id);
+    if (el) el.textContent = value;
+  }
+  window.lavUpdateEstimate = function () {
+    var box = $('lavEstimate');
+    if (!box) return;
+    var st = estimateState();
+    // 입력이 비었거나 작업 화면(lavFlow)이 열려 있으면 감춘다 — 입력 화면 전용 장치다.
+    var flow = $('lavFlow');
+    if (!st.len || (flow && !flow.hidden)) { box.hidden = true; return; }
+    box.hidden = false;
+
+    var cta = $('lavEstimateCta');
+    var note = $('lavEstimateNote');
+    var tooShort = st.detect && st.len < DETECT_MIN_CHARS;
+    var tooLong = st.len > (window.LAV_MAX_CHARS || 30000);
+
+    setEstimateText('lavEstimateMode', st.detect ? 'AI 감지' : '기본 휴머나이징');
+    setEstimateText('lavEstimateCost', tooShort ? '—' : st.cost.toLocaleString('ko-KR') + '크레딧');
+    setEstimateText('lavEstimateWon', tooShort ? '' : wonLabel(st.cost));
+
+    var messages = [];
+    if (tooLong) messages.push('한 번에 최대 ' + (window.LAV_MAX_CHARS || 30000).toLocaleString('ko-KR') + '자까지 처리할 수 있어요.');
+    else if (tooShort) messages.push('AI 감지는 ' + DETECT_MIN_CHARS + '자 이상부터 이용할 수 있어요.');
+    else if (!st.detect && st.len >= 3000) messages.push('고급 휴머나이징으로 처리하면 정액 ' + formalCredit(st.len, false).toLocaleString('ko-KR') + '크레딧이에요.');
+
+    if (!window.CU && !window.GP_HERO_PREVIEW) {
+      setEstimateText('lavEstimateBalance', '');
+      if (cta) { cta.hidden = false; cta.textContent = '로그인하고 무료 10크레딧 받기'; cta.dataset.action = 'login'; }
+      messages.unshift('가입하면 10크레딧을 무료로 드려요.');
+    } else if (window.UP === 'unlimited') {
+      setEstimateText('lavEstimateBalance', '구독 이용 중');
+      if (cta) { cta.hidden = true; cta.dataset.action = ''; }
+    } else {
+      var balance = estimateBalance();
+      var gap = st.cost - balance;
+      if (tooShort || tooLong || gap <= 0) {
+        setEstimateText('lavEstimateBalance', '보유 ' + balance.toLocaleString('ko-KR') + '크레딧'
+          + (tooShort || tooLong ? '' : ' · 작업 후 ' + (balance - st.cost).toLocaleString('ko-KR') + '크레딧'));
+        if (cta) { cta.hidden = true; cta.dataset.action = ''; }
+      } else {
+        setEstimateText('lavEstimateBalance', '보유 ' + balance.toLocaleString('ko-KR') + '크레딧');
+        if (cta) {
+          cta.hidden = false;
+          cta.textContent = gap.toLocaleString('ko-KR') + '크레딧 부족 · 충전하기';
+          cta.dataset.action = 'charge';
+        }
+        messages.unshift('입력한 글은 그대로 보관하고, 결제 후 이 화면으로 돌아와요.');
+      }
+    }
+
+    box.classList.toggle('is-short', !!(cta && !cta.hidden && cta.dataset.action === 'charge'));
+    if (note) {
+      note.hidden = !messages.length;
+      note.textContent = messages.join(' ');
+    }
+    return st;
+  };
+
+  window.lavEstimateAction = function () {
+    var st = estimateState();
+    var cta = $('lavEstimateCta');
+    var action = cta && cta.dataset ? cta.dataset.action : '';
+    if (action === 'login' || !window.CU) {
+      if (window.gpTrack) window.gpTrack('login_required', { source: 'composer_estimate' });
+      if (typeof window.showScreen === 'function') window.showScreen('login');
+      return;
+    }
+    if (window.gpTrack) {
+      window.gpTrack('composer_estimate_click', {
+        analysis_mode: st.detect ? 'detect' : 'humanize',
+        needed_credits: st.cost,
+        current_credits: estimateBalance()
+      });
+    }
+    if (typeof window.gpOpenCreditCheckout !== 'function') {
+      if (typeof window.switchTab === 'function') window.switchTab('pricing');
+      return;
+    }
+    window.gpOpenCreditCheckout({
+      action: 'composer_draft',
+      source: 'composer_estimate',
+      neededCredits: st.cost,
+      currentCredits: estimateBalance(),
+      payload: { text: st.text, mode: st.detect ? 'detect' : 'humanize' }
+    });
+  };
+
+  // 결제 후 복귀: 아직 시작하지 않은 초안이므로 작업을 실행하지 않고 입력 상태만 되살린다.
+  window.gpResumeComposerDraft = function (payload) {
+    payload = payload || {};
+    if (typeof window.switchTab === 'function') window.switchTab('main');
+    if (typeof window.lavSetMode === 'function') window.lavSetMode(payload.mode === 'detect' ? 'detect' : 'humanize');
+    var src = $('lavInput');
+    if (src && payload.text) {
+      src.value = String(payload.text);
+      if (typeof window.lavSyncCount === 'function') window.lavSyncCount(src);
+      src.focus();
+    }
+    window.lavUpdateEstimate();
+    return true;
+  };
+
   // Before/After 러너: proof 블록이 화면에 들어올 때 1회 달리기 재생(스크롤 밖에서 끝나버리는 문제 해결)
   function initProofRunner() {
     var proof = document.querySelector('.gp-lav-proof');
@@ -267,6 +397,7 @@
     if (!opts.skipUrl && typeof window.gpSyncProductModeUrl === 'function') {
       window.gpSyncProductModeUrl(m);
     }
+    if (typeof window.lavUpdateEstimate === 'function') window.lavUpdateEstimate();
   };
 
   window.lavDetect = async function (options) {

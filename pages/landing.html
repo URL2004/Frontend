@@ -1,0 +1,216 @@
+<!-- 비로그인 랜딩(E) — 앱 화면과 분리된 독립 스크린.
+     구형 .gp-main-stage(휴머나이저 단일 제품 시절 시안)는 쓰지 않고 현재 라인업 기준으로 새로 작성한다.
+     라우팅 규칙은 app-main.js의 showLandingIfEligible 참조:
+       · '/' + 비로그인 + ?mode= 없음 → 이 화면
+       · ?mode=detect|humanize(광고 딥링크) → 기존대로 앱 컴포저 직행
+     SEO: scripts/seo-prerender.mjs의 홈 라우트가 이 파셜을 크롤러 본문으로 굽는다. -->
+<div id="landingScreen" class="screen gp-lp">
+
+  <header class="gp-lp-nav">
+    <a class="gp-lp-brand" href="/" onclick="return gpLandingHome(event)">
+      <img src="/assets/img/brand-logo.png" alt="교수님 피하기">
+    </a>
+    <nav class="gp-lp-nav-links" aria-label="주요 안내">
+      <button type="button" onclick="gpLandingScrollTo('lpServices')">서비스</button>
+      <button type="button" onclick="gpLandingScrollTo('lpPricing')">요금</button>
+      <button type="button" onclick="gpLandingScrollTo('lpFaq')">자주 묻는 질문</button>
+    </nav>
+    <div class="gp-lp-nav-actions">
+      <button type="button" class="gp-lp-ghost" onclick="gpLandingStart('nav_login')">로그인</button>
+      <button type="button" class="gp-lp-primary sm" onclick="gpLandingStart('nav_cta')">무료로 시작하기</button>
+    </div>
+  </header>
+
+  <section class="gp-lp-hero">
+    <p class="gp-lp-eyebrow">제출 전 마지막 점검</p>
+    <h1>AI 초안을<br><span>내 글의 흐름으로.</span></h1>
+    <p class="gp-lp-hero-sub">
+      AI식 문체 신호를 문단별로 확인하고, 원문의 뜻과 장르와 사실을 지키면서 자연스럽게 다듬어요.
+      필요하면 내가 확인한 사실만으로 글을 처음부터 만들 수도 있습니다.
+    </p>
+    <div class="gp-lp-hero-cta">
+      <button type="button" class="gp-lp-primary" onclick="gpLandingStart('hero')">무료 10크레딧으로 시작하기</button>
+      <button type="button" class="gp-lp-ghost lg" onclick="gpLandingEnterApp('main','hero_browse')">먼저 둘러보기</button>
+    </div>
+    <ul class="gp-lp-hero-badges">
+      <li>가입 시 10크레딧 무료</li>
+      <li>충전 크레딧 유효기간 없음</li>
+      <li>작업 실패 또는 차단 시 차감 없음</li>
+    </ul>
+  </section>
+
+  <section class="gp-lp-section" id="lpServices">
+    <div class="gp-lp-section-head">
+      <h2>이런 작업을 할 수 있어요</h2>
+      <p>글의 상태와 목적에 따라 네 가지 중에서 고르면 됩니다. 비용은 글자 수에 따라 계산되고, 시작 전에 항상 먼저 보여드려요.</p>
+    </div>
+    <div class="gp-lp-grid">
+      <article class="gp-lp-card">
+        <span class="gp-lp-card-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
+        </span>
+        <h3>AI 감지</h3>
+        <p>글 전체의 AI 티 지수와 함께 어느 문단이 위험한지 문단별로 보여줍니다. 가장 두드러진 문장 한 개는 다듬은 예시를 미리 확인할 수 있어요.</p>
+        <div class="gp-lp-price"><b>100자당 1크레딧</b><span>1,000자 약 10크레딧</span></div>
+        <button type="button" class="gp-lp-card-cta" onclick="gpLandingStart('card_detect')">감지해 보기</button>
+      </article>
+
+      <article class="gp-lp-card is-featured">
+        <span class="gp-lp-card-tag">가장 많이 씁니다</span>
+        <span class="gp-lp-card-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3 20 7v6c0 4.6-3.2 7.4-8 8.8-4.8-1.4-8-4.2-8-8.8V7l8-4Z"/><path d="m9.5 12 1.8 1.8 3.7-4"/></svg>
+        </span>
+        <h3>기본 휴머나이징</h3>
+        <p>원문의 장르와 말투와 사실을 지키면서 AI식 반복과 상투어, 지나치게 균일한 문장 흐름이 두드러진 부분을 다시 구성합니다. 이미 자연스러운 문장은 덜 건드려요.</p>
+        <div class="gp-lp-price"><b>100자당 2크레딧</b><span>최소 10크레딧 · 1,000자 약 20크레딧</span></div>
+        <button type="button" class="gp-lp-card-cta" onclick="gpLandingStart('card_basic')">다듬어 보기</button>
+      </article>
+
+      <article class="gp-lp-card">
+        <span class="gp-lp-card-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
+        </span>
+        <h3>고급 휴머나이징</h3>
+        <p>기본보다 넓은 범위를 재구성하고, 모든 글에 의미와 사실과 구조 정밀 검증을 적용합니다. 구조가 복잡한 논문과 보고서에 적합하고, 직접 승인한 근거만 인용해요.</p>
+        <div class="gp-lp-price"><b>1만자 이하 200크레딧</b><span>근거 보강 사용 시 100크레딧 추가</span></div>
+        <button type="button" class="gp-lp-card-cta" onclick="gpLandingStart('card_advanced')">고급으로 맡기기</button>
+      </article>
+
+      <article class="gp-lp-card">
+        <span class="gp-lp-card-tag new">새 기능</span>
+        <span class="gp-lp-card-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15H6.8A2.8 2.8 0 0 0 4 20.8Z"/><path d="M9 8h7M9 12h7"/></svg>
+        </span>
+        <h3>글쓰기 랩</h3>
+        <p>빈 화면을 마주하지 않아도 됩니다. 장르별 질문에 아는 것만 답하면 자기소개서와 블로그 후기, 상품 소개, 일반 글을 만들어요. 답하지 않은 내용은 지어내지 않습니다.</p>
+        <div class="gp-lp-price"><b>800자 이하 40크레딧</b><span>1,500자 50 · 그 이상 60크레딧</span></div>
+        <button type="button" class="gp-lp-card-cta" onclick="gpLandingStart('card_writing_lab')">글 만들어 보기</button>
+      </article>
+    </div>
+  </section>
+
+  <section class="gp-lp-section gp-lp-example">
+    <div class="gp-lp-section-head">
+      <h2>문장이 이렇게 달라집니다</h2>
+      <p>뜻과 수치는 그대로 두고, AI식으로 읽히는 표현과 문장 호흡을 조정합니다.</p>
+    </div>
+    <div class="gp-lp-ba">
+      <article class="before">
+        <span class="gp-lp-ba-tag">변환 전</span>
+        <p>본 연구에서는 다양한 요인을 종합적으로 고려하여 분석을 진행하였으며, 이러한 결과는 여러 선행연구와 맥락을 같이 하는 것으로 판단된다.</p>
+      </article>
+      <span class="gp-lp-ba-arrow" aria-hidden="true">→</span>
+      <article class="after">
+        <span class="gp-lp-ba-tag good">변환 후</span>
+        <p>이 연구에서는 여러 요인을 함께 놓고 분석했다. 결과는 앞선 연구들과 비슷한 흐름을 보였지만, 어떤 점에서 닮았는지는 연구 맥락에 따라 다르게 읽힌다.</p>
+      </article>
+    </div>
+    <p class="gp-lp-note">예시입니다. 실제 결과는 원문과 장르에 따라 달라지며, 외부 AI 검사 도구의 점수를 보장하지는 않습니다.</p>
+  </section>
+
+  <section class="gp-lp-section">
+    <div class="gp-lp-section-head">
+      <h2>세 단계면 끝납니다</h2>
+    </div>
+    <ol class="gp-lp-steps">
+      <li><span>01</span><strong>글 붙여넣기</strong><p>텍스트를 붙여넣거나 PDF를 올리면 됩니다. 한 번에 30,000자까지 가능해요.</p></li>
+      <li><span>02</span><strong>예상 비용 확인</strong><p>붙여넣는 순간 이 글에 드는 크레딧을 계산해 보여줍니다. 시작 전에 언제든 그만둘 수 있어요.</p></li>
+      <li><span>03</span><strong>결과 확인과 보관</strong><p>원문과 나란히 확인하고 복사하거나 파일로 저장합니다. 결과는 보관함에 남아요.</p></li>
+    </ol>
+  </section>
+
+  <section class="gp-lp-section" id="lpPricing">
+    <div class="gp-lp-section-head">
+      <h2>필요한 만큼만 충전해서 씁니다</h2>
+      <p>구독이 아니라 크레딧입니다. 구매한 크레딧은 유효기간 없이 사용할 수 있어요.</p>
+    </div>
+    <div class="gp-lp-plans">
+      <div class="gp-lp-plan"><b>2,900원</b><span>110크레딧</span><em>500자 휴머나이징 약 11회</em></div>
+      <div class="gp-lp-plan"><b>8,700원</b><span>330크레딧</span><em>약 33회</em></div>
+      <div class="gp-lp-plan is-popular"><i>가장 인기</i><b>14,500원</b><span>600크레딧</span><em>약 60회</em></div>
+      <div class="gp-lp-plan"><b>29,000원</b><span>1,300크레딧</span><em>약 130회</em></div>
+      <div class="gp-lp-plan"><b>58,000원</b><span>2,700크레딧</span><em>약 270회</em></div>
+    </div>
+    <div class="gp-lp-pricing-actions">
+      <button type="button" class="gp-lp-primary" onclick="gpLandingStart('pricing_cta')">가입하고 10크레딧 받기</button>
+      <button type="button" class="gp-lp-ghost lg" onclick="gpLandingEnterApp('pricing','pricing_detail')">요금 자세히 보기</button>
+    </div>
+    <p class="gp-lp-note">토스페이먼츠와 카카오페이 결제를 지원합니다. 표시 금액은 부가세 포함입니다.</p>
+  </section>
+
+  <section class="gp-lp-section gp-lp-trust">
+    <div class="gp-lp-section-head">
+      <h2>이런 점은 지킵니다</h2>
+    </div>
+    <div class="gp-lp-trust-grid">
+      <article>
+        <strong>실패하면 차감하지 않아요</strong>
+        <p>모델 오류나 정책 차단으로 전달 가능한 결과를 만들지 못하면 크레딧은 빠져나가지 않습니다.</p>
+      </article>
+      <article>
+        <strong>없는 사실을 지어내지 않아요</strong>
+        <p>입력하지 않은 경험과 수치와 출처는 글에 넣지 않습니다. 근거 보강도 직접 승인한 자료만 인용해요.</p>
+      </article>
+      <article>
+        <strong>외부 학습에 쓰지 않아요</strong>
+        <p>입력한 글은 서비스 처리와 보관함 제공에만 사용하며 외부 학습 데이터로 넘기지 않습니다.</p>
+      </article>
+      <article>
+        <strong>한국어 표현을 함께 점검해요</strong>
+        <p>국립국어원 공개 어문규범과 표준국어대사전, 우리말샘을 참고해 맞춤법과 용어 표기를 보조 점검합니다.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="gp-lp-section" id="lpFaq">
+    <div class="gp-lp-section-head">
+      <h2>자주 묻는 질문</h2>
+    </div>
+    <div class="gp-lp-faq">
+      <details>
+        <summary>AI 감지 점수는 얼마나 믿을 수 있나요?</summary>
+        <p>문체 신호를 바탕으로 한 참고 지표이며 AI 작성 여부를 확정하지 않습니다. 검사 도구마다 결과가 다를 수 있어, 판정보다는 어느 문단을 손봐야 할지 찾는 용도로 쓰는 편이 정확합니다.</p>
+      </details>
+      <details>
+        <summary>휴머나이징하면 외부 검사를 통과하나요?</summary>
+        <p>보장하지 않습니다. 글과 검사 도구에 따라 결과가 달라집니다. 저희가 하는 일은 AI식 반복과 균일한 문장 흐름을 원문의 뜻과 장르를 지키며 다시 구성하는 것입니다.</p>
+      </details>
+      <details>
+        <summary>원문의 수치나 인용이 바뀌지 않나요?</summary>
+        <p>수치와 기관명, 직접 인용은 보호 대상으로 두고 검증합니다. 다만 자동 검증도 완벽하지 않으니, 제출 전에 핵심 수치와 인용은 원문과 한 번 대조해 주세요.</p>
+      </details>
+      <details>
+        <summary>기본과 고급은 무엇이 다른가요?</summary>
+        <p>기본은 위험 신호가 두드러진 부분을 중심으로 다시 구성하고, 고급은 더 넓은 범위를 재구성하면서 모든 글에 의미와 사실과 구조 검증을 적용합니다. 긴 논문이나 보고서라면 고급이 적합합니다.</p>
+      </details>
+      <details>
+        <summary>크레딧은 언제까지 쓸 수 있나요?</summary>
+        <p>구매한 크레딧에는 유효기간이 없습니다. 결제 후 7일 이내 환불이 가능하며, 이미 사용한 크레딧에 해당하는 금액은 제외됩니다.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="gp-lp-final">
+    <h2>지금 10크레딧으로 먼저 확인해 보세요</h2>
+    <p>가입만 하면 바로 쓸 수 있고, 결제는 필요할 때 하면 됩니다.</p>
+    <button type="button" class="gp-lp-primary" onclick="gpLandingStart('final')">무료로 시작하기</button>
+  </section>
+
+  <footer class="gp-lp-footer">
+    <div class="gp-lp-footer-links">
+      <button type="button" onclick="gpLandingEnterApp('guide','footer')">사용 가이드</button>
+      <button type="button" onclick="gpLandingEnterApp('faq','footer')">자주 묻는 질문</button>
+      <button type="button" onclick="gpLandingEnterApp('qna','footer')">문의하기</button>
+      <button type="button" onclick="showPolicy('terms')">이용 약관</button>
+      <button type="button" onclick="showPolicy('privacy')">개인정보처리방침</button>
+      <button type="button" onclick="showPolicy('refund')">환불 규정</button>
+    </div>
+    <div class="gp-lp-footer-company">
+      <p>상호명: 지피코리아(gpkorea) · 대표자: 윤동민 · 개인정보보호책임자: 윤동민</p>
+      <p>사업자등록번호: 213-11-67637 · 통신판매업 신고번호: 2024-인천연수구-4281</p>
+      <p>사업장 주소: 인천광역시 연수구 랜드마크로360번길 40, 108동 3201호</p>
+      <p>고객센터 이메일: aqua0661123@naver.com · 운영시간: 09:00 ~ 23:59</p>
+      <p>© 2026 교수님 피하기. All rights reserved.</p>
+    </div>
+  </footer>
+</div>

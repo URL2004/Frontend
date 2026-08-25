@@ -124,7 +124,8 @@
       evasion_detect: '작성 중인 AI 감지',
       evasion_transform: '작성 중인 휴머나이징',
       evasion_fallback: '원문 보존형 작업',
-      writing_lab_generate: '작성 중인 글쓰기 작업'
+      writing_lab_generate: '작성 중인 글쓰기 작업',
+      composer_draft: '입력해 둔 글'
     };
     return labels[action] || '현재 작업';
   }
@@ -393,7 +394,8 @@
       evasion_detect: 'gpResumeEvasionDetect',
       evasion_transform: 'gpResumeEvasionTransform',
       evasion_fallback: 'gpResumeEvasionFallback',
-      writing_lab_generate: 'gpResumeWritingLab'
+      writing_lab_generate: 'gpResumeWritingLab',
+      composer_draft: 'gpResumeComposerDraft'
     };
     var handlerName = handlers[pending.action];
     var handler = handlerName && window[handlerName];
@@ -514,9 +516,174 @@
     return context;
   };
 
+  // ── 상태별 히어로 오퍼(D) ────────────────────────────────────────────────────
+  // 첫 화면 문구를 모두에게 동일하게 두면, 이미 결제한 적 있고 잔액이 바닥난 사용자에게도
+  // 신규 방문자와 같은 화면을 보여주게 된다. /checkout-context의 세그먼트로 문구와 CTA를 바꾼다.
+  var heroState = null;
+
+  function heroCopy(context) {
+    var balance = window.CU && window.UC != null ? number(window.UC) : number(context.balance);
+    if (context.segment === 'trial_unused') {
+      return {
+        badge: '무료 체험',
+        title: '무료 10크레딧이 그대로 있어요',
+        desc: '500자 기본 휴머나이징 한 번 또는 1,000자 AI 감지를 무료로 써볼 수 있어요.',
+        cta: '지금 글 붙여넣기',
+        action: 'focus',
+        event: 'activation_prompt'
+      };
+    }
+    if (context.segment === 'trial_engaged') {
+      return {
+        badge: '이어하기',
+        title: '체험 크레딧이 ' + format(balance) + '크레딧 남았어요',
+        desc: format(context.starterOffer.amount) + '원 스타터 충전이면 500자 휴머나이징을 약 ' + Math.floor(number(context.starterOffer.totalCredits) / 10) + '번 더 할 수 있어요.'
+          + (starterBonusCopy(context) ? ' (' + starterBonusCopy(context) + ')' : ''),
+        cta: '스타터 충전 보기',
+        action: 'starter',
+        event: 'starter_offer'
+      };
+    }
+    if (context.segment === 'returning_low_balance' && context.lastPackage) {
+      return {
+        badge: '빠른 재충전',
+        title: '잔액이 ' + format(balance) + '크레딧 남았어요',
+        desc: '지난번 쓰신 ' + format(context.lastPackage.amount) + '원 · ' + format(context.lastPackage.credits) + '크레딧 상품으로 바로 충전할 수 있어요.',
+        cta: '이전 상품 다시 충전',
+        action: 'repurchase',
+        event: 'repurchase_offer'
+      };
+    }
+    if (context.segment === 'returning_funded') {
+      return {
+        badge: '이어하기',
+        title: '보유 ' + format(balance) + '크레딧으로 이어서 작업할 수 있어요',
+        desc: '지난 작업 결과는 작업 기록에서 다시 확인할 수 있어요.',
+        cta: '작업 기록 보기',
+        action: 'history',
+        event: 'returning_prompt'
+      };
+    }
+    return {
+      badge: '시작하기',
+      title: '보유 ' + format(balance) + '크레딧으로 바로 시작할 수 있어요',
+      desc: '글을 붙여넣으면 이 글에 드는 크레딧을 먼저 알려드려요.',
+      cta: '글 붙여넣기',
+      action: 'focus',
+      event: 'activation_prompt'
+    };
+  }
+
+  function loggedOutHeroCopy() {
+    return {
+      badge: '무료 체험',
+      title: '가입하면 10크레딧을 무료로 드려요',
+      desc: '500자 기본 휴머나이징 한 번 또는 1,000자 AI 감지를 바로 해볼 수 있어요.',
+      cta: '무료로 시작하기',
+      action: 'signup',
+      event: 'signup_prompt'
+    };
+  }
+
+  function renderHero(copy, segment) {
+    var box = byId('lavHeroOffer');
+    if (!box) return;
+    heroState = { action: copy.action, segment: segment, event: copy.event };
+    setText('lavHeroOfferBadge', copy.badge);
+    setText('lavHeroOfferTitle', copy.title);
+    setText('lavHeroOfferDesc', copy.desc);
+    setText('lavHeroOfferCta', copy.cta);
+    box.dataset.segment = segment;
+    box.hidden = false;
+    if (box.dataset.viewedSegment !== segment) {
+      box.dataset.viewedSegment = segment;
+      track(copy.event + '_view', { segment: segment, surface: 'hero' });
+    }
+  }
+
+  // 로컬 전용: ?preview_segment=trial_engaged 처럼 붙이면 계정 없이 각 상태를 눈으로 확인한다.
+  var HERO_PREVIEW_SEGMENTS = ['logged_out', 'trial_unused', 'trial_engaged', 'new_unfunded', 'returning_funded', 'returning_low_balance'];
+  function heroPreviewSegment() {
+    var isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+    if (!isLocal) return '';
+    var requested = new URLSearchParams(location.search).get('preview_segment') || '';
+    return HERO_PREVIEW_SEGMENTS.indexOf(requested) >= 0 ? requested : '';
+  }
+  function heroPreviewContext(segment) {
+    var balances = { trial_unused: 10, trial_engaged: 4, new_unfunded: 30, returning_funded: 420, returning_low_balance: 12 };
+    return {
+      segment: segment,
+      balance: balances[segment] == null ? 0 : balances[segment],
+      paidOrderCount: segment.indexOf('returning') === 0 ? 3 : 0,
+      eligibleForFirstPurchaseOffer: segment === 'trial_engaged',
+      experiment: { key: 'first_purchase_bonus_v1', variant: 'bonus_10' },
+      starterOffer: { amount: 2900, baseCredits: 110, bonusCredits: segment === 'trial_engaged' ? 10 : 0, totalCredits: segment === 'trial_engaged' ? 120 : 110 },
+      lastPackage: segment === 'returning_low_balance' ? { amount: 14500, credits: 600 } : null
+    };
+  }
+
+  window.gpRefreshHeroOffer = async function (force) {
+    var box = byId('lavHeroOffer');
+    if (!box) return null;
+    var preview = heroPreviewSegment();
+    if (preview) {
+      if (preview === 'logged_out') { window.GP_HERO_PREVIEW = ''; renderHero(loggedOutHeroCopy(), 'logged_out'); return null; }
+      var previewContext = heroPreviewContext(preview);
+      window.GP_HERO_PREVIEW = preview;
+      window.UC = previewContext.balance;
+      renderHero(heroCopy(previewContext), preview);
+      if (typeof window.lavUpdateEstimate === 'function') window.lavUpdateEstimate();
+      return previewContext;
+    }
+    if (!window.CU) {
+      renderHero(loggedOutHeroCopy(), 'logged_out');
+      return null;
+    }
+    var context = await fetchContext(!!force);
+    renderHero(heroCopy(context), context.segment);
+    return context;
+  };
+
+  window.gpHeroOfferAction = async function () {
+    var state = heroState || { action: 'focus', segment: 'unknown', event: 'activation_prompt' };
+    track(state.event + '_click', { segment: state.segment, surface: 'hero' });
+    if (state.action === 'signup') {
+      if (typeof window.showScreen === 'function') window.showScreen('login');
+      return;
+    }
+    if (state.action === 'focus') {
+      if (typeof window.switchTab === 'function') window.switchTab('main');
+      var input = byId('lavInput');
+      if (input) input.focus();
+      return;
+    }
+    if (state.action === 'history') {
+      if (typeof window.switchTab === 'function') window.switchTab('history');
+      if (typeof window.loadHistory === 'function') window.loadHistory();
+      return;
+    }
+    var context = await fetchContext(false);
+    if (state.action === 'repurchase' && context.lastPackage && typeof window.payToss === 'function') {
+      return window.payToss(context.lastPackage.amount, context.lastPackage.credits, '크레딧 충전', '', {
+        segment: context.segment,
+        offerVariant: 'repurchase_previous',
+        pendingAction: 'pricing_purchase',
+        source: 'hero_offer'
+      });
+    }
+    return window.gpOpenCreditCheckout({ action: 'pricing_purchase', source: 'hero_offer' });
+  };
+
+  window.gpConversionContext = function (force) {
+    return fetchContext(!!force);
+  };
+
   function bootstrapPricingContext(tries) {
     if (window.authReady && typeof window.authReady.then === 'function') {
-      window.authReady.then(function () { if (window.CU) window.gpRefreshPricingOffer(false); });
+      window.authReady.then(function () {
+        window.gpRefreshHeroOffer(false);
+        if (window.CU) window.gpRefreshPricingOffer(false);
+      });
       return;
     }
     if (tries > 0) setTimeout(function () { bootstrapPricingContext(tries - 1); }, 100);
