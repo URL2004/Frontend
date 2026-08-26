@@ -57,11 +57,18 @@ test('전환 퍼널과 사용자 단계별 제안 이벤트를 개인정보 없�
   assert.doesNotMatch(flow, /track\([^\n]+(?:text|email|uid):/u);
 });
 
-test('가격표는 크레딧과 함께 예상 기본 휴머나이징 횟수를 보여준다', async () => {
+test('가격표 카드는 서비스별로 몇 번 쓸 수 있는지 보여준다', async () => {
   const pricing = await read('pages/pricing.html');
-  assert.equal((pricing.match(/class="gp-plan-use"/gu) || []).length, 5);
-  assert.equal((pricing.match(/class="gp-plan-use"[^>]*id="gpStarterUseEstimate"/gu) || []).length, 1);
-  assert.match(pricing, /500자 기본 휴머나이징 약 11회/u);
-  assert.match(pricing, /500자 기본 휴머나이징 약 270회/u);
+  assert.equal((pricing.match(/class="gp-plan-svc"/gu) || []).length, 5);
+  // 스타터 카드 횟수는 첫 결제 보너스에 맞춰 conversion-flow.js가 다시 채운다.
+  for (const id of ['gpStarterSvcShort', 'gpStarterSvcBasic', 'gpStarterSvcDetect']) {
+    assert.equal((pricing.match(new RegExp(`id="${id}"`, 'gu')) || []).length, 1, `${id}는 한 번만 있어야 한다`);
+  }
+  // 단가와 일치하는 횟수(1,000자 기본=20 · 감지=10 · 1만자 고급=200 기준 내림)
+  assert.match(pricing, /1,000자 글 휴머나이징<strong id="gpStarterSvcBasic">5회/u);
+  assert.match(pricing, /1,000자 글 휴머나이징<strong>135회/u);
+  assert.match(pricing, /1,000자 AI 감지<strong>270회/u);
+  assert.match(pricing, /1만자 논문 고급 휴머나이징<strong>13회/u);
+  assert.match(pricing, /class="gp-plan-svc-note"/u);
   assert.match(pricing, /id="gpPricingSegmentPanel"/u);
 });

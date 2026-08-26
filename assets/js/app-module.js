@@ -250,7 +250,7 @@ function updateCreditUI() {
  if (badge) badge.textContent = plans[p] || 'Free';
  // 잔액이 바뀌면 컴포저 예상 비용과 상태별 오퍼도 같이 최신화한다.
  if (typeof window.lavUpdateEstimate === 'function') window.lavUpdateEstimate();
- if (typeof window.gpRefreshHeroOffer === 'function') window.gpRefreshHeroOffer(true);
+ if (typeof window.gpRefreshHeroOffer === 'function') window.gpRefreshHeroOffer(false);
 }
 
  

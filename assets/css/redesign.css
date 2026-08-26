@@ -17272,3 +17272,323 @@ body.gp-modal-open{overflow:hidden;}
  .gp-lav-offer-cta{order:3;width:100%}
  .gp-lav-estimate-balance{margin-left:0;flex-basis:100%}
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   전환 장치 2차 — 완료 화면 다음 작업 안내(1순위) · 감지 보고서 이동 비용(2순위)
+   · 콘텐츠 인라인 오퍼(3순위) · 플로팅 오퍼(4순위) · 사이드바 NEW 배지(5순위)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 5순위: 사이드바 NEW 배지 ── */
+.gp-new-badge{
+ margin-left:auto;
+ padding:2px 7px;
+ border-radius:999px;
+ background:#0f9d76;
+ color:#fff;
+ font-size:9.5px;
+ font-weight:800;
+ letter-spacing:.04em;
+}
+
+/* ── 2순위: 감지 보고서 이동 비용(정보 한 줄) ── */
+.lav-rep-go-cost{
+ margin:8px 0 0;
+ font-size:12.5px;
+ font-weight:600;
+ color:#8b90a5;
+ text-align:center;
+}
+.lav-rep-go-cost.is-short{color:#d9920a}
+.lav-rep-go-cost[hidden]{display:none !important}
+
+/* ── 1순위: 완료 화면 다음 작업 안내 ── */
+.lav-done-next{
+ display:flex;
+ align-items:center;
+ gap:14px;
+ margin-top:14px;
+ padding:14px 16px;
+ border:1px solid #e4e5f6;
+ border-radius:14px;
+ background:linear-gradient(180deg,#fbfbff,#f5f5fd);
+}
+.lav-done-next[hidden]{display:none !important}
+.lav-done-next-copy{
+ flex:1 1 auto;
+ min-width:0;
+ display:flex;
+ flex-direction:column;
+ gap:2px;
+}
+.lav-done-next-copy strong{
+ font-size:13.5px;
+ font-weight:700;
+ color:#1a1f2e;
+ line-height:1.45;
+}
+.lav-done-next-copy span{
+ font-size:12px;
+ color:#8b90a5;
+ line-height:1.5;
+}
+.lav-done-next-cta{
+ flex:none;
+ padding:10px 15px;
+ border:0;
+ border-radius:11px;
+ background:#5a5bd8;
+ color:#fff;
+ font-size:12.5px;
+ font-weight:700;
+ cursor:pointer;
+ transition:background .14s ease;
+}
+.lav-done-next-cta:hover{background:#4a4bc4}
+.lav-done-next-cta:focus-visible{outline:2px solid #171a2b;outline-offset:2px}
+
+/* ── 3순위: 콘텐츠 페이지 인라인 오퍼 ── */
+.gp-offer-inline{
+ display:flex;
+ align-items:center;
+ gap:14px;
+ max-width:960px;
+ margin:26px auto 8px;
+ padding:14px 16px;
+ border:1px solid #e4e5f6;
+ border-radius:16px;
+ background:linear-gradient(180deg,#fbfbff,#f5f5fd);
+}
+.gp-offer-inline[hidden]{display:none !important}
+.gp-offer-inline-badge{
+ flex:none;
+ padding:5px 10px;
+ border-radius:999px;
+ background:#5a5bd8;
+ color:#fff;
+ font-size:11px;
+ font-weight:700;
+}
+.gp-offer-inline-copy{
+ flex:1 1 auto;
+ min-width:0;
+ display:flex;
+ flex-direction:column;
+ gap:2px;
+}
+.gp-offer-inline-copy strong{
+ font-size:13.5px;
+ font-weight:700;
+ color:#1a1f2e;
+ line-height:1.45;
+}
+.gp-offer-inline-copy span{
+ font-size:12px;
+ color:#8b90a5;
+ line-height:1.5;
+}
+.gp-offer-inline-cta{
+ flex:none;
+ padding:10px 15px;
+ border:0;
+ border-radius:11px;
+ background:#171a2b;
+ color:#fff;
+ font-size:12.5px;
+ font-weight:700;
+ cursor:pointer;
+ transition:background .14s ease;
+}
+.gp-offer-inline-cta:hover{background:#282c45}
+.gp-offer-inline-cta:focus-visible{outline:2px solid #5a5bd8;outline-offset:2px}
+
+/* ── 4순위: 플로팅 오퍼(한 줄짜리 얇은 바, 하단 중앙) ── */
+.gp-offer-float{
+ position:fixed;
+ left:50%;
+ bottom:18px;
+ transform:translateX(-50%);
+ z-index:9000;   /* 토스트(10050)·모달(9999+)보다 아래 — 상태 알림을 가리지 않는다 */
+ display:flex;
+ align-items:center;
+ gap:12px;
+ max-width:min(640px,calc(100vw - 28px));
+ padding:10px 12px 10px 16px;
+ border:1px solid #e4e5f6;
+ border-radius:999px;
+ background:#fff;
+ box-shadow:0 14px 40px rgba(84,90,160,.2);
+}
+.gp-offer-float[hidden]{display:none !important}
+.gp-offer-float-text{
+ min-width:0;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ white-space:nowrap;
+ font-size:13px;
+ font-weight:600;
+ color:#1a1f2e;
+}
+.gp-offer-float-cta{
+ flex:none;
+ padding:8px 14px;
+ border:0;
+ border-radius:999px;
+ background:#5a5bd8;
+ color:#fff;
+ font-size:12.5px;
+ font-weight:700;
+ cursor:pointer;
+ transition:background .14s ease;
+}
+.gp-offer-float-cta:hover{background:#4a4bc4}
+.gp-offer-float-close{
+ flex:none;
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ width:28px;
+ height:28px;
+ border:0;
+ border-radius:50%;
+ background:transparent;
+ color:#8b90a5;
+ cursor:pointer;
+}
+.gp-offer-float-close:hover{background:#f1f2fb;color:#1a1f2e}
+
+@media (max-width:720px){
+ .lav-done-next,
+ .gp-offer-inline{flex-wrap:wrap}
+ .lav-done-next-cta,
+ .gp-offer-inline-cta{width:100%}
+ .gp-offer-float{bottom:72px}   /* 모바일 하단 내비(mobile-nav)와 겹치지 않게 */
+ .gp-offer-float-text{white-space:normal;font-size:12.5px;line-height:1.4}
+}
+
+/* ── 오퍼 바 전체 강조(2026-08-26 사장님): 버튼만이 아니라 바 전체를
+   상단 '업그레이드' 버튼과 같은 그라데이션 테두리 + 진한 남색 속으로.
+   대상: 상태별 히어로 오퍼 · 완료 화면 다음 작업 · 인라인 오퍼 · 플로팅 오퍼.
+   (예상 비용 바는 계산 정보 패널이라 제외 — CTA만 그라데이션 채움) ── */
+.gp-lav-offer,
+.lav-done-next,
+.gp-offer-inline,
+.gp-offer-float{
+ position:relative;
+ z-index:0;
+ overflow:hidden;
+ border:0 !important;
+ background:linear-gradient(144deg,#af40ff,#5b42f3 50%,#00ddeb) !important;
+ box-shadow:rgba(151,65,252,.24) 0 15px 34px -6px !important;
+}
+.gp-lav-offer::before,
+.lav-done-next::before,
+.gp-offer-inline::before,
+.gp-offer-float::before{
+ content:"";
+ position:absolute;
+ inset:3px;
+ z-index:-1;
+ border-radius:inherit;
+ background:rgb(5,6,45);
+}
+/* 남색 속 위 텍스트 반전 */
+.gp-lav-offer-copy strong,
+.lav-done-next-copy strong,
+.gp-offer-inline-copy strong,
+.gp-offer-float-text{color:#fff}
+.gp-lav-offer-copy span,
+.lav-done-next-copy span,
+.gp-offer-inline-copy span{color:#b9c0e0}
+/* 배지: 남색 속 위 반투명 흰 */
+.gp-lav-offer-badge,
+.gp-offer-inline-badge{
+ background:rgba(255,255,255,.16);
+ color:#fff;
+}
+/* 플로팅 닫기: 어두운 배경용 색 */
+.gp-offer-float-close{color:#8f96b8}
+.gp-offer-float-close:hover{background:rgba(255,255,255,.12);color:#fff}
+
+/* CTA: 바 속(남색) 위에서 그라데이션을 가득 채운 버튼 — 바 테두리와 한 세트로 보인다 */
+.gp-lav-offer-cta,
+.gp-lav-estimate-cta,
+.lav-done-next-cta,
+.gp-offer-inline-cta,
+.gp-offer-float-cta{
+ border:0 !important;
+ background:linear-gradient(144deg,#af40ff,#5b42f3 50%,#00ddeb) !important;
+ color:#fff !important;
+ box-shadow:rgba(151,65,252,.3) 0 10px 22px -6px !important;
+ transition:transform .2s ease,filter .2s ease;
+}
+.gp-lav-offer-cta:hover,
+.gp-lav-estimate-cta:hover,
+.lav-done-next-cta:hover,
+.gp-offer-inline-cta:hover,
+.gp-offer-float-cta:hover{
+ transform:translateY(-1px);
+ filter:brightness(1.12);
+}
+.gp-lav-offer-cta:focus-visible,
+.gp-lav-estimate-cta:focus-visible,
+.lav-done-next-cta:focus-visible,
+.gp-offer-inline-cta:focus-visible,
+.gp-offer-float-cta:focus-visible{outline:2px solid #00ddeb;outline-offset:2px}
+
+/* 플로팅 바는 fixed 하단 중앙 — 공통 강조 블록의 position:relative·z-index:0이
+   원래 배치(fixed·9000)를 덮지 않게 복원 */
+.gp-offer-float{
+ position:fixed !important;
+ z-index:9000 !important;
+}
+
+/* ── 충전 카드 서비스별 사용량(2026-08-26 사장님): '약 N회' 추상 한 줄 대신
+   이 금액으로 어떤 서비스를 몇 번 쓰는지 서비스별로 보여준다. ── */
+.gp-plan-svc{
+ display:flex;
+ flex-direction:column;
+ gap:7px;
+ margin:-6px 0 14px;
+ padding:12px 13px;
+ border-radius:12px;
+ background:rgba(120,130,255,.07);
+ border:1px solid rgba(151,171,213,.14);
+ text-align:left;
+}
+.gp-plan-svc .svc-t{
+ font-size:11px;
+ font-weight:800;
+ letter-spacing:.01em;
+ color:#8f96b8;
+}
+/* 충전 카드는 라벤더에서도 다크 카드 스타일 — 밝은 텍스트 기준으로 통일 */
+.gp-plan-svc .svc-r{
+ display:flex;
+ align-items:baseline;
+ gap:7px;
+ font-size:12px;
+ font-weight:600;
+ line-height:1.4;
+ color:rgba(233,235,255,.78);
+}
+.gp-plan-svc .svc-r i{
+ flex:none;
+ font-style:normal;
+ font-size:11px;
+ font-weight:800;
+ color:#3ee2a6;
+}
+.gp-plan-svc .svc-r strong{
+ margin-left:auto;
+ font-size:12.5px;
+ font-weight:800;
+ color:#3ee2a6;
+ white-space:nowrap;
+}
+.gp-plan-svc-note{
+ margin:14px 2px 0;
+ font-size:12px;
+ line-height:1.6;
+ color:#8f96b8;
+ text-align:center;
+}

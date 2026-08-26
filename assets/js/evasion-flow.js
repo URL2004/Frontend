@@ -657,6 +657,7 @@
 
     if ($('lavRepRemain')) {
       $('lavRepRemain').textContent = d.charged ? '이번 감지에 ' + d.charged + '크레딧을 사용했어요. (100자당 1크레딧)' : '';
+      renderReportGoCost();
     }
   }
 
@@ -1870,6 +1871,7 @@
     }
     renderBillingDisposition(st);
     renderResultNotices(st);
+    renderDoneNextStep(st);
     if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
     lavSaveToLibrary(label, st.result && st.result.outputText, grade ? grade + '등급' : '');
     notifyJobDone(st, label);
@@ -1899,6 +1901,79 @@
         ? (qualityWarnings[0].message || '의미·수치·인용·구조 중 원문과 대조할 부분이 있어요.')
         : '';
     }
+  }
+
+  // ── 완료 화면의 다음 작업 안내(1순위) ────────────────────────────────────────
+  // 결과·복사·다운로드를 다 챙긴 아래에만 붙이고, 다음 작업이 가능한 잔액이면 아예 뜨지 않는다.
+  // 금액은 추정이 아니라 이번 작업 전후 잔액 차이 — 방금 일어난 사실만 말한다.
+  // 겸사겸사: 비동기 작업 잔액은 로그인 시 1회 로드한 값이라 완료 시점에 낡아 있다.
+  // 여기서 서버 잔액(/checkout-context)으로 맞춰 상단 크레딧 칩까지 최신화한다.
+  async function renderDoneNextStep(st) {
+    var box = $('lavDoneNext');
+    if (!box) return;
+    box.hidden = true;
+    if (!window.CU || window.UP === 'unlimited') return;
+
+    var before = Math.max(0, Number(window.UC) || 0);
+    var balance = before;
+    if (typeof window.gpConversionContext === 'function') {
+      try {
+        var ctx = await window.gpConversionContext(true);
+        if (ctx && isFinite(Number(ctx.balance))) {
+          balance = Math.max(0, Number(ctx.balance));
+          window.UC = balance;
+          if (typeof window.updateCreditUI === 'function') window.updateCreditUI();
+        }
+      } catch (_) {}
+    }
+    if (balance >= SHORT_HUMANIZE_MIN_CREDITS) return;   // 다음 글을 바로 시작할 수 있으면 조용히 넘어간다
+
+    var result = (st && st.result) || {};
+    var charged = (st && st.billingDisposition) === 'charged' || result.billingDisposition === 'charged';
+    var used = Math.max(0, before - balance);
+    setEstimateText('lavDoneNextTitle', charged && used > 0
+      ? '이번 작업에 ' + used.toLocaleString('ko-KR') + '크레딧을 썼고 ' + balance.toLocaleString('ko-KR') + '크레딧 남았어요'
+      : '남은 크레딧이 ' + balance.toLocaleString('ko-KR') + '크레딧이에요');
+    setEstimateText('lavDoneNextDesc', '다음 글을 다듬으려면 최소 ' + SHORT_HUMANIZE_MIN_CREDITS + '크레딧이 필요해요.');
+    box.hidden = false;
+    if (window.gpTrack) {
+      window.gpTrack('done_next_offer_view', { surface: 'done', remaining_credits: balance, used_credits: used });
+    }
+  }
+
+  window.lavDoneNextAction = function () {
+    var balance = Math.max(0, Number(window.UC) || 0);
+    if (window.gpTrack) {
+      window.gpTrack('done_next_offer_click', { surface: 'done', remaining_credits: balance });
+    }
+    if (typeof window.gpOpenCreditCheckout !== 'function') {
+      if (typeof window.switchTab === 'function') window.switchTab('pricing');
+      return;
+    }
+    window.gpOpenCreditCheckout({
+      action: 'pricing_purchase',
+      source: 'done_next',
+      neededCredits: SHORT_HUMANIZE_MIN_CREDITS,
+      currentCredits: balance
+    });
+  };
+
+  // ── 감지 보고서 → 휴머나이저 이동 비용(2순위) ────────────────────────────────
+  // 오퍼가 아니라 정보다. 이동 버튼과 경쟁하지 않도록 버튼 아래 한 줄로만 둔다.
+  function renderReportGoCost() {
+    var line = $('lavRepGoCost');
+    if (!line) return;
+    line.hidden = true;
+    if (!window.CU || window.UP === 'unlimited') return;
+    var src = $('lavInput');
+    var len = src && src.value ? src.value.length : 0;
+    if (!len) return;
+    var cost = shortHumanizeCredit(len);
+    var balance = Math.max(0, Number(window.UC) || 0);
+    line.textContent = '이동 후 기본 휴머나이징 ' + cost.toLocaleString('ko-KR') + '크레딧 · 보유 '
+      + balance.toLocaleString('ko-KR') + '크레딧';
+    line.classList.toggle('is-short', balance < cost);
+    line.hidden = false;
   }
 
   function renderBillingDisposition(st) {

@@ -465,9 +465,15 @@ function openAdminHumanizeLab() {
  tryLoad(10);
 }
 window.openAdminHumanizeLab = openAdminHumanizeLab;
-// 글쓰기 랩: 일반 사용자도 쓰는 실운영 페이지(로그인 필수). 관리자 설정 탭의 단독 실행 버튼도 이 함수를 쓴다.
+// 글쓰기 랩: 정식 오픈 전 관리자 전용(2026-08-26 사장님 — 메뉴는 '준비 중', 진입은 관리자만).
+// 오픈 시 이 가드만 걷어내면 일반 사용자 경로(로그인 필수)가 그대로 살아난다.
 function openWritingLab() {
  if (!window.CU) { showScreen('login'); return; }
+ if (typeof window.isAdmin === 'function' && !window.isAdmin()) {
+  if (window.gpToast) window.gpToast('글쓰기 랩은 오픈 준비 중이에요. 곧 만나요!', { type: 'info', title: '준비 중' });
+  else alert('글쓰기 랩은 오픈 준비 중이에요.');
+  return;
+ }
  switchTab('writingLab');
  var tryLoad = function(tries) {
   if (typeof window.loadWritingLab === 'function') { window.loadWritingLab(); }
@@ -492,6 +498,8 @@ function switchTab(t, opts) {
  updateRouteMeta(t);
  if (!opts.skipRoute) setRouteUrl(t, opts.replaceRoute);
  if (!opts.skipTrack && typeof window.gpTrackPageView === 'function') window.gpTrackPageView(t, document.title, window.location.href);
+ // 플로팅 오퍼는 탭 단위로 무장·해제한다(읽기용 페이지에서만, 지연 노출).
+ if (typeof window.gpOnTabChange === 'function') window.gpOnTabChange(t);
 }
 
 window.addEventListener('hashchange', () => applyRouteFromUrl({ replace: true }));

@@ -39,11 +39,19 @@
     return requested === 'detect' || requested === 'humanize';
   }
 
+  // 로컬 전용: ?preview_segment=...는 앱 화면의 상태별 오퍼를 보려는 파라미터이므로 랜딩을 건너뛴다.
+  function hasLocalSegmentPreview() {
+    var isLocal = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+    if (!isLocal) return false;
+    return !!new URLSearchParams(window.location.search || '').get('preview_segment');
+  }
+
   function eligible() {
     if (window.CU) return false;
     if (dismissed()) return false;
     if (!isHomePath()) return false;
     if (hasAdLandingMode()) return false;
+    if (hasLocalSegmentPreview()) return false;
     return !!document.getElementById('landingScreen');
   }
 

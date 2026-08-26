@@ -50,6 +50,12 @@
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3 20 7v6c0 4.6-3.2 7.4-8 8.8-4.8-1.4-8-4.2-8-8.8V7l8-4Z"/><path d="m9.5 12 1.8 1.8 3.7-4"/></svg>
          <span>AI 감지 &amp; 휴머나이저</span>
        </button>
+       <!-- 글쓰기 랩(2026-08-26 사장님): 정식 오픈 전 — Pro처럼 연하게 '준비 중'으로 두고 진입은 관리자만 -->
+       <button type="button" class="gp-nav-soon" data-tab="writingLab" onclick="openWritingLab()">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15H6.8A2.8 2.8 0 0 0 4 20.8Z"/><path d="M9 8h7M9 12h5"/></svg>
+         <span>글쓰기 랩</span>
+         <span class="gp-soon-badge">준비 중</span>
+       </button>
        <button type="button" data-tab="notice" onclick="switchTab('notice');loadNotices()">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19h14M7 17V9a5 5 0 0 1 10 0v8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
          <span>공지사항</span>
@@ -218,6 +224,7 @@
 
            <!-- ② 휴머나이저로 이동 — 사장님: 본문 글 위로. 완전 분리(해결 경로 선택은 방법 선택 화면에서, 글은 그대로 가져감) -->
            <button type="button" class="lav-flow-cta lav-rep-go" onclick="lavReportToHumanize()">이 글 그대로 휴머나이저로 이동 →</button>
+           <p class="lav-rep-go-cost" id="lavRepGoCost" hidden></p>
 
            <!-- ③ 문단별 진단 -->
            <div class="lav-rep-sec lav-rep-paras">
@@ -510,6 +517,15 @@
              <button type="button" class="ghost" onclick="lavNewSentence()">새 글 시작</button>
              <button type="button" class="ghost" onclick="lavDoneCopy(this)">복사</button>
              <button type="button" onclick="lavDoneDownload()">다운로드 (.md)</button>
+           </div>
+           <!-- 다음 작업 안내(1순위): 결과를 다 챙긴 뒤, 잔액이 다음 작업 최소치에 못 미칠 때만.
+                금액은 추정이 아니라 이번 작업 전후 잔액 차이 — 방금 일어난 사실만 말한다. -->
+           <div class="lav-done-next" id="lavDoneNext" hidden>
+             <div class="lav-done-next-copy">
+               <strong id="lavDoneNextTitle"></strong>
+               <span id="lavDoneNextDesc"></span>
+             </div>
+             <button type="button" class="lav-done-next-cta" onclick="lavDoneNextAction()">충전하고 다음 글 준비하기</button>
            </div>
          </section>
        </div>

@@ -6,7 +6,7 @@
   var MAX_PENDING_AGE = 2 * 60 * 60 * 1000;
   var PLANS = [
     { amount: 2900, credits: 110, label: '스타터' },
-    { amount: 8700, credits: 330, label: '라이트' },
+    { amount: 8700, credits: 350, label: '라이트' },
     { amount: 14500, credits: 600, label: '스탠다드' },
     { amount: 29000, credits: 1300, label: '플러스' },
     { amount: 58000, credits: 2700, label: '맥스' }
@@ -446,7 +446,11 @@
       if (strong) strong.textContent = '+' + format(offer.bonusCredits) + ' 크레딧';
     }
     setText('gpStarterTotal', '총 ' + format(offer.totalCredits) + ' 크레딧');
-    setText('gpStarterUseEstimate', '500자 기본 휴머나이징 약 ' + Math.floor(number(offer.totalCredits) / 10) + '회 · 1,000자 약 ' + Math.floor(number(offer.totalCredits) / 20) + '회');
+    // 스타터 카드 사용량: 보너스 포함 총 크레딧으로 서비스별 횟수를 다시 계산(500자 기본=10 · 1,000자 기본=20 · 감지=10)
+    var starterTotal = number(offer.totalCredits);
+    setText('gpStarterSvcShort', Math.floor(starterTotal / 10) + '회');
+    setText('gpStarterSvcBasic', Math.floor(starterTotal / 20) + '회');
+    setText('gpStarterSvcDetect', Math.floor(starterTotal / 10) + '회');
 
     var panel = byId('gpPricingSegmentPanel');
     if (!panel || !window.CU) return;
@@ -627,26 +631,38 @@
     if (!box) return null;
     var preview = heroPreviewSegment();
     if (preview) {
-      if (preview === 'logged_out') { window.GP_HERO_PREVIEW = ''; renderHero(loggedOutHeroCopy(), 'logged_out'); return null; }
+      if (preview === 'logged_out') {
+        window.GP_HERO_PREVIEW = '';
+        var outPreview = loggedOutHeroCopy();
+        renderHero(outPreview, 'logged_out');
+        renderInlineOffers(outPreview, 'logged_out');
+        return null;
+      }
       var previewContext = heroPreviewContext(preview);
       window.GP_HERO_PREVIEW = preview;
       window.UC = previewContext.balance;
-      renderHero(heroCopy(previewContext), preview);
+      var previewCopy = heroCopy(previewContext);
+      renderHero(previewCopy, preview);
+      renderInlineOffers(previewCopy, preview);
       if (typeof window.lavUpdateEstimate === 'function') window.lavUpdateEstimate();
       return previewContext;
     }
     if (!window.CU) {
-      renderHero(loggedOutHeroCopy(), 'logged_out');
+      var outCopy = loggedOutHeroCopy();
+      renderHero(outCopy, 'logged_out');
+      renderInlineOffers(outCopy, 'logged_out');
       return null;
     }
     var context = await fetchContext(!!force);
-    renderHero(heroCopy(context), context.segment);
+    var copy = heroCopy(context);
+    renderHero(copy, context.segment);
+    renderInlineOffers(copy, context.segment);
     return context;
   };
 
-  window.gpHeroOfferAction = async function () {
+  async function runOfferAction(surface) {
     var state = heroState || { action: 'focus', segment: 'unknown', event: 'activation_prompt' };
-    track(state.event + '_click', { segment: state.segment, surface: 'hero' });
+    track(state.event + '_click', { segment: state.segment, surface: surface });
     if (state.action === 'signup') {
       if (typeof window.showScreen === 'function') window.showScreen('login');
       return;
@@ -668,14 +684,128 @@
         segment: context.segment,
         offerVariant: 'repurchase_previous',
         pendingAction: 'pricing_purchase',
-        source: 'hero_offer'
+        source: surface + '_offer'
       });
     }
-    return window.gpOpenCreditCheckout({ action: 'pricing_purchase', source: 'hero_offer' });
-  };
+    return window.gpOpenCreditCheckout({ action: 'pricing_purchase', source: surface + '_offer' });
+  }
+
+  window.gpHeroOfferAction = function () { return runOfferAction('hero'); };
+  window.gpInlineOfferAction = function () { return runOfferAction('inline'); };
+  window.gpOfferFloatAction = function () { return runOfferAction('floating'); };
 
   window.gpConversionContext = function (force) {
     return fetchContext(!!force);
+  };
+
+  // ── 인라인 오퍼(3순위) ───────────────────────────────────────────────────────
+  // 읽기용 페이지 본문 끝. 스크롤을 끝까지 내린 사람에게만 보이므로 방해가 없고,
+  // 문구는 히어로와 같은 세그먼트 판정을 그대로 쓴다(페이지마다 복제하지 않는다).
+  var OFFER_PAGES = ['faq', 'notice', 'community', 'guide', 'blog'];
+
+  function currentOfferPage() {
+    for (var i = 0; i < OFFER_PAGES.length; i++) {
+      var el = byId(OFFER_PAGES[i] + 'Content');
+      if (el && el.style.display !== 'none') return OFFER_PAGES[i];
+    }
+    return '';
+  }
+
+  function renderInlineOffers(copy, segment) {
+    var slots = document.querySelectorAll('[data-gp-offer-slot]');
+    if (!slots.length) return;
+    Array.prototype.forEach.call(slots, function (slot) {
+      if (!slot.dataset.built) {
+        slot.textContent = '';
+        var badge = document.createElement('span');
+        badge.className = 'gp-offer-inline-badge';
+        var box = document.createElement('div');
+        box.className = 'gp-offer-inline-copy';
+        box.appendChild(document.createElement('strong'));
+        box.appendChild(document.createElement('span'));
+        var cta = document.createElement('button');
+        cta.type = 'button';
+        cta.className = 'gp-offer-inline-cta';
+        cta.addEventListener('click', function () { window.gpInlineOfferAction(); });
+        slot.appendChild(badge);
+        slot.appendChild(box);
+        slot.appendChild(cta);
+        slot.dataset.built = '1';
+      }
+      slot.querySelector('.gp-offer-inline-badge').textContent = copy.badge;
+      slot.querySelector('.gp-offer-inline-copy strong').textContent = copy.title;
+      slot.querySelector('.gp-offer-inline-copy span').textContent = copy.desc;
+      slot.querySelector('.gp-offer-inline-cta').textContent = copy.cta;
+      slot.hidden = false;
+    });
+    var page = currentOfferPage();
+    if (page && document.body.dataset.inlineOfferViewed !== page + ':' + segment) {
+      document.body.dataset.inlineOfferViewed = page + ':' + segment;
+      track(copy.event + '_view', { segment: segment, surface: 'inline', page: page });
+    }
+  }
+
+  // ── 플로팅 오퍼(4순위) ───────────────────────────────────────────────────────
+  // 지금 살 이유가 있는 두 세그먼트에만. 즉시 노출은 팝업으로 읽히므로 체류 5초 또는 스크롤 50% 이후.
+  var FLOAT_SEGMENTS = ['returning_low_balance', 'trial_engaged'];
+  var FLOAT_DISMISS_KEY = 'gp_offer_float_dismissed_v1';
+  var floatTimer = null;
+  var floatShown = false;
+
+  function floatDismissed() {
+    try { return sessionStorage.getItem(FLOAT_DISMISS_KEY) === '1'; } catch (_) { return false; }
+  }
+
+  window.gpOfferFloatDismiss = function () {
+    try { sessionStorage.setItem(FLOAT_DISMISS_KEY, '1'); } catch (_) {}
+    var bar = byId('gpOfferFloat');
+    if (bar) bar.hidden = true;
+    track('offer_dismiss', { surface: 'floating', segment: (heroState && heroState.segment) || '' });
+  };
+
+  function floatBlocked() {
+    if (floatDismissed()) return true;
+    if (!window.CU && !window.GP_HERO_PREVIEW) return true;   // 로컬 프리뷰는 로그인 없이 확인 가능
+    if (document.body.classList.contains('gp-modal-open')) return true;
+    var job = byId('lavActiveJob');   // 진행 중 작업이 있으면 상태 알림과 겹치므로 띄우지 않는다
+    if (job && !job.hidden) return true;
+    return !currentOfferPage();
+  }
+
+  async function showFloatingOffer(trigger) {
+    if (floatShown || floatBlocked()) return;
+    var preview = heroPreviewSegment();
+    var context = preview && preview !== 'logged_out' ? heroPreviewContext(preview) : await fetchContext(false);
+    if (!context || FLOAT_SEGMENTS.indexOf(context.segment) < 0) return;
+    if (floatShown || floatBlocked()) return;
+    var bar = byId('gpOfferFloat');
+    if (!bar) return;
+    var copy = heroCopy(context);
+    heroState = { action: copy.action, segment: context.segment, event: copy.event };
+    setText('gpOfferFloatText', copy.title);
+    setText('gpOfferFloatCta', copy.cta);
+    bar.hidden = false;
+    floatShown = true;
+    track(copy.event + '_view', { segment: context.segment, surface: 'floating', trigger: trigger });
+  }
+
+  function onFloatScroll() {
+    var doc = document.documentElement;
+    var max = Math.max(1, doc.scrollHeight - doc.clientHeight);
+    var ratio = (window.scrollY || doc.scrollTop || 0) / max;
+    if (ratio >= 0.5) showFloatingOffer('scroll');
+  }
+
+  // 탭이 바뀔 때마다 초기화 — 페이지를 벗어나면 즉시 내리고, 자격이 있으면 다시 무장한다.
+  window.gpOnTabChange = function (tabName) {
+    var bar = byId('gpOfferFloat');
+    if (bar) bar.hidden = true;
+    floatShown = false;
+    if (floatTimer) { clearTimeout(floatTimer); floatTimer = null; }
+    window.removeEventListener('scroll', onFloatScroll, true);
+    if (OFFER_PAGES.indexOf(tabName) < 0) return;
+    floatTimer = setTimeout(function () { showFloatingOffer('dwell'); }, 5000);
+    window.addEventListener('scroll', onFloatScroll, true);
   };
 
   function bootstrapPricingContext(tries) {
