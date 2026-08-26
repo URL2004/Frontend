@@ -2,6 +2,9 @@
  var config = window.APP_CONFIG || {};
  var measurementId = config.GA_MEASUREMENT_ID || '';
  var metaPixelId = String(config.META_PIXEL_ID || '').trim();
+ var naverCommonKey = String(config.NAVER_COMMON_KEY || '').trim();
+ var naverCookieDomain = String(config.NAVER_COOKIE_DOMAIN || '').trim();
+ var naverTrackingInitialized = false;
  var lastPageViewKey = '';
  var STORAGE_KEYS = {
   first: 'gp_attribution_first_touch',
@@ -46,6 +49,45 @@
  }
 
  var metaPixelEnabled = initMetaPixel();
+
+ function initNaverTracking() {
+  if (naverTrackingInitialized) return true;
+  if (!/^s_[a-z0-9]{6,64}$/i.test(naverCommonKey)) return false;
+  if (!naverCookieDomain || !window.wcs || typeof window.wcs_do !== 'function') return false;
+  window.wcs_add = window.wcs_add || {};
+  window.wcs_add.wa = naverCommonKey;
+  if (typeof window.wcs.inflow === 'function') window.wcs.inflow(naverCookieDomain);
+  window.wcs_do();
+  naverTrackingInitialized = true;
+  return true;
+ }
+
+ function naverEventType(eventName) {
+  return {
+   sign_up: 'sign_up',
+   purchase: 'purchase',
+   begin_checkout: 'begin_checkout',
+   detect_run: 'custom001',
+   humanize_run: 'custom002'
+  }[eventName] || '';
+ }
+
+ function trackNaverEvent(eventName, payload) {
+  payload = payload || {};
+  var type = naverEventType(eventName);
+  if (!type || !initNaverTracking() || typeof window.wcs.trans !== 'function') return false;
+  var conversion = { type: type };
+  if (payload.transaction_id) conversion.id = clean(payload.transaction_id, 150);
+  if (type === 'purchase') {
+   conversion.value = String(Math.max(0, Number(payload.value) || 0));
+   conversion.currency = clean(payload.currency || 'KRW', 10).toUpperCase();
+  }
+  window.wcs.trans(conversion);
+  return true;
+ }
+
+ window.gpNaverInitialize = initNaverTracking;
+ window.gpNaverTrack = trackNaverEvent;
 
  function metaEventId(eventName, preferred) {
   var supplied = clean(preferred, 180);
@@ -326,6 +368,7 @@
    app_env: config.APP_ENV || 'production'
   }, attributionContext(), params || {});
   if (measurementId) window.gtag('event', eventName, payload);
+  trackNaverEvent(eventName, payload);
   return trackMetaEvent(eventName, payload);
  };
 

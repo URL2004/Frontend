@@ -38,6 +38,8 @@
     API_BASE: apiBase,
     GA_MEASUREMENT_ID: runtime.GA_MEASUREMENT_ID || 'G-4FVJBV5FDJ',
     META_PIXEL_ID: runtime.META_PIXEL_ID || (isProductionHost ? '1575815300659999' : ''),
+    NAVER_COMMON_KEY: runtime.NAVER_COMMON_KEY || (isProductionHost ? 's_3d19465b3633' : ''),
+    NAVER_COOKIE_DOMAIN: runtime.NAVER_COOKIE_DOMAIN || (isProductionHost ? 'gpkorea.ai.kr' : ''),
     KAKAO_JS_KEY: runtime.KAKAO_JS_KEY || '742c97ee8a4457012e84eff0a3d72bf5',
     KAKAO_REST_KEY: runtime.KAKAO_REST_KEY || '943f7421fdaef8af6e9ed698f6fa9250',
     MAINTENANCE_MODE: truthy(runtime.MAINTENANCE_MODE),
