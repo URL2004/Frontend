@@ -45,9 +45,22 @@ body.dark .lfeature{background:rgba(88,166,255,.06);border-color:rgba(88,166,255
 .lbadge{margin-top:14px;font-size:12px;color:var(--text3);}
 .btn-kakao{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;border-radius:50px;border:none;background:#FEE500;color:#191919;font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:8px;}
 .btn-kakao:hover{opacity:.88;}
+.btn-google:disabled,.btn-kakao:disabled{cursor:wait;opacity:.68;transform:none!important;box-shadow:none!important;}
+.social-login-status[hidden]{display:none;}
+.social-login-status{display:flex;align-items:center;justify-content:center;gap:9px;min-height:24px;margin:4px 0 2px;color:var(--text2);font-size:12.5px;font-weight:600;line-height:1.4;}
+.social-login-spinner{width:15px;height:15px;flex:0 0 15px;border:2px solid rgba(90,91,216,.2);border-top-color:#5a5bd8;border-radius:50%;animation:gp-auth-spin .72s linear infinite;}
 .kakao-warn{display:none;flex-direction:column;align-items:center;gap:12px;margin-top:20px;padding:16px;background:rgba(254,229,0,.15);border:1px solid rgba(254,229,0,.5);border-radius:12px;}
 .kakao-warn p{font-size:14px;font-weight:600;}
 .kakao-warn span{font-size:12px;color:var(--text2);}
+.gp-auth-transition[hidden]{display:none!important;}
+.gp-auth-transition{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;padding:24px;background:rgba(246,247,252,.78);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+.gp-auth-transition-panel{display:flex;flex-direction:column;align-items:center;width:min(360px,calc(100vw - 40px));padding:34px 30px 32px;border-radius:20px;background:#fff;box-shadow:0 24px 64px rgba(47,49,103,.18);text-align:center;}
+.gp-auth-transition-panel>img{width:152px;height:auto;margin-bottom:24px;}
+.gp-auth-transition-spinner{width:34px;height:34px;margin-bottom:20px;border:3px solid #e5e7f3;border-top-color:#5a5bd8;border-radius:50%;animation:gp-auth-spin .72s linear infinite;}
+.gp-auth-transition-panel h2{margin:0;color:#171a2c;font-size:20px;font-weight:800;letter-spacing:-.02em;}
+.gp-auth-transition-panel p{max-width:29ch;margin:9px 0 0;color:#656c80;font-size:14px;font-weight:500;line-height:1.55;}
+@keyframes gp-auth-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.social-login-spinner,.gp-auth-transition-spinner{animation-duration:1.8s}}
 
 /* APP */
 .shell{max-width:720px;margin:0 auto;padding:0 24px 80px;}

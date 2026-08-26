@@ -24,14 +24,18 @@
  <div class="llogo"><img src="/assets/img/brand-logo.webp" alt="교수님 피하기"></div>
  <div class="ltitle">AI 초안, 내 글의 흐름에 맞게</div>
  <div class="ldesc">AI식 문체 신호를 확인하고 원문의 뜻과 장르를 지키며 다듬어요.<br>과제·자소서·논문을 한곳에서 관리할 수 있습니다.</div>
- <button class="btn-google" onclick="googleLogin()">
+ <button id="googleLoginBtn" class="btn-google" type="button" onclick="googleLogin()">
  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
  Google로 시작하기
 </button>
- <button class="btn-kakao" onclick="kakaoLogin()">
+ <button id="kakaoLoginBtn" class="btn-kakao" type="button" onclick="kakaoLogin()" aria-describedby="socialLoginStatus">
  <img src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_medium.png" alt="kakao" style="width:20px;height:20px;">
  카카오로 시작하기
 </button>
+ <div id="socialLoginStatus" class="social-login-status" role="status" aria-live="polite" hidden>
+  <span class="social-login-spinner" aria-hidden="true"></span>
+  <span id="socialLoginStatusText">로그인을 확인하고 있어요.</span>
+ </div>
  <div class="lbadge">신규 가입 시 10크레딧이 무료로 제공됩니다</div>
  <button class="lhome" onclick="gpLandingBackHome()">홈으로 돌아가기</button>
  <div class="kakao-warn">
@@ -40,6 +44,15 @@
  <button onclick="openExternal()" style="padding:10px 20px;border-radius:50px;border:none;background:var(--blue);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">Chrome으로 열기</button>
 </div>
 </div>
+</div>
+
+<div id="authTransition" class="gp-auth-transition" aria-hidden="true" hidden>
+ <div class="gp-auth-transition-panel" role="status" aria-live="assertive" aria-atomic="true">
+  <img src="/assets/img/brand-logo.webp" alt="" aria-hidden="true">
+  <span class="gp-auth-transition-spinner" aria-hidden="true"></span>
+  <h2 id="authTransitionTitle">카카오 로그인 확인 중</h2>
+  <p id="authTransitionMessage">작업 화면을 준비하고 있어요.</p>
+ </div>
 </div>
 
 <!-- 앱 -->

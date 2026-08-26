@@ -253,8 +253,8 @@ test('lp 스위치는 랜딩을 강제하거나 건너뛰고 관리자 페이지
   assert.match(landingJs, /LOGIN_PENDING_KEY/u);
   assert.match(landingJs, /gpLandingCompleteLogin/u);
   assert.match(landingJs, /url\.searchParams\.delete\('lp'\)/u);
-  assert.match(appModule, /gpLandingCompleteLogin[\s\S]{0,120}?showScreen\('app'\)/u);
-  assert.equal((appModule.match(/window\.gpLandingCompleteLogin\(\)/g) || []).length, 2);
+  assert.match(appModule, /function showAuthenticatedShell[\s\S]{0,260}?gpLandingCompleteLogin[\s\S]{0,120}?showScreen\('app'\)/u);
+  assert.equal((appModule.match(/window\.gpLandingCompleteLogin\(\)/g) || []).length, 1);
   // 관리자 페이지: 미리보기 버튼과 광고 링크 지정 안내
   assert.match(admin, /window\.open\('\/\?lp=1', '_blank', 'noopener'\)/u);
   assert.match(admin, /\?lp=0/u);
@@ -280,7 +280,7 @@ test('첫 랜딩은 번들 한 번으로 조립하고 인증·장식 작업이 �
   assert.match(loader, /firebase:authUser:/u);
   assert.match(loader, /dataset\.gpInitialScreen = landing \? 'landing' : 'app'/u);
   assert.match(appModule, /window\.gpAuthResolved = true/u);
-  assert.match(appModule, /showScreen\('app'\)[\s\S]{0,300}?await loadUser\(u\)/u);
+  assert.match(appModule, /if \(u\) \{[\s\S]{0,100}?showAuthenticatedShell\(u, 'auth_state'\);[\s\S]{0,100}?await loadUser\(u\)/u);
 
   assert.match(boot, /requestIdleCallback\(run, \{ timeout: 1800 \}\)/u);
   assert.doesNotMatch(boot, /script\('https:\/\/cdn\.jsdelivr\.net\/npm\/(?:gsap|vanilla-tilt|countup)/u);
@@ -290,4 +290,43 @@ test('첫 랜딩은 번들 한 번으로 조립하고 인증·장식 작업이 �
   assert.match(tracking, /4500\);/u);
   assert.doesNotMatch(index, /<script[^>]+(?:wcs\.naver\.net|js\.tosspayments\.com)/u);
   assert.match(landingPage, /brand-logo-menu\.webp/u);
+});
+
+test('카카오 로그인은 콜백을 즉시 처리하고 메인 전환 중 진행 상태를 명확히 보여준다', async () => {
+  const [appModule, appMain, loader, login, css, landingJs, index] = await Promise.all([
+    read('assets/js/app-module.js'),
+    read('assets/js/app-main.js'),
+    read('assets/js/page-loader.js'),
+    read('partials/login-screen.html'),
+    read('assets/css/app.css'),
+    read('assets/js/landing.js'),
+    read('index.html')
+  ]);
+
+  // 모바일 OAuth 리다이렉트는 전체 이미지·폰트 load 이벤트를 기다리지 않는다.
+  assert.match(appModule, /queueMicrotask\(\(\) => window\.handleKakaoCallback\(\)\)/u);
+  assert.match(appModule, /function isKakaoOAuthCallback\(params\)[\s\S]{0,260}?params\.get\('fail'\) !== '1'[\s\S]{0,180}?!params\.has\('paymentKey'\)/u);
+  assert.doesNotMatch(appMain, /location\.search\.includes\('code='\)[\s\S]{0,80}?handleKakaoCallback/u);
+  assert.match(loader, /function hasKakaoCallback\(params\)/u);
+  assert.match(loader, /dataset\.gpAuthCallback = 'kakao'/u);
+  assert.match(loader, /overlay\.hidden = false/u);
+
+  // 팝업이 닫히는 즉시 앱 셸과 차단형 진행 상태를 보여 사용자가 오류로 오해하지 않는다.
+  assert.match(appModule, /beginAuthTransition\('kakao', '카카오 로그인 확인 중', '메인 화면을 먼저 준비하고 있어요\.'/u);
+  assert.match(login, /id="authTransition"[\s\S]{0,500}?role="status"/u);
+  assert.match(login, /id="socialLoginStatus"[^>]+aria-live="polite"/u);
+  assert.match(css, /\.gp-auth-transition\{[\s\S]{0,240}?backdrop-filter/u);
+  assert.match(css, /\.btn-google:disabled,.btn-kakao:disabled/u);
+
+  // 재방문자는 매번 실패하는 계정 생성 요청을 먼저 보내지 않고 로그인부터 시도한다.
+  const authHelper = appModule.slice(appModule.indexOf('async function signInOrCreateKakaoUser'), appModule.indexOf('function syncKakaoProfileInBackground'));
+  assert.ok(authHelper.indexOf('signInWithEmailAndPassword') < authHelper.indexOf('createUserWithEmailAndPassword'));
+  assert.match(appModule, /showAuthenticatedShell\(result\.user, 'kakao_direct'\);[\s\S]{0,100}?syncKakaoProfileInBackground/u);
+
+  // 랜딩에서 로그인 화면으로 이동하기 전 서버를 깨우고 인증 호스트 연결도 미리 준비한다.
+  assert.match(landingJs, /gpWarmAuthBackend/u);
+  assert.match(appModule, /fetch\(window\.apiUrl\('\/healthz'\)/u);
+  for (const host of ['kauth.kakao.com', 'kapi.kakao.com', 'ai-backend-3xtk.onrender.com']) {
+    assert.match(index, new RegExp(`<link rel="preconnect" href="https://${host.replaceAll('.', '\\.')}"`, 'u'));
+  }
 });
