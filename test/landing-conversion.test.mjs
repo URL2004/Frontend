@@ -206,3 +206,49 @@ test('충전 사다리는 라이트 350으로 단조 할인(-9/-14/-17/-23/-26)�
   assert.match(pricing, /1,000자 글 휴머나이징<strong>17회/u);
   assert.match(pricing, /1,000자 AI 감지<strong>35회/u);
 });
+
+test('랜딩 v2는 코다 구조(데모·탭·상황·사실 스트립)를 우리 자산으로 구현한다', async () => {
+  const [landing, landingJs, css] = await Promise.all([
+    read('pages/landing.html'),
+    read('assets/js/landing.js'),
+    read('assets/css/landing.css')
+  ]);
+  // 히어로 라이브 데모: 5장면 마크업 + 진행 스크립트 + 모션 배려
+  for (const demo of ['composer', 'estimate', 'analyzing', 'report', 'result']) {
+    assert.match(landing, new RegExp(`data-demo="${demo}"`, 'u'), `데모 장면 ${demo}가 있어야 한다`);
+  }
+  assert.match(landing, /실제 이용 흐름을 요약한 예시 화면입니다/u);   // 데모는 예시임을 명시
+  assert.match(landingJs, /function demoCycle\(\)/u);
+  assert.match(landingJs, /prefers-reduced-motion/u);
+  assert.match(landingJs, /IntersectionObserver/u);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/u);
+  // 블렌드 탭 4항목 + 실제 화면 자산 + 준비 중 오버레이
+  assert.equal((landing.match(/data-blend="\d"/gu) || []).length, 4);
+  for (const shot of ['shot-detect', 'shot-composer', 'shot-settings', 'shot-done']) {
+    assert.match(landing, new RegExp(`/assets/img/landing/${shot}\.png`, 'u'));
+  }
+  assert.match(landingJs, /window\.gpLandingBlendPick = function/u);
+  assert.match(landing, /id="lpBlendSoon"/u);
+  // 상황 4종 딥링크 CTA
+  for (const src of ['moment_assignment', 'moment_resume', 'moment_thesis', 'moment_blog']) {
+    assert.match(landing, new RegExp(`gpLandingStart[(]'${src}'[)]`, 'u'));
+  }
+  // 날조 금지: 고객사·이용자 수·매체 인용을 지어내지 않는다(사실 스트립으로 대체)
+  assert.doesNotMatch(landing, /[0-9,만]+\s*(?:개\s*팀|명이|고객사|기업이)/u);
+  assert.match(landing, /실패·차단 시 <b>차감 0<\/b>/u);
+});
+
+test('lp 스위치는 랜딩을 강제하거나 건너뛰고 관리자 페이지에서 안내한다', async () => {
+  const [landingJs, admin] = await Promise.all([
+    read('assets/js/landing.js'),
+    read('pages/admin.html')
+  ]);
+  assert.match(landingJs, /function landingOverride\(\)/u);
+  assert.match(landingJs, /if \(lp === '1'\) return 'force';/u);
+  assert.match(landingJs, /if \(lp === '0'\) return 'skip';/u);
+  // force는 로그인·이력 검사보다 먼저 평가된다
+  assert.match(landingJs, /var override = landingOverride\(\);[\s\S]{0,120}?if \(override === 'force'\)/u);
+  // 관리자 페이지: 미리보기 버튼과 광고 링크 지정 안내
+  assert.match(admin, /window\.open\('\/\?lp=1', '_blank', 'noopener'\)/u);
+  assert.match(admin, /\?lp=0/u);
+});

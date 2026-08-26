@@ -1,17 +1,25 @@
-<!-- 비로그인 랜딩(E) — 앱 화면과 분리된 독립 스크린.
-     구형 .gp-main-stage(휴머나이저 단일 제품 시절 시안)는 쓰지 않고 현재 라인업 기준으로 새로 작성한다.
-     라우팅 규칙은 app-main.js의 showLandingIfEligible 참조:
-       · '/' + 비로그인 + ?mode= 없음 → 이 화면
-       · ?mode=detect|humanize(광고 딥링크) → 기존대로 앱 컴포저 직행
+<!-- 비로그인 랜딩 v2(2026-08-26) — coda.io/start/welcome 벤치마킹, 우리 리듬(라벤더·Pretendard)으로.
+     구조: 공지바 → 초대형 히어로 + 라이브 데모(영상처럼 자동 재생되는 DOM 애니메이션, 사장님 지시)
+       → 사실 스트립 → 원칙 밴드 → 서비스 블렌드 탭 → 상황 4종 → 신뢰 카드 3 → 가격 → FAQ → 푸터.
+     원칙: 코다의 사회적 증거(고객 로고·이용자 수·매체 인용)는 날조할 수 없으므로
+       검증 가능한 제품 사실과 우리 원칙으로 치환한다. 단가·무보장 문구는 테스트가 고정한다.
+     라우팅 규칙은 landing.js(비로그인 홈만, ?mode= 딥링크는 앱 직행) — 변경 없음.
      SEO: scripts/seo-prerender.mjs의 홈 라우트가 이 파셜을 크롤러 본문으로 굽는다. -->
 <div id="landingScreen" class="screen gp-lp">
 
+  <!-- 0. 공지 바 -->
+  <div class="gp-lp-notice">
+    <span>새 기능 <b>글쓰기 랩</b>이 오픈 준비 중이에요 — 자기소개서·후기·소개 글을 처음부터 만들어 드립니다.</span>
+    <button type="button" onclick="gpLandingNotice()">가입하고 소식 받기 →</button>
+  </div>
+
   <header class="gp-lp-nav">
     <a class="gp-lp-brand" href="/" onclick="return gpLandingHome(event)">
-      <img src="/assets/img/brand-logo.png" alt="교수님 피하기">
+      <img src="/assets/img/brand-logo-menu.png" alt="교수님 피하기">
     </a>
     <nav class="gp-lp-nav-links" aria-label="주요 안내">
       <button type="button" onclick="gpLandingScrollTo('lpServices')">서비스</button>
+      <button type="button" onclick="gpLandingScrollTo('lpMoments')">활용</button>
       <button type="button" onclick="gpLandingScrollTo('lpPricing')">요금</button>
       <button type="button" onclick="gpLandingScrollTo('lpFaq')">자주 묻는 질문</button>
     </nav>
@@ -21,147 +29,242 @@
     </div>
   </header>
 
+  <!-- 1. 히어로 — 크림 배경 + 초대형 헤드라인 + 라이브 데모 -->
   <section class="gp-lp-hero">
-    <p class="gp-lp-eyebrow">제출 전 마지막 점검</p>
-    <h1>AI 초안을<br><span>내 글의 흐름으로.</span></h1>
-    <p class="gp-lp-hero-sub">
-      AI식 문체 신호를 문단별로 확인하고, 원문의 뜻과 장르와 사실을 지키면서 자연스럽게 다듬어요.
-      필요하면 내가 확인한 사실만으로 글을 처음부터 만들 수도 있습니다.
-    </p>
-    <div class="gp-lp-hero-cta">
-      <button type="button" class="gp-lp-primary" onclick="gpLandingStart('hero')">무료 10크레딧으로 시작하기</button>
-      <button type="button" class="gp-lp-ghost lg" onclick="gpLandingEnterApp('main','hero_browse')">먼저 둘러보기</button>
+    <div class="gp-lp-hero-inner">
+      <h1>AI 초안 티,<br>제출 전에 지운다.</h1>
+      <p class="gp-lp-hero-sub">AI식 문체 신호를 문단별로 확인하고, 원문의 뜻과 장르와 사실을 지키면서 자연스럽게 다듬어요.</p>
+      <div class="gp-lp-hero-cta">
+        <button type="button" class="gp-lp-primary" onclick="gpLandingStart('hero')">무료 10크레딧으로 시작하기</button>
+        <button type="button" class="gp-lp-ghost lg" onclick="gpLandingEnterApp('main','hero_browse')">먼저 둘러보기</button>
+      </div>
     </div>
-    <ul class="gp-lp-hero-badges">
-      <li>가입 시 10크레딧 무료</li>
-      <li>충전 크레딧 유효기간 없음</li>
-      <li>작업 실패 또는 차단 시 차감 없음</li>
-    </ul>
+
+    <!-- 라이브 데모: 실제 이용 흐름 5장면 루프(붙여넣기 → 비용 → 분석 → 감지 보고서 → 휴머나이징 결과).
+         수치는 실제 단가와 일치(85자 감지 = 1크레딧). landing.js gpLandingDemo* 가 진행한다. -->
+    <div class="gp-lp-demo-wrap">
+      <div class="gp-lp-shotframe">
+        <span class="gp-lp-shotbar" aria-hidden="true"><i></i><i></i><i></i></span>
+        <div class="gp-lp-demo" id="lpDemo" data-scene="1" aria-label="교수님 피하기 이용 흐름 데모">
+          <aside class="lpd-side" aria-hidden="true">
+            <span class="lpd-logo"></span>
+            <i></i><i></i><i></i><i></i>
+          </aside>
+          <div class="lpd-stage">
+
+            <!-- 장면 1~2: 컴포저 -->
+            <div class="lpd-composer" data-demo="composer">
+              <div class="lpd-input">
+                <span id="lpDemoType"></span><span class="lpd-caret" aria-hidden="true"></span>
+              </div>
+              <div class="lpd-composer-bar">
+                <span class="lpd-count"><b id="lpDemoLen">0</b>자</span>
+                <span class="lpd-modes" aria-hidden="true"><i>휴머나이징</i><i class="on">AI 감지</i></span>
+                <span class="lpd-send" id="lpDemoSend" aria-hidden="true">↑</span>
+              </div>
+            </div>
+            <div class="lpd-estimate" data-demo="estimate">
+              <span class="lpd-est-mode">AI 감지</span>
+              <b><span id="lpDemoCost">0</span>크레딧</b>
+              <span class="lpd-est-note">무료 10크레딧으로 바로 가능</span>
+            </div>
+
+            <!-- 장면 3: 분석 중 -->
+            <div class="lpd-analyzing" data-demo="analyzing">
+              <span class="lpd-spin" aria-hidden="true"></span>
+              <b>문장 구조를 분석하고 있어요</b>
+              <div class="lpd-steps" aria-hidden="true"><i class="done"></i><i class="run"></i><i></i></div>
+            </div>
+
+            <!-- 장면 4: 감지 보고서 -->
+            <div class="lpd-report" data-demo="report">
+              <div class="lpd-gauge" aria-hidden="true">
+                <svg viewBox="0 0 100 100"><circle class="t" cx="50" cy="50" r="42"/><circle class="v" id="lpDemoArc" cx="50" cy="50" r="42"/></svg>
+                <span><b id="lpDemoProb">0</b>%<small>AI 티 지수</small></span>
+              </div>
+              <div class="lpd-rep-copy">
+                <em class="lpd-badge bad">높음</em>
+                <b>AI가 쓴 글처럼 보일 위험이 높아요</b>
+                <span class="lpd-stats"><i class="r">위험 3</i><i class="m">주의 2</i><i class="g">안전 4</i></span>
+                <span class="lpd-go">이 글 그대로 휴머나이저로 이동 →</span>
+              </div>
+            </div>
+
+            <!-- 장면 5: 휴머나이징 결과 -->
+            <div class="lpd-result" data-demo="result">
+              <em class="lpd-badge good">휴머나이징 완료</em>
+              <div class="lpd-ba">
+                <p class="before">본 연구에서는 다양한 요인을 종합적으로 고려하여 분석을 진행하였다.</p>
+                <p class="after">이 연구에서는 여러 요인을 함께 놓고 분석했다.</p>
+              </div>
+              <span class="lpd-result-note">원문의 뜻·수치·장르는 그대로</span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <p class="gp-lp-demo-cap">실제 이용 흐름을 요약한 예시 화면입니다. 결과는 글에 따라 달라져요.</p>
+    </div>
   </section>
 
+  <!-- 2. 사실 스트립 — 고객 로고 대신 검증 가능한 제품 사실 -->
+  <section class="gp-lp-facts" aria-label="서비스 기본 사실">
+    <span><b>100자 1크레딧</b>부터 시작</span>
+    <span>실패·차단 시 <b>차감 0</b></span>
+    <span>크레딧 <b>유효기간 없음</b></span>
+    <span>입력한 글 <b>학습 사용 없음</b></span>
+  </section>
+
+  <!-- 3. 원칙 밴드 -->
+  <section class="gp-lp-principle">
+    <div class="gp-lp-principle-inner">
+      <h2>정확한 짧은 글이,<br>근거 없는 긴 글보다 낫다.</h2>
+      <p>우리는 없는 사실을 지어내서 글을 늘리지 않습니다. 원문의 뜻과 수치와 장르를 지키는 것이 이 서비스의 첫 번째 규칙이에요.</p>
+      <button type="button" class="gp-lp-primary" onclick="gpLandingScrollTo('lpServices')">작동 방식 보기</button>
+    </div>
+  </section>
+
+  <!-- 4. 서비스 블렌드 — 탭 스위칭 -->
   <section class="gp-lp-section" id="lpServices">
-    <div class="gp-lp-section-head">
-      <h2>이런 작업을 할 수 있어요</h2>
-      <p>글의 상태와 목적에 따라 네 가지 중에서 고르면 됩니다. 비용은 글자 수에 따라 계산되고, 시작 전에 항상 먼저 보여드려요.</p>
+    <div class="gp-lp-blend">
+      <div class="gp-lp-blend-copy">
+        <h2>하나의 크레딧으로,<br>글의 모든 단계를.</h2>
+        <ul class="gp-lp-blend-list" role="tablist" aria-label="서비스 선택">
+          <li><button type="button" role="tab" aria-selected="true" class="on" data-blend="0" onclick="gpLandingBlendPick(0)">AI 감지<small>100자당 1크레딧 · 문단별 진단</small></button></li>
+          <li><button type="button" role="tab" aria-selected="false" data-blend="1" onclick="gpLandingBlendPick(1)">기본 휴머나이징<small>100자당 2크레딧 · 최소 10크레딧</small></button></li>
+          <li><button type="button" role="tab" aria-selected="false" data-blend="2" onclick="gpLandingBlendPick(2)">고급 휴머나이징<small>1만자 이하 200크레딧 · 정밀 검증</small></button></li>
+          <li><button type="button" role="tab" aria-selected="false" data-blend="3" onclick="gpLandingBlendPick(3)">글쓰기 랩<small>800자 이하 40크레딧 · 준비 중</small></button></li>
+        </ul>
+        <p class="gp-lp-blend-note" id="lpBlendNote">글 전체의 AI 티 지수와 함께 어느 문단이 위험한지 문단별로 보여줍니다.</p>
+        <button type="button" class="gp-lp-primary" onclick="gpLandingStart('blend')">무료로 시작하기</button>
+      </div>
+      <div class="gp-lp-blend-shot">
+        <div class="gp-lp-shotframe">
+          <span class="gp-lp-shotbar" aria-hidden="true"><i></i><i></i><i></i></span>
+          <img id="lpBlendImg" src="/assets/img/landing/shot-detect.png" alt="AI 감지 보고서 화면" loading="lazy" decoding="async">
+          <span class="gp-lp-shot-soon" id="lpBlendSoon" hidden>오픈 준비 중</span>
+        </div>
+      </div>
     </div>
-    <div class="gp-lp-grid">
-      <article class="gp-lp-card">
-        <span class="gp-lp-card-ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
-        </span>
-        <h3>AI 감지</h3>
-        <p>글 전체의 AI 티 지수와 함께 어느 문단이 위험한지 문단별로 보여줍니다. 가장 두드러진 문장 한 개는 다듬은 예시를 미리 확인할 수 있어요.</p>
-        <div class="gp-lp-price"><b>100자당 1크레딧</b><span>1,000자 약 10크레딧</span></div>
-        <button type="button" class="gp-lp-card-cta" onclick="gpLandingStart('card_detect')">감지해 보기</button>
-      </article>
+  </section>
 
-      <article class="gp-lp-card is-featured">
-        <span class="gp-lp-card-tag">가장 많이 씁니다</span>
-        <span class="gp-lp-card-ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3 20 7v6c0 4.6-3.2 7.4-8 8.8-4.8-1.4-8-4.2-8-8.8V7l8-4Z"/><path d="m9.5 12 1.8 1.8 3.7-4"/></svg>
-        </span>
-        <h3>기본 휴머나이징</h3>
-        <p>원문의 장르와 말투와 사실을 지키면서 AI식 반복과 상투어, 지나치게 균일한 문장 흐름이 두드러진 부분을 다시 구성합니다. 이미 자연스러운 문장은 덜 건드려요.</p>
-        <div class="gp-lp-price"><b>100자당 2크레딧</b><span>최소 10크레딧 · 1,000자 약 20크레딧</span></div>
-        <button type="button" class="gp-lp-card-cta" onclick="gpLandingStart('card_basic')">다듬어 보기</button>
-      </article>
+  <!-- 5. 상황 4종 -->
+  <section class="gp-lp-section gp-lp-moments" id="lpMoments">
+    <div class="gp-lp-section-head">
+      <h2><em>이런 순간</em>에 씁니다</h2>
+    </div>
 
-      <article class="gp-lp-card">
-        <span class="gp-lp-card-ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
-        </span>
-        <h3>고급 휴머나이징</h3>
-        <p>기본보다 넓은 범위를 재구성하고, 모든 글에 의미와 사실과 구조 정밀 검증을 적용합니다. 구조가 복잡한 논문과 보고서에 적합하고, 직접 승인한 근거만 인용해요.</p>
-        <div class="gp-lp-price"><b>1만자 이하 200크레딧</b><span>근거 보강 사용 시 100크레딧 추가</span></div>
-        <button type="button" class="gp-lp-card-cta" onclick="gpLandingStart('card_advanced')">고급으로 맡기기</button>
-      </article>
+    <article class="gp-lp-moment">
+      <div class="gp-lp-moment-copy">
+        <h3>제출 전 과제</h3>
+        <p>AI로 초안을 잡은 리포트, 내기 전에 어느 문단이 위험한지 확인하고 그 부분만 자연스럽게 다시 구성해요.</p>
+        <div class="gp-lp-mini-ba">
+          <span class="b">"다양한 요인을 종합적으로 고려하여"</span>
+          <i aria-hidden="true">→</i>
+          <span class="a">"여러 요인을 함께 놓고"</span>
+        </div>
+        <button type="button" class="gp-lp-ghost" onclick="gpLandingStart('moment_assignment')">과제 검사해 보기</button>
+      </div>
+      <div class="gp-lp-shotframe sm"><span class="gp-lp-shotbar" aria-hidden="true"><i></i><i></i><i></i></span><img src="/assets/img/landing/shot-detect.png" alt="문단별 AI 감지 화면" loading="lazy" decoding="async"></div>
+    </article>
 
-      <article class="gp-lp-card">
-        <span class="gp-lp-card-tag new">준비 중</span>
-        <span class="gp-lp-card-ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15H6.8A2.8 2.8 0 0 0 4 20.8Z"/><path d="M9 8h7M9 12h7"/></svg>
-        </span>
-        <h3>글쓰기 랩</h3>
-        <p>빈 화면을 마주하지 않아도 됩니다. 장르별 질문에 아는 것만 답하면 자기소개서와 블로그 후기, 상품 소개, 일반 글을 만들어요. 답하지 않은 내용은 지어내지 않습니다.</p>
-        <div class="gp-lp-price"><b>800자 이하 40크레딧</b><span>1,500자 50 · 그 이상 60크레딧</span></div>
-        <button type="button" class="gp-lp-card-cta" onclick="gpLandingStart('card_writing_lab')">오픈 소식 먼저 받기</button>
+    <article class="gp-lp-moment">
+      <div class="gp-lp-moment-copy">
+        <h3>자기소개서</h3>
+        <p>경험과 성과, 1인칭은 그대로 보호합니다. 자소서 전용 보존 규칙과 의미 검증이 기본으로 적용돼요.</p>
+        <div class="gp-lp-mini-ba">
+          <span class="b">"소통 능력을 함양할 수 있었습니다"</span>
+          <i aria-hidden="true">→</i>
+          <span class="a">"말하는 법이 달라졌습니다"</span>
+        </div>
+        <button type="button" class="gp-lp-ghost" onclick="gpLandingStart('moment_resume')">자소서 다듬어 보기</button>
+      </div>
+      <div class="gp-lp-shotframe sm"><span class="gp-lp-shotbar" aria-hidden="true"><i></i><i></i><i></i></span><img src="/assets/img/landing/shot-settings.png" alt="처리 방식 선택 화면" loading="lazy" decoding="async"></div>
+    </article>
+
+    <article class="gp-lp-moment">
+      <div class="gp-lp-moment-copy">
+        <h3>논문·긴 보고서</h3>
+        <p>고급 휴머나이징은 더 넓은 범위를 재구성하면서 모든 글에 의미·사실·구조 정밀 검증을 적용합니다. 수치·기관명·직접 인용은 보호 대상이에요.</p>
+        <div class="gp-lp-mini-ba">
+          <span class="b">1만자 논문</span>
+          <i aria-hidden="true">→</i>
+          <span class="a">정액 200크레딧</span>
+        </div>
+        <button type="button" class="gp-lp-ghost" onclick="gpLandingStart('moment_thesis')">고급으로 맡겨 보기</button>
+      </div>
+      <div class="gp-lp-shotframe sm"><span class="gp-lp-shotbar" aria-hidden="true"><i></i><i></i><i></i></span><img src="/assets/img/landing/shot-done.png" alt="휴머나이징 완료 화면" loading="lazy" decoding="async"></div>
+    </article>
+
+    <article class="gp-lp-moment">
+      <div class="gp-lp-moment-copy">
+        <h3>블로그·후기</h3>
+        <p>말투는 친근하게, 내용은 그대로. 붙여넣는 순간 이 글에 드는 크레딧을 먼저 보여드리니 부담 없이 시작할 수 있어요.</p>
+        <div class="gp-lp-mini-ba">
+          <span class="b">1,000자 후기</span>
+          <i aria-hidden="true">→</i>
+          <span class="a">20크레딧 · 약 520원</span>
+        </div>
+        <button type="button" class="gp-lp-ghost" onclick="gpLandingStart('moment_blog')">후기 다듬어 보기</button>
+      </div>
+      <div class="gp-lp-shotframe sm"><span class="gp-lp-shotbar" aria-hidden="true"><i></i><i></i><i></i></span><img src="/assets/img/landing/shot-composer.png" alt="예상 비용이 표시된 입력 화면" loading="lazy" decoding="async"></div>
+    </article>
+  </section>
+
+  <!-- 6. 신뢰 카드 3 — 상단 미니 UI + 설명 -->
+  <section class="gp-lp-section gp-lp-trustband">
+    <div class="gp-lp-section-head">
+      <h2>시작하기 전에, 전부 보여드려요</h2>
+    </div>
+    <div class="gp-lp-trust3">
+      <article>
+        <div class="gp-lp-trust-ui" aria-hidden="true">
+          <span class="tg"><svg viewBox="0 0 100 100"><circle class="t" cx="50" cy="50" r="40"/><circle class="v" cx="50" cy="50" r="40" style="stroke-dashoffset:55"/></svg><b>78%</b></span>
+          <span class="tstats"><i class="r">위험 3</i><i class="m">주의 2</i><i class="g">안전 4</i></span>
+        </div>
+        <h3>문단별로 진단해요</h3>
+        <p>점수 하나가 아니라 어느 문단이 왜 위험한지 짚어줍니다. 판정이 아닌 참고 지표예요.</p>
+      </article>
+      <article>
+        <div class="gp-lp-trust-ui" aria-hidden="true">
+          <span class="tcost"><i>기본 휴머나이징</i><b>20크레딧</b><em>약 520원 · 보유 110</em></span>
+        </div>
+        <h3>비용을 먼저 알려드려요</h3>
+        <p>붙여넣는 순간 이 글에 드는 크레딧이 계산됩니다. 시작 전에 언제든 그만둘 수 있어요.</p>
+      </article>
+      <article>
+        <div class="gp-lp-trust-ui" aria-hidden="true">
+          <span class="tcheck"><i>✓ 의미 검증</i><i>✓ 수치·인용 보호</i><i>✓ 실패 시 차감 0</i></span>
+        </div>
+        <h3>결과를 검증해요</h3>
+        <p>뜻·수치·구조가 원문과 같은지 확인하고, 전달 가능한 결과를 못 만들면 크레딧을 차감하지 않습니다.</p>
       </article>
     </div>
   </section>
 
-  <section class="gp-lp-section gp-lp-example">
-    <div class="gp-lp-section-head">
-      <h2>문장이 이렇게 달라집니다</h2>
-      <p>뜻과 수치는 그대로 두고, AI식으로 읽히는 표현과 문장 호흡을 조정합니다.</p>
-    </div>
-    <div class="gp-lp-ba">
-      <article class="before">
-        <span class="gp-lp-ba-tag">변환 전</span>
-        <p>본 연구에서는 다양한 요인을 종합적으로 고려하여 분석을 진행하였으며, 이러한 결과는 여러 선행연구와 맥락을 같이 하는 것으로 판단된다.</p>
-      </article>
-      <span class="gp-lp-ba-arrow" aria-hidden="true">→</span>
-      <article class="after">
-        <span class="gp-lp-ba-tag good">변환 후</span>
-        <p>이 연구에서는 여러 요인을 함께 놓고 분석했다. 결과는 앞선 연구들과 비슷한 흐름을 보였지만, 어떤 점에서 닮았는지는 연구 맥락에 따라 다르게 읽힌다.</p>
-      </article>
-    </div>
-    <p class="gp-lp-note">예시입니다. 실제 결과는 원문과 장르에 따라 달라지며, 외부 AI 검사 도구의 점수를 보장하지는 않습니다.</p>
-  </section>
-
-  <section class="gp-lp-section">
-    <div class="gp-lp-section-head">
-      <h2>세 단계면 끝납니다</h2>
-    </div>
-    <ol class="gp-lp-steps">
-      <li><span>01</span><strong>글 붙여넣기</strong><p>텍스트를 붙여넣거나 PDF를 올리면 됩니다. 한 번에 30,000자까지 가능해요.</p></li>
-      <li><span>02</span><strong>예상 비용 확인</strong><p>붙여넣는 순간 이 글에 드는 크레딧을 계산해 보여줍니다. 시작 전에 언제든 그만둘 수 있어요.</p></li>
-      <li><span>03</span><strong>결과 확인과 보관</strong><p>원문과 나란히 확인하고 복사하거나 파일로 저장합니다. 결과는 보관함에 남아요.</p></li>
-    </ol>
-  </section>
-
+  <!-- 7. 가격 클로징 -->
   <section class="gp-lp-section" id="lpPricing">
-    <div class="gp-lp-section-head">
-      <h2>필요한 만큼만 충전해서 씁니다</h2>
-      <p>구독이 아니라 크레딧입니다. 구매한 크레딧은 유효기간 없이 사용할 수 있어요.</p>
-    </div>
-    <div class="gp-lp-plans">
-      <div class="gp-lp-plan"><b>2,900원</b><span>110크레딧</span><em>500자 휴머나이징 약 11회</em></div>
-      <div class="gp-lp-plan"><b>8,700원</b><span>350크레딧</span><em>약 35회</em></div>
-      <div class="gp-lp-plan is-popular"><i>가장 인기</i><b>14,500원</b><span>600크레딧</span><em>약 60회</em></div>
-      <div class="gp-lp-plan"><b>29,000원</b><span>1,300크레딧</span><em>약 130회</em></div>
-      <div class="gp-lp-plan"><b>58,000원</b><span>2,700크레딧</span><em>약 270회</em></div>
-    </div>
-    <div class="gp-lp-pricing-actions">
-      <button type="button" class="gp-lp-primary" onclick="gpLandingStart('pricing_cta')">가입하고 10크레딧 받기</button>
-      <button type="button" class="gp-lp-ghost lg" onclick="gpLandingEnterApp('pricing','pricing_detail')">요금 자세히 보기</button>
-    </div>
-    <p class="gp-lp-note">토스페이먼츠와 카카오페이 결제를 지원합니다. 표시 금액은 부가세 포함입니다.</p>
-  </section>
-
-  <section class="gp-lp-section gp-lp-trust">
-    <div class="gp-lp-section-head">
-      <h2>이런 점은 지킵니다</h2>
-    </div>
-    <div class="gp-lp-trust-grid">
-      <article>
-        <strong>실패하면 차감하지 않아요</strong>
-        <p>모델 오류나 정책 차단으로 전달 가능한 결과를 만들지 못하면 크레딧은 빠져나가지 않습니다.</p>
-      </article>
-      <article>
-        <strong>없는 사실을 지어내지 않아요</strong>
-        <p>입력하지 않은 경험과 수치와 출처는 글에 넣지 않습니다. 근거 보강도 직접 승인한 자료만 인용해요.</p>
-      </article>
-      <article>
-        <strong>외부 학습에 쓰지 않아요</strong>
-        <p>입력한 글은 서비스 처리와 보관함 제공에만 사용하며 외부 학습 데이터로 넘기지 않습니다.</p>
-      </article>
-      <article>
-        <strong>한국어 표현을 함께 점검해요</strong>
-        <p>국립국어원 공개 어문규범과 표준국어대사전, 우리말샘을 참고해 맞춤법과 용어 표기를 보조 점검합니다.</p>
-      </article>
+    <div class="gp-lp-pricing">
+      <div class="gp-lp-pricing-copy">
+        <h2>구독이 아니라,<br>쓴 만큼.</h2>
+        <p>구매한 크레딧은 유효기간 없이 사용할 수 있어요. 매달 나가는 돈 없이, 필요한 만큼만 충전합니다.</p>
+        <div class="gp-lp-pricing-actions">
+          <button type="button" class="gp-lp-primary" onclick="gpLandingStart('pricing_cta')">가입하고 10크레딧 받기</button>
+          <button type="button" class="gp-lp-ghost lg" onclick="gpLandingEnterApp('pricing','pricing_detail')">요금 자세히 보기</button>
+        </div>
+        <p class="gp-lp-note">토스페이먼츠·카카오페이 지원, 부가세 포함. 결제 후 7일 이내 환불 가능(사용분 제외).</p>
+      </div>
+      <div class="gp-lp-plans">
+        <div class="gp-lp-plan"><b>2,900원</b><span>110크레딧</span><em>500자 휴머나이징 약 11회</em></div>
+        <div class="gp-lp-plan"><b>8,700원</b><span>350크레딧</span><em>약 35회</em></div>
+        <div class="gp-lp-plan is-popular"><i>가장 인기</i><b>14,500원</b><span>600크레딧</span><em>약 60회</em></div>
+        <div class="gp-lp-plan"><b>29,000원</b><span>1,300크레딧</span><em>약 130회</em></div>
+        <div class="gp-lp-plan"><b>58,000원</b><span>2,700크레딧</span><em>약 270회</em></div>
+      </div>
     </div>
   </section>
 
+  <!-- 8. FAQ -->
   <section class="gp-lp-section" id="lpFaq">
     <div class="gp-lp-section-head">
       <h2>자주 묻는 질문</h2>
@@ -190,8 +293,9 @@
     </div>
   </section>
 
+  <!-- 최종 CTA -->
   <section class="gp-lp-final">
-    <h2>지금 10크레딧으로 먼저 확인해 보세요</h2>
+    <h2>지금 10크레딧으로<br>먼저 확인해 보세요</h2>
     <p>가입만 하면 바로 쓸 수 있고, 결제는 필요할 때 하면 됩니다.</p>
     <button type="button" class="gp-lp-primary" onclick="gpLandingStart('final')">무료로 시작하기</button>
   </section>
