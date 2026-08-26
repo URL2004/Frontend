@@ -7651,7 +7651,7 @@
   "k1": {
    "label": "과제·레포트 · 카드 1 후킹",
    "set": "k",
-   "bg": "bg-a1.webp",
+   "bg": "bg-k1.webp",
    "bgColor": "#F4F4FA",
    "layers": [
     {
@@ -7837,7 +7837,7 @@
   "k2": {
    "label": "과제·레포트 · 카드 2 진단",
    "set": "k",
-   "bg": "bg-a2.webp",
+   "bg": "bg-k2.webp",
    "bgColor": "#F4F4FA",
    "layers": [
     {
@@ -7975,7 +7975,7 @@
   "k3": {
    "label": "과제·레포트 · 카드 3 변환",
    "set": "k",
-   "bg": "bg-a3.webp",
+   "bg": "bg-k3.webp",
    "bgColor": "#F4F4FA",
    "layers": [
     {
@@ -8161,7 +8161,7 @@
   "k4": {
    "label": "과제·레포트 · 카드 4 범위",
    "set": "k",
-   "bg": "bg-a4.webp",
+   "bg": "bg-k4.webp",
    "bgColor": "#F4F4FA",
    "layers": [
     {
@@ -8299,7 +8299,7 @@
   "k5": {
    "label": "과제·레포트 · 카드 5 CTA",
    "set": "k",
-   "bg": "bg-a5.webp",
+   "bg": "bg-k5.webp",
    "bgColor": "#F4F4FA",
    "layers": [
     {
