@@ -136,8 +136,9 @@
   ];
 
   var LAB = '/assets/img/carousel-lab/';
-  var KEYS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
+  var KEYS = ['k', 'l', 'm', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
   var SETNAME = {
+    k: '과제·레포트', l: '자소서·면접', m: '블로그·SEO',
     a: 'A 클린 스위프', b: 'B 미드나잇', c: 'C 빅 타이포', d: 'D 캠퍼스 웜', e: 'E 글래스',
     f: 'F 리소 프린트', g: 'G 스위스 그리드', h: 'H 클레이 파스텔', i: 'I 손글씨 노트', j: 'J 매거진'
   };
@@ -852,7 +853,7 @@
         picker.hidden = true;
         if (pickerMode === 'bg') setBackground(src, pickerApplyAll.querySelector('input').checked);
         else if (pickerMode === 'template') {
-          var m = src.match(/card-([a-j][1-5])\.png/);
+          var m = src.match(/card-([a-m][1-5])\.png/);
           if (m) applyTemplate(m[1], tplSetCheck.querySelector('input').checked);
         } else {
           addImage(src, src.indexOf('logo') > -1 ? 300 : 620);

@@ -301,3 +301,11 @@ footer.credits .fineprint { color: var(--lab-muted); }
 .deck-load { border-style: solid; background: #fff; }
 .deck-load .deck-plus { font-size: 20px; }
 .deck-load:hover { background: var(--lab-accent-soft); }
+
+/* ---------- v5: 축 구분 (메시지 축 / 비주얼 축) ---------- */
+.axis-head { margin: 64px 0 -14px; padding: 20px 24px; border-radius: 18px; background: var(--lab-panel); border: 1px solid var(--lab-line); }
+.axis-head h2 { margin: 0 0 6px; font-size: 21px; font-weight: 800; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.axis-tag { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 14px; background: var(--lab-accent-soft); color: var(--lab-accent); font-size: 12.5px; font-weight: 700; }
+.axis-head p { margin: 0; font-size: 14px; color: var(--lab-body); line-height: 1.65; max-width: 88ch; }
+.concept.is-segment .concept-key { background: #1F8F6B; }
+.concept.is-segment .concept-layout { background: #E4F5EE; color: #1F7A5C; }
