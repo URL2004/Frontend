@@ -254,6 +254,7 @@ test('lp 스위치는 랜딩을 강제하거나 건너뛰고 관리자 페이지
   assert.match(landingJs, /gpLandingCompleteLogin/u);
   assert.match(landingJs, /url\.searchParams\.delete\('lp'\)/u);
   assert.match(appModule, /gpLandingCompleteLogin[\s\S]{0,120}?showScreen\('app'\)/u);
+  assert.equal((appModule.match(/window\.gpLandingCompleteLogin\(\)/g) || []).length, 2);
   // 관리자 페이지: 미리보기 버튼과 광고 링크 지정 안내
   assert.match(admin, /window\.open\('\/\?lp=1', '_blank', 'noopener'\)/u);
   assert.match(admin, /\?lp=0/u);

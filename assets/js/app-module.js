@@ -138,6 +138,7 @@ onAuthStateChanged(auth, async u =>{
   if (u) {
    CU = u;
    window.CU = u;
+   if (typeof window.gpLandingCompleteLogin === 'function') window.gpLandingCompleteLogin();
    showScreen('app');
    window.updateAuthUI(true);
    retryPendingPaymentCallback('auth_state_fallback');
