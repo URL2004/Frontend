@@ -239,8 +239,9 @@ test('랜딩 v2는 코다 구조(데모·탭·상황·사실 스트립)를 우�
 });
 
 test('lp 스위치는 랜딩을 강제하거나 건너뛰고 관리자 페이지에서 안내한다', async () => {
-  const [landingJs, admin] = await Promise.all([
+  const [landingJs, appModule, admin] = await Promise.all([
     read('assets/js/landing.js'),
+    read('assets/js/app-module.js'),
     read('pages/admin.html')
   ]);
   assert.match(landingJs, /function landingOverride\(\)/u);
@@ -248,6 +249,11 @@ test('lp 스위치는 랜딩을 강제하거나 건너뛰고 관리자 페이지
   assert.match(landingJs, /if \(lp === '0'\) return 'skip';/u);
   // force는 로그인·이력 검사보다 먼저 평가된다
   assert.match(landingJs, /var override = landingOverride\(\);[\s\S]{0,120}?if \(override === 'force'\)/u);
+  // 랜딩에서 시작한 로그인은 인증 성공 직후 강제 lp 값을 제거하고 앱으로 진입한다.
+  assert.match(landingJs, /LOGIN_PENDING_KEY/u);
+  assert.match(landingJs, /gpLandingCompleteLogin/u);
+  assert.match(landingJs, /url\.searchParams\.delete\('lp'\)/u);
+  assert.match(appModule, /gpLandingCompleteLogin[\s\S]{0,120}?showScreen\('app'\)/u);
   // 관리자 페이지: 미리보기 버튼과 광고 링크 지정 안내
   assert.match(admin, /window\.open\('\/\?lp=1', '_blank', 'noopener'\)/u);
   assert.match(admin, /\?lp=0/u);

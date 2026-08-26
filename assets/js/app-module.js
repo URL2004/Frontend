@@ -119,6 +119,7 @@ onAuthStateChanged(auth, async u =>{
  try {
   if (u) {
   CU = u; window.CU = u; await loadUser(u);
+  if (typeof window.gpLandingCompleteLogin === 'function') window.gpLandingCompleteLogin();
   showScreen('app');
   window.updateAuthUI(true);
   if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });

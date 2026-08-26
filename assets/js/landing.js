@@ -11,6 +11,8 @@
   'use strict';
 
   var DISMISS_KEY = 'gp_landing_dismissed_v1';
+  var LOGIN_PENDING_KEY = 'gp_landing_login_pending_v1';
+  var landingLoginPendingMemory = false;
 
   function track(name, params) {
     if (typeof window.gpTrack === 'function') window.gpTrack(name, params || {});
@@ -25,6 +27,28 @@
       if (value) sessionStorage.setItem(DISMISS_KEY, '1');
       else sessionStorage.removeItem(DISMISS_KEY);
     } catch (_) {}
+  }
+
+  function landingLoginPending() {
+    try { return sessionStorage.getItem(LOGIN_PENDING_KEY) === '1' || landingLoginPendingMemory; }
+    catch (_) { return landingLoginPendingMemory; }
+  }
+
+  function setLandingLoginPending(value) {
+    landingLoginPendingMemory = !!value;
+    try {
+      if (value) sessionStorage.setItem(LOGIN_PENDING_KEY, '1');
+      else sessionStorage.removeItem(LOGIN_PENDING_KEY);
+    } catch (_) {}
+  }
+
+  function removeLandingOverride() {
+    var url = new URL(window.location.href);
+    if (!url.searchParams.has('lp')) return;
+    url.searchParams.delete('lp');
+    var query = url.searchParams.toString();
+    var next = url.pathname + (query ? '?' + query : '') + url.hash;
+    window.history.replaceState(window.history.state, '', next);
   }
 
   function isHomePath() {
@@ -92,17 +116,30 @@
   // 로그아웃 시에는 다시 랜딩부터 보여준다.
   window.gpLandingReset = function () {
     setDismissed(false);
+    setLandingLoginPending(false);
     var screen = document.getElementById('landingScreen');
     if (screen) delete screen.dataset.viewed;
   };
 
   window.gpLandingStart = function (source) {
     track('landing_signup_click', { source: source || 'landing', surface: 'landing' });
+    setLandingLoginPending(true);
     if (typeof window.showScreen === 'function') window.showScreen('login');
+  };
+
+  // 랜딩에서 시작한 로그인만 완료 처리한다. 관리자 미리보기 등 로그인 상태에서
+  // 직접 ?lp=1을 연 경우에는 강제 랜딩 동작을 그대로 유지한다.
+  window.gpLandingCompleteLogin = function () {
+    if (!landingLoginPending()) return false;
+    setLandingLoginPending(false);
+    setDismissed(true);
+    removeLandingOverride();
+    return true;
   };
 
   window.gpLandingEnterApp = function (tabName, source) {
     track('landing_enter_app', { source: source || 'landing', target_tab: tabName || 'main', surface: 'landing' });
+    setLandingLoginPending(false);
     setDismissed(true);
     if (typeof window.showScreen === 'function') window.showScreen('app');
     if (typeof window.switchTab === 'function') window.switchTab(tabName || 'main');
@@ -127,6 +164,7 @@
   // ── 공지 바(글쓰기 랩 예고) ─────────────────────────────────────────────
   window.gpLandingNotice = function () {
     track('landing_notice_click', { surface: 'landing', topic: 'writing_lab_soon' });
+    setLandingLoginPending(true);
     if (typeof window.showScreen === 'function') window.showScreen('login');
   };
 
