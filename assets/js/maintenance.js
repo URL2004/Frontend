@@ -45,7 +45,7 @@
     root.innerHTML =
       '<main class="gp-maintenance-page" aria-labelledby="gpMaintenanceTitle">' +
         '<section class="gp-maintenance-card">' +
-          '<img src="/assets/img/brand-logo.png" alt="교수님 피하기" class="gp-maintenance-logo">' +
+          '<img src="/assets/img/brand-logo.webp" alt="교수님 피하기" class="gp-maintenance-logo">' +
           '<p class="gp-maintenance-kicker">서비스 점검 중</p>' +
           '<h1 id="gpMaintenanceTitle">잠시만 기다려 주세요.</h1>' +
           '<p class="gp-maintenance-copy">' + esc(message) + '</p>' +

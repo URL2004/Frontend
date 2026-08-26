@@ -6,6 +6,17 @@
  var naverCookieDomain = String(config.NAVER_COOKIE_DOMAIN || '').trim();
  var naverTrackingInitialized = false;
  var lastPageViewKey = '';
+
+ function scheduleNonCritical(task, delay) {
+  var schedule = function () {
+   setTimeout(function () {
+    if ('requestIdleCallback' in window) requestIdleCallback(task, { timeout: 2500 });
+    else task();
+   }, delay || 0);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedule, { once: true });
+  else schedule();
+ }
  var STORAGE_KEYS = {
   first: 'gp_attribution_first_touch',
   last: 'gp_attribution_last_touch',
@@ -401,12 +412,13 @@
  };
 
  if (measurementId) {
-  var gtagScript = document.createElement('script');
-  gtagScript.async = true;
-  gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(measurementId);
-  document.head.appendChild(gtagScript);
-
   window.gtag('js', new Date());
   window.gtag('config', measurementId, { send_page_view: false });
+  scheduleNonCritical(function () {
+   var gtagScript = document.createElement('script');
+   gtagScript.async = true;
+   gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(measurementId);
+   document.head.appendChild(gtagScript);
+  }, 4500);
  }
 })();

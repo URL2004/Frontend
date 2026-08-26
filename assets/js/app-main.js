@@ -1745,7 +1745,14 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
    alert('결제는 운영 환경에서만 사용할 수 있어요.');
    return;
   }
-  const tp = TossPayments(clientKey);
+  try {
+   await window.gpLoadTossPayments();
+  } catch (sdkError) {
+   if (window.gpTrackPaymentError) window.gpTrackPaymentError('checkout_sdk_load_failed', { checkoutType: 'credits', amount, credits, plan }, sdkError);
+   alert('결제 모듈을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+   return;
+  }
+  const tp = window.TossPayments(clientKey);
   const orderId = 'order_' + Date.now();
   if (typeof window.gpBindPendingCheckout === 'function') {
    window.gpBindPendingCheckout(orderId, {
@@ -1941,7 +1948,14 @@ async function payTossSubscription(tier) {
    alert('정기 구독 결제는 운영 환경에서만 사용할 수 있어요.');
    return;
   }
-  const tp = TossPayments(clientKey);
+  try {
+   await window.gpLoadTossPayments();
+  } catch (sdkError) {
+   if (window.gpTrackPaymentError) window.gpTrackPaymentError('subscription_sdk_load_failed', { checkoutType: 'subscription', tier, amount: info.amount }, sdkError);
+   alert('결제 모듈을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+   return;
+  }
+  const tp = window.TossPayments(clientKey);
  const customerKey = 'cust_' + window.CU.uid;
 
  try {

@@ -1,7 +1,7 @@
 (function () {
   // 파셜은 동기 XHR로 로드되어 브라우저 휴리스틱 캐시에 잡히기 쉽다.
   // UI 버전이 바뀔 때마다 올려서 강제로 새 파일을 받게 한다.
-  var ASSET_V = 'lav-181';   // ★ L-01: 자산 버전과 일치 — 파셜 stale 캐시 방지
+  var ASSET_V = 'lav-182';   // ★ L-01: 자산 버전과 일치 — 파셜 stale 캐시 방지
   var partials = [
     '/partials/login-screen.html',
     '/pages/landing.html',
@@ -37,6 +37,63 @@
     return xhr.responseText;
   }
 
+  function loadPageMarkup() {
+    var runtime = window.APP_RUNTIME_CONFIG || {};
+    if (Number(runtime.PAGE_BUNDLE_VERSION) === 1) {
+      try {
+        var bundled = loadPartial('/partials/app-bundle.html');
+        window.PAGE_PARTIAL_BUNDLE_USED = true;
+        return bundled;
+      } catch (error) {
+        console.warn('Page bundle unavailable; loading individual partials.', error);
+      }
+    }
+    window.PAGE_PARTIAL_BUNDLE_USED = false;
+    return partials.map(loadPartial).join('\n');
+  }
+
+  function hasCachedFirebaseUser() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i) || '';
+        if (key.indexOf('firebase:authUser:') === 0 && localStorage.getItem(key)) return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function isHomePath() {
+    var path = String(window.location.pathname || '/').replace(/\/index\.html$/i, '/');
+    if (path.length > 1) path = path.replace(/\/+$/, '');
+    return path === '' || path === '/';
+  }
+
+  function shouldStartOnLanding() {
+    var params = new URLSearchParams(window.location.search || '');
+    var lp = params.get('lp');
+    if (lp === '1') return true;
+    if (lp === '0') return false;
+    var mode = String(params.get('mode') || '').toLowerCase();
+    if (mode === 'detect' || mode === 'humanize') return false;
+    if (!isHomePath() || window.location.hash) return false;
+    try {
+      if (sessionStorage.getItem('gp_landing_dismissed_v1') === '1') return false;
+    } catch (_) {}
+    return !hasCachedFirebaseUser();
+  }
+
+  function selectInitialScreen() {
+    var landing = shouldStartOnLanding();
+    var landingScreen = document.getElementById('landingScreen');
+    var appScreen = document.getElementById('appScreen');
+    document.querySelectorAll('.screen.active').forEach(function (screen) {
+      screen.classList.remove('active');
+    });
+    var target = landing ? landingScreen : appScreen;
+    if (target) target.classList.add('active');
+    document.documentElement.dataset.gpInitialScreen = landing ? 'landing' : 'app';
+  }
+
   // SEO 프리렌더 블록 제거: 빌드된 정적 HTML에는 크롤러용 noscript 본문이 있다.
   // JS 브라우저에서는 렌더되지 않지만, 파셜 주입 전에 제거해 중복 ID 가능성을 없앤다.
   var seo = document.getElementById('seo-prerender-static') || document.getElementById('seo-prerender');
@@ -44,7 +101,8 @@
 
   var root = document.getElementById('page-root');
   if (!root) throw new Error('Missing #page-root');
-  root.insertAdjacentHTML('beforeend', partials.map(loadPartial).join('\n'));
+  root.insertAdjacentHTML('beforeend', loadPageMarkup());
+  selectInitialScreen();
   window.PAGE_PARTIALS = partials;
 })();
 

@@ -225,7 +225,7 @@ test('랜딩 v2는 코다 구조(데모·탭·상황·사실 스트립)를 우�
   // 블렌드 탭 4항목 + 실제 화면 자산 + 준비 중 오버레이
   assert.equal((landing.match(/data-blend="\d"/gu) || []).length, 4);
   for (const shot of ['shot-detect', 'shot-composer', 'shot-settings', 'shot-done']) {
-    assert.match(landing, new RegExp(`/assets/img/landing/${shot}\.png`, 'u'));
+    assert.match(landing, new RegExp(`/assets/img/landing/${shot}\\.webp`, 'u'));
   }
   assert.match(landingJs, /window\.gpLandingBlendPick = function/u);
   assert.match(landing, /id="lpBlendSoon"/u);
@@ -258,4 +258,36 @@ test('lp 스위치는 랜딩을 강제하거나 건너뛰고 관리자 페이지
   // 관리자 페이지: 미리보기 버튼과 광고 링크 지정 안내
   assert.match(admin, /window\.open\('\/\?lp=1', '_blank', 'noopener'\)/u);
   assert.match(admin, /\?lp=0/u);
+});
+
+test('첫 랜딩은 번들 한 번으로 조립하고 인증·장식 작업이 초기 화면을 막지 않는다', async () => {
+  const [build, loader, boot, appModule, appMain, vendors, tracking, index, landingPage] = await Promise.all([
+    read('scripts/build-vite-static.mjs'),
+    read('assets/js/page-loader.js'),
+    read('assets/js/app-boot.js'),
+    read('assets/js/app-module.js'),
+    read('assets/js/app-main.js'),
+    read('assets/js/vendor-init.js'),
+    read('assets/js/head-tracking.js'),
+    read('index.html'),
+    read('pages/landing.html')
+  ]);
+
+  assert.match(build, /PAGE_BUNDLE_VERSION: 1/u);
+  assert.match(build, /async function writePageBundle\(\)/u);
+  assert.match(loader, /loadPartial\('\/partials\/app-bundle\.html'\)/u);
+  assert.match(loader, /function selectInitialScreen\(\)/u);
+  assert.match(loader, /firebase:authUser:/u);
+  assert.match(loader, /dataset\.gpInitialScreen = landing \? 'landing' : 'app'/u);
+  assert.match(appModule, /window\.gpAuthResolved = true/u);
+  assert.match(appModule, /showScreen\('app'\)[\s\S]{0,300}?await loadUser\(u\)/u);
+
+  assert.match(boot, /requestIdleCallback\(run, \{ timeout: 1800 \}\)/u);
+  assert.doesNotMatch(boot, /script\('https:\/\/cdn\.jsdelivr\.net\/npm\/(?:gsap|vanilla-tilt|countup)/u);
+  assert.match(vendors, /window\.gpLoadTossPayments = function/u);
+  assert.match(vendors, /5500\);/u);
+  assert.match(appMain, /await window\.gpLoadTossPayments\(\)/u);
+  assert.match(tracking, /4500\);/u);
+  assert.doesNotMatch(index, /<script[^>]+(?:wcs\.naver\.net|js\.tosspayments\.com)/u);
+  assert.match(landingPage, /brand-logo-menu\.webp/u);
 });

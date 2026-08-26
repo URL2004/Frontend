@@ -4,7 +4,7 @@
     return;
   }
 
-  var v = 'lav-181';
+  var v = 'lav-182';
   function script(src, attrs) {
     attrs = attrs || '';
     document.write('<script ' + attrs + ' src="' + src + '"><\/script>');
@@ -21,8 +21,33 @@
   script('/assets/js/writing-lab.js?v=' + v);
   script('/assets/js/app-module.js?v=' + v, 'type="module"');
   script('/assets/js/payment-callbacks.js?v=' + v, 'type="module"');
-  script('https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js');
-  script('https://cdn.jsdelivr.net/npm/vanilla-tilt@1.8.1/dist/vanilla-tilt.min.js');
-  script('https://cdn.jsdelivr.net/npm/countup.js@2.8.0/dist/countUp.umd.js');
-  script('/assets/js/animations.js?v=' + v);
+  function loadEnhancement(src) {
+    return new Promise(function (resolve, reject) {
+      var el = document.createElement('script');
+      el.src = src;
+      el.async = true;
+      el.onload = resolve;
+      el.onerror = reject;
+      document.head.appendChild(el);
+    });
+  }
+
+  function scheduleEnhancements() {
+    var run = function () {
+      Promise.all([
+        loadEnhancement('https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js'),
+        loadEnhancement('https://cdn.jsdelivr.net/npm/vanilla-tilt@1.8.1/dist/vanilla-tilt.min.js'),
+        loadEnhancement('https://cdn.jsdelivr.net/npm/countup.js@2.8.0/dist/countUp.umd.js')
+      ]).then(function () {
+        return loadEnhancement('/assets/js/animations.js?v=' + v);
+      }).catch(function (error) {
+        console.warn('Optional visual enhancements were skipped.', error);
+      });
+    };
+    if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 1800 });
+    else setTimeout(run, 900);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleEnhancements, { once: true });
+  else scheduleEnhancements();
 })();

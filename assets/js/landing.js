@@ -106,6 +106,10 @@
 
   // 인증이 확정되기 전에 화면을 바꾸면 로그인 사용자에게 랜딩이 한 번 스쳐 지나간다.
   window.gpMaybeShowLanding = function () {
+    if (landingOverride() === 'force' || document.documentElement.dataset.gpInitialScreen === 'landing' || window.gpAuthResolved) {
+      applyLanding();
+      return;
+    }
     if (window.authReady && typeof window.authReady.then === 'function') {
       window.authReady.then(applyLanding, applyLanding);
       return;
@@ -171,13 +175,13 @@
   // ── 서비스 블렌드 탭(코다 벤치마킹) ─────────────────────────────────────
   // 좌측 항목을 고르면 우측 실제 화면이 바뀐다. 글쓰기 랩은 오픈 전이라 오버레이로 정직하게 표시.
   var BLEND = [
-    { img: '/assets/img/landing/shot-detect.png',   alt: 'AI 감지 보고서 화면',        soon: false,
+    { img: '/assets/img/landing/shot-detect.webp',   alt: 'AI 감지 보고서 화면',        soon: false,
       note: '글 전체의 AI 티 지수와 함께 어느 문단이 위험한지 문단별로 보여줍니다.' },
-    { img: '/assets/img/landing/shot-done.png',     alt: '기본 휴머나이징 결과 화면',   soon: false,
+    { img: '/assets/img/landing/shot-done.webp',     alt: '기본 휴머나이징 결과 화면',   soon: false,
       note: '원문의 장르와 말투와 사실을 지키면서 AI식 반복과 균일한 문장 흐름을 다시 구성합니다.' },
-    { img: '/assets/img/landing/shot-settings.png', alt: '고급 휴머나이징 설정 화면',   soon: false,
+    { img: '/assets/img/landing/shot-settings.webp', alt: '고급 휴머나이징 설정 화면',   soon: false,
       note: '더 넓은 범위를 재구성하고 모든 글에 의미·사실·구조 정밀 검증을 적용합니다. 직접 승인한 근거만 인용해요.' },
-    { img: '/assets/img/landing/shot-composer.png', alt: '글쓰기 랩(오픈 준비 중)',     soon: true,
+    { img: '/assets/img/landing/shot-composer.webp', alt: '글쓰기 랩(오픈 준비 중)',     soon: true,
       note: '장르별 질문에 아는 것만 답하면 자기소개서·후기·소개 글을 만들어요. 답하지 않은 내용은 지어내지 않습니다.' }
   ];
 
@@ -189,13 +193,37 @@
       btn.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     var img = document.getElementById('lpBlendImg');
-    if (img) { img.src = item.img; img.alt = item.alt; }
+    if (img) { img.src = item.img; img.alt = item.alt; delete img.dataset.lpSrc; }
     var soon = document.getElementById('lpBlendSoon');
     if (soon) soon.hidden = !item.soon;
     var note = document.getElementById('lpBlendNote');
     if (note) note.textContent = item.note;
     track('landing_blend_pick', { surface: 'landing', blend_index: index });
   };
+
+  function initDeferredLandingImages() {
+    var images = document.querySelectorAll('#landingScreen img[data-lp-src]');
+    function load(img) {
+      if (!img.dataset.lpSrc) return;
+      img.src = img.dataset.lpSrc;
+      delete img.dataset.lpSrc;
+    }
+    if (!('IntersectionObserver' in window)) {
+      images.forEach(load);
+      return;
+    }
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        load(entry.target);
+        observer.unobserve(entry.target);
+      });
+    }, { rootMargin: '240px 0px' });
+    images.forEach(function (img) { observer.observe(img); });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initDeferredLandingImages, { once: true });
+  else initDeferredLandingImages();
 
   // ── 히어로 라이브 데모(사장님 지시: 실제 사용 장면처럼) ───────────────────
   // 영상 파일이 아니라 DOM 애니메이션으로 5장면 루프:
