@@ -120,3 +120,22 @@ test('공개 라우트 집합: 프리렌더 라우트와 SPA 라우터가 같은
   const build = await read('scripts/build-vite-static.mjs');
   assert.match(build, /sitemap-gen\.mjs/u, '빌드에 사이트맵 생성기 미연결');
 });
+
+test('use_case 흐름: 랜딩 변형·3택 프리셋·이벤트 파라미터가 연결돼 있다', async () => {
+  const [landing, evasion, tracking] = await Promise.all([
+    read('assets/js/landing.js'),
+    read('assets/js/evasion-flow.js'),
+    read('assets/js/head-tracking.js')
+  ]);
+  // 랜딩 변형 4종 + 히어로 셀렉터
+  for (const key of ['assignment', 'resume', 'paper', 'blog']) {
+    assert.match(landing, new RegExp(key + ':\\s*\\{'), `LP_VARIANTS.${key} 부재`);
+  }
+  assert.match(landing, /\.gp-lp-hero-inner h1/u);
+  // 3택 화면 글 종류 프리셋 매핑
+  assert.match(evasion, /USE_CASE_PROFILE\s*=\s*\{\s*assignment:\s*'report_assignment'/u);
+  assert.match(evasion, /applyUseCasePreset\(\)/u);
+  // 이벤트 컨텍스트에 use_case 포함(Meta params 포함)
+  assert.match(tracking, /use_case:\s*last\.use_case \|\| first\.use_case/u);
+  assert.match(tracking, /use_case:\s*clean\(payload\.use_case, 40\)/u);
+});

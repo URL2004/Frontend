@@ -139,6 +139,7 @@
    traffic_campaign: clean(payload.traffic_campaign, 150),
    traffic_content: clean(payload.traffic_content, 150),
    traffic_term: clean(payload.traffic_term, 150),
+   use_case: clean(payload.use_case, 40),
    analysis_mode: clean(payload.analysis_mode || inferredMode, 50),
    humanize_mode: clean(payload.humanize_mode || (eventName === 'humanize_run' ? payload.mode : ''), 50),
    method: clean(payload.method, 50),
@@ -239,6 +240,21 @@
   return host;
  }
 
+ // use_case 파생(2026-08-28 P0-6): 광고는 use_case를 별도 파라미터가 아니라 utm_content 접두
+ // ({use_case}_{set}_c{n}) 또는 네이버 그룹 코드({group}_responsive)로 싣는다 — 셋 다 지원한다.
+ var USE_CASES = ['assignment', 'resume', 'blog', 'paper', 'short', 'general'];
+ var NAVER_GROUP_USE_CASE = { '03': 'resume', '07': 'blog', '08': 'assignment', '09': 'paper', '10': 'short' };
+ function deriveUseCase(params) {
+  var direct = clean(params.get('use_case'), 40).toLowerCase();
+  if (USE_CASES.indexOf(direct) >= 0) return direct;
+  var content = clean(params.get('utm_content'), 150).toLowerCase();
+  var prefix = content.match(/^(assignment|resume|blog|paper|short|general)(?=[_\-]|$)/);
+  if (prefix) return prefix[1];
+  var group = content.match(/^g(\d{2})/);
+  if (group && NAVER_GROUP_USE_CASE[group[1]]) return NAVER_GROUP_USE_CASE[group[1]];
+  return '';
+ }
+
  function currentTouch() {
   var params = new URLSearchParams(window.location.search || '');
   var referrerHost = externalReferrerHost();
@@ -246,6 +262,7 @@
   Object.keys(PARAMS).forEach(function (key) {
    values[key] = clean(params.get(PARAMS[key]), key === 'napm' ? 500 : 250);
   });
+  var useCase = deriveUseCase(params);
   var hasPaidId = !!(values.napm || values.gclid || values.fbclid);
   var hasCampaignParam = !!(values.source || values.medium || values.campaign || values.content || values.term || hasPaidId);
   var source = values.source || (values.napm ? 'naver' : values.gclid ? 'google' : values.fbclid ? 'meta' : sourceFromHost(referrerHost)) || 'direct';
@@ -264,6 +281,7 @@
     napm: values.napm,
     gclid: values.gclid,
     fbclid: values.fbclid,
+    use_case: useCase,
     landing_path: landingPath,
     landing_url: origin + landingPath,
     referrer_host: clean(referrerHost, 250)
@@ -311,6 +329,7 @@
    first_touch_source: first.source || 'direct',
    first_touch_medium: first.medium || 'none',
    first_touch_campaign: first.campaign || '',
+   use_case: last.use_case || first.use_case || '',   // 광고 용도 맥락 — 가입·첫 완료·구매까지 모든 이벤트에 관통
    landing_path: last.landing_path || window.location.pathname || '/'
   };
  }

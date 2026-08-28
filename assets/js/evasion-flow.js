@@ -322,10 +322,29 @@
       if (!(d && d.ok)) console.warn('[evasion] 진단 폴백 동작 중 — 백엔드 미연결 상태(블로그 변환은 실패함)');
       applyDiag(d && d.ok ? d : fakeDiagnose(text));
       applyAdvancedRouting();   // 3택 화면 진입 시 고급 잠금·추천을 즉시 반영(구 reduce 진입 로직 이동)
+      applyUseCasePreset();     // 광고 use_case 맥락 → 세부 설정 글 종류 프리셋(P0-6, 1회만)
       renderSelectCosts();
       show('select');
     });
   };
+
+  // 광고 용도 맥락(use_case, head-tracking이 파생·보존) → 글 종류 세부 설정 프리셋.
+  // 자동 판별이 기본이고 서버도 원문 장르가 뚜렷하면 자동을 우선하므로, 비어 있을 때 1회만 살짝 채운다.
+  var useCasePresetDone = false;
+  var USE_CASE_PROFILE = { assignment: 'report_assignment', resume: 'resume_application', paper: 'academic_paper', blog: 'review_blog' };
+  function applyUseCasePreset() {
+    if (useCasePresetDone) return;
+    useCasePresetDone = true;
+    try {
+      var ctx = window.gpAttribution && window.gpAttribution.getContext ? window.gpAttribution.getContext() : null;
+      var profile = ctx && USE_CASE_PROFILE[ctx.use_case];
+      var select = $('lavDocumentProfile');
+      if (profile && select && !select.value) {
+        select.value = profile;
+        if (window.lavDocumentProfileChange) window.lavDocumentProfileChange();
+      }
+    } catch (e) { /* 프리셋 실패 시 자동 판별 유지 */ }
+  }
 
   window.lavFlowGo = function (name) {
     show(name);

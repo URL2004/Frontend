@@ -355,3 +355,49 @@
     if (typeof window.switchTab === 'function') window.switchTab('main');
   };
 })();
+
+// ── 용도별 랜딩 변형(2026-08-28 P0-6): 광고의 use_case 맥락(utm_content 접두·use_case 파라미터,
+//    head-tracking이 파생·보존)에 맞춰 히어로 카피만 스왑한다. 크롤러는 기본 카피를 본다(JS 적용).
+//    카피는 검수 언어 원칙 준수 — 통과·점수 보장 표현 금지(광고 구현 명세 2026-08-26 정합).
+(function () {
+  var LP_VARIANTS = {
+    assignment: {
+      h1: '과제의 AI 문체 신호,<br>제출 전에 확인한다.',
+      sub: '수치·인용·내 주장은 유지하고, 확인이 필요한 문단부터 보여드립니다.',
+      cta: '과제 1,000자 무료 감지'
+    },
+    resume: {
+      h1: '내 경험은 그대로,<br>AI식 상투어만 덜어낸다.',
+      sub: '회사명·직무·내 행동·결과를 구분해 없는 경험을 만들지 않습니다.',
+      cta: '자소서 문단 점검하기'
+    },
+    paper: {
+      h1: '수치·기관명·인용을 지키는<br>장문 검수.',
+      sub: '긴 글은 구간별로 감지하고 변경된 부분을 원문과 비교할 수 있게 보여드립니다.',
+      cta: '보고서 점검 시작하기'
+    },
+    blog: {
+      h1: '후기의 사실과 말투는 그대로,<br>반복 표현만 정리한다.',
+      sub: '직접 경험하지 않은 장점이나 성과는 추가하지 않습니다.',
+      cta: '후기 문장 점검하기'
+    }
+  };
+  function applyLandingUseCase() {
+    try {
+      var ctx = window.gpAttribution && window.gpAttribution.getContext ? window.gpAttribution.getContext() : null;
+      var v = ctx && LP_VARIANTS[ctx.use_case];
+      if (!v) return;
+      var h1 = document.querySelector('.gp-lp-hero-inner h1');
+      var sub = document.querySelector('.gp-lp-hero-sub');
+      var cta = document.querySelector('.gp-lp-hero-cta .gp-lp-primary');
+      if (h1) h1.innerHTML = v.h1;   // 정적 사전(LP_VARIANTS)만 주입 — 사용자 입력 아님
+      if (sub) sub.textContent = v.sub;
+      if (cta) cta.textContent = v.cta;
+      if (typeof window.gpTrack === 'function') window.gpTrack('landing_variant_view', { landing_variant: ctx.use_case });
+    } catch (e) { /* 변형 실패 시 기본 카피 유지 */ }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyLandingUseCase, { once: true });
+  else applyLandingUseCase();
+  // 파셜 지연 주입(page-loader) 대비 — 랜딩 DOM이 늦게 들어와도 1회 재시도
+  setTimeout(applyLandingUseCase, 1500);
+})();
