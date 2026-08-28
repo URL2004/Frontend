@@ -233,8 +233,12 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'patches'/u);
   assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 45);
-  assert.match(admin, /구조 무결성·사후 문단 보강·3택 흐름·연구노트/u);
-  assert.match(admin, /Backend 34c8b26 · Frontend 73c603f/u);
+  assert.match(admin, /구조 무결성·문단 보강·3택 흐름·연구노트·공지/u);
+  assert.match(admin, /Backend 34c8b26 · Frontend bfc3d2f/u);
+  assert.match(admin, /운영 Git<\/dt><dd>745건/u);
+  assert.match(admin, /Backend \/ Frontend<\/dt><dd>495 \/ 250/u);
+  assert.match(admin, /8,700원 라이트 충전 상품을 350크레딧으로 확대/u);
+  assert.match(admin, /엔진 업데이트·유료 크레딧 유효기간·라이트 상품 지급량/u);
   assert.match(admin, /백엔드 전체 849개, 문단 보강 상태기계 32개, 프런트 87개 테스트/u);
   assert.match(admin, /최종 문서 무결성·안전 후보 원장/u);
   assert.match(admin, /Backend 6e51d4c/u);
@@ -306,8 +310,8 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /관리자 실험실과 운영 화면 기반/u);
   assert.match(admin, /2026년 6월/u);
   assert.match(admin, /FLOOR v2 의미 보존 엔진과 운영 저장소 시작/u);
-  assert.match(admin, /운영 Git[\s\S]*678건/u);
-  assert.match(admin, /Backend \/ Frontend[\s\S]*475 \/ 203/u);
+  assert.match(admin, /운영 Git[\s\S]*745건/u);
+  assert.match(admin, /Backend \/ Frontend[\s\S]*495 \/ 250/u);
   assert.match(admin, /GPT·Claude 작업 기록[\s\S]*56개 세션/u);
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
