@@ -43,7 +43,7 @@ nav.crumb a{color:var(--muted);text-decoration:none}
 nav.crumb a:hover{color:var(--deep)}
 /* ── 기사 판형 ── */
 article{padding:6px 0 48px}
-.eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--accent);text-transform:uppercase}
+.byline .cat{color:var(--accent);font-weight:700}
 h1{font-size:clamp(27px,4.6vw,38px);font-weight:800;line-height:1.28;letter-spacing:-.015em;margin:10px 0 14px;word-break:keep-all}
 .byline{display:flex;flex-wrap:wrap;gap:6px 0;font-size:13px;color:var(--muted);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 0;margin:18px 0 4px}
 .byline span+span::before{content:'·';margin:0 10px;color:var(--line)}
@@ -79,34 +79,44 @@ footer.site a{color:var(--muted)}
 img{max-width:100%}
 /* ── 허브: 매거진 그리드 ── */
 .hub-head{padding:44px 0 8px}
-.hub-head h1{margin:8px 0 10px}
+.hub-head h1{margin:0 0 12px}
 .hub-head p{max-width:56ch;font-size:16.5px;color:var(--ink2);margin:0}
 .hub-sec{display:flex;align-items:baseline;gap:14px;margin:44px 0 16px}
 .hub-sec strong{font-size:14px;font-weight:800;letter-spacing:.12em;color:var(--ink)}
 .hub-sec i{flex:1;height:1px;background:var(--line)}
-.feature-row{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:18px}
+.feature-row{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:20px}
 @media (max-width:860px){.feature-row{grid-template-columns:1fr}}
-a.feat{display:flex;flex-direction:column;justify-content:flex-end;gap:10px;min-height:400px;padding:30px;border-radius:18px;text-decoration:none;color:#fff;background:linear-gradient(145deg,#4443c0,#6d6ee6 62%,#8a8cf0);box-shadow:var(--shadow);position:relative;overflow:hidden;isolation:isolate}
+a.feat{display:flex;flex-direction:column;justify-content:flex-end;gap:10px;min-height:420px;padding:32px;border-radius:18px;text-decoration:none;color:#fff;background:linear-gradient(145deg,#4443c0,#6d6ee6 62%,#8a8cf0);box-shadow:var(--shadow);position:relative;overflow:hidden;isolation:isolate}
 a.feat img.cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
-a.feat::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(to top,rgba(24,22,54,.88) 8%,rgba(24,22,54,.45) 45%,rgba(24,22,54,.08))}
+a.feat::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(to top,rgba(24,22,54,.9) 10%,rgba(24,22,54,.48) 48%,rgba(24,22,54,.06))}
 a.feat .hub-cat{color:rgba(255,255,255,.9)}
-a.feat strong{font-size:clamp(21px,2.6vw,27px);font-weight:800;line-height:1.35;letter-spacing:-.01em;text-shadow:0 1px 12px rgba(24,22,54,.4)}
-a.feat p{margin:0;color:rgba(255,255,255,.92);font-size:14.5px;line-height:1.7;max-width:52ch}
+a.feat strong{font-size:clamp(22px,2.7vw,29px);font-weight:800;line-height:1.32;letter-spacing:-.01em;text-shadow:0 1px 12px rgba(24,22,54,.45);max-width:24ch}
+a.feat p{margin:0;color:rgba(255,255,255,.93);font-size:15px;line-height:1.7;max-width:50ch}
 a.feat time{font-size:12.5px;color:rgba(255,255,255,.75)}
-.feat-side{display:grid;grid-template-rows:1fr 1fr;gap:18px}
-.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
-.hub-card{display:flex;flex-direction:column;gap:9px;border:1px solid var(--line);border-radius:16px;background:var(--card);padding:0 0 20px;text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:transform .16s,border-color .16s;overflow:hidden}
-.hub-card img.cover{width:100%;aspect-ratio:3/2;object-fit:cover;display:block;border-bottom:1px solid var(--line)}
-.hub-card>*:not(img){margin-left:20px;margin-right:20px}
-.hub-card .hub-cat{margin-top:16px}
+/* 사이드: 세로 카드에 와이드 이미지를 욱여넣지 않는다 — 썸네일 가로형 행(비율 고정, 텍스트 우선) */
+.feat-side{display:flex;flex-direction:column;gap:20px;justify-content:space-between}
+.hub-row{display:flex;gap:18px;align-items:stretch;flex:1;border:1px solid var(--line);border-radius:16px;background:var(--card);padding:18px;text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:border-color .16s}
+.hub-row:hover{border-color:var(--accent)}
+.hub-row:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.hub-row .txt{display:flex;flex-direction:column;gap:8px;min-width:0}
+.hub-row strong{font-size:17.5px;font-weight:700;line-height:1.45;letter-spacing:-.01em;word-break:keep-all}
+.hub-row p{margin:0;font-size:14px;color:var(--ink2);line-height:1.65;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hub-row .meta{margin-top:auto;font-size:12.5px;color:var(--muted)}
+.hub-row img.cover{flex:0 0 116px;width:116px;height:116px;align-self:center;object-fit:cover;border-radius:12px}
+@media (max-width:520px){.hub-row img.cover{flex-basis:88px;width:88px;height:88px}}
+/* 그리드: 16:9 이미지로 본문 공간 확보, 제목이 이끌고 설명이 받친다 */
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
+.hub-card{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;background:var(--card);text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:transform .16s,border-color .16s;overflow:hidden}
+.hub-card img.cover{width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;display:block;border-bottom:1px solid var(--line)}
+.hub-card .body{display:flex;flex-direction:column;gap:8px;padding:18px 20px 20px;flex:1}
+.hub-card strong{font-size:18px;font-weight:700;line-height:1.42;letter-spacing:-.012em;word-break:keep-all}
+.hub-card p{margin:0;font-size:14px;color:var(--ink2);line-height:1.68;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hub-card .meta{margin-top:auto;padding-top:10px;font-size:12.5px;color:var(--muted)}
 .hub-card:hover{transform:translateY(-2px);border-color:var(--accent)}
-.feat-side .hub-card img.cover{aspect-ratio:16/7}
-.article-cover{width:100%;aspect-ratio:2.4/1;object-fit:cover;border-radius:16px;box-shadow:var(--shadow);margin:22px 0 4px;display:block}
+.article-cover{width:100%;height:auto;aspect-ratio:2.4/1;object-fit:cover;border-radius:16px;box-shadow:var(--shadow);margin:22px 0 4px;display:block}
+::selection{background:var(--accent);color:#fff}
 .hub-card:focus-visible,a.feat:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .hub-cat{font-size:11.5px;font-weight:700;letter-spacing:.12em;color:var(--accent)}
-.hub-card strong{font-size:17.5px;font-weight:700;line-height:1.42;letter-spacing:-.01em;word-break:keep-all}
-.hub-card p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.hub-card time{margin-top:auto;padding-top:6px;font-size:12px;color:var(--muted)}
 .tpl-strip{border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:var(--shadow);padding:26px 28px;margin:8px 0 0}
 .tpl-strip h2{margin:0 0 4px;padding:0;border:0;font-size:19px}
 .tpl-strip>p{margin:0 0 16px;font-size:14px;color:var(--muted)}
@@ -120,7 +130,7 @@ a.feat time{font-size:12.5px;color:rgba(255,255,255,.75)}
 .hub-cta p{margin:0;font-size:14px;color:var(--muted)}
 .hub-cta a{background:var(--accent);color:#fff;text-decoration:none;font-weight:700;border-radius:11px;padding:13px 24px;font-size:15px;white-space:nowrap}
 .hub-cta a:hover{background:var(--deep)}
-@media (prefers-reduced-motion:reduce){.hub-card,.tpl-grid a{transition:none}.hub-card:hover{transform:none}}
+@media (prefers-reduced-motion:reduce){.hub-card,.hub-row,.tpl-grid a{transition:none}.hub-card:hover{transform:none}}
 `;
 
 const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">';
@@ -237,9 +247,8 @@ function articlePage(article, allArticles) {
   ];
   const body = `
 <article>
-<span class="eyebrow">${esc(article.category)}</span>
 <h1>${esc(article.title)}</h1>
-<div class="byline"><span>교수님 피하기 팀</span><span>검수: ${esc(article.reviewer || '검수 대기')}</span><span>${article.date}</span></div>
+<div class="byline"><span class="cat">${esc(article.category)}</span><span>교수님 피하기 팀</span><span>검수: ${esc(article.reviewer || '검수 대기')}</span><span>${article.date}</span></div>
 <img class="article-cover" src="${coverOf(article.slug)}" alt="" width="1200" height="500" loading="eager" decoding="async">
 <p class="lead">${article.lead}</p>
 ${article.body}
@@ -287,9 +296,8 @@ function templatePage(tpl, allArticles) {
   ];
   const body = `
 <article>
-<span class="eyebrow">${esc(tpl.genreLabel)} 템플릿</span>
 <h1>${esc(tpl.title)}</h1>
-<div class="byline"><span>교수님 피하기 팀</span><span>검수: ${esc(tpl.reviewer || '검수 대기')}</span><span>${tpl.date}</span></div>
+<div class="byline"><span class="cat">${esc(tpl.genreLabel)} 템플릿</span><span>교수님 피하기 팀</span><span>검수: ${esc(tpl.reviewer || '검수 대기')}</span><span>${tpl.date}</span></div>
 <p class="lead">${tpl.lead}</p>
 ${tpl.body}
 <div class="cta-box">
@@ -335,17 +343,26 @@ function hubPage() {
   const grid = rest.slice(2);
   const card = (a) => `
 <a class="hub-card" href="/blog/${a.slug}">
-<img class="cover" src="${coverOf(a.slug)}" alt="" width="1200" height="800" loading="lazy" decoding="async">
-<span class="hub-cat">${esc(a.category)}</span>
+<img class="cover" src="${coverOf(a.slug)}" alt="" width="1200" height="675" loading="lazy" decoding="async">
+<span class="body">
 <strong>${esc(a.title)}</strong>
 <p>${esc(a.description)}</p>
-<time>${a.date}</time>
+<span class="meta">${esc(a.category)} · <time>${a.date}</time></span>
+</span>
+</a>`;
+  const rowCard = (a) => `
+<a class="hub-row" href="/blog/${a.slug}">
+<span class="txt">
+<strong>${esc(a.title)}</strong>
+<p>${esc(a.description)}</p>
+<span class="meta">${esc(a.category)} · <time>${a.date}</time></span>
+</span>
+<img class="cover" src="${coverOf(a.slug)}" alt="" width="1200" height="800" loading="lazy" decoding="async">
 </a>`;
   const tplLinks = TEMPLATE_PAGES.map((t) => `<a href="/templates/${t.genre}/${t.subtype}">${esc(t.title)}</a>`).join('\n');
   const body = `
 <article>
 <div class="hub-head">
-<span class="eyebrow">교수님 피하기 블로그</span>
 <h1>AI 초안을 다듬는 실전 기준</h1>
 <p>점수 보장이 아니라, 사실을 지키면서 자연스럽게 만드는 방법을 다룹니다. 과제·자소서·리포트를 제출하기 전에 확인할 기준을 짧고 구체적으로 정리했어요.</p>
 </div>
@@ -359,7 +376,7 @@ function hubPage() {
 <time>${feat.date}</time>
 </a>
 <div class="feat-side">
-${side.map(card).join('\n')}
+${side.map(rowCard).join('\n')}
 </div>
 </div>
 <div class="hub-sec"><strong>가이드 전체</strong><i></i></div>
