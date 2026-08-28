@@ -17692,3 +17692,37 @@ body.dark .lav-refine-guide span i{color:#b4b6ff;}
 body.dark .lav-refine-input{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2);color:var(--text,#e8eaf6);}
 body.dark .lav-refine-input::placeholder{color:#7d84a8;}
 body.dark .lav-refine-ok{color:#4ade80;}
+
+/* ===== 3택 1화면(select, 2026-08-28 흐름 단순화): 카드 3장 + 인라인 비용 ===== */
+.lav-select-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:4px 0 14px;}
+.lav-sel-stack{display:flex;flex-direction:column;gap:8px;min-width:0;}
+.lav-sel-card{
+ position:relative;display:flex;flex-direction:column;gap:8px;text-align:left;
+ padding:16px;border:1.5px solid var(--line,#e4e5f0);border-radius:14px;
+ background:var(--card,#fff);cursor:pointer;font-family:inherit;color:var(--text,#1f2437);
+ transition:border-color .15s, box-shadow .15s;
+}
+.lav-sel-card:hover:not(:disabled){border-color:#5a5bd8;box-shadow:0 4px 14px rgba(90,91,216,.10);}
+.lav-sel-card:focus-visible{outline:2px solid #5a5bd8;outline-offset:2px;}
+.lav-sel-card.accent{border-color:rgba(90,91,216,.55);}
+.lav-sel-card p{margin:0;font-size:12.5px;line-height:1.55;color:var(--text3,#6b7280);}
+.lav-sel-card .lav-purpose-reco{position:absolute;top:-9px;right:12px;}
+.lav-sel-card.is-locked,.lav-sel-card:disabled{opacity:.55;cursor:not-allowed;}
+.lav-sel-cost{
+ font-style:normal;font-size:13px;font-weight:700;color:#4749c9;
+ background:rgba(90,91,216,.08);border-radius:8px;padding:5px 10px;align-self:flex-start;
+ font-variant-numeric:tabular-nums;
+}
+.lav-sel-evidence{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.5;color:var(--text2,#3c4257);padding:2px 4px;cursor:pointer;}
+.lav-sel-evidence input{margin-top:2px;}
+.lav-sel-evidence.ev-off{opacity:.5;pointer-events:none;}
+.lav-blocked-memo{
+ width:100%;box-sizing:border-box;font-family:inherit;font-size:14px;line-height:1.6;
+ padding:11px 13px;border:1.5px solid #c9cce6;border-radius:10px;background:#fff;color:var(--text,#1f2437);
+ resize:vertical;min-height:56px;margin:10px 0 2px;
+}
+.lav-blocked-memo:focus{outline:none;border-color:#5a5bd8;box-shadow:0 0 0 3px rgba(90,91,216,.15);}
+body.dark .lav-sel-card{background:var(--card,#1d1e2d);border-color:rgba(255,255,255,.14);color:var(--text,#e8e9f5);}
+body.dark .lav-sel-card.accent{border-color:rgba(138,140,240,.6);}
+body.dark .lav-sel-cost{color:#b4b6ff;background:rgba(138,140,240,.14);}
+body.dark .lav-blocked-memo{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2);color:var(--text,#e8e9f5);}

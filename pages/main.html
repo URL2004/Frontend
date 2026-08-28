@@ -1,4 +1,4 @@
-<div id="mainContent">
+﻿<div id="mainContent">
  <div id="lowbanner" class="lowbanner" style="display:none">
    <span>크레딧이 부족합니다</span>
    <button class="chargbtn" onclick="switchTab('pricing')">충전하기</button>
@@ -246,8 +246,8 @@
            <p class="lav-rep-note" id="lavRepRemain"></p>
          </section>
 
-         <!-- 분석 결과 + 목적 선택(한 화면) -->
-         <section class="lav-flow-card lav-choose" data-flow="choose" hidden>
+         <!-- 분석 결과 + 처리 방식 3택(한 화면) — 2026-08-28 흐름 단순화: 카드 클릭 = 선택 + 확인 모달 직행 -->
+         <section class="lav-flow-card lav-choose" data-flow="select" hidden>
            <!-- ① 진단 요약 -->
            <div class="lav-diag2">
              <span class="lav-diag-grade" id="lavDiagGrade">C</span>
@@ -275,10 +275,15 @@
              기본과 고급 모두 원문의 수치·기관·인용을 보호합니다. <b>고급 휴머나이징</b>은 문장을 더 넓게 재구성하면서 모든 글에 의미 검증을 적용하므로 긴 보고서·논문에 더 적합해요. 다만 자동 검증도 완벽하지 않으니 제출 전 핵심 수치와 인용은 원문과 한 번 대조해 주세요.
            </div>
 
-           <!-- ② 목적 선택 — 2갈래로 명확하게(아이콘+제목 한 줄, 설명 1줄, 주의문구는 풋노트) -->
-           <h3 class="lav-flow-h">목적을 골라주세요</h3>
-           <div class="lav-purpose-grid">
-             <button type="button" class="lav-purpose-opt" onclick="lavRunPolish()">
+           <!-- ② 처리 방식 3택 — 카드에 인라인 비용, 클릭 즉시 확인 모달(단계 축소) -->
+           <h3 class="lav-flow-h">처리 방식을 골라주세요</h3>
+           <!-- 기존 설정 수집·잠금·추천 로직(currentSettings·applyAdvancedRouting)이 그대로 쓰는 숨김 라디오 — 카드가 값을 정한다 -->
+           <div hidden aria-hidden="true">
+             <input type="radio" name="lavTone" value="blog" checked>
+             <input type="radio" name="lavTone" value="formal">
+           </div>
+           <div class="lav-select-grid">
+             <button type="button" class="lav-sel-card" id="lavCardPolish" onclick="lavRunPolish()">
                <span class="lav-purpose-head">
                  <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">edit_note</span></span>
                  <span class="lav-purpose-t">
@@ -287,154 +292,85 @@
                  </span>
                </span>
                <p>원문의 장르와 말투를 유지하면서 비문·띄어쓰기·어색한 연결·중복 표현만 정리해요.</p>
+               <em class="lav-sel-cost" id="lavCostPolish">비용 계산 중</em>
                <span class="lav-purpose-caveat">문장을 넓게 다시 쓰는 휴머나이징 기능은 아니에요</span>
              </button>
-             <button type="button" class="lav-purpose-opt accent" onclick="lavFlowGo('reduce')">
-               <span class="lav-purpose-reco">추천</span>
+             <button type="button" class="lav-sel-card accent" id="lavCardBasic" onclick="lavSelectTone('blog')">
+               <span class="lav-purpose-reco" id="lavBasicRecommended">추천</span>
                <span class="lav-purpose-head">
                  <span class="lav-purpose-ico reduce" aria-hidden="true"><span class="material-symbols-outlined">shield</span></span>
                  <span class="lav-purpose-t">
-                   <strong>AI 티 줄이기</strong>
+                   <strong>기본 휴머나이징</strong>
                    <em class="lav-purpose-band">장르를 보존하는 휴머나이징</em>
                  </span>
                </span>
-               <p>원문의 장르·화자·사실을 지키면서 AI식 반복과 지나치게 균일한 문장 흐름이 있는 부분을 자연스럽게 다시 구성해요.</p>
+               <p>원문의 장르·말투·사실을 지키면서 AI식 반복·상투어·균일한 문장 흐름이 두드러진 부분을 자연스럽게 다시 구성해요.</p>
+               <em class="lav-sel-cost" id="lavCostBlog">비용 계산 중</em>
                <span class="lav-purpose-caveat strong">AI 티 지수는 글·외부 검사기에 따라 달라지며 보장값이 아니에요</span>
              </button>
-           </div>
-         </section>
-
-         <!-- 회피 설정 — 필수(어투·문체)만 펼쳐 보이고, 선택 옵션(경험·관점/근거)은 접어둔다 -->
-         <section class="lav-flow-card lav-reduce" data-flow="reduce" hidden>
-           <div class="lav-set-block">
-             <div class="lav-set-label"><strong>처리 방식</strong><span>글의 길이와 검증 필요성에 맞게 선택하세요</span></div>
-             <div class="lav-tone-grid">
-               <label class="lav-tone-opt">
-                 <input type="radio" name="lavTone" value="blog" checked onchange="lavToneChange(true)">
-                 <span class="lav-tone-body">
-                   <b>기본 휴머나이징 <u class="rec" id="lavBasicRecommended">추천</u></b>
-                   <i>
-                     <span class="ln">원문의 장르·말투·사실을 지키면서 AI식 반복·상투어·균일한 흐름이 두드러진 문장을 다시 구성해요.</span>
-                     <span class="ln hl">이미 자연스러운 문장은 덜 바꾸고, 위험 신호가 많을수록 더 넓게 손보며 필요하면 의미까지 검증해요.</span>
-                   </i>
-                   <em class="lav-tone-chips"><span>일반 글 추천</span><span>길이별 시간 계산</span><span>최소 10크레딧</span><span>100자당 2크레딧</span></em>
+             <div class="lav-sel-stack">
+               <button type="button" class="lav-sel-card" id="lavCardFormal" onclick="lavSelectTone('formal')">
+                 <span class="lav-purpose-reco" id="lavFormalRecommended" hidden>추천</span>
+                 <span class="lav-purpose-head">
+                   <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">science</span></span>
+                   <span class="lav-purpose-t">
+                     <strong>고급 휴머나이징</strong>
+                     <em class="lav-purpose-band">넓은 재구성 + 전 문서 정밀 검증</em>
+                   </span>
                  </span>
+                 <p>기본보다 더 넓은 문장 범위를 재구성하고, 모든 글에 의미·사실·구조 정밀 검증을 적용해요. 긴 논문·보고서에 적합해요.</p>
+                 <em class="lav-sel-cost" id="lavCostFormal">비용 계산 중</em>
+                 <span class="lav-purpose-caveat" id="lavFormalLockNote" hidden>이 글에서는 선택할 수 없어요</span>
+               </button>
+               <label class="lav-sel-evidence" id="lavEvidenceRow">
+                 <input type="checkbox" id="lavEvidence" onchange="lavEvidenceChange()">
+                 <span><b>근거 보강</b> +100크레딧 — 자료를 검색해 보여드리고, 직접 승인한 것만 결과에 사용해요</span>
                </label>
-               <label class="lav-tone-opt">
-                 <input type="radio" name="lavTone" value="formal" onchange="lavToneChange(true)">
-                 <span class="lav-tone-body">
-                   <b>고급 휴머나이징 <u class="rec" id="lavFormalRecommended" hidden>추천</u><u class="lock-tag">현재 선택 불가</u></b>
-                   <i>
-                     <span class="ln">기본보다 더 넓은 문장 범위를 재구성하고, 모든 글에 모델 기반 의미·사실·구조 정밀 검증을 적용해요.</span>
-                     <span class="ln hl">긴 논문·보고서처럼 구조가 복잡한 글에 적합하고, 직접 승인한 근거만 추가할 수 있어요.</span>
-                   </i>
-                   <em class="lav-tone-chips"><span>긴 글·복잡한 글 추천</span><span>모든 글 의미 검증</span><span>200~600크레딧</span><span>근거 사용 시 +100</span></em>
-                 </span>
-               </label>
+               <p class="lav-evidence-note" id="lavEvidenceNote" hidden>검색과 검수 단계가 추가되어 기본 예상 시간보다 약 8분 이상 더 걸릴 수 있어요.</p>
              </div>
-             <div class="lav-basic-style" id="lavBasicStyleBlock">
-               <div class="lav-set-label"><strong>문체 보조 힌트</strong><span>장르 판별과 별개로 단어 선택과 문장 연결의 친근함·격식을 조정해요</span></div>
-               <div class="lav-radio-row">
-                 <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="blog" checked onchange="lavBasicStyleChange()"><span>블로그·후기에 가까워요<i>원문 말투를 지키며 단어와 연결을 조금 더 친근하게</i></span></label>
-                 <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="report" onchange="lavBasicStyleChange()"><span>과제·보고서에 가까워요<i>원문 구조와 종결체를 지키며 격식과 정확성을 유지</i></span></label>
-               </div>
-             </div>
-             <div class="lav-document-profile" id="lavDocumentProfileBlock">
-               <label for="lavDocumentProfile"><strong>글 종류</strong><span>자동 판별을 권장해요. 판정이 애매한 글만 직접 골라 주세요.</span></label>
-               <select id="lavDocumentProfile" onchange="lavDocumentProfileChange()">
-                 <option value="">자동 판별 (권장)</option>
-                 <option value="academic_paper">논문·학술글</option>
-                 <option value="report_assignment">과제·보고서</option>
-                 <option value="long_explainer">전문 설명·장문 해설</option>
-                 <option value="clinical_record">임상·전문 기록</option>
-                 <option value="legal_contract">계약서·약관</option>
-                 <option value="student_record_teacher">세특·교사 관찰 기록</option>
-                 <option value="student_self_assessment">학생 자기평가</option>
-                 <option value="resume_application">자소서·지원서</option>
-                 <option value="personal_essay">개인 에세이</option>
-                 <option value="review_blog">후기·블로그</option>
-                 <option value="marketing">홍보·광고</option>
-                 <option value="social">SNS 글</option>
-                 <option value="mail_notice">메일·안내문</option>
-                 <option value="creative">시·창작문</option>
-                 <option value="general">일반 글</option>
-               </select>
-               <p id="lavDocumentProfileHint">선택해도 원문에서 장르가 뚜렷하면 안전을 위해 자동 판정을 우선합니다.</p>
-             </div>
-             <p class="lav-tone-variance"><b>기본은 원문 상태에 따라 변환 강도가 달라지고, 고급은 더 넓게 재구성하며 모든 글을 의미 검증해요.</b> 두 모드 모두 장르·화자·사실을 보호하며, 외부 검사 점수는 보장되지 않아요.</p>
-             <p class="lav-tone-advanced-note" id="lavToneAdvancedNote" role="status" hidden><b>이 글에는 고급을 권장해요.</b> <span id="lavToneAdvancedText"></span></p>
-             <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>이 글은 개인 경험·관찰을 그대로 지키는 것이 중요해요. <b>기본 휴머나이징에도 해당 장르 보존 규칙과 의미 검증이 적용</b>됩니다. 고급은 더 넓게 재구성하므로 이 유형에는 기본을 권장합니다.</p>
            </div>
-
-           <div class="lav-set-block" id="lavLenBlock" hidden>
-             <input type="hidden" name="lavLen" value="keep">
-             <div class="lav-set-label"><strong>결과 분량</strong><span>원문에 가깝게 유지</span></div>
-             <p class="lav-tone-variance">고급 휴머나이징은 요약·분량 축소 기능이 아니에요. 의미와 구조를 지키면서 원문 길이에 가깝게 다시 구성합니다.</p>
-           </div>
-
-           <!-- 선택 옵션: 경험·관점 넣기(자동 코칭 ↔ 직접 메모) — 접힌 아코디언, 펼치면 상세 -->
-           <details class="lav-set-block lav-opt-acc" id="lavPersonalBlock">
+           <p class="lav-tone-advanced-note" id="lavToneAdvancedNote" role="status" hidden><b>이 글에는 고급을 권장해요.</b> <span id="lavToneAdvancedText"></span></p>
+           <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>이 글은 개인 경험·관찰을 그대로 지키는 것이 중요해요. <b>기본 휴머나이징에도 해당 장르 보존 규칙과 의미 검증이 적용</b>됩니다. 고급은 더 넓게 재구성하므로 이 유형에는 기본을 권장합니다.</p>
+           <p class="lav-tone-variance"><b>세 방식 모두 장르·화자·사실을 보호합니다.</b> 외부 검사 점수는 글과 도구에 따라 달라지며 보장되지 않아요.</p>
+           <!-- 세부 설정(선택) — 기본값 자동. 오판별 같은 소수 케이스의 탈출구만 남긴다(2026-08-28 흐름 단순화 D1) -->
+           <details class="lav-set-block lav-opt-acc" id="lavDetailBlock">
              <summary class="lav-acc-sum">
-               <span class="lav-acc-main"><strong>내 경험·관점 넣기</strong><em class="lav-acc-opt">추천</em></span>
-               <span class="lav-acc-desc">직접 겪은 경험이나 확인한 사례를 적어주면 추상적인 문장을 더 구체적으로 다듬는 데 도움이 돼요. <b>실제로 아는 내용만</b> 한두 줄 적어주세요.</span>
+               <span class="lav-acc-main"><strong>세부 설정</strong><em class="lav-acc-opt">선택</em></span>
+               <span class="lav-acc-desc">기본값(자동 판별·자동 문체)으로 충분해요. 판정이 애매한 글만 직접 지정하세요.</span>
                <svg class="lav-acc-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
              </summary>
              <div class="lav-acc-body">
-               <div id="lavAutoCoachBlock">
-                 <label class="lav-toggle">
-                   <input type="checkbox" id="lavAutoCoach" onchange="lavAutoCoachChange()">
-                   <span class="lav-toggle-track" aria-hidden="true"><i></i></span>
-                   <span class="lav-toggle-text">
-                     <b>자동 코칭</b>
-                     <i>시작 전에 원문과 어울리는 관점·경험 후보를 보여줘요. 실제 내 생각이나 경험에 맞는 항목만 고르면 글에 반영돼요.</i>
-                   </span>
-                 </label>
-                 <p class="lav-memo-toggle-hint" id="lavMemoToggleHint"><button type="button" class="lav-linkbtn" onclick="lavMemoManual()">경험 메모 직접 입력</button></p>
-                 <p class="lav-evidence-hint" id="lavAutoCoachHint" hidden>‘고급 휴머나이징’을 선택하면 켤 수 있어요.</p>
+               <div class="lav-basic-style" id="lavBasicStyleBlock">
+                 <div class="lav-set-label"><strong>문체 보조 힌트</strong><span>기본 휴머나이징에서 단어 선택과 문장 연결의 친근함·격식을 조정해요</span></div>
+                 <div class="lav-radio-row">
+                   <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="blog" checked onchange="lavBasicStyleChange()"><span>블로그·후기에 가까워요<i>원문 말투를 지키며 단어와 연결을 조금 더 친근하게</i></span></label>
+                   <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="report" onchange="lavBasicStyleChange()"><span>과제·보고서에 가까워요<i>원문 구조와 종결체를 지키며 격식과 정확성을 유지</i></span></label>
+                 </div>
                </div>
-
-               <div id="lavMemoBlock" hidden>
-                 <p class="lav-memo-intro">아는 칸만 적으면 되고, 모두 비워도 진행할 수 있어요. <b>적어주신 내용만 추가 정보로 사용해요.</b></p>
-
-                 <div class="lav-memo-field">
-                   <div class="lav-memo-flabel is-key"><b>① 직접 겪은 일·경험</b><span>실제로 겪은 내용만 입력</span></div>
-                   <textarea class="lav-memo" id="lavMemoExp" rows="2" placeholder="예) 작년 여름 ○○기관에서 3주간 봉사하며 ~한 점을 직접 봤다"></textarea>
-                 </div>
-                 <div class="lav-memo-field">
-                   <div class="lav-memo-flabel"><b>② 구체적인 사례·예시</b><span>추상적인 문장을 구체화할 때 참고</span></div>
-                   <textarea class="lav-memo" id="lavMemoCase" rows="2" placeholder="예) 우리 팀은 ~방식을 도입해 처리 시간을 절반으로 줄였다"></textarea>
-                 </div>
-                 <div class="lav-memo-field">
-                   <div class="lav-memo-flabel"><b>③ 정확히 아는 수치·출처</b><span>직접 확인할 수 있는 정보만 입력</span></div>
-                   <textarea class="lav-memo" id="lavMemoNum" rows="2" placeholder="예) 본문의 ○○% 수치는 내가 읽은 △△ 보고서 기준이다"></textarea>
-                 </div>
-                 <div class="lav-memo-field">
-                   <div class="lav-memo-flabel"><b>④ 내 생각·입장</b><span>글에 분명히 드러내고 싶은 내 판단</span></div>
-                   <textarea class="lav-memo" id="lavMemoView" rows="2" placeholder="예) 나는 이 문제의 핵심이 ~라고 본다 / ~점이 가장 중요하다고 생각한다"></textarea>
-                 </div>
+               <div class="lav-document-profile" id="lavDocumentProfileBlock">
+                 <label for="lavDocumentProfile"><strong>글 종류</strong><span>자동 판별을 권장해요. 판정이 애매한 글만 직접 골라 주세요.</span></label>
+                 <select id="lavDocumentProfile" onchange="lavDocumentProfileChange()">
+                   <option value="">자동 판별 (권장)</option>
+                   <option value="academic_paper">논문·학술글</option>
+                   <option value="report_assignment">과제·보고서</option>
+                   <option value="long_explainer">전문 설명·장문 해설</option>
+                   <option value="clinical_record">임상·전문 기록</option>
+                   <option value="legal_contract">계약서·약관</option>
+                   <option value="student_record_teacher">세특·교사 관찰 기록</option>
+                   <option value="student_self_assessment">학생 자기평가</option>
+                   <option value="resume_application">자소서·지원서</option>
+                   <option value="personal_essay">개인 에세이</option>
+                   <option value="review_blog">후기·블로그</option>
+                   <option value="marketing">홍보·광고</option>
+                   <option value="social">SNS 글</option>
+                   <option value="mail_notice">메일·안내문</option>
+                   <option value="creative">시·창작문</option>
+                   <option value="general">일반 글</option>
+                 </select>
+                 <p id="lavDocumentProfileHint">선택해도 원문에서 장르가 뚜렷하면 안전을 위해 자동 판정을 우선합니다.</p>
                </div>
              </div>
            </details>
-
-           <!-- 근거 보강은 고급 휴머나이징 전용 — 기본에선 잠금(한 줄로 축소) -->
-           <div class="lav-set-block ev-off" id="lavEvidenceBlock">
-             <label class="lav-toggle">
-               <input type="checkbox" id="lavEvidence" onchange="lavEvidenceChange()" disabled>
-               <span class="lav-toggle-track" aria-hidden="true"><i></i></span>
-               <span class="lav-toggle-text">
-                 <b>근거 보강 <u class="only">고급 전용</u></b>
-                 <i>
-                   <span class="ln">주제와 맞는 자료 후보(통계·연구·기관)를 찾아 보여 드려요. 직접 승인한 자료만 결과에 사용합니다.</span>
-                   <span class="ln">근거가 부족한 주장을 보완할 때만 사용하고, 승인하지 않은 자료는 글에 넣지 않아요.</span>
-                   <span class="ln hl">원문에 근거가 충분하면 켜지 않아도 돼요. 외부 검사 점수 개선을 보장하는 옵션은 아니에요.</span>
-                 </i>
-               </span>
-             </label>
-             <p class="lav-evidence-note" id="lavEvidenceNote" hidden>검색과 검수 단계가 추가되어 기본 예상 시간보다 약 8분 이상 더 걸릴 수 있어요.</p>
-             <p class="lav-evidence-hint" id="lavEvidenceHint">‘고급 휴머나이징’을 선택하면 켤 수 있어요.</p>
-           </div>
-
-           <button type="button" class="lav-flow-cta lav-flow-cta-split" onclick="lavOpenConfirm()"><span>AI 티 줄이기 시작</span><small id="lavCtaMeta">입력 길이에 따라 시간·비용 계산</small></button>
          </section>
 
          <!-- 4) 작업 상태 -->
@@ -478,10 +414,12 @@
            <div id="lavBlockedAbstract" class="lav-blocked-abstract" hidden>
              <div class="lav-blocked-abstract-title">이 부분이 두루뭉술해서 AI 티 줄이기가 어려워요</div>
              <ul id="lavBlockedAbstractList" class="lav-blocked-abstract-list"></ul>
-             <div class="lav-blocked-abstract-tip">위 내용과 관련된 <b>실제 경험·사례·수치</b>를 경험 메모에 적고 다시 도전하면, 그 부분을 더 구체적이고 자연스럽게 바꿀 수 있어요.</div>
+             <div class="lav-blocked-abstract-tip">위 내용과 관련된 <b>실제 경험·사례·수치</b>를 한 줄 적고 다시 도전하면, 그 부분을 더 구체적이고 자연스럽게 바꿀 수 있어요.</div>
            </div>
+           <!-- 인라인 경험 메모(2026-08-28 D6): 설정 화면 아코디언 제거로, 재도전 메모는 차단 화면에서 바로 받는다 -->
+           <textarea class="lav-blocked-memo" id="lavBlockedMemo" rows="2" maxlength="500" placeholder="예) 작년 겨울 편의점 야간 알바에서 정산이 30분 늦어 막차를 놓친 적이 있다 — 실제 겪은 일만 한 줄"></textarea>
            <div class="lav-blocked-actions">
-             <button type="button" class="lav-flow-cta" onclick="lavBlockedRetryMemo()">경험 메모 넣고 다시 도전</button>
+             <button type="button" class="lav-flow-cta" onclick="lavBlockedRetryMemo()">메모 반영해 다시 도전</button>
              <button type="button" id="lavBlockedEvidence" class="lav-blocked-2nd" onclick="lavBlockedRetryEvidence()" hidden>근거 보강 켜고 다시 도전</button>
              <button type="button" id="lavBlockedFallback" class="lav-blocked-2nd" onclick="lavBlockedAcceptFallback()" hidden>원문 보존 다듬기로 받기</button>
              <button type="button" class="lav-blocked-cancel" onclick="lavBlockedCancel()">취소</button>
