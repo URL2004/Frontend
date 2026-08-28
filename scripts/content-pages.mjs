@@ -57,6 +57,15 @@ footer.site{border-top:1px solid var(--line);margin-top:30px}
 footer.site .wrap{padding:22px 20px 40px;font-size:12.5px;color:var(--muted);line-height:1.7}
 footer.site a{color:var(--muted)}
 img{max-width:100%}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin:26px 0}
+.hub-card{display:flex;flex-direction:column;gap:7px;border:1px solid var(--line);border-radius:12px;background:var(--card);padding:18px;text-decoration:none;color:var(--ink);transition:border-color .15s}
+.hub-card:hover,.hub-card:focus-visible{border-color:var(--accent)}
+.hub-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hub-cat{font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--deep)}
+.hub-card strong{font-size:16.5px;line-height:1.4;word-break:keep-all}
+.hub-card p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.6}
+.hub-card time{font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.hub-card{transition:none}}
 `;
 
 function pageShell({ title, description, url, breadcrumbs, bodyHtml, ldBlocks }) {
@@ -206,8 +215,69 @@ ${relatedBlock(tpl.related, allArticles)}
   });
 }
 
+// 블로그 허브(/blog)도 완전 독립 페이지(2026-08-28 사장님 결정) — 앱 셸 밖의 정적 문서.
+function hubPage() {
+  const url = `${SITE}/blog`;
+  const ld = [
+    jsonLd({
+      '@context': 'https://schema.org',
+      '@type': 'Blog',
+      name: '교수님 피하기 블로그',
+      url,
+      description: 'AI 초안을 자연스럽게 다듬을 때 확인할 기준을 정리한 실전 가이드 모음.',
+      publisher: { '@type': 'Organization', name: '교수님 피하기', url: SITE }
+    }),
+    jsonLd({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: '홈', item: `${SITE}/` },
+        { '@type': 'ListItem', position: 2, name: '블로그', item: url }
+      ]
+    })
+  ];
+  const cards = BLOG_ARTICLES.map((a) => `
+<a class="hub-card" href="/blog/${a.slug}">
+<span class="hub-cat">${esc(a.category)}</span>
+<strong>${esc(a.title)}</strong>
+<p>${esc(a.description)}</p>
+<time>${a.date}</time>
+</a>`).join('\n');
+  const tplLinks = TEMPLATE_PAGES.map((t) => `<a href="/templates/${t.genre}/${t.subtype}">${esc(t.title)} →</a>`).join('\n');
+  const body = `
+<article>
+<h1>교수님 피하기 블로그</h1>
+<p class="lead">AI 초안을 다듬을 때 확인해야 할 기준을 짧고 구체적으로 정리했습니다. 점수 보장이 아니라, 사실을 지키면서 자연스럽게 만드는 방법을 다룹니다.</p>
+<div class="hub-grid">
+${cards}
+</div>
+<section class="related"><h2>빈칸 채우기 입력 템플릿</h2>
+${tplLinks}
+</section>
+<div class="cta-box">
+<strong>읽는 것보다 빠른 확인</strong>
+<p>글을 붙여넣으면 문단별 AI 문체 신호를 바로 보여드립니다. 가입 시 10크레딧 제공, 실패한 작업은 차감되지 않아요.</p>
+<a href="/">무료 10크레딧으로 시작하기</a>
+</div>
+</article>`;
+  return pageShell({
+    title: '교수님 피하기 블로그 – AI 글 다듬기 실전 가이드',
+    description: 'AI 티 줄이기, 감지 점수 읽는 법, 제출 전 사실 확인, 크레딧 계산까지 — AI 초안을 다듬는 실전 기준을 정리한 블로그입니다.',
+    url,
+    breadcrumbs: [{ name: '홈', url: '/' }, { name: '블로그' }],
+    bodyHtml: body,
+    ldBlocks: ld
+  });
+}
+
 export async function generateContentPages({ dist }) {
   const written = [];
+  {
+    const out = path.join(dist, 'blog', 'index.html');
+    await fs.mkdir(path.dirname(out), { recursive: true });
+    await fs.writeFile(out, hubPage(), 'utf8');
+    written.push('blog(허브)');
+  }
   for (const article of BLOG_ARTICLES) {
     const out = path.join(dist, 'blog', article.slug, 'index.html');
     await fs.mkdir(path.dirname(out), { recursive: true });
@@ -223,9 +293,11 @@ export async function generateContentPages({ dist }) {
   return written;
 }
 
-// 사이트맵 편입용 공개 콘텐츠 URL 목록
+// 사이트맵 편입용 공개 콘텐츠 URL 목록(허브 포함 — 허브는 SPA 프리렌더 라우트에서 독립 페이지로 분리됨)
 export function contentUrls() {
+  const latest = BLOG_ARTICLES.map((a) => a.date).sort().pop();
   return [
+    { url: '/blog', date: latest },
     ...BLOG_ARTICLES.map((a) => ({ url: `/blog/${a.slug}`, date: a.date })),
     ...TEMPLATE_PAGES.map((t) => ({ url: `/templates/${t.genre}/${t.subtype}`, date: t.date }))
   ];

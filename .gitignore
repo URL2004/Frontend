@@ -14,3 +14,7 @@ ga4-oauth-client*.json
 dist/
 
 .vercel
+
+# 빌드 산출 정적 콘텐츠(블로그 허브·기사·입력 템플릿) — scripts/blog-data.mjs·templates-data.mjs가 원천
+/blog/
+/templates/

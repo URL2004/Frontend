@@ -53,17 +53,8 @@ export const ROUTES = [
     breadcrumb: '커뮤니티',
     faq: false
   },
-  {
-    out: 'blog/index.html',
-    url: '/blog',
-    partial: 'blog.html',
-    title: '블로그 – AI 티 줄이는 글쓰기 · 과제 문장 다듬기 | 교수님 피하기',
-    h1: '교수님 피하기 블로그',
-    description:
-      'AI가 쓴 것처럼 보이는 문장을 자연스럽게 다듬는 방법을 정리한 블로그 허브입니다. 과제, 자기소개서, 리포트, 블로그 글쓰기 가이드를 확인하세요.',
-    breadcrumb: '블로그',
-    faq: false
-  },
+  // /blog 허브는 2026-08-28부터 SPA 프리렌더가 아니라 content-pages.mjs의 완전 독립 정적 페이지
+  // (사이트맵 등록은 contentUrls()가 담당). 여기 다시 추가하면 독립 허브를 SPA 셸로 덮어쓰게 되니 금지.
   {
     out: 'detect-report/index.html',
     url: '/detect-report',

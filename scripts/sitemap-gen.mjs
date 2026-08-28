@@ -39,8 +39,8 @@ export async function generateSitemap({ root, dist }) {
     '  <url>',
     `    <loc>${SITE}${c.url}</loc>`,
     `    <lastmod>${c.date}</lastmod>`,
-    '    <changefreq>monthly</changefreq>',
-    `    <priority>${c.url.startsWith('/blog/') ? '0.6' : '0.5'}</priority>`,
+    `    <changefreq>${c.url === '/blog' ? 'weekly' : 'monthly'}</changefreq>`,
+    `    <priority>${c.url === '/blog' ? '0.8' : c.url.startsWith('/blog/') ? '0.6' : '0.5'}</priority>`,
     '  </url>'
   ].join('\n'));
   const entries = [...routeEntries, ...contentEntries].join('\n');
