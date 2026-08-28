@@ -191,3 +191,10 @@ test('크레딧 계산기: 공용 단가 모듈이 evasion-flow 공식과 같은
   const boot = await read('assets/js/app-boot.js');
   assert.match(boot, /credit-pricing\.js/u);
 });
+
+test('랜딩(홈) 푸터는 블로그·요금 등으로 가는 크롤러블 실링크를 가진다', async () => {
+  const landing = await read('pages/landing.html');
+  for (const href of ['/blog', '/pricing', '/guide', '/faq', '/qna']) {
+    assert.ok(landing.includes(`<a href="${href}">`), `랜딩 푸터에 ${href} 실링크 부재`);
+  }
+});
