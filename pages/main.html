@@ -518,6 +518,13 @@
              <button type="button" class="ghost" onclick="lavDoneCopy(this)">복사</button>
              <button type="button" onclick="lavDoneDownload()">다운로드 (.md)</button>
            </div>
+           <!-- 사후 문단 보강(코칭 프레이밍): 결과 품질 경고가 아니라 "원문에 없던 구체성"을 사용자 한 줄로 여는 섹션 -->
+           <div class="lav-done-refine" id="lavDoneRefine" hidden>
+             <strong class="lav-refine-title">✍️ 더 사람답게 — 실제 경험 한 줄</strong>
+             <p class="lav-refine-lead">자연스러운 문장 다듬기는 이미 끝났어요. 위 결과에서 <b class="lav-refine-mark-sample">보라색으로 칠해진 문단</b>은 <b>원문에 구체적인 장면·수치가 없어서</b>, 지어내지 않는 한 어떤 도구도 채울 수 없는 부분이에요. 실제 겪은 일 한 줄이면 그 문단만 다시 다듬어 드려요.</p>
+             <div id="lavDoneRefineList"></div>
+             <p class="lav-refine-ok" id="lavDoneRefineOk" hidden>✓ 모든 문단에 구체적인 내용이 충분해요 — 보강 없이 그대로 써도 좋아요.</p>
+           </div>
            <!-- 다음 작업 안내(1순위): 결과를 다 챙긴 뒤, 잔액이 다음 작업 최소치에 못 미칠 때만.
                 금액은 추정이 아니라 이번 작업 전후 잔액 차이 — 방금 일어난 사실만 말한다. -->
            <div class="lav-done-next" id="lavDoneNext" hidden>

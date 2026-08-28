@@ -17592,3 +17592,103 @@ body.gp-modal-open{overflow:hidden;}
  color:#8f96b8;
  text-align:center;
 }
+/* ===== 사후 문단 보강(refine): 결과 아래 코칭 섹션 — 경고가 아닌 성장 프레임(경고색 금지) ===== */
+
+/* 결과 본문 안 문단 강조 — 보강 대상은 본문에서 바로 보이게 */
+.lav-para{white-space:pre-wrap;}
+.lav-para.is-refine-target{
+ display:block;
+ background:rgba(90,91,216,.10);
+ border-left:3px solid #5a5bd8;
+ border-radius:6px;
+ padding:8px 10px;
+ margin:2px 0;
+}
+.lav-para.is-refine-target::before{
+ content:'✍️ 실제 경험 넣기 추천';
+ display:table;   /* 칩만 한 줄 차지(shrink-wrap) — 본문은 다음 줄부터 */
+ font-size:12px;
+ font-weight:700;
+ color:#4749c9;
+ background:#fff;
+ border:1px solid rgba(90,91,216,.45);
+ border-radius:999px;
+ padding:2px 10px;
+ margin:0 0 6px;
+ white-space:nowrap;
+}
+.lav-para.is-refreshed{animation:lavRefinePulse 1.8s ease;}
+.lav-para.is-pulse{animation:lavRefinePulse 1.3s ease;}
+@keyframes lavRefinePulse{0%{background:rgba(90,91,216,.28);}100%{background:transparent;}}
+
+.lav-done-refine{
+ margin-top:20px;
+ padding:18px;
+ border:1px solid rgba(90,91,216,.30);
+ border-left:4px solid #5a5bd8;
+ border-radius:12px;
+ background:#f6f6ff;
+}
+.lav-refine-title{display:block;font-size:16px;font-weight:800;color:var(--text,#1f2437);margin-bottom:8px;}
+.lav-refine-lead{font-size:13.5px;line-height:1.65;color:var(--text2,#3c4257);margin:0 0 12px;}
+.lav-refine-mark-sample{background:rgba(90,91,216,.18);border-radius:4px;padding:1px 5px;color:#4749c9;}
+.lav-refine-card{padding:14px 0 4px;border-top:1px dashed #cfd2ea;}
+.lav-refine-card:first-child{border-top:0;padding-top:2px;}
+.lav-refine-quote{margin:0 0 8px;font-size:13.5px;line-height:1.6;color:var(--text,#1f2437);background:rgba(90,91,216,.10);border-left:3px solid #5a5bd8;padding:10px 12px;border-radius:8px;cursor:pointer;}
+.lav-refine-quote:hover{background:rgba(90,91,216,.16);}
+.lav-refine-hint{font-size:13px;line-height:1.6;color:var(--text2,#3c4257);margin:0 0 10px;}
+/* "뭘 써야 할지" 가이드 — 한 줄 공식 3가지 */
+.lav-refine-guide{display:flex;flex-direction:column;gap:5px;margin:0 0 12px;padding:10px 12px;background:#fff;border:1px solid #e2e4f2;border-radius:10px;}
+.lav-refine-guide b{font-size:13px;color:var(--text,#1f2437);margin-bottom:2px;}
+.lav-refine-guide span{font-size:13px;line-height:1.55;color:var(--text2,#3c4257);}
+.lav-refine-guide span i{font-style:normal;font-weight:700;color:#4749c9;margin-right:6px;}
+.lav-refine-row{display:flex;flex-direction:column;gap:10px;}
+.lav-refine-input{
+ width:100%;
+ box-sizing:border-box;
+ font-size:15px;
+ line-height:1.6;
+ font-family:inherit;
+ padding:12px 14px;
+ border:1.5px solid #c9cce6;
+ border-radius:10px;
+ background:#fff;
+ color:var(--text,#1f2437);
+ resize:vertical;
+ min-height:64px;
+}
+.lav-refine-input::placeholder{color:#9aa0bd;}
+.lav-refine-input:focus{outline:none;border-color:#5a5bd8;box-shadow:0 0 0 3px rgba(90,91,216,.15);}
+.lav-refine-btn{
+ width:100%;
+ font-size:14.5px;
+ font-weight:700;
+ padding:13px 16px;
+ border-radius:10px;
+ border:0;
+ background:#5a5bd8;
+ color:#fff;
+ cursor:pointer;
+}
+.lav-refine-btn:hover{background:#4749c9;}
+.lav-refine-btn:disabled{opacity:.55;cursor:default;}
+.lav-refine-status{font-size:13px;line-height:1.55;margin:9px 0 0;color:var(--text2,#3c4257);}
+.lav-refine-status.is-error{color:#d23f3f;}
+.lav-refine-ok{font-size:13.5px;font-weight:600;color:#1e8e3e;margin:0;}
+.lav-refine-status[hidden],.lav-refine-ok[hidden],.lav-done-refine[hidden]{display:none !important;}
+
+body.dark .lav-para.is-refine-target{background:rgba(120,122,255,.14);border-left-color:#8a8cf0;}
+body.dark .lav-para.is-refine-target::before{background:rgba(20,22,40,.9);color:#b4b6ff;border-color:rgba(138,140,240,.5);}
+body.dark .lav-done-refine{background:rgba(90,91,216,.10);border-color:rgba(138,140,240,.35);border-left-color:#8a8cf0;}
+body.dark .lav-refine-title{color:var(--text,#e8eaf6);}
+body.dark .lav-refine-lead,body.dark .lav-refine-hint,body.dark .lav-refine-status{color:var(--text2,#c3c6dd);}
+body.dark .lav-refine-mark-sample{background:rgba(120,122,255,.22);color:#b4b6ff;}
+body.dark .lav-refine-card{border-top-color:rgba(255,255,255,.14);}
+body.dark .lav-refine-quote{background:rgba(120,122,255,.14);color:var(--text,#e8eaf6);border-left-color:#8a8cf0;}
+body.dark .lav-refine-guide{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14);}
+body.dark .lav-refine-guide b{color:var(--text,#e8eaf6);}
+body.dark .lav-refine-guide span{color:var(--text2,#c3c6dd);}
+body.dark .lav-refine-guide span i{color:#b4b6ff;}
+body.dark .lav-refine-input{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2);color:var(--text,#e8eaf6);}
+body.dark .lav-refine-input::placeholder{color:#7d84a8;}
+body.dark .lav-refine-ok{color:#4ade80;}
