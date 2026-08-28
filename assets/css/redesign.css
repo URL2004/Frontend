@@ -17754,3 +17754,7 @@ a.mnav-btn,a.snav-btn{display:flex;}
 body.dark .gp-calc,body.dark .gp-calc-cell{border-color:rgba(255,255,255,.14);}
 body.dark .gp-calc-cell em b{color:#b4b6ff;}
 body.dark .gp-calc-input-row input{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2);color:var(--text,#e8e9f5);}
+
+/* 앵커 전환된 CTA의 기본 링크 스타일 유출 방지(2026-08-28) */
+.gp-seo-actions a.gp-seo-primary,.gp-blog-feature a.gp-seo-primary{text-decoration:none;color:#fff;}
+.gp-seo-actions a,.gp-seo-strip a{text-decoration:none;}

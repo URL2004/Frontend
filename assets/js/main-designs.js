@@ -28,8 +28,10 @@
   // 라벤더에서는 실제 앱 요소(분석 결과·탭 컨테이너·크레딧 칩·업그레이드 버튼·
   // 사이드바 푸터·최근 기록 리스트)를 라벤더 셸 안의 슬롯으로 옮긴다.
   // 복제가 아니라 이동이므로 #uname, #creditChip 등 동적 갱신이 그대로 동작한다.
-  var TAB_IDS = ['main', 'pricing', 'community', 'guide', 'faq', 'qna', 'notice', 'mypage', 'admin', 'adminHumanizeLab', 'history', 'pro', 'writingLab'];
-  var MOVED_TABS = ['history', 'notice', 'community', 'guide', 'faq', 'qna', 'pricing', 'pro', 'mypage', 'admin', 'adminHumanizeLab', 'writingLab'];
+  // ★blog·detectReport 포함(2026-08-28): 목록에서 빠져 있어 /blog·/detect-report 직접 진입 시
+  //   탭 콘텐츠가 라벤더 셸 밖(메인 아래)에 그려지고 히어로도 안 숨는 이중 표시 버그가 있었다.
+  var TAB_IDS = ['main', 'pricing', 'community', 'blog', 'detectReport', 'guide', 'faq', 'qna', 'notice', 'mypage', 'admin', 'adminHumanizeLab', 'history', 'pro', 'writingLab'];
+  var MOVED_TABS = ['history', 'notice', 'community', 'blog', 'detectReport', 'guide', 'faq', 'qna', 'pricing', 'pro', 'mypage', 'admin', 'adminHumanizeLab', 'writingLab'];
 
   function moveInto(el, target) {
     if (el && target && el.parentElement !== target) target.appendChild(el);
