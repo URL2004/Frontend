@@ -86,16 +86,22 @@ img{max-width:100%}
 .hub-sec i{flex:1;height:1px;background:var(--line)}
 .feature-row{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:18px}
 @media (max-width:860px){.feature-row{grid-template-columns:1fr}}
-a.feat{display:flex;flex-direction:column;justify-content:flex-end;gap:10px;min-height:340px;padding:30px;border-radius:18px;text-decoration:none;color:#fff;background:linear-gradient(145deg,#4443c0,#6d6ee6 62%,#8a8cf0);box-shadow:var(--shadow);position:relative;overflow:hidden}
-a.feat::after{content:'';position:absolute;right:-70px;top:-70px;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.09)}
-a.feat .hub-cat{color:rgba(255,255,255,.85)}
-a.feat strong{font-size:clamp(21px,2.6vw,27px);font-weight:800;line-height:1.35;letter-spacing:-.01em}
-a.feat p{margin:0;color:rgba(255,255,255,.88);font-size:14.5px;line-height:1.7;max-width:52ch}
-a.feat time{font-size:12.5px;color:rgba(255,255,255,.7)}
+a.feat{display:flex;flex-direction:column;justify-content:flex-end;gap:10px;min-height:400px;padding:30px;border-radius:18px;text-decoration:none;color:#fff;background:linear-gradient(145deg,#4443c0,#6d6ee6 62%,#8a8cf0);box-shadow:var(--shadow);position:relative;overflow:hidden;isolation:isolate}
+a.feat img.cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+a.feat::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(to top,rgba(24,22,54,.88) 8%,rgba(24,22,54,.45) 45%,rgba(24,22,54,.08))}
+a.feat .hub-cat{color:rgba(255,255,255,.9)}
+a.feat strong{font-size:clamp(21px,2.6vw,27px);font-weight:800;line-height:1.35;letter-spacing:-.01em;text-shadow:0 1px 12px rgba(24,22,54,.4)}
+a.feat p{margin:0;color:rgba(255,255,255,.92);font-size:14.5px;line-height:1.7;max-width:52ch}
+a.feat time{font-size:12.5px;color:rgba(255,255,255,.75)}
 .feat-side{display:grid;grid-template-rows:1fr 1fr;gap:18px}
 .hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
-.hub-card{display:flex;flex-direction:column;gap:9px;border:1px solid var(--line);border-radius:16px;background:var(--card);padding:22px;text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:transform .16s,border-color .16s}
+.hub-card{display:flex;flex-direction:column;gap:9px;border:1px solid var(--line);border-radius:16px;background:var(--card);padding:0 0 20px;text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:transform .16s,border-color .16s;overflow:hidden}
+.hub-card img.cover{width:100%;aspect-ratio:3/2;object-fit:cover;display:block;border-bottom:1px solid var(--line)}
+.hub-card>*:not(img){margin-left:20px;margin-right:20px}
+.hub-card .hub-cat{margin-top:16px}
 .hub-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.feat-side .hub-card img.cover{aspect-ratio:16/7}
+.article-cover{width:100%;aspect-ratio:2.4/1;object-fit:cover;border-radius:16px;box-shadow:var(--shadow);margin:22px 0 4px;display:block}
 .hub-card:focus-visible,a.feat:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .hub-cat{font-size:11.5px;font-weight:700;letter-spacing:.12em;color:var(--accent)}
 .hub-card strong{font-size:17.5px;font-weight:700;line-height:1.42;letter-spacing:-.01em;word-break:keep-all}
@@ -118,6 +124,39 @@ a.feat time{font-size:12.5px;color:rgba(255,255,255,.7)}
 `;
 
 const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">';
+
+// 기사 커버(ima2-gen 산출 일러스트 → assets/img/blog/{slug}.webp) — 슬러그와 파일명이 1:1
+function coverOf(slug) {
+  return `/assets/img/blog/${slug}.webp`;
+}
+
+// 로그인 적응형 내비(2026-08-29 사장님): 가입 전 = 가입 CTA, 가입 후 = "작업실 열기".
+// Firebase 인증 상태를 같은 오리진의 indexedDB(firebaseLocalStorageDb)에서 읽는다 — 실패 시 게스트 문구 유지.
+const AUTH_ADAPT = `<script>
+(function () {
+  function member() {
+    document.querySelectorAll('[data-member-label]').forEach(function (el) { el.textContent = el.getAttribute('data-member-label'); });
+    document.querySelectorAll('[data-member-text]').forEach(function (el) { el.textContent = el.getAttribute('data-member-text'); });
+  }
+  try {
+    var req = indexedDB.open('firebaseLocalStorageDb');
+    req.onsuccess = function () {
+      try {
+        var db = req.result;
+        if (!db.objectStoreNames.contains('firebaseLocalStorage')) return;
+        var g = db.transaction('firebaseLocalStorage', 'readonly').objectStore('firebaseLocalStorage').getAll();
+        g.onsuccess = function () {
+          var rows = g.result || [];
+          for (var i = 0; i < rows.length; i++) {
+            var key = rows[i] && rows[i].fbase_key;
+            if (key && key.indexOf('authUser') >= 0 && rows[i].value) { member(); return; }
+          }
+        };
+      } catch (e) { /* 게스트 문구 유지 */ }
+    };
+  } catch (e) { /* 게스트 문구 유지 */ }
+})();
+</script>`;
 
 function pageShell({ title, description, url, breadcrumbs, bodyHtml, ldBlocks, wide }) {
   const crumbHtml = breadcrumbs
@@ -146,7 +185,7 @@ ${ldBlocks.join('\n')}
 <a class="brand" href="/">교수님 <em>피하기</em></a>
 <a href="/blog">블로그</a>
 <span class="sp"></span>
-<a class="cta" href="/">무료로 시작</a>
+<a class="cta" href="/" data-member-label="작업실 열기">무료로 시작</a>
 </div></header>
 <div class="wrap${wide ? ' wide' : ''}">
 <nav class="crumb">${crumbHtml}</nav>
@@ -154,8 +193,9 @@ ${bodyHtml}
 </div>
 <footer class="site"><div class="bar">
 교수님 피하기 · 지피코리아(gpkorea) — AI 초안의 문체 신호를 확인하고 원문의 뜻·장르·사실을 지키며 다듬는 도구입니다.
-AI 감지 결과와 외부 검사 점수는 참고 신호이며 보장값이 아닙니다. <a href="/">서비스 홈</a> · <a href="/blog">블로그</a>
+AI 감지 결과와 외부 검사 점수는 참고 신호이며 보장값이 아닙니다. <a href="/" data-member-label="작업실로 돌아가기">서비스 홈</a> · <a href="/blog">블로그</a>
 </div></footer>
+${AUTH_ADAPT}
 </body>
 </html>
 `;
@@ -200,12 +240,13 @@ function articlePage(article, allArticles) {
 <span class="eyebrow">${esc(article.category)}</span>
 <h1>${esc(article.title)}</h1>
 <div class="byline"><span>교수님 피하기 팀</span><span>검수: ${esc(article.reviewer || '검수 대기')}</span><span>${article.date}</span></div>
+<img class="article-cover" src="${coverOf(article.slug)}" alt="" width="1200" height="500" loading="eager" decoding="async">
 <p class="lead">${article.lead}</p>
 ${article.body}
 <div class="cta-box">
-<strong>${esc(article.ctaTitle || '내 글로 직접 확인해 보세요')}</strong>
-<p>${esc(article.ctaDesc || '가입하면 10크레딧으로 1,000자 AI 감지 또는 500자 기본 휴머나이징을 먼저 써볼 수 있어요. 실패한 작업은 차감되지 않습니다.')}</p>
-<a href="${article.ctaHref || '/'}">${esc(article.ctaLabel || '무료 10크레딧으로 시작하기')}</a>
+<strong data-member-text="이어서 다듬어 볼까요?">${esc(article.ctaTitle || '내 글로 직접 확인해 보세요')}</strong>
+<p data-member-text="작업실에 글을 붙여넣으면 문단별 AI 문체 신호를 바로 확인할 수 있어요. 실패한 작업은 차감되지 않습니다.">${esc(article.ctaDesc || '가입하면 10크레딧으로 1,000자 AI 감지 또는 500자 기본 휴머나이징을 먼저 써볼 수 있어요. 실패한 작업은 차감되지 않습니다.')}</p>
+<a href="${article.ctaHref || '/'}" data-member-label="${article.ctaHref ? esc(article.ctaLabel || '열어 보기') : '작업실 열기'}">${esc(article.ctaLabel || '무료 10크레딧으로 시작하기')}</a>
 </div>
 ${relatedBlock(article.related, allArticles)}
 </article>`;
@@ -254,7 +295,7 @@ ${tpl.body}
 <div class="cta-box">
 <strong>지금은 이렇게 쓰세요</strong>
 <p>이 체크리스트로 초안을 직접 작성한 뒤, 교수님 피하기에서 AI식 문체 신호를 점검하고 다듬을 수 있어요. 사실을 대신 만들어 주는 도구가 아니라, 내가 아는 사실을 지키며 문장을 다듬는 도구입니다. 장르별 질문에 답하면 초안까지 만들어 주는 글쓰기 랩은 현재 준비 중이에요.</p>
-<a href="/">무료 10크레딧으로 시작하기</a>
+<a href="/" data-member-label="작업실 열기">무료 10크레딧으로 시작하기</a>
 </div>
 ${relatedBlock(tpl.related, allArticles)}
 </article>`;
@@ -294,6 +335,7 @@ function hubPage() {
   const grid = rest.slice(2);
   const card = (a) => `
 <a class="hub-card" href="/blog/${a.slug}">
+<img class="cover" src="${coverOf(a.slug)}" alt="" width="1200" height="800" loading="lazy" decoding="async">
 <span class="hub-cat">${esc(a.category)}</span>
 <strong>${esc(a.title)}</strong>
 <p>${esc(a.description)}</p>
@@ -310,6 +352,7 @@ function hubPage() {
 <div class="hub-sec"><strong>이번 주 추천</strong><i></i></div>
 <div class="feature-row">
 <a class="feat" href="/blog/${feat.slug}">
+<img class="cover" src="${coverOf(feat.slug)}" alt="" loading="eager" decoding="async">
 <span class="hub-cat">${esc(feat.category)}</span>
 <strong>${esc(feat.title)}</strong>
 <p>${esc(feat.description)}</p>
@@ -333,10 +376,10 @@ ${tplLinks}
 </div>
 <div class="hub-cta">
 <div>
-<strong>읽는 것보다 빠른 확인</strong>
-<p>글을 붙여넣으면 문단별 AI 문체 신호를 바로 보여드립니다. 가입 시 10크레딧 제공, 실패한 작업은 차감되지 않아요.</p>
+<strong data-member-text="이어서 다듬어 볼까요?">읽는 것보다 빠른 확인</strong>
+<p data-member-text="작업실에 글을 붙여넣으면 문단별 AI 문체 신호를 바로 확인할 수 있어요. 실패한 작업은 차감되지 않아요.">글을 붙여넣으면 문단별 AI 문체 신호를 바로 보여드립니다. 가입 시 10크레딧 제공, 실패한 작업은 차감되지 않아요.</p>
 </div>
-<a href="/">무료 10크레딧으로 시작하기</a>
+<a href="/" data-member-label="작업실 열기">무료 10크레딧으로 시작하기</a>
 </div>
 </article>`;
   return pageShell({
