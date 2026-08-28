@@ -153,3 +153,8 @@ await writeRuntimeConfig();
 // (정적 복사 이후에 실행해 원본 index.html을 본문 포함 버전으로 덮어쓴다.)
 const prerendered = await prerenderSeo({ root, dist });
 console.log(`[seo-prerender] generated ${prerendered.length} routes: ${prerendered.join(', ')}`);
+
+// sitemap.xml 생성(2026-08-28): 수기 사본 복사본을 실제 커밋일 lastmod 버전으로 덮어쓴다.
+const { generateSitemap } = await import('./sitemap-gen.mjs');
+const sitemapCount = await generateSitemap({ root, dist });
+console.log(`[sitemap-gen] generated sitemap.xml with ${sitemapCount} urls`);

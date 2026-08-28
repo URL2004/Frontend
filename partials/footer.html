@@ -10,19 +10,19 @@
   <div class="gp-footer-links">
     <div>
       <strong>서비스</strong>
-      <button onclick="switchTab('main')">AI 검사</button>
-      <button onclick="switchTab('main');setMode('humanize')">휴머나이징</button>
-      <button onclick="switchTab('detectReport')">AI 감지기</button>
-      <button onclick="switchTab('blog')">블로그</button>
-      <button onclick="switchTab('pricing')">요금제</button>
+      <a data-tab="main" href="/">AI 검사</a>
+      <a data-tab="main" data-tab-call="setMode" data-tab-arg="humanize" href="/">휴머나이징</a>
+      <a data-tab="detectReport" href="/detect-report">AI 감지기</a>
+      <a data-tab="blog" href="/blog">블로그</a>
+      <a data-tab="pricing" href="/pricing">요금제</a>
       <button onclick="openMyPage()">결과 보관함</button>
     </div>
     <div>
       <strong>고객 지원</strong>
-      <button onclick="switchTab('guide')">사용 가이드</button>
-      <button onclick="switchTab('notice');loadNotices()">공지사항</button>
-      <button onclick="switchTab('faq')">자주 묻는 질문</button>
-      <button onclick="switchTab('qna');loadQuestions()">문의하기</button>
+      <a data-tab="guide" href="/guide">사용 가이드</a>
+      <a data-tab="notice" data-tab-call="loadNotices" href="/notice">공지사항</a>
+      <a data-tab="faq" href="/faq">자주 묻는 질문</a>
+      <a data-tab="qna" data-tab-call="loadQuestions" href="/qna">문의하기</a>
     </div>
     <div>
       <strong>회사 정보</strong>

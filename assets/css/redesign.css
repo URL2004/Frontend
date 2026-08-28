@@ -2916,7 +2916,7 @@ textarea#inputText{
 .gp-footer-brand span{color:var(--text2);}
 .gp-footer-links{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;}
 .gp-footer-links strong{display:block;color:#fff;margin-bottom:14px;}
-.gp-footer-links button{
+.gp-footer-links :is(button,a){
  display:block;
  border:0;
  background:none;
@@ -9459,7 +9459,7 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
  scrollbar-width:none;
 }
 .gp-lav-menu::-webkit-scrollbar{display:none;}
-.gp-lav-menu button,
+.gp-lav-menu :is(button,a),
 .gp-lav-side-link,
 .gp-lav-side-bottom button{
  display:flex;
@@ -9478,7 +9478,7 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
  cursor:pointer;
  transition:background .15s ease,color .15s ease;
 }
-.gp-lav-menu button svg,
+.gp-lav-menu :is(button,a) svg,
 .gp-lav-side-link svg,
 .gp-lav-side-bottom button svg{
  flex:0 0 20px;
@@ -9487,27 +9487,27 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
  color:#8d94a9;
  transition:color .15s ease;
 }
-.gp-lav-menu button span,
+.gp-lav-menu :is(button,a) span,
 .gp-lav-side-link span,
 .gp-lav-side-bottom button span{
  white-space:nowrap;
 }
-.gp-lav-menu button:hover,
+.gp-lav-menu :is(button,a):hover,
 .gp-lav-side-link:hover,
 .gp-lav-side-bottom button:hover{
  background:#f3f4fa;
  color:#23283a;
 }
-.gp-lav-menu button:hover svg,
+.gp-lav-menu :is(button,a):hover svg,
 .gp-lav-side-link:hover svg,
 .gp-lav-side-bottom button:hover svg{
  color:#5d647c;
 }
-.gp-lav-menu button.active{
+.gp-lav-menu :is(button,a).active{
  background:#edecfd;
  color:#4b4cc6;
 }
-.gp-lav-menu button.active svg{
+.gp-lav-menu :is(button,a).active svg{
  color:#5a5bd8;
 }
 .gp-lav-side-sep{
@@ -9545,7 +9545,7 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
 .gp-lav-page.side-collapsed .gp-lav-brand strong,
 .gp-lav-page.side-collapsed .gp-lav-new span,
 .gp-lav-page.side-collapsed .gp-lav-new kbd,
-.gp-lav-page.side-collapsed .gp-lav-menu button span,
+.gp-lav-page.side-collapsed .gp-lav-menu :is(button,a) span,
 .gp-lav-page.side-collapsed .gp-lav-side-link span,
 .gp-lav-page.side-collapsed .gp-lav-side-bottom button span{
  display:none;
@@ -9557,7 +9557,7 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
  justify-content:center;
  padding:0;
 }
-.gp-lav-page.side-collapsed .gp-lav-menu button,
+.gp-lav-page.side-collapsed .gp-lav-menu :is(button,a),
 .gp-lav-page.side-collapsed .gp-lav-side-link,
 .gp-lav-page.side-collapsed .gp-lav-side-bottom button{
  justify-content:center;
@@ -11308,12 +11308,12 @@ body[data-main-design="lavender"] #loginScreen .lhome:hover{
 .gp-lav-banners p{
  font-weight:500;
 }
-.gp-lav-menu button,
+.gp-lav-menu :is(button,a),
 .gp-lav-side-link,
 .gp-lav-side-bottom button{
  font-weight:600;
 }
-.gp-lav-menu button.active{
+.gp-lav-menu :is(button,a).active{
  font-weight:700;
 }
 .gp-lav-chips button{
@@ -11397,12 +11397,12 @@ body[data-main-design="lavender"] #loginScreen .ldesc{
  background:rgba(75,76,198,.12);
  color:#4b4cc6;
 }
-.gp-lav-menu button.active{
+.gp-lav-menu :is(button,a).active{
  background:#eef0f8;
  color:#14182a;
  box-shadow:none;
 }
-.gp-lav-menu button.active svg{
+.gp-lav-menu :is(button,a).active svg{
  color:#3d4458;
 }
 .gp-lav-side-bottom .gp-invite-btn{
@@ -17726,3 +17726,7 @@ body.dark .lav-sel-card{background:var(--card,#1d1e2d);border-color:rgba(255,255
 body.dark .lav-sel-card.accent{border-color:rgba(138,140,240,.6);}
 body.dark .lav-sel-cost{color:#b4b6ff;background:rgba(138,140,240,.14);}
 body.dark .lav-blocked-memo{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2);color:var(--text,#e8e9f5);}
+
+/* 크롤러블 내비(2026-08-28): switchTab 버튼 → 실링크 전환에 따른 앵커 기본값 */
+.gp-lav-menu a,.gp-footer-links a,a.mnav-btn,a.snav-btn{text-decoration:none;cursor:pointer;}
+a.mnav-btn,a.snav-btn{display:flex;}

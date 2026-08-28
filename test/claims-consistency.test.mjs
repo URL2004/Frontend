@@ -1,0 +1,122 @@
+// claim 일관성 잠금 테스트(2026-08-28 T2.7) — 화면·검색 스키마·가격·약관이 서로 어긋나면 여기서 깨진다.
+// 감사보고서 P0-1(프리렌더 공개상태)·P0-4(FAQ 이중화)·P0-7(유효기간)·P0-8(noindex)·P0-2(크롤러블 링크)의 회귀 방지.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { FAQ_ITEMS } from '../scripts/faq-data.mjs';
+import { ROUTES } from '../scripts/route-meta.mjs';
+import { prerenderSeo } from '../scripts/seo-prerender.mjs';
+
+const read = (p) => readFile(new URL(`../${p}`, import.meta.url), 'utf8');
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+
+test('FAQ 화면(faq.html)과 데이터 모듈(=JSON-LD 원천)이 글자 단위로 일치한다', async () => {
+  const faq = await read('pages/faq.html');
+  const qs = [...faq.matchAll(/class="faq-q"[^>]*><span>([^<]+)<\/span>/gu)].map((m) => m[1].trim());
+  const as = [...faq.matchAll(/<div class="faq-a">([^<]+)<\/div>/gu)].map((m) => m[1].trim());
+  assert.equal(qs.length, FAQ_ITEMS.length, '화면 질문 수 ≠ 데이터 문항 수');
+  assert.equal(as.length, FAQ_ITEMS.length, '화면 답변 수 ≠ 데이터 문항 수');
+  FAQ_ITEMS.forEach((item, i) => {
+    assert.equal(qs[i], item.q, `질문 불일치(#${i + 1})`);
+    assert.equal(as[i], item.a, `답변 불일치(#${i + 1}: ${item.q})`);
+  });
+  // 프리렌더는 데이터 모듈만 사용해야 한다(자체 사본 금지 — 과거 화면 11 vs 스키마 10 사고 방지)
+  const prerender = await read('scripts/seo-prerender.mjs');
+  assert.match(prerender, /from '\.\/faq-data\.mjs'/u);
+  assert.doesNotMatch(prerender, /어떤 서비스인가요/u);
+});
+
+test('가격·크레딧 수치는 단일 원천(conversion-flow PLANS)과 pricing·landing에서 일치한다', async () => {
+  const [flow, pricing, landing] = await Promise.all([
+    read('assets/js/conversion-flow.js'),
+    read('pages/pricing.html'),
+    read('pages/landing.html')
+  ]);
+  const plansBlock = flow.slice(flow.indexOf('var PLANS = ['), flow.indexOf('];', flow.indexOf('var PLANS = [')));
+  const plans = [...plansBlock.matchAll(/amount:\s*(\d+),\s*credits:\s*(\d+)/gu)]
+    .map((m) => ({ amount: Number(m[1]), credits: Number(m[2]) }));
+  assert.equal(plans.length, 5, 'PLANS 5종이어야 함');
+  for (const { amount, credits } of plans) {
+    assert.ok(pricing.includes(`payToss(${amount},${credits}`), `pricing.html payToss(${amount},${credits}) 부재`);
+    const fmt = credits.toLocaleString('en-US');
+    assert.ok(pricing.includes(`총 ${fmt} 크레딧`), `pricing.html 총 ${fmt} 크레딧 부재`);
+    assert.ok(landing.includes(`${fmt}크레딧`), `landing.html ${fmt}크레딧 부재`);
+  }
+  // 과거 사고 수치(8700원=330) 재유입 방지
+  assert.ok(!pricing.includes('payToss(8700,330'), '구버전 330크레딧 재유입');
+});
+
+test('크레딧 유효기간 표기는 약관까지 포함해 전 표면에서 무기한으로 일치한다', async () => {
+  const files = await Promise.all([
+    read('assets/js/app-main.js'),
+    read('pages/landing.html'),
+    read('pages/pricing.html'),
+    read('pages/faq.html'),
+    read('scripts/faq-data.mjs'),
+    read('scripts/route-meta.mjs')
+  ]);
+  const all = files.join('\n');
+  assert.doesNotMatch(all, /크레딧의?\s*이용기간은?\s*결제일로부터\s*1년/u, '약관 1년 문구 재유입(2026-08-28 무기한 개정)');
+  assert.match(files[0], /유료로 충전한 크레딧은 유효기간 없이 사용할 수 있습니다/u);
+  // 보장형 금지 주장(마케팅·스키마 공통)
+  assert.doesNotMatch(all, /100%\s*(보장|통과)|무조건 통과|탐지\s*통과를?\s*보장/u);
+});
+
+test('프리렌더 공개상태: /pricing 검색 본문에 준비 중 안내만 있고 구독 상품·실험 문구는 없다', async () => {
+  const dist = await mkdtemp(join(tmpdir(), 'gp-prerender-'));
+  try {
+    await prerenderSeo({ root: repoRoot, dist });
+    const pricingOut = await readFile(join(dist, 'pricing/index.html'), 'utf8');
+    assert.match(pricingOut, /정기 구독은 준비 중이에요/u, '준비 중 배너가 검색 본문에 있어야 함');
+    assert.doesNotMatch(pricingOut, /openSubscribeConfirm|구독 시작|11,900|54,900|99,000|290,000/u, '준비 중 구독 상품이 검색 본문에 노출');
+    assert.doesNotMatch(pricingOut, /첫 결제 실험 혜택/u, 'A/B 실험 문구가 검색 본문에 노출');
+    const faqOut = await readFile(join(dist, 'faq/index.html'), 'utf8');
+    for (const item of FAQ_ITEMS) {
+      assert.ok(faqOut.includes(JSON.stringify(item.q).slice(1, -1)), `FAQ 스키마에 질문 누락: ${item.q}`);
+    }
+  } finally {
+    await rm(dist, { recursive: true, force: true });
+  }
+});
+
+test('vercel.json: 인증 앱 경로와 원시 조각은 noindex 헤더를 가진다', async () => {
+  const config = JSON.parse(await read('vercel.json'));
+  const bySource = new Map((config.headers || []).map((h) => [h.source, new Map(h.headers.map((i) => [i.key.toLowerCase(), i.value]))]));
+  assert.equal(bySource.get('/pages/(.*)')?.get('x-robots-tag'), 'noindex');
+  assert.equal(bySource.get('/partials/(.*)')?.get('x-robots-tag'), 'noindex');
+  const appBlock = [...bySource.keys()].find((s) => /mypage/.test(s));
+  assert.ok(appBlock, '앱 경로 noindex 블록 부재');
+  for (const p of ['mypage', 'admin', 'admin-humanize-lab', 'history', 'pro', 'writing-lab', 'main']) {
+    assert.ok(appBlock.includes(p), `noindex 대상 누락: /${p}`);
+  }
+  assert.equal(bySource.get(appBlock).get('x-robots-tag'), 'noindex, nofollow');
+});
+
+test('내비는 크롤러블 앵커(a[href][data-tab])와 라우팅 델리게이트를 사용한다', async () => {
+  const [main, footer, mobileNav, appShell, appMain] = await Promise.all([
+    read('pages/main.html'),
+    read('partials/footer.html'),
+    read('partials/mobile-nav.html'),
+    read('partials/app-shell-start.html'),
+    read('assets/js/app-main.js')
+  ]);
+  const countAnchors = (s) => (s.match(/<a [^>]*data-tab="[^"]+"[^>]*href="\//gu) || []).length;
+  assert.ok(countAnchors(main) >= 6, `main.html 사이드바 앵커 부족(${countAnchors(main)})`);
+  assert.ok(countAnchors(footer) >= 9, `footer 앵커 부족(${countAnchors(footer)})`);
+  assert.ok(countAnchors(mobileNav) >= 6, `모바일 내비 앵커 부족(${countAnchors(mobileNav)})`);
+  assert.ok(countAnchors(appShell) >= 7, `사이드바 앵커 부족(${countAnchors(appShell)})`);
+  assert.match(appMain, /closest\('a\[data-tab\]\[href\]'\)/u, '앵커 라우팅 델리게이트 부재');
+});
+
+test('공개 라우트 집합: 프리렌더 라우트와 SPA 라우터가 같은 경로를 가리킨다', async () => {
+  const appMain = await read('assets/js/app-main.js');
+  for (const r of ROUTES) {
+    const path = r.url === '/' ? "'/'" : `'${r.url}'`;
+    assert.ok(appMain.includes(`${path}:`) || appMain.includes(`${path} :`) || appMain.includes(`${r.url}':`), `PATH_ROUTES에 ${r.url} 부재`);
+  }
+  const build = await read('scripts/build-vite-static.mjs');
+  assert.match(build, /sitemap-gen\.mjs/u, '빌드에 사이트맵 생성기 미연결');
+});

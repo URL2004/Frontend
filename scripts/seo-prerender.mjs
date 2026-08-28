@@ -17,126 +17,9 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-
-const SITE = 'https://gpkorea.ai.kr';
-const OG_IMAGE = `${SITE}/og-image.png?v=4`;
-const LOGO = `${SITE}/favicon-512x512.png`;
-
-// 공개(인덱싱 대상) 라우트 정의. mypage/history/pro 는 인증·동적이라 제외(SPA 폴백 유지).
-const ROUTES = [
-  {
-    out: 'index.html',
-    url: '/',
-    partial: 'landing.html',
-    title: '교수님 피하기 – AI 휴머나이저 · AI 감지',
-    h1: '교수님 피하기 AI 휴머나이저',
-    description:
-      'AI로 작성한 글을 자연스럽고 사람답게 다듬는 AI 휴머나이저. AI 티 지수를 확인하고, 휴머나이징으로 문장을 사람답게 바꿔보세요.',
-    breadcrumb: null,
-    faq: false
-  },
-  {
-    out: 'pricing/index.html',
-    url: '/pricing',
-    partial: 'pricing.html',
-    title: '요금제 · 충전 · 구독 – 교수님 피하기 AI 휴머나이저',
-    h1: '교수님 피하기 요금제',
-    description:
-      '교수님 피하기 크레딧 충전과 구독 플랜 안내. AI 감지는 100자당 1크레딧, 휴머나이징은 최소 10크레딧부터 사용할 수 있으며 충전 크레딧은 소멸 기한 없이 사용할 수 있습니다.',
-    breadcrumb: '요금제',
-    faq: false
-  },
-  {
-    out: 'faq/index.html',
-    url: '/faq',
-    partial: 'faq.html',
-    title: '자주 묻는 질문 – AI 감지 정확도 · 크레딧 · 환불 | 교수님 피하기',
-    h1: '교수님 피하기 자주 묻는 질문',
-    description:
-      '교수님 피하기 이용 방법, AI 감지 정확도, 크레딧·환불, 개인정보 보안 등 자주 묻는 질문을 한곳에 모았습니다.',
-    breadcrumb: '자주 묻는 질문',
-    faq: true
-  },
-  {
-    out: 'community/index.html',
-    url: '/community',
-    partial: 'community.html',
-    title: '커뮤니티 – AI 감지 · 과제 글쓰기 · 휴머나이징 경험 공유 | 교수님 피하기',
-    h1: '교수님 피하기 커뮤니티',
-    description:
-      'AI 감지, 과제 작성, 휴머나이징 활용 경험을 나누는 교수님 피하기 커뮤니티입니다. 인기 게시글과 오늘의 키워드를 확인하세요.',
-    breadcrumb: '커뮤니티',
-    faq: false
-  },
-  {
-    out: 'blog/index.html',
-    url: '/blog',
-    partial: 'blog.html',
-    title: '블로그 – AI 티 줄이는 글쓰기 · 과제 문장 다듬기 | 교수님 피하기',
-    h1: '교수님 피하기 블로그',
-    description:
-      'AI가 쓴 것처럼 보이는 문장을 자연스럽게 다듬는 방법을 정리한 블로그 허브입니다. 과제, 자기소개서, 리포트, 블로그 글쓰기 가이드를 확인하세요.',
-    breadcrumb: '블로그',
-    faq: false
-  },
-  {
-    out: 'detect-report/index.html',
-    url: '/detect-report',
-    partial: 'detect-report.html',
-    title: 'AI 감지기 – AI 티 지수 확인 · 문장 분석 | 교수님 피하기',
-    h1: 'AI 감지기',
-    description:
-      '제출 전 글을 붙여넣고 AI 작성 흔적과 AI 티 나는 문장을 확인하세요. AI 감지 결과를 바탕으로 휴머나이징까지 이어갈 수 있습니다.',
-    breadcrumb: 'AI 감지기',
-    faq: false
-  },
-  {
-    out: 'guide/index.html',
-    url: '/guide',
-    partial: 'guide.html',
-    title: '사용 가이드 – AI 감지 · 휴머나이징 · 결과 보관 | 교수님 피하기',
-    h1: '교수님 피하기 사용 가이드',
-    description:
-      '교수님 피하기에서 글을 붙여넣고 AI 감지, 휴머나이징, 결과 보관, 크레딧 충전까지 진행하는 방법을 단계별로 안내합니다.',
-    breadcrumb: '사용 가이드',
-    faq: false
-  },
-  {
-    out: 'qna/index.html',
-    url: '/qna',
-    partial: 'qna.html',
-    title: '문의하기 – 결제 · 계정 · 오류 1:1 문의 | 교수님 피하기',
-    h1: '교수님 피하기 문의하기',
-    description:
-      '교수님 피하기 1:1 문의 — 결제·계정·오류 등 개인 문의를 남기고 답변을 확인하세요. 운영 시간 안내 포함.',
-    breadcrumb: '문의하기',
-    faq: false
-  },
-  {
-    out: 'notice/index.html',
-    url: '/notice',
-    partial: 'notice.html',
-    title: '공지사항 – 서비스 업데이트 · 운영 안내 | 교수님 피하기',
-    h1: '교수님 피하기 공지사항',
-    description: '교수님 피하기 서비스 업데이트와 운영 공지사항을 확인하세요.',
-    breadcrumb: '공지사항',
-    faq: false
-  }
-];
-
-// /faq 의 FAQPage 구조화 데이터(faq.html 본문과 1:1로 일치해야 구글 가이드라인 충족).
-const FAQ_ITEMS = [
-  ['교수님 피하기는 어떤 서비스인가요?', 'AI로 쓴 티가 나는지 확인(AI 감지)하고, 더 자연스럽고 사람다운 문장으로 다듬어 주는(휴머나이징) 서비스입니다.'],
-  ['무료로 사용할 수 있나요?', 'AI 감지와 휴머나이징 모두 크레딧으로 이용해요. AI 감지는 100자당 1크레딧, 휴머나이징은 글자 수에 따라 차감됩니다. 회원가입 후 크레딧을 충전해 이용해 주세요.'],
-  ['휴머나이징 후에도 제 글의 의미가 유지되나요?', '핵심 주장과 논지 흐름은 유지하면서, 기계적인 문장 패턴과 반복 표현만 자연스럽게 조정합니다.'],
-  ['AI 감지 결과는 얼마나 정확한가요?', '주요 AI 패턴을 기준으로 분석하지만, 모든 외부 검사 결과를 100% 보장하지는 않습니다. 변환 후 재검사를 권장합니다.'],
-  ['더 자연스러운 결과를 얻으려면 어떻게 하나요?', '감지 보고서에서 AI 티가 나는 문단을 먼저 확인하고, 휴머나이징(기본/고급)으로 다듬은 뒤 다시 감지해 보세요. 한 번에 안 되면 고급 휴머나이징으로 재변환해 보세요.'],
-  ['휴머나이징 품질은 어떻게 검증하나요?', '국립국어원 공공데이터(어문규범 규정·공공언어 용어·말뭉치 통계)와 표준국어대사전·우리말샘 오픈 API를 기준으로 맞춤법과 용어 표기를 검사하고, 원문에 없는 사실을 만들지 않았는지 함께 확인합니다.'],
-  ['크레딧은 어떻게 충전하나요?', '충전하기 메뉴에서 원하는 크레딧을 선택해 토스·카카오페이로 결제하면 즉시 충전됩니다. AI 감지는 100자당 1크레딧, 휴머나이징은 최소 10크레딧 및 100자당 2크레딧 기준입니다.'],
-  ['충전한 크레딧은 소멸되나요?', '구매한 크레딧은 소멸 기한 없이 계속 사용할 수 있습니다.'],
-  ['환불은 어떻게 받나요?', '사용하지 않은 크레딧은 환불 규정에 따라 환불 가능합니다. 이미 사용한 크레딧과 구독 쿠폰 사용분은 환불 대상에서 제외됩니다.'],
-  ['제 글이 저장되거나 다른 곳에 사용되나요?', '결과 보관함과 이용 기록 제공을 위해 일부 결과가 저장될 수 있습니다. 외부 학습 데이터로는 사용하지 않습니다.']
-];
+// 단일 원천(2026-08-28): 라우트 메타·FAQ는 별도 모듈에서 가져온다 — 이 파일에 사본을 두지 않는다.
+import { SITE, OG_IMAGE, LOGO, ROUTES } from './route-meta.mjs';
+import { FAQ_ITEMS } from './faq-data.mjs';
 
 function htmlEscapeAttr(s) {
   return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -190,7 +73,7 @@ function buildJsonLdBlocks(route) {
       jsonLd({
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
-        mainEntity: FAQ_ITEMS.map(([q, a]) => ({
+        mainEntity: FAQ_ITEMS.map(({ q, a }) => ({
           '@type': 'Question',
           name: q,
           acceptedAnswer: { '@type': 'Answer', text: a }
@@ -202,9 +85,41 @@ function buildJsonLdBlocks(route) {
   return blocks.join('\n');
 }
 
-// 파셜을 크롤러가 본문으로 인식하도록 정리: display:none / hidden 무력화.
+// data-seo-exclude 마커 블록을 통째로 제거(2026-08-28 T2.1).
+// 준비 중 구독 카드·A/B 실험 문구처럼 "사용자에게 공개되지 않은 상태"가 숨김 해제 규칙 때문에
+// 크롤러 본문으로 노출되던 문제의 해결책: 숨김을 풀기 전에, 비공개로 표시된 블록을 먼저 걷어낸다.
+// jsdom 없이 같은 태그명 균형 스캔으로 닫는 태그를 찾는다 — 못 찾으면 빌드를 시끄럽게 실패시킨다.
+function removeSeoExcluded(html) {
+  const openRe = /<([a-zA-Z][a-zA-Z0-9-]*)\b[^>]*\sdata-seo-exclude(?:="[^"]*")?[^>]*>/;
+  let out = String(html);
+  let m;
+  while ((m = openRe.exec(out))) {
+    const tag = m[1];
+    const start = m.index;
+    const tokenRe = new RegExp('<' + tag + '(?=[\\s>])|</' + tag + '\\s*>', 'gi');
+    tokenRe.lastIndex = start;
+    let depth = 0;
+    let end = -1;
+    let t;
+    while ((t = tokenRe.exec(out))) {
+      if (t[0][1] === '/') {
+        depth--;
+        if (depth === 0) { end = tokenRe.lastIndex; break; }
+      } else {
+        depth++;
+      }
+    }
+    if (end < 0) throw new Error(`seo-prerender: data-seo-exclude <${tag}> 블록의 닫는 태그를 찾지 못했습니다.`);
+    out = out.slice(0, start) + out.slice(end);
+  }
+  return out;
+}
+
+// 파셜을 크롤러가 본문으로 인식하도록 정리:
+//   1) 비공개 마커(data-seo-exclude) 블록 제거 — 공개 상태와 검색 본문을 일치시킨다
+//   2) 남은 본문의 display:none / hidden 무력화 — SPA 초기 숨김(파셜 래퍼·아코디언)을 크롤러에 펼침
 function cleanPartial(html) {
-  return String(html)
+  return removeSeoExcluded(String(html))
     .replace(/\sstyle="display:\s*none[^"]*"/gi, '')
     .replace(/\sstyle='display:\s*none[^']*'/gi, '')
     .replace(/display:\s*none\s*;?/gi, '')

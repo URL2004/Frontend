@@ -46,36 +46,36 @@
        <kbd id="lavNewKbd">⌘ N</kbd>
      </button>
      <nav class="gp-lav-menu" aria-label="기능 메뉴">
-       <button type="button" class="active" data-tab="main" onclick="switchTab('main')">
+       <a class="active" data-tab="main" href="/">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3 20 7v6c0 4.6-3.2 7.4-8 8.8-4.8-1.4-8-4.2-8-8.8V7l8-4Z"/><path d="m9.5 12 1.8 1.8 3.7-4"/></svg>
          <span>AI 감지 &amp; 휴머나이저</span>
-       </button>
+       </a>
        <!-- 글쓰기 랩(2026-08-26 사장님): 정식 오픈 전 — Pro처럼 연하게 '준비 중'으로 두고 진입은 관리자만 -->
        <button type="button" class="gp-nav-soon" data-tab="writingLab" onclick="openWritingLab()">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15H6.8A2.8 2.8 0 0 0 4 20.8Z"/><path d="M9 8h7M9 12h5"/></svg>
          <span>글쓰기 랩</span>
          <span class="gp-soon-badge">준비 중</span>
        </button>
-       <button type="button" data-tab="notice" onclick="switchTab('notice');loadNotices()">
+       <a data-tab="notice" data-tab-call="loadNotices" href="/notice">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19h14M7 17V9a5 5 0 0 1 10 0v8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
          <span>공지사항</span>
-       </button>
-       <button type="button" data-tab="community" onclick="switchTab('community');loadPosts()">
+       </a>
+       <a data-tab="community" data-tab-call="loadPosts" href="/community">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5Z"/></svg>
          <span>커뮤니티</span>
-       </button>
-       <button type="button" data-tab="faq" onclick="switchTab('faq')">
+       </a>
+       <a data-tab="faq" href="/faq">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.7 2.7 0 0 1 5 1.4c0 1.8-2.6 2.2-2.6 3.8"/><path d="M12 17.5h.01"/></svg>
          <span>자주 묻는 질문</span>
-       </button>
-       <button type="button" data-tab="qna" onclick="switchTab('qna');loadQuestions()">
+       </a>
+       <a data-tab="qna" data-tab-call="loadQuestions" href="/qna">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3a8.5 8.5 0 0 1 8.5 8.5z"/></svg>
          <span>문의하기</span>
-       </button>
-       <button type="button" data-tab="pricing" onclick="switchTab('pricing')">
+       </a>
+       <a data-tab="pricing" href="/pricing">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 15h5"/></svg>
          <span>충전하기</span>
-       </button>
+       </a>
        <button type="button" class="gp-nav-soon" data-tab="pro" onclick="goToPro()">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
          <span>Pro</span>
@@ -86,10 +86,10 @@
          <span class="material-symbols-outlined" aria-hidden="true" style="font-size:20px">inventory_2</span>
          <span>보관함</span>
        </button>
-       <button type="button" data-tab="history" onclick="switchTab('history');loadHistory()">
+       <a data-tab="history" data-tab-call="loadHistory" href="/history">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14v15H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
          <span>작업 기록</span>
-       </button>
+       </a>
        <div id="lavHistSlot" class="gp-lav-hist"></div>
      </nav>
      <div class="gp-lav-side-bottom" id="lavSideFootSlot"></div>
