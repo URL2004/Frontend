@@ -86,22 +86,23 @@ img{max-width:100%}
 .hub-sec i{flex:1;height:1px;background:var(--line)}
 .feature-row{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:20px}
 @media (max-width:860px){.feature-row{grid-template-columns:1fr}}
-a.feat{display:flex;flex-direction:column;justify-content:flex-end;gap:10px;min-height:420px;padding:32px;border-radius:18px;text-decoration:none;color:#fff;background:linear-gradient(145deg,#4443c0,#6d6ee6 62%,#8a8cf0);box-shadow:var(--shadow);position:relative;overflow:hidden;isolation:isolate}
-a.feat img.cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
-a.feat::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(to top,rgba(24,22,54,.9) 10%,rgba(24,22,54,.48) 48%,rgba(24,22,54,.06))}
-a.feat .hub-cat{color:rgba(255,255,255,.9)}
-a.feat strong{font-size:clamp(22px,2.7vw,29px);font-weight:800;line-height:1.32;letter-spacing:-.01em;text-shadow:0 1px 12px rgba(24,22,54,.45);max-width:24ch}
-a.feat p{margin:0;color:rgba(255,255,255,.93);font-size:15px;line-height:1.7;max-width:50ch}
-a.feat time{font-size:12.5px;color:rgba(255,255,255,.75)}
+/* 리드 카드: 밝은 일러스트 위 오버레이 텍스트는 대비 미달 → 이미지/텍스트 분리형 */
+a.feat{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:18px;overflow:hidden;text-decoration:none;color:var(--ink);background:var(--card);box-shadow:var(--shadow);transition:border-color .16s}
+a.feat:hover{border-color:var(--accent)}
+a.feat img.cover{width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;display:block;border-bottom:1px solid var(--line)}
+a.feat .feat-body{display:flex;flex-direction:column;gap:10px;padding:24px 28px 26px;flex:1}
+a.feat strong{font-size:clamp(21px,2.4vw,26px);font-weight:800;line-height:1.35;letter-spacing:-.012em;word-break:keep-all}
+a.feat p{margin:0;color:var(--ink2);font-size:15px;line-height:1.7;max-width:62ch}
+a.feat .meta{margin-top:auto;padding-top:8px;font-size:12.5px;color:var(--muted)}
 /* 사이드: 세로 카드에 와이드 이미지를 욱여넣지 않는다 — 썸네일 가로형 행(비율 고정, 텍스트 우선) */
 .feat-side{display:flex;flex-direction:column;gap:20px;justify-content:space-between}
 .hub-row{display:flex;gap:18px;align-items:stretch;flex:1;border:1px solid var(--line);border-radius:16px;background:var(--card);padding:18px;text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:border-color .16s}
 .hub-row:hover{border-color:var(--accent)}
 .hub-row:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.hub-row .txt{display:flex;flex-direction:column;gap:8px;min-width:0}
+.hub-row .txt{display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:0;flex:1}
 .hub-row strong{font-size:17.5px;font-weight:700;line-height:1.45;letter-spacing:-.01em;word-break:keep-all}
-.hub-row p{margin:0;font-size:14px;color:var(--ink2);line-height:1.65;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.hub-row .meta{margin-top:auto;font-size:12.5px;color:var(--muted)}
+.hub-row p{margin:0;font-size:14px;color:var(--ink2);line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.hub-row .meta{margin-top:2px;font-size:12.5px;color:var(--muted)}
 .hub-row img.cover{flex:0 0 116px;width:116px;height:116px;align-self:center;object-fit:cover;border-radius:12px}
 @media (max-width:520px){.hub-row img.cover{flex-basis:88px;width:88px;height:88px}}
 /* 그리드: 16:9 이미지로 본문 공간 확보, 제목이 이끌고 설명이 받친다 */
@@ -115,8 +116,7 @@ a.feat time{font-size:12.5px;color:rgba(255,255,255,.75)}
 .hub-card:hover{transform:translateY(-2px);border-color:var(--accent)}
 .article-cover{width:100%;height:auto;aspect-ratio:2.4/1;object-fit:cover;border-radius:16px;box-shadow:var(--shadow);margin:22px 0 4px;display:block}
 ::selection{background:var(--accent);color:#fff}
-.hub-card:focus-visible,a.feat:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.hub-cat{font-size:11.5px;font-weight:700;letter-spacing:.12em;color:var(--accent)}
+.hub-card:focus-visible,a.feat:focus-visible,.hub-row:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .tpl-strip{border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:var(--shadow);padding:26px 28px;margin:8px 0 0}
 .tpl-strip h2{margin:0 0 4px;padding:0;border:0;font-size:19px}
 .tpl-strip>p{margin:0 0 16px;font-size:14px;color:var(--muted)}
@@ -369,11 +369,12 @@ function hubPage() {
 <div class="hub-sec"><strong>이번 주 추천</strong><i></i></div>
 <div class="feature-row">
 <a class="feat" href="/blog/${feat.slug}">
-<img class="cover" src="${coverOf(feat.slug)}" alt="" loading="eager" decoding="async">
-<span class="hub-cat">${esc(feat.category)}</span>
+<img class="cover" src="${coverOf(feat.slug)}" alt="" width="1200" height="675" loading="eager" decoding="async">
+<span class="feat-body">
 <strong>${esc(feat.title)}</strong>
 <p>${esc(feat.description)}</p>
-<time>${feat.date}</time>
+<span class="meta">${esc(feat.category)} · <time>${feat.date}</time></span>
+</span>
 </a>
 <div class="feat-side">
 ${side.map(rowCard).join('\n')}
