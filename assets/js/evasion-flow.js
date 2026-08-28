@@ -215,7 +215,7 @@
   }
 
   var STEP_LABEL = {
-    analyzing: '분석', report: 'AI 감지 보고서', choose: '방법 선택', reduce: 'AI 티 줄이기 설정',
+    analyzing: '분석', report: 'AI 감지 보고서', select: '방법 선택',
     job: '휴머나이징 중', blocked: '다시 도전', done: '완료'
   };
 
@@ -249,9 +249,9 @@
     var label = $('lavFlowStep'); if (label) label.textContent = STEP_LABEL[name] || '';
     var ctx = $('lavFlowCtx'), src = $('lavInput');
     if (ctx && src) ctx.textContent = '원문 ' + (src.value || '').length.toLocaleString() + '자';   // 글자수 통일: 공백 포함(과금·메인 컴포저와 동일)
-    // 뒤로 버튼: 방법선택(choose)·회피설정(reduce)·감지 보고서(report)에서 표시. 분석중·작업중·완료에선 숨김.
+    // 뒤로 버튼: 방법선택(select)·감지 보고서(report)에서 표시. 분석중·작업중·완료에선 숨김.
     var back = document.querySelector('.lav-flow-back');
-    if (back) back.style.visibility = (name === 'choose' || name === 'reduce' || name === 'report') ? 'visible' : 'hidden';
+    if (back) back.style.visibility = (name === 'select' || name === 'report') ? 'visible' : 'hidden';
     var edit = document.querySelector('.lav-flow-edit');
     if (edit) edit.hidden = name === 'analyzing' || name === 'job' || name === 'blocked' || name === 'done';
   }
@@ -267,6 +267,7 @@
 
   var lastDiag = null;   // 결과 화면의 예상 밴드 표기에 재사용
   var toneSelectionTouched = false;
+  var lavMemoOverride = '';   // 차단 화면 인라인 메모(재도전 시 1회 사용) — 사전 메모 아코디언 제거(2026-08-28) 후 유일한 사전 메모 경로
 
   function advancedUnavailable(d) {
     if (!d) return false;
@@ -278,6 +279,7 @@
 
   function resetToneChoice() {
     toneSelectionTouched = false;
+    lavMemoOverride = '';   // 새 진단 = 새 흐름 — 차단 재도전 메모 초기화
     var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');
     if (blogRadio) blogRadio.checked = true;
   }
@@ -306,12 +308,7 @@
     var src = $('lavInput');
     var text = src ? src.value : '';
     resetToneChoice();
-    cameFromReport = false;   // 진단 경유 동선 — 설정 화면 뒤로가기는 방법선택으로
-    // ★ 코칭 픽 조기 프리페치: 자동 코칭을 사용자가 켠 경우에만 비용을 쓰고 후보를 캐시한다.
-    try {
-      var ac = $('lavAutoCoach');
-      if (ac && ac.checked && !ac.disabled && text && text.trim().replace(/\s/g, '').length >= 80) fetchCoach(text);
-    } catch (e) { }
+    cameFromReport = false;   // 진단 경유 동선 — 방법선택 뒤로가기는 입력 화면으로
     show('analyzing');
     var minWait = new Promise(function (r) { setTimeout(r, 900); });   // 스피너 최소 노출(즉답이면 화면이 깜빡임)
     console.info('[evasion] API_BASE =', window.apiBase ? window.apiBase() : '?');
@@ -324,31 +321,54 @@
       var d = out[0];
       if (!(d && d.ok)) console.warn('[evasion] 진단 폴백 동작 중 — 백엔드 미연결 상태(블로그 변환은 실패함)');
       applyDiag(d && d.ok ? d : fakeDiagnose(text));
-      show('choose');
+      applyAdvancedRouting();   // 3택 화면 진입 시 고급 잠금·추천을 즉시 반영(구 reduce 진입 로직 이동)
+      applyUseCasePreset();     // 광고 use_case 맥락 → 세부 설정 글 종류 프리셋(P0-6, 1회만)
+      renderSelectCosts();
+      show('select');
     });
   };
 
+  // 광고 용도 맥락(use_case, head-tracking이 파생·보존) → 글 종류 세부 설정 프리셋.
+  // 자동 판별이 기본이고 서버도 원문 장르가 뚜렷하면 자동을 우선하므로, 비어 있을 때 1회만 살짝 채운다.
+  var useCasePresetDone = false;
+  var USE_CASE_PROFILE = { assignment: 'report_assignment', resume: 'resume_application', paper: 'academic_paper', blog: 'review_blog' };
+  function applyUseCasePreset() {
+    if (useCasePresetDone) return;
+    useCasePresetDone = true;
+    try {
+      var ctx = window.gpAttribution && window.gpAttribution.getContext ? window.gpAttribution.getContext() : null;
+      var profile = ctx && USE_CASE_PROFILE[ctx.use_case];
+      var select = $('lavDocumentProfile');
+      if (profile && select && !select.value) {
+        select.value = profile;
+        if (window.lavDocumentProfileChange) window.lavDocumentProfileChange();
+      }
+    } catch (e) { /* 프리셋 실패 시 자동 판별 유지 */ }
+  }
+
   window.lavFlowGo = function (name) {
-    if (name === 'reduce') applyAdvancedRouting();
     show(name);
-    if (name === 'reduce' && window.lavToneChange) window.lavToneChange();   // 분량/근거 블록 동기화
   };
 
   // v2 진단 결과에 따라 고급 잠금과 추천 선택을 한 곳에서 동기화한다.
-  // 추천 선택은 설정 화면에 먼저 보여 주며, 실제 실행은 기존 확인 모달을 통과해야 한다.
+  // 3택 화면(select)의 카드 상태(잠금·추천 배지)와 숨김 라디오를 함께 갱신한다.
   function applyAdvancedRouting() {
     var unfit = advancedUnavailable(lastDiag);
     var recommendAdvanced = !unfit && !!(lastDiag && lastDiag.recommendedMode === 'formal');
     var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
     var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');
-    var formalOpt = formalRadio ? formalRadio.closest('.lav-tone-opt') : null;
     if (formalRadio) {
       formalRadio.disabled = unfit;
       if (unfit && formalRadio.checked && blogRadio) blogRadio.checked = true;   // 고급 선택돼 있었으면 기본으로
       if (!unfit && !toneSelectionTouched) formalRadio.checked = recommendAdvanced;
     }
     if (!toneSelectionTouched && blogRadio) blogRadio.checked = !recommendAdvanced || unfit;
-    if (formalOpt) formalOpt.classList.toggle('is-locked', unfit);
+    // 고급 카드 잠금 표시 + 근거 체크박스 동반 잠금
+    var formalCard = $('lavCardFormal');
+    if (formalCard) { formalCard.classList.toggle('is-locked', unfit); formalCard.disabled = unfit; }
+    var lockNote = $('lavFormalLockNote'); if (lockNote) lockNote.hidden = !unfit;
+    var evRow = $('lavEvidenceRow'); if (evRow) evRow.classList.toggle('ev-off', unfit);
+    var ev = $('lavEvidence'); if (ev) { ev.disabled = unfit; if (unfit) ev.checked = false; }
     var basicRecommended = $('lavBasicRecommended');
     var formalRecommended = $('lavFormalRecommended');
     if (basicRecommended) basicRecommended.hidden = recommendAdvanced;
@@ -367,13 +387,34 @@
     }
   }
 
-  // 뒤로: 회피설정→방법선택, 방법선택→(보고서 경유면) 보고서, 보고서→입력화면(원문 유지)
+  // 3택 카드 클릭: 숨김 라디오에 값 반영 후 확인 모달 직행(구 reduce 화면 생략 — 2026-08-28 단계 축소)
+  window.lavSelectTone = function (tone) {
+    var radio = document.querySelector('input[name="lavTone"][value="' + tone + '"]');
+    if (!radio || radio.disabled) return;   // 고급 잠금 상태 방어
+    radio.checked = true;
+    toneSelectionTouched = true;
+    window.lavOpenConfirm();
+  };
+
+  // 3택 카드 인라인 비용·시간 — 서버와 동일한 단가 공식 재사용
+  function renderSelectCosts() {
+    var src = $('lavInput');
+    var text = src ? src.value : '';
+    var len = text.length;
+    var evOn = !!($('lavEvidence') && $('lavEvidence').checked && !$('lavEvidence').disabled);
+    var shortLabel = shortHumanizeCredit(len) + '크레딧 · ' + estimateTimeLabel(shortEstimateSec(text));
+    var p = $('lavCostPolish'); if (p) p.textContent = shortLabel;
+    var b = $('lavCostBlog'); if (b) b.textContent = shortLabel;
+    var f = $('lavCostFormal');
+    if (f) f.textContent = formalCredit(len, evOn) + '크레딧 · ' + estimateTimeRangeLabel(formalEstimateRange(text, evOn));
+  }
+
+  // 뒤로: 방법선택→(보고서 경유면) 보고서, 보고서→입력화면(원문 유지)
   window.lavFlowBack = function () {
     var step = $('lavFlow') && $('lavFlow').dataset.step;
-    if (step === 'reduce') show('choose');
-    else if (step === 'choose') { if (cameFromReport) show('report'); else window.lavFlowReset(); }
+    if (step === 'select') { if (cameFromReport) show('report'); else window.lavFlowReset(); }
     else if (step === 'report') window.lavFlowReset();
-    else show('choose');
+    else show('select');
   };
 
   // ── AI 감지 분리: 유료 감지(100자당 1크레딧) → 보고서(휴머나이징 전환 퍼널) ──────────
@@ -691,7 +732,9 @@
         }
       });
     }
-    show('choose');
+    applyAdvancedRouting();   // 보고서 경유 진입도 3택 카드 상태·비용을 즉시 준비
+    renderSelectCosts();
+    show('select');
   };
 
   window.lavFlowReset = function () {
@@ -782,51 +825,10 @@
     }
   }
 
+  // 3택 화면(2026-08-28): 구 reduce 화면의 블록 토글이 사라져 라디오 변경은 비용 갱신만 담당한다.
   window.lavToneChange = function (userInitiated) {
     if (userInitiated === true) toneSelectionTouched = true;
-    var formal = document.querySelector('input[name="lavTone"]:checked');
-    var isFormal = formal && formal.value === 'formal';
-    var basicStyle = currentBasicStyle();
-    var isReportBasic = !isFormal && basicStyle === 'report';
-    var styleBlock = $('lavBasicStyleBlock');
-    if (styleBlock) styleBlock.hidden = !!isFormal;
-    var lenBlock = $('lavLenBlock');
-    if (lenBlock) lenBlock.hidden = !isFormal;
-    // 근거 보강은 고급 휴머나이징 전용 — 엔진이 blog 경로 미지원이라 기본 휴머나이징에선 기능·시각 모두 잠금
-    var ev = $('lavEvidence');
-    if (ev) {
-      ev.disabled = !isFormal;
-      if (!isFormal && ev.checked) { ev.checked = false; window.lavEvidenceChange(); }
-    }
-    var evBlock = $('lavEvidenceBlock');
-    if (evBlock) evBlock.classList.toggle('ev-off', !isFormal);
-    var evHint = $('lavEvidenceHint');
-    if (evHint) evHint.hidden = isFormal;
-    // ★ 자동 코칭은 친근한 표현 보조/고급에서만 적용. 격식 표현 보조는 원문 인칭·사실 보존을 위해 끈다.
-    var ac = $('lavAutoCoach');
-    if (ac) {
-      ac.disabled = isReportBasic;
-      if (isReportBasic) ac.checked = false;
-    }
-    var acBlock = $('lavAutoCoachBlock');
-    if (acBlock) {
-      acBlock.hidden = isReportBasic;
-      acBlock.classList.remove('ev-off');
-    }
-    // 경험·관점 아코디언(래퍼) — 격식 표현 보조에서는 내부(코칭·메모)가 전부 잠기므로 통째로 숨김
-    var persBlock = $('lavPersonalBlock');
-    if (persBlock) persBlock.hidden = isReportBasic;
-    var acHint = $('lavAutoCoachHint');
-    if (acHint) acHint.hidden = true;
-    if (isReportBasic) {
-      var memoBlock = $('lavMemoBlock');
-      if (memoBlock) memoBlock.hidden = true;
-      var memoHint = $('lavMemoToggleHint');
-      if (memoHint) memoHint.hidden = true;
-    }
-    // 서버와 같은 길이 계산식으로 예상 시간·크레딧을 표시한다. 대기열 시간은 별도다.
-    updateCtaMeta();
-    if (!isReportBasic) window.lavAutoCoachChange();   // 메모칸 가시성 동기화(자동 ON=숨김 / 자동OFF=노출) + 후보 프리페치
+    renderSelectCosts();
   };
 
   window.lavBasicStyleChange = function () {
@@ -837,60 +839,15 @@
     var on = $('lavEvidence') && $('lavEvidence').checked;
     var note = $('lavEvidenceNote');
     if (note) note.hidden = !on;
-    updateCtaMeta();
+    renderSelectCosts();   // 근거 +100크레딧을 고급 카드 비용에 즉시 반영
   };
 
-  // ★ 경험 메모 4칸(직접경험·사례·수치·내생각) → 한 줄에 한 가지씩 합쳐 memo 문자열로(엔진은 줄 단위로 녹임).
-  var MEMO_FIELDS = ['lavMemoExp', 'lavMemoCase', 'lavMemoNum', 'lavMemoView'];
+  // 사전 메모는 차단 화면 인라인 입력(lavMemoOverride) 하나로 축소 — 경험·관점 아코디언과
+  // 자동 코칭(coach-suggest)은 사후 문단 보강 루프가 대체한다(2026-08-28 흐름 단순화).
   function collectMemo() {
-    var lines = [];
-    MEMO_FIELDS.forEach(function (id) {
-      var el = $(id);
-      if (el && el.value.trim()) {
-        el.value.split(/\n+/).forEach(function (ln) { ln = ln.trim(); if (ln) lines.push(ln); });
-      }
-    });
-    // 자동 코칭 모달에서 체크한 추천 픽(입장·경험)도 memo로 합류 — 체크=저자 승인(무날조)
-    document.querySelectorAll('#lavCoachPicksList input.lav-pick-cb:checked').forEach(function (cb) {
-      var t = (cb.getAttribute('data-text') || '').trim();
-      if (t && lines.indexOf(t) < 0) lines.push(t);
-    });
-    return lines.join('\n');
+    return (lavMemoOverride || '').trim();
   }
-
-  // ── 자동 코칭 후보 fetch(캐시·프리페치). /coach-suggest는 LLM 1콜(~10초)이라 시작 모달 전에 미리 받아둔다.
-  var _coachCache = {}, _coachPending = {};
-  function coachKey(t) { return (t || '').trim(); }
-  function fetchCoach(text) {
-    var key = coachKey(text);
-    if (!key || key.replace(/\s/g, '').length < 80) return Promise.resolve({ stances: [], experiences: [] });
-    if (_coachCache[key]) return Promise.resolve(_coachCache[key]);
-    if (_coachPending[key]) return _coachPending[key];
-    var p = fetch(window.apiUrl('/coach-suggest'), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: text })
-    }).then(function (r) { return r.json(); }).then(function (d) {
-      var out = (d && d.ok) ? { stances: d.stances || [], experiences: d.experiences || [] } : { stances: [], experiences: [] };
-      _coachCache[key] = out; delete _coachPending[key]; return out;
-    }).catch(function () { delete _coachPending[key]; return { stances: [], experiences: [] }; });
-    _coachPending[key] = p;
-    return p;
-  }
-  // 자동 코칭 ON ↔ 직접 메모칸 토글(가독성: 둘 중 하나만 노출)
-  window.lavAutoCoachChange = function () {
-    var ac = $('lavAutoCoach');
-    var on = !!(ac && ac.checked && !ac.disabled);
-    var memo = $('lavMemoBlock'); if (memo) memo.hidden = on;          // 자동 ON → 메모칸 숨김
-    var hint = $('lavMemoToggleHint'); if (hint) hint.hidden = !on;    // 자동 ON일 때만 '직접 입력' 링크
-    if (on) { var src = $('lavInput'); if (src) fetchCoach(src.value); }  // 미리 후보 받아두기(모달 즉시 표시)
-  };
-  window.lavMemoManual = function () {   // '경험 메모 직접 입력' → 자동 끄고 메모칸 노출
-    var ac = $('lavAutoCoach');
-    if (ac && !ac.disabled) { ac.checked = false; window.lavAutoCoachChange(); }
-  };
-  function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  var _coachRenderGen = 0;
-  var _coachLoading = false;
+  var _coachLoading = false;   // 시작 버튼 잠금 상태(효과 사전고지와 공유) — 코칭 제거 후에도 잠금 계약 유지
   function lavStartBtn() { return $('lavConfirmStartBtn'); }
   function effectNoticeRequired() {
     var notice = $('lavEffectNotice');
@@ -922,37 +879,6 @@
   }
   function effectNoticeAcceptedForRun() {
     return !effectNoticeRequired() || !!($('lavEffectNoticeAccepted') && $('lavEffectNoticeAccepted').checked);
-  }
-  // 시작 확인 모달에 추천 픽(입장·경험) 체크박스 렌더 — 자동 코칭 ON이면(기본/고급 둘 다).
-  //   ★2026-06-18: 해요체 캐주얼 글(기본 휴머나이징)에서 자동코칭 픽이 안 뜨던 문제 — 'formal 전용' 게이트 제거.
-  //   메모 경로(collectMemo→memo)는 blog(runShortJob)·formal 둘 다 전송하므로 픽이 양쪽에 적용된다.
-  //   ★★2026-06-18(사장님 지적): 확인창이 먼저 뜨고 픽이 ~9초 뒤 채워져, 그 빈 순간에 사용자가 "코칭 안 되네" 하고
-  //   바로 시작을 눌러 픽을 건너뛴다. → 픽 로딩 동안 '시작하기' 버튼을 잠그고(추천 불러오는 중…), 픽이 뜨거나
-  //   실패/없음·15초 타임아웃 시 풀어준다. 프리페치(진단단계)가 끝나 있으면 즉시 풀려 체감 지연 거의 없음.
-  function renderCoachPicks(s) {
-    var wrap = $('lavCoachPicks'), list = $('lavCoachPicksList');
-    if (!wrap || !list) { lavStartBtnState(false); return; }
-    if (!s.autoCoach) { wrap.hidden = true; lavStartBtnState(false); return; }
-    wrap.hidden = false;
-    list.innerHTML = '<div class="lav-coach-picks-loading">원문과 어울리는 관점·경험 후보를 찾고 있어요…</div>';
-    lavStartBtnState(true);   // 픽 뜰 때까지 시작 잠금
-    var src = $('lavInput'); var text = src ? src.value : '';
-    var gen = ++_coachRenderGen;
-    var done = false;
-    var unlock = function () { if (gen === _coachRenderGen) lavStartBtnState(false); };
-    setTimeout(function () { if (!done) unlock(); }, 15000);   // 안전: 15초 넘으면 잠금 해제(무한 잠금 방지)
-    fetchCoach(text).then(function (d) {
-      done = true;
-      if (gen !== _coachRenderGen) return;   // 더 최신 요청 있으면 무시
-      lavStartBtnState(false);               // 로딩 끝 → 시작 가능
-      var items = ((d.stances || []).map(function (x) { return { text: x.text, tag: '관점', pre: false }; }))
-        .concat((d.experiences || []).map(function (x) { return { text: x.text, tag: '경험', pre: false }; }));
-      if (!items.length) { wrap.hidden = true; return; }
-      list.innerHTML = items.map(function (it) {
-        return '<label class="lav-pick"><input type="checkbox" class="lav-pick-cb"' + (it.pre ? ' checked' : '') +
-          ' data-text="' + escHtml(it.text) + '"><span class="lav-pick-tag">' + it.tag + '</span><span class="lav-pick-text">' + escHtml(it.text) + '</span></label>';
-      }).join('');
-    });
   }
   function currentBasicStyle() {
     var style = document.querySelector('input[name="lavBasicStyle"]:checked');
@@ -990,19 +916,17 @@
   };
   function currentSettings() {
     var tone = document.querySelector('input[name="lavTone"]:checked');
-    var len = document.querySelector('input[name="lavLen"]');
     var ev = $('lavEvidence');
-    var ac = $('lavAutoCoach');
     var basicStyle = tone && tone.value === 'blog' ? currentBasicStyle() : null;
     var basicReport = basicStyle === 'report';
     return {
       tone: tone ? tone.value : 'blog',
       basicStyle: basicStyle || 'blog',
       documentProfile: currentDocumentProfile(),
-      length: len ? len.value : 'keep',
+      length: 'keep',   // 분량 옵션 화면 제거(2026-08-28) — 서버 계약은 keep 고정 유지
       memo: basicReport ? '' : collectMemo(),
-      evidence: !!(ev && ev.checked),
-      autoCoach: !basicReport && !!(ac && ac.checked && !ac.disabled)   // 자동 코칭 — 사용자가 켠 경우에만 추천 후보를 표시
+      evidence: !!(ev && ev.checked && !ev.disabled),
+      autoCoach: false   // 사전 코칭 제거(2026-08-28) — 사후 문단 보강이 대체
     };
   }
 
@@ -1011,7 +935,7 @@
     var ttl = document.querySelector('.lav-confirm-title');
     if (ttl) ttl.textContent = '이 설정으로 시작할까요?';
     var s = currentSettings();
-    renderCoachPicks(s);   // 자동 코칭 ON(고급)이면 추천 픽 체크박스 표시(시작 직전 선택)
+    lavStartBtnState(false);   // 코칭 잠금 제거(2026-08-28) — 잔여 잠금 방어
     renderEffectNotice(s);
     var sum = $('lavConfirmSummary');
     if (sum) {
@@ -1020,9 +944,7 @@
       rows.push(['글 종류', s.documentProfile ? DOCUMENT_PROFILE_LABELS[s.documentProfile] + ' · 애매할 때만 반영' : '자동 판별']);
       if (s.tone === 'blog') rows.push(['문체 보조', s.basicStyle === 'report' ? '격식 있는 표현 보조 · 원문 장르 우선' : '친근한 표현 보조 · 원문 장르 우선']);
       if (s.tone === 'formal') rows.push(['분량', '원문에 가깝게 유지']);
-      // 자동 코칭 ON이면 위 추천 픽 섹션이 입력을 대신함 → 메모 행 생략(중복·혼동 방지)
-      if (s.tone === 'blog' && s.basicStyle === 'report') rows.push(['추가 메모', '사용 안 함 · 원문 중심']);
-      else if (!(s.tone === 'formal' && s.autoCoach)) rows.push(['경험 메모', s.memo ? '입력함 · 글에 자연스럽게 녹여요' : '없음']);
+      if (s.memo) rows.push(['재도전 메모', '입력함 · 글에 자연스럽게 녹여요']);
       rows.push(['근거 보강', s.tone === 'formal' ? (s.evidence ? '켬 — 검색 후 검수·승인' : '끔') : '기본 휴머나이징에선 사용 안 함']);
       sum.innerHTML = rows.map(function (r) {
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
@@ -1125,7 +1047,7 @@
     }).catch(function (err) {
       if (gen !== pollGen) return;
       alert(err && err.message ? err.message : '승인 처리에 실패했어요.');
-      show('reduce');
+      show('select');
     });
   }
 
@@ -1304,7 +1226,7 @@
       } catch (err) {
         if (gen !== pollGen) return;
         err.gpResumePayload = { flowMode: mode, text: text, settings: s || {} };
-        await handleTransformStartError(err, mode === 'polish' ? 'choose' : 'reduce', gen);
+        await handleTransformStartError(err, 'select', gen);
       }
     })();
   }
@@ -1318,8 +1240,7 @@
     if (!text) { if (src) src.focus(); return; }
     pendingPolish = true;
     renderEffectNotice({ tone: 'polish' });
-    var cp = $('lavCoachPicks'); if (cp) cp.hidden = true;   // 다듬기(최소수정)는 코칭 픽 없음 — 모달 재사용 시 직전 잔여 숨김
-    lavStartBtnState(false);   // 코칭 잠금이 남아있을 수 있으니 시작 버튼 활성화 보장
+    lavStartBtnState(false);   // 잔여 시작버튼 잠금 방어
     var ttl = document.querySelector('.lav-confirm-title');
     if (ttl) ttl.textContent = '원문 보존 다듬기를 시작할까요?';
     var sum = $('lavConfirmSummary');
@@ -1518,7 +1439,7 @@
     clearJobRef();
     clearActiveJobUi();
     if (window.gpToast) window.gpToast('작업을 중단했어요. 크레딧은 차감되지 않았습니다.', { type: 'info' });
-    show('reduce');
+    show('select');
   };
   // ── P5: jobId 재진입 — 새로고침·재방문 시 진행 중 작업 복원(서버 job은 어차피 계속 돌고 있음) ──
   function saveJobRef(jobId, status) {
@@ -1637,7 +1558,7 @@
     if (err && err.httpStatus === 422 && err.code === 'NO_EDITABLE_CONTENT') {
       clearJobRef();
       clearActiveJobUi();
-      show(fallbackStep || 'reduce');
+      show(fallbackStep || 'select');
       var inputNotice = err.message || '변환할 일반 본문을 찾지 못했어요.';
       if (window.gpToast) window.gpToast(inputNotice, { type: 'warning', title: '입력 내용을 확인해 주세요' });
       else alert(inputNotice);
@@ -1651,7 +1572,7 @@
         effectNoticeCode: err.effectNoticeCode || 'LOW_EXPECTED_EFFECT',
         requiresEffectConfirmation: true
       });
-      show(fallbackStep || 'reduce');
+      show(fallbackStep || 'select');
       if (window.gpToast) window.gpToast('변화가 작을 수 있는 글이에요. 예상 효과를 확인하면 진행할 수 있어요.', { type: 'warning', title: '예상 효과 확인' });
       window.lavOpenConfirm();
       return;
@@ -1683,7 +1604,7 @@
     }
     if (err && err.httpStatus === 402 && typeof window.gpOpenCreditCheckout === 'function') {
       clearActiveJobUi();
-      show(fallbackStep || 'reduce');
+      show(fallbackStep || 'select');
       var resumePayload = err.gpResumePayload || {};
       var resumeText = String(resumePayload.text || (($('lavInput') || {}).value || ''));
       var resumeSettings = resumePayload.settings || {};
@@ -1706,7 +1627,7 @@
     if (!/차감/.test(msg)) msg += '\n\n크레딧은 차감되지 않았어요. (차감은 작업이 완료될 때만 일어나요)';
     alert(msg);
     clearActiveJobUi();
-    show(fallbackStep || 'reduce');
+    show(fallbackStep || 'select');
   }
 
   // 폴링: 6초 간격, 최대 45분(근거 검색+재구성). 창을 닫아도 서버 작업은 계속됨(job 방식).
@@ -1750,7 +1671,7 @@
         clearActiveJobUi();
         notifyJobIssue(jobId, st.error || '작업을 찾을 수 없어요. 다시 시도해 주세요.');
         if (!window.gpNotify) alert(st.error || '작업을 찾을 수 없어요. (서버가 재시작됐을 수 있어요) 다시 시도해 주세요.');
-        show('choose');
+        show('select');
         return;
       }
       if (st.status === 'cancelled') {
@@ -1758,7 +1679,7 @@
         activeCancel = null;
         clearJobRef();
         clearActiveJobUi();
-        show('reduce');
+        show('select');
         return;
       }
       if (st.status === 'queued') {
@@ -1810,7 +1731,7 @@
         clearActiveJobUi();
         notifyJobIssue(jobId, st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
         if (!window.gpNotify) alert(st.error || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.');
-        show(st.mode === 'polish' ? 'choose' : 'reduce');   // 다듬기는 설정 화면이 없음 — 방법 선택으로
+        show('select');   // 방법 선택으로
         return;
       }
     }
@@ -1872,8 +1793,11 @@
     renderBillingDisposition(st);
     renderResultNotices(st);
     renderDoneNextStep(st);
-    if ($('lavDoneBody')) $('lavDoneBody').textContent = (st.result && st.result.outputText) || '';
-    lavSaveToLibrary(label, st.result && st.result.outputText, grade ? grade + '등급' : '');
+    renderDoneBody((st.result && st.result.outputText) || '', st.result && st.result.refineTargets);
+    lavDoneLibId = lavSaveToLibrary(label, st.result && st.result.outputText, grade ? grade + '등급' : '');
+    lavRefineJobId = (st && st.jobId) || null;
+    lavRefineBusy = false; refinePollGen++;   // 이전 보강 폴링 자연 종료
+    renderRefineTargets(st);
     notifyJobDone(st, label);
   }
 
@@ -2055,29 +1979,28 @@
     }
   }
 
-  // 경험 메모 넣고 다시 — 설정 화면으로 돌아가 메모칸에 포커스(원문은 lavInput에 유지 → 재제출 시 새 작업)
+  // 메모 반영해 다시 도전 — 차단 화면 인라인 메모(D6)를 다음 제출에 실어 방법 선택으로 복귀
+  //   (원문은 lavInput에 유지 → 카드 선택·확인 모달 경유 재제출 = 새 작업·재과금 안내)
   window.lavBlockedRetryMemo = function () {
+    var memoEl = $('lavBlockedMemo');
+    lavMemoOverride = memoEl ? (memoEl.value || '').trim() : '';
     lavBlockedJobId = null;
     clearJobRef();
     clearActiveJobUi();
-    show('reduce');
-    // 접힌 아코디언을 펼치고, 자동 코칭이 켜져 있으면 꺼서 메모칸을 노출
-    var pers = $('lavPersonalBlock');
-    if (pers) pers.open = true;
-    if (window.lavMemoManual) window.lavMemoManual();
-    var memo = $('lavMemoExp');
-    if (memo) { try { memo.focus(); } catch (e) { } try { memo.scrollIntoView({ block: 'center' }); } catch (e) { } }
+    applyAdvancedRouting();
+    renderSelectCosts();
+    show('select');
   };
-  // 근거 보강 켜고 다시 — 고급(formal)으로 전환 + 근거 토글 ON
+  // 근거 보강 켜고 다시 — 고급(formal)+근거 ON으로 세팅 후 확인 모달 직행(화면 경유 생략)
   window.lavBlockedRetryEvidence = function () {
     lavBlockedJobId = null;
     clearJobRef();
     clearActiveJobUi();
     var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
-    if (formalRadio) { formalRadio.checked = true; if (window.lavToneChange) window.lavToneChange(); }
+    if (formalRadio && !formalRadio.disabled) { formalRadio.checked = true; toneSelectionTouched = true; }
     var ev = $('lavEvidence');
     if (ev && !ev.disabled) { ev.checked = true; if (window.lavEvidenceChange) window.lavEvidenceChange(); }
-    show('reduce');
+    window.lavOpenConfirm();
   };
   // 보존형 다듬기로 받기 — 명시 동의로만 보존형 재처리(보존형 단가 차감). 백그라운드 처리 → 폴링으로 완료 수신.
   window.lavBlockedAcceptFallback = function () {
@@ -2159,7 +2082,7 @@
     activeCancel = null;
     clearJobRef();
     clearActiveJobUi();
-    show('choose');
+    show('select');
   };
 
   function makeJobCanceller(jobId) {
@@ -2219,7 +2142,7 @@
       } catch (err) {
         if (gen !== pollGen) return;
         err.gpResumePayload = { flowMode: 'formal', text: text, settings: s || {} };
-        await handleTransformStartError(err, 'reduce', gen);
+        await handleTransformStartError(err, 'select', gen);
       }
     })();
   }
@@ -2303,22 +2226,230 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   };
 
+  // ── 사후 문단 보강(2026-08-27): 결과 아래 코칭 섹션 — 추상 문단에 실제 경험 한 줄을 받아 그 문단만 재생성.
+  //   프레이밍 계약: 추상성은 원문 귀속(엔진 실패가 아님) · 최대 2개 · 결과 본문과 시각 분리 · 무변화는 정직 안내·무과금.
+  var lavRefineJobId = null, lavRefineBusy = false, lavDoneLibId = null, refinePollGen = 0;
+
+  // 결과 본문을 문단 단위 DOM으로 렌더 — 보강 대상 문단을 본문 안에서 직접 강조한다.
+  //   구분자(빈 줄)는 텍스트 노드로 보존 → container.textContent === outputText 그대로라
+  //   복사·다운로드(textContent 기반)가 깨지지 않는다. flashIdx = 방금 보강된 문단(펄스 표시).
+  function renderDoneBody(outputText, targets, flashIdx) {
+    var body = $('lavDoneBody');
+    if (!body) return;
+    var text = outputText || '';
+    var targetIdx = {};
+    (targets || []).forEach(function (t) { targetIdx[t.index] = true; });
+    body.innerHTML = '';
+    var parts = text.split(/(\n[ \t]*\n+)/);
+    var contentIdx = 0;
+    for (var i = 0; i < parts.length; i++) {
+      var piece = parts[i];
+      if (!piece) continue;
+      if (i % 2 === 1 || !piece.trim()) { body.appendChild(document.createTextNode(piece)); continue; }
+      var span = document.createElement('span');
+      span.className = 'lav-para';
+      span.setAttribute('data-para-idx', String(contentIdx));
+      if (targetIdx[contentIdx]) span.classList.add('is-refine-target');
+      if (flashIdx === contentIdx) span.classList.add('is-refreshed');
+      span.textContent = piece;
+      body.appendChild(span);
+      contentIdx++;
+    }
+    if (typeof flashIdx === 'number') {
+      setTimeout(function () {
+        var el = body.querySelector('.lav-para.is-refreshed');
+        if (el) el.classList.remove('is-refreshed');
+      }, 1800);
+    }
+  }
+
+  function renderRefineTargets(st) {
+    var wrap = $('lavDoneRefine'), list = $('lavDoneRefineList'), okLine = $('lavDoneRefineOk');
+    if (!wrap || !list) return;
+    var result = (st && st.result) || {};
+    var targets = result.refineTargets;
+    if (targets === undefined) { wrap.hidden = true; return; }   // 백엔드 플래그 OFF — 섹션 자체를 숨김
+    wrap.hidden = false;
+    list.innerHTML = '';
+    var refineInfo = result.refine || {};
+    var freeLeft = Math.max(0, Number(refineInfo.freeLeft) || 0);
+    if (!targets.length) { if (okLine) okLine.hidden = false; return; }   // 빈 배열 = 구체성 충분(긍정 신호)
+    if (okLine) okLine.hidden = true;
+    targets.slice(0, 2).forEach(function (t) {
+      var card = document.createElement('div');
+      card.className = 'lav-refine-card';
+      var quote = document.createElement('blockquote');
+      quote.className = 'lav-refine-quote';
+      quote.textContent = '“' + (t.snippet || '') + '…”';
+      quote.title = '누르면 결과에서 이 문단 위치로 이동해요';
+      quote.onclick = function () {   // 카드 ↔ 본문 강조 연결: 스니펫 클릭 = 해당 문단으로 스크롤 + 펄스
+        var el = document.querySelector('#lavDoneBody .lav-para[data-para-idx="' + t.index + '"]');
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('is-pulse');
+        setTimeout(function () { el.classList.remove('is-pulse'); }, 1300);
+      };
+      var hint = document.createElement('p');
+      hint.className = 'lav-refine-hint';
+      hint.textContent = '위 결과에서 보라색으로 칠해진 문단이에요. 원문에 구체적인 장면·수치가 없어 일반론으로 남아 있어요.';
+      // "뭘 써야 할지" 가이드 — 정적 텍스트라 innerHTML 사용(사용자 입력 없음)
+      var guide = document.createElement('div');
+      guide.className = 'lav-refine-guide';
+      guide.innerHTML = '<b>이 문단 주제로 직접 겪은 일을 한 줄이면 돼요</b>'
+        + '<span><i>언제·어디서</i> 작년 겨울, 편의점 야간 알바에서</span>'
+        + '<span><i>무슨 일</i> 정산이 30분 늦어 막차를 놓쳤다</span>'
+        + '<span><i>숫자가 있으면 더 좋아요</i> 2년간 · 세 번 · 30분</span>';
+      var row = document.createElement('div');
+      row.className = 'lav-refine-row';
+      var input = document.createElement('textarea');
+      input.rows = 2;
+      input.maxLength = 500;
+      input.className = 'lav-refine-input';
+      input.placeholder = '예) 작년 겨울 편의점 야간 알바에서 정산이 30분 늦어 막차를 놓친 적이 있다';
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'lav-refine-btn';
+      var credit = Number(t.credit) || 0;
+      btn.textContent = freeLeft > 0
+        ? '내 경험 넣어 이 문단만 다시 다듬기 (무료 ' + freeLeft + '회 남음)'
+        : '내 경험 넣어 이 문단만 다시 다듬기 (' + credit + '크레딧)';
+      var status = document.createElement('p');
+      status.className = 'lav-refine-status';
+      status.hidden = true;
+      btn.onclick = function () { lavRefineSubmit(t.index, credit, freeLeft, input, btn, status); };
+      row.appendChild(input); row.appendChild(btn);
+      card.appendChild(quote); card.appendChild(hint); card.appendChild(guide); card.appendChild(row); card.appendChild(status);
+      list.appendChild(card);
+    });
+  }
+
+  function lavRefineStatus(statusEl, msg, isError) {
+    if (!statusEl) return;
+    statusEl.hidden = !msg;
+    statusEl.textContent = msg || '';
+    statusEl.classList.toggle('is-error', !!isError);
+  }
+
+  async function lavRefineSubmit(idx, credit, freeLeft, input, btn, statusEl) {
+    if (lavRefineBusy || !lavRefineJobId) return;
+    var memo = (input && input.value || '').trim();
+    if (memo.length < 5) { lavRefineStatus(statusEl, '실제 겪은 일을 5자 이상 적어 주세요.', true); return; }
+    // 유료 회차 클라이언트 프리체크 — accept-fallback과 동일 패턴
+    if (freeLeft <= 0 && credit > 0 && window.UP !== 'unlimited' && (Number(window.UC) || 0) < credit) {
+      if (typeof window.gpOpenCreditCheckout === 'function') {
+        window.gpOpenCreditCheckout({ action: 'paragraph_refine', source: 'refine_card', neededCredits: credit, currentCredits: Number(window.UC) || 0 });
+      } else lavRefineStatus(statusEl, '크레딧이 부족해요. 충전 후 다시 시도해 주세요.', true);
+      return;
+    }
+    lavRefineBusy = true;
+    input.disabled = true; btn.disabled = true;
+    var prevLabel = btn.textContent;
+    btn.textContent = '문단을 다시 다듬는 중…';
+    lavRefineStatus(statusEl, '실제 경험을 문단에 녹이는 중이에요. 30초~2분 정도 걸려요.');
+    if (typeof window.gpTrack === 'function') window.gpTrack('refine_start', { paragraph_index: idx, memo_length: memo.length, free: freeLeft > 0 });
+    try {
+      var idToken = await evGetIdToken();
+      var res = await fetch(window.apiUrl('/transform/' + lavRefineJobId + '/refine-paragraph'), {
+        method: 'POST',
+        headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ paragraphIndex: idx, memo: memo })
+      });
+      var d = null;
+      try { d = await res.json(); } catch (e2) { d = {}; }
+      if (!res.ok) {
+        if (res.status === 402 && typeof window.gpOpenCreditCheckout === 'function') {
+          window.gpOpenCreditCheckout({ action: 'paragraph_refine', source: 'refine_card', neededCredits: (d && d.needed) || credit, currentCredits: Number(window.UC) || 0 });
+        }
+        lavRefineStatus(statusEl, (d && d.error) || '문단 보강을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.', true);
+        lavRefineBusy = false; input.disabled = false; btn.disabled = false; btn.textContent = prevLabel;
+        return;
+      }
+      pollRefine(lavRefineJobId, ++refinePollGen, { input: input, btn: btn, statusEl: statusEl, prevLabel: prevLabel });
+    } catch (e) {
+      lavRefineStatus(statusEl, '네트워크 오류로 시작하지 못했어요. 잠시 후 다시 시도해 주세요.', true);
+      lavRefineBusy = false; input.disabled = false; btn.disabled = false; btn.textContent = prevLabel;
+    }
+  }
+
+  function pollRefine(jobId, gen, ui) {
+    var tries = 0, MAX_TRIES = 80;   // 3초 × 80 ≈ 4분(백엔드 타임아웃 3분 + 여유)
+    var restore = function () { ui.input.disabled = false; ui.btn.disabled = false; ui.btn.textContent = ui.prevLabel; };
+    var tick = async function () {
+      if (gen !== refinePollGen || jobId !== lavRefineJobId) { lavRefineBusy = false; return; }   // 새 작업·재보강 시작 → 자연 종료
+      tries++;
+      var body = null;
+      try {
+        var idToken = await evGetIdToken();
+        var res = await fetch(window.apiUrl('/transform/' + jobId), { headers: evAuthHeaders(idToken) });
+        if (res.ok) { try { body = await res.json(); } catch (e2) { body = null; } }
+      } catch (e) { body = null; }
+      var refine = body && body.refine;
+      if (refine && refine.status === 'done') {
+        lavRefineBusy = false;
+        if (refine.changed) {
+          var outputText = (body.result && body.result.outputText) || '';
+          // 보강된 문단만 펄스로 표시 — 남은 타겟 강조도 함께 갱신
+          renderDoneBody(outputText, body.result && body.result.refineTargets, refine.paragraphIndex);
+          lavUpdateLibraryText(lavDoneLibId, outputText);
+          renderRefineTargets(body);   // 구체화된 문단은 카드에서 빠지고 무료 횟수 갱신
+          if (window.gpToast) window.gpToast('실제 경험이 문단에 자연스럽게 녹아 들어갔어요.', { type: 'success' });
+          if (typeof window.gpTrack === 'function') window.gpTrack('refine_done', { deducted: !!refine.deducted });
+        } else {
+          lavRefineStatus(ui.statusEl, refine.note || '문단이 크게 달라지지 않아 원래 문단을 유지했어요. 크레딧·무료 횟수는 쓰지 않았어요.');
+          restore();
+          if (typeof window.gpTrack === 'function') window.gpTrack('refine_noop', {});
+        }
+        return;
+      }
+      if (refine && refine.status === 'error') {
+        lavRefineBusy = false;
+        lavRefineStatus(ui.statusEl, refine.error || '문단 보강 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.', true);
+        restore();
+        if (typeof window.gpTrack === 'function') window.gpTrack('refine_error', {});
+        return;
+      }
+      if (tries >= MAX_TRIES) {
+        lavRefineBusy = false;
+        lavRefineStatus(ui.statusEl, '응답이 늦어지고 있어요. 잠시 후 다시 시도해 주세요.', true);
+        restore();
+        return;
+      }
+      setTimeout(tick, 3000);
+    };
+    setTimeout(tick, 3000);
+  }
+
   // ── 보관함(localStorage 기반 — Firebase 없이도 동작) ──────────
   var LIB_KEY = 'lavLibrary';
   function lavLibAll() {
     try { return JSON.parse(localStorage.getItem(LIB_KEY) || '[]'); } catch (e) { return []; }
   }
   window.lavSaveToLibrary = function (kind, text, band) {
-    if (!text || !text.trim()) return;
+    if (!text || !text.trim()) return null;
     try {
       var list = lavLibAll();
       var title = (text.split('\n').find(function (l) { return l.trim(); }) || '제목 없음').trim().slice(0, 50);
-      list.unshift({ id: 'L' + (list.length ? (parseInt(list[0].id.slice(1), 10) + 1) : 1), kind: kind, band: band || '', title: title, text: text, len: text.replace(/\s/g, '').length });
+      var entry = { id: 'L' + (list.length ? (parseInt(list[0].id.slice(1), 10) + 1) : 1), kind: kind, band: band || '', title: title, text: text, len: text.replace(/\s/g, '').length };
+      list.unshift(entry);
       if (list.length > 50) list = list.slice(0, 50);   // 보관 상한
       localStorage.setItem(LIB_KEY, JSON.stringify(list));
       if (typeof window.lavRenderLibrary === 'function') window.lavRenderLibrary();
-    } catch (e) { /* localStorage 가득참 등 — 무시 */ }
+      return entry.id;   // 사후 문단 보강이 같은 항목을 갱신할 수 있게 식별자 반환
+    } catch (e) { return null; /* localStorage 가득참 등 — 무시 */ }
   };
+  // 보강된 결과로 보관함 항목을 제자리 갱신(append-only 예외 — 같은 작업의 최신본 유지).
+  function lavUpdateLibraryText(id, text) {
+    if (!id || !text) return;
+    try {
+      var list = lavLibAll();
+      var hit = list.find(function (x) { return x.id === id; });
+      if (!hit) return;
+      hit.text = text;
+      hit.len = text.replace(/\s/g, '').length;
+      localStorage.setItem(LIB_KEY, JSON.stringify(list));
+      if (typeof window.lavRenderLibrary === 'function') window.lavRenderLibrary();
+    } catch (e) { /* 무시 */ }
+  }
   window.lavOpenLibrary = function () {
     window.lavRenderLibrary();
     var m = $('lavLibraryModal'); if (m) m.hidden = false;

@@ -505,6 +505,19 @@ function switchTab(t, opts) {
 window.addEventListener('hashchange', () => applyRouteFromUrl({ replace: true }));
 window.addEventListener('popstate', () => applyRouteFromUrl({ replace: true }));
 
+// 크롤러블 내비 델리게이트(2026-08-28 T2.4): <a href data-tab>는 검색엔진용 실링크이고,
+// 일반 클릭만 SPA 라우팅으로 가로챈다. 새 탭·수정키(Ctrl/Cmd/Shift/Alt)·중클릭은 브라우저 기본 동작 유지.
+document.addEventListener('click', function (e) {
+ var a = e.target && e.target.closest ? e.target.closest('a[data-tab][href]') : null;
+ if (!a) return;
+ if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+ if (a.target && a.target !== '_self') return;
+ e.preventDefault();
+ switchTab(a.getAttribute('data-tab'));
+ var fn = a.getAttribute('data-tab-call');
+ if (fn && typeof window[fn] === 'function') window[fn](a.getAttribute('data-tab-arg') || undefined);
+});
+
 // Pro 탭 진입 가드: 미로그인이면 로그인 화면, 비구독자면 가격 페이지로 안내
 function goToPro() {
  if (!window.PRO_ENABLED) {
@@ -2016,7 +2029,7 @@ function showPolicy(type) {
 제3조 (크레딧 및 결제)
 1. 크레딧은 유료 결제 또는 무료 지급을 통해 획득할 수 있습니다.
 2. 결제는 토스페이먼츠를 통해 이루어집니다.
-3. 유료로 충전한 크레딧의 이용기간은 결제일로부터 1년입니다.
+3. 유료로 충전한 크레딧은 유효기간 없이 사용할 수 있습니다.
 4. 단순 변심에 따른 일반 환불 신청기간은 결제일로부터 7일이며, 사용분을 제외한 환불 계산과 예외 사항은 환불규정에 따릅니다.
 
 제3조의2 (정기 구독 결제)

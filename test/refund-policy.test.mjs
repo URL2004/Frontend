@@ -43,7 +43,9 @@ test('환불 버튼은 크레딧과 구독 모두 7일을 검사하고 사용 �
 });
 
 test('이용약관과 환불규정은 유효기간·환불기간 및 3영업일 처리를 구분한다', () => {
-  assert.match(mainSource, /유료로 충전한 크레딧의 이용기간은 결제일로부터 1년/u);
+  // 2026-08-28 약관 개정(D2): 크레딧 만료 로직이 없고 전 마케팅 표면이 무기한 표기 → 약관도 무기한으로 통일
+  assert.match(mainSource, /유료로 충전한 크레딧은 유효기간 없이 사용할 수 있습니다/u);
+  assert.doesNotMatch(mainSource, /크레딧의?\s*이용기간은?\s*결제일로부터\s*1년/u);
   assert.match(mainSource, /일반 환불 신청기간은 결제일로부터 7일/u);
   assert.match(mainSource, /환불 정산상 월 50회 기준/u);
   assert.match(mainSource, /요청일로부터 3영업일 이내에 결제 취소 조치/u);

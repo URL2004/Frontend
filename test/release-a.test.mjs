@@ -23,11 +23,11 @@ test('기본·고급 설명은 체감 재구성 범위와 검증 범위를 구�
     read('pages/faq.html'),
     read('assets/js/evasion-flow.js')
   ]);
-  assert.match(main, /이미 자연스러운 문장은 덜 바꾸고, 위험 신호가 많을수록 더 넓게/u);
-  assert.match(main, /기본은 원문 상태에 따라 변환 강도가 달라지고/u);
-  assert.match(main, /기본보다 더 넓은 문장 범위를 재구성하고, 모든 글에 모델 기반 의미·사실·구조 정밀 검증/u);
-  assert.match(main, /장르 판별과 별개로 단어 선택과 문장 연결의 친근함·격식/u);
-  assert.match(main, /외부 검사 점수는 보장되지 않아요/u);
+  // 3택 1화면(2026-08-28): 기본·고급 설명은 select 카드에서 구분된다
+  assert.match(main, /원문의 장르·말투·사실을 지키면서 AI식 반복·상투어·균일한 문장 흐름이 두드러진 부분을 자연스럽게 다시 구성/u);
+  assert.match(main, /기본보다 더 넓은 문장 범위를 재구성하고, 모든 글에 의미·사실·구조 정밀 검증/u);
+  assert.match(main, /기본 휴머나이징에서 단어 선택과 문장 연결의 친근함·격식/u);
+  assert.match(main, /외부 검사 점수는 글과 도구에 따라 달라지며 보장되지 않아요/u);
   assert.match(guide, /AI식 반복과 균일한 흐름을 다시 구성/u);
   assert.match(faq, /고급은 기본보다 더 넓은 문장 범위를 재구성/u);
   assert.match(evasion, /Math\.max\(90, Math\.min\(1200, Math\.round\(bareLength\(text\) \/ 12\)\)\)/u);
@@ -53,7 +53,7 @@ test('다듬기·기본·고급 명칭과 설명은 선택부터 결과·이력�
   ]);
   assert.match(main, /원문 보존 다듬기/u);
   assert.match(main, /원문의 장르와 말투를 유지하면서 비문·띄어쓰기·어색한 연결·중복 표현만 정리/u);
-  assert.match(main, /AI식 반복과 지나치게 균일한 문장 흐름이 있는 부분을 자연스럽게 다시 구성/u);
+  assert.match(main, /AI식 반복·상투어·균일한 문장 흐름이 두드러진 부분을 자연스럽게 다시 구성/u);
   assert.match(evasion, /문체 보조[^\n]+원문 장르 우선/u);
   assert.match(evasion, /원문 보존 다듬기를 시작할까요/u);
   assert.match(evasion, /label = '기본 휴머나이징'/u);
@@ -162,7 +162,13 @@ test('한국어 장르 판정은 고급을 잠그지 않고 고급 차단 작업
   assert.match(main, /id="lavBasicRecommended"/u);
   assert.match(main, /id="lavFormalRecommended"[^>]*hidden/u);
   assert.match(main, /id="lavToneAdvancedNote"[^>]*role="status"[^>]*hidden/u);
-  assert.match(main, /lavToneChange\(true\)/u);
+  // 3택 1화면(2026-08-28): 카드 클릭이 숨김 라디오를 정하고 확인 모달로 직행한다
+  assert.match(main, /lavSelectTone\('blog'\)/u);
+  assert.match(main, /lavSelectTone\('formal'\)/u);
+  assert.match(main, /id="lavCostBlog"/u);
+  assert.match(main, /id="lavCostFormal"/u);
+  assert.match(evasion, /window\.lavSelectTone = function/u);
+  assert.doesNotMatch(main, /lavPersonalBlock|lavAutoCoach|lavCoachPicks|data-flow="reduce"/u);
   assert.match(evasion, /function advancedUnavailable\(d\)/u);
   assert.match(evasion, /if \(d\.advancedEligible === false\) return true/u);
   assert.match(evasion, /lastDiag\.recommendedMode === 'formal'/u);

@@ -182,8 +182,11 @@ test('랜딩은 현재 서비스 네 가지와 단가를 사실대로 안내하�
 });
 
 test('홈 프리렌더 본문은 작업 화면이 아니라 랜딩을 크롤러에 노출한다', async () => {
+  // 라우트 정의는 단일 원천(scripts/route-meta.mjs)으로 이동(2026-08-28 T2.2)
+  const meta = await read('scripts/route-meta.mjs');
+  assert.match(meta, /out: 'index\.html',\s*\n\s*url: '\/',\s*\n\s*partial: 'landing\.html'/u);
   const seo = await read('scripts/seo-prerender.mjs');
-  assert.match(seo, /out: 'index\.html',\s*\n\s*url: '\/',\s*\n\s*partial: 'landing\.html'/u);
+  assert.match(seo, /from '\.\/route-meta\.mjs'/u);
   // 랜딩이 자체 h1을 가지므로 홈에 h1을 덧붙이지 않는다.
   assert.doesNotMatch(seo, /route\.url === '\/' \|\| !/u);
 });

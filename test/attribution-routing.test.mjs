@@ -99,3 +99,22 @@ test('회원가입 뒤에도 유입정보를 삭제하지 않고 가입 원본�
   assert.match(moduleSource, /window\.gpAttribution\.snapshot\(\)/u);
   assert.doesNotMatch(moduleSource, /localStorage\.removeItem\('traffic_source'\)/u);
 });
+
+test('use_case는 파라미터·utm_content 접두·네이버 그룹 코드에서 파생되어 컨텍스트에 관통된다', () => {
+  // 1) Meta 캐러셀: utm_content = {use_case}_{set}_c{n}
+  let store = new Map();
+  let w = loadTracking('https://gpkorea.ai.kr/?lp=1&utm_source=meta&utm_medium=paid_social&utm_campaign=x&utm_content=resume_setA_c2', store);
+  assert.equal(w.gpAttribution.snapshot().last_touch.use_case, 'resume');
+  assert.equal(w.gpAttribution.getContext().use_case, 'resume');
+  // 2) 명시 use_case 파라미터가 utm_content 접두보다 우선
+  store = new Map();
+  w = loadTracking('https://gpkorea.ai.kr/?lp=1&use_case=paper&utm_source=meta&utm_medium=paid_social&utm_campaign=x&utm_content=general_setA_c1', store);
+  assert.equal(w.gpAttribution.getContext().use_case, 'paper');
+  // 3) 네이버 그룹 코드(g03_responsive) → resume
+  store = new Map();
+  w = loadTracking('https://gpkorea.ai.kr/?lp=1&utm_source=naver&utm_medium=cpc&utm_campaign=gp_search&utm_content=g03_responsive', store);
+  assert.equal(w.gpAttribution.getContext().use_case, 'resume');
+  // 4) 결제 콜백(direct 재방문)에도 last touch의 use_case가 보존된다
+  w = loadTracking('https://gpkorea.ai.kr/?credits=350&plan=starter', store);
+  assert.equal(w.gpAttribution.getContext().use_case, 'resume');
+});

@@ -31,6 +31,8 @@ const staticEntries = [
   'og-image.png',
   'robots.txt',
   'sitemap.xml',
+  'blog',        // 정적 콘텐츠(허브+기사) — 빌드 시작 시 리포 루트에 생성돼 dev(vite)도 같은 파일을 서빙
+  'templates',   // 입력 템플릿 파일럿 — 위와 동일(.gitignore 대상, 산출물)
   'google9fc9828aad4d4ecc.html',
   'CNAME',
   'vercel.json'
@@ -131,6 +133,7 @@ await fs.writeFile(path.join(viteScratch, 'index.html'), '<div id="vite-static-b
 await fs.writeFile(path.join(viteScratch, 'entry.js'), 'export default {};\n', 'utf8');
 await build({
   root: viteScratch,
+  configFile: false,   // 리포 루트 vite.config(dev 전용 정적 서빙)와 격리
   publicDir: false,
   build: {
     outDir: viteOut,
@@ -141,6 +144,15 @@ await build({
 await fs.rm(viteScratch, { recursive: true, force: true });
 await fs.rm(viteOut, { recursive: true, force: true });
 await fs.mkdir(dist, { recursive: true });
+
+// 정적 콘텐츠 페이지(블로그 허브·기사·입력 템플릿)를 리포 루트에 생성 — SPA 부팅 없는 독립 문서.
+// 루트에 두는 이유(2026-08-28): vite dev가 같은 파일을 서빙해 로컬에서도 운영과 동일하게
+// /blog·/blog/{slug}가 독립 페이지로 열린다(과거 dev에선 SPA 폴백 → 랜딩으로 떨어지는 문제).
+const { generateContentPages } = await import('./content-pages.mjs');
+await fs.rm(path.join(root, 'blog'), { recursive: true, force: true });
+await fs.rm(path.join(root, 'templates'), { recursive: true, force: true });
+const contentPages = await generateContentPages({ dist: root });
+console.log(`[content-pages] generated ${contentPages.length} pages at repo root`);
 
 for (const entry of staticEntries) {
   await copyIfExists(entry);
@@ -153,3 +165,8 @@ await writeRuntimeConfig();
 // (정적 복사 이후에 실행해 원본 index.html을 본문 포함 버전으로 덮어쓴다.)
 const prerendered = await prerenderSeo({ root, dist });
 console.log(`[seo-prerender] generated ${prerendered.length} routes: ${prerendered.join(', ')}`);
+
+// sitemap.xml 생성(2026-08-28): 수기 사본 복사본을 실제 커밋일 lastmod 버전으로 덮어쓴다.
+const { generateSitemap } = await import('./sitemap-gen.mjs');
+const sitemapCount = await generateSitemap({ root, dist });
+console.log(`[sitemap-gen] generated sitemap.xml with ${sitemapCount} urls`);
