@@ -4,15 +4,17 @@ import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('메인 공지는 세부 개선 대신 격식체로 신규 기능 오픈 소식을 보여준다', async () => {
+test('메인 공지는 최신 엔진과 문단 보강 기능을 격식체로 안내한다', async () => {
   const page = await read('pages/notice.html');
   const featured = page.slice(
     page.indexOf('gp-notice-featured'),
     page.indexOf('noticeWriteForm')
   );
 
-  assert.match(featured, /AI 감지 보고서를 정식 오픈했습니다/u);
-  assert.match(featured, /글 전체의 AI 티 지수와 문단별 문체 특징/u);
+  assert.match(featured, /필요한 문단만 한 번 더 보강할 수 있습니다/u);
+  assert.match(featured, /실제 경험이나 사실을 직접 입력하면 다듬기·기본 결과의 해당 문단만/u);
+  assert.match(featured, /휴머나이징 엔진을 v2\.5\.41로 업데이트했습니다/u);
+  assert.match(featured, /결합·누락 위험을 줄였습니다/u);
   assert.doesNotMatch(featured, /정확도 개선/u);
   assert.doesNotMatch(featured, /AI 감지가 크레딧 이용 방식으로 바뀌었어요/u);
   assert.doesNotMatch(featured, /(?:해요|했어요|됐어요|있어요)/u);
@@ -25,8 +27,11 @@ test('하단 공지는 제외 요청한 주제를 숨기고 남은 중요 공지
     source.indexOf('const NOTICE_RETIRED_TITLES')
   );
 
-  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 7);
+  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 10);
   for (const title of [
+    '휴머나이징 v2.5.41 업데이트 — 구조 보존·문단 보강',
+    '유료 충전 크레딧 유효기간 변경 안내',
+    '라이트 충전 상품 지급량 확대 — 8,700원 350크레딧',
     '휴머나이징 엔진 v2.5 업데이트 — 문단 구조 보존 강화',
     'AI 감지 크레딧 이용 방식 전환 안내 (100자당 1크레딧)',
     'AI 감지 보고서 문단별 미리보기·전체보기 개선',
@@ -38,6 +43,10 @@ test('하단 공지는 제외 요청한 주제를 숨기고 남은 중요 공지
     assert.match(baseItems, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'u'));
   }
   assert.doesNotMatch(baseItems, /(?:고급 휴머나이징|최대 3만 자|결과 보관함|환불 정책|서비스 리브랜딩|원문 문단 역할과 사례·결론 연결 보존 강화|AI 감지 점수·설명 일관성 개선|논문·자소서·전문 기록 장르별 맞춤 처리 확대|서비스 안정화 점검 완료)/u);
+  assert.match(baseItems, /결과가 바뀌지 않거나 안전 검증을 통과하지 못한 보강 요청은 크레딧과 무료 횟수를 사용하지 않습니다/u);
+  assert.match(baseItems, /제출 전에 수치·인용·고유명사와 사실관계를 직접 확인하시기 바랍니다/u);
+  assert.match(baseItems, /현재 보유한 유료 충전 크레딧에도 같은 기준이 적용됩니다/u);
+  assert.match(baseItems, /각 주문에 실제 지급된 크레딧을 기준으로 계산합니다/u);
   assert.match(source, /\.filter\(item => !NOTICE_RETIRED_TITLES\.has\(item\.title\.trim\(\)\)\)/u);
   assert.doesNotMatch(baseItems, /(?:해요|했어요|돼요|됐어요|드려요|있어요|없어요|않아요)/u);
 });
