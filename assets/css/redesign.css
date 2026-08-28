@@ -12588,6 +12588,7 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  font-weight:800;
  letter-spacing:.02em;
 }
+.lav-purpose-caveat[hidden]{display:none!important;}   /* display:block이 [hidden]을 덮는 반복 사고 가드 */
 .lav-purpose-caveat{
  display:block;
  margin-top:8px;
@@ -13176,7 +13177,11 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  width:100%;
  margin:0;
  padding-top:8px;
+ padding-bottom:0;
 }
+/* 흐름 화면에선 결과가 flow 카드 안에 렌더됨 — 빈 레거시 결과 슬롯이 min-height:100vh를 넘겨
+   상단이 스크롤되는 원인(2026-08-29 사장님 보고)이라 flow 동안 숨긴다 */
+.gp-lav-hero.flow-active .gp-lav-result{display:none;}
 .gp-lav-flow{
  width:min(760px,100%);
  margin:0 auto;
@@ -17694,38 +17699,41 @@ body.dark .lav-refine-input::placeholder{color:#7d84a8;}
 body.dark .lav-refine-ok{color:#4ade80;}
 
 /* ===== 3택 1화면(select, 2026-08-28 흐름 단순화): 카드 3장 + 인라인 비용 ===== */
-.lav-select-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:4px 0 14px;}
-.lav-sel-stack{display:flex;flex-direction:column;gap:8px;min-width:0;}
+/* 3택 카드: 가로 3열 고정, 큰 제목 + 한 줄 설명 + 비용만 (2026-08-29 가독성 개편) */
+.lav-select-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:4px 0 12px;align-items:stretch;}
+@media (max-width:720px){.lav-select-grid{grid-template-columns:1fr;}}
+/* 흐름 패널은 다크 모드에서도 흰색 유지 → 카드도 명시적 라이트 고정(토큰 혼합 시 다크-온-다크 사고 방지) */
 .lav-sel-card{
- position:relative;display:flex;flex-direction:column;gap:8px;text-align:left;
- padding:16px;border:1.5px solid var(--line,#e4e5f0);border-radius:14px;
- background:var(--card,#fff);cursor:pointer;font-family:inherit;color:var(--text,#1f2437);
+ position:relative;display:flex;flex-direction:column;gap:10px;text-align:left;
+ padding:20px 18px 18px;border:1.5px solid #e4e5f0;border-radius:16px;
+ background:#fff;cursor:pointer;font-family:inherit;color:#1f2437;
  transition:border-color .15s, box-shadow .15s;
 }
 .lav-sel-card:hover:not(:disabled){border-color:#5a5bd8;box-shadow:0 4px 14px rgba(90,91,216,.10);}
 .lav-sel-card:focus-visible{outline:2px solid #5a5bd8;outline-offset:2px;}
-.lav-sel-card.accent{border-color:rgba(90,91,216,.55);}
-.lav-sel-card p{margin:0;font-size:12.5px;line-height:1.55;color:var(--text3,#6b7280);}
+.lav-sel-card.accent{border-color:rgba(90,91,216,.55);background:linear-gradient(180deg,rgba(90,91,216,.05),rgba(90,91,216,0) 55%),#fff;}
+.lav-sel-card .lav-purpose-ico{margin-bottom:2px;}
+.lav-sel-title{font-size:18px;font-weight:800;line-height:1.3;letter-spacing:-.01em;color:#1f2437;word-break:keep-all;}
+.lav-sel-card p{margin:0;font-size:13.5px;line-height:1.6;color:#3c4257;word-break:keep-all;}
 .lav-sel-card .lav-purpose-reco{position:absolute;top:-9px;right:12px;}
 .lav-sel-card.is-locked,.lav-sel-card:disabled{opacity:.55;cursor:not-allowed;}
 .lav-sel-cost{
- font-style:normal;font-size:13px;font-weight:700;color:#4749c9;
- background:rgba(90,91,216,.08);border-radius:8px;padding:5px 10px;align-self:flex-start;
+ margin-top:auto;font-style:normal;font-size:14px;font-weight:800;color:#4749c9;
+ background:rgba(90,91,216,.08);border-radius:9px;padding:7px 12px;align-self:flex-start;
  font-variant-numeric:tabular-nums;
 }
-.lav-sel-evidence{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.5;color:var(--text2,#3c4257);padding:2px 4px;cursor:pointer;}
-.lav-sel-evidence input{margin-top:2px;}
+.lav-sel-evidence{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.55;color:var(--text2,#3c4257);padding:4px 4px 0;cursor:pointer;}
+.lav-sel-evidence input{margin-top:3px;}
 .lav-sel-evidence.ev-off{opacity:.5;pointer-events:none;}
+.lav-sel-ev-tag{font-style:normal;font-size:11px;font-weight:700;color:#4749c9;background:rgba(90,91,216,.1);border-radius:6px;padding:2px 7px;margin:0 6px;vertical-align:1px;}
 .lav-blocked-memo{
  width:100%;box-sizing:border-box;font-family:inherit;font-size:14px;line-height:1.6;
- padding:11px 13px;border:1.5px solid #c9cce6;border-radius:10px;background:#fff;color:var(--text,#1f2437);
+ padding:11px 13px;border:1.5px solid #c9cce6;border-radius:10px;background:#fff;color:#1f2437;
  resize:vertical;min-height:56px;margin:10px 0 2px;
 }
 .lav-blocked-memo:focus{outline:none;border-color:#5a5bd8;box-shadow:0 0 0 3px rgba(90,91,216,.15);}
-body.dark .lav-sel-card{background:var(--card,#1d1e2d);border-color:rgba(255,255,255,.14);color:var(--text,#e8e9f5);}
-body.dark .lav-sel-card.accent{border-color:rgba(138,140,240,.6);}
-body.dark .lav-sel-cost{color:#b4b6ff;background:rgba(138,140,240,.14);}
-body.dark .lav-blocked-memo{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2);color:var(--text,#e8e9f5);}
+/* (body.dark 오버라이드 제거 — 2026-08-29: 라벤더 흐름 패널은 다크 모드에서도 흰색이라
+   다크 토큰을 섞으면 다크-온-다크로 글자가 안 보이는 사고가 남. 카드·메모는 라이트 고정) */
 
 /* 크롤러블 내비(2026-08-28): switchTab 버튼 → 실링크 전환에 따른 앵커 기본값 */
 .gp-lav-menu a,.gp-footer-links a,a.mnav-btn,a.snav-btn{text-decoration:none;cursor:pointer;}
@@ -17737,23 +17745,7 @@ a.mnav-btn,a.snav-btn{display:flex;}
 .gp-blog-feature a.gp-seo-primary{display:inline-block;margin-top:6px;}
 
 /* 크레딧 계산기(2026-08-28 P1-3) */
-.gp-calc{border:1px solid var(--line,#e4e5f0);border-left:4px solid #5a5bd8;border-radius:14px;background:var(--surface,#fff);padding:20px 22px;margin:0 0 18px;}
-.gp-calc-head strong{display:block;font-size:17px;margin-bottom:3px;}
-.gp-calc-head span{font-size:13px;color:var(--text3,#6b7280);}
-.gp-calc-input-row{display:flex;align-items:center;gap:8px;margin:14px 0;}
-.gp-calc-input-row input{width:140px;font-size:18px;font-weight:700;padding:10px 14px;border:1.5px solid #c9cce6;border-radius:10px;background:var(--surface,#fff);color:var(--text,#1f2437);font-variant-numeric:tabular-nums;}
-.gp-calc-input-row input:focus{outline:none;border-color:#5a5bd8;box-shadow:0 0 0 3px rgba(90,91,216,.15);}
-.gp-calc-input-row span{font-size:14px;color:var(--text3,#6b7280);}
-.gp-calc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;}
-.gp-calc-cell{border:1px solid var(--line,#e4e5f0);border-radius:10px;padding:12px 14px;}
-.gp-calc-cell>span{display:block;font-size:12px;color:var(--text3,#6b7280);margin-bottom:5px;}
-.gp-calc-cell em{font-style:normal;display:flex;flex-direction:column;gap:1px;}
-.gp-calc-cell em b{font-size:17px;color:#4749c9;font-variant-numeric:tabular-nums;}
-.gp-calc-cell em i{font-style:normal;font-size:11.5px;color:var(--text3,#6b7280);}
-.gp-calc-note{font-size:12px;color:var(--text3,#6b7280);margin:12px 0 0;}
-body.dark .gp-calc,body.dark .gp-calc-cell{border-color:rgba(255,255,255,.14);}
-body.dark .gp-calc-cell em b{color:#b4b6ff;}
-body.dark .gp-calc-input-row input{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2);color:var(--text,#e8e9f5);}
+/* (크레딧 계산기 UI 제거 — 2026-08-29 사장님 지시. 단가 표시는 3택 카드 인라인 비용이 담당) */
 
 /* 앵커 전환된 CTA의 기본 링크 스타일 유출 방지(2026-08-28) */
 .gp-seo-actions a.gp-seo-primary,.gp-blog-feature a.gp-seo-primary{text-decoration:none;color:#fff;}

@@ -172,26 +172,15 @@ test('콘텐츠 데이터(블로그 8편·템플릿 6종)도 금지 주장·유�
   }
 });
 
-test('크레딧 계산기: 공용 단가 모듈이 evasion-flow 공식과 같은 값을 낸다', async () => {
-  const vm = await import('node:vm');
-  const src = await read('assets/js/credit-pricing.js');
-  const win = { document: { readyState: 'complete', getElementById: () => null, addEventListener: () => {} } };
-  vm.runInNewContext(src, { window: win, document: win.document, Math, String, parseInt });
-  const p = win.gpCreditPricing;
-  // 서버·evasion-flow와 동일해야 하는 기준값(감지 100자당 1 / 기본 최소10·100자당2 / 고급 200/400/600)
-  assert.equal(p.detectCredit(1000), 10);
-  assert.equal(p.shortCredit(300), 10);
-  assert.equal(p.shortCredit(1050), 22);
-  assert.equal(p.formalCredit(10000, false), 200);
-  assert.equal(p.formalCredit(15000, false), 400);
-  assert.equal(p.formalCredit(25000, true), 700);
+test('단가 공식: evasion-flow 기준 공식이 유지되고 계산기 잔재가 없다', async () => {
+  // 계산기 UI는 2026-08-29 제거 — 단가 표시는 3택 카드 인라인 비용(evasion-flow)이 단일 표면
   const evasion = await read('assets/js/evasion-flow.js');
   assert.match(evasion, /SHORT_HUMANIZE_MIN_CREDITS = 10/u);
   assert.match(evasion, /Math\.max\(SHORT_HUMANIZE_MIN_CREDITS, Math\.ceil\(.*\/ 100\) \* 2\)/u);
   const pricingHtml = await read('pages/pricing.html');
-  assert.match(pricingHtml, /id="calculator"/u);
+  assert.ok(!pricingHtml.includes('id="calculator"'), '제거된 계산기 섹션이 되살아남');
   const boot = await read('assets/js/app-boot.js');
-  assert.match(boot, /credit-pricing\.js/u);
+  assert.ok(!boot.includes('credit-pricing.js'), '삭제된 credit-pricing.js를 여전히 로드함');
 });
 
 test('랜딩(홈) 푸터는 블로그·요금 등으로 가는 크롤러블 실링크를 가진다', async () => {

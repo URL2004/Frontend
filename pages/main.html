@@ -289,51 +289,32 @@
            </div>
            <div class="lav-select-grid">
              <button type="button" class="lav-sel-card" id="lavCardPolish" onclick="lavRunPolish()">
-               <span class="lav-purpose-head">
-                 <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">edit_note</span></span>
-                 <span class="lav-purpose-t">
-                   <strong>원문 보존 다듬기</strong>
-                   <em class="lav-purpose-band quiet">맞춤법·문장 완성도 정리</em>
-                 </span>
-               </span>
-               <p>원문의 장르와 말투를 유지하면서 비문·띄어쓰기·어색한 연결·중복 표현만 정리해요.</p>
+               <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">edit_note</span></span>
+               <strong class="lav-sel-title">원문 보존 다듬기</strong>
+               <p>맞춤법·비문·어색한 연결만 정리해요. 문장을 넓게 다시 쓰지는 않아요.</p>
                <em class="lav-sel-cost" id="lavCostPolish">비용 계산 중</em>
-               <span class="lav-purpose-caveat">문장을 넓게 다시 쓰는 휴머나이징 기능은 아니에요</span>
              </button>
              <button type="button" class="lav-sel-card accent" id="lavCardBasic" onclick="lavSelectTone('blog')">
                <span class="lav-purpose-reco" id="lavBasicRecommended">추천</span>
-               <span class="lav-purpose-head">
-                 <span class="lav-purpose-ico reduce" aria-hidden="true"><span class="material-symbols-outlined">shield</span></span>
-                 <span class="lav-purpose-t">
-                   <strong>기본 휴머나이징</strong>
-                   <em class="lav-purpose-band">장르를 보존하는 휴머나이징</em>
-                 </span>
-               </span>
-               <p>원문의 장르·말투·사실을 지키면서 AI식 반복·상투어·균일한 문장 흐름이 두드러진 부분을 자연스럽게 다시 구성해요.</p>
+               <span class="lav-purpose-ico reduce" aria-hidden="true"><span class="material-symbols-outlined">shield</span></span>
+               <strong class="lav-sel-title">기본 휴머나이징</strong>
+               <p>장르·말투·사실은 지키고, AI 티가 나는 문장만 자연스럽게 다시 써요.</p>
                <em class="lav-sel-cost" id="lavCostBlog">비용 계산 중</em>
-               <span class="lav-purpose-caveat strong">AI 티 지수는 글·외부 검사기에 따라 달라지며 보장값이 아니에요</span>
              </button>
-             <div class="lav-sel-stack">
-               <button type="button" class="lav-sel-card" id="lavCardFormal" onclick="lavSelectTone('formal')">
-                 <span class="lav-purpose-reco" id="lavFormalRecommended" hidden>추천</span>
-                 <span class="lav-purpose-head">
-                   <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">science</span></span>
-                   <span class="lav-purpose-t">
-                     <strong>고급 휴머나이징</strong>
-                     <em class="lav-purpose-band">넓은 재구성 + 전 문서 정밀 검증</em>
-                   </span>
-                 </span>
-                 <p>기본보다 더 넓은 문장 범위를 재구성하고, 모든 글에 의미·사실·구조 정밀 검증을 적용해요. 긴 논문·보고서에 적합해요.</p>
-                 <em class="lav-sel-cost" id="lavCostFormal">비용 계산 중</em>
-                 <span class="lav-purpose-caveat" id="lavFormalLockNote" hidden>이 글에서는 선택할 수 없어요</span>
-               </button>
-               <label class="lav-sel-evidence" id="lavEvidenceRow">
-                 <input type="checkbox" id="lavEvidence" onchange="lavEvidenceChange()">
-                 <span><b>근거 보강</b> +100크레딧 — 자료를 검색해 보여드리고, 직접 승인한 것만 결과에 사용해요</span>
-               </label>
-               <p class="lav-evidence-note" id="lavEvidenceNote" hidden>검색과 검수 단계가 추가되어 기본 예상 시간보다 약 8분 이상 더 걸릴 수 있어요.</p>
-             </div>
+             <button type="button" class="lav-sel-card" id="lavCardFormal" onclick="lavSelectTone('formal')">
+               <span class="lav-purpose-reco" id="lavFormalRecommended" hidden>추천</span>
+               <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">science</span></span>
+               <strong class="lav-sel-title">고급 휴머나이징</strong>
+               <p>더 넓게 재구성하고 전 문서 정밀 검증까지. 긴 논문·보고서에 적합해요.</p>
+               <span class="lav-purpose-caveat" id="lavFormalLockNote" hidden>이 글에서는 선택할 수 없어요</span>
+               <em class="lav-sel-cost" id="lavCostFormal">비용 계산 중</em>
+             </button>
            </div>
+           <label class="lav-sel-evidence" id="lavEvidenceRow">
+             <input type="checkbox" id="lavEvidence" onchange="lavEvidenceChange()">
+             <span><b>근거 보강</b><i class="lav-sel-ev-tag">고급 전용</i> +100크레딧 — 자료를 검색해 보여드리고, 직접 승인한 것만 결과에 사용해요</span>
+           </label>
+           <p class="lav-evidence-note" id="lavEvidenceNote" hidden>검색과 검수 단계가 추가되어 기본 예상 시간보다 약 8분 이상 더 걸릴 수 있어요.</p>
            <p class="lav-tone-advanced-note" id="lavToneAdvancedNote" role="status" hidden><b>이 글에는 고급을 권장해요.</b> <span id="lavToneAdvancedText"></span></p>
            <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>이 글은 개인 경험·관찰을 그대로 지키는 것이 중요해요. <b>기본 휴머나이징에도 해당 장르 보존 규칙과 의미 검증이 적용</b>됩니다. 고급은 더 넓게 재구성하므로 이 유형에는 기본을 권장합니다.</p>
            <p class="lav-tone-variance"><b>세 방식 모두 장르·화자·사실을 보호합니다.</b> 외부 검사 점수는 글과 도구에 따라 달라지며 보장되지 않아요.</p>

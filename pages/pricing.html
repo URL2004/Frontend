@@ -34,23 +34,6 @@
  </section>
 
  <div id="pricingTabCredit">
-  <!-- 크레딧 계산기(2026-08-28 P1-3): 결제 전 실제 비용 확인 — 단가 공식은 credit-pricing.js(서버와 동일 기준) -->
-  <section class="gp-calc" id="calculator">
-   <div class="gp-calc-head">
-    <strong>내 글에 얼마가 들까요?</strong>
-    <span>글자 수(공백 포함)를 넣으면 모드별 예상 크레딧을 바로 보여드려요.</span>
-   </div>
-   <div class="gp-calc-input-row">
-    <input id="gpCalcChars" type="text" inputmode="numeric" maxlength="6" placeholder="예: 2500" oninput="gpCalcUpdate()" aria-label="글자 수 입력">
-    <span>자</span>
-   </div>
-   <div class="gp-calc-grid">
-    <div class="gp-calc-cell"><span>AI 감지</span><em id="gpCalcDetect"><b>—</b><i>글자 수를 입력하세요</i></em></div>
-    <div class="gp-calc-cell"><span>기본 휴머나이징 · 다듬기</span><em id="gpCalcBasic"><b>—</b><i>글자 수를 입력하세요</i></em></div>
-    <div class="gp-calc-cell"><span>고급 휴머나이징</span><em id="gpCalcFormal"><b>—</b><i>글자 수를 입력하세요</i></em></div>
-   </div>
-   <p class="gp-calc-note" id="gpCalcFormalNote" hidden>고급에서 근거 보강을 켜면 +100크레딧이 추가돼요. 원화 환산은 충전 단위별 단가(1크레딧 약 21~26원) 기준의 참고 범위입니다.</p>
-  </section>
   <section id="gpPricingSegmentPanel" class="gp-pricing-segment" hidden aria-live="polite">
    <div>
     <strong id="gpPricingSegmentTitle">내 사용 단계에 맞는 다음 선택</strong>
