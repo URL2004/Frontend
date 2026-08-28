@@ -141,30 +141,47 @@ function coverOf(slug) {
 }
 
 // 로그인 적응형 내비(2026-08-29 사장님): 가입 전 = 가입 CTA, 가입 후 = "작업실 열기".
-// Firebase 인증 상태를 같은 오리진의 indexedDB(firebaseLocalStorageDb)에서 읽는다 — 실패 시 게스트 문구 유지.
+// 앱은 setPersistence(browserLocalPersistence)라 인증 상태가 localStorage에 있다(app-module.js:43).
+// localStorage 우선 확인 + indexedDB 폴백(기본 persistence로 바뀔 경우 대비) — 실패 시 게스트 문구 유지.
 const AUTH_ADAPT = `<script>
 (function () {
   function member() {
     document.querySelectorAll('[data-member-label]').forEach(function (el) { el.textContent = el.getAttribute('data-member-label'); });
     document.querySelectorAll('[data-member-text]').forEach(function (el) { el.textContent = el.getAttribute('data-member-text'); });
   }
-  try {
-    var req = indexedDB.open('firebaseLocalStorageDb');
-    req.onsuccess = function () {
-      try {
-        var db = req.result;
-        if (!db.objectStoreNames.contains('firebaseLocalStorage')) return;
-        var g = db.transaction('firebaseLocalStorage', 'readonly').objectStore('firebaseLocalStorage').getAll();
-        g.onsuccess = function () {
-          var rows = g.result || [];
-          for (var i = 0; i < rows.length; i++) {
-            var key = rows[i] && rows[i].fbase_key;
-            if (key && key.indexOf('authUser') >= 0 && rows[i].value) { member(); return; }
-          }
-        };
-      } catch (e) { /* 게스트 문구 유지 */ }
-    };
-  } catch (e) { /* 게스트 문구 유지 */ }
+  function fromLocalStorage() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('firebase:authUser:') === 0) {
+          var v = null;
+          try { v = JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) {}
+          if (v && v.uid) { member(); return true; }
+        }
+      }
+    } catch (e) { /* 게스트 문구 유지 */ }
+    return false;
+  }
+  function fromIndexedDb() {
+    try {
+      var req = indexedDB.open('firebaseLocalStorageDb');
+      req.onsuccess = function () {
+        try {
+          var db = req.result;
+          if (!db.objectStoreNames.contains('firebaseLocalStorage')) return;
+          var g = db.transaction('firebaseLocalStorage', 'readonly').objectStore('firebaseLocalStorage').getAll();
+          g.onsuccess = function () {
+            var rows = g.result || [];
+            for (var i = 0; i < rows.length; i++) {
+              var key = rows[i] && rows[i].fbase_key;
+              if (key && key.indexOf('authUser') >= 0 && rows[i].value) { member(); return; }
+            }
+          };
+        } catch (e) { /* 게스트 문구 유지 */ }
+      };
+    } catch (e) { /* 게스트 문구 유지 */ }
+  }
+  if (!fromLocalStorage()) fromIndexedDb();
 })();
 </script>`;
 
