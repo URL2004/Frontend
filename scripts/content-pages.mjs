@@ -1,7 +1,9 @@
-// 정적 콘텐츠 페이지 생성기(2026-08-28 Phase 4) — 블로그 기사(/blog/{slug})와
-// 템플릿 파일럿(/templates/{genre}/{subtype})을 빌드 타임에 독립 HTML로 굽는다.
+// 정적 콘텐츠 페이지 생성기(2026-08-28 Phase 4) — 블로그 허브(/blog)·기사(/blog/{slug})·
+// 입력 템플릿(/templates/{genre}/{subtype})을 빌드 타임에 독립 HTML로 굽는다.
 // SPA를 부팅하지 않는 완결 문서라 크롤러·직접 방문 모두 같은 본문을 본다(noscript 아님).
-// Vercel은 rewrite보다 정적 파일을 우선하므로 별도 라우팅 설정 없이 서빙된다.
+// Vercel은 rewrite보다 정적 파일을 우선하고, dev는 vite.config 미들웨어가 같은 파일을 서빙한다.
+// ★내비 원칙(2026-08-28 사장님): 콘텐츠 페이지의 헤더·푸터는 독립 세계 안(홈=랜딩·블로그·시작 CTA)만
+//   가리킨다 — 가이드·FAQ 같은 앱 셸 라우트로 새지 않는다(본문 내 요금 링크는 전환 경로라 예외).
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -17,58 +19,107 @@ function jsonLd(obj) {
   return `<script type="application/ld+json">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>`;
 }
 
-// 독립 문서용 콤팩트 스타일 — 앱 CSS에 의존하지 않는다(라이트·다크 모두 명시적으로 칠한다).
+// 매거진 스타일(2026-08-28 재설계) — 허브는 1180px 피처 그리드, 기사는 820px 판형.
+// 앱 CSS에 의존하지 않는 완결 스타일. 라이트·다크 모두 토큰으로 명시.
 const STYLE = `
-:root{--paper:#fbfbfd;--ink:#23263a;--ink2:#4a4d68;--muted:#6c7090;--accent:#5a5bd8;--deep:#4749c9;--soft:rgba(90,91,216,.08);--line:#e4e5f0;--card:#fff}
-@media (prefers-color-scheme:dark){:root{--paper:#16171f;--ink:#e8e9f5;--ink2:#c0c2d8;--muted:#8f93b3;--accent:#8a8cf0;--deep:#b4b6ff;--soft:rgba(138,140,240,.12);--line:#2b2d3c;--card:#1d1e29}}
-*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;line-height:1.75;font-size:16px;word-break:keep-all}
-.wrap{max-width:760px;margin:0 auto;padding:0 20px}
-header.site{border-bottom:1px solid var(--line);background:var(--card)}
-header.site .wrap{display:flex;align-items:center;gap:18px;padding:14px 20px}
-header.site a{color:var(--ink2);text-decoration:none;font-size:14px}
-header.site a.brand{font-weight:800;color:var(--ink);font-size:16px;margin-right:auto}
-header.site a.cta{background:var(--accent);color:#fff;border-radius:999px;padding:7px 16px;font-weight:700}
-nav.crumb{font-size:13px;color:var(--muted);padding:22px 0 0}
-nav.crumb a{color:var(--muted)}
-article{padding:8px 0 40px}
-h1{font-size:clamp(24px,5vw,32px);line-height:1.32;margin:12px 0 10px;word-break:keep-all}
-.byline{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 6px}
-.lead{font-size:17px;color:var(--ink2);border-left:3px solid var(--accent);background:var(--soft);border-radius:0 10px 10px 0;padding:14px 18px;margin:18px 0 26px}
-h2{font-size:20px;margin:38px 0 10px;line-height:1.35}
-h3{font-size:16.5px;margin:26px 0 8px}
-p{margin:12px 0;color:var(--ink2)}
+:root{--paper:#faf9fc;--ink:#211f2e;--ink2:#46445c;--muted:#8482a0;--accent:#5a5bd8;--deep:#4443c0;--soft:#efeefb;--line:#e7e5f0;--card:#fff;--shadow:0 1px 2px rgba(33,31,46,.04),0 8px 28px rgba(90,91,216,.07)}
+@media (prefers-color-scheme:dark){:root{--paper:#141320;--ink:#eceaf6;--ink2:#c3c1d8;--muted:#8d8ba8;--accent:#8a8cf0;--deep:#b4b6ff;--soft:#232238;--line:#2b2a3f;--card:#1c1b2b;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Noto Sans KR','Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;line-height:1.8;font-size:16px;word-break:keep-all;-webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto;padding:0 24px}
+.wrap.wide{max-width:1180px}
+a{color:var(--deep)}
+/* ── 상단 바: 독립 세계 안만 가리킨다(홈·블로그·CTA) ── */
+header.site{position:sticky;top:0;z-index:10;border-bottom:1px solid var(--line);background:var(--card)}
+header.site .bar{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:22px;padding:13px 24px}
+header.site a{color:var(--ink2);text-decoration:none;font-size:14px;font-weight:500}
+header.site a.brand{font-weight:800;color:var(--ink);font-size:16.5px;letter-spacing:-.01em}
+header.site a.brand em{font-style:normal;color:var(--accent)}
+header.site .sp{margin-left:auto}
+header.site a.cta{background:var(--accent);color:#fff;border-radius:999px;padding:8px 18px;font-weight:700;font-size:13.5px}
+header.site a.cta:hover{background:var(--deep)}
+nav.crumb{font-size:13px;color:var(--muted);padding:26px 0 0}
+nav.crumb a{color:var(--muted);text-decoration:none}
+nav.crumb a:hover{color:var(--deep)}
+/* ── 기사 판형 ── */
+article{padding:6px 0 48px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--accent);text-transform:uppercase}
+h1{font-size:clamp(27px,4.6vw,38px);font-weight:800;line-height:1.28;letter-spacing:-.015em;margin:10px 0 14px;word-break:keep-all}
+.byline{display:flex;flex-wrap:wrap;gap:6px 0;font-size:13px;color:var(--muted);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 0;margin:18px 0 4px}
+.byline span+span::before{content:'·';margin:0 10px;color:var(--line)}
+.lead{font-size:18px;line-height:1.75;color:var(--ink2);margin:26px 0 30px}
+.lead b{color:var(--ink)}
+h2{font-size:22px;font-weight:800;letter-spacing:-.01em;margin:44px 0 12px;padding-top:26px;border-top:1px solid var(--line);line-height:1.35}
+h3{font-size:16.5px;font-weight:700;margin:26px 0 8px}
+p{margin:13px 0;color:var(--ink2)}
 article b,article strong{color:var(--ink)}
-ul,ol{margin:12px 0;padding-left:24px;color:var(--ink2)}
-li{margin:7px 0}
-table{border-collapse:collapse;width:100%;font-size:14.5px;margin:16px 0}
-th{font-size:13px;color:var(--muted);text-align:left;padding:9px 12px;border-bottom:2px solid var(--line);white-space:nowrap}
-td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink2)}
-.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card);margin:16px 0}
-.note{font-size:14px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:18px 0}
-.check{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 18px;margin:16px 0}
-.cta-box{margin:36px 0 8px;padding:22px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;background:var(--card)}
-.cta-box strong{display:block;font-size:17px;margin-bottom:6px}
-.cta-box p{margin:4px 0 14px;font-size:14.5px}
-.cta-box a{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:11px 20px;font-size:15px}
-.related{border-top:1px solid var(--line);padding:26px 0 8px}
-.related h2{margin-top:0;font-size:17px}
-.related a{display:block;color:var(--deep);text-decoration:none;padding:7px 0;font-size:15px}
-footer.site{border-top:1px solid var(--line);margin-top:30px}
-footer.site .wrap{padding:22px 20px 40px;font-size:12.5px;color:var(--muted);line-height:1.7}
+ul,ol{margin:13px 0;padding-left:22px;color:var(--ink2)}
+li{margin:8px 0}
+li::marker{color:var(--accent)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card);box-shadow:var(--shadow);margin:20px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th{font-size:12.5px;letter-spacing:.05em;color:var(--muted);text-align:left;padding:12px 16px;border-bottom:2px solid var(--line);white-space:nowrap;background:var(--soft)}
+td{padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink2)}
+tr:last-child td{border-bottom:0}
+.num{font-variant-numeric:tabular-nums}
+.note{font-size:14px;color:var(--ink2);background:var(--soft);border-radius:12px;padding:14px 18px;margin:20px 0}
+.check{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:10px 22px;margin:20px 0}
+.cta-box{margin:42px 0 8px;padding:26px 28px;border-radius:16px;background:var(--soft);border:1px solid var(--line)}
+.cta-box strong{display:block;font-size:18px;margin-bottom:6px;letter-spacing:-.01em}
+.cta-box p{margin:4px 0 16px;font-size:14.5px}
+.cta-box a{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;border-radius:11px;padding:12px 22px;font-size:15px}
+.cta-box a:hover{background:var(--deep)}
+.related{border-top:1px solid var(--line);padding:28px 0 8px;margin-top:34px}
+.related h2{margin:0 0 10px;padding:0;border:0;font-size:16px;letter-spacing:.02em}
+.related a{display:block;color:var(--deep);text-decoration:none;padding:8px 0;font-size:15px;font-weight:500}
+.related a:hover{text-decoration:underline;text-underline-offset:4px}
+footer.site{border-top:1px solid var(--line);margin-top:34px;background:var(--card)}
+footer.site .bar{max-width:1180px;margin:0 auto;padding:24px;font-size:12.5px;color:var(--muted);line-height:1.7}
 footer.site a{color:var(--muted)}
 img{max-width:100%}
-.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin:26px 0}
-.hub-card{display:flex;flex-direction:column;gap:7px;border:1px solid var(--line);border-radius:12px;background:var(--card);padding:18px;text-decoration:none;color:var(--ink);transition:border-color .15s}
-.hub-card:hover,.hub-card:focus-visible{border-color:var(--accent)}
-.hub-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.hub-cat{font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--deep)}
-.hub-card strong{font-size:16.5px;line-height:1.4;word-break:keep-all}
-.hub-card p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.6}
-.hub-card time{font-size:12px;color:var(--muted)}
-@media (prefers-reduced-motion:reduce){.hub-card{transition:none}}
+/* ── 허브: 매거진 그리드 ── */
+.hub-head{padding:44px 0 8px}
+.hub-head h1{margin:8px 0 10px}
+.hub-head p{max-width:56ch;font-size:16.5px;color:var(--ink2);margin:0}
+.hub-sec{display:flex;align-items:baseline;gap:14px;margin:44px 0 16px}
+.hub-sec strong{font-size:14px;font-weight:800;letter-spacing:.12em;color:var(--ink)}
+.hub-sec i{flex:1;height:1px;background:var(--line)}
+.feature-row{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:18px}
+@media (max-width:860px){.feature-row{grid-template-columns:1fr}}
+a.feat{display:flex;flex-direction:column;justify-content:flex-end;gap:10px;min-height:340px;padding:30px;border-radius:18px;text-decoration:none;color:#fff;background:linear-gradient(145deg,#4443c0,#6d6ee6 62%,#8a8cf0);box-shadow:var(--shadow);position:relative;overflow:hidden}
+a.feat::after{content:'';position:absolute;right:-70px;top:-70px;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.09)}
+a.feat .hub-cat{color:rgba(255,255,255,.85)}
+a.feat strong{font-size:clamp(21px,2.6vw,27px);font-weight:800;line-height:1.35;letter-spacing:-.01em}
+a.feat p{margin:0;color:rgba(255,255,255,.88);font-size:14.5px;line-height:1.7;max-width:52ch}
+a.feat time{font-size:12.5px;color:rgba(255,255,255,.7)}
+.feat-side{display:grid;grid-template-rows:1fr 1fr;gap:18px}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.hub-card{display:flex;flex-direction:column;gap:9px;border:1px solid var(--line);border-radius:16px;background:var(--card);padding:22px;text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:transform .16s,border-color .16s}
+.hub-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.hub-card:focus-visible,a.feat:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.hub-cat{font-size:11.5px;font-weight:700;letter-spacing:.12em;color:var(--accent)}
+.hub-card strong{font-size:17.5px;font-weight:700;line-height:1.42;letter-spacing:-.01em;word-break:keep-all}
+.hub-card p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.hub-card time{margin-top:auto;padding-top:6px;font-size:12px;color:var(--muted)}
+.tpl-strip{border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:var(--shadow);padding:26px 28px;margin:8px 0 0}
+.tpl-strip h2{margin:0 0 4px;padding:0;border:0;font-size:19px}
+.tpl-strip>p{margin:0 0 16px;font-size:14px;color:var(--muted)}
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.tpl-grid a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink2);font-size:14px;font-weight:500;border:1px solid var(--line);border-radius:11px;padding:12px 15px;transition:border-color .16s,color .16s}
+.tpl-grid a::before{content:'✎';color:var(--accent);font-size:15px}
+.tpl-grid a:hover{border-color:var(--accent);color:var(--ink)}
+.hub-cta{display:flex;flex-wrap:wrap;align-items:center;gap:14px 26px;margin:40px 0 52px;padding:26px 30px;border-radius:18px;background:linear-gradient(120deg,var(--soft),var(--card));border:1px solid var(--line)}
+.hub-cta div{flex:1 1 380px}
+.hub-cta strong{display:block;font-size:18px;margin-bottom:4px}
+.hub-cta p{margin:0;font-size:14px;color:var(--muted)}
+.hub-cta a{background:var(--accent);color:#fff;text-decoration:none;font-weight:700;border-radius:11px;padding:13px 24px;font-size:15px;white-space:nowrap}
+.hub-cta a:hover{background:var(--deep)}
+@media (prefers-reduced-motion:reduce){.hub-card,.tpl-grid a{transition:none}.hub-card:hover{transform:none}}
 `;
 
-function pageShell({ title, description, url, breadcrumbs, bodyHtml, ldBlocks }) {
+const FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">';
+
+function pageShell({ title, description, url, breadcrumbs, bodyHtml, ldBlocks, wide }) {
   const crumbHtml = breadcrumbs
     .map((b, i) => (i === breadcrumbs.length - 1 ? esc(b.name) : `<a href="${b.url}">${esc(b.name)}</a>`))
     .join(' › ');
@@ -86,24 +137,24 @@ function pageShell({ title, description, url, breadcrumbs, bodyHtml, ldBlocks })
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="${url}">
 <link rel="icon" href="/favicon-32x32.png">
+${FONTS}
 ${ldBlocks.join('\n')}
 <style>${STYLE}</style>
 </head>
 <body>
-<header class="site"><div class="wrap">
-<a class="brand" href="/">교수님 피하기</a>
+<header class="site"><div class="bar">
+<a class="brand" href="/">교수님 <em>피하기</em></a>
 <a href="/blog">블로그</a>
-<a href="/guide">가이드</a>
-<a href="/pricing">요금</a>
+<span class="sp"></span>
 <a class="cta" href="/">무료로 시작</a>
 </div></header>
-<div class="wrap">
+<div class="wrap${wide ? ' wide' : ''}">
 <nav class="crumb">${crumbHtml}</nav>
 ${bodyHtml}
 </div>
-<footer class="site"><div class="wrap">
-교수님 피하기 · 지피코리아(gpkorea) — AI 초안의 문체 신호를 확인하고 원문의 뜻·장르·사실을 지키며 다듬는 도구입니다.<br>
-AI 감지 결과와 외부 검사 점수는 참고 신호이며 보장값이 아닙니다. <a href="/">서비스</a> · <a href="/faq">자주 묻는 질문</a> · <a href="/qna">문의</a>
+<footer class="site"><div class="bar">
+교수님 피하기 · 지피코리아(gpkorea) — AI 초안의 문체 신호를 확인하고 원문의 뜻·장르·사실을 지키며 다듬는 도구입니다.
+AI 감지 결과와 외부 검사 점수는 참고 신호이며 보장값이 아닙니다. <a href="/">서비스 홈</a> · <a href="/blog">블로그</a>
 </div></footer>
 </body>
 </html>
@@ -146,8 +197,9 @@ function articlePage(article, allArticles) {
   ];
   const body = `
 <article>
+<span class="eyebrow">${esc(article.category)}</span>
 <h1>${esc(article.title)}</h1>
-<div class="byline"><span>교수님 피하기 팀</span><span>검수: ${esc(article.reviewer || '검수 대기')}</span><span>수정일 ${article.date}</span><span>${esc(article.category)}</span></div>
+<div class="byline"><span>교수님 피하기 팀</span><span>검수: ${esc(article.reviewer || '검수 대기')}</span><span>${article.date}</span></div>
 <p class="lead">${article.lead}</p>
 ${article.body}
 <div class="cta-box">
@@ -187,15 +239,16 @@ function templatePage(tpl, allArticles) {
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: '홈', item: `${SITE}/` },
-        { '@type': 'ListItem', position: 2, name: '입력 템플릿', item: `${SITE}/blog` },
+        { '@type': 'ListItem', position: 2, name: '블로그', item: `${SITE}/blog` },
         { '@type': 'ListItem', position: 3, name: tpl.title, item: url }
       ]
     })
   ];
   const body = `
 <article>
+<span class="eyebrow">${esc(tpl.genreLabel)} 템플릿</span>
 <h1>${esc(tpl.title)}</h1>
-<div class="byline"><span>교수님 피하기 팀</span><span>검수: ${esc(tpl.reviewer || '검수 대기')}</span><span>수정일 ${tpl.date}</span><span>${esc(tpl.genreLabel)} 템플릿</span></div>
+<div class="byline"><span>교수님 피하기 팀</span><span>검수: ${esc(tpl.reviewer || '검수 대기')}</span><span>${tpl.date}</span></div>
 <p class="lead">${tpl.lead}</p>
 ${tpl.body}
 <div class="cta-box">
@@ -215,7 +268,7 @@ ${relatedBlock(tpl.related, allArticles)}
   });
 }
 
-// 블로그 허브(/blog)도 완전 독립 페이지(2026-08-28 사장님 결정) — 앱 셸 밖의 정적 문서.
+// 블로그 허브 — 매거진 판형(2026-08-28 재설계): 피처 1 + 서브 2, 카테고리 그리드, 템플릿 스트립, CTA 밴드.
 function hubPage() {
   const url = `${SITE}/blog`;
   const ld = [
@@ -236,27 +289,53 @@ function hubPage() {
       ]
     })
   ];
-  const cards = BLOG_ARTICLES.map((a) => `
+  const [feat, ...rest] = BLOG_ARTICLES;
+  const side = rest.slice(0, 2);
+  const grid = rest.slice(2);
+  const card = (a) => `
 <a class="hub-card" href="/blog/${a.slug}">
 <span class="hub-cat">${esc(a.category)}</span>
 <strong>${esc(a.title)}</strong>
 <p>${esc(a.description)}</p>
 <time>${a.date}</time>
-</a>`).join('\n');
-  const tplLinks = TEMPLATE_PAGES.map((t) => `<a href="/templates/${t.genre}/${t.subtype}">${esc(t.title)} →</a>`).join('\n');
+</a>`;
+  const tplLinks = TEMPLATE_PAGES.map((t) => `<a href="/templates/${t.genre}/${t.subtype}">${esc(t.title)}</a>`).join('\n');
   const body = `
 <article>
-<h1>교수님 피하기 블로그</h1>
-<p class="lead">AI 초안을 다듬을 때 확인해야 할 기준을 짧고 구체적으로 정리했습니다. 점수 보장이 아니라, 사실을 지키면서 자연스럽게 만드는 방법을 다룹니다.</p>
-<div class="hub-grid">
-${cards}
+<div class="hub-head">
+<span class="eyebrow">교수님 피하기 블로그</span>
+<h1>AI 초안을 다듬는 실전 기준</h1>
+<p>점수 보장이 아니라, 사실을 지키면서 자연스럽게 만드는 방법을 다룹니다. 과제·자소서·리포트를 제출하기 전에 확인할 기준을 짧고 구체적으로 정리했어요.</p>
 </div>
-<section class="related"><h2>빈칸 채우기 입력 템플릿</h2>
+<div class="hub-sec"><strong>이번 주 추천</strong><i></i></div>
+<div class="feature-row">
+<a class="feat" href="/blog/${feat.slug}">
+<span class="hub-cat">${esc(feat.category)}</span>
+<strong>${esc(feat.title)}</strong>
+<p>${esc(feat.description)}</p>
+<time>${feat.date}</time>
+</a>
+<div class="feat-side">
+${side.map(card).join('\n')}
+</div>
+</div>
+<div class="hub-sec"><strong>가이드 전체</strong><i></i></div>
+<div class="hub-grid">
+${grid.map(card).join('\n')}
+</div>
+<div class="hub-sec"><strong>빈칸 채우기 입력 템플릿</strong><i></i></div>
+<div class="tpl-strip">
+<h2>쓰기 전에 사실부터 모으는 템플릿</h2>
+<p>글을 대신 써주는 게 아니라, 필요한 사실을 빠짐없이 모으게 해주는 체크리스트형 템플릿입니다.</p>
+<div class="tpl-grid">
 ${tplLinks}
-</section>
-<div class="cta-box">
+</div>
+</div>
+<div class="hub-cta">
+<div>
 <strong>읽는 것보다 빠른 확인</strong>
 <p>글을 붙여넣으면 문단별 AI 문체 신호를 바로 보여드립니다. 가입 시 10크레딧 제공, 실패한 작업은 차감되지 않아요.</p>
+</div>
 <a href="/">무료 10크레딧으로 시작하기</a>
 </div>
 </article>`;
@@ -266,7 +345,8 @@ ${tplLinks}
     url,
     breadcrumbs: [{ name: '홈', url: '/' }, { name: '블로그' }],
     bodyHtml: body,
-    ldBlocks: ld
+    ldBlocks: ld,
+    wide: true
   });
 }
 
