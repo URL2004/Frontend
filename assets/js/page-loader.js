@@ -1,7 +1,7 @@
 (function () {
   // 파셜은 동기 XHR로 로드되어 브라우저 휴리스틱 캐시에 잡히기 쉽다.
   // UI 버전이 바뀔 때마다 올려서 강제로 새 파일을 받게 한다.
-  var ASSET_V = 'lav-182';   // ★ L-01: 자산 버전과 일치 — 파셜 stale 캐시 방지
+  var ASSET_V = 'lav-183';   // ★ L-01: 자산 버전과 일치 — 파셜 stale 캐시 방지
   var partials = [
     '/partials/login-screen.html',
     '/pages/landing.html',
@@ -70,6 +70,7 @@
 
   function shouldStartOnLanding() {
     var params = new URLSearchParams(window.location.search || '');
+    if (hasKakaoCallback(params)) return false;
     var lp = params.get('lp');
     if (lp === '1') return true;
     if (lp === '0') return false;
@@ -82,7 +83,17 @@
     return !hasCachedFirebaseUser();
   }
 
+  function hasKakaoCallback(params) {
+    params = params || new URLSearchParams(window.location.search || '');
+    return params.has('code')
+      && params.get('success') !== '1'
+      && params.get('fail') !== '1'
+      && params.get('subfail') !== '1'
+      && !params.has('paymentKey');
+  }
+
   function selectInitialScreen() {
+    var kakaoCallback = hasKakaoCallback();
     var landing = shouldStartOnLanding();
     var landingScreen = document.getElementById('landingScreen');
     var appScreen = document.getElementById('appScreen');
@@ -92,6 +103,19 @@
     var target = landing ? landingScreen : appScreen;
     if (target) target.classList.add('active');
     document.documentElement.dataset.gpInitialScreen = landing ? 'landing' : 'app';
+    if (kakaoCallback) {
+      document.documentElement.dataset.gpAuthCallback = 'kakao';
+      var overlay = document.getElementById('authTransition');
+      if (appScreen) {
+        appScreen.inert = true;
+        appScreen.setAttribute('aria-busy', 'true');
+      }
+      if (overlay) {
+        overlay.hidden = false;
+        overlay.setAttribute('aria-hidden', 'false');
+      }
+      document.body.classList.add('gp-auth-transitioning');
+    }
   }
 
   // SEO 프리렌더 블록 제거: 빌드된 정적 HTML에는 크롤러용 noscript 본문이 있다.

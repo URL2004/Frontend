@@ -1,5 +1,21 @@
+var resolveKakaoReady;
+window.gpKakaoReady = new Promise(function (resolve) {
+ resolveKakaoReady = resolve;
+});
 window.onKakaoLoad = function() {
- Kakao.init(window.APP_CONFIG.KAKAO_JS_KEY);
+ try {
+  if (!window.Kakao) throw new Error('Kakao SDK missing');
+  if (!window.Kakao.isInitialized || !window.Kakao.isInitialized()) {
+   window.Kakao.init(window.APP_CONFIG.KAKAO_JS_KEY);
+  }
+  resolveKakaoReady(window.Kakao);
+ } catch (error) {
+  console.warn('Kakao SDK initialization failed.', error);
+  resolveKakaoReady(null);
+ }
+};
+window.onKakaoError = function () {
+ resolveKakaoReady(null);
 };
 
 var tossPaymentsPromise = null;

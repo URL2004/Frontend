@@ -2173,9 +2173,6 @@ function showPolicy(type) {
 }
 
 window.addEventListener('load',()=>{
- if (location.search.includes('code=')) {
- window.handleKakaoCallback();
- }
 // --- 사진 미리보기 이벤트 등록 ---
  const photoInput = document.getElementById('community-photos');
  const previewList = document.getElementById('photo-preview-list');

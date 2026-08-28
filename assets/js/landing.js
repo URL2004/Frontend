@@ -128,6 +128,7 @@
   window.gpLandingStart = function (source) {
     track('landing_signup_click', { source: source || 'landing', surface: 'landing' });
     setLandingLoginPending(true);
+    if (typeof window.gpWarmAuthBackend === 'function') window.gpWarmAuthBackend();
     if (typeof window.showScreen === 'function') window.showScreen('login');
   };
 
@@ -169,6 +170,7 @@
   window.gpLandingNotice = function () {
     track('landing_notice_click', { surface: 'landing', topic: 'writing_lab_soon' });
     setLandingLoginPending(true);
+    if (typeof window.gpWarmAuthBackend === 'function') window.gpWarmAuthBackend();
     if (typeof window.showScreen === 'function') window.showScreen('login');
   };
 
