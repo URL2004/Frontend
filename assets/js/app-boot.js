@@ -12,6 +12,7 @@
 
   script('/assets/js/page-loader.js?v=' + v);
   script('/assets/js/ui-feedback.js?v=' + v);
+  script('/assets/js/credit-pricing.js?v=' + v);
   script('/assets/js/conversion-flow.js?v=' + v);
   script('/assets/js/detect-presentation.js?v=' + v);
   script('/assets/js/app-main.js?v=' + v);

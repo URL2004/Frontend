@@ -139,3 +139,55 @@ test('use_case 흐름: 랜딩 변형·3택 프리셋·이벤트 파라미터가 
   assert.match(tracking, /use_case:\s*last\.use_case \|\| first\.use_case/u);
   assert.match(tracking, /use_case:\s*clean\(payload\.use_case, 40\)/u);
 });
+
+test('콘텐츠 데이터(블로그 8편·템플릿 6종)도 금지 주장·유효기간 규칙을 지킨다', async () => {
+  const [blog, templates] = await Promise.all([
+    read('scripts/blog-data.mjs'),
+    read('scripts/templates-data.mjs')
+  ]);
+  const { BLOG_ARTICLES } = await import('../scripts/blog-data.mjs');
+  const { TEMPLATE_PAGES } = await import('../scripts/templates-data.mjs');
+  assert.equal(BLOG_ARTICLES.length, 8, '블로그 8편이어야 함');
+  assert.equal(TEMPLATE_PAGES.length, 6, '템플릿 파일럿 6종이어야 함');
+  const all = blog + '\n' + templates;
+  // 보장·날조형 표현 금지(감사보고서 §6·§8 게이트)
+  assert.doesNotMatch(all, /100%\s*(보장|통과|만족)|무조건 통과|합격(을|률)?\s*보장|탐지\s*통과를?\s*보장/u);
+  assert.doesNotMatch(all, /크레딧의?\s*이용기간은?\s*결제일로부터\s*1년/u);
+  // 후기(review_blog) 유형 파일럿 금지(PRODUCT.md 기준선 사유)
+  for (const t of TEMPLATE_PAGES) assert.notEqual(t.genre, 'review_blog');
+  // 전 편 발행 게이트 필드 보유(작성일·검수 상태·관련 링크)
+  for (const a of BLOG_ARTICLES) {
+    assert.ok(a.slug && a.title && a.description && a.date && a.reviewer, `기사 메타 누락: ${a.slug}`);
+    assert.ok(Array.isArray(a.related) && a.related.length >= 1, `관련 링크 없음: ${a.slug}`);
+  }
+  for (const t of TEMPLATE_PAGES) {
+    assert.ok(t.genre && t.subtype && t.title && t.date && t.reviewer, `템플릿 메타 누락: ${t.genre}/${t.subtype}`);
+  }
+  // 허브에 8편 전부 실링크로 연결
+  const hub = await read('pages/blog.html');
+  for (const a of BLOG_ARTICLES) {
+    assert.ok(hub.includes(`/blog/${a.slug}`), `허브에 /blog/${a.slug} 링크 부재`);
+  }
+});
+
+test('크레딧 계산기: 공용 단가 모듈이 evasion-flow 공식과 같은 값을 낸다', async () => {
+  const vm = await import('node:vm');
+  const src = await read('assets/js/credit-pricing.js');
+  const win = { document: { readyState: 'complete', getElementById: () => null, addEventListener: () => {} } };
+  vm.runInNewContext(src, { window: win, document: win.document, Math, String, parseInt });
+  const p = win.gpCreditPricing;
+  // 서버·evasion-flow와 동일해야 하는 기준값(감지 100자당 1 / 기본 최소10·100자당2 / 고급 200/400/600)
+  assert.equal(p.detectCredit(1000), 10);
+  assert.equal(p.shortCredit(300), 10);
+  assert.equal(p.shortCredit(1050), 22);
+  assert.equal(p.formalCredit(10000, false), 200);
+  assert.equal(p.formalCredit(15000, false), 400);
+  assert.equal(p.formalCredit(25000, true), 700);
+  const evasion = await read('assets/js/evasion-flow.js');
+  assert.match(evasion, /SHORT_HUMANIZE_MIN_CREDITS = 10/u);
+  assert.match(evasion, /Math\.max\(SHORT_HUMANIZE_MIN_CREDITS, Math\.ceil\(.*\/ 100\) \* 2\)/u);
+  const pricingHtml = await read('pages/pricing.html');
+  assert.match(pricingHtml, /id="calculator"/u);
+  const boot = await read('assets/js/app-boot.js');
+  assert.match(boot, /credit-pricing\.js/u);
+});

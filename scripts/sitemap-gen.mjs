@@ -6,6 +6,7 @@ import { execSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { SITE, ROUTES } from './route-meta.mjs';
+import { contentUrls } from './content-pages.mjs';
 
 const CHANGEFREQ = {
   '/': 'weekly', '/pricing': 'weekly', '/detect-report': 'weekly', '/blog': 'weekly',
@@ -25,15 +26,25 @@ function lastmodFor(root, partial) {
 }
 
 export async function generateSitemap({ root, dist }) {
-  const entries = ROUTES.map((r) => [
+  const routeEntries = ROUTES.map((r) => [
     '  <url>',
     `    <loc>${SITE}${r.url === '/' ? '/' : r.url}</loc>`,
     `    <lastmod>${lastmodFor(root, r.partial)}</lastmod>`,
     `    <changefreq>${CHANGEFREQ[r.url] || 'weekly'}</changefreq>`,
     `    <priority>${PRIORITY[r.url] || '0.5'}</priority>`,
     '  </url>'
-  ].join('\n')).join('\n');
+  ].join('\n'));
+  // 정적 콘텐츠(블로그 기사·입력 템플릿) — lastmod는 데이터의 작성/수정일
+  const contentEntries = contentUrls().map((c) => [
+    '  <url>',
+    `    <loc>${SITE}${c.url}</loc>`,
+    `    <lastmod>${c.date}</lastmod>`,
+    '    <changefreq>monthly</changefreq>',
+    `    <priority>${c.url.startsWith('/blog/') ? '0.6' : '0.5'}</priority>`,
+    '  </url>'
+  ].join('\n'));
+  const entries = [...routeEntries, ...contentEntries].join('\n');
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>\n`;
   await fs.writeFile(path.join(dist, 'sitemap.xml'), xml, 'utf8');
-  return ROUTES.length;
+  return ROUTES.length + contentEntries.length;
 }

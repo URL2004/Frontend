@@ -17730,3 +17730,27 @@ body.dark .lav-blocked-memo{background:rgba(255,255,255,.07);border-color:rgba(2
 /* 크롤러블 내비(2026-08-28): switchTab 버튼 → 실링크 전환에 따른 앵커 기본값 */
 .gp-lav-menu a,.gp-footer-links a,a.mnav-btn,a.snav-btn{text-decoration:none;cursor:pointer;}
 a.mnav-btn,a.snav-btn{display:flex;}
+
+/* 블로그 허브 기사 실링크(2026-08-28 P1-1) */
+.gp-blog-list h3 a{color:inherit;text-decoration:none;}
+.gp-blog-list h3 a:hover,.gp-blog-list h3 a:focus-visible{text-decoration:underline;text-underline-offset:3px;}
+.gp-blog-feature a.gp-seo-primary{display:inline-block;margin-top:6px;}
+
+/* 크레딧 계산기(2026-08-28 P1-3) */
+.gp-calc{border:1px solid var(--line,#e4e5f0);border-left:4px solid #5a5bd8;border-radius:14px;background:var(--surface,#fff);padding:20px 22px;margin:0 0 18px;}
+.gp-calc-head strong{display:block;font-size:17px;margin-bottom:3px;}
+.gp-calc-head span{font-size:13px;color:var(--text3,#6b7280);}
+.gp-calc-input-row{display:flex;align-items:center;gap:8px;margin:14px 0;}
+.gp-calc-input-row input{width:140px;font-size:18px;font-weight:700;padding:10px 14px;border:1.5px solid #c9cce6;border-radius:10px;background:var(--surface,#fff);color:var(--text,#1f2437);font-variant-numeric:tabular-nums;}
+.gp-calc-input-row input:focus{outline:none;border-color:#5a5bd8;box-shadow:0 0 0 3px rgba(90,91,216,.15);}
+.gp-calc-input-row span{font-size:14px;color:var(--text3,#6b7280);}
+.gp-calc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;}
+.gp-calc-cell{border:1px solid var(--line,#e4e5f0);border-radius:10px;padding:12px 14px;}
+.gp-calc-cell>span{display:block;font-size:12px;color:var(--text3,#6b7280);margin-bottom:5px;}
+.gp-calc-cell em{font-style:normal;display:flex;flex-direction:column;gap:1px;}
+.gp-calc-cell em b{font-size:17px;color:#4749c9;font-variant-numeric:tabular-nums;}
+.gp-calc-cell em i{font-style:normal;font-size:11.5px;color:var(--text3,#6b7280);}
+.gp-calc-note{font-size:12px;color:var(--text3,#6b7280);margin:12px 0 0;}
+body.dark .gp-calc,body.dark .gp-calc-cell{border-color:rgba(255,255,255,.14);}
+body.dark .gp-calc-cell em b{color:#b4b6ff;}
+body.dark .gp-calc-input-row input{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.2);color:var(--text,#e8e9f5);}

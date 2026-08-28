@@ -154,6 +154,11 @@ await writeRuntimeConfig();
 const prerendered = await prerenderSeo({ root, dist });
 console.log(`[seo-prerender] generated ${prerendered.length} routes: ${prerendered.join(', ')}`);
 
+// 정적 콘텐츠 페이지(블로그 기사·입력 템플릿) 생성 — SPA 부팅 없는 독립 문서.
+const { generateContentPages } = await import('./content-pages.mjs');
+const contentPages = await generateContentPages({ dist });
+console.log(`[content-pages] generated ${contentPages.length} pages: ${contentPages.join(', ')}`);
+
 // sitemap.xml 생성(2026-08-28): 수기 사본 복사본을 실제 커밋일 lastmod 버전으로 덮어쓴다.
 const { generateSitemap } = await import('./sitemap-gen.mjs');
 const sitemapCount = await generateSitemap({ root, dist });
