@@ -106,8 +106,8 @@ test('내비는 크롤러블 앵커(a[href][data-tab])와 라우팅 델리게이
   const countAnchors = (s) => (s.match(/<a [^>]*data-tab="[^"]+"[^>]*href="\//gu) || []).length;
   assert.ok(countAnchors(main) >= 6, `main.html 사이드바 앵커 부족(${countAnchors(main)})`);
   assert.ok(countAnchors(footer) >= 8, `footer 앵커 부족(${countAnchors(footer)})`);
-  // 블로그는 SPA 탭이 아니라 독립 정적 허브로 전체 이동(2026-08-28) — data-tab 없는 순수 링크여야 한다
-  assert.match(footer, /<a href="\/blog">블로그<\/a>/u);
+  // 연구노트(구 블로그)는 SPA 탭이 아니라 독립 정적 허브로 전체 이동(2026-08-28) — data-tab 없는 순수 링크여야 한다
+  assert.match(footer, /<a href="\/blog">연구노트<\/a>/u);
   assert.ok(countAnchors(mobileNav) >= 6, `모바일 내비 앵커 부족(${countAnchors(mobileNav)})`);
   assert.ok(countAnchors(appShell) >= 7, `사이드바 앵커 부족(${countAnchors(appShell)})`);
   assert.match(appMain, /closest\('a\[data-tab\]\[href\]'\)/u, '앵커 라우팅 델리게이트 부재');

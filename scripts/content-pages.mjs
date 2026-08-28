@@ -210,7 +210,7 @@ ${ldBlocks.join('\n')}
 <body>
 <header class="site"><div class="bar">
 <a class="brand" href="/">교수님 <em>피하기</em></a>
-<a href="/blog">블로그</a>
+<a href="/blog">연구노트</a>
 <span class="sp"></span>
 <a class="cta" href="/" data-member-label="작업실 열기">무료로 시작</a>
 </div></header>
@@ -220,7 +220,7 @@ ${bodyHtml}
 </div>
 <footer class="site"><div class="bar">
 교수님 피하기 · 지피코리아(gpkorea) — AI 초안의 문체 신호를 확인하고 원문의 뜻·장르·사실을 지키며 다듬는 도구입니다.
-AI 감지 결과와 외부 검사 점수는 참고 신호이며 보장값이 아닙니다. <a href="/" data-member-label="작업실로 돌아가기">서비스 홈</a> · <a href="/blog">블로그</a>
+AI 감지 결과와 외부 검사 점수는 참고 신호이며 보장값이 아닙니다. <a href="/" data-member-label="작업실로 돌아가기">서비스 홈</a> · <a href="/blog">연구노트</a>
 </div></footer>
 ${AUTH_ADAPT}
 </body>
@@ -257,7 +257,7 @@ function articlePage(article, allArticles) {
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: '홈', item: `${SITE}/` },
-        { '@type': 'ListItem', position: 2, name: '블로그', item: `${SITE}/blog` },
+        { '@type': 'ListItem', position: 2, name: '연구노트', item: `${SITE}/blog` },
         { '@type': 'ListItem', position: 3, name: article.title, item: url }
       ]
     })
@@ -277,10 +277,10 @@ ${article.body}
 ${relatedBlock(article.related, allArticles)}
 </article>`;
   return pageShell({
-    title: `${article.title} | 교수님 피하기 블로그`,
+    title: `${article.title} | 교수님 피하기 연구노트`,
     description: article.description,
     url,
-    breadcrumbs: [{ name: '홈', url: '/' }, { name: '블로그', url: '/blog' }, { name: article.title }],
+    breadcrumbs: [{ name: '홈', url: '/' }, { name: '연구노트', url: '/blog' }, { name: article.title }],
     bodyHtml: body,
     ldBlocks: ld
   });
@@ -306,7 +306,7 @@ function templatePage(tpl, allArticles) {
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: '홈', item: `${SITE}/` },
-        { '@type': 'ListItem', position: 2, name: '블로그', item: `${SITE}/blog` },
+        { '@type': 'ListItem', position: 2, name: '연구노트', item: `${SITE}/blog` },
         { '@type': 'ListItem', position: 3, name: tpl.title, item: url }
       ]
     })
@@ -328,7 +328,7 @@ ${relatedBlock(tpl.related, allArticles)}
     title: `${tpl.title} | 교수님 피하기`,
     description: tpl.description,
     url,
-    breadcrumbs: [{ name: '홈', url: '/' }, { name: '블로그', url: '/blog' }, { name: tpl.title }],
+    breadcrumbs: [{ name: '홈', url: '/' }, { name: '연구노트', url: '/blog' }, { name: tpl.title }],
     bodyHtml: body,
     ldBlocks: ld
   });
@@ -341,7 +341,7 @@ function hubPage() {
     jsonLd({
       '@context': 'https://schema.org',
       '@type': 'Blog',
-      name: '교수님 피하기 블로그',
+      name: '교수님 피하기 연구노트',
       url,
       description: 'AI 초안을 자연스럽게 다듬을 때 확인할 기준을 정리한 실전 가이드 모음.',
       publisher: { '@type': 'Organization', name: '교수님 피하기', url: SITE }
@@ -418,10 +418,10 @@ ${tplLinks}
 </div>
 </article>`;
   return pageShell({
-    title: '교수님 피하기 블로그 – AI 글 다듬기 실전 가이드',
-    description: 'AI 티 줄이기, 감지 점수 읽는 법, 제출 전 사실 확인, 크레딧 계산까지 — AI 초안을 다듬는 실전 기준을 정리한 블로그입니다.',
+    title: '교수님 피하기 연구노트 – AI 글 다듬기 실전 가이드',
+    description: 'AI 티 줄이기, 감지 점수 읽는 법, 제출 전 사실 확인, 크레딧 계산까지 — AI 초안을 다듬는 실전 기준을 정리한 연구노트입니다.',
     url,
-    breadcrumbs: [{ name: '홈', url: '/' }, { name: '블로그' }],
+    breadcrumbs: [{ name: '홈', url: '/' }, { name: '연구노트' }],
     bodyHtml: body,
     ldBlocks: ld,
     wide: true
