@@ -9524,7 +9524,7 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
   padding-bottom:max(32px,env(safe-area-inset-bottom));
  }
  #mainContent[data-main-design="lavender"] .gp-lav-hero:not(.flow-active){
-  margin:0 auto auto;padding:clamp(8px,2dvh,18px) 0 max(26px,env(safe-area-inset-bottom));
+  margin:0 auto auto;padding:clamp(20px,3.5dvh,30px) 0 max(26px,env(safe-area-inset-bottom));
  }
  #mainContent[data-main-design="lavender"] .gp-lav-hero-title img{
   width:clamp(184px,52vw,230px);filter:drop-shadow(0 10px 22px rgba(90,91,216,.12));
