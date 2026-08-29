@@ -530,11 +530,53 @@
     var preToken = null;
     try { preToken = await evGetIdToken(true); } catch (e) { /* 비로그인 */ }
     if (!preToken) { alert('AI 감지는 로그인이 필요해요. 로그인 후 이용해 주세요.'); return; }
+    if (window.authReady && typeof window.authReady.then === 'function') {
+      try { await window.authReady; } catch (e) { /* 사용자 정보 조회 실패 시 서버 검증으로 이어간다. */ }
+    }
+    var unlimited = window.UP === 'unlimited';
+    var balance = Number(window.UC);
+    var hasKnownBalance = window.gpUserDataReady === true && !!window.CU && Number.isFinite(balance);
+    if (!options.resumeAfterPayment && !unlimited && hasKnownBalance && balance < cost) {
+      if (typeof window.gpOpenCreditCheckout === 'function') {
+        await window.gpOpenCreditCheckout({
+          action: 'evasion_detect',
+          source: 'evasion_detect_preflight',
+          neededCredits: cost,
+          currentCredits: balance,
+          payload: { text: text }
+        });
+      } else if (confirm('AI 감지에 ' + cost + '크레딧이 필요해요. 충전 페이지로 이동할까요?') && typeof switchTab === 'function') {
+        switchTab('pricing');
+      }
+      return;
+    }
+    var detectSummary = [
+      { label: '분석할 글', value: text.length.toLocaleString() + '자' },
+      unlimited
+        ? { label: '이용 방식', value: '무제한 이용권', emphasis: true }
+        : { label: '사용 크레딧', value: cost.toLocaleString() + '크레딧', emphasis: true }
+    ];
+    if (!unlimited && hasKnownBalance) {
+      detectSummary.push({ label: '감지 후 잔액', value: Math.max(0, balance - cost).toLocaleString() + '크레딧' });
+    }
     var agree = options.resumeAfterPayment === true
       ? true
       : (window.gpConfirm
-        ? await window.gpConfirm({ title: 'AI 감지', message: '이 글(' + text.length.toLocaleString() + '자) 감지에 ' + cost + '크레딧이 차감돼요. (100자당 1크레딧)', confirmText: cost + '크레딧으로 감지' })
-        : confirm('AI 감지에 ' + cost + '크레딧이 차감돼요. 진행할까요?'));
+        ? await window.gpConfirm({
+            variant: 'detect',
+            title: 'AI 감지를 시작할까요?',
+            message: '글 전체의 AI 티 지수와 두드러진 문체 신호를 확인합니다.',
+            summary: detectSummary,
+            safeText: unlimited
+              ? '무제한 이용권으로 처리되며 크레딧은 차감되지 않아요.'
+              : '감지에 실패하면 크레딧은 차감되지 않아요.',
+            note: '결과는 문체 패턴 기반 참고값이며, 실제 작성 주체나 외부 검사 결과를 보장하지 않습니다.',
+            confirmText: unlimited ? 'AI 감지 시작' : cost.toLocaleString() + '크레딧 사용하고 감지',
+            cancelText: '취소'
+          })
+        : confirm(unlimited
+          ? 'AI 감지를 시작할까요? 결과는 문체 패턴 기반 참고값입니다.'
+          : 'AI 감지에 ' + cost + '크레딧을 사용합니다. 실패하면 차감되지 않아요. 진행할까요?'));
     if (!agree) return;
     cameFromReport = false;
     // 멱등키 — 재시도 중복 차감 방지

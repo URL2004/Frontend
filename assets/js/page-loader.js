@@ -1,7 +1,7 @@
 (function () {
   // 파셜은 동기 XHR로 로드되어 브라우저 휴리스틱 캐시에 잡히기 쉽다.
   // UI 버전이 바뀔 때마다 올려서 강제로 새 파일을 받게 한다.
-  var ASSET_V = 'lav-186';   // ★ L-01: 자산 버전과 일치 — 파셜 stale 캐시 방지
+  var ASSET_V = 'lav-187';   // ★ L-01: 자산 버전과 일치 — 파셜 stale 캐시 방지
   var partials = [
     '/partials/login-screen.html',
     '/pages/landing.html',
@@ -34,7 +34,9 @@
     if ((xhr.status < 200 || xhr.status >= 300) && !(xhr.status === 0 && xhr.responseText)) {
       throw new Error('Failed to load page partial: ' + url);
     }
-    return xhr.responseText;
+    // UTF-8 BOM이 파셜 사이에 남으면 본문 안에서 보이지 않는 한 줄로 렌더되어
+    // 앱 상단 여백과 문서 스크롤을 만든다. 모든 파셜 경계에서 제거한다.
+    return String(xhr.responseText || '').replace(/^\uFEFF/u, '');
   }
 
   function loadPageMarkup() {

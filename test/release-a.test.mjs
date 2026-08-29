@@ -386,11 +386,11 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-186/u);
-  assert.match(boot, /var v = 'lav-186'/u);
+  assert.match(index, /app-boot\.js\?v=lav-187/u);
+  assert.match(boot, /var v = 'lav-187'/u);
   assert.match(boot, /input-quality\.js\?v=/u);
-  assert.match(loader, /var ASSET_V = 'lav-186'/u);
-  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166|167|168|170|185)/u);
+  assert.match(loader, /var ASSET_V = 'lav-187'/u);
+  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166|167|168|170|185|186)/u);
 });
 
 test('진행 중 휴머나이징은 어디서든 복귀하고 이전 퍼센트가 새 작업을 덮지 않는다', async () => {

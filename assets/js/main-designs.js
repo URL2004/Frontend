@@ -87,6 +87,8 @@
     if (main) main.style.display = 'block';
     var hero = document.querySelector('.gp-lav-hero');
     if (hero) hero.style.display = lavTab === 'main' ? '' : 'none';
+    var tabs = document.getElementById('lavTabSlot');
+    if (tabs) tabs.hidden = lavTab === 'main';
     document.querySelectorAll('.gp-lav-menu [data-tab]').forEach(function (b) {
       b.classList.toggle('active', b.dataset.tab === lavTab);
     });

@@ -92,6 +92,7 @@ window._fbDoc = doc;
 let CU = null;
 window.UC = 0;
 window.UP = 'free';
+window.gpUserDataReady = false;
 const ADMIN_ROLES = {
  'nC90IyjgaIZ8Z0JTABMTiyQHF9g1': { name:'운영자', label:'운영자' },
  'qa0iQAeVmMOxoy6Vg5ENTRKk0Vm2': { name:'관리자', label:'관리자' },
@@ -253,12 +254,14 @@ onAuthStateChanged(auth, async u =>{
  try {
   window.gpAuthResolved = true;
   if (u) {
+  window.gpUserDataReady = false;
   showAuthenticatedShell(u, 'auth_state');
   await loadUser(u);
   await flushPendingKakaoLink(u);
   }
   else {
   CU = null; window.CU = null;
+  window.gpUserDataReady = false;
   if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications([]);
   showScreen('app');
   if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });
@@ -358,7 +361,8 @@ async function loadUser(u) {
    else { console.log('추천 적용 실패:', data.error); localStorage.removeItem('pendingRef'); }
   } catch(e) { console.log('추천 적용 네트워크 오류 (재시도 가능):', e); }
  }
- updateCreditUI();
+  window.gpUserDataReady = true;
+  updateCreditUI();
  window.updateNotifBadge(u.uid);
  setTimeout(() => { if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory(); }, 300);
  // 저장 실패로 localStorage에 백업된 기록이 있으면 로그인·데이터 로드 후 자동 재시도.

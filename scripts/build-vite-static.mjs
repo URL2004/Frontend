@@ -116,9 +116,10 @@ async function writePageBundle() {
   const contents = await Promise.all(
     pagePartials.map((entry) => fs.readFile(path.join(root, entry), 'utf8'))
   );
+  const normalized = contents.map((content) => content.replace(/^\uFEFF/u, ''));
   const target = path.join(dist, 'partials', 'app-bundle.html');
   await fs.mkdir(path.dirname(target), { recursive: true });
-  await fs.writeFile(target, contents.join('\n'), 'utf8');
+  await fs.writeFile(target, normalized.join('\n'), 'utf8');
 }
 
 await fs.rm(dist, { recursive: true, force: true });

@@ -41,14 +41,24 @@
     dialog.hidden = true;
     dialog.innerHTML =
       '<div class="gp-dialog-backdrop" data-gp-dialog-cancel></div>' +
-      '<section class="gp-dialog-card" role="dialog" aria-modal="true" aria-labelledby="gpDialogTitle">' +
-        '<button type="button" class="gp-dialog-x" data-gp-dialog-cancel aria-label="닫기">×</button>' +
+      '<section class="gp-dialog-card" role="dialog" aria-modal="true" aria-labelledby="gpDialogTitle" aria-describedby="gpDialogBody">' +
+        '<button type="button" class="gp-dialog-x" data-gp-dialog-cancel aria-label="닫기">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>' +
+        '</button>' +
         '<div class="gp-dialog-icon" id="gpDialogIcon" aria-hidden="true"></div>' +
         '<h2 id="gpDialogTitle"></h2>' +
-        '<p id="gpDialogMessage"></p>' +
-        '<div id="gpPromptWrap" class="gp-prompt-wrap" hidden>' +
-          '<textarea id="gpPromptInput" rows="4"></textarea>' +
-          '<small id="gpPromptHint"></small>' +
+        '<div id="gpDialogBody" class="gp-dialog-body">' +
+          '<p id="gpDialogMessage"></p>' +
+          '<dl id="gpDialogSummary" class="gp-dialog-summary" hidden></dl>' +
+          '<p id="gpDialogSafe" class="gp-dialog-safe" hidden>' +
+            '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>' +
+            '<span id="gpDialogSafeText"></span>' +
+          '</p>' +
+          '<p id="gpDialogNote" class="gp-dialog-note" hidden></p>' +
+          '<div id="gpPromptWrap" class="gp-prompt-wrap" hidden>' +
+            '<textarea id="gpPromptInput" rows="4"></textarea>' +
+            '<small id="gpPromptHint"></small>' +
+          '</div>' +
         '</div>' +
         '<div class="gp-dialog-actions">' +
           '<button type="button" class="gp-dialog-cancel" data-gp-dialog-cancel>취소</button>' +
@@ -81,8 +91,16 @@
       window.gpCloseNotificationCenter();
     });
     document.addEventListener('keydown', function (e) {
+      if (activeDialog && e.key === 'Tab') {
+        trapDialogFocus(e);
+        return;
+      }
       if (e.key === 'Escape') {
-        if (activeDialog) closeDialog(null);
+        if (activeDialog) {
+          e.preventDefault();
+          closeDialog(null);
+          return;
+        }
         window.gpCloseNotificationCenter();
       }
     });
@@ -115,22 +133,83 @@
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 180);
   }
 
-  function closeDialog(value) {
+  function dialogFocusables(root) {
+    if (!root) return [];
+    return Array.prototype.slice.call(root.querySelectorAll(
+      'button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+    )).filter(function (el) {
+      return !el.hidden && el.getClientRects().length > 0;
+    });
+  }
+  function trapDialogFocus(e) {
+    var root = $('gpDialogRoot');
+    var focusables = dialogFocusables(root);
+    if (!focusables.length) return;
+    var first = focusables[0];
+    var last = focusables[focusables.length - 1];
+    var current = document.activeElement;
+    if (e.shiftKey && (current === first || !root.contains(current))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && (current === last || !root.contains(current))) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+  function closeDialog(value, restoreFocus) {
     var root = $('gpDialogRoot');
     if (root) root.hidden = true;
+    document.documentElement.classList.remove('gp-dialog-open');
+    document.body.classList.remove('gp-dialog-open');
     if (activeDialog) {
-      activeDialog.resolve(value);
+      var state = activeDialog;
       activeDialog = null;
+      state.resolve(value);
+      if (restoreFocus !== false && state.previousFocus && state.previousFocus.isConnected && typeof state.previousFocus.focus === 'function') {
+        setTimeout(function () { state.previousFocus.focus(); }, 0);
+      }
     }
+  }
+  function renderDialogSummary(items) {
+    var summary = $('gpDialogSummary');
+    if (!summary) return;
+    summary.textContent = '';
+    var rows = Array.isArray(items) ? items.filter(function (item) {
+      return item && item.label != null && item.value != null;
+    }) : [];
+    rows.forEach(function (item) {
+      var row = document.createElement('div');
+      row.className = 'gp-dialog-summary-row' + (item.emphasis ? ' is-emphasis' : '');
+      var label = document.createElement('dt');
+      var value = document.createElement('dd');
+      label.textContent = String(item.label);
+      value.textContent = String(item.value);
+      row.appendChild(label);
+      row.appendChild(value);
+      summary.appendChild(row);
+    });
+    summary.hidden = rows.length === 0;
+  }
+  function renderDialogIcon(icon, opts, promptMode) {
+    if (!icon) return;
+    if (opts.variant === 'detect') {
+      icon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h10M4 10h7M4 15h5"/><circle cx="15.5" cy="14.5" r="4.5"/><path d="m19 18 2 2"/></svg>';
+      return;
+    }
+    icon.textContent = opts.icon || (opts.danger ? '!' : promptMode ? '✎' : '?');
   }
   function openDialog(opts, promptMode) {
     ensureShell();
     opts = opts || {};
-    if (activeDialog) closeDialog(null);
+    if (activeDialog) closeDialog(null, false);
+    var previousFocus = document.activeElement;
     var root = $('gpDialogRoot');
     var title = $('gpDialogTitle');
     var message = $('gpDialogMessage');
     var icon = $('gpDialogIcon');
+    var safe = $('gpDialogSafe');
+    var safeText = $('gpDialogSafeText');
+    var note = $('gpDialogNote');
     var promptWrap = $('gpPromptWrap');
     var promptInput = $('gpPromptInput');
     var promptHint = $('gpPromptHint');
@@ -138,9 +217,16 @@
     var cancelBtn = root.querySelector('[data-gp-dialog-cancel].gp-dialog-cancel');
     root.classList.toggle('danger', !!opts.danger);
     root.classList.toggle('prompt', !!promptMode);
+    root.classList.toggle('variant-detect', opts.variant === 'detect');
     title.textContent = opts.title || (promptMode ? '내용을 입력해 주세요' : '내용을 확인해 주세요');
     message.textContent = opts.message || '';
-    icon.textContent = opts.icon || (opts.danger ? '!' : promptMode ? '✎' : '?');
+    message.hidden = !message.textContent;
+    renderDialogIcon(icon, opts, promptMode);
+    renderDialogSummary(opts.summary);
+    safeText.textContent = opts.safeText || '';
+    safe.hidden = !safeText.textContent;
+    note.textContent = opts.note || '';
+    note.hidden = !note.textContent;
     confirmBtn.textContent = opts.confirmText || (promptMode ? '입력 완료' : '확인');
     cancelBtn.textContent = opts.cancelText || '취소';
     promptWrap.hidden = !promptMode;
@@ -150,7 +236,8 @@
       promptHint.textContent = opts.hint || '';
     }
     root.onclick = function (e) {
-      if (e.target && e.target.hasAttribute('data-gp-dialog-cancel')) closeDialog(promptMode ? null : false);
+      var cancel = e.target && e.target.closest ? e.target.closest('[data-gp-dialog-cancel]') : null;
+      if (cancel && root.contains(cancel)) closeDialog(promptMode ? null : false);
     };
     confirmBtn.onclick = function () {
       if (!promptMode) return closeDialog(true);
@@ -164,8 +251,10 @@
       closeDialog(v);
     };
     root.hidden = false;
+    document.documentElement.classList.add('gp-dialog-open');
+    document.body.classList.add('gp-dialog-open');
     setTimeout(function () { (promptMode ? promptInput : confirmBtn).focus(); }, 30);
-    return new Promise(function (resolve) { activeDialog = { resolve: resolve }; });
+    return new Promise(function (resolve) { activeDialog = { resolve: resolve, previousFocus: previousFocus }; });
   }
 
   function getLocalItems() {
