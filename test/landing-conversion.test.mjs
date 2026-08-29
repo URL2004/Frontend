@@ -252,16 +252,15 @@ test('충전 사다리는 라이트 350으로 단조 할인(-9/-14/-17/-23/-26)�
   assert.match(pricing, /총 400 크레딧/u);
   assert.match(flow, /\{ amount: 8700, credits: 400, firstBonus: 32, label: '라이트' \}/u);
   assert.match(landing, /8,700원<\/b><span>400크레딧/u);
-  // 할인 표기: 기준가 29원(스타터 순정가) 대비, 커질수록 커지는 단조 사다리
-  const badges = [...pricing.matchAll(/plan-discount">(-\d+%)</gu)].map(m => m[1]).slice(0, 5);
-  assert.deepEqual(badges, ['-9%', '-25%', '-29%', '-33%', '-39%']);
-  // 사용량 표기는 400 기준 내림값과 일치(공용 비교표 — 2026-08-29 카드 밖으로 이동)
+  // 사다리의 세기는 "보너스 지급 +N%"로만 표기한다 — 무엇 대비인지 불분명하던
+  // 마이너스 할인율 배지는 제거(2026-08-29 운영 결정).
+  assert.ok(!pricing.includes('plan-discount'), '할인율 배지 재유입');
   assert.match(pricing, /data-plan-credits="400" data-work-cost="20">20회</u);
   assert.match(pricing, /data-plan-credits="400" data-work-cost="10">40회</u);
 });
 
-test('가격 카드는 보너스 비율과 스타터 분할 구매 대비 이득을 명시한다', async () => {
-  // 2026-08-29 사장님 지시: "올라갈수록 이만큼 더 주고 첫 구매 보너스는 이만큼"을 화면에서 확실히 보이게.
+test('가격 카드는 보너스 비율과 첫 구매 보너스를 상품마다 명시한다', async () => {
+  // 2026-08-29: "올라갈수록 이만큼 더 주고 첫 구매 보너스는 이만큼"을 화면에서 확실히 보이게.
   const pricing = await read('pages/pricing.html');
   // 상품별 보너스 비율(기본 제공 대비) — 올라갈수록 커진다
   const rates = [...pricing.matchAll(/보너스 지급 <em>\+(\d+)%<\/em>/gu)].map((m) => Number(m[1]));
@@ -273,14 +272,8 @@ test('가격 카드는 보너스 비율과 스타터 분할 구매 대비 이득
     assert.match(pricing, new RegExp(`data-first-bonus-for="${amount}" hidden`, 'u'), `${amount} 첫 구매 행 부재`);
     assert.match(pricing, new RegExp(`data-plan-total-for="${amount}"`, 'u'), `${amount} 총 크레딧 훅 부재`);
   }
-  // 같은 금액을 스타터로 쪼개 살 때 대비 이득을 카드에 직접 적는다
-  for (const [splits, split, gain] of [[3, '330', '70'], [5, '550', '150'], [10, '1,100', '400'], [20, '2,200', '1,100']]) {
-    assert.match(
-      pricing,
-      new RegExp(`2,900원으로 ${splits}번 나눠 사면 ${split.replace(',', ',')}크레딧<b>${gain.replace(',', ',')}크레딧 더</b>`, 'u'),
-      `${splits}회 분할 비교 문구 부재`
-    );
-  }
+  // 분할 구매 비교 줄은 문장이 길어 카드에서 구분되지 않아 제거(2026-08-29). 같은 정보는 위 보너스 비율이 전달한다.
+  assert.ok(!pricing.includes('나눠 사면'), '분할 비교 문구 재유입');
 });
 
 test('랜딩 v2는 코다 구조(데모·탭·상황·사실 스트립)를 우리 자산으로 구현한다', async () => {
@@ -366,7 +359,9 @@ test('익명 홈은 서버 렌더 랜딩을 즉시 활성화하고 앱·인증 �
   assert.match(appModule, /if \(u\) \{[\s\S]{0,100}?showAuthenticatedShell\(u, 'auth_state'\);[\s\S]{0,100}?await loadUser\(u\)/u);
 
   assert.match(boot, /requestIdleCallback\(task, \{ timeout: timeout \|\| 1800 \}\)/u);
-  assert.match(boot, /setTimeout\(start, 12000\)/u);
+  assert.match(boot, /addEventListener\('scroll', start, \{ once: true, passive: true \}\)/u);
+  assert.match(boot, /addEventListener\('pointerdown', start, \{ once: true, passive: true \}\)/u);
+  assert.doesNotMatch(boot, /setTimeout\(start,/u, '광고 SDK를 수동 방문에서 자동으로 불러오면 안 됨');
   assert.match(boot, /setTimeout\(hydrate, 12000\)/u);
   assert.match(landingJs, /demoStartTimer = setTimeout[\s\S]{0,180}3200/u);
   assert.match(boot, /if \(mode === 'landing'\)[\s\S]*?loadScript\('\/assets\/js\/landing\.js'\)/u);

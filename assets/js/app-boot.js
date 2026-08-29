@@ -66,11 +66,10 @@
 
   function loadTrackingAfterFirstRender() {
     var started = false;
-    var timer = 0;
     function start() {
       if (started) return;
       started = true;
-      clearTimeout(timer);
+      window.removeEventListener('scroll', start);
       window.removeEventListener('pointerdown', start);
       window.removeEventListener('keydown', start);
       idle(function () {
@@ -79,10 +78,10 @@
         });
       }, 1800);
     }
+    window.addEventListener('scroll', start, { once: true, passive: true });
     window.addEventListener('pointerdown', start, { once: true, passive: true });
     window.addEventListener('keydown', start, { once: true });
-    // 실제 상호작용에서는 즉시 시작하되, 수동 방문의 광고 스크립트는 초기 성능 측정 뒤로 미룬다.
-    timer = setTimeout(start, 12000);
+    // 무거운 광고 SDK는 실제 참여 뒤에만 불러 첫 화면과 수동 방문의 입력 응답성을 지킨다.
   }
 
   function scheduleLandingHydration() {

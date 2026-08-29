@@ -1061,11 +1061,16 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
 }
 @media(max-width:760px){
  #mainContent[data-main-design="lavender"] .gp-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
- #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card{grid-column:auto;}
+ /* ★ nth-last-child(-n+2)는 .plan-card보다 특정도가 높아, 여기서 함께 풀지 않으면
+    span 3이 남아 좁은 화면에서 3열 그리드를 강제하고 카드가 화면 밖으로 넘쳤다(2026-08-29 수정). */
+ #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card,
+ #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card:nth-last-child(-n+2){grid-column:auto;}
  #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card:last-child{grid-column:1 / -1;}
 }
 @media(max-width:560px){
  #mainContent[data-main-design="lavender"] .gp-plan-grid{grid-template-columns:1fr !important;}
+ #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card,
+ #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card:nth-last-child(-n+2),
  #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card:last-child{grid-column:auto;}
 }
 /* 돌출 금지 — 줄바꿈이 생겨도 카드끼리 겹치지 않는다(강조는 테두리·뱃지로) */
@@ -1101,9 +1106,10 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
  text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;
 }
 /* 총 크레딧 · 비교 박스 · 버튼은 항상 카드 바닥 쪽에 같은 순서로 */
-#mainContent[data-main-design="lavender"] .plan-card .gp-plan-total{text-align:center;}
-#mainContent[data-main-design="lavender"] .plan-card .plan-vs-starter{margin-top:8px;}
-#mainContent[data-main-design="lavender"] .plan-card .plan-btn{margin-top:14px !important;}
+#mainContent[data-main-design="lavender"] .plan-card .gp-plan-total{text-align:center;margin-top:12px;}
+#mainContent[data-main-design="lavender"] .plan-card .plan-btn{margin-top:auto !important;}
+/* 할인율 배지 제거(2026-08-29) 후 헤더는 상품 크레딧 한 칸만 — 다섯 카드 모두 같은 헤더 높이 */
+#mainContent[data-main-design="lavender"] .plan-hd-row{justify-content:flex-start;}
 #mainContent[data-main-design="lavender"] .plan-card:hover{
  border-color:#bcbef0 !important;
  transform:translateY(-2px);
@@ -1112,9 +1118,17 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
 #mainContent[data-main-design="lavender"] .plan-tag{
  font-size:15px !important;
 }
+/* 할인율 배지를 뺀 자리만큼 가격을 위로 올리고 키운다(2026-08-29 운영 결정) */
 #mainContent[data-main-design="lavender"] .plan-price-main{
- font-size:26px !important;
- margin:4px 0 2px !important;
+ font-size:34px !important;
+ line-height:1.1 !important;
+ letter-spacing:-.02em;
+ margin:0 0 2px !important;
+ font-variant-numeric:tabular-nums;
+}
+#mainContent[data-main-design="lavender"] .plan-hd-row{margin-bottom:6px !important;}
+#mainContent[data-main-design="lavender"] .plan-tag{
+ font-size:12px !important;font-weight:750 !important;letter-spacing:.02em !important;text-transform:none !important;
 }
 #mainContent[data-main-design="lavender"] .plan-won{
  font-size:14px !important;
@@ -1151,16 +1165,8 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
 #mainContent[data-main-design="lavender"] .plan-feats li.feat-first strong{color:#1f7a4d;}
 #mainContent[data-main-design="lavender"] .plan-feats li.feat-first em{background:#dff3e6;color:#1f7a4d;}
 #mainContent[data-main-design="lavender"] .plan-feats li.feat-first[hidden]{display:none !important;}
-/* 플랜 카드는 다크 표면이라(app.css 기본) 비교 박스도 같은 결로 — 카드에서 튀지 않게 반투명 틴트 */
-.plan-vs-starter{
- display:flex;flex-direction:column;gap:3px;
- margin-top:10px;padding:10px 12px;border-radius:10px;
- background:rgba(122,124,232,.12);border:1px solid rgba(122,124,232,.30);
- font-size:12px;line-height:1.45;color:rgba(226,228,255,.72);
-}
-.plan-vs-starter b{font-size:14px;font-weight:800;color:#b4b6ff;}
-.plan-vs-starter.is-base{background:transparent;border-style:dashed;border-color:rgba(226,228,255,.20);color:rgba(226,228,255,.5);font-weight:600;}
-.plan-premium .plan-vs-starter b{color:#c9b0ff;}
+/* (분할 구매 비교 줄 제거 — 2026-08-29: 문장이 길어 카드에서 구분이 어려웠다.
+   같은 정보는 "보너스 지급 +N%" 배지가 더 짧게 전달한다) */
 #mainContent[data-main-design="lavender"] .plan-btn{
  margin-top:12px;
  min-height:42px;
@@ -8597,37 +8603,43 @@ body.gp-modal-open{overflow:hidden;}
 
 /* ── 충전 카드 서비스별 사용량(2026-08-26 운영 결정): '약 N회' 추상 한 줄 대신
    이 금액으로 어떤 서비스를 몇 번 쓰는지 서비스별로 보여준다. ── */
-/* 상품별 사용량 비교표(2026-08-29 재설계): 카드마다 3줄씩 반복하던 블록을 한 표로 합쳐
-   카드 높이를 낮추고(5장 한 줄 배치 가능) 티어 간 비교가 한눈에 되게 했다. */
+/* 카드 안 사용량 목록(2026-08-29 운영 결정으로 카드 내부 복귀) — 라벨 왼쪽·횟수 오른쪽 2단 고정.
+   좁은 카드(5열)에서도 한 줄에 들어가도록 라벨을 짧게 쓰고 숫자는 줄바꿈 금지. */
 .gp-plan-svc{
- margin:0 0 14px;
- padding:6px 4px;
- border-radius:14px;
- background:rgba(120,130,255,.07);
+ display:flex;
+ flex-direction:column;
+ gap:6px;
+ margin:12px 0 0;
+ padding:11px 12px;
+ border-radius:11px;
+ background:rgba(120,130,255,.08);
  border:1px solid rgba(151,171,213,.16);
- overflow-x:auto;
+ text-align:left;
 }
-.gp-plan-svc .svc-row{
+.gp-plan-svc .svc-t{
+ font-size:11px;
+ font-weight:800;
+ color:#8f96b8;
+ margin-bottom:1px;
+}
+.gp-plan-svc .svc-r{
  display:grid;
- grid-template-columns:minmax(190px,1.6fr) repeat(5,minmax(64px,1fr));
- align-items:center;
+ grid-template-columns:1fr auto;
+ align-items:baseline;
  gap:8px;
- padding:9px 12px;
- min-width:560px;
+ font-size:12px;
+ font-weight:600;
+ line-height:1.45;
+ color:rgba(233,235,255,.78);
 }
-.gp-plan-svc .svc-row + .svc-row{border-top:1px solid rgba(151,171,213,.12);}
-.gp-plan-svc .svc-row > span:first-child{
- font-size:12.5px;font-weight:650;color:rgba(233,235,255,.78);text-align:left;
+.gp-plan-svc .svc-r > span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gp-plan-svc .svc-r strong{
+ font-size:12.5px;
+ font-weight:800;
+ color:#3ee2a6;
+ white-space:nowrap;
+ font-variant-numeric:tabular-nums;
 }
-.gp-plan-svc .svc-row strong{
- font-size:13px;font-weight:800;color:#3ee2a6;text-align:center;
- font-variant-numeric:tabular-nums;white-space:nowrap;
-}
-.gp-plan-svc .svc-head{padding-top:11px;padding-bottom:11px;}
-.gp-plan-svc .svc-head > span{
- font-size:11.5px;font-weight:800;color:#8f96b8;text-align:center;white-space:nowrap;
-}
-.gp-plan-svc .svc-head > span:first-child{font-size:11.5px;color:#8f96b8;text-align:left;}
 .gp-plan-svc-note{
  margin:14px 2px 0;
  font-size:12px;
@@ -9380,4 +9392,24 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
 @media(max-width:560px){
  .gp-ops-time{margin-left:0;width:100%;}
  .gp-ops-cards{grid-template-columns:repeat(2,1fr);}
+}
+
+/* ── 공지·커뮤니티 일러스트 복원(2026-08-29) ──
+   레거시 정리 과정에서 이미지 크기 규칙이 함께 지워져 PNG가 원본 픽셀 크기로 렌더되며
+   카드 밖으로 넘쳤다(모바일에서 최대 +682px). 카드 배치까지 여기서 자급자족으로 고정한다. */
+#mainContent[data-main-design="lavender"] .gp-notice-card{
+ display:flex;align-items:center;justify-content:space-between;gap:18px;min-width:0;
+}
+#mainContent[data-main-design="lavender"] .gp-notice-card > div{min-width:0;flex:1 1 auto;}
+#mainContent[data-main-design="lavender"] .gp-notice-card img{
+ flex:0 0 auto;width:150px;max-width:32%;height:auto;
+ filter:drop-shadow(0 18px 32px rgba(70,84,255,.20));
+}
+#mainContent[data-main-design="lavender"] .gp-visual-card img{
+ display:block;width:140px;max-width:40%;height:auto;margin:14px 0 0 auto;
+ filter:drop-shadow(0 18px 34px rgba(80,92,255,.24));
+}
+@media(max-width:560px){
+ #mainContent[data-main-design="lavender"] .gp-notice-card img{width:110px;max-width:30%;}
+ #mainContent[data-main-design="lavender"] .gp-visual-card img{width:110px;}
 }
