@@ -3039,7 +3039,7 @@ function historyRenderDetail() {
    : `<div class="gp-history-detail-empty">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg>
       <strong>기록을 선택해 주세요</strong>
-      <p>원문과 결과를 확인하고 복사·다운로드·이어쓰기까지 할 수 있어요.</p>
+      <p>결과와 원문을 확인하고 복사·다운로드·이어쓰기까지 할 수 있어요.</p>
      </div>`;
   return;
  }
@@ -3052,6 +3052,11 @@ function historyRenderDetail() {
  const details = isDetect
   ? `${historyDetailBlock('분석 요약', view.summary, true)}${historyDetailBlock('상세 분석', view.detail, false)}`
   : historyDetailBlock('휴머나이징 결과', item.outputText, true);
+ const originalBlock = historyDetailBlock('원문', item.inputText, false);
+ const noDetail = '<p class="gp-history-no-detail">저장된 상세 결과가 없어요.</p>';
+ const contentBlocks = isDetect
+  ? `${originalBlock}${details || noDetail}`
+  : `${details || noDetail}${originalBlock}`;
  const actions = isDetect
   ? `<button type="button" class="primary" onclick="historyContinueHumanize()">휴머나이징으로 이어서</button>
      <button type="button" onclick="historyRunAgain('detect')">다시 감지</button>
@@ -3070,8 +3075,7 @@ function historyRenderDetail() {
    </div>
   </header>
   <div class="gp-history-detail-body">
-   ${historyDetailBlock('원문', item.inputText, false)}
-   ${details || '<p class="gp-history-no-detail">저장된 상세 결과가 없어요.</p>'}
+   ${contentBlocks}
   </div>
   <footer class="gp-history-actions" aria-label="이 기록으로 할 수 있는 작업">${actions}</footer>
  </article>`;

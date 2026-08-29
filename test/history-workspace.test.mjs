@@ -65,6 +65,16 @@ test('사용자 휴머나이징 기록은 결과만 보여주고 모델의 작�
   assert.doesNotMatch(search, /item\.humanSummary|item\.humanDetail/u);
 });
 
+test('휴머나이징 기록은 결과를 원문보다 먼저, AI 감지는 원문을 분석보다 먼저 보여준다', async () => {
+  const [html, source] = await Promise.all([
+    read('pages/history.html'),
+    read('assets/js/app-module.js')
+  ]);
+  const detail = source.slice(source.indexOf('function historyRenderDetail'), source.indexOf('function historyRender()'));
+  assert.match(html, /결과와 원문을 확인하고/u);
+  assert.match(detail, /const contentBlocks = isDetect\s*\? `\$\{originalBlock\}\$\{details \|\| noDetail\}`\s*:\s*`\$\{details \|\| noDetail\}\$\{originalBlock\}`/u);
+});
+
 test('작업 상태와 이용 내역을 분리하고 복구 가능한 화면 상태를 제공한다', async () => {
   const source = await read('assets/js/app-module.js');
   assert.match(source, /<small>작업 상태<\/small>/u);

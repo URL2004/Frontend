@@ -400,10 +400,10 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-192/u);
-  assert.match(boot, /var v = 'lav-192'/u);
+  assert.match(index, /app-boot\.js\?v=lav-193/u);
+  assert.match(boot, /var v = 'lav-193'/u);
   assert.match(boot, /input-quality\.js\?v=/u);
-  assert.match(loader, /var ASSET_V = 'lav-192'/u);
+  assert.match(loader, /var ASSET_V = 'lav-193'/u);
   assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166|167|168|170|185|186)/u);
 });
 
