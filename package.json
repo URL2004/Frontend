@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",
+    "prebuild": "npm test",
     "build": "node scripts/build-vite-static.mjs",
     "test": "node --test test/*.test.mjs",
     "ga4:auth": "node scripts/ga4-cli.mjs auth",

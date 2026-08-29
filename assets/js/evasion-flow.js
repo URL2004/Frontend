@@ -216,7 +216,7 @@
 
   var STEP_LABEL = {
     analyzing: '분석', report: 'AI 감지 보고서', select: '방법 선택',
-    job: '휴머나이징 중', blocked: '다시 도전', done: '완료'
+    job: '휴머나이징 중', blocked: '다시 시도', done: '완료'
   };
 
   // 입력 화면 → 워크스페이스 화면 전환(페이지 전환)
@@ -304,7 +304,7 @@
       return {
         state: 'ready',
         title: '구체성이 충분해요',
-        desc: '사례와 정보는 유지하고 필요한 표현만 다듬습니다.'
+        desc: '사례와 정보는 유지하고 필요한 표현만 다듬어요.'
       };
     }
     if (grade === 'C') {
@@ -317,7 +317,7 @@
     return {
       state: 'partial',
       title: '일부 표현이 추상적이에요',
-      desc: '구체적인 내용은 지키고 일반적인 표현만 골라 다듬습니다.'
+      desc: '구체적인 내용은 지키고 일반적인 표현만 골라 다듬어요.'
     };
   }
 
@@ -443,7 +443,11 @@
     // 고급 카드 잠금 표시 + 근거 체크박스 동반 잠금
     var formalCard = $('lavCardFormal');
     if (formalCard) { formalCard.classList.toggle('is-locked', unfit); formalCard.disabled = unfit; }
-    var lockNote = $('lavFormalLockNote'); if (lockNote) lockNote.hidden = !unfit;
+    var lockNote = $('lavFormalLockNote');
+    if (lockNote) {
+      lockNote.hidden = !unfit;
+      if (unfit) lockNote.textContent = (lastDiag && lastDiag.restructureUnfitReason) || '원문 보존이 중요한 글이에요. 기본 휴머나이징을 선택해 주세요.';
+    }
     // 근거 보강은 모달 안 옵션(2026-08-29) — 잠긴 글에선 비활성화만 걸어두고 노출은 lavOpenConfirm이 판단
     var ev = $('lavEvidence'); if (ev) { ev.disabled = unfit; if (unfit) ev.checked = false; }
     var basicRecommended = $('lavBasicRecommended');
@@ -503,7 +507,7 @@
     var ta = $('lavInput');
     if (ta) ta.placeholder = m === 'detect'
       ? 'AI가 썼는지 궁금한 글을 붙여넣어 보세요...'
-      : 'AI 느낌이 나는 문장을 붙여넣어 보세요...';
+      : '다듬을 초안이나 문단을 붙여넣어 보세요...';
     if (!opts.skipUrl && typeof window.gpSyncProductModeUrl === 'function') {
       window.gpSyncProductModeUrl(m);
     }
@@ -524,8 +528,6 @@
       return;
     }
     if (typeof window.lavEnsureReadableInput === 'function' && !window.lavEnsureReadableInput(text)) return;
-    // ★ 무료 제공 제거(사장님 결정 2026-07-20): 감지는 항상 유료(100자당 1크레딧·로그인 필수).
-    //   시작 전에 비용을 고지하고 동의받는다 — 서버도 같은 계약(비로그인 401·잔액 선검증).
     var cost = Math.ceil(text.length / 100);
     var preToken = null;
     try { preToken = await evGetIdToken(true); } catch (e) { /* 비로그인 */ }
@@ -565,18 +567,18 @@
         ? await window.gpConfirm({
             variant: 'detect',
             title: 'AI 감지를 시작할까요?',
-            message: '글 전체의 AI 티 지수와 두드러진 문체 신호를 확인합니다.',
+            message: '글 전체의 AI 티 지수와 두드러진 문체 신호를 확인해요.',
             summary: detectSummary,
             safeText: unlimited
               ? '무제한 이용권으로 처리되며 크레딧은 차감되지 않아요.'
               : '감지에 실패하면 크레딧은 차감되지 않아요.',
-            note: '결과는 문체 패턴 기반 참고값이며, 실제 작성 주체나 외부 검사 결과를 보장하지 않습니다.',
+            note: '결과는 문체 패턴 기반 참고값이며, 실제 작성 주체나 외부 검사 결과를 보장하지 않아요.',
             confirmText: unlimited ? 'AI 감지 시작' : '감지 시작 · ' + cost.toLocaleString() + '크레딧',
             cancelText: '취소'
           })
         : confirm(unlimited
           ? 'AI 감지를 시작할까요? 결과는 문체 패턴 기반 참고값입니다.'
-          : 'AI 감지에 ' + cost + '크레딧을 사용합니다. 실패하면 차감되지 않아요. 진행할까요?'));
+          : 'AI 감지에 ' + cost + '크레딧을 사용해요. 전달 가능한 결과를 만들지 못하면 차감하지 않아요. 진행할까요?'));
     if (!agree) return;
     cameFromReport = false;
     // 멱등키 — 재시도 중복 차감 방지
@@ -717,14 +719,14 @@
       arc.style.transition = 'none';
       arc.style.strokeDashoffset = LEN;
     }
-    // "판정 보류" 금지(사장님 지시) — 서버가 LLM 실패 시에도 엔진 추정 숫자를 보내므로 보류 문구 자체를 제거.
+    // 서버가 LLM 실패 시에도 엔진 추정 숫자를 보내므로 별도 판정 보류 문구는 표시하지 않는다.
     var badge = $('lavRepBadge');
     if (badge) {
       badge.hidden = (p == null);
       badge.textContent = d.riskLabel || (sev === 'bad' ? 'AI 티 지수 높음' : sev === 'mid' ? 'AI 티 지수 중간' : 'AI 티 지수 낮음');
       badge.className = 'lav-rep-badge' + (sev ? ' ' + sev : '');
     }
-    if ($('lavRepTitle')) $('lavRepTitle').textContent = d.title || '분석 결과';
+    if ($('lavRepTitle')) $('lavRepTitle').textContent = d.title || '참고 결과';
     if ($('lavRepSummary')) $('lavRepSummary').textContent = d.summary || '';
     var cc = d.counts || {};
     if ($('lavRepStatRisk')) $('lavRepStatRisk').textContent = cc.risk || 0;
@@ -819,7 +821,7 @@
     }
   }
 
-  // 보고서 → 휴머나이저 핸드오프(완전 분리 — 사장님 지시): 해결 경로 선택은 보고서가 아니라
+  // 보고서 → 휴머나이징 핸드오프: 해결 경로 선택은 보고서가 아니라
   // 기존 방법 선택(choose) 화면에서. 보고서 데이터로 진단 배너·밴드를 채워 재진단 없이 이어가고,
   // 글은 입력칸(lavInput)에 그대로 남아 있어 같은 글로 바로 진행된다(컨텍스트 바 원문 N자 표기 동일).
   window.lavReportToHumanize = function () {
@@ -1064,8 +1066,8 @@
     renderAnchorGuide(lastDiag);
     if (hint) {
       hint.textContent = profile
-        ? '자동 판정이 애매할 때만 이 선택을 사용해요. 원문 장르가 뚜렷하면 안전을 위해 자동 판정을 우선합니다.'
-        : '원문의 구성·어휘·종결체를 보고 엔진이 글 종류를 판별합니다.';
+        ? '자동 판정이 애매할 때만 이 선택을 사용해요. 원문 장르가 뚜렷하면 안전을 위해 자동 판정을 우선해요.'
+        : '원문의 구성·어휘·종결체를 보고 엔진이 글 종류를 판별해요.';
     }
   };
   function currentSettings() {
@@ -1334,8 +1336,6 @@
     if (typeof m.lengthRatio === 'number') badge(true, '분량 ' + Math.round(m.lengthRatio * 100) + '%');
   }
 
-  // ★ short job(2026-06-13): 직접 fetch였던 기본 휴머나이징(blog)·원문 보존 다듬기(polish)를 /transform job으로 —
-  //   새로고침·창닫기 생존 + lavJobRef 재진입(고급 휴머나이징과 동일). 둘 다 크레딧이 드는 작업이라 생존 필수(사장님 지적).
   function runShortJob(mode, s) {
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
@@ -1477,7 +1477,7 @@
       newButton.classList.toggle('is-job-active', blocking);
       var newLabel = newButton.querySelector('span');
       var newKbd = $('lavNewKbd');
-      if (newLabel) newLabel.textContent = blocking ? '진행 화면 보기' : '새 문장 시작';
+      if (newLabel) newLabel.textContent = blocking ? '진행 화면 보기' : '새 글 시작';
       if (newKbd) newKbd.textContent = blocking
         ? '진행 중'
         : (navigator.platform && navigator.platform.indexOf('Mac') === -1 ? 'Ctrl N' : '⌘ N');
@@ -1569,8 +1569,8 @@
       clientId: 'job_done_' + st.jobId,
       type: 'job_done',
       title: '작업 완료',
-      message: label + ' 결과가 준비됐어요. 보관함에 저장했습니다.',
-      action: { type: 'library' }
+      message: label + ' 결과가 준비됐어요. 작업 기록에서 확인할 수 있어요.',
+      action: { tab: 'history' }
     }, { persist: true });
   }
   function notifyJobIssue(jobId, message) {
@@ -1600,7 +1600,7 @@
     stopFormalTicker();
     clearJobRef();
     clearActiveJobUi();
-    if (window.gpToast) window.gpToast('작업을 중단했어요. 크레딧은 차감되지 않았습니다.', { type: 'info' });
+    if (window.gpToast) window.gpToast('작업을 중단했어요. 크레딧은 차감하지 않았어요.', { type: 'info' });
     show('select');
   };
   // ── P5: jobId 재진입 — 새로고침·재방문 시 진행 중 작업 복원(서버 job은 어차피 계속 돌고 있음) ──
@@ -1938,20 +1938,13 @@
         $('lavFallbackMsg').textContent = st.note || '기본 휴머나이징 결과를 안전하게 전달하기 어려워, 사용자가 선택한 원문 보존 다듬기로 다시 처리했어요.';
       }
     }
-    // ── '예상 AI 탐지율 %' 표기 제거(2026-06-15) ──────────────────────────────
-    //   결과 화면 우상단 숫자는 진단 밴드를 그대로 재표기한 값이라 실제 출력과 무관 — 격식·추상글은
-    //   실제 100%인데 35~60%로 표기돼 거짓 약속·환불 사고를 냈다. 회피율은 LLM 생성·탐지기·글에 따라
-    //   크게 흔들려 약속할 수 없으므로, surfaceguard가 신뢰성 있게 맞히는 '글 등급'만 정성 신호로 노출하고
-    //   (다듬기·등급 미상이면 숨김), 정확한 수치는 직접 측정을 안내한다.
-    var GRADE_LABEL = { A: '쉬움', B: '보통', C: '어려움' };
-    var GRADE_COLOR = { A: '#1e8e3e', B: '#d9920a', C: '#d23f3f' };
-    var grade = (lastDiag && lastDiag.grade) || '';
-    var showGrade = st.mode !== 'polish' && !!GRADE_LABEL[grade];
+    // 결과와 무관한 예상 탐지율·난이도 대신 사용자가 실제로 완료한 작업을 표시한다.
+    var RESULT_MODE_LABEL = { polish: '원문 보존', blog: '기본', formal: '고급' };
     var scoreWrap = $('lavDoneScoreWrap');
-    if (scoreWrap) scoreWrap.hidden = !showGrade;
-    if (showGrade && $('lavDoneScore')) {
-      $('lavDoneScore').textContent = GRADE_LABEL[grade];
-      $('lavDoneScore').style.color = GRADE_COLOR[grade];
+    if (scoreWrap) scoreWrap.hidden = false;
+    if ($('lavDoneScore')) {
+      $('lavDoneScore').textContent = RESULT_MODE_LABEL[st.mode] || '완료';
+      $('lavDoneScore').style.color = 'var(--brand-strong,#4b4cc6)';
     }
     var doneNote = $('lavDoneNote');
     if (doneNote) {
@@ -1965,7 +1958,6 @@
     renderResultNotices(st);
     renderDoneNextStep(st);
     renderDoneBody((st.result && st.result.outputText) || '', st.result && st.result.refineTargets);
-    lavDoneLibId = lavSaveToLibrary(label, st.result && st.result.outputText, grade ? grade + '등급' : '');
     lavRefineJobId = (st && st.jobId) || null;
     lavRefineBusy = false; refinePollGen++;   // 이전 보강 폴링 자연 종료
     renderRefineTargets(st);
@@ -2091,7 +2083,7 @@
       return;
     }
     if (disposition === 'charged' && st && st.deducted === false) {
-      wrap.textContent = '크레딧 처리 상태를 확인하고 있어요. 이용 기록에서 최종 상태를 확인해 주세요.';
+      wrap.textContent = '크레딧 처리 상태를 확인하고 있어요. 작업 기록에서 최종 상태를 확인해 주세요.';
       wrap.classList.add('is-review');
     } else {
       wrap.textContent = labels[disposition];
@@ -2120,8 +2112,8 @@
         var tip = abEl.querySelector('.lav-blocked-abstract-tip');
         if (title) title.textContent = showLost ? '이 사실·수치의 누락 위험이 확인됐어요' : '이 부분이 추상적이라 자연스럽게 바꾸기 어려워요';
         if (tip) tip.innerHTML = showLost
-          ? '사실·수치가 많은 글은 <b>문단을 짧게 나누거나</b>, 해당 부분은 원문 표현을 더 유지해서 다시 도전해 주세요.'
-          : '위 내용과 관련된 <b>실제 경험·사례·수치</b>를 경험 메모에 적고 다시 도전하면, 그 부분을 더 구체적이고 자연스럽게 바꿀 수 있어요.';
+          ? '사실·수치가 많은 글은 <b>문단을 짧게 나누거나</b>, 해당 부분은 원문 표현을 더 유지해서 다시 시도해 주세요.'
+          : '위 내용과 관련된 <b>실제 경험·사례·수치</b>를 경험 메모에 적고 다시 시도하면, 그 부분을 더 구체적이고 자연스럽게 바꿀 수 있어요.';
         abList.innerHTML = '';
         paras.forEach(function (p) {
           var li = document.createElement('li');
@@ -2150,7 +2142,7 @@
     }
   }
 
-  // 메모 반영해 다시 도전 — 차단 화면 인라인 메모(D6)를 다음 제출에 실어 방법 선택으로 복귀
+  // 메모 반영해 다시 시도 — 차단 화면 인라인 메모(D6)를 다음 제출에 실어 방법 선택으로 복귀
   //   (원문은 lavInput에 유지 → 카드 선택·확인 모달 경유 재제출 = 새 작업·재과금 안내)
   window.lavBlockedRetryMemo = function () {
     var memoEl = $('lavBlockedMemo');
@@ -2399,7 +2391,7 @@
 
   // ── 사후 문단 보강(2026-08-27): 결과 아래 코칭 섹션 — 추상 문단에 실제 경험 한 줄을 받아 그 문단만 재생성.
   //   프레이밍 계약: 추상성은 원문 귀속(엔진 실패가 아님) · 최대 2개 · 결과 본문과 시각 분리 · 무변화는 정직 안내·무과금.
-  var lavRefineJobId = null, lavRefineBusy = false, lavDoneLibId = null, refinePollGen = 0;
+  var lavRefineJobId = null, lavRefineBusy = false, refinePollGen = 0;
 
   // 결과 본문을 문단 단위 DOM으로 렌더 — 보강 대상 문단을 본문 안에서 직접 강조한다.
   //   구분자(빈 줄)는 텍스트 노드로 보존 → container.textContent === outputText 그대로라
@@ -2561,7 +2553,6 @@
           var outputText = (body.result && body.result.outputText) || '';
           // 보강된 문단만 펄스로 표시 — 남은 타겟 강조도 함께 갱신
           renderDoneBody(outputText, body.result && body.result.refineTargets, refine.paragraphIndex);
-          lavUpdateLibraryText(lavDoneLibId, outputText);
           renderRefineTargets(body);   // 구체화된 문단은 카드에서 빠지고 무료 횟수 갱신
           if (window.gpToast) window.gpToast('실제 경험이 문단에 자연스럽게 녹아 들어갔어요.', { type: 'success' });
           if (typeof window.gpTrack === 'function') window.gpTrack('refine_done', { deducted: !!refine.deducted });
@@ -2590,70 +2581,4 @@
     setTimeout(tick, 3000);
   }
 
-  // ── 보관함(localStorage 기반 — Firebase 없이도 동작) ──────────
-  var LIB_KEY = 'lavLibrary';
-  function lavLibAll() {
-    try { return JSON.parse(localStorage.getItem(LIB_KEY) || '[]'); } catch (e) { return []; }
-  }
-  window.lavSaveToLibrary = function (kind, text, band) {
-    if (!text || !text.trim()) return null;
-    try {
-      var list = lavLibAll();
-      var title = (text.split('\n').find(function (l) { return l.trim(); }) || '제목 없음').trim().slice(0, 50);
-      var entry = { id: 'L' + (list.length ? (parseInt(list[0].id.slice(1), 10) + 1) : 1), kind: kind, band: band || '', title: title, text: text, len: text.replace(/\s/g, '').length };
-      list.unshift(entry);
-      if (list.length > 50) list = list.slice(0, 50);   // 보관 상한
-      localStorage.setItem(LIB_KEY, JSON.stringify(list));
-      if (typeof window.lavRenderLibrary === 'function') window.lavRenderLibrary();
-      return entry.id;   // 사후 문단 보강이 같은 항목을 갱신할 수 있게 식별자 반환
-    } catch (e) { return null; /* localStorage 가득참 등 — 무시 */ }
-  };
-  // 보강된 결과로 보관함 항목을 제자리 갱신(append-only 예외 — 같은 작업의 최신본 유지).
-  function lavUpdateLibraryText(id, text) {
-    if (!id || !text) return;
-    try {
-      var list = lavLibAll();
-      var hit = list.find(function (x) { return x.id === id; });
-      if (!hit) return;
-      hit.text = text;
-      hit.len = text.replace(/\s/g, '').length;
-      localStorage.setItem(LIB_KEY, JSON.stringify(list));
-      if (typeof window.lavRenderLibrary === 'function') window.lavRenderLibrary();
-    } catch (e) { /* 무시 */ }
-  }
-  window.lavOpenLibrary = function () {
-    window.lavRenderLibrary();
-    var m = $('lavLibraryModal'); if (m) m.hidden = false;
-    if (typeof window.lavCloseSidebar === 'function') window.lavCloseSidebar();
-  };
-  window.lavCloseLibrary = function () {
-    var m = $('lavLibraryModal'); if (m) m.hidden = true;
-  };
-  window.lavRenderLibrary = function () {
-    var wrap = $('lavLibraryList');
-    if (!wrap) return;
-    var list = lavLibAll();
-    if (!list.length) { wrap.innerHTML = '<p class="lav-lib-empty">아직 보관된 결과가 없어요. 변환을 완료하면 자동으로 여기에 저장됩니다.</p>'; return; }
-    wrap.innerHTML = '';
-    list.forEach(function (item) {
-      var row = document.createElement('div');
-      row.className = 'lav-lib-item';
-      var meta = document.createElement('div');
-      meta.className = 'lav-lib-meta';
-      var b1 = document.createElement('b'); b1.textContent = item.title;
-      var sp = document.createElement('span'); sp.textContent = item.kind + ' · ' + (item.band || '') + ' · ' + item.len.toLocaleString() + '자';
-      meta.appendChild(b1); meta.appendChild(sp);
-      var acts = document.createElement('div');
-      acts.className = 'lav-lib-acts';
-      var copyBtn = document.createElement('button'); copyBtn.type = 'button'; copyBtn.className = 'ghost'; copyBtn.textContent = '복사';
-      copyBtn.onclick = function () { if (navigator.clipboard) navigator.clipboard.writeText(item.text).catch(function () {}); copyBtn.textContent = '복사됨'; setTimeout(function () { copyBtn.textContent = '복사'; }, 1200); };
-      var dlBtn = document.createElement('button'); dlBtn.type = 'button'; dlBtn.className = 'ghost'; dlBtn.textContent = '.md';
-      dlBtn.onclick = function () { var blob = new Blob([item.text], { type: 'text/markdown;charset=utf-8' }); var url = URL.createObjectURL(blob); var a = document.createElement('a'); a.href = url; a.download = item.title.replace(/[\\/:*?"<>|]/g, '').slice(0, 40) + '.md'; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); };
-      var delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.className = 'ghost lav-lib-del'; delBtn.textContent = '삭제';
-      delBtn.onclick = function () { var l = lavLibAll().filter(function (x) { return x.id !== item.id; }); localStorage.setItem(LIB_KEY, JSON.stringify(l)); window.lavRenderLibrary(); };
-      acts.appendChild(copyBtn); acts.appendChild(dlBtn); acts.appendChild(delBtn);
-      row.appendChild(meta); row.appendChild(acts);
-      wrap.appendChild(row);
-    });
-  };
 })();

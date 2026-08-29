@@ -55,10 +55,37 @@ test('첫 화면 오퍼는 결제 이력과 잔액 단계에 따라 문구와 �
   }
   assert.match(flow, /loggedOutHeroCopy/u);
   assert.match(flow, /window\.gpRefreshHeroOffer/u);
+  // 바로 아래 입력창에 포커스만 주는 버튼은 변화가 없어 보이므로 정보만 남긴다.
+  assert.match(flow, /cta\.hidden = copy\.action === 'focus'/u);
+  assert.match(flow, /box\.classList\.toggle\('is-passive', copy\.action === 'focus'\)/u);
   // 재구매 세그먼트는 지난번 상품으로 바로 결제하고, 클릭 출처는 표면별로 기록한다.
   assert.match(flow, /offerVariant: 'repurchase_previous'[\s\S]*?source: surface \+ '_offer'/u);
   // 잔액이 바뀌면 오퍼도 다시 계산한다.
   assert.match(module_, /window\.gpRefreshHeroOffer\(false\)/u);
+});
+
+test('메인은 입력창을 화면 중심으로 올리고 모바일에서는 입력을 먼저 크게 보여준다', async () => {
+  const [flow, css, index, main] = await Promise.all([
+    read('assets/js/conversion-flow.js'),
+    read('assets/css/redesign.css'),
+    read('index.html'),
+    read('pages/main.html')
+  ]);
+  const block = css.slice(css.indexOf('lavender v114'));
+  assert.ok(block.length > 500, '메인 작업 화면 배치 규칙이 있어야 한다');
+  assert.match(block, /\.gp-lav-hero:not\(\.flow-active\)[^{]*\{[\s\S]*?translateY\(clamp\(-190px,-15vh,-120px\)\)/u);
+  assert.match(block, /@media\(max-width:760px\)[\s\S]*?height:clamp\(180px,30dvh,240px\) !important/u);
+  assert.match(block, /font-size:16px/u); // iOS 입력 포커스 확대 방지
+  assert.match(block, /\.gp-lav-offer[^{]*\{[\s\S]*?display:grid/u);
+  assert.match(flow, /heroOrderMedia = window\.matchMedia\('\(max-width: 760px\)'\)/u);
+  assert.match(flow, /anchor\.insertAdjacentElement\('afterend', offer\)/u);
+  assert.match(flow, /composer\.insertAdjacentElement\('beforebegin', offer\)/u);
+  assert.match(index, /viewport-fit=cover/u);
+  const bubble = css.slice(css.indexOf('lavender v115'));
+  assert.match(bubble, /\.gp-lav-offer\{[\s\S]*?width:max-content;[\s\S]*?max-width:min\(760px,calc\(100% - 32px\)\)/u);
+  assert.match(bubble, /\.gp-lav-offer-tail\{[\s\S]*?bottom:-8px[\s\S]*?z-index:1[\s\S]*?clip-path:polygon\(0 0,100% 0,50% 100%\)/u);
+  assert.match(bubble, /@media\(max-width:760px\)[\s\S]*?\.gp-lav-offer-tail\{[\s\S]*?top:-8px[\s\S]*?clip-path:polygon\(50% 0,100% 100%,0 100%\)/u);
+  assert.match(main, /class="gp-lav-offer-tail" aria-hidden="true"/u);
 });
 
 test('완료 화면은 잔액이 다음 작업 최소치 미만일 때만 사실 기반 충전 안내를 붙인다', async () => {
@@ -88,12 +115,23 @@ test('감지 보고서의 휴머나이저 이동 버튼 아래에는 비용 정�
   assert.match(evasion, /이동 후 기본 휴머나이징 /u);
 });
 
-test('콘텐츠 페이지 본문 끝에 세그먼트 인라인 오퍼 슬롯이 있고 충전 페이지에는 없다', async () => {
+test('일반 콘텐츠는 세그먼트 오퍼를 쓰고 FAQ·가이드는 전용 작업 선택기를 사용한다', async () => {
   const flow = await read('assets/js/conversion-flow.js');
-  for (const page of ['faq', 'notice', 'community', 'guide', 'blog']) {
+  for (const page of ['notice', 'community', 'blog']) {
     const html = await read(`pages/${page}.html`);
     assert.match(html, /data-gp-offer-slot/u, `${page}에 인라인 오퍼 슬롯이 있어야 한다`);
   }
+  const faq = await read('pages/faq.html');
+  assert.doesNotMatch(faq, /data-gp-offer-slot/u);
+  assert.match(faq, /AI 감지 시작/u);
+  assert.match(faq, /휴머나이징 시작/u);
+  assert.doesNotMatch(flow, /OFFER_PAGES = \['faq'/u);
+  const guide = await read('pages/guide.html');
+  assert.doesNotMatch(guide, /data-gp-offer-slot/u);
+  assert.match(guide, /openProductMode\('detect'\)/u);
+  assert.match(guide, /openProductMode\('humanize'\)/u);
+  assert.match(guide, /data-tab="pricing" href="\/pricing"/u);
+  assert.doesNotMatch(flow, /OFFER_PAGES = \[[^\]]*'guide'/u);
   const pricing = await read('pages/pricing.html');
   assert.doesNotMatch(pricing, /data-gp-offer-slot/u);   // gpPricingSegmentPanel과 중복 금지
   assert.match(flow, /renderInlineOffers/u);
@@ -172,9 +210,10 @@ test('랜딩은 현재 서비스 네 가지와 단가를 사실대로 안내하�
   assert.match(landing, /100자당 1크레딧/u);
   assert.match(landing, /100자당 2크레딧/u);
   assert.match(landing, /1만자 이하 200크레딧/u);
-  assert.match(landing, /800자 이하 40크레딧/u);
+  assert.match(landing, /가격 확정 전 · 준비 중/u);
+  assert.doesNotMatch(landing, /800자 이하 40크레딧/u);
   // 과장 금지: 외부 검사 통과나 점수를 보장하지 않는다고 명시한다.
-  assert.match(landing, /보장하지 않습니다/u);
+  assert.match(landing, /보장하지 않아요/u);
   assert.match(landing, /유효기간 없이/u);
   // 구형 시안 마크업을 되살리지 않는다(주석 언급은 허용, 실제 클래스 사용은 금지).
   assert.doesNotMatch(landing, /class="[^"]*gp-main-stage/u);
@@ -198,16 +237,39 @@ test('충전 사다리는 라이트 350으로 단조 할인(-9/-14/-17/-23/-26)�
     read('pages/landing.html')
   ]);
   // 라이트 350: 스타터 3회(=330)보다 확실히 낫게 — 죽은 티어 수리(2026-08-26)
-  assert.match(pricing, /payToss\(8700,350,/u);
-  assert.match(pricing, /총 350 크레딧/u);
-  assert.match(flow, /\{ amount: 8700, credits: 350, label: '라이트' \}/u);
-  assert.match(landing, /8,700원<\/b><span>350크레딧/u);
+  assert.match(pricing, /payToss\(8700,400,/u);
+  assert.match(pricing, /총 400 크레딧/u);
+  assert.match(flow, /\{ amount: 8700, credits: 400, firstBonus: 32, label: '라이트' \}/u);
+  assert.match(landing, /8,700원<\/b><span>400크레딧/u);
   // 할인 표기: 기준가 29원(스타터 순정가) 대비, 커질수록 커지는 단조 사다리
   const badges = [...pricing.matchAll(/plan-discount">(-\d+%)</gu)].map(m => m[1]).slice(0, 5);
-  assert.deepEqual(badges, ['-9%', '-14%', '-17%', '-23%', '-26%']);
-  // 사용량 표기는 350 기준 내림값과 일치
-  assert.match(pricing, /1,000자 글 휴머나이징<strong>17회/u);
-  assert.match(pricing, /1,000자 AI 감지<strong>35회/u);
+  assert.deepEqual(badges, ['-9%', '-25%', '-29%', '-33%', '-39%']);
+  // 사용량 표기는 400 기준 내림값과 일치
+  assert.match(pricing, /1,000자 글 휴머나이징<strong[^>]*data-plan-credits="400"[^>]*data-work-cost="20"[^>]*>20회 추가/u);
+  assert.match(pricing, /1,000자 AI 감지<strong[^>]*data-plan-credits="400"[^>]*data-work-cost="10"[^>]*>40회 추가/u);
+});
+
+test('가격 카드는 보너스 비율과 스타터 분할 구매 대비 이득을 명시한다', async () => {
+  // 2026-08-29 사장님 지시: "올라갈수록 이만큼 더 주고 첫 구매 보너스는 이만큼"을 화면에서 확실히 보이게.
+  const pricing = await read('pages/pricing.html');
+  // 상품별 보너스 비율(기본 제공 대비) — 올라갈수록 커진다
+  const rates = [...pricing.matchAll(/보너스 지급 <em>\+(\d+)%<\/em>/gu)].map((m) => Number(m[1]));
+  assert.deepEqual(rates, [10, 33, 40, 50, 65]);
+  // 첫 구매 보너스: 다섯 카드 전부에 있고(종전엔 스타터 카드만), 비율은 누진
+  const firstRates = [...pricing.matchAll(/첫 구매 보너스 <em>\+(\d+)%<\/em>/gu)].map((m) => Number(m[1]));
+  assert.deepEqual(firstRates, [5, 8, 10, 12, 15]);
+  for (const amount of [2900, 8700, 14500, 29000, 58000]) {
+    assert.match(pricing, new RegExp(`data-first-bonus-for="${amount}" hidden`, 'u'), `${amount} 첫 구매 행 부재`);
+    assert.match(pricing, new RegExp(`data-plan-total-for="${amount}"`, 'u'), `${amount} 총 크레딧 훅 부재`);
+  }
+  // 같은 금액을 스타터로 쪼개 살 때 대비 이득을 카드에 직접 적는다
+  for (const [splits, split, gain] of [[3, '330', '70'], [5, '550', '150'], [10, '1,100', '400'], [20, '2,200', '1,100']]) {
+    assert.match(
+      pricing,
+      new RegExp(`2,900원으로 ${splits}번 나눠 사면 ${split.replace(',', ',')}크레딧<b>${gain.replace(',', ',')}크레딧 더</b>`, 'u'),
+      `${splits}회 분할 비교 문구 부재`
+    );
+  }
 });
 
 test('랜딩 v2는 코다 구조(데모·탭·상황·사실 스트립)를 우리 자산으로 구현한다', async () => {
@@ -238,7 +300,7 @@ test('랜딩 v2는 코다 구조(데모·탭·상황·사실 스트립)를 우�
   }
   // 날조 금지: 고객사·이용자 수·매체 인용을 지어내지 않는다(사실 스트립으로 대체)
   assert.doesNotMatch(landing, /[0-9,만]+\s*(?:개\s*팀|명이|고객사|기업이)/u);
-  assert.match(landing, /실패·차단 시 <b>차감 0<\/b>/u);
+  assert.match(landing, /전달 가능한 결과를 만들지 못하면<\/b> 차감하지 않아요/u);
 });
 
 test('lp 스위치는 랜딩을 강제하거나 건너뛰고 관리자 페이지에서 안내한다', async () => {
@@ -263,11 +325,13 @@ test('lp 스위치는 랜딩을 강제하거나 건너뛰고 관리자 페이지
   assert.match(admin, /\?lp=0/u);
 });
 
-test('첫 랜딩은 번들 한 번으로 조립하고 인증·장식 작업이 초기 화면을 막지 않는다', async () => {
-  const [build, loader, boot, appModule, appMain, vendors, tracking, index, landingPage] = await Promise.all([
+test('익명 홈은 서버 렌더 랜딩을 즉시 활성화하고 앱·인증 자원을 초기 요청하지 않는다', async () => {
+  const [build, prerender, loader, boot, landingJs, appModule, appMain, vendors, tracking, index, landingPage] = await Promise.all([
     read('scripts/build-vite-static.mjs'),
+    read('scripts/seo-prerender.mjs'),
     read('assets/js/page-loader.js'),
     read('assets/js/app-boot.js'),
+    read('assets/js/landing.js'),
     read('assets/js/app-module.js'),
     read('assets/js/app-main.js'),
     read('assets/js/vendor-init.js'),
@@ -278,20 +342,40 @@ test('첫 랜딩은 번들 한 번으로 조립하고 인증·장식 작업이 �
 
   assert.match(build, /PAGE_BUNDLE_VERSION: 1/u);
   assert.match(build, /async function writePageBundle\(\)/u);
-  assert.match(loader, /loadPartial\('\/partials\/app-bundle\.html'\)/u);
-  assert.match(loader, /function selectInitialScreen\(\)/u);
+  assert.match(loader, /function fetchText\(url\)/u);
+  assert.match(loader, /fetchText\('\/pages\/landing\.html'\)/u);
+  assert.match(loader, /querySelector\('#landingScreen'\)/u);
+  assert.match(loader, /hydrateLandingDeferred/u);
+  assert.match(loader, /template\.content\.cloneNode\(true\)/u);
+  assert.match(loader, /fetchText\('\/partials\/app-bundle\.html'\)/u);
+  assert.match(loader, /function initialMode\(\)/u);
   assert.match(loader, /firebase:authUser:/u);
-  assert.match(loader, /dataset\.gpInitialScreen = landing \? 'landing' : 'app'/u);
+  assert.match(loader, /window\.GP_PAGE_READY = mode === 'landing'/u);
   assert.match(appModule, /window\.gpAuthResolved = true/u);
   assert.match(appModule, /if \(u\) \{[\s\S]{0,100}?showAuthenticatedShell\(u, 'auth_state'\);[\s\S]{0,100}?await loadUser\(u\)/u);
 
-  assert.match(boot, /requestIdleCallback\(run, \{ timeout: 1800 \}\)/u);
+  assert.match(boot, /requestIdleCallback\(task, \{ timeout: timeout \|\| 1800 \}\)/u);
+  assert.match(boot, /setTimeout\(start, 6500\)/u);
+  assert.match(boot, /setTimeout\(hydrate, 7000\)/u);
+  assert.match(landingJs, /demoStartTimer = setTimeout[\s\S]{0,180}3200/u);
+  assert.match(boot, /if \(mode === 'landing'\)[\s\S]*?loadScript\('\/assets\/js\/landing\.js'\)/u);
   assert.doesNotMatch(boot, /script\('https:\/\/cdn\.jsdelivr\.net\/npm\/(?:gsap|vanilla-tilt|countup)/u);
   assert.match(vendors, /window\.gpLoadTossPayments = function/u);
   assert.match(vendors, /5500\);/u);
   assert.match(appMain, /await window\.gpLoadTossPayments\(\)/u);
   assert.match(tracking, /4500\);/u);
   assert.doesNotMatch(index, /<script[^>]+(?:wcs\.naver\.net|js\.tosspayments\.com)/u);
+  assert.doesNotMatch(index, /firebase-(?:app|auth|firestore)/u);
+  assert.doesNotMatch(index, /assets\/css\/(?:app|redesign|writing-lab)\.css/u);
+  assert.doesNotMatch(index, /document\.write|XMLHttpRequest/u);
+  assert.match(index, /root\.querySelector\('#landingScreen'\)/u);
+  assert.match(index, /runtime-config\.js" defer/u);
+  assert.match(index, /app-boot\.js" defer/u);
+  assert.match(prerender, /route\.url === '\/' && route\.partial === 'landing\.html'/u);
+  assert.match(prerender, /landingDeferredTemplate/u);
+  assert.match(prerender, /deferredMarker = '<section class="gp-lp-principle">'/u);
+  assert.match(build, /writeHashedAssetManifest/u);
+  assert.match(boot, /fetch\('\/asset-manifest\.json'/u);
   assert.match(landingPage, /brand-logo-menu\.webp/u);
 });
 
@@ -326,10 +410,10 @@ test('카카오 로그인은 콜백을 즉시 처리하고 메인 전환 중 진
   assert.ok(authHelper.indexOf('signInWithEmailAndPassword') < authHelper.indexOf('createUserWithEmailAndPassword'));
   assert.match(appModule, /showAuthenticatedShell\(result\.user, 'kakao_direct'\);[\s\S]{0,100}?syncKakaoProfileInBackground/u);
 
-  // 랜딩에서 로그인 화면으로 이동하기 전 서버를 깨우고 인증 호스트 연결도 미리 준비한다.
+  // 랜딩에서 로그인 화면으로 이동하기 전 서버는 깨우되 인증 호스트는 초기 HTML에서 연결하지 않는다.
   assert.match(landingJs, /gpWarmAuthBackend/u);
   assert.match(appModule, /fetch\(window\.apiUrl\('\/healthz'\)/u);
   for (const host of ['kauth.kakao.com', 'kapi.kakao.com', 'ai-backend-3xtk.onrender.com']) {
-    assert.match(index, new RegExp(`<link rel="preconnect" href="https://${host.replaceAll('.', '\\.')}"`, 'u'));
+    assert.doesNotMatch(index, new RegExp(`<link rel="preconnect" href="https://${host.replaceAll('.', '\\.')}"`, 'u'));
   }
 });

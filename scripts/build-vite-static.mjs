@@ -1,6 +1,7 @@
 import { build } from 'vite';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { prerenderSeo } from './seo-prerender.mjs';
 import { publicRuntimeValue } from './runtime-config-values.mjs';
 
@@ -39,7 +40,6 @@ const staticEntries = [
 ];
 const pagePartials = [
   'partials/login-screen.html',
-  'pages/landing.html',
   'partials/app-shell-start.html',
   'pages/main.html',
   'pages/history.html',
@@ -57,9 +57,7 @@ const pagePartials = [
   'pages/admin-humanize-lab.html',
   'pages/writing-lab.html',
   'partials/app-shell-end.html',
-  'partials/footer.html',
-  'partials/modals.html',
-  'partials/mobile-nav.html'
+  'partials/modals.html'
 ];
 
 async function exists(p) {
@@ -122,6 +120,86 @@ async function writePageBundle() {
   await fs.writeFile(target, normalized.join('\n'), 'utf8');
 }
 
+async function stripPublishedHtmlComments() {
+  const htmlFiles = (await listFiles(dist)).filter((file) => /\.html$/iu.test(file));
+  await Promise.all(htmlFiles.map(async (file) => {
+    const original = await fs.readFile(file, 'utf8');
+    const stripped = original.replace(/<!--[\s\S]*?-->/gu, '');
+    if (stripped !== original) await fs.writeFile(file, stripped, 'utf8');
+  }));
+}
+
+function contentHash(content) {
+  return crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
+}
+
+function posixPath(value) {
+  return value.split(path.sep).join('/');
+}
+
+function hashedAssetPath(rel, hash) {
+  const parsed = path.posix.parse(posixPath(rel));
+  return path.posix.join(parsed.dir, `${parsed.name}.${hash}${parsed.ext}`);
+}
+
+async function listFiles(dir) {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  const nested = await Promise.all(entries.map(async (entry) => {
+    const target = path.join(dir, entry.name);
+    return entry.isDirectory() ? listFiles(target) : [target];
+  }));
+  return nested.flat();
+}
+
+function replaceAssetReferences(text, manifest) {
+  return Object.keys(manifest)
+    .sort((a, b) => b.length - a.length)
+    .reduce((value, source) => value.split(source).join(manifest[source]), text);
+}
+
+async function writeHashedAssetManifest() {
+  const assetsRoot = path.join(dist, 'assets');
+  const files = await listFiles(assetsRoot);
+  const manifest = {};
+  const codeFiles = [];
+
+  for (const file of files) {
+    const rel = posixPath(path.relative(dist, file));
+    if (/\.(?:css|js)$/iu.test(rel)) {
+      codeFiles.push(file);
+      continue;
+    }
+    const content = await fs.readFile(file);
+    const hashed = hashedAssetPath(rel, contentHash(content));
+    await fs.copyFile(file, path.join(dist, hashed));
+    manifest[`/${rel}`] = `/${hashed}`;
+  }
+
+  for (const file of codeFiles.sort()) {
+    const rel = posixPath(path.relative(dist, file));
+    let content = await fs.readFile(file, 'utf8');
+    content = replaceAssetReferences(content, manifest);
+    const hashed = hashedAssetPath(rel, contentHash(content));
+    await fs.writeFile(path.join(dist, hashed), content, 'utf8');
+    manifest[`/${rel}`] = `/${hashed}`;
+  }
+
+  const allFiles = await listFiles(dist);
+  const rewritable = allFiles.filter((file) => /\.(?:html|css)$/iu.test(file));
+  for (const file of rewritable) {
+    const original = await fs.readFile(file, 'utf8');
+    const rewritten = replaceAssetReferences(original, manifest);
+    if (rewritten !== original) await fs.writeFile(file, rewritten, 'utf8');
+  }
+
+  await fs.writeFile(
+    path.join(dist, 'asset-manifest.json'),
+    `${JSON.stringify({ schemaVersion: 1, assets: manifest }, null, 2)}\n`,
+    'utf8'
+  );
+  return manifest;
+}
+
 await fs.rm(dist, { recursive: true, force: true });
 await fs.rm(viteScratch, { recursive: true, force: true });
 await fs.rm(viteOut, { recursive: true, force: true });
@@ -171,3 +249,7 @@ console.log(`[seo-prerender] generated ${prerendered.length} routes: ${prerender
 const { generateSitemap } = await import('./sitemap-gen.mjs');
 const sitemapCount = await generateSitemap({ root, dist });
 console.log(`[sitemap-gen] generated sitemap.xml with ${sitemapCount} urls`);
+
+await stripPublishedHtmlComments();
+const assetManifest = await writeHashedAssetManifest();
+console.log(`[asset-manifest] generated ${Object.keys(assetManifest).length} immutable asset urls`);

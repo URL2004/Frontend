@@ -82,8 +82,8 @@
           endpoint: '/confirm-payment',
           reason: options && options.reason
         });
-        if (window.gpToast) window.gpToast('결제 확인을 위해 로그인이 필요합니다. 로그인 후 이 페이지로 돌아오시면 자동으로 처리됩니다.', { type: 'error' });
-        else alert('결제 확인을 위해 로그인이 필요합니다. 로그인 후 이 페이지로 돌아오시면 자동으로 처리됩니다.');
+        if (window.gpToast) window.gpToast('결제 확인을 위해 로그인이 필요해요. 로그인 후 이 페이지로 돌아오면 자동으로 처리해요.', { type: 'error' });
+        else alert('결제 확인을 위해 로그인이 필요해요. 로그인 후 이 페이지로 돌아오면 자동으로 처리해요.');
         return false;
       }
 
@@ -100,8 +100,8 @@
           credits,
           endpoint: '/confirm-payment'
         }, e);
-        if (window.gpToast) window.gpToast('로그인 정보를 확인하지 못했습니다. 다시 로그인해 주세요.', { type: 'error' });
-        else alert('로그인 정보를 확인하지 못했습니다. 다시 로그인해 주세요.');
+        if (window.gpToast) window.gpToast('로그인 정보를 확인하지 못했어요. 다시 로그인해 주세요.', { type: 'error' });
+        else alert('로그인 정보를 확인하지 못했어요. 다시 로그인해 주세요.');
         return false;
       }
 
@@ -153,7 +153,7 @@
               : chargedCredits + '크레딧이 충전됐어요. 보유 크레딧을 확인해 주세요.',
             action: { tab: resumed && conversionMeta.pending_action === 'writing_lab_generate' ? 'writingLab' : (resumed ? 'main' : 'pricing') }
           }, { persist: true });
-        } else alert(chargedCredits + '크레딧이 충전됐습니다.');
+        } else alert(chargedCredits + '크레딧이 충전됐어요.');
         return true;
       }
 
@@ -198,125 +198,4 @@
   };
 
   window.processPendingPaymentCallback({ reason: 'page_load' });
-})();
-
-// === 정기결제 빌링 인증 콜백 ===
-(async function() {
-  const url = new URLSearchParams(window.location.search);
-  const authKey = url.get('authKey');
-  const tier = url.get('sub');
-  const ck = url.get('ck');
-  if (!authKey || !tier || !ck) return;
-
-  await window.authReady;
-  for (let i = 0; i < 4 && !window.CU; i++) {
-    await new Promise(r => setTimeout(r, 1500));
-  }
-  if (!window.CU) {
-    if (window.gpTrackPaymentError) window.gpTrackPaymentError('subscription_auth_missing', {
-      checkoutType: 'subscription',
-      tier,
-      uid: url.get('uid'),
-      endpoint: '/subscription/issue-billing-key'
-    });
-    if (window.gpToast) window.gpToast('구독 처리를 위해 로그인이 필요합니다. 로그인 후 이 페이지로 돌아오시면 자동으로 처리됩니다.', { type: 'error' });
-    else alert('구독 처리를 위해 로그인이 필요합니다. 로그인 후 이 페이지로 돌아오시면 자동으로 처리됩니다.');
-    return;
-  }
-
-  const dedupKey = 'sub_' + authKey;
-  if (localStorage.getItem(dedupKey)) return;
-  localStorage.setItem(dedupKey, '1');
-
-  let idToken;
-  try { idToken = await window.CU.getIdToken(); }
-  catch (e) {
-    localStorage.removeItem(dedupKey);
-    if (window.gpTrackPaymentError) window.gpTrackPaymentError('subscription_token_failed', {
-      checkoutType: 'subscription',
-      tier,
-      endpoint: '/subscription/issue-billing-key'
-    }, e);
-    if (window.gpToast) window.gpToast('로그인 정보를 확인하지 못했습니다. 다시 로그인해 주세요.', { type: 'error' });
-    else alert('로그인 정보를 확인하지 못했습니다. 다시 로그인해 주세요.');
-    return;
-  }
-
-  try {
-    const res = await fetch(window.apiUrl('/subscription/issue-billing-key'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        idToken, authKey,
-        customerKey: ck,
-        tier,
-        customerEmail: window.CU.email || '',
-        customerName: window.CU.displayName || '',
-        meta: window.gpMetaContext ? window.gpMetaContext() : {}
-      })
-    });
-    const data = await res.json();
-    if (res.ok && data.ok) {
-      history.replaceState({}, '', location.pathname);
-      if (window.gpTrack) window.gpTrack('purchase', {
-        transaction_id: data.orderId,
-        meta_event_id: 'purchase_' + data.orderId,
-        value: data.amount,
-        currency: 'KRW',
-        items: [{ item_id: 'sub_' + tier, item_name: 'subscription_' + tier, quantity: 1, price: data.amount }],
-        traffic_source: localStorage.getItem('traffic_source') || 'direct'
-      });
-      // 사용자 doc 다시 로드
-      try {
-        const snap = await window._fbGetDoc(window._fbDoc(window._fbDb, 'users', window.CU.uid));
-        const d = snap.data();
-        if (d.subscription) {
-          window.SUB = {
-            tier: d.subscription.tier,
-            status: d.subscription.status,
-            nextBillingMs: d.subscription.nextBillingAt?.toMillis ? d.subscription.nextBillingAt.toMillis() : 0,
-            cancelledAt: d.subscription.cancelledAt || null,
-            cardCompany: d.subscription.cardCompany || null,
-            cardNumber: d.subscription.cardNumber || null
-          };
-        }
-        window.COUPON = d.coupon ? { tier: d.coupon.tier, remaining: d.coupon.remaining, granted: d.coupon.granted } : null;
-        window.UP = (d.subscription?.tier === 'unlimited') ? 'unlimited' : 'pro';
-        if (typeof window.updateCreditUI === 'function') window.updateCreditUI();
-        const lock = document.getElementById('snavProLock');
-        if (lock) lock.style.display = 'none';
-      } catch(e) {}
-      if (window.gpNotify) {
-        window.gpNotify({
-          clientId: 'subscription_' + data.orderId,
-          type: 'payment',
-          title: '구독 시작',
-          message: '구독이 시작됐어요. Pro 탭에서 바로 사용할 수 있습니다.',
-          action: { tab: 'pro' }
-        }, { persist: true });
-      } else alert('구독이 시작됐어요! Pro 탭에서 바로 사용해 보세요.');
-      switchTab('pro');
-    } else {
-      localStorage.removeItem(dedupKey);
-      if (window.gpTrackPaymentError) window.gpTrackPaymentError('subscription_api_failed', {
-        checkoutType: 'subscription',
-        tier,
-        status: res.status,
-        code: data.code || '',
-        message: data.error || data.message || 'subscription failed',
-        endpoint: '/subscription/issue-billing-key'
-      });
-      if (window.gpToast) window.gpToast('구독 처리 실패: ' + (data.error || '알 수 없는 오류'), { type: 'error' });
-      else alert('구독 처리 실패: ' + (data.error || '알 수 없는 오류'));
-    }
-  } catch(err) {
-    localStorage.removeItem(dedupKey);
-    if (window.gpTrackPaymentError) window.gpTrackPaymentError('subscription_network_failed', {
-      checkoutType: 'subscription',
-      tier,
-      endpoint: '/subscription/issue-billing-key'
-    }, err);
-    if (window.gpToast) window.gpToast('구독 결제 확인 중 통신이 끊겼어요. 결제는 안전하니, 잠시 후 새로고침하면 다시 확인돼요.', { type: 'error' });
-    else alert('구독 결제 확인 중 통신이 끊겼어요. 결제는 안전하니, 잠시 후 새로고침하면 다시 확인돼요.');
-  }
 })();

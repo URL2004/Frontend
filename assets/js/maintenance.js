@@ -39,7 +39,7 @@
   function render() {
     var root = document.getElementById('page-root');
     if (!root) return;
-    var message = config.MAINTENANCE_MESSAGE || '더 안정적인 결제와 변환 환경을 적용하고 있어요. 점검이 끝나면 바로 다시 이용할 수 있습니다.';
+    var message = config.MAINTENANCE_MESSAGE || '더 안정적인 결제와 변환 환경을 적용하고 있어요. 점검이 끝나면 바로 다시 이용할 수 있어요.';
     document.documentElement.classList.add('design-ready');
     document.body.classList.add('gp-maintenance-body');
     root.innerHTML =

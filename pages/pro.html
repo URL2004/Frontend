@@ -1,52 +1,11 @@
 <div id="proContent" class="gp-pro-page" style="display:none;">
-  <div class="gp-pro-head">
-    <span class="gp-pro-eyebrow">
-      <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      Pro
-    </span>
-    <h2>Pro 전용 작업실</h2>
-  </div>
-  <p class="gp-pro-desc">쿠폰을 선택하면 쿠폰의 글자 한도 안에서 AI 감지와 휴머나이징을 이용할 수 있어요. 처리 기준과 결과 품질 정책은 메인 화면과 같습니다.</p>
-
-  <!-- 구독 정보 카드 -->
-  <div id="proSubInfo" class="gp-pro-card gp-pro-subinfo">
-    <div>
-      <div class="gp-pro-label">현재 구독</div>
-      <div id="proSubTier" class="gp-pro-tier">—</div>
-      <div id="proSubMeta" class="gp-pro-meta">—</div>
-    </div>
-    <div class="gp-pro-subactions">
-      <button class="cancelbtn" onclick="openMyPage()">구독 관리</button>
-    </div>
-  </div>
-
-  <!-- 쿠폰 카드 -->
-  <div id="proCouponCard" class="gp-pro-card gp-pro-coupons">
-    <div class="gp-pro-card-title">보유 쿠폰</div>
-    <div id="proCouponList" class="gp-pro-coupon-list"></div>
-    <div id="proCouponEmpty" class="gp-pro-empty" style="display:none;">지금 사용할 수 있는 쿠폰이 없어요. 구독 중이라면 다음 결제일에 새 쿠폰이 지급됩니다.</div>
-  </div>
-
-  <!-- 입력/결과 영역 -->
-  <div class="gp-pro-card gp-pro-workbench">
-    <div class="gp-pro-toolbar">
-      <div class="gp-pro-modes">
-        <button id="proModeDetect" class="pro-mode-btn" onclick="setProMode('detect')">AI 감지</button>
-        <button id="proModeAssignment" class="pro-mode-btn active" onclick="setProMode('assignment')">대학 과제</button>
-        <button id="proModeResume" class="pro-mode-btn" onclick="setProMode('resume')">자기소개서</button>
-        <button id="proModeBlog" class="pro-mode-btn" onclick="setProMode('blog')">블로그/SNS</button>
-      </div>
-      <div id="proSelectedBadge" class="gp-pro-selected">쿠폰을 선택하세요</div>
-    </div>
-    <textarea id="proInputText" placeholder="먼저 쿠폰을 선택한 뒤 처리할 글을 입력해 주세요." oninput="updateProCount(this)"></textarea>
-    <div class="gp-pro-footer">
-      <div class="gp-pro-counts">
-        <span id="proCcount">0자</span>
-        <span id="proHint">쿠폰 1회 사용</span>
-      </div>
-      <button id="proRunBtn" onclick="runProAnalysis()" disabled style="opacity:.5;">작업 시작</button>
-    </div>
-  </div>
-
-  <div id="proResult" class="gp-pro-result"></div>
+  <header class="gp-pro-head">
+    <span class="gp-pro-eyebrow">Pro</span>
+    <h1>Pro 전용 작업실</h1>
+  </header>
+  <section class="gp-pro-card gp-pro-ready" aria-labelledby="proReadyTitle">
+    <strong id="proReadyTitle">Pro는 준비 중이에요</strong>
+    <p>정기 구독과 Pro 전용 작업실은 아직 신청을 받지 않아요. 현재는 유효기간 없는 크레딧을 충전해 AI 감지 · 휴머나이징을 이용해 주세요.</p>
+    <a class="plan-btn" data-tab="pricing" href="/pricing">크레딧 충전하기</a>
+  </section>
 </div>

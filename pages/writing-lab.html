@@ -4,13 +4,13 @@
   <main class="gp-wl-page" aria-labelledby="wlPageTitle">
     <header class="gp-wl-head">
       <div class="gp-wl-head-copy">
-        <h2 id="wlPageTitle">글쓰기 랩</h2>
+        <h1 id="wlPageTitle">글쓰기 랩</h1>
         <p>확인한 사실을 질문에 맞춰 알려주면, 글을 만들고 자연스럽게 다듬은 뒤 근거까지 확인해요.</p>
       </div>
-      <div id="wlAdminBadge" class="gp-wl-admin-badge" hidden>관리자 실험 모드 · 무과금</div>
+      <div id="wlAdminBadge" class="gp-wl-admin-badge">관리자 전용 · 준비 중</div>
       <div class="gp-wl-trust" role="note">
         <strong>정확한 짧은 글을 우선해요.</strong>
-        <span>정보가 부족하면 억지로 늘리지 않고, 무엇이 부족한지와 가능한 선택지를 먼저 보여드립니다.</span>
+        <span>정보가 부족하면 억지로 늘리지 않고, 무엇이 부족한지와 가능한 선택지를 먼저 보여드려요.</span>
       </div>
     </header>
 
@@ -55,7 +55,7 @@
       <div class="gp-wl-section-head gp-wl-section-head-split">
         <div>
           <h3 id="wlInputTitle">글에 넣을 정보를 알려주세요</h3>
-          <p>모르는 내용은 비워도 괜찮아요. 입력하지 않은 내용은 글에 만들지 않습니다.</p>
+          <p>모르는 내용은 비워도 괜찮아요. 입력하지 않은 내용은 글에 넣지 않아요.</p>
         </div>
         <label class="gp-wl-subtype">
           <span>세부 유형</span>
@@ -79,7 +79,7 @@
             <span>메모 붙여넣기 <small>선택</small></span>
             <textarea id="wlNotes" rows="5" maxlength="5000" placeholder="방문 메모, 지원 경험, 상품 설명 등 기존 내용을 붙여 넣으세요."></textarea>
           </label>
-          <p>메모의 문장을 바로 사실로 사용하지 않아요. 정보 후보를 찾은 뒤 직접 확인한 항목만 질문 칸에 넣습니다.</p>
+          <p>메모의 문장을 바로 사실로 사용하지 않아요. 정보 후보를 찾은 뒤 직접 확인한 항목만 질문 칸에 넣어요.</p>
           <button type="button" id="wlExtractBtn" class="gp-wl-secondary" onclick="wlExtractNotes()">메모에서 정보 후보 찾기</button>
           <div id="wlCandidateList" class="gp-wl-candidates" hidden></div>
         </div>
@@ -87,7 +87,7 @@
 
       <div class="gp-wl-step-actions">
         <button type="button" id="wlQuestionPrev" class="gp-wl-secondary" onclick="wlQuestionMove(-1)">이전 질문</button>
-        <span id="wlAutosaveNote" class="gp-wl-autosave">이 탭에 임시 저장됩니다.</span>
+        <span id="wlAutosaveNote" class="gp-wl-autosave">이 탭에 임시 저장돼요.</span>
         <button type="button" class="gp-wl-text-button" onclick="wlClearDraft()">임시 입력 지우기</button>
         <button type="button" id="wlQuestionNext" class="gp-wl-primary" onclick="wlQuestionMove(1)">다음 질문</button>
         <button type="button" id="wlToSettings" class="gp-wl-primary" onclick="wlGoSettings()" hidden>글 설정으로</button>
@@ -103,7 +103,7 @@
       <div class="gp-wl-section-head">
         <div>
           <h3 id="wlSettingsTitle">완성할 글의 조건을 정해요</h3>
-          <p>입력한 정보로 가능한 분량은 다음 단계에서 먼저 확인합니다.</p>
+          <p>입력한 정보로 가능한 분량은 다음 단계에서 먼저 확인해요.</p>
         </div>
       </div>
 
@@ -111,14 +111,14 @@
         <label class="gp-wl-field">
           <span>목표 분량 <small>선택</small></span>
           <input id="wlTargetChars" type="number" min="60" max="3000" step="10" placeholder="추천 분량을 자동 계산해요" oninput="wlSettingsChanged()">
-          <small class="gp-wl-help">원하는 글자 수가 없으면 입력 정보를 바탕으로 추천합니다.</small>
+          <small class="gp-wl-help">원하는 글자 수가 없으면 입력 정보를 바탕으로 추천해요.</small>
         </label>
         <label class="gp-wl-field">
           <span>분량 계산 방식</span>
           <select id="wlCharMode" onchange="wlSettingsChanged()">
             <option value="with_space">공백 포함 글자 수</option>
             <option value="no_space">공백 제외 글자 수</option>
-            <option value="byte2">한글 2byte 기준</option>
+            <option value="byte2">한글 2바이트 기준</option>
           </select>
         </label>
         <label class="gp-wl-field">
@@ -135,7 +135,7 @@
             <option value="auto">휴머나이징 적용 · 추천</option>
             <option value="skip">초안만 만들기</option>
           </select>
-          <small class="gp-wl-help">기존 휴머나이징 엔진으로 문체를 다듬고 같은 근거로 다시 검사합니다.</small>
+          <small class="gp-wl-help">기존 휴머나이징 엔진으로 문체를 다듬고 같은 근거로 다시 검사해요.</small>
         </label>
       </div>
       <label class="gp-wl-field">
@@ -202,7 +202,7 @@
         <li id="wlProg1"><b>1</b><span>근거로 초안 구성</span></li>
         <li id="wlProg2"><b>2</b><span>초안 사실·분량 확인</span></li>
         <li id="wlProg3"><b>3</b><span>휴머나이징</span></li>
-        <li id="wlProg4"><b>4</b><span>최종 공개 검사</span></li>
+        <li id="wlProg4"><b>4</b><span>제출 전 최종 점검</span></li>
       </ol>
       <div id="wlStatus5" class="gp-wl-status" role="status" aria-live="polite"></div>
 
@@ -219,8 +219,8 @@
             <button type="button" class="gp-wl-secondary gp-wl-small" onclick="wlRunAgain()">다시 만들기</button>
           </div>
         </div>
-        <textarea id="wlFinal" rows="16" placeholder="완성된 글이 여기에 표시됩니다." oninput="wlFinalEdited()"></textarea>
-        <p id="wlEditHint" class="gp-wl-edit-hint">결과를 수정하면 공개 상태가 해제됩니다. 수정 후 다시 확인해 주세요.</p>
+        <textarea id="wlFinal" rows="16" placeholder="완성된 글이 여기에 표시돼요." oninput="wlFinalEdited()"></textarea>
+        <p id="wlEditHint" class="gp-wl-edit-hint">결과를 수정하면 검수 완료 상태가 해제돼요. 수정 후 다시 확인해 주세요.</p>
       </section>
 
       <div id="wlReport" class="gp-wl-report" hidden></div>

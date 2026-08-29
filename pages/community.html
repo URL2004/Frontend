@@ -5,15 +5,15 @@
    <div class="gp-page-primary">
     <div class="gp-page-head">
      <div>
-      <h2>커뮤니티</h2>
+      <h1>커뮤니티</h1>
       <p>글을 쓰며 알게 된 방법과 고민을 나누는 공간이에요. 서로의 경험을 참고해 더 나은 글을 만들어 보세요.</p>
      </div>
-     <button class="wbtn" onclick="document.getElementById('wform').style.display=document.getElementById('wform').style.display==='none'?'block':'none'">글쓰기</button>
+     <button class="wbtn" type="button" onclick="openCommunityComposer()">글쓰기</button>
     </div>
 
     <div class="gp-search">
-     <input type="search" placeholder="제목·내용·작성자 검색">
-     <button type="button" aria-label="검색">
+     <input id="postSearch" type="search" placeholder="제목·내용·작성자 검색" aria-label="커뮤니티 게시글 검색" autocomplete="off" oninput="queuePostSearch(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();applyPostSearch(this.value)}">
+     <button id="postSearchBtn" type="button" aria-label="커뮤니티 게시글 검색" onclick="applyPostSearch()">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
      </button>
     </div>
@@ -21,13 +21,13 @@
     <div class="wform" id="wform">
      <select id="postCategory">
       <option value="자유">자유</option>
-      <option value="블로그 작성 꿀팁">블로그 작성 팁</option>
+      <option value="블로그 작성 팁">블로그 작성 팁</option>
       <option value="논문">논문</option>
       <option value="자소서 조언">자소서 조언</option>
       <option value="글쓰기 팁">글쓰기 팁</option>
      </select>
-     <input id="ptitle" type="text" placeholder="제목">
-     <textarea id="pbody" placeholder="내용을 입력하세요..."></textarea>
+     <input id="ptitle" type="text" maxlength="120" placeholder="제목">
+     <textarea id="pbody" maxlength="10000" placeholder="내용을 입력하세요..."></textarea>
      <div class="photo-upload-container">
       <label class="photo-input-label">사진 첨부
        <input type="file" id="community-photos" accept="image/*" multiple style="display:none;">
@@ -40,15 +40,15 @@
        <label class="anon-label" id="featuredLabel" style="display:none;"><input type="checkbox" id="postFeatured">에디터 추천</label>
       </div>
       <div class="wform-btns">
-       <button class="cancelbtn" onclick="document.getElementById('wform').style.display='none'">취소</button>
-       <button class="postsubmit" id="postsubmit" onclick="submitPost()">등록</button>
+       <button class="cancelbtn" type="button" onclick="document.getElementById('wform').style.display='none'">취소</button>
+       <button class="postsubmit" id="postsubmit" type="button" onclick="submitPost()">등록</button>
       </div>
      </div>
     </div>
 
     <div class="cat-filter" id="catFilter">
      <button class="cat-fbtn active" data-cat="" onclick="filterByCategory('')">전체</button>
-     <button class="cat-fbtn" data-cat="블로그 작성 꿀팁" onclick="filterByCategory('블로그 작성 꿀팁')">블로그 작성 팁</button>
+     <button class="cat-fbtn" data-cat="블로그 작성 팁" onclick="filterByCategory('블로그 작성 팁')">블로그 작성 팁</button>
      <button class="cat-fbtn" data-cat="논문" onclick="filterByCategory('논문')">논문</button>
      <button class="cat-fbtn" data-cat="자소서 조언" onclick="filterByCategory('자소서 조언')">자소서 조언</button>
      <button class="cat-fbtn" data-cat="글쓰기 팁" onclick="filterByCategory('글쓰기 팁')">글쓰기 팁</button>
@@ -56,14 +56,14 @@
     </div>
 
     <div class="sortbar">
-     <button class="sortbtn active" data-sort="latest" onclick="loadPosts('latest')">최신순</button>
-     <button class="sortbtn" data-sort="views" onclick="loadPosts('views')">인기순</button>
-     <button class="sortbtn" data-sort="oldest" onclick="loadPosts('oldest')">오래된순</button>
+     <button class="sortbtn active" data-sort="latest" onclick="setPostSort('latest')">최신순</button>
+     <button class="sortbtn" data-sort="views" onclick="setPostSort('views')">인기순</button>
+     <button class="sortbtn" data-sort="oldest" onclick="setPostSort('oldest')">오래된순</button>
     </div>
 
-    <!-- 에디터 추천은 aside(우측)로 이동, 이번주 인기글은 제거 — 메인은 글 목록만(혼동 방지, 사장님 지시) -->
     <div id="postList" class="post-grid gp-board-list"></div>
     <div id="postPager" class="gp-pager" style="display:none;"></div>
+    <p id="communityResultsStatus" class="sr-only" role="status" aria-live="polite"></p>
    </div>
 
    <aside class="gp-page-aside">
@@ -74,20 +74,13 @@
      </div>
      <img loading="lazy" decoding="async" src="/assets/img/community-quill.png" alt="">
     </article>
-    <!-- 에디터 추천(PICK): 메인에서 우측 aside로 이동 — JS(_renderFeaturedSection)가 동일 id로 채움 -->
     <article id="featuredSection" class="gp-aside-card feat-section feat-aside" style="display:none;">
      <div class="feat-title">에디터 추천 <span class="feat-title-badge">PICK</span></div>
      <div id="featuredList" class="feat-grid"></div>
     </article>
-    <article class="gp-aside-card">
+    <article class="gp-aside-card" id="rankSection" style="display:none;">
      <h3>인기 게시글 TOP 5</h3>
-     <ol class="gp-rank-list" id="rankList">
-      <li><span>1</span>블로그 글을 자연스럽게 다듬는 루틴 <strong>128</strong></li>
-      <li><span>2</span>교수님이 좋아하는 보고서 작성법 <strong>112</strong></li>
-      <li><span>3</span>서론에서 시선 끄는 문장 쓰는 법 <strong>96</strong></li>
-      <li><span>4</span>인용과 출처를 정확하게 표시하는 법 <strong>89</strong></li>
-      <li><span>5</span>반복 표현을 줄이는 문장 수정 예시 <strong>77</strong></li>
-     </ol>
+     <ol class="gp-rank-list" id="rankList"></ol>
     </article>
     <article class="gp-aside-card">
      <h3>커뮤니티 가이드</h3>

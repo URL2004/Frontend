@@ -29,14 +29,14 @@ test('기본·고급 설명은 체감 재구성 범위와 검증 범위를 구�
   assert.match(main, /장르·말투·사실 유지/u);
   assert.match(main, /전체 흐름 재구성/u);
   assert.match(main, /전 문서 의미 검증/u);
-  assert.match(main, /기본 휴머나이징에서만 쓰여요\. 원문 말투는 그대로 두고 단어·연결의 결만 조정합니다/u);
-  assert.match(main, /id="lavDetailSummary">자동 판별 · 자동 문체/u);
-  assert.match(main, /외부 탐지기 결과는 보장하지 않습니다/u);
+  assert.match(main, /기본 휴머나이징에서만 쓰여요\. 원문 말투는 그대로 두고 단어·연결의 결만 조정해요/u);
+  assert.match(main, /id="lavDetailSummary">자동 판별 · 문체 자동 선택/u);
+  assert.match(main, /외부 AI 감지 결과는 보장하지 않아요/u);
   assert.doesNotMatch(main, /id="lavEvidenceRow"/u);
   assert.match(modals, /class="lav-confirm-opt" id="lavEvidenceRow" hidden/u);
   assert.match(evasion, /setConfirmEvidenceAvailability\(!!\(tone && tone\.value === 'formal'\)\)/u);
   assert.match(evasion, /renderConfirmCost\(\);\s+\/\/ 모달을 연 뒤 호출/u);
-  assert.match(guide, /AI식 반복과 균일한 흐름을 다시 구성/u);
+  assert.match(guide, /AI식 반복, 상투적인 표현, 지나치게 균일한 흐름/u);
   assert.match(faq, /고급은 기본보다 더 넓은 문장 범위를 재구성/u);
   assert.match(evasion, /Math\.max\(90, Math\.min\(1200, Math\.round\(bareLength\(text\) \/ 12\)\)\)/u);
   assert.match(evasion, /lastDiag\.advancedTimeEstimate/u);
@@ -84,7 +84,7 @@ test('다듬기·기본·고급 명칭과 설명은 선택부터 결과·이력�
   assert.match(module, /case 'blog': return '기본 휴머나이징'/u);
   assert.match(module, /case 'polish': return '원문 보존 다듬기'/u);
   assert.match(lab, /value="polish">원문 보존 다듬기/u);
-  assert.match(guide, /교정만 필요하면 원문 보존 다듬기/u);
+  assert.match(guide, /내용과 문장 구조는 그대로 두고 문장 완성도만 높이고 싶을 때/u);
   assert.match(faq, /원문 보존 다듬기와 휴머나이징은 무엇이 다른가요/u);
   const activeCopy = `${main}\n${guide}\n${faq}\n${evasion}\n${legacy}\n${module}\n${lab}`;
   assert.doesNotMatch(activeCopy, /과제 어투로 다듬기|기본 휴머나이징\(블로그\)|다듬기\(보존형\)|그대로 다듬기/u);
@@ -99,7 +99,7 @@ test('진단 선택 섹션은 상태 라벨과 중복 유도 없이 핵심 정�
   assert.match(evasion, /구체적인 근거가 부족해요/u);
   assert.match(evasion, /일반적인 표현이 많아 문장만 바꿔도 비슷하게 느껴질 수 있어요/u);
   assert.match(main, /어떻게 다듬을까요\?/u);
-  assert.match(main, /외부 탐지기 결과는 보장하지 않습니다/u);
+  assert.match(main, /외부 AI 감지 결과는 보장하지 않아요/u);
   assert.doesNotMatch(main, /lavDiagGrade|lavAnchorGuide|lavEditForAnchor|추천 시작점|효과가 제한될 수 있는 글 유형/u);
   assert.doesNotMatch(main, /그대로 제출하면 AI 탐지 위험이 높아요/u);
   assert.doesNotMatch(evasion, /window\.lavEditForAnchor = function|humanize_anchor_action/u);
@@ -374,7 +374,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   }
   assert.match(styles, /\.gp-admin-patch-release>summary/u);
   assert.match(styles, /\.gp-admin-patch-audit/u);
-  assert.match(styles, /@media\(max-width:700px\)[^{]*\{/u);
+  assert.match(styles, /@media\(max-width:760px\)[^{]*\{/u);
 });
 
 test('관리자 GPT 설정은 Luna 기본·Terra 승격과 GPT-5.6 reasoning을 제공한다', async () => {
@@ -394,17 +394,18 @@ test('관리자 GPT 설정은 Luna 기본·Terra 승격과 GPT-5.6 reasoning을 
   assert.doesNotMatch(source, /gpt-5\.4-(?:mini|nano)|gpt-5\.4'/u);
 });
 
-test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async () => {
-  const [index, boot, loader] = await Promise.all([
+test('자산은 수동 버전 대신 콘텐츠 해시 매니페스트를 사용한다', async () => {
+  const [index, boot, loader, build] = await Promise.all([
     read('index.html'),
     read('assets/js/app-boot.js'),
-    read('assets/js/page-loader.js')
+    read('assets/js/page-loader.js'),
+    read('scripts/build-vite-static.mjs')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-193/u);
-  assert.match(boot, /var v = 'lav-193'/u);
-  assert.match(boot, /input-quality\.js\?v=/u);
-  assert.match(loader, /var ASSET_V = 'lav-193'/u);
-  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166|167|168|170|185|186)/u);
+  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /\?v=lav-|ASSET_V/u);
+  assert.match(build, /createHash\('sha256'\)/u);
+  assert.match(build, /asset-manifest\.json/u);
+  assert.match(boot, /fetch\('\/asset-manifest\.json'/u);
+  assert.match(boot, /function assetPath\(src\)/u);
 });
 
 test('진행 중 휴머나이징은 어디서든 복귀하고 이전 퍼센트가 새 작업을 덮지 않는다', async () => {
@@ -417,7 +418,7 @@ test('진행 중 휴머나이징은 어디서든 복귀하고 이전 퍼센트�
   assert.match(main, /id="lavActiveJob"[\s\S]*?onclick="lavOpenActiveJob\(\)"[\s\S]*?aria-live="polite"/u);
   assert.ok((designs.match(/window\.lavPrepareNewSentence\(\)/gu) || []).length >= 2);
   assert.match(evasion, /window\.lavPrepareNewSentence = function/u);
-  assert.match(evasion, /newLabel\.textContent = blocking \? '진행 화면 보기' : '새 문장 시작'/u);
+  assert.match(evasion, /newLabel\.textContent = blocking \? '진행 화면 보기' : '새 글 시작'/u);
   assert.match(evasion, /var jobTickerGeneration = 0/u);
   assert.match(evasion, /function replaceJobTicker\(estimate, label, initialSec\)/u);
   assert.equal((evasion.match(/formalStop = startJobTicker/gu) || []).length, 1);
@@ -460,7 +461,8 @@ test('완료 화면·이용 기록·관리자 관측은 과금 처리와 v2.5 �
   assert.match(main, /id="lavBillingNotice"[^>]*role="status"/u);
   assert.match(evasion, /waived_quality_shortfall:\s*'과거 무차감 정책/u);
   assert.match(evasion, /waived_repeat_low_benefit:\s*'과거 무차감 정책/u);
-  assert.match(module, /과거 정책 · 무차감/u);
+  assert.match(module, /waived_quality_shortfall:\s*\{ short: '무차감'/u);
+  assert.match(module, /admin_no_charge:\s*\{ short: '무차감'/u);
   assert.match(module, /deliveredLimitedEffectCount/u);
   assert.match(module, /zeroApprovedChargedCount/u);
   assert.match(module, /structureSignatureFailureCount/u);

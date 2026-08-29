@@ -4,12 +4,15 @@
   var PENDING_KEY = 'gp_pending_paid_job_v1';
   var RESUMED_PREFIX = 'gp_resumed_paid_job_';
   var MAX_PENDING_AGE = 2 * 60 * 60 * 1000;
+  // 지급량 소스 오브 트루스는 Backend/lib/conversionOffers.js의 CREDIT_PRODUCTS다.
+  // 여기·pricing.html·landing.html 표기가 어긋나면 claims-consistency 테스트가 깨진다.
+  // firstBonus = 첫 구매 보너스(상품 총 크레딧 × 5/8/10/12/15%, 반올림) — 서버 계산과 같은 값.
   var PLANS = [
-    { amount: 2900, credits: 110, label: '스타터' },
-    { amount: 8700, credits: 350, label: '라이트' },
-    { amount: 14500, credits: 600, label: '스탠다드' },
-    { amount: 29000, credits: 1300, label: '플러스' },
-    { amount: 58000, credits: 2700, label: '맥스' }
+    { amount: 2900, credits: 110, firstBonus: 6, label: '스타터' },
+    { amount: 8700, credits: 400, firstBonus: 32, label: '라이트' },
+    { amount: 14500, credits: 700, firstBonus: 70, label: '스탠다드' },
+    { amount: 29000, credits: 1500, firstBonus: 180, label: '플러스' },
+    { amount: 58000, credits: 3300, firstBonus: 495, label: '맥스' }
   ];
   var contextCache = null;
   var contextUid = '';
@@ -31,8 +34,9 @@
       balance: balance,
       paidOrderCount: 0,
       eligibleForFirstPurchaseOffer: false,
-      experiment: { key: 'first_purchase_bonus_v1', variant: 'unknown' },
+      experiment: { key: 'first_purchase_bonus_v2', variant: 'unknown' },
       starterOffer: { amount: 2900, baseCredits: 110, bonusCredits: 0, totalCredits: 110 },
+      firstPurchaseOffers: [],
       lastPackage: null
     };
   }
@@ -100,11 +104,20 @@
     return contextPromise;
   }
 
-  function planTotal(plan, context) {
-    if (plan.amount === 2900 && context && context.starterOffer) {
-      return number(context.starterOffer.totalCredits) || plan.credits;
+  // 첫 구매 보너스는 전 상품에 적용된다(2026-08-29) — 종전엔 스타터만 반영해
+  // 라이트 이상을 권하는 결제 모달이 실제 지급량보다 적게 표시했다.
+  function planBonus(plan, context) {
+    if (!context || !context.eligibleForFirstPurchaseOffer) return 0;
+    var offers = context.firstPurchaseOffers || [];
+    for (var i = 0; i < offers.length; i++) {
+      if (number(offers[i].amount) === plan.amount) return number(offers[i].bonusCredits);
     }
-    return plan.credits;
+    if (plan.amount === 2900 && context.starterOffer) return number(context.starterOffer.bonusCredits);
+    return 0;
+  }
+
+  function planTotal(plan, context) {
+    return plan.credits + planBonus(plan, context);
   }
 
   function choosePlan(options, context) {
@@ -131,25 +144,67 @@
   }
 
   function modalCopy(context, pending, plan) {
+    var payload = pending.payload || {};
+    var work = pending.action === 'evasion_detect' || (pending.action === 'composer_draft' && payload.mode === 'detect') || (pending.action === 'main_analysis' && payload.mode === 'detect')
+      ? 'AI 감지'
+      : pending.action === 'writing_lab_generate'
+        ? '글쓰기 랩 생성'
+        : pending.action === 'evasion_transform' && payload.flowMode === 'formal'
+          ? '고급 휴머나이징'
+          : pending.action === 'paragraph_refine'
+            ? '문단 다시 다듬기'
+            : '기본 휴머나이징';
     if (context.segment === 'returning_low_balance' && context.lastPackage && number(context.lastPackage.amount) === plan.amount) {
       return {
         title: '이전에 쓰던 상품으로 바로 이어가세요',
-        description: '결제가 끝나면 ' + actionLabel(pending.action) + '을 자동으로 다시 시작합니다.',
+        description: '결제가 끝나면 ' + work + ' 작업을 자동으로 다시 시작해요.',
         badge: '빠른 재충전'
       };
     }
     if (context.segment === 'trial_unused') {
       return {
-        title: '무료 크레딧은 그대로 두고 부족한 만큼 채우세요',
-        description: '입력한 내용과 설정을 보관했습니다. 결제가 끝나면 중단된 지점에서 바로 이어집니다.',
+        title: work + '에 부족한 크레딧만 채우세요',
+        description: '입력한 내용과 설정을 보관했어요. 결제가 끝나면 중단된 지점에서 바로 이어져요.',
         badge: '작업 자동 재개'
       };
     }
     return {
-      title: '결제 후 방금 작업을 자동으로 이어갑니다',
-      description: '입력한 글과 선택한 설정은 이 브라우저에 안전하게 임시 저장됩니다.',
+      title: work + ' 작업을 이어갈 충전 상품이에요',
+      description: actionLabel(pending.action) + '에 필요한 부족분을 기준으로 계산했어요.',
       badge: '작업 자동 재개'
     };
+  }
+
+  function workUses(pending, totalCredits, neededCredits) {
+    var payload = pending.payload || {};
+    if (pending.action === 'evasion_detect' || (pending.action === 'composer_draft' && payload.mode === 'detect') || (pending.action === 'main_analysis' && payload.mode === 'detect')) {
+      return '100자 AI 감지 약 ' + Math.floor(totalCredits) + '회 가능';
+    }
+    if (pending.action === 'evasion_transform' && payload.flowMode === 'formal') {
+      return '이번 고급 휴머나이징 후 같은 규모 작업 약 ' + Math.floor(totalCredits / Math.max(1, neededCredits)) + '회 가능';
+    }
+    if (pending.action === 'writing_lab_generate') {
+      return '이번 글쓰기 랩 작업 후 추가 가능 횟수는 결제 전에 다시 확인해요.';
+    }
+    return '500자 기본 휴머나이징 약 ' + Math.floor(totalCredits / 10) + '회 · 1,000자 약 ' + Math.floor(totalCredits / 20) + '회';
+  }
+
+  function renderModalLoading() {
+    setText('gpCreditCheckoutBadge', '충전 안내');
+    setText('gpCreditCheckoutTitle', '이번 작업에 맞는 충전 상품을 계산하고 있어요');
+    setText('gpCreditCheckoutDesc', '작업 종류와 부족한 크레딧을 확인한 뒤 결제를 시작할 수 있어요.');
+    setText('gpCreditCheckoutPlan', '상품 확인 중');
+    setText('gpCreditCheckoutPrice', '—');
+    setText('gpCreditCheckoutCredits', '—');
+    setText('gpCreditCheckoutUses', '계산이 끝나면 가능한 작업 횟수를 보여드려요.');
+    setText('gpCreditCheckoutNeeded', '—');
+    setText('gpCreditCheckoutAfter', '—');
+    var button = byId('gpCreditCheckoutButton');
+    if (button) {
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      button.textContent = '상품을 계산하고 있어요';
+    }
   }
 
   function setText(id, value) {
@@ -167,7 +222,7 @@
     var neededCredits = number(options.neededCredits);
     var afterCredits = Math.max(0, currentCredits + totalCredits - neededCredits);
     var copy = modalCopy(context, pending, plan);
-    var bonus = plan.amount === 2900 && context.starterOffer ? number(context.starterOffer.bonusCredits) : 0;
+    var bonus = planBonus(plan, context);
     modalState.context = context;
     modalState.plan = plan;
     modalState.totalCredits = totalCredits;
@@ -178,7 +233,7 @@
     setText('gpCreditCheckoutPlan', plan.label + ' 충전');
     setText('gpCreditCheckoutPrice', format(plan.amount) + '원');
     setText('gpCreditCheckoutCredits', format(totalCredits) + '크레딧');
-    setText('gpCreditCheckoutUses', '500자 기본 휴머나이징 약 ' + Math.floor(totalCredits / 10) + '회 · 1,000자 약 ' + Math.floor(totalCredits / 20) + '회');
+    setText('gpCreditCheckoutUses', workUses(pending, totalCredits, neededCredits));
     setText('gpCreditCheckoutCurrent', format(currentCredits) + '크레딧');
     setText('gpCreditCheckoutNeeded', format(neededCredits) + '크레딧');
     setText('gpCreditCheckoutAfter', format(afterCredits) + '크레딧');
@@ -187,7 +242,7 @@
     var bonusNode = byId('gpCreditCheckoutBonus');
     if (bonusNode) {
       bonusNode.hidden = bonus <= 0;
-      bonusNode.textContent = bonus > 0 ? '첫 결제 실험 혜택 +' + format(bonus) + '크레딧 포함' : '';
+      bonusNode.textContent = bonus > 0 ? '첫 구매 보너스 +' + format(bonus) + '크레딧 포함' : '';
     }
     var summary = byId('gpCreditCheckoutSummary');
     if (summary) summary.hidden = neededCredits <= 0;
@@ -196,6 +251,7 @@
       button.disabled = false;
       button.removeAttribute('aria-busy');
     }
+    modalState.ready = true;
   }
 
   function focusableNodes(modal) {
@@ -248,9 +304,9 @@
       expiresAt: now + MAX_PENDING_AGE
     };
     writePending(pending);
-    modalState = { options: options, pending: pending, context: fallbackContext(), plan: PLANS[0], totalCredits: 110 };
+    modalState = { options: options, pending: pending, context: null, plan: null, totalCredits: 0, ready: false };
     lastFocused = document.activeElement;
-    renderModal(modalState.context);
+    renderModalLoading();
 
     var modal = byId('gpCreditCheckoutModal');
     if (!modal) {
@@ -268,7 +324,7 @@
       source: pending.source,
       needed_credits: pending.neededCredits,
       current_credits: pending.currentCredits,
-      segment: modalState.context.segment
+      segment: 'loading'
     });
 
     var context = await fetchContext(false);
@@ -308,7 +364,7 @@
   };
 
   window.gpPurchaseCreditOffer = async function () {
-    if (!modalState || !modalState.plan) return;
+    if (!modalState || !modalState.ready || !modalState.plan) return;
     var button = byId('gpCreditCheckoutButton');
     if (button) {
       button.disabled = true;
@@ -381,7 +437,7 @@
           clientId: 'payment_more_credit_' + orderId,
           type: 'payment',
           title: '충전 완료',
-          message: '작업에 필요한 크레딧이 아직 부족해요. 입력 내용은 보관되어 있습니다.',
+          message: '작업에 필요한 크레딧이 아직 부족해요. 입력 내용은 보관되어 있어요.',
           action: { tab: 'pricing' }
         }, { persist: true });
       }
@@ -417,7 +473,7 @@
       return true;
     } catch (error) {
       try { localStorage.removeItem(resumedKey); } catch (_) {}
-      if (window.gpToast) window.gpToast('결제는 완료됐지만 작업을 자동으로 다시 시작하지 못했어요. 입력 내용은 보관되어 있습니다.', { type: 'warning' });
+      if (window.gpToast) window.gpToast('결제는 완료됐지만 작업을 자동으로 다시 시작하지 못했어요. 입력 내용은 보관되어 있어요.', { type: 'warning' });
       return false;
     }
   }
@@ -433,19 +489,37 @@
 
   function starterBonusCopy(context) {
     var bonus = number(context && context.starterOffer && context.starterOffer.bonusCredits);
-    return bonus > 0 ? '첫 결제 실험 혜택 +' + format(bonus) + '크레딧' : '';
+    return bonus > 0 ? '첫 결제 보너스 +' + format(bonus) + '크레딧' : '';
+  }
+
+  // 첫 구매 보너스 행(다섯 카드 전부) — 자격이 있을 때만 노출한다.
+  // 카드는 정적으로 보너스를 적어두고, 재구매자에게는 여기서 숨긴다(받지도 않는 혜택을 보여주지 않기 위함).
+  function applyFirstPurchaseRows(context) {
+    var eligible = !!(context && context.eligibleForFirstPurchaseOffer);
+    var offers = (context && context.firstPurchaseOffers) || [];
+    var byAmount = {};
+    offers.forEach(function (o) { byAmount[number(o.amount)] = o; });
+    PLANS.forEach(function (plan) {
+      var row = document.querySelector('[data-first-bonus-for="' + plan.amount + '"]');
+      if (!row) return;
+      var served = byAmount[plan.amount];
+      // 서버가 상품별 값을 주면 그것을, 아직 못 받았으면 정적 표기를 쓴다
+      var bonus = served ? number(served.bonusCredits) : plan.firstBonus;
+      row.hidden = !eligible || bonus <= 0;
+      var strong = row.querySelector('strong');
+      if (strong) strong.textContent = '+' + format(bonus) + ' 크레딧';
+      var totalEl = document.querySelector('[data-plan-total-for="' + plan.amount + '"]');
+      if (totalEl) {
+        var total = (!eligible || bonus <= 0) ? plan.credits : plan.credits + bonus;
+        totalEl.textContent = '총 ' + format(total) + ' 크레딧';
+      }
+    });
   }
 
   function applyPricingContext(context) {
     if (!context) return;
     var offer = context.starterOffer || fallbackContext().starterOffer;
-    var extraRow = byId('gpStarterExperimentBonus');
-    if (extraRow) {
-      extraRow.hidden = number(offer.bonusCredits) <= 0;
-      var strong = extraRow.querySelector('strong');
-      if (strong) strong.textContent = '+' + format(offer.bonusCredits) + ' 크레딧';
-    }
-    setText('gpStarterTotal', '총 ' + format(offer.totalCredits) + ' 크레딧');
+    applyFirstPurchaseRows(context);
     // 스타터 카드 사용량: 보너스 포함 총 크레딧으로 서비스별 횟수를 다시 계산(500자 기본=10 · 1,000자 기본=20 · 감지=10)
     var starterTotal = number(offer.totalCredits);
     setText('gpStarterSvcShort', Math.floor(starterTotal / 10) + '회');
@@ -524,6 +598,27 @@
   // 첫 화면 문구를 모두에게 동일하게 두면, 이미 결제한 적 있고 잔액이 바닥난 사용자에게도
   // 신규 방문자와 같은 화면을 보여주게 된다. /checkout-context의 세그먼트로 문구와 CTA를 바꾼다.
   var heroState = null;
+  var heroOrderMedia = window.matchMedia('(max-width: 760px)');
+
+  function syncHeroOfferPlacement() {
+    var offer = byId('lavHeroOffer');
+    var composer = document.querySelector('#lavEntry .gp-lav-composer');
+    var estimate = byId('lavEstimate');
+    if (!offer || !composer) return;
+    if (heroOrderMedia.matches) {
+      // 모바일은 글쓰기부터 시작하고, 잔액·가입·충전 안내는 입력 아래에서 이어진다.
+      var anchor = estimate || composer;
+      if (anchor.nextElementSibling !== offer) anchor.insertAdjacentElement('afterend', offer);
+      return;
+    }
+    // 데스크톱은 넓은 화면에서 현재 상태를 먼저 훑고 입력으로 내려가는 순서를 유지한다.
+    if (composer.previousElementSibling !== offer) composer.insertAdjacentElement('beforebegin', offer);
+  }
+  if (typeof heroOrderMedia.addEventListener === 'function') {
+    heroOrderMedia.addEventListener('change', syncHeroOfferPlacement);
+  } else if (typeof heroOrderMedia.addListener === 'function') {
+    heroOrderMedia.addListener(syncHeroOfferPlacement);
+  }
 
   function heroCopy(context) {
     var balance = window.CU && window.UC != null ? number(window.UC) : number(context.balance);
@@ -592,11 +687,18 @@
   function renderHero(copy, segment) {
     var box = byId('lavHeroOffer');
     if (!box) return;
+    syncHeroOfferPlacement();
     heroState = { action: copy.action, segment: segment, event: copy.event };
     setText('lavHeroOfferBadge', copy.badge);
     setText('lavHeroOfferTitle', copy.title);
     setText('lavHeroOfferDesc', copy.desc);
+    var cta = byId('lavHeroOfferCta');
     setText('lavHeroOfferCta', copy.cta);
+    // 입력창 바로 위의 포커스 버튼은 화면 변화가 거의 없어 고장처럼 느껴진다.
+    // 이 상태에서는 잔액·무료 범위만 정보로 보여주고, 실제 이동이 있는 행동만 버튼으로 남긴다.
+    if (cta) cta.hidden = copy.action === 'focus';
+    box.classList.toggle('is-passive', copy.action === 'focus');
+    box.dataset.action = copy.action;
     box.dataset.segment = segment;
     box.hidden = false;
     if (box.dataset.viewedSegment !== segment) {
@@ -701,7 +803,8 @@
   // ── 인라인 오퍼(3순위) ───────────────────────────────────────────────────────
   // 읽기용 페이지 본문 끝. 스크롤을 끝까지 내린 사람에게만 보이므로 방해가 없고,
   // 문구는 히어로와 같은 세그먼트 판정을 그대로 쓴다(페이지마다 복제하지 않는다).
-  var OFFER_PAGES = ['faq', 'notice', 'community', 'guide', 'blog'];
+  // FAQ는 정확도·환불·개인정보에 답하는 신뢰 화면이다. 전용 작업 선택기를 사용해 공통 판매 오퍼와 겹치지 않는다.
+  var OFFER_PAGES = ['notice', 'community', 'blog'];
 
   function currentOfferPage() {
     for (var i = 0; i < OFFER_PAGES.length; i++) {

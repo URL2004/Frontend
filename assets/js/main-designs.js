@@ -1,35 +1,9 @@
 (function () {
-  var STORAGE_KEY = 'gp-main-design';
-  var DEFAULT_DESIGN = 'lavender';
-  // ★ 라벤더 확정(2026-06-12 사장님 결정): 구형 시안 전부 걷어냄 — main.html 시안 블록 삭제, ?design= 무시.
-  var allowed = { lavender: true };
-
   function getMain() {
     return document.getElementById('mainContent');
   }
 
-  function getInitialDesign() {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-      var params = new URLSearchParams(window.location.search);
-      var requested = params.get('design');
-      return allowed[requested] ? requested : DEFAULT_DESIGN;
-    } catch (_) {
-      return DEFAULT_DESIGN;
-    }
-  }
-
-  function syncOptions(design) {
-    document.querySelectorAll('.gp-design-option').forEach(function (btn) {
-      btn.classList.toggle('active', btn.dataset.design === design);
-    });
-  }
-
-  // 라벤더에서는 실제 앱 요소(분석 결과·탭 컨테이너·크레딧 칩·업그레이드 버튼·
-  // 사이드바 푸터·최근 기록 리스트)를 라벤더 셸 안의 슬롯으로 옮긴다.
-  // 복제가 아니라 이동이므로 #uname, #creditChip 등 동적 갱신이 그대로 동작한다.
-  // ★blog·detectReport 포함(2026-08-28): 목록에서 빠져 있어 /blog·/detect-report 직접 진입 시
-  //   탭 콘텐츠가 라벤더 셸 밖(메인 아래)에 그려지고 히어로도 안 숨는 이중 표시 버그가 있었다.
+  // 탭 파셜은 하나의 라벤더 셸 안으로만 이동합니다.
   var TAB_IDS = ['main', 'pricing', 'community', 'blog', 'detectReport', 'guide', 'faq', 'qna', 'notice', 'mypage', 'admin', 'adminHumanizeLab', 'history', 'pro', 'writingLab'];
   var MOVED_TABS = ['history', 'notice', 'community', 'blog', 'detectReport', 'guide', 'faq', 'qna', 'pricing', 'pro', 'mypage', 'admin', 'adminHumanizeLab', 'writingLab'];
 
@@ -37,36 +11,9 @@
     if (el && target && el.parentElement !== target) target.appendChild(el);
   }
 
-  function placeShared(design) {
-    var res = document.getElementById('result');
-    var credit = document.getElementById('creditChip');
-    var upgrade = document.getElementById('lsUpgradeBtn');
-    var foot = document.querySelector('.gp-sidebar-footer');
-    var hist = document.getElementById('sidebarHistoryList');
-    if (design === 'lavender') {
-      moveInto(res, document.getElementById('lavResultSlot'));
-      var slotT = document.getElementById('lavTabSlot');
-      if (slotT) MOVED_TABS.forEach(function (n) { moveInto(document.getElementById(n + 'Content'), slotT); });
-      var slotTop = document.getElementById('lavTopSlot');
-      if (slotTop) { moveInto(credit, slotTop); moveInto(upgrade, slotTop); }
-      moveInto(foot, document.getElementById('lavSideFootSlot'));
-      moveInto(hist, document.getElementById('lavHistSlot'));
-    } else {
-      var anchor = document.getElementById('pdfInput');
-      if (anchor && res && res.previousElementSibling !== anchor) anchor.insertAdjacentElement('afterend', res);
-      var main = getMain();
-      if (main) {
-        var prev = main;
-        MOVED_TABS.forEach(function (n) {
-          var el = document.getElementById(n + 'Content');
-          if (el) { prev.insertAdjacentElement('afterend', el); prev = el; }
-        });
-      }
-      var actions = document.querySelector('.gp-top-actions');
-      if (actions) { moveInto(credit, actions); moveInto(upgrade, actions); }
-      moveInto(foot, document.querySelector('.gp-sidebar'));
-      moveInto(hist, document.querySelector('.gp-sidebar .gp-nav, .gp-sidebar .sidebar-nav'));
-    }
+  function placeShared() {
+    var slot = document.getElementById('lavTabSlot');
+    if (slot) MOVED_TABS.forEach(function (name) { moveInto(document.getElementById(name + 'Content'), slot); });
   }
 
   // 라벤더에서 탭이 바뀌어도 라벤더 셸(#mainContent)은 항상 보이고,
@@ -107,119 +54,23 @@
     };
   }
 
-  function applyDesign(design) {
-    if (!allowed[design]) design = DEFAULT_DESIGN;
+  function applyDesign() {
     var main = getMain();
-    if (main) main.dataset.mainDesign = design;
+    if (main) main.dataset.mainDesign = 'lavender';
     var shell = main ? main.closest('.gp-main') : document.querySelector('.gp-main');
-    if (shell) shell.dataset.mainDesign = design;
+    if (shell) shell.dataset.mainDesign = 'lavender';
     document.querySelectorAll('#appScreen, .app-layout, .gp-sidebar, .main-content.gp-main').forEach(function (el) {
-      el.dataset.mainDesign = design;
+      el.dataset.mainDesign = 'lavender';
     });
-    document.body.dataset.mainDesign = design;
-    syncOptions(design);
-    placeShared(design);
+    document.body.dataset.mainDesign = 'lavender';
+    placeShared();
     patchSwitchTab();
-    if (design === 'lavender') {
-      lavInit();
-      lavTab = detectTab();
-      lavApplyTab();
-    } else if (origSwitchTab && lavTab) {
-      origSwitchTab(lavTab, { skipRoute: true });
-    }
+    lavInit();
+    lavTab = detectTab();
+    lavApplyTab();
   }
 
-  window.setMainDesign = function (design) {
-    if (!allowed[design]) design = DEFAULT_DESIGN;
-    applyDesign(design);
-  };
-
-  window.openMainDesignPicker = function () {
-    var panel = document.getElementById('mainDesignPicker');
-    if (!panel) return;
-    panel.hidden = false;
-    panel.classList.add('open');
-    syncOptions(getMain()?.dataset.mainDesign || DEFAULT_DESIGN);
-  };
-
-  window.closeMainDesignPicker = function () {
-    var panel = document.getElementById('mainDesignPicker');
-    if (!panel) return;
-    panel.classList.remove('open');
-    panel.hidden = true;
-  };
-
-  window.syncHubCount = function (textarea) {
-    var count = document.getElementById('hubInputCount');
-    if (!count || !textarea) return;
-    count.textContent = (textarea.value || '').length.toLocaleString() + ' / 30,000자';
-  };
-
-  window.clearHubInput = function () {
-    var source = document.getElementById('hubInputText');
-    var quick = document.getElementById('hubQuickInput');
-    if (!source) return;
-    source.value = '';
-    if (quick) quick.value = '';
-    window.syncHubCount(source);
-    source.focus();
-  };
-
-  window.fillHubSample = function () {
-    var source = document.getElementById('hubInputText');
-    var quick = document.getElementById('hubQuickInput');
-    if (!source) return;
-    source.value = '본 연구에서는 인공지능 기술의 발전과 그에 따른 사회적 영향을 분석하고자 하였다. 먼저 인공지능의 개념과 역사에 대해 살펴본 후 다양한 분야에서의 활용 사례를 조사하였다.';
-    if (quick) quick.value = source.value;
-    window.syncHubCount(source);
-    source.focus();
-  };
-
-  window.runHubQuickAnalysis = function () {
-    var quick = document.getElementById('hubQuickInput');
-    var source = document.getElementById('hubInputText');
-    if (quick && source && quick.value.trim()) {
-      source.value = quick.value.trim();
-      window.syncHubCount(source);
-    }
-    window.runHubAnalysis('detect');
-  };
-
-  window.fillNeonSample = function () {
-    var target = document.getElementById('inputText');
-    if (!target) return;
-    target.value = '본 연구에서는 인공지능 기술의 발전과 그에 따른 사회적 영향을 분석하고자 하였다. 먼저 관련 선행연구를 검토한 뒤, 주요 사례를 중심으로 변화 양상을 정리하였다.';
-    if (typeof updateCount === 'function') updateCount(target);
-    if (typeof updateSendBtn === 'function') updateSendBtn();
-    target.focus();
-  };
-
-  window.runHubAnalysis = function (taskMode) {
-    var source = document.getElementById('hubInputText');
-    var quick = document.getElementById('hubQuickInput');
-    var target = document.getElementById('inputText');
-    if (source && quick && !source.value.trim() && quick.value.trim()) {
-      source.value = quick.value.trim();
-      window.syncHubCount(source);
-    }
-    if (!source || !source.value.trim()) {
-      if (source) source.focus();
-      return;
-    }
-    if (target) {
-      target.value = source.value;
-      if (typeof updateCount === 'function') updateCount(target);
-      if (typeof updateSendBtn === 'function') updateSendBtn();
-    }
-    if (typeof lsSelectTaskMobile === 'function') {
-      lsSelectTaskMobile(taskMode === 'detect' ? 'detect' : taskMode || 'assignment');
-    } else if (typeof setMode === 'function') {
-      setMode(taskMode === 'detect' ? 'detect' : 'humanize');
-    }
-    if (typeof runAnalysis === 'function') runAnalysis();
-  };
-
-  /* ===== Lavender SaaS (confirmed main design) ===== */
+  /* ===== Lavender SaaS application ===== */
   var lavState = { mode: 'humanize', task: 'assignment', model: 0, banner: 0, timer: null, inited: false };
   var LAV_MODELS = ['Natural v2', 'Classic v1'];
 
@@ -231,7 +82,7 @@
     var hamburger = document.querySelector('.gp-lav-hamburger');
     var collapse = document.querySelector('.gp-lav-collapse');
     if (!page || !sidebar) return;
-    var mobile = window.matchMedia('(max-width: 940px)').matches;
+    var mobile = window.matchMedia('(max-width: 960px)').matches;
     var mobileOpen = mobile && page.classList.contains('menu-open');
     if (mobile) {
       sidebar.inert = !mobileOpen;
@@ -291,7 +142,7 @@
   window.lavToggleSidebar = function () {
     var page = lavPage();
     if (!page) return;
-    var mobile = window.matchMedia('(max-width: 940px)').matches;
+    var mobile = window.matchMedia('(max-width: 960px)').matches;
     if (mobile) page.classList.toggle('menu-open');
     else page.classList.toggle('side-collapsed');
     lavSyncSidebarA11y();
@@ -309,7 +160,7 @@
     var restoreFocus = !!(sidebar && sidebar.contains(document.activeElement));
     page.classList.remove('menu-open');
     lavSyncSidebarA11y();
-    if (restoreFocus && window.matchMedia('(max-width: 940px)').matches) {
+    if (restoreFocus && window.matchMedia('(max-width: 960px)').matches) {
       var hamburger = document.querySelector('.gp-lav-hamburger');
       if (hamburger) requestAnimationFrame(function () { hamburger.focus(); });
     }
@@ -438,6 +289,12 @@
     var len = (textarea.value || '').length;
     count.textContent = len ? len.toLocaleString() + ' / 30,000자' : '';
     count.classList.toggle('over', len > window.LAV_MAX_CHARS);
+    var run = document.getElementById('lavRunButton');
+    if (run) {
+      var detect = window.lavMode === 'detect';
+      var credits = len ? (detect ? Math.ceil(len / 100) : Math.max(10, Math.ceil(len / 100) * 2)) : 0;
+      run.setAttribute('aria-label', (detect ? 'AI 감지' : '휴머나이징') + ' 시작 · ' + (credits ? '예상 ' + credits + '크레딧' : '예상 크레딧 계산 전'));
+    }
     if (typeof window.lavUpdateEstimate === 'function') window.lavUpdateEstimate();
   };
 
@@ -515,26 +372,6 @@
     });
   });
 
-  // 페이지 검색 바: 해당 페이지 리스트 행을 텍스트로 실시간 필터링
-  document.addEventListener('input', function (event) {
-    var input = event.target;
-    if (!input.matches || !input.matches('.gp-search input')) return;
-    if (input.hasAttribute('data-notice-search')) return;
-    var page = input.closest('[id$="Content"]');
-    if (!page) return;
-    var q = input.value.trim().toLowerCase();
-    page.querySelectorAll('.gp-board-row, .pitem').forEach(function (row) {
-      row.style.display = !q || row.textContent.toLowerCase().indexOf(q) !== -1 ? '' : 'none';
-    });
-  });
-
-  document.addEventListener('click', function (event) {
-    var panel = document.getElementById('mainDesignPicker');
-    if (!panel || panel.hidden) return;
-    if (event.target.closest('.gp-design-picker') || event.target.closest('.gp-design-open') || event.target.closest('[data-design-trigger]')) return;
-    window.closeMainDesignPicker();
-  });
-
   document.addEventListener('keydown', function (event) {
     var page = lavPage();
     if (event.key === 'Tab' && page && page.classList.contains('menu-open')) {
@@ -548,24 +385,13 @@
         hamburger.focus({ preventScroll: true });
       }
     }
-    if (event.key === 'Escape') {
-      window.closeMainDesignPicker();
-      if (page && page.classList.contains('menu-open')) window.lavCloseSidebar();
-    }
+    if (event.key === 'Escape' && page && page.classList.contains('menu-open')) window.lavCloseSidebar();
   });
 
-  if (document.readyState === 'loading') {
-    // ★ 즉시 적용(2026-06-12): page-loader가 동기 XHR로 DOM 조립을 이미 끝낸 뒤 이 스크립트가 실행되므로
-    //   DOMContentLoaded를 기다릴 필요가 없다 — 그 대기가 "구형 셸이 한 번 그려졌다 사라지는" 플래시의 원인이었음.
-    //   적용 완료 시 html.design-ready → index.html의 anti-FOUC 가드가 화면을 보여준다.
-    function bootDesign() {
-      applyDesign(getInitialDesign());
-      document.documentElement.classList.add('design-ready');
-    }
-    try { bootDesign(); }
-    catch (e) { document.addEventListener('DOMContentLoaded', bootDesign); }
-  } else {
-    try { applyDesign(getInitialDesign()); }
-    finally { document.documentElement.classList.add('design-ready'); }
+  function bootDesign() {
+    applyDesign();
+    document.documentElement.classList.add('design-ready');
   }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootDesign, { once: true });
+  else bootDesign();
 })();

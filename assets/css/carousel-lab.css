@@ -220,12 +220,12 @@ footer.credits .fineprint { color: var(--lab-muted); }
   .strip { scroll-behavior: smooth; }
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1180px) {
   .studio-grid { grid-template-columns: minmax(0, 1fr); }
   .studio-stage { max-width: 620px; }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 760px) {
   :root { --card-scale: 0.296; }
   .wrap { padding: 0 18px 70px; }
   .hero { padding: 36px 0 8px; }

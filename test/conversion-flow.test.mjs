@@ -17,7 +17,7 @@ test('크레딧 부족 결제창은 작업을 보관하고 주문 번호에 결�
   assert.match(flow, /gp_resumed_paid_job_/u);
   assert.match(modal, /id="gpCreditCheckoutModal"[^>]+role="dialog"[^>]+aria-modal="true"/u);
   assert.match(modal, /id="gpCreditCheckoutSummary"/u);
-  assert.match(modal, /작업 실패 시 크레딧은 차감되지 않습니다/u);
+  assert.match(modal, /전달 가능한 결과를 만들지 못하면 크레딧을 차감하지 않아요/u);
 });
 
 test('결제 완료 후 지원하는 모든 작업 흐름에 자동 재개 핸들러가 연결된다', async () => {
@@ -65,10 +65,10 @@ test('가격표 카드는 서비스별로 몇 번 쓸 수 있는지 보여준다
     assert.equal((pricing.match(new RegExp(`id="${id}"`, 'gu')) || []).length, 1, `${id}는 한 번만 있어야 한다`);
   }
   // 단가와 일치하는 횟수(1,000자 기본=20 · 감지=10 · 1만자 고급=200 기준 내림)
-  assert.match(pricing, /1,000자 글 휴머나이징<strong id="gpStarterSvcBasic">5회/u);
-  assert.match(pricing, /1,000자 글 휴머나이징<strong>135회/u);
-  assert.match(pricing, /1,000자 AI 감지<strong>270회/u);
-  assert.match(pricing, /1만자 논문 고급 휴머나이징<strong>13회/u);
+  assert.match(pricing, /1,000자 글 휴머나이징<strong id="gpStarterSvcBasic"[^>]*>5회 추가/u);
+  assert.match(pricing, /1,000자 글 휴머나이징<strong[^>]*data-plan-credits="3300"[^>]*data-work-cost="20"[^>]*>165회 추가/u);
+  assert.match(pricing, /1,000자 AI 감지<strong[^>]*data-plan-credits="3300"[^>]*data-work-cost="10"[^>]*>330회 추가/u);
+  assert.match(pricing, /1만자 논문 고급 휴머나이징<strong[^>]*data-plan-credits="3300"[^>]*data-work-cost="200"[^>]*>16회 추가/u);
   assert.match(pricing, /class="gp-plan-svc-note"/u);
   assert.match(pricing, /id="gpPricingSegmentPanel"/u);
 });

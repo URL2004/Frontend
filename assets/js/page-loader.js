@@ -1,10 +1,8 @@
 (function () {
-  // 파셜은 동기 XHR로 로드되어 브라우저 휴리스틱 캐시에 잡히기 쉽다.
-  // UI 버전이 바뀔 때마다 올려서 강제로 새 파일을 받게 한다.
-  var ASSET_V = 'lav-193';   // ★ L-01: 자산 버전과 일치 — 파셜 stale 캐시 방지
-  var partials = [
+  'use strict';
+
+  var APP_PARTIALS = [
     '/partials/login-screen.html',
-    '/pages/landing.html',
     '/partials/app-shell-start.html',
     '/pages/main.html',
     '/pages/history.html',
@@ -22,36 +20,16 @@
     '/pages/admin-humanize-lab.html',
     '/pages/writing-lab.html',
     '/partials/app-shell-end.html',
-    '/partials/footer.html',
-    '/partials/modals.html',
-    '/partials/mobile-nav.html'
+    '/partials/modals.html'
   ];
 
-  function loadPartial(url) {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', url + '?v=' + ASSET_V, false);
-    xhr.send(null);
-    if ((xhr.status < 200 || xhr.status >= 300) && !(xhr.status === 0 && xhr.responseText)) {
-      throw new Error('Failed to load page partial: ' + url);
-    }
-    // UTF-8 BOM이 파셜 사이에 남으면 본문 안에서 보이지 않는 한 줄로 렌더되어
-    // 앱 상단 여백과 문서 스크롤을 만든다. 모든 파셜 경계에서 제거한다.
-    return String(xhr.responseText || '').replace(/^\uFEFF/u, '');
-  }
-
-  function loadPageMarkup() {
-    var runtime = window.APP_RUNTIME_CONFIG || {};
-    if (Number(runtime.PAGE_BUNDLE_VERSION) === 1) {
-      try {
-        var bundled = loadPartial('/partials/app-bundle.html');
-        window.PAGE_PARTIAL_BUNDLE_USED = true;
-        return bundled;
-      } catch (error) {
-        console.warn('Page bundle unavailable; loading individual partials.', error);
-      }
-    }
-    window.PAGE_PARTIAL_BUNDLE_USED = false;
-    return partials.map(loadPartial).join('\n');
+  function fetchText(url) {
+    return fetch(url, { credentials: 'same-origin' }).then(function (response) {
+      if (!response.ok) throw new Error('Failed to load page partial: ' + url);
+      return response.text();
+    }).then(function (text) {
+      return String(text || '').replace(/^\uFEFF/u, '');
+    });
   }
 
   function hasCachedFirebaseUser() {
@@ -64,25 +42,10 @@
     return false;
   }
 
-  function isHomePath() {
+  function normalizedPath() {
     var path = String(window.location.pathname || '/').replace(/\/index\.html$/i, '/');
     if (path.length > 1) path = path.replace(/\/+$/, '');
-    return path === '' || path === '/';
-  }
-
-  function shouldStartOnLanding() {
-    var params = new URLSearchParams(window.location.search || '');
-    if (hasKakaoCallback(params)) return false;
-    var lp = params.get('lp');
-    if (lp === '1') return true;
-    if (lp === '0') return false;
-    var mode = String(params.get('mode') || '').toLowerCase();
-    if (mode === 'detect' || mode === 'humanize') return false;
-    if (!isHomePath() || window.location.hash) return false;
-    try {
-      if (sessionStorage.getItem('gp_landing_dismissed_v1') === '1') return false;
-    } catch (_) {}
-    return !hasCachedFirebaseUser();
+    return path || '/';
   }
 
   function hasKakaoCallback(params) {
@@ -94,52 +57,140 @@
       && !params.has('paymentKey');
   }
 
-  function selectInitialScreen() {
-    var kakaoCallback = hasKakaoCallback();
-    var landing = shouldStartOnLanding();
-    var landingScreen = document.getElementById('landingScreen');
-    var appScreen = document.getElementById('appScreen');
-    document.querySelectorAll('.screen.active').forEach(function (screen) {
-      screen.classList.remove('active');
-    });
-    var target = landing ? landingScreen : appScreen;
-    if (target) target.classList.add('active');
-    document.documentElement.dataset.gpInitialScreen = landing ? 'landing' : 'app';
-    if (kakaoCallback) {
-      document.documentElement.dataset.gpAuthCallback = 'kakao';
-      var overlay = document.getElementById('authTransition');
-      if (appScreen) {
-        appScreen.inert = true;
-        appScreen.setAttribute('aria-busy', 'true');
-      }
-      if (overlay) {
-        overlay.hidden = false;
-        overlay.setAttribute('aria-hidden', 'false');
-      }
-      document.body.classList.add('gp-auth-transitioning');
-    }
+  function shouldStartOnLanding() {
+    var params = new URLSearchParams(window.location.search || '');
+    if (hasKakaoCallback(params)) return false;
+    var lp = params.get('lp');
+    if (lp === '1') return true;
+    if (lp === '0') return false;
+    var mode = String(params.get('mode') || '').toLowerCase();
+    if (mode === 'detect' || mode === 'humanize') return false;
+    if (normalizedPath() !== '/' || window.location.hash) return false;
+    try {
+      if (sessionStorage.getItem('gp_landing_dismissed_v1') === '1') return false;
+    } catch (_) {}
+    return !hasCachedFirebaseUser();
   }
 
-  // SEO 프리렌더 블록 제거: 빌드된 정적 HTML에는 크롤러용 noscript 본문이 있다.
-  // JS 브라우저에서는 렌더되지 않지만, 파셜 주입 전에 제거해 중복 ID 가능성을 없앤다.
-  var seo = document.getElementById('seo-prerender-static') || document.getElementById('seo-prerender');
-  if (seo && seo.parentNode) seo.parentNode.removeChild(seo);
+  function initialMode() {
+    if (shouldStartOnLanding()) return 'landing';
+    if (normalizedPath() === '/pricing' && !hasCachedFirebaseUser() && !hasKakaoCallback()) return 'public-pricing';
+    return 'app';
+  }
 
-  var root = document.getElementById('page-root');
-  if (!root) throw new Error('Missing #page-root');
-  root.insertAdjacentHTML('beforeend', loadPageMarkup());
-  selectInitialScreen();
-  window.PAGE_PARTIALS = partials;
+  function root() {
+    var node = document.getElementById('page-root');
+    if (!node) throw new Error('Missing #page-root');
+    return node;
+  }
+
+  function removeSeoPrerender() {
+    var seo = document.getElementById('seo-prerender-static') || document.getElementById('seo-prerender');
+    if (seo && seo.parentNode) seo.parentNode.removeChild(seo);
+  }
+
+  async function appMarkup() {
+    var runtime = window.APP_RUNTIME_CONFIG || {};
+    if (Number(runtime.PAGE_BUNDLE_VERSION) === 1) {
+      try {
+        var bundled = await fetchText('/partials/app-bundle.html');
+        window.PAGE_PARTIAL_BUNDLE_USED = true;
+        return bundled;
+      } catch (error) {
+        console.warn('Page bundle unavailable; loading individual partials.', error);
+      }
+    }
+    window.PAGE_PARTIAL_BUNDLE_USED = false;
+    return (await Promise.all(APP_PARTIALS.map(fetchText))).join('\n');
+  }
+
+  function showOnly(screenName) {
+    document.querySelectorAll('.screen.active').forEach(function (screen) { screen.classList.remove('active'); });
+    var screen = document.getElementById(screenName + 'Screen');
+    if (screen) screen.classList.add('active');
+  }
+
+  function prepareAuthCallback() {
+    if (!hasKakaoCallback()) return;
+    document.documentElement.dataset.gpAuthCallback = 'kakao';
+    var appScreen = document.getElementById('appScreen');
+    var overlay = document.getElementById('authTransition');
+    if (appScreen) {
+      appScreen.inert = true;
+      appScreen.setAttribute('aria-busy', 'true');
+    }
+    if (overlay) {
+      overlay.hidden = false;
+      overlay.setAttribute('aria-hidden', 'false');
+    }
+    document.body.classList.add('gp-auth-transitioning');
+  }
+
+  async function loadLanding() {
+    var pageRoot = root();
+    if (!pageRoot.querySelector('#landingScreen')) pageRoot.innerHTML = await fetchText('/pages/landing.html');
+    showOnly('landing');
+    document.documentElement.dataset.gpInitialScreen = 'landing';
+    return 'landing';
+  }
+
+  function hydrateLandingDeferred() {
+    var template = document.getElementById('landingDeferredTemplate');
+    var screen = document.getElementById('landingScreen');
+    if (!template || !screen || !template.content) return false;
+    screen.appendChild(template.content.cloneNode(true));
+    template.remove();
+    window.dispatchEvent(new CustomEvent('gp:landing-deferred-ready'));
+    return true;
+  }
+
+  async function loadPublicPricing() {
+    var pricing = await fetchText('/pages/pricing.html');
+    root().innerHTML = '<div class="gp-public-shell">'
+      + '<header class="gp-public-nav"><a href="/" class="gp-lp-brand"><img src="/assets/img/brand-logo-menu.webp" alt="교수님 피하기"></a>'
+      + '<button type="button" data-public-login>로그인</button></header>'
+      + '<main class="gp-public-main">' + pricing + '</main>'
+      + '<footer class="gp-public-footer"><a href="/faq">자주 묻는 질문</a><a href="/qna">문의하기</a><span>지피코리아 · 213-11-67637</span></footer>'
+      + '</div>';
+    root().querySelectorAll('[onclick]').forEach(function (element) { element.removeAttribute('onclick'); });
+    root().addEventListener('click', function (event) {
+      var publicShell = event.target.closest('.gp-public-shell');
+      if (!publicShell) return;
+      if (event.target.closest('a[href]') && !event.target.closest('[data-public-login]')) return;
+      if (event.target.closest('button, .plan-card')) {
+        event.preventDefault();
+        if (typeof window.gpLoadApp === 'function') window.gpLoadApp({ screen: 'login', tab: 'pricing' });
+      }
+    });
+    document.documentElement.dataset.gpInitialScreen = 'public-pricing';
+    document.documentElement.classList.add('design-ready');
+    return 'public-pricing';
+  }
+
+  var appMarkupPromise = null;
+  async function loadApp(options) {
+    options = options || {};
+    if (!appMarkupPromise) appMarkupPromise = appMarkup();
+    root().innerHTML = await appMarkupPromise;
+    document.documentElement.dataset.gpInitialScreen = 'app';
+    window.PAGE_PARTIALS = APP_PARTIALS.slice();
+    showOnly(options.screen === 'login' ? 'login' : 'app');
+    prepareAuthCallback();
+    return 'app';
+  }
+
+  removeSeoPrerender();
+  var mode = initialMode();
+  window.GPPageLoader = {
+    initialMode: mode,
+    loadApp: loadApp,
+    hydrateLandingDeferred: hydrateLandingDeferred,
+    hasCachedFirebaseUser: hasCachedFirebaseUser,
+    hasKakaoCallback: hasKakaoCallback
+  };
+  window.GP_PAGE_READY = mode === 'landing'
+    ? loadLanding()
+    : mode === 'public-pricing'
+      ? loadPublicPricing()
+      : loadApp();
 })();
-
-
-
-
-
-
-
-
-
-
-
-

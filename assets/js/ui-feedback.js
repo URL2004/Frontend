@@ -347,7 +347,7 @@
     var items = combinedItems();
     updateBadge();
     if (!items.length) {
-      list.innerHTML = '<div class="gp-notification-empty"><span class="material-symbols-outlined">notifications</span><b>새 알림이 없습니다</b><p>작업 완료와 댓글, 문의 답변을 여기에서 확인할 수 있어요.</p></div>';
+      list.innerHTML = '<div class="gp-notification-empty"><span class="material-symbols-outlined">notifications</span><b>새 알림이 없어요</b><p>작업 완료와 댓글, 문의 답변을 여기에서 확인할 수 있어요.</p></div>';
       return;
     }
     list.innerHTML = items.map(function (n) {
@@ -383,11 +383,6 @@
   function followNotification(n) {
     window.gpCloseNotificationCenter();
     var a = n.action || {};
-    if (a.type === 'library' && typeof window.lavOpenLibrary === 'function') {
-      if (typeof window.switchTab === 'function') window.switchTab('main');
-      setTimeout(function () { window.lavOpenLibrary(); }, 120);
-      return;
-    }
     if (a.tab && typeof window.switchTab === 'function') {
       window.switchTab(a.tab);
       return;

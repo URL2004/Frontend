@@ -12,12 +12,12 @@ test('AI 감지 실행 확인은 분석 내용·비용·잔액·무차감 조건
 
   assert.match(source, /variant:\s*'detect'/u);
   assert.match(source, /title:\s*'AI 감지를 시작할까요\?'/u);
-  assert.match(source, /글 전체의 AI 티 지수와 두드러진 문체 신호를 확인합니다/u);
+  assert.match(source, /글 전체의 AI 티 지수와 두드러진 문체 신호를 확인해요/u);
   assert.match(source, /label:\s*'분석할 글'/u);
   assert.match(source, /label:\s*'사용 크레딧'/u);
   assert.match(source, /label:\s*'감지 후 잔액'/u);
   assert.match(source, /감지에 실패하면 크레딧은 차감되지 않아요/u);
-  assert.match(source, /실제 작성 주체나 외부 검사 결과를 보장하지 않습니다/u);
+  assert.match(source, /실제 작성 주체나 외부 검사 결과를 보장하지 않아요/u);
   assert.match(source, /window\.UP === 'unlimited'/u);
   assert.match(source, /무제한 이용권으로 처리되며 크레딧은 차감되지 않아요/u);
   assert.match(source, /'감지 시작 · ' \+ cost\.toLocaleString\(\) \+ '크레딧'/u);
@@ -49,7 +49,7 @@ test('공통 확인창은 감지 전용 정보 구조와 키보드 포커스 복
   assert.match(styles, /\.gp-dialog-root\.variant-detect \.gp-dialog-card\{width:min\(456px,100%\)/u);
   assert.match(styles, /body\.gp-dialog-open\{overflow:hidden;/u);
   assert.match(styles, /grid-template-columns:96px minmax\(0,1fr\)/u);
-  assert.match(styles, /@media\(max-width:480px\)/u);
+  assert.match(styles, /@media\(max-width:560px\)/u);
 });
 
 test('메인 파셜의 숨은 줄과 빈 탭 슬롯은 제거되어 사이드바 상단과 문서 높이를 밀지 않는다', async () => {

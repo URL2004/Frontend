@@ -1,4 +1,4 @@
-<div id="policyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;overflow-y:auto;padding:40px 20px;" onclick="if(event.target===this)this.style.display='none'">
+<div id="policyModal" role="dialog" aria-modal="true" aria-labelledby="policyTitle" aria-describedby="policyBody" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:var(--layer-dialog);overflow-y:auto;padding:40px 20px;" onclick="if(event.target===this)this.style.display='none'">
  <div class="gp-modal-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);max-width:600px;margin:0 auto;padding:22px 32px 28px;">
  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
  <h2 id="policyTitle" style="font-size:18px;font-weight:700;color:var(--text);"></h2>
@@ -13,53 +13,16 @@
  <div id="policyBody" style="font-size:14px;color:var(--text2);line-height:1.9;"></div>
 </div>
 </div>
-<!-- 정기결제 동의 모달 -->
-<div id="subConfirmModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeSubscribeConfirm()">
-  <div class="gp-modal-card" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;width:100%;max-width:460px;margin:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative;overflow:hidden;">
-    <button class="gp-modal-close" onclick="closeSubscribeConfirm()" aria-label="닫기" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:none;background:var(--surface2);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">×</button>
-    <div style="padding:24px 22px 6px;">
-      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:14px;">정기 구독 시작</div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;">
-        <div style="font-size:13px;color:var(--text3);">선택 상품</div>
-        <div id="subConfirmTier" style="font-size:15px;font-weight:700;color:var(--text);margin:2px 0 8px;">—</div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
-          <span style="color:var(--text2);">결제 금액</span>
-          <span id="subConfirmAmount" style="color:var(--text);font-weight:600;">—</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;">
-          <span style="color:var(--text2);">다음 결제 예정일</span>
-          <span id="subConfirmNext" style="color:var(--text);font-weight:600;">—</span>
-        </div>
-      </div>
-      <ul style="margin:0 0 14px;padding-left:18px;font-size:12px;color:var(--text2);line-height:1.7;">
-        <li>위 금액이 즉시 결제되고, 매월 같은 날짜에 자동 결제됩니다. (VAT 포함)</li>
-        <li>결제일 전까지 마이페이지에서 언제든 해지할 수 있고, 해지해도 이번 사이클 끝까지 사용 가능합니다.</li>
-        <li>결제 실패 시 구독은 자동으로 일시 중단됩니다.</li>
-        <li>등록한 카드 정보는 토스페이먼츠가 안전하게 보관하며, 회사는 카드 번호를 저장하지 않습니다.</li>
-        <li><strong style="color:var(--text);">환불</strong>: 결제일로부터 7일 이내 신청할 수 있으며, 미사용 시 전액 환불됩니다. 사용 시 모든 상품을 환불 정산상 월 50회 기준으로 계산해 사용분을 공제합니다.</li>
-      </ul>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin-bottom:14px;cursor:pointer;">
-        <input type="checkbox" id="subConfirmAgree" onchange="onSubConfirmAgreeChange(this)" style="width:16px;height:16px;cursor:pointer;">
-        <span>위 자동 결제 약관 및 <a href="#" onclick="event.preventDefault();showPolicy('terms');" style="color:var(--accent);text-decoration:underline;">이용약관</a>에 동의합니다.</span>
-      </label>
-    </div>
-    <div style="padding:0 22px 22px;display:flex;gap:8px;">
-      <button onclick="closeSubscribeConfirm()" style="flex:1;padding:11px 0;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:14px;cursor:pointer;">취소</button>
-      <button id="subConfirmStartBtn" onclick="startSubscription()" disabled style="flex:1;padding:11px 0;border-radius:10px;border:none;background:var(--gp-accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;opacity:.5;">구독 시작</button>
-    </div>
-  </div>
-</div>
-
 <!-- 환불하기 모달 -->
-<div id="refundModal" class="lav-confirm-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div id="refundModal" class="lav-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="refundModalTitle" aria-describedby="refundModalDesc" style="display:none" onclick="if(event.target===this)this.style.display='none'">
   <div class="lav-confirm-card">
     <button type="button" class="lav-confirm-x" onclick="document.getElementById('refundModal').style.display='none'" aria-label="닫기">×</button>
-    <strong class="lav-confirm-title">환불하기</strong>
-    <p class="lav-refund-lead">결제 후 7일 이내라면 사용분을 뺀 <b>예상 환불액</b>을 확인하고 요청할 수 있어요.</p>
+    <strong class="lav-confirm-title" id="refundModalTitle">환불하기</strong>
+    <p class="lav-refund-lead" id="refundModalDesc">결제 후 7일 이내라면 사용분을 뺀 <b>예상 환불액</b>을 확인하고 요청할 수 있어요.</p>
     <div id="refundModalList" class="lav-refund-list">
       <div class="lav-confirm-empty">불러오는 중...</div>
     </div>
-    <p class="lav-confirm-fine">무료 지급 크레딧과 이미 사용한 크레딧은 제외돼요. 구독은 환불 정산상 월 50회 기준으로 사용분을 공제하며, 최종 금액은 서버 확인 후 확정돼요.</p>
+    <p class="lav-confirm-fine">무료 지급 크레딧과 이미 사용한 크레딧은 제외돼요. 최종 금액은 서버가 사용 내역을 확인한 뒤 확정해요.</p>
   </div>
 </div>
 
@@ -69,31 +32,31 @@
     <button id="gpCreditCheckoutClose" class="gp-credit-checkout-close" type="button" onclick="gpCloseCreditCheckout()" aria-label="결제 안내 닫기">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
-    <span id="gpCreditCheckoutBadge" class="gp-credit-checkout-badge">작업 자동 재개</span>
-    <h2 id="gpCreditCheckoutTitle">결제 후 방금 작업을 자동으로 이어갑니다</h2>
-    <p id="gpCreditCheckoutDesc">입력한 글과 선택한 설정은 이 브라우저에 안전하게 임시 저장됩니다.</p>
+    <span id="gpCreditCheckoutBadge" class="gp-credit-checkout-badge">충전 안내</span>
+    <h2 id="gpCreditCheckoutTitle">이번 작업에 맞는 충전 상품을 계산하고 있어요</h2>
+    <p id="gpCreditCheckoutDesc">작업 종류와 부족한 크레딧을 확인한 뒤 결제를 시작할 수 있어요.</p>
 
     <div class="gp-credit-offer">
       <div class="gp-credit-offer-head">
         <div>
-          <strong id="gpCreditCheckoutPlan">스타터 충전</strong>
-          <span id="gpCreditCheckoutCredits">110크레딧</span>
+          <strong id="gpCreditCheckoutPlan">상품 확인 중</strong>
+          <span id="gpCreditCheckoutCredits">—</span>
         </div>
-        <b id="gpCreditCheckoutPrice">2,900원</b>
+        <b id="gpCreditCheckoutPrice">—</b>
       </div>
-      <p id="gpCreditCheckoutUses">500자 기본 휴머나이징 약 11회 · 1,000자 약 5회</p>
+      <p id="gpCreditCheckoutUses">계산이 끝나면 가능한 작업 횟수를 보여드려요.</p>
       <span id="gpCreditCheckoutBonus" class="gp-credit-offer-bonus" hidden></span>
     </div>
 
     <dl id="gpCreditCheckoutSummary" class="gp-credit-checkout-summary">
       <div><dt>현재 보유</dt><dd id="gpCreditCheckoutCurrent">0크레딧</dd></div>
-      <div><dt>이번 작업 필요</dt><dd id="gpCreditCheckoutNeeded">10크레딧</dd></div>
-      <div><dt>작업 후 예상 잔액</dt><dd id="gpCreditCheckoutAfter">100크레딧</dd></div>
+      <div><dt>이번 작업 필요</dt><dd id="gpCreditCheckoutNeeded">—</dd></div>
+      <div><dt>작업 후 예상 잔액</dt><dd id="gpCreditCheckoutAfter">—</dd></div>
     </dl>
 
-    <button id="gpCreditCheckoutButton" class="gp-credit-checkout-primary" type="button" onclick="gpPurchaseCreditOffer()">2,900원 결제하고 작업 이어가기</button>
+    <button id="gpCreditCheckoutButton" class="gp-credit-checkout-primary" type="button" onclick="gpPurchaseCreditOffer()" disabled>상품을 계산하고 있어요</button>
     <button class="gp-credit-checkout-secondary" type="button" onclick="gpViewAllCreditPlans()">다른 충전 상품 비교하기</button>
-    <p class="gp-credit-checkout-policy">작업 실패 시 크레딧은 차감되지 않습니다. 일반 환불은 결제 후 7일 이내 가능하며, 사용한 크레딧 금액은 제외됩니다.</p>
+    <p class="gp-credit-checkout-policy">전달 가능한 결과를 만들지 못하면 크레딧을 차감하지 않아요. 일반 환불은 결제 후 7일 이내 가능하며, 사용한 크레딧 금액은 제외됩니다.</p>
   </div>
 </div>
 
@@ -108,7 +71,7 @@
 </div>
 
 <!-- 친구 초대 모달 -->
-<div id="inviteModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+<div id="inviteModal" role="dialog" aria-modal="true" aria-labelledby="inviteModalTitle" aria-describedby="inviteModalDesc" style="display:none;position:fixed;inset:0;z-index:var(--layer-dialog);background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
   <div class="gp-modal-card" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;width:100%;max-width:420px;margin:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);position:relative;overflow:hidden;">
     <!-- 닫기 -->
     <button class="gp-modal-close" onclick="closeInviteModal()" aria-label="닫기" style="position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:none;background:var(--surface2);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">×</button>
@@ -121,8 +84,8 @@
         <path d="M46 62c0-10.5 8.5-19 19-19h0c10.5 0 19 8.5 19 19" stroke="#3fb950" stroke-width="2" fill="none" stroke-linecap="round"/>
         <path d="M50 10 L53 6 M50 10 L47 6 M50 10 L50 4" stroke="#e3b341" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
-      <div style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;">친구를 초대하면 각각 20크레딧을 드려요</div>
-      <div style="font-size:13px;color:var(--text2);line-height:1.6;">공유한 링크로 친구가 가입하면<br>친구와 초대한 사람 모두 <strong style="color:var(--green);">20크레딧</strong>을 받아요.</div>
+      <div id="inviteModalTitle" style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;">친구를 초대하면 각각 20크레딧을 드려요</div>
+      <div id="inviteModalDesc" style="font-size:13px;color:var(--text2);line-height:1.6;">공유한 링크로 친구가 가입하면<br>친구와 초대한 사람 모두 <strong style="color:var(--green);">20크레딧</strong>을 받아요.</div>
     </div>
     <!-- 안내 -->
     <div style="padding:20px 22px;">
@@ -153,14 +116,11 @@
   </div>
 </div>
 
-<!-- 회피 시작 확인 모달 (과금 직전) -->
-<div id="lavConfirmModal" class="lav-confirm-modal" hidden onclick="if(event.target===this)lavCloseConfirm()">
+<div id="lavConfirmModal" class="lav-confirm-modal" hidden role="dialog" aria-modal="true" aria-labelledby="lavConfirmTitle" aria-describedby="lavConfirmSub" onclick="if(event.target===this)lavCloseConfirm()">
   <div class="lav-confirm-card">
     <button type="button" class="lav-confirm-x" onclick="lavCloseConfirm()" aria-label="닫기">×</button>
-    <strong class="lav-confirm-title">이 설정으로 시작할까요?</strong>
-    <!-- 사전 코칭 픽 제거(2026-08-28) — 사후 문단 보강 루프가 대체 -->
+    <strong class="lav-confirm-title" id="lavConfirmTitle">이 설정으로 시작할까요?</strong>
     <ul class="lav-confirm-summary" id="lavConfirmSummary"></ul>
-    <!-- 근거 보강: 고급을 고른 뒤에만 보이는 옵션(2026-08-29 이동) — 켜면 아래 크레딧·시간이 즉시 갱신 -->
     <label class="lav-confirm-opt" id="lavEvidenceRow" hidden>
       <input type="checkbox" id="lavEvidence" onchange="lavEvidenceChange()">
       <span class="lav-confirm-opt-t">
@@ -187,16 +147,6 @@
       <button type="button" class="ghost" onclick="lavCloseConfirm()">취소</button>
       <button type="button" id="lavConfirmStartBtn" onclick="lavStartJob()">시작하기</button>
     </div>
-  </div>
-</div>
-
-<!-- 보관함 모달 (회피 결과 — localStorage 기반) -->
-<div id="lavLibraryModal" class="lav-confirm-modal" hidden onclick="if(event.target===this)lavCloseLibrary()">
-  <div class="lav-confirm-card lav-library-card">
-    <button type="button" class="lav-confirm-x" onclick="lavCloseLibrary()" aria-label="닫기">×</button>
-    <strong class="lav-confirm-title">보관함</strong>
-    <p class="lav-confirm-note" style="margin-top:0">다듬은 글은 이 기기(브라우저)에만 최근 50건까지 저장돼요. 왼쪽 ‘기록’과는 따로이고, 언제든 지울 수 있어요.</p>
-    <div class="lav-library-list" id="lavLibraryList"></div>
   </div>
 </div>
 

@@ -48,7 +48,8 @@ test('이용약관과 환불규정은 유효기간·환불기간 및 3영업일 
   assert.match(mainSource, /시행일: 2026년 8월 29일/u);
   assert.doesNotMatch(mainSource, /크레딧의?\s*이용기간은?\s*결제일로부터\s*1년/u);
   assert.match(mainSource, /일반 환불 신청기간은 결제일로부터 7일/u);
-  assert.match(mainSource, /환불 정산상 월 50회 기준/u);
+  assert.match(mainSource, /남은 크레딧은 유효기간 없이 사용할 수 있습니다/u);
   assert.match(mainSource, /요청일로부터 3영업일 이내에 결제 취소 조치/u);
   assert.doesNotMatch(mainSource, /처리 기간: 영업일 기준 3~5일/u);
+  assert.doesNotMatch(mainSource, /제3조의2 \(정기 구독 결제\)|구독 플랜 환불 정책|잔여 쿠폰/u);
 });

@@ -1,4 +1,4 @@
-let mode='detect', dark=true, tab='main', humanizeMode='assignment', selectedLang='ko';
+let mode='detect', tab='main', humanizeMode='assignment', selectedLang='ko';
 window.mode='detect';
 const SHORT_HUMANIZE_MIN_CREDITS = 10;
 function shortHumanizeCredit(len) {
@@ -51,12 +51,12 @@ const PATH_ROUTES = {
 };
 const ROUTE_META = {
 main: {
-  title: '교수님 피하기 · AI 휴머나이저',
-  description: 'AI식 문체 신호를 확인하고 원문의 뜻과 장르를 지키며 문장을 다듬는 AI 휴머나이저, 교수님 피하기입니다.'
+  title: '교수님 피하기 · AI 감지 · 휴머나이징',
+  description: 'AI식 문체 신호를 확인하고 원문의 뜻과 장르를 지키며 문장을 다듬는 AI 감지 · 휴머나이징 서비스, 교수님 피하기입니다.'
  },
  pricing: {
   title: '요금제 · 교수님 피하기',
-  description: '교수님 피하기 크레딧 충전, 구독 플랜, Pro 기능을 확인하세요.'
+  description: '교수님 피하기 크레딧 충전 상품과 작업별 이용 기준을 확인하세요.'
  },
 community: {
  title: '커뮤니티 · 교수님 피하기',
@@ -64,19 +64,19 @@ community: {
 },
 blog: {
  title: '블로그 · AI 글쓰기 다듬기 가이드 | 교수님 피하기',
- description: '과제·자기소개서·리포트에서 반복 표현과 균일한 흐름을 점검하는 글쓰기 가이드를 모았습니다.'
+ description: '과제·자기소개서·리포트에서 반복 표현과 균일한 흐름을 점검하는 글쓰기 가이드를 모았어요.'
 },
 detectReport: {
  title: 'AI 감지기 · AI 티 지수 확인 | 교수님 피하기',
- description: '글을 붙여넣고 AI식 문체 신호가 두드러진 문장을 확인하세요. 결과를 바탕으로 휴머나이징까지 이어갈 수 있습니다.'
+ description: '글을 붙여넣고 AI식 문체 신호가 두드러진 문장을 확인하세요. 결과를 바탕으로 휴머나이징까지 이어갈 수 있어요.'
 },
 guide: {
  title: '사용 가이드 · 교수님 피하기',
- description: '교수님 피하기 사용 방법을 처음부터 결과 보관까지 단계별로 안내합니다.'
+ description: '교수님 피하기 사용 방법을 처음부터 작업 기록까지 단계별로 안내해요.'
 },
 faq: {
  title: '자주 묻는 질문 · 교수님 피하기',
- description: '교수님 피하기 이용, 크레딧·환불, AI 감지 정확도 등 자주 묻는 질문을 모았습니다.'
+ description: '교수님 피하기 이용, 크레딧·환불, AI 감지 정확도 등 자주 묻는 질문을 모았어요.'
  },
  qna: {
   title: '문의하기 · 교수님 피하기',
@@ -88,7 +88,7 @@ faq: {
  },
  mypage: {
   title: '마이페이지 · 교수님 피하기',
-  description: '내 크레딧, 구독, 계정 정보를 확인하세요.'
+  description: '내 크레딧과 작업 기록, 계정 정보를 확인하세요.'
  },
  admin: {
   title: '관리자 · 교수님 피하기',
@@ -99,16 +99,16 @@ faq: {
   description: '관리자 전용 휴머나이징 보존형 테스트 페이지입니다.'
  },
  history: {
-  title: '이용 기록 · 교수님 피하기',
-  description: '내 AI 감지 및 휴머나이징 작업 기록을 확인하세요.'
+  title: '작업 기록 · 교수님 피하기',
+  description: '내 AI 감지 · 휴머나이징 작업 기록을 확인하세요.'
  },
  pro: {
   title: 'Pro · 교수님 피하기',
-  description: '교수님 피하기 Pro 전용 기능을 이용하세요.'
+  description: '교수님 피하기 Pro 전용 기능은 준비 중이에요. 현재는 크레딧을 충전해 이용해 주세요.'
  },
  writingLab: {
   title: '글쓰기 랩 · 교수님 피하기',
-  description: '내 사실과 경험만으로 자기소개서·블로그·소개 글을 만들고, 휴머나이징과 무날조 검수까지 한 번에 끝내는 글쓰기 랩입니다.'
+  description: '글쓰기 랩은 관리자 검수 중인 준비 단계이며 아직 공개 신청을 받지 않아요.'
  }
 };
 
@@ -341,21 +341,8 @@ function updateSendBtn() {
 
 function showScreen(n) {
  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
- document.getElementById(n+'Screen').classList.add('active');
- if(n==='app') initThemeBtn();
-}
-function toggleTheme() {
- dark=!dark; document.body.classList.toggle('dark',dark);
- const sun='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
- const moon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
- const themeBtn = document.getElementById('themeBtn');
- if (themeBtn) themeBtn.innerHTML=dark?moon:sun;
-}
-function initThemeBtn() {
- const sun='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
- const moon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
- const themeBtn = document.getElementById('themeBtn');
- if (themeBtn) themeBtn.innerHTML=dark?moon:sun;
+ const target = document.getElementById(n+'Screen');
+ if (target) target.classList.add('active');
 }
 function setMode(m) {
  mode = m;
@@ -468,15 +455,14 @@ function openAdminHumanizeLab() {
  tryLoad(10);
 }
 window.openAdminHumanizeLab = openAdminHumanizeLab;
-// 글쓰기 랩: 정식 오픈 전 관리자 전용(2026-08-26 사장님 — 메뉴는 '준비 중', 진입은 관리자만).
-// 오픈 시 이 가드만 걷어내면 일반 사용자 경로(로그인 필수)가 그대로 살아난다.
-function openWritingLab() {
+async function openWritingLab() {
  if (!window.CU) { showScreen('login'); return; }
  if (typeof window.isAdmin === 'function' && !window.isAdmin()) {
-  if (window.gpToast) window.gpToast('글쓰기 랩은 오픈 준비 중이에요. 곧 만나요!', { type: 'info', title: '준비 중' });
-  else alert('글쓰기 랩은 오픈 준비 중이에요.');
+  if (window.gpToast) window.gpToast('글쓰기 랩은 준비 중이에요.', { type: 'info', title: '준비 중' });
+  else alert('글쓰기 랩은 준비 중이에요.');
   return;
  }
+ if (typeof window.gpEnsureWritingLab === 'function') await window.gpEnsureWritingLab();
  switchTab('writingLab');
  var tryLoad = function(tries) {
   if (typeof window.loadWritingLab === 'function') { window.loadWritingLab(); }
@@ -485,12 +471,24 @@ function openWritingLab() {
  tryLoad(10);
 }
 window.openWritingLab = openWritingLab;
+function openQnaComposer() {
+ if (!window.CU) {
+  showScreen('login');
+  return false;
+ }
+ const form = document.getElementById('qform');
+ if (!form) return false;
+ form.style.display = 'block';
+ const title = document.getElementById('qtitle');
+ if (title) title.focus({ preventScroll: true });
+ return true;
+}
+window.openQnaComposer = openQnaComposer;
 function switchTab(t, opts) {
  opts = opts || {};
  t = normalizeRouteTab(t);
  tab=t;
  document.querySelectorAll('.ntab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
- document.querySelectorAll('.mnav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.snav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','adminHumanizeLab','history','pro','writingLab'].forEach(n=>{
  const el = document.getElementById(n+'Content');
@@ -521,11 +519,10 @@ document.addEventListener('click', function (e) {
  if (fn && typeof window[fn] === 'function') window[fn](a.getAttribute('data-tab-arg') || undefined);
 });
 
-// Pro 탭 진입 가드: 미로그인이면 로그인 화면, 비구독자면 가격 페이지로 안내
+// 구독 비활성 기간에는 Pro 설명 화면에서 준비 상태와 충전 경로만 보여 줍니다.
 function goToPro() {
  if (!window.PRO_ENABLED) {
-   if (window.gpToast) window.gpToast('오픈되면 공지·메일로 안내드릴게요.', { type: 'info', title: 'Pro는 준비 중이에요' });
-   else alert('Pro 기능은 준비 중이에요.\n오픈되면 공지·메일로 안내드릴게요.');
+   switchTab('pro');
    return;
  }
  if (!window.CU) { showScreen('login'); return; }
@@ -534,8 +531,8 @@ function goToPro() {
  if (!valid) {
    switchTab('pricing');
    setTimeout(() => {
-     if (typeof window.switchPricingTab === 'function') window.switchPricingTab('sub');
-     const el = document.getElementById('subscriptionSection');
+     if (typeof window.switchPricingTab === 'function') window.switchPricingTab('credit');
+     const el = document.getElementById('pricingTabCredit');
      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
    }, 100);
    return;
@@ -606,8 +603,8 @@ function refreshProTab() {
  const listEl = document.getElementById('proCouponList');
  const emptyEl = document.getElementById('proCouponEmpty');
  if (!sub) {
-   if (tierEl) tierEl.textContent = '구독 없음';
-   if (metaEl) metaEl.textContent = '가격 페이지에서 구독을 시작하세요.';
+   if (tierEl) tierEl.textContent = 'Pro 준비 중';
+   if (metaEl) metaEl.textContent = '현재는 크레딧을 충전해 이용해 주세요.';
    if (listEl) listEl.innerHTML = '';
    if (emptyEl) emptyEl.style.display = 'block';
    return;
@@ -658,7 +655,7 @@ async function runProAnalysis() {
  const text = document.getElementById('proInputText').value.trim();
  if (text.length < 5) { alert('처리할 글을 5자 이상 입력해 주세요.'); return; }
  const charLimit = (tier === 'unlimited') ? 50000 : parseInt(tier, 10);
- if (text.length > charLimit) { alert(TIER_LABELS[tier] + ' 한도를 초과했습니다.'); return; }
+ if (text.length > charLimit) { alert(TIER_LABELS[tier] + ' 한도를 초과했어요.'); return; }
 
  const mode = window.PRO_STATE.mode;
  const apiMode = mode === 'detect' ? 'detect' : 'humanize';
@@ -744,11 +741,6 @@ function updateCount(el) {
  autoResize(el);
  updateHint();
  updateSendBtn();
- const needed=creditNeededForText(el.value, currentCreditMode());
- const b=document.getElementById('lowbanner');
-
- // 로그인된 상태(window.CU가 있을 때)에서만 크레딧 부족 배너를 띄우도록 수정!
- if(b) b.style.display=(window.CU && window.UP!=='unlimited' && window.UC<needed && el.value.length>0) ? 'flex' : 'none';
  checkLangMismatch();
 }
 function updateHint() {
@@ -818,16 +810,13 @@ function handlePDF(input) {
 }
 
 async function extractAndFillFromPdf(file) {
- const badge = document.getElementById('pdfBadge');
- const pdfName = document.getElementById('pdfName');
- const inputText = document.getElementById('inputText');
+ const inputText = document.getElementById('lavInput') || document.getElementById('inputText');
+ if (!inputText) return;
  const prevPlaceholder = inputText.placeholder;
 
- // 추출 중 UI — 첨부 직후 텍스트 추출은 시간이 걸리므로 명시적 로딩 표시
- badge.style.display = 'block';
- pdfName.textContent = ' ' + file.name + ' · 텍스트 추출 중...';
  inputText.disabled = true;
  inputText.placeholder = 'PDF에서 텍스트를 추출하고 있어요...';
+ if (window.gpToast) window.gpToast(file.name + '에서 텍스트를 읽고 있어요.', { type: 'info', title: 'PDF 처리 중' });
 
  try {
   const text = await extractPdfText(file);
@@ -837,10 +826,10 @@ async function extractAndFillFromPdf(file) {
    return;
   }
   inputText.value = text;
-  pdfName.textContent = ' ' + file.name + ' · ' + text.length.toLocaleString() + '자 추출됨';
-  // 글자수/크레딧/배너/전송버튼 갱신
-  updateCount(inputText);
-  if (text.length < 50) {
+  if (inputText.id === 'lavInput' && typeof window.lavSyncCount === 'function') window.lavSyncCount(inputText);
+  else updateCount(inputText);
+  if (window.gpToast) window.gpToast(text.length.toLocaleString() + '자를 입력창에 넣었어요.', { type: 'success', title: 'PDF 불러오기 완료' });
+  if (text.length < 100) {
    alert('읽어 온 텍스트가 ' + text.length + '자로 너무 짧아요. 스캔 PDF인지 확인해 주세요.');
   }
  } catch (e) {
@@ -850,18 +839,21 @@ async function extractAndFillFromPdf(file) {
  } finally {
   inputText.disabled = false;
   inputText.placeholder = prevPlaceholder;
-  document.getElementById('pdfInput').value = '';
+  const picker = document.getElementById('pdfInput');
+  if (picker) picker.value = '';
  }
 }
 
 function clearPDF() {
- const inputText = document.getElementById('inputText');
- document.getElementById('pdfBadge').style.display = 'none';
- document.getElementById('pdfInput').value = '';
+ const inputText = document.getElementById('lavInput') || document.getElementById('inputText');
+ const picker = document.getElementById('pdfInput');
+ if (picker) picker.value = '';
+ if (!inputText) return;
  inputText.value = '';
  inputText.disabled = false;
- inputText.placeholder = '분석하거나 다듬을 글을 입력해 주세요. PDF 파일도 첨부할 수 있어요.';
- updateCount(inputText);
+ inputText.placeholder = '다듬을 초안이나 문단을 붙여넣어 보세요...';
+ if (inputText.id === 'lavInput' && typeof window.lavSyncCount === 'function') window.lavSyncCount(inputText);
+ else updateCount(inputText);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -997,7 +989,7 @@ async function callAnalyzeApi(payload, opts) {
   if (netErr) {
    if (timedOut) {
     // 타임아웃은 무한정 다시 기다리기보다 즉시 안내 (서버는 abort로 차감 안 함)
-    var te = new Error('서버 응답이 지연돼 요청을 중단했어요. 크레딧은 차감되지 않았습니다. 글을 더 짧게 나눠 다시 시도해 주세요.');
+    var te = new Error('서버 응답이 지연돼 요청을 중단했어요. 크레딧은 차감하지 않았어요. 글을 더 짧게 나눠 다시 시도해 주세요.');
     te.code = 'timeout';
     throw te;
    }
@@ -1023,7 +1015,7 @@ async function callAnalyzeApi(payload, opts) {
    apiError.body = body;
    throw apiError;
   }
-  if (!body || !body.ok) throw new Error('처리 중 오류가 발생했습니다.');
+  if (!body || !body.ok) throw new Error('처리 중 오류가 발생했어요.');
   return body;
  }
 }
@@ -1074,7 +1066,7 @@ async function transformFetchJson(authUser, path, init, forceRefresh) {
   return transformFetchJson(authUser, path, init, true);
  }
  if (!response.ok || (body && body.error)) {
-  var error = new Error((body && body.error) || '변환 요청을 처리하지 못했습니다.');
+  var error = new Error((body && body.error) || '변환 요청을 처리하지 못했어요.');
   error.code = body && body.code;
   error.status = response.status;
   error.body = body;
@@ -1085,7 +1077,7 @@ async function transformFetchJson(authUser, path, init, forceRefresh) {
 
 async function callTransformJob(payload) {
  var authUser = payload.authUser;
- if (!authUser || typeof authUser.getIdToken !== 'function') throw new Error('로그인이 필요합니다.');
+ if (!authUser || typeof authUser.getIdToken !== 'function') throw new Error('로그인이 필요해요.');
  var transformMode = publicTransformMode(payload.humanizeMode || payload.mode);
  var minLen = transformMinLength(transformMode);
  var text = String(payload.text || '').trim();
@@ -1110,10 +1102,10 @@ async function callTransformJob(payload) {
    var accepted = window.gpConfirm
     ? await window.gpConfirm({
        title: '변화가 작을 수 있는 글이에요',
-       message: '이미 자연스러운 글은 바꿀 대상이 적어 원문의 장르·화자·리듬을 지키는 범위에서만 손봅니다. 안전한 얕은 결과도 정상 과금됩니다.',
+       message: '이미 자연스러운 글은 바꿀 대상이 적어 원문의 장르·화자·리듬을 지키는 범위에서만 손봐요. 안전한 얕은 결과도 정상 과금해요.',
        confirmText: '확인하고 진행'
       })
-    : confirm('이미 자연스러운 글이라 결과 변화가 작을 수 있어요. 안전한 얕은 결과도 정상 과금됩니다. 계속할까요?');
+    : confirm('이미 자연스러운 글이라 결과 변화가 작을 수 있어요. 안전한 얕은 결과도 정상 과금해요. 계속할까요?');
    if (!accepted) throw new Error('예상 효과 확인 후 다시 시작해 주세요. 크레딧은 차감되지 않았어요.');
    return callTransformJob(Object.assign({}, payload, { effectNoticeAccepted: true }));
   }
@@ -1121,7 +1113,7 @@ async function callTransformJob(payload) {
  }
  if (typeof payload.onEstimate === 'function') payload.onEstimate(start);
  var jobId = start.jobId;
- if (!jobId) throw new Error('작업 번호를 받지 못했습니다.');
+ if (!jobId) throw new Error('작업 번호를 받지 못했어요.');
  var deadline = Date.now() + 6 * 60 * 60 * 1000;
  while (Date.now() < deadline) {
   await new Promise(function(resolve){ setTimeout(resolve, 2500); });
@@ -1149,13 +1141,13 @@ async function callTransformJob(payload) {
    blocked.body = current;
    throw blocked;
   }
-  if (current.status === 'error') throw new Error(current.error || '변환 중 오류가 발생했습니다.');
-  if (current.status === 'cancelled') throw new Error('변환 작업이 취소됐습니다.');
+  if (current.status === 'error') throw new Error(current.error || '변환 중 오류가 발생했어요.');
+  if (current.status === 'cancelled') throw new Error('변환 작업이 취소됐어요.');
   if (current.status === 'awaiting_approval') {
-   throw new Error('이 작업은 근거 승인이 필요합니다. 새 변환 화면에서 계속해 주세요.');
+   throw new Error('이 작업은 근거 승인이 필요해요. 새 변환 화면에서 계속해 주세요.');
   }
  }
- throw new Error('처리 시간이 길어지고 있어요. 작업 결과는 이용 기록에서 확인해 주세요.');
+ throw new Error('처리 시간이 길어지고 있어요. 작업 결과는 작업 기록에서 확인해 주세요.');
 }
 
 function combineChunkResults(results, apiMode) {
@@ -1221,7 +1213,7 @@ async function runAnalysis() {
  const authUser = await getCurrentAuthUser(8000);
  if (!authUser) {
  if (window.gpTrack) window.gpTrack('login_required', { source: 'analysis' });
- alert('로그인한 뒤 이용해 주세요. 신규 가입 계정에는 10크레딧이 지급됩니다.');
+ alert('로그인한 뒤 이용해 주세요. 신규 가입 계정에는 10크레딧을 드려요.');
  showScreen('login');
  return;
 }
@@ -1299,11 +1291,11 @@ async function runAnalysis() {
  const estSec = initialEstimate.highSec;
  const hintHtml = mode === 'detect'
   ? `<div class="prog-hint">예상 처리 시간: ${initialEstimate.label}. 페이지를 닫지 말아주세요.</div>`
-  : `<div class="prog-hint">예상 처리 시간: ${initialEstimate.label}. 창을 닫아도 서버에서 계속 처리됩니다.</div>
-     <div class="prog-warn">완료된 결과는 이용 기록에서 다시 확인할 수 있어요.</div>`;
+  : `<div class="prog-hint">예상 처리 시간: ${initialEstimate.label}. 창을 닫아도 서버에서 계속 처리해요.</div>
+     <div class="prog-warn">완료된 결과는 작업 기록에서 다시 확인할 수 있어요.</div>`;
  document.getElementById('result').innerHTML = `<div class="progress-overlay" id="progressOverlay">
   <div class="prog-pct" id="progPct">0%</div>
-  <div class="prog-status" id="progStatus">준비 중...</div>
+  <div class="prog-status" id="progStatus">준비 중</div>
   <div class="prog-track"><div class="prog-bar" id="progBar"></div></div>
   <div class="prog-chunk" id="progChunk" style="margin-top:8px;font-size:13px;color:var(--text3);"></div>
   ${hintHtml}
@@ -1410,7 +1402,7 @@ async function runAnalysis() {
     if (!(lowSec > 0 && highSec >= lowSec)) return;
     estimatedMs = highSec * 1000;
     var hint = document.querySelector('.prog-hint');
-    if (hint) hint.textContent = '예상 처리 시간: ' + estimateRangeLabel({ lowSec: lowSec, highSec: highSec }) + '. 창을 닫아도 서버에서 계속 처리됩니다.';
+    if (hint) hint.textContent = '예상 처리 시간: ' + estimateRangeLabel({ lowSec: lowSec, highSec: highSec }) + '. 창을 닫아도 서버에서 계속 처리해요.';
    }
   });
  } else if (text.length > 5500) {
@@ -1507,7 +1499,7 @@ async function runAnalysis() {
    message: String(e.message || 'unknown').slice(0, 120),
    chars: text.length
   });
-  renderError(e.message || '오류가 발생했습니다.');
+  renderError(e.message || '오류가 발생했어요.');
  }
  } finally {
  window.removeEventListener('beforeunload', onLeave);
@@ -1556,12 +1548,12 @@ function renderDetect(r) {
  bc = 'safe';
  bl = ' 안전';
  mainMsg = 'AI 생성 신호가 낮게 감지됐어요';
- subMsg = '현재 점수는 낮은 구간입니다. 감지 결과는 문체 패턴에 대한 추정치이며 실제 작성 주체를 확정하지 않습니다.';
+ subMsg = '현재 점수는 낮은 구간이에요. 감지 결과는 문체 패턴에 대한 추정치이며 실제 작성 주체를 확정하지 않아요.';
  } else if (p <= 49) {
  bc = 'caution';
  bl = ' 조심';
  mainMsg = 'AI 생성 신호가 일부 감지됐어요';
- subMsg = '일부 정형적인 문체 특징이 관찰됐습니다. 점수와 상세 근거를 함께 참고해 주세요.';
+ subMsg = '일부 정형적인 문체 특징이 관찰됐어요. 점수와 상세 근거를 함께 참고해 주세요.';
  } else {
  bc = 'danger';
  bl = ' 위험';
@@ -1718,7 +1710,7 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
   if (!window.CU) {
    if (window.gpTrack) window.gpTrack('login_required', { source: 'payment', value: amount, currency: 'KRW' });
    if (window.gpTrackPaymentError) window.gpTrackPaymentError('checkout_login_required', { checkoutType: 'credits', amount, credits, plan });
-   alert('로그인이 필요합니다.');
+   alert('로그인이 필요해요.');
    return;
   }
 
@@ -1811,191 +1803,22 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
 }
 window.payToss = payToss;
 
-// 가격 페이지 내부 탭 전환 (크레딧 / 정기구독)
+// 기존 호출 호환용: 요금 화면은 크레딧 충전으로 단일화했습니다.
 window.switchPricingTab = switchPricingTab;
-function switchPricingTab(t) {
+function switchPricingTab() {
   const credit = document.getElementById('pricingTabCredit');
-  const sub = document.getElementById('pricingTabSub');
-  const btnCredit = document.getElementById('pricingTabBtnCredit');
-  const btnSub = document.getElementById('pricingTabBtnSub');
   const heroTitle = document.getElementById('pricingHeroTitle');
   const heroDesc = document.getElementById('pricingHeroDesc');
-  const isCredit = (t === 'credit');
-  if (credit) credit.style.display = isCredit ? 'block' : 'none';
-  if (sub) sub.style.display = isCredit ? 'none' : 'block';
-  if (btnCredit) {
-    btnCredit.setAttribute('aria-selected', isCredit ? 'true' : 'false');
-    btnCredit.style.background = isCredit ? 'var(--surface)' : 'transparent';
-    btnCredit.style.color = isCredit ? 'var(--text)' : 'var(--text2)';
-    btnCredit.style.fontWeight = isCredit ? '700' : '600';
-    btnCredit.style.boxShadow = isCredit ? '0 1px 4px rgba(0,0,0,.08)' : 'none';
-  }
-  if (btnSub) {
-    btnSub.setAttribute('aria-selected', isCredit ? 'false' : 'true');
-    btnSub.style.background = isCredit ? 'transparent' : 'var(--surface)';
-    btnSub.style.color = isCredit ? 'var(--text2)' : 'var(--text)';
-    btnSub.style.fontWeight = isCredit ? '600' : '700';
-    btnSub.style.boxShadow = isCredit ? 'none' : '0 1px 4px rgba(0,0,0,.08)';
-  }
+  if (credit) credit.style.display = 'block';
   if (heroTitle && heroDesc) {
-    if (isCredit) {
-      heroTitle.textContent = '지금 충전하고 바로 사용하세요';
-      heroDesc.innerHTML = '구매한 크레딧은 <strong>유효기간 없이</strong> 사용할 수 있어요. AI 감지는 100자당 1크레딧이며, 휴머나이징은 선택한 모드와 글자 수에 따라 차감돼요.';
-    } else {
-      heroTitle.textContent = 'Pro 정기 구독으로 더 저렴하게';
-      heroDesc.innerHTML = '글자 한도 내 월 50회 또는 무제한. <strong>매달 자동 결제</strong>되며 언제든 해지할 수 있어요.';
-    }
+    heroTitle.textContent = '지금 충전하고 바로 사용하세요';
+    heroDesc.innerHTML = '구매한 크레딧은 <strong>유효기간 없이</strong> 사용할 수 있어요. AI 감지는 100자당 1크레딧이며, 휴머나이징은 선택한 모드와 글자 수에 따라 차감돼요.';
   }
-  if (window.gpTrack) window.gpTrack('pricing_tab_change', { pricing_tab: t });
+  if (window.gpTrack) window.gpTrack('pricing_tab_change', { pricing_tab: 'credit' });
 }
 
-// === 정기결제 구독 ===
-// ⚠️ 토스 정기결제 심사 통과 후 true로 변경하면 즉시 활성화됩니다.
-//    false면 가격 페이지에 정기구독 카드는 노출되지만 "구독 시작" 버튼은 비활성 + 안내 배너 표시.
-// 아직 구현 전이라 막아둠(준비 중). 오픈 시 true로.
 window.SUBSCRIPTION_ENABLED = false;
 window.PRO_ENABLED = false;
-
-// 정기구독 가용성 UI 적용 (카드 비활성 처리, 배너 토글, 버튼 라벨)
-window.applySubscriptionAvailability = function() {
-  const enabled = !!window.SUBSCRIPTION_ENABLED;
-  const banner = document.getElementById('subscriptionDisabledBanner');
-  if (banner) banner.style.display = enabled ? 'none' : 'flex';
-  const cards = document.querySelectorAll('#subscriptionSection .plan-card');
-  cards.forEach(card => {
-    if (enabled) {
-      card.classList.remove('sub-disabled');
-      const btn = card.querySelector('.plan-btn');
-      if (btn) btn.textContent = '구독 시작';
-    } else {
-      card.classList.add('sub-disabled');
-      const btn = card.querySelector('.plan-btn');
-      if (btn) btn.textContent = '준비 중';
-    }
-  });
-};
-// 페이지 로드 시 1회 적용
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => window.applySubscriptionAvailability());
-} else {
-  setTimeout(() => window.applySubscriptionAvailability(), 0);
-}
-
-const SUB_PLAN_INFO = {
- '1000':      { amount: 11900,  name: '베이직 (1,000자 × 50회/월)' },
- '5000':      { amount: 54900,  name: '스탠다드 (5,000자 × 50회/월)' },
- '10000':     { amount: 99000,  name: '프로 (10,000자 × 50회/월)' },
- 'unlimited': { amount: 290000, name: '무제한' }
-};
-
-function openSubscribeConfirm(tier) {
- if (!window.SUBSCRIPTION_ENABLED) {
-   if (window.gpToast) window.gpToast('오픈되면 공지·메일로 안내드릴게요.', { type: 'info', title: '정기 구독은 준비 중이에요' });
-   else alert('정기 구독은 준비 중이에요.\n오픈되면 공지·메일로 안내드릴게요.');
-   return;
- }
- if (!window.CU) { alert('로그인이 필요합니다.'); showScreen('login'); return; }
- const info = SUB_PLAN_INFO[tier];
- if (!info) return;
- if (window.SUB && window.SUB.status === 'active') {
-   alert('이미 진행 중인 구독이 있습니다. 마이페이지에서 관리해주세요.');
-   return;
- }
- const modal = document.getElementById('subConfirmModal');
- if (!modal) return;
- const next = new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('ko-KR');
- document.getElementById('subConfirmTier').textContent = info.name;
- document.getElementById('subConfirmAmount').textContent = info.amount.toLocaleString() + '원/월';
- document.getElementById('subConfirmNext').textContent = next;
- document.getElementById('subConfirmAgree').checked = false;
- document.getElementById('subConfirmStartBtn').disabled = true;
- document.getElementById('subConfirmStartBtn').dataset.tier = tier;
- modal.style.display = 'flex';
-}
-
-function closeSubscribeConfirm() {
- const modal = document.getElementById('subConfirmModal');
- if (modal) modal.style.display = 'none';
-}
-
-function onSubConfirmAgreeChange(cb) {
- document.getElementById('subConfirmStartBtn').disabled = !cb.checked;
-}
-
-async function startSubscription() {
- const tier = document.getElementById('subConfirmStartBtn').dataset.tier;
- closeSubscribeConfirm();
- await payTossSubscription(tier);
-}
-
-async function payTossSubscription(tier) {
- if (!window.SUBSCRIPTION_ENABLED) {
-   alert('정기 구독은 현재 결제 시스템 검수 중입니다.\n검수 완료 즉시 안내드릴게요.');
-   return;
- }
- if (!window.CU) {
-   if (window.gpTrackPaymentError) window.gpTrackPaymentError('subscription_login_required', { checkoutType: 'subscription', tier });
-   alert('로그인이 필요합니다.');
-   return;
- }
- const info = SUB_PLAN_INFO[tier];
- if (!info) return;
-
- if (window.gpTrack) window.gpTrack('select_item', {
-   item_list_name: 'subscription',
-   items: [{ item_id: 'sub_' + tier, item_name: info.name, quantity: 1, price: info.amount }],
-   value: info.amount, currency: 'KRW',
-   traffic_source: localStorage.getItem('traffic_source') || 'direct'
- });
- if (window.gpTrack) window.gpTrack('begin_checkout', {
-   items: [{ item_id: 'sub_' + tier, item_name: info.name, quantity: 1, price: info.amount }],
-   value: info.amount,
-   currency: 'KRW',
-   checkout_type: 'subscription'
- });
-
-  const clientKey = window.APP_CONFIG.TOSS_CLIENT_KEY;
-  if (!clientKey) {
-   if (window.gpTrackPaymentError) window.gpTrackPaymentError('subscription_client_key_missing', {
-    checkoutType: 'subscription',
-    tier,
-    amount: info.amount
-   });
-   alert('정기 구독 결제는 운영 환경에서만 사용할 수 있어요.');
-   return;
-  }
-  try {
-   await window.gpLoadTossPayments();
-  } catch (sdkError) {
-   if (window.gpTrackPaymentError) window.gpTrackPaymentError('subscription_sdk_load_failed', { checkoutType: 'subscription', tier, amount: info.amount }, sdkError);
-   alert('결제 모듈을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
-   return;
-  }
-  const tp = window.TossPayments(clientKey);
- const customerKey = 'cust_' + window.CU.uid;
-
- try {
-   await tp.requestBillingAuth('카드', {
-     customerKey,
-     successUrl: `${window.location.origin + window.location.pathname}?sub=${tier}&ck=${encodeURIComponent(customerKey)}&uid=${encodeURIComponent(window.CU.uid)}${maintenancePreviewQuery()}`,
-     failUrl: location.origin + location.pathname + '?subfail=1' + maintenancePreviewQuery()
-   });
- } catch(e) {
-   if (window.gpTrack) window.gpTrack(e.code === 'USER_CANCEL' ? 'checkout_cancel' : 'checkout_error', {
-    checkout_type: 'subscription',
-    value: info.amount,
-    currency: 'KRW',
-    code: e.code || '',
-   message: String(e.message || '').slice(0, 120)
-   });
-   if (window.gpTrackPaymentError) window.gpTrackPaymentError('request_billing_auth_failed', {
-    checkoutType: 'subscription',
-    tier,
-    amount: info.amount
-   }, e);
-   if (e.code !== 'USER_CANCEL') alert('결제 오류: ' + e.message);
- }
-}
 
 function showPolicy(type) {
  const modal = document.getElementById('policyModal');
@@ -2014,7 +1837,7 @@ function showPolicy(type) {
 
  if (type === 'company') {
  title.textContent = '회사 정보 · 사업자 정보';
- body.innerHTML = '상호명: 지피코리아(gpkorea)<br>대표자: 윤동민<br>개인정보보호책임자: 윤동민<br>사업자등록번호: 213-11-67637<br>통신판매업 신고번호: 2024-인천연수구-4281<br>사업장 주소: 인천광역시 연수구 랜드마크로360번길 40, 108동 3201호<br>이메일: aqua0661123@naver.com<br>고객센터: 이메일 문의 · 운영시간 09:00 ~ 23:59<br><br>본 서비스는 국립국어원 공공저작물(공공언어 용어 목록 · 어문규범 규정 · 말뭉치 통계, 공공누리 제1유형)과 표준국어대사전 · 우리말샘 · 온용어 오픈 API를 활용해 결과 품질을 검증합니다.<br><br><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2131167637" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;">▸ 통신판매사업자 정보 확인 (공정거래위원회)</a>';
+ body.innerHTML = '상호명: 지피코리아(gpkorea)<br>대표자: 윤동민<br>개인정보보호책임자: 윤동민<br>사업자등록번호: 213-11-67637<br>통신판매업 신고번호: 2024-인천연수구-4281<br>사업장 주소: 인천광역시 연수구 랜드마크로360번길 40, 108동 3201호<br>이메일: aqua0661123@naver.com<br>고객센터: 이메일 문의 · 운영 시간 09:00–23:59<br><br>본 서비스는 국립국어원 공공저작물(공공언어 용어 목록 · 어문규범 규정 · 말뭉치 통계, 공공누리 제1유형)과 표준국어대사전 · 우리말샘 · 온용어 오픈 API를 활용해 결과 품질을 검증합니다.<br><br><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2131167637" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;">▸ 통신판매사업자 정보 확인 (공정거래위원회)</a>';
  return;
  }
 
@@ -2034,21 +1857,6 @@ function showPolicy(type) {
 2. 결제는 토스페이먼츠를 통해 이루어집니다.
 3. 유료로 충전한 크레딧은 유효기간 없이 사용할 수 있습니다.
 4. 단순 변심에 따른 일반 환불 신청기간은 결제일로부터 7일이며, 사용분을 제외한 환불 계산과 예외 사항은 환불규정에 따릅니다.
-
-제3조의2 (정기 구독 결제)
-1. 회사는 매월 자동 결제되는 정기 구독 상품(이하 "구독")을 제공하며, 구독자는 Pro 전용 작업실과 매월 부여되는 쿠폰(또는 무제한 사용권)을 이용할 수 있습니다.
-2. 구독을 신청하면 신청 즉시 첫 결제가 이루어지고, 그 후 매월 동일한 날짜(매 30일)에 등록된 결제 수단으로 자동 결제가 진행됩니다.
-3. 구독 상품과 가격은 다음과 같습니다.
-  · 베이직(1,000자 × 50회/월): 11,900원/월
-  · 스탠다드(5,000자 × 50회/월): 54,900원/월
-  · 프로(10,000자 × 50회/월): 99,000원/월
-  · 무제한: 290,000원/월 (회수·글자 수 제한 없음)
-4. 매 사이클에 부여된 쿠폰은 해당 사이클 내에서만 사용 가능하며, 다음 결제일에 잔여 쿠폰은 소멸되고 새 쿠폰이 50회 부여됩니다(무제한 상품 제외).
-5. 이용자는 마이페이지에서 언제든 구독을 해지할 수 있으며, 해지 후에도 다음 결제일 전까지 잔여 쿠폰을 사용할 수 있습니다. 해지 시점이 다음 결제일 이후이면 신규 결제는 발생하지 않습니다.
-6. 결제 실패 시 구독은 자동으로 일시 중단되며, 이용자는 결제 수단 변경 후 다시 구독할 수 있습니다.
-7. 자동 결제 카드 정보는 토스페이먼츠가 안전하게 보관하며, 회사는 카드 번호 등의 결제 정보를 자체 보관하지 않습니다.
-8. 구독 환불은 각 결제일로부터 7일 이내 신청할 수 있습니다. 미사용 시 전액 환불하며, 사용한 경우 모든 구독 상품을 환불 정산상 월 50회 기준으로 계산하여 사용 횟수에 해당하는 금액을 공제합니다. 무제한 상품의 50회 기준은 환불액 계산에만 적용되며 서비스 이용 횟수를 제한하지 않습니다.
-9. 결제 후 7일이 지난 단순 변심은 당월 환불 대상이 아니며, 구독 해지 시 다음 자동결제만 중단되고 현재 결제기간 종료일까지 이용할 수 있습니다. 중복 결제, 서비스 미제공 또는 관계 법령상 별도 환불 사유는 예외로 처리합니다.
 
 제4조 (이용자 책임 및 면책 - Disclaimer)
 1. 본 서비스는 AI 작성 여부 진단(감지) 및 텍스트 휴머나이징(문장 다듬기·재작성) 도구를 제공하며, 해당 도구의 활용 방법과 목적은 전적으로 이용자의 판단과 책임에 따릅니다.
@@ -2077,7 +1885,7 @@ function showPolicy(type) {
 1. 수집하는 개인정보 항목
 - Google/카카오 로그인을 통해 이름, 이메일 주소를 수집합니다.
 - 서비스 이용 기록, 크레딧 사용 내역, 결제 정보(주문번호, 결제금액)를 수집합니다.
-- 사용자가 입력한 텍스트, 변환 결과, Q&A/커뮤니티 작성 내용은 서비스 처리, 결과 보관함, 고객지원 제공을 위해 저장될 수 있습니다.
+- 사용자가 입력한 텍스트, 변환 결과, Q&A/커뮤니티 작성 내용은 서비스 처리, 작업 기록, 고객지원 제공을 위해 저장될 수 있습니다.
 - 서비스 이용 과정에서 접속 IP, 접속 일시, 브라우저 정보 등이 자동으로 수집될 수 있습니다.
 - 광고 및 분석 유입 시 UTM 파라미터, 광고 클릭 식별자, 방문 페이지와 회원가입·기능 완료·결제 이벤트가 수집될 수 있습니다. 사용자가 입력한 원문과 변환 결과는 광고 플랫폼으로 전송하지 않습니다.
 
@@ -2138,21 +1946,13 @@ function showPolicy(type) {
 - 구매한 유료 크레딧을 전혀 사용하지 않은 경우 결제금액 전액을 환불합니다.
 - 일부 사용한 경우 '결제금액 × (환불 대상 유료 크레딧 ÷ 해당 주문의 구매 크레딧)'으로 계산하고 1원 미만은 버립니다.
 - 무료로 지급된 크레딧은 환불 대상이 아닙니다.
-- 결제 후 7일이 지난 단순 변심은 환불 대상이 아니며, 남은 크레딧은 이용기간까지 사용할 수 있습니다.
+- 결제 후 7일이 지난 단순 변심은 환불 대상이 아니며, 남은 크레딧은 유효기간 없이 사용할 수 있습니다.
 
-2. 구독 플랜 환불 정책
-- 최초 결제와 매월 갱신 결제 모두 해당 결제일로부터 7일 이내 일반 환불을 요청할 수 있습니다.
-- 해당 결제주기를 전혀 사용하지 않은 경우 결제금액 전액을 환불합니다.
-- 일부 사용한 경우 모든 구독 상품을 환불 정산상 월 50회 기준으로 보고 '결제금액 × (50회 - 사용 횟수) ÷ 50회'로 계산하며 1원 미만은 버립니다.
-- 무제한 상품의 월 50회 기준은 환불액 계산에만 적용되며 실제 서비스 이용 횟수를 제한하지 않습니다.
-- 환불 승인 시 구독은 즉시 종료되고 해당 결제주기의 잔여 쿠폰과 이용권은 소멸합니다.
-- 결제 후 7일이 지난 단순 변심은 다음 자동결제를 해지할 수 있으며, 현재 결제기간 종료일까지 계속 이용할 수 있습니다.
-
-3. 예외 처리
+2. 예외 처리
 - 중복 결제, 회사 책임으로 인한 서비스 미제공·중대한 오류, 표시·광고 또는 계약내용과 다른 서비스 제공 등은 위 일반 환불기간과 별도로 관계 법령과 사실 확인 결과에 따라 환불하거나 크레딧을 복구합니다.
 - 온라인 환불 버튼이 비활성화된 경우에도 위 예외 사유가 있으면 고객센터 이메일로 신청할 수 있습니다.
 
-4. 환불 신청 및 처리
+3. 환불 신청 및 처리
 - 마이페이지의 환불하기 메뉴 또는 고객센터 이메일(aqua0661123@naver.com)로 환불 신청
 - 신청 시 아래 정보를 기재해 주세요.
   · 주문번호 및 결제일
@@ -2161,19 +1961,20 @@ function showPolicy(type) {
 - 화면의 예상 환불액은 현재 사용 내역을 기준으로 하며, 최종 금액은 서버가 승인 시점의 사용량을 다시 확인해 확정합니다.
 - 환불은 결제 수단으로 원칙 환불하며, 카드 결제의 경우 카드 취소로 처리됩니다.
 
-5. 일반 환불 제외 항목
+4. 일반 환불 제외 항목
 - 이미 사용된 크레딧
-- 구독의 이미 사용된 횟수에 해당하는 금액
 - 결제 후 7일이 지난 단순 변심
 - 부정 사용으로 적립된 크레딧
 - 무료 지급 크레딧
 
-6. 소비자 분쟁 해결
+5. 소비자 분쟁 해결
 환불 관련 분쟁이 해결되지 않는 경우 공정거래위원회 소비자분쟁조정위원회(1372.go.kr)에 분쟁 조정을 신청하실 수 있습니다.
 
-시행일: 2026년 7월 20일`.split('\n').join('<br>');
+시행일: 2026년 8월 29일`.split('\n').join('<br>');
  }
 }
+
+window.showPolicy = showPolicy;
 
 window.addEventListener('load',()=>{
 // --- 사진 미리보기 이벤트 등록 ---
@@ -2221,6 +2022,9 @@ window.addEventListener('load',()=>{
  window.clearSelectedFiles = () =>{ selectedFiles = []; previewList.innerHTML = ''; };
  }
  const p=new URLSearchParams(location.search);
+ if (p.get('subfail') === '1' || p.has('authKey') || p.has('sub') || p.has('ck')) {
+  history.replaceState({}, '', location.pathname);
+ }
  if(p.get('success')==='1') {
  history.replaceState({},'',location.pathname);
  }
@@ -2233,17 +2037,6 @@ window.addEventListener('load',()=>{
    amount: p.get('amount') || ''
   });
   alert('결제가 취소됐어요.');
-  history.replaceState({},'',location.pathname);
- }
- if(p.get('subfail')==='1') {
-  if (window.gpTrackPaymentError) window.gpTrackPaymentError('subscription_fail_redirect', {
-   checkoutType: 'subscription',
-   code: p.get('code') || '',
-   message: p.get('message') || '',
-   orderId: p.get('orderId') || '',
-   amount: p.get('amount') || ''
-  });
-  alert('구독 결제가 취소됐어요.');
   history.replaceState({},'',location.pathname);
  }
 });

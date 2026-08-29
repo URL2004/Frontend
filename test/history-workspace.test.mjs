@@ -39,7 +39,9 @@ test('기록 목록은 50건 페이지 단위로 읽고 개별 주소로 바로 
   assert.match(source, /searchParams\.set\('item', id\)/u);
   assert.match(source, /getDoc\(doc\(db, 'users', CU\.uid, 'history', id\)\)/u);
   assert.match(source, /openHistoryRecord\(this\.dataset\.historyId\)/u);
-  for (const nav of [main, shell, mobile]) assert.match(nav, /data-tab-call="openHistoryHome"/u);
+  assert.match(main, /data-tab-call="openHistoryHome"/u);
+  assert.doesNotMatch(shell, /data-tab-call="openHistoryHome"/u);
+  assert.doesNotMatch(mobile, /data-tab-call="openHistoryHome"/u);
 });
 
 test('상세 기록에서 결과를 복사·저장·편집하고 감지 원문을 이어서 쓸 수 있다', async () => {
@@ -77,10 +79,12 @@ test('휴머나이징 기록은 결과를 원문보다 먼저, AI 감지는 원�
 
 test('작업 상태와 이용 내역을 분리하고 복구 가능한 화면 상태를 제공한다', async () => {
   const source = await read('assets/js/app-module.js');
+  const userHistory = source.slice(source.indexOf('function historyBillingInfo'), source.indexOf('// --- 환불 시스템 UI ---'));
   assert.match(source, /<small>작업 상태<\/small>/u);
   assert.match(source, /<small>이용 내역<\/small>/u);
   assert.match(source, /이용권 포함/u);
-  assert.match(source, /무차감 · 관리자/u);
+  assert.doesNotMatch(userHistory, /검토 필요|과거 정책|관리자 무차감|무차감 · 관리자/u);
+  assert.match(userHistory, /return \{ label: '작업 완료', tone: 'good' \}/u);
   assert.match(source, /기록을 불러오지 못했어요/u);
   assert.match(source, /다시 시도/u);
   assert.match(source, /일치하는 기록이 없어요/u);

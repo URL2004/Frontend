@@ -185,7 +185,7 @@ const AUTH_ADAPT = `<script>
 })();
 </script>`;
 
-function pageShell({ title, description, url, breadcrumbs, bodyHtml, ldBlocks, wide }) {
+function pageShell({ title, description, url, breadcrumbs, bodyHtml, ldBlocks, wide, image = OG_IMAGE }) {
   const crumbHtml = breadcrumbs
     .map((b, i) => (i === breadcrumbs.length - 1 ? esc(b.name) : `<a href="${b.url}">${esc(b.name)}</a>`))
     .join(' › ');
@@ -199,7 +199,7 @@ function pageShell({ title, description, url, breadcrumbs, bodyHtml, ldBlocks, w
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${url}">
-<meta property="og:image" content="${OG_IMAGE}">
+<meta property="og:image" content="${image}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="${url}">
 <link rel="icon" href="/favicon-32x32.png">
@@ -239,6 +239,7 @@ function relatedBlock(slugs, all) {
 
 function articlePage(article, allArticles) {
   const url = `${SITE}/blog/${article.slug}`;
+  const image = `${SITE}${coverOf(article.slug)}`;
   const ld = [
     jsonLd({
       '@context': 'https://schema.org',
@@ -249,6 +250,7 @@ function articlePage(article, allArticles) {
       dateModified: article.date,
       inLanguage: 'ko',
       mainEntityOfPage: url,
+      image,
       author: { '@type': 'Organization', name: '교수님 피하기 팀', url: SITE },
       publisher: { '@type': 'Organization', name: '교수님 피하기', url: SITE, logo: { '@type': 'ImageObject', url: `${SITE}/favicon-512x512.png` } }
     }),
@@ -282,7 +284,8 @@ ${relatedBlock(article.related, allArticles)}
     url,
     breadcrumbs: [{ name: '홈', url: '/' }, { name: '연구노트', url: '/blog' }, { name: article.title }],
     bodyHtml: body,
-    ldBlocks: ld
+    ldBlocks: ld,
+    image
   });
 }
 

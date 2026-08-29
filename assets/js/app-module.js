@@ -31,7 +31,11 @@ window.safePhotoUrl = safePhotoUrl;
 window.toggleFaq = function(btn) {
  const item = btn.closest('.faq-item');
  if (!item) return;
- item.classList.toggle('open');
+ const open = item.classList.toggle('open');
+ const answerId = btn.getAttribute('aria-controls');
+ const answer = answerId ? document.getElementById(answerId) : item.querySelector('.faq-a');
+ btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+ if (answer) answer.setAttribute('aria-hidden', open ? 'false' : 'true');
 };
 
 const FB = window.APP_CONFIG.FIREBASE;
@@ -370,14 +374,28 @@ async function loadUser(u) {
 }
 
 function updateCreditUI() {
- const el = document.getElementById('creditChip');
- if (!el) return;
- if (!window.CU) { el.innerHTML = '크레딧 10'; el.style.color = 'var(--text2)'; return; }
  const plans = { pro:'프로', master:'마스터', unlimited:'무제한' };
  const p = window.UP;
- if (p === 'unlimited') { el.innerHTML = '크레딧 무제한'; el.style.color = 'var(--yellow)'; }
- else if (plans[p]) { el.innerHTML = '크레딧 ' + window.UC + ' · ' + plans[p]; el.style.color = p==='master'?'var(--yellow)':'var(--blue)'; }
- else { el.innerHTML = '크레딧 ' + window.UC; el.style.color = window.UC<=3?'var(--red)':'var(--text)'; }
+ const loggedIn = !!window.CU;
+ const balance = Math.max(0, Number(window.UC) || 0);
+ const balanceText = !loggedIn
+  ? '가입 시 10크레딧'
+  : p === 'unlimited'
+   ? '크레딧 무제한'
+   : '크레딧 ' + balance + (plans[p] ? ' · ' + plans[p] : '');
+ document.querySelectorAll('[data-credit-balance]').forEach(node => {
+  node.textContent = balanceText;
+  node.style.color = !loggedIn ? 'var(--text2)' : p === 'unlimited' || p === 'master' ? 'var(--yellow)' : balance <= 3 ? 'var(--red)' : 'var(--text)';
+ });
+ document.querySelectorAll('[data-credit-work-count]').forEach(node => {
+  const cost = Math.max(1, Number(node.dataset.workCost) || 1);
+  const planCredits = Math.max(0, Number(node.dataset.planCredits) || 0);
+  const kind = node.dataset.creditWorkCount;
+  const available = kind === 'current'
+   ? (loggedIn ? balance : 10)
+   : planCredits;
+  node.textContent = Math.floor(available / cost).toLocaleString('ko-KR') + '회' + (kind === 'additional' ? ' 추가' : '');
+ });
  // 플랜 뱃지 업데이트
  const badge = document.getElementById('userPlanBadge');
  if (badge) badge.textContent = plans[p] || 'Free';
@@ -801,7 +819,7 @@ window.updateAuthUI = (isLoggedIn) =>{
    uname.onclick = () => window.showScreen('login');
  }
  }
- if (isLoggedIn && typeof updateCreditUI === 'function') updateCreditUI();
+ if (typeof updateCreditUI === 'function') updateCreditUI();
 };
 
 function clearKakaoCallbackQuery() {
@@ -881,7 +899,7 @@ async function exchangeKakaoIdentity(accessToken, passwordFor, timing) {
  }
  const data = await response.json().catch(() => ({}));
  if (!response.ok || data.error) {
-  const error = new Error(data.error || '카카오 계정 확인에 실패했습니다.');
+ const error = new Error(data.error || '카카오 계정 확인에 실패했어요.');
   error.code = data.code || 'KAKAO_BACKEND_ERROR';
   throw error;
  }
@@ -912,12 +930,12 @@ async function exchangeKakaoIdentity(accessToken, passwordFor, timing) {
 function waitForKakaoSdk() {
  if (window.Kakao?.Auth) return Promise.resolve(window.Kakao);
  const ready = window.gpKakaoReady;
- if (!ready || typeof ready.then !== 'function') return Promise.reject(new Error('카카오 로그인 모듈을 불러오지 못했습니다.'));
+ if (!ready || typeof ready.then !== 'function') return Promise.reject(new Error('카카오 로그인 모듈을 불러오지 못했어요.'));
  return Promise.race([
   ready,
-  wait(6000).then(() => { throw new Error('카카오 로그인 연결이 지연되고 있습니다. 다시 시도해 주세요.'); })
+  wait(6000).then(() => { throw new Error('카카오 로그인 연결이 지연되고 있어요. 다시 시도해 주세요.'); })
  ]).then(sdk => {
-  if (!sdk?.Auth) throw new Error('카카오 로그인 모듈을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.');
+  if (!sdk?.Auth) throw new Error('카카오 로그인 모듈을 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.');
   return sdk;
  });
 }
@@ -942,7 +960,7 @@ window.handleKakaoCallback = async () =>{
   });
   const tokenData = await tokenRes.json().catch(() => ({}));
   timing.tokenMs = Math.round(performance.now() - tokenStartedAt);
-  if (!tokenRes.ok || !tokenData.access_token) throw new Error('카카오 인증 정보를 확인하지 못했습니다.');
+  if (!tokenRes.ok || !tokenData.access_token) throw new Error('카카오 인증 정보를 확인하지 못했어요.');
   clearKakaoCallbackQuery();
   await exchangeKakaoIdentity(tokenData.access_token, kakaoId => 'kakao_' + kakaoId + '_pw!', timing);
   return true;
@@ -950,7 +968,7 @@ window.handleKakaoCallback = async () =>{
   clearKakaoCallbackQuery();
   failAuthTransition();
   if (window.gpTrack) window.gpTrack('login_error', { method: 'kakao', flow: 'redirect', message: String(e.message || '').slice(0, 120) });
-  if (window.gpToast) window.gpToast(e.message || '카카오 로그인에 실패했습니다.', { type: 'error', title: '로그인 확인 필요' });
+  if (window.gpToast) window.gpToast(e.message || '카카오 로그인에 실패했어요.', { type: 'error', title: '로그인 확인 필요' });
   else alert('카카오 로그인 실패: ' + (e.message || JSON.stringify(e)));
   return false;
  }
@@ -983,7 +1001,7 @@ window.kakaoLogin = async () =>{
   const canceled = e && e.error_code === 'CANCELED';
   if (window.gpTrack) window.gpTrack(canceled ? 'login_cancel' : 'login_error', { method: 'kakao', message: String(e.message || '').slice(0, 120) });
   if (!canceled) {
-   if (window.gpToast) window.gpToast(e.message || '카카오 로그인에 실패했습니다.', { type: 'error', title: '로그인 확인 필요' });
+   if (window.gpToast) window.gpToast(e.message || '카카오 로그인에 실패했어요.', { type: 'error', title: '로그인 확인 필요' });
    else alert('카카오 로그인 실패: ' + (e.message || JSON.stringify(e)));
   }
  }
@@ -1102,26 +1120,30 @@ window.showReferralPopup = async () => {
  const link = window.APP_CONFIG.SITE_URL + '?ref=' + refCode;
  const overlay = document.createElement('div');
  overlay.id = 'refOverlay';
- overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+ overlay.setAttribute('role', 'dialog');
+ overlay.setAttribute('aria-modal', 'true');
+ overlay.setAttribute('aria-labelledby', 'refOverlayTitle');
+ overlay.setAttribute('aria-describedby', 'refOverlayDesc');
+ overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:var(--layer-dialog,10040);display:flex;align-items:center;justify-content:center;padding:20px;';
  overlay.innerHTML = `
  <div style="background:var(--surface);border-radius:16px;max-width:380px;width:100%;padding:32px 24px;position:relative;text-align:center;">
-  <button onclick="document.getElementById('refOverlay').remove()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);">×</button>
+  <button type="button" aria-label="초대 안내 닫기" onclick="document.getElementById('refOverlay').remove()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);">×</button>
   <div style="margin-bottom:16px;">
    <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5" width="56" height="56" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
   </div>
-  <div style="font-size:18px;font-weight:700;margin-bottom:6px;">친구와 함께 20크레딧 받기</div>
-  <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">초대 링크로 친구가 가입하면 두 사람 모두<br><strong style="color:var(--green);">20크레딧</strong>을 받아요.</div>
+  <div id="refOverlayTitle" style="font-size:18px;font-weight:700;margin-bottom:6px;">친구와 함께 20크레딧 받기</div>
+  <div id="refOverlayDesc" style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">초대 링크로 친구가 가입하면 두 사람 모두<br><strong style="color:var(--green);">20크레딧</strong>을 받아요.</div>
   <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;text-align:left;">
    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">크레딧 받는 방법</div>
    <div style="display:flex;flex-direction:column;gap:8px;">
     <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span> 아래 링크를 친구에게 공유하세요.</div>
-    <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span> 친구가 링크로 신규 가입하면 친구에게 20크레딧이 지급됩니다.</div>
-    <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span> 가입이 확인되면 초대한 사람에게도 20크레딧이 지급됩니다.</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span> 친구가 링크로 신규 가입하면 친구에게 20크레딧을 드려요.</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span> 가입이 확인되면 초대한 사람에게도 20크레딧을 드려요.</div>
    </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px;">
    <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${link}</div>
-   <button onclick="navigator.clipboard.writeText('${link}');this.textContent='복사했습니다';setTimeout(()=>this.textContent='링크 복사',1500)" style="padding:10px 18px;border-radius:10px;border:none;background:var(--green);color:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">링크 복사</button>
+   <button onclick="navigator.clipboard.writeText('${link}');this.textContent='복사했어요';setTimeout(()=>this.textContent='링크 복사',1500)" style="padding:10px 18px;border-radius:10px;border:none;background:var(--green);color:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">링크 복사</button>
   </div>
  </div>`;
  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
@@ -1136,14 +1158,16 @@ window.showReferralPopup = async () => {
 // ===== COMMUNITY =====
 window.sortBy = 'latest';
 window.currentCategory = window.currentCategory || '';
+window.postSearch = window.postSearch || '';
 
 // 페이지네이션 — 한 페이지에 10개씩
 const POSTS_PER_PAGE = 10;
 window.postPage = window.postPage || 1;
 window._cachedPosts = null;
+let _postSearchTimer = null;
 
 const CAT_SLUG = {
- '블로그 작성 꿀팁':'blog',
+ '블로그 작성 팁':'blog',
  '논문':'paper',
  '자소서 조언':'resume',
  '글쓰기 팁':'writing',
@@ -1159,7 +1183,11 @@ const _SICO_HRT='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 // 강조 스탯 한 칸: 아이콘 + 굵은 숫자
 function _gbrStat(ico, n, kind){ return '<span class="gbr-stat'+(kind?' '+kind:'')+'">'+ico+'<b>'+n+'</b></span>'; }
 
-function _categorySlug(cat){ return CAT_SLUG[cat] || 'free'; }
+function _normalizePostCategory(cat){
+ const value = String(cat || '자유').trim();
+ return value === '블로그 작성 꿀팁' ? '블로그 작성 팁' : value;
+}
+function _categorySlug(cat){ return CAT_SLUG[_normalizePostCategory(cat)] || 'free'; }
 function _postScore(p){
  const views = p.views || 0;
  const likes = (p.likes || []).length;
@@ -1174,11 +1202,6 @@ function _postThumbUrl(p){
  return null;
 }
 function _fmtDate(p){ return p.createdAt ? new Date(p.createdAt.toDate()).toLocaleDateString('ko-KR') : ''; }
-function _mockDate(daysAgo){
- const d = new Date();
- d.setDate(d.getDate() - daysAgo);
- return { toDate: () => d };
-}
 function _makeExcerpt(body, n){
  if (!body) return '';
  n = n || 80;
@@ -1187,12 +1210,11 @@ function _makeExcerpt(body, n){
 }
 
 function _renderPostCard(p){
- const cat = p.category || '자유';
+ const cat = _normalizePostCategory(p.category);
  const date = _fmtDate(p);
  const likes = (p.likes || []).length;
  const hiddenBadge = p.hidden ? '<span class="gbr-hidden">숨김</span>' : '';
- const onClick = p.demo ? "showScreen('login')" : "viewPost('"+jsAttr(p.id)+"')";
- return '<div class="gp-board-row" onclick="'+onClick+'">'
+ return '<div class="gp-board-row" onclick="viewPost(\''+jsAttr(p.id)+'\')">'
   + '<div class="gbr-main">'
   +  '<div class="gbr-ttl">'+escapeHtml(p.title||'')+hiddenBadge+'</div>'
   +  '<div class="gbr-sub">'
@@ -1210,7 +1232,7 @@ function _renderPostCard(p){
 }
 
 function _renderFeaturedCard(p){
- const cat = p.category || '자유';
+ const cat = _normalizePostCategory(p.category);
  const slug = _categorySlug(cat);
  const thumb = _postThumbUrl(p);
  const date = _fmtDate(p);
@@ -1239,7 +1261,7 @@ function _renderFeaturedSection(featured){
  list.innerHTML = featured.slice(0, 4).map(_renderFeaturedCard).join('');
 }
 
-// 인기 게시글 TOP 5(aside) — 실제 글로 클릭 가능하게(사장님: 제목에 링크)
+// 인기 게시글 TOP 5(aside) — 실제 글만 표시한다.
 function _renderRankList(top5){
  const el = document.getElementById('rankList');
  if (!el) return;
@@ -1261,7 +1283,7 @@ function _renderPopularSection(top5){
  sect.style.display = 'block';
 
  const top = top5[0];
- const cat = top.category || '자유';
+ const cat = _normalizePostCategory(top.category);
  const slug = _categorySlug(cat);
  const thumb = _postThumbUrl(top);
  const date = _fmtDate(top);
@@ -1303,8 +1325,98 @@ function _renderPopularSection(top5){
  }).join('');
 }
 
+function _communitySearchText(value){
+ return String(value || '').normalize('NFKC').trim().toLocaleLowerCase('ko-KR');
+}
+
+function _postCreatedAtMs(post){
+ if (!post || !post.createdAt) return 0;
+ try {
+  const value = typeof post.createdAt.toDate === 'function' ? post.createdAt.toDate() : new Date(post.createdAt);
+  const time = value instanceof Date ? value.getTime() : Number(value);
+  return Number.isFinite(time) ? time : 0;
+ } catch (_) {
+  return 0;
+ }
+}
+
+function _filteredSortedPosts(){
+ const category = window.currentCategory ? _normalizePostCategory(window.currentCategory) : '';
+ const search = _communitySearchText(window.postSearch);
+ const posts = (window._cachedPosts || []).filter(post => {
+  if (category && _normalizePostCategory(post.category) !== category) return false;
+  if (!search) return true;
+  const haystack = _communitySearchText([post.title, post.body, post.authorName].join(' '));
+  return haystack.includes(search);
+ });
+ return posts.sort((a, b) => {
+  if (window.sortBy === 'oldest') return _postCreatedAtMs(a) - _postCreatedAtMs(b);
+  if (window.sortBy === 'views') return (Number(b.views) || 0) - (Number(a.views) || 0) || _postCreatedAtMs(b) - _postCreatedAtMs(a);
+  return _postCreatedAtMs(b) - _postCreatedAtMs(a);
+ });
+}
+
+function _setCommunityStatus(message){
+ const status = document.getElementById('communityResultsStatus');
+ if (status) status.textContent = message || '';
+}
+
+function _clearCommunityPostSurfaces(){
+ window._cachedPosts = [];
+ window.postPage = 1;
+ const featured = document.getElementById('featuredSection');
+ const popular = document.getElementById('popularSection');
+ const rankSection = document.getElementById('rankSection');
+ const featuredList = document.getElementById('featuredList');
+ const popularHero = document.getElementById('popularHero');
+ const popularRest = document.getElementById('popularRest');
+ const rankList = document.getElementById('rankList');
+ const pager = document.getElementById('postPager');
+ if (featured) { featured.style.display = 'none'; featured.dataset.has = '0'; }
+ if (popular) { popular.style.display = 'none'; popular.dataset.has = '0'; }
+ if (rankSection) rankSection.style.display = 'none';
+ if (featuredList) featuredList.innerHTML = '';
+ if (popularHero) popularHero.innerHTML = '';
+ if (popularRest) popularRest.innerHTML = '';
+ if (rankList) rankList.innerHTML = '';
+ if (pager) { pager.style.display = 'none'; pager.innerHTML = ''; }
+}
+
+function _showCommunityLoginGate(){
+ _clearCommunityPostSurfaces();
+ const listView = document.getElementById('listView');
+ const detailView = document.getElementById('detailView');
+ const list = document.getElementById('postList');
+ const form = document.getElementById('wform');
+ if (listView) listView.style.display = 'block';
+ if (detailView) detailView.style.display = 'none';
+ if (form) form.style.display = 'none';
+ if (list) {
+  list.innerHTML = '<div class="gp-community-login-gate" style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text3)">'
+   + '<p>로그인하면 실제 커뮤니티 글을 확인할 수 있어요</p>'
+   + '<button type="button" class="wbtn" onclick="openCommunityLogin()">로그인하기</button>'
+   + '</div>';
+ }
+ _setCommunityStatus('로그인이 필요해요.');
+}
+
+window.openCommunityLogin = function(){
+ if (window.gpTrack) window.gpTrack('login_required', { source: 'community' });
+ if (typeof window.showScreen === 'function') window.showScreen('login');
+};
+
+window.openCommunityComposer = function(){
+ const form = document.getElementById('wform');
+ if (!CU) {
+  if (form) form.style.display = 'none';
+  window.openCommunityLogin();
+  return;
+ }
+ if (form) form.style.display = form.style.display === 'block' ? 'none' : 'block';
+};
+
 window.filterByCategory = function(cat){
- window.currentCategory = cat || '';
+ window.currentCategory = cat ? _normalizePostCategory(cat) : '';
  document.querySelectorAll('.cat-fbtn').forEach(b => b.classList.toggle('active', (b.dataset.cat||'') === window.currentCategory));
  const isAll = !window.currentCategory;
  const fs = document.getElementById('featuredSection');
@@ -1315,18 +1427,42 @@ window.filterByCategory = function(cat){
  _renderPostPage();
 };
 
+window.setPostSort = function(sort){
+ if (!['latest', 'views', 'oldest'].includes(sort)) return;
+ window.sortBy = sort;
+ window.postPage = 1;
+ document.querySelectorAll('.sortbtn').forEach(button => button.classList.toggle('active', button.dataset.sort === sort));
+ _renderPostPage();
+};
+
+window.queuePostSearch = function(value){
+ clearTimeout(_postSearchTimer);
+ _postSearchTimer = setTimeout(() => window.applyPostSearch(value), 250);
+};
+
+window.applyPostSearch = function(value){
+ clearTimeout(_postSearchTimer);
+ const input = document.getElementById('postSearch');
+ window.postSearch = _communitySearchText(value === undefined ? input?.value : value);
+ if (input && value !== undefined && input.value !== value) input.value = value;
+ window.postPage = 1;
+ _renderPostPage();
+};
+
 function _renderPostPage() {
  const pl = document.getElementById('postList');
  const pager = document.getElementById('postPager');
  if (!pl) return;
- const all = window._cachedPosts || [];
+ if (!CU) { _showCommunityLoginGate(); return; }
  const cat = window.currentCategory || '';
- const posts = cat ? all.filter(p => (p.category || '자유') === cat) : all;
+ const search = window.postSearch || '';
+ const posts = _filteredSortedPosts();
  if (!posts.length) {
    pl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--text3)">'
-    + (cat ? '"'+escapeHtml(cat)+'" 카테고리 글이 아직 없어요' : '첫 번째 글을 작성해보세요!')
+    + (search ? '검색 결과가 없어요. 검색어나 필터를 바꿔보세요.' : cat ? '"'+escapeHtml(cat)+'" 카테고리 글이 아직 없어요.' : '아직 게시글이 없어요.')
     + '</div>';
    if (pager) pager.style.display = 'none';
+   _setCommunityStatus(search ? '검색 결과가 없어요.' : '표시할 게시글이 없어요.');
    return;
  }
  const totalPages = Math.max(1, Math.ceil(posts.length / POSTS_PER_PAGE));
@@ -1336,6 +1472,7 @@ function _renderPostPage() {
  const slice = posts.slice(startIdx, startIdx + POSTS_PER_PAGE);
  pl.innerHTML = slice.map(_renderPostCard).join('');
  _renderPager(totalPages);
+ _setCommunityStatus(`게시글 ${posts.length}건 중 ${startIdx + 1}~${Math.min(startIdx + POSTS_PER_PAGE, posts.length)}건을 표시했어요.`);
 }
 
 function _renderPager(totalPages) {
@@ -1365,7 +1502,7 @@ function _renderPager(totalPages) {
 }
 
 window.gotoPostPage = function(n) {
- const total = Math.max(1, Math.ceil((window._cachedPosts||[]).length / POSTS_PER_PAGE));
+ const total = Math.max(1, Math.ceil(_filteredSortedPosts().length / POSTS_PER_PAGE));
  if (n < 1 || n > total) return;
  window.postPage = n;
  _renderPostPage();
@@ -1376,7 +1513,7 @@ window.gotoPostPage = function(n) {
 
 window.loadPosts = async (sort) =>{
  const sortChanged = sort && sort !== window.sortBy;
- if (sort) window.sortBy = sort;
+ if (sort && ['latest', 'views', 'oldest'].includes(sort)) window.sortBy = sort;
  document.querySelectorAll('.sortbtn').forEach(b =>b.classList.toggle('active', b.dataset.sort===window.sortBy));
  const pl = document.getElementById('postList');
  if (!pl) return;
@@ -1384,30 +1521,24 @@ window.loadPosts = async (sort) =>{
  const featLabel = document.getElementById('featuredLabel');
  if (featLabel) featLabel.style.display = (window.isAdmin && window.isAdmin()) ? 'flex' : 'none';
  const pager = document.getElementById('postPager');
- // 로그인 안 한 경우: 친절한 안내 + Firestore 호출 차단 (룰이 auth 요구)
+ // 비로그인 상태에서는 공개 읽기 규칙과 무관하게 UI에서 실게시글 접근을 차단한다.
  if (!CU) {
-  const fs = document.getElementById('featuredSection');
-  const ps = document.getElementById('popularSection');
-  if (fs) fs.style.display = 'none';
-  if (ps) ps.style.display = 'none';
-  window._cachedPosts = [
-   { id:'demo-post-1', demo:true, category:'블로그 작성 꿀팁', title:'블로그 글을 자연스럽게 다듬는 루틴', body:'초안을 쓴 뒤 반복 표현과 문장 리듬을 확인하는 순서를 정리했어요.', authorName:'익명', createdAt:_mockDate(0), views:1246, likes:[1,2,3,4,5], commentCount:34 },
-   { id:'demo-post-2', demo:true, category:'논문', title:'서론과 결론의 정형 표현을 줄이는 방법', body:'서론과 결론에서 자주 반복되는 표현을 어떻게 정리했는지 경험을 나눠요.', authorName:'석문대생', createdAt:_mockDate(0), views:973, likes:[1,2,3,4], commentCount:22 },
-   { id:'demo-post-3', demo:true, category:'자소서 조언', title:'경험을 살리는 자소서 문항별 구조', body:'문항마다 어떤 순서로 경험과 판단을 연결하면 좋은지 정리했습니다.', authorName:'취준러', createdAt:_mockDate(1), views:861, likes:[1,2,3], commentCount:18 },
-   { id:'demo-post-4', demo:true, category:'글쓰기 팁', title:'같은 문장 구조의 반복을 줄이는 7가지 방법', body:'내용은 유지하면서 어순과 문장 호흡을 조절한 예시를 모았어요.', authorName:'익명', createdAt:_mockDate(1), views:752, likes:[1,2], commentCount:11 },
-   { id:'demo-post-5', demo:true, category:'자유', title:'이번 학기 과제 지옥, 우리 같이 버텨요', body:'다들 뭐 하고 계신가요? 저만 이렇게 바쁜 거 아니죠?', authorName:'익명', createdAt:_mockDate(2), views:630, likes:[1,2], commentCount:29 }
-  ];
-  window.postPage = 1;
-  _renderPostPage();
-  if (pager) pager.style.display = 'none';
+  _showCommunityLoginGate();
   return;
  }
+ const requestUid = CU.uid;
+ const rankSection = document.getElementById('rankSection');
+ if (rankSection) rankSection.style.display = '';
  pl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--text3)">불러오는 중...</div>';
  if (pager) pager.style.display = 'none';
  try {
  const snap = await getDocs(collection(db,'posts'));
+ if (!CU || CU.uid !== requestUid) { _showCommunityLoginGate(); return; }
  let posts = [];
- snap.forEach(d =>posts.push({id:d.id,...d.data()}));
+ snap.forEach(d => {
+  const data = d.data();
+  posts.push({id:d.id,...data,category:_normalizePostCategory(data.category)});
+ });
 
  // 숨김 글: 작성자/관리자만 보임
  const _isAdm = window.isAdmin && window.isAdmin();
@@ -1441,27 +1572,31 @@ window.loadPosts = async (sort) =>{
   if (ps) ps.style.display = 'none';
  }
 
- if (window.sortBy==='oldest') posts.sort((a,b)=>(a.createdAt?.toDate()||0)-(b.createdAt?.toDate()||0));
- else if (window.sortBy==='views') posts.sort((a,b)=>(b.views||0)-(a.views||0));
- else posts.sort((a,b)=>(b.createdAt?.toDate()||0)-(a.createdAt?.toDate()||0));
  window._cachedPosts = posts;
  if (sortChanged || !window.postPage) window.postPage = 1;
  _renderPostPage();
- } catch(e) { pl.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--red)">게시글을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>'; }
+ } catch(e) {
+  if (!CU || CU.uid !== requestUid) { _showCommunityLoginGate(); return; }
+  _clearCommunityPostSurfaces();
+  pl.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--red)">게시글을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</div>';
+  _setCommunityStatus('게시글을 불러오지 못했어요.');
+ }
 };
 
 window.submitPost = async () =>{
- if (!CU) { alert('로그인이 필요합니다.'); return; }
+ if (!CU) { window.openCommunityLogin(); return; }
  const title = document.getElementById('ptitle').value.trim();
  const body = document.getElementById('pbody').value.trim();
  if (!title||!body) { alert('제목과 내용을 모두 입력해 주세요.'); return; }
  
  const files = typeof window.getSelectedFiles === 'function' ? window.getSelectedFiles() : [];
- if (files.length >5) { alert('사진은 최대 5장까지만 가능합니다.'); return; }
+ if (files.length >5) { alert('사진은 최대 5장까지만 올릴 수 있어요.'); return; }
 
  const anon = document.getElementById('postAnon').checked;
  const btn = document.getElementById('postsubmit');
+ if (!btn || btn.disabled) return;
  btn.disabled = true; 
+ btn.setAttribute('aria-busy', 'true');
  btn.textContent = '등록 중...';
 
  try {
@@ -1483,7 +1618,7 @@ window.submitPost = async () =>{
  btn.textContent = '게시글 저장 중...';
  const pAuthorName = anon ? '익명' : (window.getAdminName() || CU.displayName);
  const catEl = document.getElementById('postCategory');
- const category = (catEl && catEl.value) ? catEl.value : '자유';
+ const category = _normalizePostCategory((catEl && catEl.value) ? catEl.value : '자유');
  const featEl = document.getElementById('postFeatured');
  const isFeatured = !!(window.isAdmin() && featEl && featEl.checked);
  await addDoc(collection(db,'posts'),{
@@ -1516,11 +1651,13 @@ window.submitPost = async () =>{
  alert('등록 실패: '+e.message); 
  } finally { 
  btn.disabled=false; 
+ btn.removeAttribute('aria-busy');
  btn.textContent='등록'; 
  }
 };
 
 window.viewPost = async (postId) =>{
+ if (!CU) { _showCommunityLoginGate(); window.openCommunityLogin(); return; }
  document.getElementById('listView').style.display='none';
  document.getElementById('detailView').style.display='block';
  const dv = document.getElementById('postDetail');
@@ -1544,7 +1681,7 @@ window.viewPost = async (postId) =>{
  const bmClass = bookmarked?'abtn bookmarked':'abtn';
  const bmTxt = bookmarked?' 북마크됨':' 북마크';
  const postUrl = location.origin+location.pathname+'?post='+postId;
- const pdCat = p.category || '자유';
+ const pdCat = _normalizePostCategory(p.category);
  const pdSlug = _categorySlug(pdCat);
  const pdCatHtml = '<div style="margin-bottom:8px;"><span class="cat-chip cat-'+pdSlug+'">'+escapeHtml(pdCat)+'</span>'+(p.isFeatured?'<span class="feat-title-badge" style="margin-left:6px;">에디터 추천</span>':'')+'</div>';
  dv.innerHTML =
@@ -1609,11 +1746,11 @@ window.viewPost = async (postId) =>{
  ch += '</div>';
  dv.innerHTML += ch;
  document.getElementById('curPostId').value = postId;
- } catch(e) { dv.innerHTML='<div style="color:var(--red)">게시글을 불러오지 못했습니다. '+escapeHtml(e.message || '')+'</div>'; }
+ } catch(e) { dv.innerHTML='<div style="color:var(--red)">게시글을 불러오지 못했어요. '+escapeHtml(e.message || '')+'</div>'; }
 };
 
 window.submitComment = async (postId) =>{
- if (!CU) { alert('로그인이 필요합니다.'); return; }
+ if (!CU) { alert('로그인이 필요해요.'); return; }
  const body = document.getElementById('cinput').value.trim();
  if (!body) { alert('댓글 내용을 입력해 주세요.'); return; }
  const anon = document.getElementById('canon').checked;
@@ -1642,7 +1779,7 @@ window.submitComment = async (postId) =>{
 };
 
 window.toggleBm = async (postId) =>{
- if (!CU) { alert('로그인이 필요합니다.'); return; }
+ if (!CU) { alert('로그인이 필요해요.'); return; }
  const ref = doc(db,'users',CU.uid);
  const snap = await getDoc(ref);
  const bms = snap.data().bookmarks||[];
@@ -1765,12 +1902,12 @@ window.loadQuestions = async (sort) =>{
   const isPerm = /permission|insufficient/i.test(e.message||'');
   el.innerHTML = isPerm
    ? '<div class="qna-empty">작성자와 관리자만 볼 수 있어요.</div>'
-   : '<div class="qna-empty" style="color:var(--red)">문의 목록을 불러오지 못했습니다. '+escapeHtml(e.message||'')+'</div>';
+   : '<div class="qna-empty" style="color:var(--red)">문의 목록을 불러오지 못했어요. '+escapeHtml(e.message||'')+'</div>';
  }
 };
 
 window.submitQuestion = async () =>{
- if (!CU) { alert('로그인이 필요합니다.'); return; }
+ if (!CU) { alert('로그인이 필요해요.'); return; }
  const title = document.getElementById('qtitle').value.trim();
  const body = document.getElementById('qbody').value.trim();
  if (!title || !body) { alert('문의 제목과 내용을 모두 입력해 주세요.'); return; }
@@ -1864,7 +2001,7 @@ window.viewQuestion = async (qid) =>{
   const isPerm = /permission|insufficient/i.test(e.message||'');
   dv.innerHTML = isPerm
    ? '<div class="qna-empty">작성자와 관리자만 볼 수 있어요.</div>'
-   : '<div class="qna-empty" style="color:var(--red)">문의 내용을 불러오지 못했습니다. '+escapeHtml(e.message||'')+'</div>';
+   : '<div class="qna-empty" style="color:var(--red)">문의 내용을 불러오지 못했어요. '+escapeHtml(e.message||'')+'</div>';
  }
 };
 
@@ -1968,42 +2105,42 @@ const NOTICE_BASE_ITEMS = [
  {
   id: 'humanize-v2541-refine',
   category: '업데이트',
-  title: '휴머나이징 v2.5.41 업데이트 — 구조 보존·문단 보강',
+  title: '긴 글 구조 보존과 문단 보강을 개선했어요',
   date: '2026.08.29',
   views: 0,
-  body: '휴머나이징 엔진을 v2.5.41로 업데이트했습니다. 긴 글을 처리할 때 제목·절·문단의 순서와 경계를 원문과 다시 대조해 서로 다른 절이 합쳐지거나 설명이 빠지는 문제를 줄였습니다.\n\n다듬기·기본 결과에서는 보강이 필요한 문단에 문단 보강 기능이 표시될 수 있습니다. 사용자가 직접 입력한 실제 경험이나 사실을 바탕으로 해당 문단만 다시 다듬으며, 결과가 바뀌지 않거나 안전 검증을 통과하지 못한 보강 요청은 크레딧과 무료 횟수를 사용하지 않습니다.\n\n다듬기·기본·고급의 차이를 한 화면에서 비교할 수 있도록 선택 화면을 정리하고, 글쓰기 연구노트와 템플릿·가격 계산기를 추가했습니다. 휴머나이징 결과는 제출 전에 수치·인용·고유명사와 사실관계를 직접 확인하시기 바랍니다.'
+  body: '긴 글을 처리할 때 제목·절·문단의 순서와 경계를 원문과 다시 대조해 서로 다른 절이 합쳐지거나 설명이 빠지는 문제를 줄였어요.\n\n다듬기·기본 결과에서는 보강이 필요한 문단에 문단 보강 기능이 표시될 수 있어요. 사용자가 직접 입력한 실제 경험이나 사실을 바탕으로 해당 문단만 다시 다듬으며, 결과가 바뀌지 않거나 안전 검증을 통과하지 못한 보강 요청은 크레딧과 무료 횟수를 사용하지 않아요.\n\n다듬기·기본·고급의 차이를 한 화면에서 비교할 수 있도록 선택 화면을 정리하고, 글쓰기 연구노트와 템플릿·가격 계산기를 추가했어요. 휴머나이징 결과는 제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요.'
  },
  {
   id: 'paid-credit-no-expiry-20260829',
   category: '정책',
-  title: '유료 충전 크레딧 유효기간 변경 안내',
+  title: '유료 충전 크레딧은 유효기간이 없어요',
   date: '2026.08.29',
   views: 0,
-  body: '2026년 8월 29일부터 유료로 충전한 크레딧은 유효기간 없이 사용할 수 있습니다. 현재 보유한 유료 충전 크레딧에도 같은 기준이 적용됩니다.\n\n무료 지급 크레딧과 별도 만료일이 표시된 쿠폰·이벤트 혜택은 각 지급 조건을 따릅니다. 환불 신청 기간과 사용분 공제 방식은 기존 환불규정을 따릅니다.'
+  body: '2026년 8월 29일부터 유료로 충전한 크레딧은 유효기간 없이 사용할 수 있어요. 현재 보유한 유료 충전 크레딧과 무료 지급 크레딧에도 같은 기준을 적용해요.\n\n환불 신청 기간과 사용분 공제 방식은 환불 규정을 따라요.'
  },
  {
   id: 'light-credit-350-20260826',
   category: '업데이트',
-  title: '라이트 충전 상품 지급량 확대 — 8,700원 350크레딧',
+  title: '라이트 충전 상품이 350크레딧으로 늘었어요',
   date: '2026.08.26',
   views: 0,
-  body: '8,700원 라이트 충전 상품의 지급량을 330크레딧에서 350크레딧으로 늘렸습니다. 변경 이후 결제 건부터 적용되며, 기존 결제 내역과 환불 금액은 각 주문에 실제 지급된 크레딧을 기준으로 계산합니다.'
+  body: '8,700원 라이트 충전 상품의 지급량을 330크레딧에서 350크레딧으로 늘렸어요. 변경 이후 결제 건부터 적용하며, 기존 결제 내역과 환불 금액은 각 주문에 실제 지급된 크레딧을 기준으로 계산해요.'
  },
  {
   id: 'humanize-v25',
   category: '업데이트',
-  title: '휴머나이징 엔진 v2.5 업데이트 — 문단 구조 보존 강화',
+  title: '문단 구조 보존을 강화했어요',
   date: '2026.07.22',
   views: 1246,
-  body: '원문의 문단 구조와 사례·결론 연결을 유지하면서 문장을 더욱 자연스럽게 다듬도록 분석·재작성 엔진을 강화했습니다. 제목, 표, 목록과 인용 구조도 더욱 안정적으로 보존합니다.'
+  body: '원문의 문단 구조와 사례·결론 연결을 유지하면서 문장을 더욱 자연스럽게 다듬도록 분석·재작성 흐름을 강화했어요. 제목, 표, 목록과 인용 구조도 더욱 안정적으로 보존해요.'
  },
  {
   id: 'detect-report-launch',
   category: '업데이트',
-  title: 'AI 감지 보고서 정식 오픈',
+  title: 'AI 감지 보고서를 열었어요',
   date: '2026.07.21',
   views: 2841,
-  body: '글 전체의 AI 티 지수와 문단별 문체 특징을 한눈에 확인할 수 있는 AI 감지 보고서를 정식 오픈했습니다. 분석 결과와 주요 근거를 하나의 종합 보고서로 제공합니다.'
+  body: '글 전체의 AI 티 지수와 문단별 문체 특징을 한눈에 확인할 수 있는 AI 감지 보고서를 열었어요. 참고 결과와 주요 근거를 하나의 종합 보고서로 보여드려요.'
  },
  {
   id: 'detect-credit-policy',
@@ -2011,7 +2148,7 @@ const NOTICE_BASE_ITEMS = [
   title: 'AI 감지 크레딧 이용 방식 전환 안내 (100자당 1크레딧)',
   date: '2026.07.20',
   views: 3512,
-  body: 'AI 감지는 로그인 후 100자당 1크레딧으로 이용할 수 있습니다. 실행 전에 예상 사용량을 확인할 수 있으며, 정상적으로 결과를 받지 못한 작업은 크레딧이 차감되지 않습니다.'
+  body: 'AI 감지는 로그인 후 100자당 1크레딧으로 이용할 수 있어요. 실행 전에 예상 사용량을 확인할 수 있으며, 전달 가능한 결과를 만들지 못하면 크레딧을 차감하지 않아요.'
  },
  {
   id: 'detect-report-preview',
@@ -2019,7 +2156,7 @@ const NOTICE_BASE_ITEMS = [
   title: 'AI 감지 보고서 문단별 미리보기·전체보기 개선',
   date: '2026.07.20',
   views: 1102,
-  body: '문단별 감지 결과를 짧은 미리보기로 먼저 확인하고 필요한 문단만 펼쳐볼 수 있습니다. 긴 글에서도 전체 흐름과 세부 근거를 빠르게 비교할 수 있도록 보고서 구성을 개선했습니다.'
+  body: '문단별 감지 결과를 짧은 미리보기로 먼저 확인하고 필요한 문단만 펼쳐볼 수 있어요. 긴 글에서도 전체 흐름과 세부 근거를 빠르게 비교할 수 있도록 보고서 구성을 개선했어요.'
  },
  {
   id: 'friend-invite-event',
@@ -2027,7 +2164,7 @@ const NOTICE_BASE_ITEMS = [
   title: '친구 초대 혜택 안내 — 초대자와 가입자 모두 20크레딧 지급',
   date: '2026.07.18',
   views: 2874,
-  body: '초대 링크를 통해 친구가 신규 가입하면 초대자와 가입자에게 각각 20크레딧을 지급합니다. 사이드바의 초대하기 버튼에서 링크를 복사하여 바로 공유할 수 있습니다.'
+  body: '초대 링크를 통해 친구가 신규 가입하면 초대자와 가입자에게 각각 20크레딧을 드려요. 사이드바의 초대하기 버튼에서 링크를 복사해 바로 공유할 수 있어요.'
  },
  {
   id: 'application-genre-quality',
@@ -2035,7 +2172,7 @@ const NOTICE_BASE_ITEMS = [
   title: '자소서·지원서 장르 재구성 품질 개선',
   date: '2026.07.08',
   views: 1532,
-  body: '성장 과정, 경험, 지원 동기와 포부의 문항 경계를 유지하면서 반복 표현을 줄이도록 자소서·지원서 처리 품질을 개선했습니다.'
+  body: '성장 과정, 경험, 지원 동기와 포부의 문항 경계를 유지하면서 반복 표현을 줄이도록 자소서·지원서 처리 품질을 개선했어요.'
  },
  {
   id: 'long-document-performance',
@@ -2043,7 +2180,7 @@ const NOTICE_BASE_ITEMS = [
   title: '긴 문서 처리 속도·안정성 개선',
   date: '2026.07.05',
   views: 987,
-  body: '긴 문서를 구간별로 안전하게 나누고 순서대로 다시 결합하는 흐름을 보강했습니다. 일시적인 오류가 발생한 구간은 자동으로 재시도하여 작업 중단 가능성을 줄였습니다.'
+  body: '긴 문서를 구간별로 안전하게 나누고 순서대로 다시 결합하는 흐름을 보강했어요. 일시적인 오류가 발생한 구간은 자동으로 다시 시도해 작업 중단 가능성을 줄였어요.'
  }
 ];
 
@@ -2124,7 +2261,7 @@ function renderNoticeList() {
   status.textContent = scope + ' ' + items.length.toLocaleString('ko-KR') + '개' + suffix;
  }
  if (!items.length) {
-  el.innerHTML = '<div class="gp-notice-empty">조건에 맞는 공지사항이 없습니다.<small>다른 분류를 선택하거나 검색어를 변경하시기 바랍니다.</small></div>';
+  el.innerHTML = '<div class="gp-notice-empty">조건에 맞는 공지사항이 없어요.<small>다른 분류를 선택하거나 검색어를 바꿔 보세요.</small></div>';
   return;
  }
  el.innerHTML = items.map((item, index) =>
@@ -2237,7 +2374,7 @@ window.loadNotices = async () =>{
   );
   renderNoticeList();
  } catch(e) {
-  if (window.gpToast) window.gpToast('운영 공지를 불러오지 못해 기본 공지를 표시합니다.', { type: 'info' });
+  if (window.gpToast) window.gpToast('운영 공지를 불러오지 못해 기본 공지를 표시해요.', { type: 'info' });
  }
 };
 
@@ -2262,7 +2399,7 @@ window.viewNotice = async (id) =>{
    views: Number(n.views || 0)
   });
  } catch (e) {
-  if (window.gpToast) window.gpToast('공지 내용을 불러오지 못했습니다.', { type: 'error' });
+  if (window.gpToast) window.gpToast('공지 내용을 불러오지 못했어요.', { type: 'error' });
   renderNoticeList();
  }
 };
@@ -2371,7 +2508,7 @@ window.loadMyPage = async () =>{
 +'<button onclick="deleteAccount()" style="padding:5px 12px;border-radius:50px;border:1px solid var(--border);background:transparent;color:var(--text3);font-family:var(--font);font-size:11px;cursor:pointer;">회원 탈퇴</button></div>'
  +'</div>'
  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
- +'<button class="buybtn" onclick="switchTab(\'pricing\')">플랜 변경</button>'
+ +'<button class="buybtn" onclick="switchTab(\'pricing\')">충전하기</button>'
  +'<button onclick="showReferralPopup()" style="padding:9px 0;border-radius:50px;border:none;background:var(--green);color:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">친구 초대</button>'
  +'</div>'
  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">'
@@ -2391,7 +2528,7 @@ window.loadMyPage = async () =>{
  await window.loadOrderHistory();
  await window.loadCreditHistory();
  window.renderSubManage(u);
- } catch(e) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">작업 기록을 불러오지 못했습니다. '+escapeHtml(e.message || '')+'</div>'; }
+ } catch(e) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">작업 기록을 불러오지 못했어요. '+escapeHtml(e.message || '')+'</div>'; }
 };
 
 // 마이페이지 정기결제 관리 카드 렌더
@@ -2401,15 +2538,11 @@ window.renderSubManage = function(u) {
   const sub = u.subscription;
   const coupon = u.coupon;
   if (!sub) {
-    el.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'
-      +'<div><div style="font-size:15px;font-weight:700;">정기 구독</div>'
-      +'<div style="font-size:13px;color:var(--text2);margin-top:2px;">아직 구독 중이 아닙니다.</div></div>'
-      +'<button onclick="switchTab(\'pricing\');setTimeout(()=>{if(window.switchPricingTab)window.switchPricingTab(\'sub\');const s=document.getElementById(\'subscriptionSection\');if(s)s.scrollIntoView({behavior:\'smooth\'});},100);" '
-      +'style="padding:8px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#815df2,#5587f8);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">구독 시작하기</button>'
-      +'</div></div>';
+    el.hidden = true;
+    el.innerHTML = '';
     return;
   }
+  el.hidden = false;
   const tierLabels = { '1000':'베이직(1,000자 × 50회/월)', '5000':'스탠다드(5,000자 × 50회/월)', '10000':'프로(10,000자 × 50회/월)', 'unlimited':'무제한' };
   const tierPrices = { '1000':11900, '5000':54900, '10000':99000, 'unlimited':290000 };
   const nextMs = sub.nextBillingAt?.toMillis ? sub.nextBillingAt.toMillis() : (sub.nextBillingAt?._seconds ? sub.nextBillingAt._seconds*1000 : 0);
@@ -2426,16 +2559,14 @@ window.renderSubManage = function(u) {
   let pastDueBanner = '';
   if (sub.status === 'active') {
     actionBtn = '<button onclick="cancelSubscription()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;">구독 해지</button>';
-  } else if (sub.status === 'cancelled' && nextMs > Date.now()) {
-    actionBtn = '<button onclick="resumeSubscription()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;cursor:pointer;">구독 재개</button>';
   } else if (sub.status === 'past_due') {
-    actionBtn = '<button onclick="retrySubscription(\''+sub.tier+'\')" style="padding:8px 14px;border-radius:8px;border:none;background:var(--red);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">결제수단 다시 등록</button>';
+    actionBtn = '<button onclick="switchTab(\'pricing\')" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">크레딧 충전하기</button>';
     pastDueBanner = '<div style="background:rgba(217,48,37,.08);border:1px solid rgba(217,48,37,.3);border-radius:10px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">'
       +'<svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" width="22" height="22" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
-      +'<div style="font-size:13px;color:var(--text);"><strong style="color:var(--red);">정기 결제를 완료하지 못했습니다.</strong> 카드 한도와 만료일을 확인한 뒤 결제 수단을 다시 등록해 주세요. 등록이 끝나면 결제를 다시 시도합니다.</div>'
+      +'<div style="font-size:13px;color:var(--text);"><strong style="color:var(--red);">정기 결제를 완료하지 못했어요.</strong> 신규·재개 신청은 준비 중이에요. 현재는 크레딧을 충전해 이용해 주세요.</div>'
       +'</div>';
   } else {
-    actionBtn = '<button onclick="switchTab(\'pricing\');setTimeout(()=>{if(window.switchPricingTab)window.switchPricingTab(\'sub\');const s=document.getElementById(\'subscriptionSection\');if(s)s.scrollIntoView({behavior:\'smooth\'});},100);" style="padding:8px 14px;border-radius:8px;border:none;background:linear-gradient(135deg,#815df2,#5587f8);color:#fff;font-size:13px;cursor:pointer;">다시 구독하기</button>';
+    actionBtn = '<button onclick="switchTab(\'pricing\')" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13px;cursor:pointer;">크레딧 충전하기</button>';
   }
 
   el.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;">'
@@ -2452,20 +2583,6 @@ window.renderSubManage = function(u) {
     +'<div style="color:var(--text3);">결제 카드</div><div style="color:var(--text);">'+ cardLine +'</div>'
     +'<div style="color:var(--text3);">이번 사이클 쿠폰</div><div style="color:var(--text);">'+ couponLine +'</div>'
     +'</div></div>';
-};
-
-// past_due 상태에서 결제수단 다시 등록 → 같은 티어로 재구독
-window.retrySubscription = async function(tier) {
-  if (!window.SUBSCRIPTION_ENABLED) {
-    alert('정기 구독은 현재 결제 시스템 검수 중입니다.\n검수 완료 즉시 안내드릴게요.');
-    return;
-  }
-  if (!window.CU) return;
-  const ok = window.gpConfirm
-    ? await window.gpConfirm({ title: '카드를 다시 등록할까요?', message: '등록이 끝나면 즉시 결제가 시도됩니다.', confirmText: '등록하기' })
-    : confirm('카드를 다시 등록하면 즉시 결제가 시도됩니다. 진행할까요?');
-  if (!ok) return;
-  await payTossSubscription(tier);
 };
 
 window.cancelSubscription = async function() {
@@ -2487,25 +2604,6 @@ window.cancelSubscription = async function() {
       await window.loadMyPage();
     } else {
       alert(data.error || '해지 실패');
-    }
-  } catch(e) { alert('네트워크 오류: ' + e.message); }
-};
-
-window.resumeSubscription = async function() {
-  if (!window.CU) return;
-  try {
-    const idToken = await window.CU.getIdToken();
-    const res = await fetch(window.apiUrl('/subscription/resume'), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken })
-    });
-    const data = await res.json();
-    if (data.ok) {
-      alert(data.message || '구독이 재개되었습니다.');
-      if (window.SUB) window.SUB.status = 'active';
-      await window.loadMyPage();
-    } else {
-      alert(data.error || '재개 실패');
     }
   } catch(e) { alert('네트워크 오류: ' + e.message); }
 };
@@ -2592,7 +2690,7 @@ window.loadNotifications = async () =>{
  }
  el.innerHTML = html;
  } catch(e) {
-  if (el) el.innerHTML='<div style="color:var(--red)">작업 내용을 불러오지 못했습니다.</div>';
+  if (el) el.innerHTML='<div style="color:var(--red)">작업 내용을 불러오지 못했어요.</div>';
  }
 };
 
@@ -2653,7 +2751,7 @@ window.sendEmailNotification = async (toEmail, toName, fromName, postTitle, mess
 };
 
 window.toggleLike = async (postId) =>{
- if (!CU) { alert('로그인이 필요합니다.'); return; }
+ if (!CU) { alert('로그인이 필요해요.'); return; }
  const ref = doc(db,'posts',postId);
  const snap = await getDoc(ref);
  const likes = snap.data().likes || [];
@@ -2673,7 +2771,7 @@ window.toggleReplyForm = (commentId) =>{
 };
 
 window.submitReply = async (postId, commentId, parentAuthorName) =>{
- if (!CU) { alert('로그인이 필요합니다.'); return; }
+ if (!CU) { alert('로그인이 필요해요.'); return; }
  const bodyEl = document.getElementById('reply_' + commentId);
  const body = bodyEl ? bodyEl.value.trim() : '';
  if (!body) { alert('답글 내용을 입력해 주세요.'); return; }
@@ -2781,10 +2879,10 @@ function historyBillingInfo(disposition, credits) {
  const chargedCredits = Math.max(0, Number(credits) || 0).toLocaleString('ko-KR');
  const values = {
   charged: { short: `${chargedCredits}크레딧 사용`, badge: '사용 완료', waived: false },
-  waived_quality_shortfall: { short: '과거 정책 · 무차감', badge: '과거 정책 무차감', waived: true },
-  waived_repeat_low_benefit: { short: '과거 정책 · 무차감', badge: '과거 정책 무차감', waived: true },
+  waived_quality_shortfall: { short: '무차감', badge: '무차감', waived: true },
+  waived_repeat_low_benefit: { short: '무차감', badge: '무차감', waived: true },
   plan_unlimited: { short: '이용권 포함', badge: '이용권 포함', waived: true },
-  admin_no_charge: { short: '무차감 · 관리자', badge: '관리자 무차감', waived: true }
+  admin_no_charge: { short: '무차감', badge: '무차감', waived: true }
  };
  if (values[disposition]) return values[disposition];
  return Number(credits) > 0
@@ -2862,9 +2960,8 @@ function historyWorkStatus(item) {
   if (probability <= 49) return { label: `AI 생성 가능성 보통 · ${probability}%`, tone: 'notice' };
   return { label: `AI 생성 가능성 높음 · ${probability}%`, tone: 'warn' };
  }
- return item.qualityStatus === 'needs_review'
-  ? { label: '검토 필요', tone: 'notice' }
-  : { label: '작업 완료', tone: 'good' };
+ // qualityStatus는 운영 품질 확인용 메타데이터다. 사용자 기록에는 내부 판정명을 노출하지 않는다.
+ return { label: '작업 완료', tone: 'good' };
 }
 
 function historyDateText(ms) {
@@ -2996,7 +3093,7 @@ function historyRenderList() {
      const selected = historyState.selectedId === item.id;
      return `<div role="listitem" class="gp-history-row-wrap">
       <button type="button" class="gp-history-row${selected ? ' is-selected' : ''}" data-history-id="${escapeHtml(item.id)}" aria-expanded="${selected ? 'true' : 'false'}" aria-controls="historyDetailPanel" onclick="historySelect(this.dataset.historyId)">
-       <span class="gp-history-row-top"><span class="gp-history-kind ${isDetect ? 'detect' : 'humanize'}">${isDetect ? 'AI 감지' : '휴머나이저'}</span><time>${escapeHtml(historyDateText(item.createdAtMs))}</time></span>
+       <span class="gp-history-row-top"><span class="gp-history-kind ${isDetect ? 'detect' : 'humanize'}">${isDetect ? 'AI 감지' : '휴머나이징'}</span><time>${escapeHtml(historyDateText(item.createdAtMs))}</time></span>
        <strong>${escapeHtml(historyTitle(item))}</strong>
        <span class="gp-history-row-preview">${escapeHtml(historyPreview(item))}</span>
        <span class="gp-history-row-meta"><span class="gp-history-work ${work.tone}">${escapeHtml(work.label)}</span><span class="gp-history-billing">${escapeHtml(billing.short)}</span></span>
@@ -3067,7 +3164,7 @@ function historyRenderDetail() {
  panel.innerHTML = `<article class="gp-history-detail">
   <header class="gp-history-detail-head">
    <button type="button" class="gp-history-back" onclick="historyCloseDetail()" aria-label="작업 기록 목록으로 돌아가기"><span aria-hidden="true">←</span> 목록</button>
-   <div class="gp-history-detail-kicker"><span class="gp-history-kind ${isDetect ? 'detect' : 'humanize'}">${isDetect ? 'AI 감지' : '휴머나이저'}</span><time>${escapeHtml(historyDateText(item.createdAtMs))}</time></div>
+   <div class="gp-history-detail-kicker"><span class="gp-history-kind ${isDetect ? 'detect' : 'humanize'}">${isDetect ? 'AI 감지' : '휴머나이징'}</span><time>${escapeHtml(historyDateText(item.createdAtMs))}</time></div>
    <h2>${escapeHtml(historyTitle(item))}</h2>
    <div class="gp-history-detail-meta">
     <span><small>작업 상태</small><b class="${work.tone}">${escapeHtml(work.label)}${isDetect && probability != null ? ' (추정)' : ''}</b></span>
@@ -3455,7 +3552,7 @@ window.loadOrderHistory = async () =>{
 
 // 환불하기 모달 열기
 window.showRefundModal = async () =>{
- if (!CU) { alert('로그인이 필요합니다.'); return; }
+ if (!CU) { alert('로그인이 필요해요.'); return; }
  const modal = document.getElementById('refundModal');
  modal.style.display = 'flex';
  await window.loadRefundModalList();
@@ -3756,7 +3853,7 @@ function adminHistoryTypeText(type) {
   referral: '친구 추천',
   coupon_redeem: '쿠폰',
   detect: 'AI 감지',
-  humanize: '휴머나이저',
+  humanize: '휴머나이징',
   restructure: '고급 휴머나이징(정밀 검증)',
   admin_adjust: '관리자 조정'
  })[type] || '기타';
@@ -3778,7 +3875,7 @@ function adminHistoryLabel(h) {
    case 'assignment': return '원문 보존 다듬기(구형 기록)';
    case 'thesis': return '논문 다듬기(구형 기록)';
    case 'resume': return '다듬기(자소서)';
-   default: return '휴머나이저';   // 구 데이터(모드 미기록)
+   default: return '휴머나이징';   // 구 데이터(모드 미기록)
   }
  }
  if (type === 'restructure') {
@@ -4963,7 +5060,7 @@ window.loadAdminHumanizeLab = async function() {
 
 // 관리자 탭: 섹션이 누적되며 세로 스크롤이 과도해져, 성격별 그룹만 표시 (선택은 세션 유지)
 window.adminSwitchTab = function(tab) {
- const valid = ['ops', 'quality', 'users', 'ledger', 'coupons', 'settings', 'patches'];
+ const valid = ['ops', 'incidents', 'quality', 'users', 'ledger', 'coupons', 'settings', 'patches'];
  if (!valid.includes(tab)) tab = 'ops';
  try { sessionStorage.setItem('gpAdminTab', tab); } catch (e) {}
  document.querySelectorAll('#adminContent [data-admin-tab]').forEach(s => {
@@ -5010,11 +5107,185 @@ window.loadAdminPage = async function() {
   window.loadAdminWritingPolicies(),
   window.loadAdminWritingMetrics(),
   window.loadAdminJobs(),
+  window.loadAdminOpsLogs(),
   window.loadAdminHumanizeQuality(),
   window.loadAdminRefundList(),
   window.loadAllCreditHistory(),
   window.loadCouponBatches()
  ]);
+};
+
+// ── 장애 로그(2026-08-29) ────────────────────────────────────────────────
+// 서버가 등급을 매긴 사건(Backend lib/opsEvents 카탈로그)을 목록·요약·하트비트로 보여준다.
+// 목표는 "이게 심각한가"를 목록에서 바로 판단하고, 확인(ack)까지 여기서 끝내는 것.
+let gpOpsQueryTimer = null;
+window.adminOpsQueryInput = function() {
+ clearTimeout(gpOpsQueryTimer);
+ gpOpsQueryTimer = setTimeout(() => window.loadAdminOpsLogs(), 300);
+};
+
+function gpOpsEscape(value) {
+ return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function gpOpsAgo(ms) {
+ if (!ms) return '-';
+ const diff = Math.max(0, Date.now() - Number(ms));
+ const m = Math.floor(diff / 60000);
+ if (m < 1) return '방금';
+ if (m < 60) return m + '분 전';
+ const h = Math.floor(m / 60);
+ if (h < 24) return h + '시간 전';
+ return Math.floor(h / 24) + '일 전';
+}
+
+async function gpOpsPost(path, body) {
+ const idToken = await window.CU.getIdToken();
+ const res = await fetch(window.apiUrl(path), {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+  body: JSON.stringify(body || {})
+ });
+ const data = await res.json().catch(() => ({}));
+ if (!res.ok || !data.ok) throw new Error(data.error || '요청에 실패했어요.');
+ return data;
+}
+
+window.loadAdminOpsLogs = async function() {
+ const listEl = document.getElementById('adminOpsList');
+ if (!listEl || !window.CU || !window.isAdmin()) return;
+ const hours = Number((document.getElementById('adminOpsHours') || {}).value) || 24;
+ const severity = (document.getElementById('adminOpsSeverity') || {}).value || '';
+ const domain = (document.getElementById('adminOpsDomain') || {}).value || '';
+ const q = ((document.getElementById('adminOpsQuery') || {}).value || '').trim();
+ const onlyOpen = !!(document.getElementById('adminOpsOnlyOpen') || {}).checked;
+
+ try {
+  const [summary, logs] = await Promise.all([
+   gpOpsPost('/admin/ops-summary', { hours }),
+   gpOpsPost('/admin/ops-logs', { hours, severity, domain, q, onlyOpen, limit: 80 })
+  ]);
+  gpOpsRenderSummary(summary);
+  gpOpsRenderBeats(summary.heartbeats || []);
+  gpOpsRenderDomains(logs.domains || []);
+  gpOpsRenderList(logs);
+  const tag = document.getElementById('adminOpsSourceTag');
+  if (tag) tag.textContent = logs.source === 'firestore' ? '' : '메모리 보관분';
+ } catch (e) {
+  listEl.innerHTML = '<div class="gp-admin-empty">장애 로그를 불러오지 못했어요. ' + gpOpsEscape(e.message || '') + '</div>';
+ }
+};
+
+function gpOpsRenderSummary(s) {
+ const el = document.getElementById('adminOpsSummary');
+ if (!el) return;
+ const sev = s.bySeverity || {};
+ const alerting = s.alerting || {};
+ const hook = alerting.webhook || {};
+ // 알림 자체가 죽었는지 보여준다 — 예전에는 웹훅이 실패해도 아무도 몰랐다.
+ const hookState = !alerting.discord
+  ? '<span class="gp-ops-pill warn">디스코드 미설정</span>'
+  : (hook.failed ? '<span class="gp-ops-pill warn">전송 실패 ' + hook.failed + '건</span>' : '<span class="gp-ops-pill ok">알림 정상</span>');
+ const store = alerting.store || {};
+ const storeState = store.writeErrors ? '<span class="gp-ops-pill warn">저장 실패 ' + store.writeErrors + '건</span>' : '';
+
+ el.innerHTML =
+  '<div class="gp-ops-cards">' +
+   '<div class="gp-ops-card sev1"><b>' + (sev.SEV1 || 0) + '</b><span>SEV1 · 돈·정합성</span></div>' +
+   '<div class="gp-ops-card sev2"><b>' + (sev.SEV2 || 0) + '</b><span>SEV2 · 기능 장애</span></div>' +
+   '<div class="gp-ops-card sev3"><b>' + (sev.SEV3 || 0) + '</b><span>SEV3 · 기록만</span></div>' +
+   '<div class="gp-ops-card open"><b>' + (s.openSev1 || 0) + '</b><span>미확인 SEV1</span></div>' +
+  '</div>' +
+  '<div class="gp-ops-meta">최근 ' + (s.hours || 24) + '시간 · 사건 ' + (s.incidents || 0) + '건(발생 ' + (s.occurrences || 0) + '회) ' + hookState + ' ' + storeState + '</div>' +
+  (s.topEvents && s.topEvents.length
+   ? '<div class="gp-ops-top">' + s.topEvents.slice(0, 5).map(t =>
+      '<span class="gp-ops-topitem"><i>' + gpOpsEscape(t.event) + '</i><b>' + t.count + '</b></span>').join('') + '</div>'
+   : '');
+}
+
+function gpOpsRenderBeats(beats) {
+ const el = document.getElementById('adminOpsHeartbeats');
+ if (!el) return;
+ if (!beats.length) { el.innerHTML = ''; return; }
+ // 부재 감지: "일어나야 할 일이 안 일어난 것"은 이 줄에서만 보인다.
+ el.innerHTML = '<div class="gp-ops-beatrow">' + beats.map(b => {
+  const cls = b.state === 'stale' ? 'stale' : (b.state === 'ok' ? 'ok' : 'unknown');
+  const label = b.state === 'stale' ? (b.ageMinutes + '분째 멈춤') : (b.state === 'ok' ? gpOpsAgo(b.lastBeatMs) : '기록 없음');
+  return '<span class="gp-ops-beat ' + cls + '"><i>' + gpOpsEscape(b.label || b.name) + '</i>' + gpOpsEscape(label) + '</span>';
+ }).join('') + '</div>';
+}
+
+function gpOpsRenderDomains(domains) {
+ const sel = document.getElementById('adminOpsDomain');
+ if (!sel) return;
+ const current = sel.value;
+ const options = ['<option value="">전체 영역</option>'].concat(domains.map(d =>
+  '<option value="' + gpOpsEscape(d) + '">' + gpOpsEscape(d) + '</option>'));
+ sel.innerHTML = options.join('');
+ if (domains.includes(current)) sel.value = current;
+}
+
+function gpOpsRenderList(data) {
+ const el = document.getElementById('adminOpsList');
+ if (!el) return;
+ const items = data.items || [];
+ const badge = document.getElementById('adminOpsTabBadge');
+ if (badge) {
+  const open = items.filter(i => i.severity === 'SEV1' && !i.acked).length;
+  badge.hidden = !open;
+  badge.textContent = String(open);
+ }
+ if (!items.length) {
+  el.innerHTML = '<div class="gp-admin-empty">조건에 맞는 장애 기록이 없어요.</div>';
+  return;
+ }
+ el.innerHTML = items.map(item => {
+  const sev = item.severity || 'SEV3';
+  const ids = [
+   item.uid ? ['회원', item.uid] : null,
+   item.orderId ? ['주문', item.orderId] : null,
+   item.jobId ? ['작업', item.jobId] : null,
+   item.amount != null ? ['금액', '₩' + Number(item.amount).toLocaleString('ko-KR')] : null,
+   item.credits != null ? ['크레딧', item.credits] : null,
+   item.code ? ['코드', item.code] : null,
+   item.stage ? ['단계', item.stage] : null,
+   item.requestId ? ['requestId', item.requestId] : null,
+   item.statusCode ? ['status', item.statusCode] : null
+  ].filter(Boolean);
+  return '' +
+   '<article class="gp-ops-item ' + sev.toLowerCase() + (item.acked ? ' acked' : '') + '">' +
+    '<div class="gp-ops-item-head">' +
+     '<span class="gp-ops-sev ' + sev.toLowerCase() + '">' + sev + '</span>' +
+     '<span class="gp-ops-domain">' + gpOpsEscape(item.domain || 'ops') + '</span>' +
+     '<b class="gp-ops-event">' + gpOpsEscape(item.event) + '</b>' +
+     (Number(item.count) > 1 ? '<span class="gp-ops-count">' + item.count + '건</span>' : '') +
+     '<span class="gp-ops-time">' + gpOpsAgo(item.lastSeenMs || item.createdMs) + '</span>' +
+    '</div>' +
+    (item.message ? '<p class="gp-ops-msg">' + gpOpsEscape(item.message) + '</p>' : '') +
+    (item.action ? '<p class="gp-ops-action"><i>대응</i>' + gpOpsEscape(item.action) + '</p>' : '') +
+    (ids.length ? '<div class="gp-ops-ids">' + ids.map(([k, v]) =>
+      '<span><i>' + gpOpsEscape(k) + '</i>' + gpOpsEscape(v) + '</span>').join('') + '</div>' : '') +
+    (item.stack ? '<details class="gp-ops-stack"><summary>스택 보기</summary><pre>' + gpOpsEscape(item.stack) + '</pre></details>' : '') +
+    '<div class="gp-ops-item-foot">' +
+     (item.acked
+      ? '<span class="gp-ops-ackinfo">확인함 · ' + gpOpsEscape(item.ackedAt ? item.ackedAt.slice(0, 16).replace('T', ' ') : '') + '</span>' +
+        (item.memoryOnly ? '' : '<button type="button" class="gp-admin-mini-btn" onclick="adminOpsAck(\'' + gpOpsEscape(item.id) + '\', false)">확인 취소</button>')
+      : (item.memoryOnly
+         ? '<span class="gp-ops-ackinfo">메모리 보관분(저장 전)</span>'
+         : '<button type="button" class="gp-admin-mini-btn" onclick="adminOpsAck(\'' + gpOpsEscape(item.id) + '\', true)">확인 처리</button>')) +
+    '</div>' +
+   '</article>';
+ }).join('');
+}
+
+window.adminOpsAck = async function(id, acked) {
+ if (!id) return;
+ try {
+  await gpOpsPost('/admin/ops-ack', { id, acked });
+  await window.loadAdminOpsLogs();
+ } catch (e) {
+  if (window.gpToast) window.gpToast(e.message || '확인 처리에 실패했어요.', { type: 'error' });
+ }
 };
 
 window.loadAdminWritingPolicies = async function() {
@@ -5320,7 +5591,7 @@ window.adminToggleLogItem = async function(id) {
     const note = raw !== null && raw !== Math.round(detectView.probability)
      ? `<div style="margin-top:6px;color:var(--text3);font-size:12px;">원점수 ${raw}% · ${escapeHtml(matchInfo)}</div>`
      : '';
-    html += `<div class="gp-admin-log-block"><div class="gp-admin-log-block-head"><span>AI 탐지 확률</span></div><div class="gp-admin-log-text">${Math.round(detectView.probability)}%${note}</div></div>`;
+    html += `<div class="gp-admin-log-block"><div class="gp-admin-log-block-head"><span>AI 감지 확률</span></div><div class="gp-admin-log-text">${Math.round(detectView.probability)}%${note}</div></div>`;
    }
    html += block('탐지 요약', detectView.summary, false);
    html += block('탐지 상세', detectView.detail, true);
@@ -6163,7 +6434,7 @@ function wlabChecksHtml(title, checks, extras) {
  const pills = [
   pill('공백포함 ' + Number(c.withSpace || 0).toLocaleString('ko-KR') + '자'),
   pill('공백제외 ' + Number(c.noSpace || 0).toLocaleString('ko-KR') + '자'),
-  pill('2byte ' + Number(c.byte2 || 0).toLocaleString('ko-KR'))
+  pill('2바이트 ' + Number(c.byte2 || 0).toLocaleString('ko-KR'))
  ];
  if (lim.applicable) {
   pills.push(lim.pass

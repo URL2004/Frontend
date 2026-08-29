@@ -12,7 +12,7 @@ test('사용자 화면은 AI 감지를 작성자 확정이 아닌 참고 지표�
   ]);
 
   assert.match(detect, /작성 여부를 확정하는 판정이 아니며/u);
-  assert.match(faq, /실제 작성 주체를 확정하지 않습니다/u);
+  assert.match(faq, /실제 작성 주체를 확정하지 않아요/u);
   assert.match(index, /AI식 문체 신호를 확인하고/u);
   assert.doesNotMatch(detect + faq + index, /사람답게|100% 보장/u);
 });

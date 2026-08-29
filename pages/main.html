@@ -1,39 +1,4 @@
 <div id="mainContent">
- <div id="lowbanner" class="lowbanner" style="display:none">
-   <span>크레딧이 부족합니다</span>
-   <button class="chargbtn" onclick="switchTab('pricing')">충전하기</button>
- </div>
-
- <div class="modetog" style="display:none!important">
-   <button class="mbtn detect active" onclick="gpApplyProductMode('detect')">AI 감지</button>
-   <button class="mbtn human" onclick="gpApplyProductMode('humanize')">휴머나이저</button>
- </div>
- <div class="humanize-mode-container" id="humanizeOptions" style="display:none!important">
-   <div class="mode-tabs-group">
-     <button type="button" class="mode-tab active" data-mode="assignment" onclick="selectHumanizeMode(this)">대학 과제</button>
-     <button type="button" class="mode-tab" data-mode="resume" onclick="selectHumanizeMode(this)">자기소개서</button>
-     <button type="button" class="mode-tab" data-mode="blog" onclick="selectHumanizeMode(this)">블로그/SNS</button>
-     <button type="button" class="mode-tab" data-mode="thesis" onclick="selectHumanizeMode(this)">논문/학술지</button>
-   </div>
- </div>
- <div class="card detect-mode" id="inputCard" style="display:none!important">
-   <span class="clabel" id="inputLabel">분석할 텍스트</span>
-   <button class="sbtn db" id="sbtn" onclick="runAnalysis()" style="display:none!important">
-     <div class="sbtn-inner"><span class="btxt" id="btxt">분석 시작</span></div>
-     <span class="pct-txt" id="pctTxt"></span>
-   </button>
- </div>
-
- <div class="gp-top-actions">
-   <button class="gp-design-open" data-design-trigger type="button" onclick="openMainDesignPicker()">
-     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/><path d="M17 14l3 3-3 3"/></svg>
-     디자인 예시
-   </button>
-   <button class="ls-credit-btn" id="creditChip" onclick="switchTab('pricing')">보유 크레딧 10</button>
-   <button class="ls-upgrade-btn" id="lsUpgradeBtn" onclick="switchTab('pricing')">업그레이드</button>
-  </div>
-
-
  <div class="gp-lav-page" id="lavPage">
    <aside class="gp-lav-sidebar" id="lavSidebar" aria-label="주요 메뉴">
      <div class="gp-lav-brand">
@@ -48,9 +13,8 @@
      <nav class="gp-lav-menu" aria-label="기능 메뉴">
        <a class="active" data-tab="main" href="/">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3 20 7v6c0 4.6-3.2 7.4-8 8.8-4.8-1.4-8-4.2-8-8.8V7l8-4Z"/><path d="m9.5 12 1.8 1.8 3.7-4"/></svg>
-         <span>AI 감지 &amp; 휴머나이저</span>
+         <span>AI 감지 · 휴머나이징</span>
        </a>
-       <!-- 글쓰기 랩(2026-08-26 사장님): 정식 오픈 전 — Pro처럼 연하게 '준비 중'으로 두고 진입은 관리자만 -->
        <button type="button" class="gp-nav-soon" data-tab="writingLab" onclick="openWritingLab()">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15H6.8A2.8 2.8 0 0 0 4 20.8Z"/><path d="M9 8h7M9 12h5"/></svg>
          <span>글쓰기 랩</span>
@@ -64,7 +28,6 @@
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5Z"/></svg>
          <span>커뮤니티</span>
        </a>
-       <!-- 연구노트(구 블로그, 2026-08-29 개명): SPA 탭이 아니라 독립 정적 허브(/blog)로 전체 이동 — data-tab 없음 -->
        <a href="/blog">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z"/><path d="M8 12h8M8 16h5"/></svg>
          <span>연구노트</span>
@@ -91,9 +54,30 @@
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14v15H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
          <span>작업 기록</span>
        </a>
-       <div id="lavHistSlot" class="gp-lav-hist"></div>
-     </nav>
-     <div class="gp-lav-side-bottom" id="lavSideFootSlot"></div>
+       <div id="lavHistSlot" class="gp-lav-hist"><div id="sidebarHistoryList"></div></div>
+      </nav>
+      <div class="gp-lav-side-bottom" id="lavSideFootSlot">
+        <div class="sidebar-footer gp-sidebar-footer">
+          <button class="gp-sidebar-login" type="button" onclick="openMyPage()">
+            <span class="gp-user-dot" aria-hidden="true"></span>
+            <span id="uname" class="sidebar-user-name">로그인 / 회원가입</span>
+            <span id="userPlanBadge" class="sidebar-user-badge">Free</span>
+          </button>
+          <div id="sidebarInviteBanner" class="sidebar-invite gp-invite">
+            <button class="gp-invite-close" type="button" aria-label="초대 배너 닫기" onclick="document.getElementById('sidebarInviteBanner').hidden=true">×</button>
+            <div class="sidebar-invite-title">친구와 함께 20크레딧 받기</div>
+            <div class="sidebar-invite-sub">초대 링크로 가입하면 두 사람 모두 받아요</div>
+            <button type="button" class="gp-invite-btn" onclick="openInviteModal()">초대하기</button>
+          </div>
+          <div class="gp-sidebar-legal">
+            <span>지피코리아 · 213-11-67637</span>
+            <button type="button" onclick="showPolicy('terms')">이용약관</button>
+            <button type="button" onclick="showPolicy('privacy')">개인정보</button>
+            <button type="button" onclick="showPolicy('refund')">환불</button>
+            <a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2131167637" target="_blank" rel="noopener">사업자정보 확인</a>
+          </div>
+        </div>
+      </div>
    </aside>
    <div class="gp-lav-backdrop" onclick="lavCloseSidebar()" aria-hidden="true"></div>
 
@@ -109,7 +93,11 @@
             </span>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
           </button>
-          <span class="gp-lav-top-slot" id="lavTopSlot"></span>
+          <span class="gp-lav-top-slot" id="lavTopSlot">
+            <button class="ls-credit-btn" id="creditChip" data-credit-balance type="button" onclick="switchTab('pricing')">가입 시 10크레딧</button>
+            <button class="ls-upgrade-btn" id="lsUpgradeBtn" type="button" onclick="switchTab('pricing')">충전하기</button>
+          </span>
+          <a class="gp-lav-mobile-pricing" href="/pricing" data-tab="pricing">요금</a>
          <button type="button" class="gp-lav-guide" onclick="switchTab('guide')"><b>?</b><span>사용 가이드</span></button>
          <button type="button" class="gp-lav-bell gp-bell-uiverse" onclick="gpOpenNotificationCenter(event)" aria-label="알림" aria-haspopup="dialog">
            <svg class="gp-bell-icon" viewBox="0 0 448 512" aria-hidden="true">
@@ -118,7 +106,6 @@
            <i aria-hidden="true"></i>
            <span id="notifBadge" class="gp-notif-badge" hidden></span>
          </button>
-         <button type="button" class="gp-lav-design" data-design-trigger onclick="openMainDesignPicker()">디자인 예시</button>
        </div>
      </header>
 
@@ -136,32 +123,35 @@
            <span id="lavHeroOfferDesc"></span>
          </div>
          <button type="button" class="gp-lav-offer-cta" id="lavHeroOfferCta" onclick="gpHeroOfferAction()"></button>
+         <span class="gp-lav-offer-tail" aria-hidden="true"></span>
        </div>
 
        <div class="gp-lav-composer">
-         <textarea id="lavInput" rows="5" placeholder="AI 느낌이 나는 문장을 붙여넣어 보세요..." aria-describedby="lavInputError" onkeydown="lavComposerKey(event)" oninput="lavSyncCount(this)"></textarea>
+         <textarea id="lavInput" rows="5" placeholder="다듬을 초안이나 문단을 붙여넣어 보세요..." aria-describedby="lavInputError lavRateNote" onkeydown="lavComposerKey(event)" oninput="lavSyncCount(this)"></textarea>
          <p class="gp-lav-input-error" id="lavInputError" role="alert" hidden></p>
          <div class="gp-lav-composer-bar">
-           <label class="gp-lav-add gp-upload-uiverse" for="pdfInput" title="파일 업로드 (.pdf)" aria-label="파일 업로드">
+           <button class="gp-lav-add gp-upload-uiverse" type="button" title="PDF 파일 업로드" aria-label="PDF 파일 업로드" onclick="document.getElementById('pdfInput').click()">
              <span class="gp-upload-plus" aria-hidden="true"></span>
-           </label>
+           </button>
            <span class="gp-lav-count" id="lavCount" aria-live="polite"></span>
            <div class="gp-lav-mode" role="group" aria-label="실행 모드 선택">
              <button type="button" class="on" data-mode="humanize" onclick="gpApplyProductMode('humanize')" aria-pressed="true">
                <span class="material-symbols-outlined" aria-hidden="true">auto_fix_high</span><span class="lbl">휴머나이징</span>
              </button>
              <button type="button" data-mode="detect" onclick="gpApplyProductMode('detect')" aria-pressed="false" title="100자당 1크레딧">
-               <span class="material-symbols-outlined" aria-hidden="true">search_insights</span><span class="lbl">AI 감지</span><em>100자 1크레딧</em>
+               <span class="material-symbols-outlined" aria-hidden="true">search_insights</span><span class="lbl">AI 감지</span><em>100자당 1크레딧</em>
              </button>
            </div>
-           <button type="button" class="gp-lav-send" onclick="lavRun()" aria-label="시작">
+           <button type="button" class="gp-lav-send" id="lavRunButton" onclick="lavRun()" aria-label="휴머나이징 시작 · 예상 크레딧 계산 전">
              <span class="lav-send-box" aria-hidden="true">
                <span class="lav-send-elem"><svg viewBox="0 0 46 40" xmlns="http://www.w3.org/2000/svg"><path d="M46 20.038c0-.7-.3-1.5-.8-2.1l-16-17c-1.1-1-3.2-1.4-4.4-.3-1.2 1.1-1.2 3.3 0 4.4l11.3 11.9H3c-1.7 0-3 1.3-3 3s1.3 3 3 3h33.1l-11.3 11.9c-1 1-1.2 3.3 0 4.4 1.2 1.1 3.3.8 4.4-.3l16-17c.5-.5.8-1.1.8-1.9z"></path></svg></span>
                <span class="lav-send-elem"><svg viewBox="0 0 46 40" xmlns="http://www.w3.org/2000/svg"><path d="M46 20.038c0-.7-.3-1.5-.8-2.1l-16-17c-1.1-1-3.2-1.4-4.4-.3-1.2 1.1-1.2 3.3 0 4.4l11.3 11.9H3c-1.7 0-3 1.3-3 3s1.3 3 3 3h33.1l-11.3 11.9c-1 1-1.2 3.3 0 4.4 1.2 1.1 3.3.8 4.4-.3l16-17c.5-.5.8-1.1.8-1.9z"></path></svg></span>
              </span>
            </button>
          </div>
+         <input type="file" id="pdfInput" accept="application/pdf,.pdf" hidden onchange="handlePDF(this)">
        </div>
+       <p class="gp-lav-rate-note" id="lavRateNote">기본 휴머나이징 최소 10크레딧 · 100자당 2크레딧</p>
        <!-- 예상 비용(C): 붙여넣는 즉시 이 글의 크레딧을 계산해 보여준다.
             계산식은 evasion-flow.js의 shortHumanizeCredit·감지 단가와 동일한 소스를 쓴다. -->
        <div class="gp-lav-estimate" id="lavEstimate" hidden>
@@ -176,7 +166,6 @@
        </div>
 
 
-       <!-- 문장 체험(gp-lav-proof) 블록 제거 — 사장님: 크레딧 들여가며 체험 안 할 것(2026-06-13). 복원 시 git 이력 참조 -->
        </div>
 
        <div class="gp-lav-flow" id="lavFlow" hidden>
@@ -214,18 +203,18 @@
              </div>
              <div class="lav-rep-verdict">
                <span class="lav-rep-badge" id="lavRepBadge">판정</span>
-               <strong id="lavRepTitle">분석 결과</strong>
+               <strong id="lavRepTitle">참고 결과</strong>
                <p id="lavRepSummary"></p>
                <div class="lav-rep-stats">
-                 <span class="st bad"><b id="lavRepStatRisk">0</b>위험 문단</span>
+                 <span class="st bad"><b id="lavRepStatRisk">0</b>주의가 필요한 문단</span>
                  <span class="st mid"><b id="lavRepStatThin">0</b>주의</span>
                  <span class="st good"><b id="lavRepStatSafe">0</b>안전</span>
                </div>
              </div>
            </div>
 
-           <!-- ② 휴머나이저로 이동 — 사장님: 본문 글 위로. 완전 분리(해결 경로 선택은 방법 선택 화면에서, 글은 그대로 가져감) -->
-           <button type="button" class="lav-flow-cta lav-rep-go" onclick="lavReportToHumanize()">이 글 그대로 휴머나이저로 이동 →</button>
+           <!-- 진단 결과의 원문을 유지한 채 휴머나이징 방법 선택으로 이동합니다. -->
+           <button type="button" class="lav-flow-cta lav-rep-go" onclick="lavReportToHumanize()">이 글 그대로 휴머나이징으로 이동 →</button>
            <p class="lav-rep-go-cost" id="lavRepGoCost" hidden></p>
 
            <!-- ③ 문단별 진단 -->
@@ -261,7 +250,7 @@
 
            <div class="lav-choice-heading">
              <h3 class="lav-flow-h" id="lavChoiceHeading">어떻게 다듬을까요?</h3>
-             <p>선택 후 비용과 시간을 확인합니다.</p>
+             <p>선택 후 비용과 시간을 확인해요.</p>
            </div>
            <!-- 기존 설정 수집·잠금·추천 로직(currentSettings·applyAdvancedRouting)이 그대로 쓰는 숨김 라디오 — 카드가 값을 정한다 -->
            <div hidden aria-hidden="true">
@@ -280,7 +269,7 @@
                  <li>문단 구조 그대로 유지</li>
                </ul>
                <span class="lav-sel-examples"><small>글 예시</small><b>제출 전 과제 · 자기소개서 · 교정이 필요한 초안</b></span>
-               <em class="lav-sel-cost" id="lavCostPolish">비용 계산 중</em>
+               <em class="lav-sel-cost" id="lavCostPolish">최소 10크레딧 · 100자당 2크레딧</em>
              </button>
              <button type="button" class="lav-sel-card" id="lavCardBasic" onclick="lavSelectTone('blog')">
                <span class="lav-purpose-reco" id="lavBasicRecommended" hidden>추천</span>
@@ -294,7 +283,7 @@
                  <li>문단 순서와 구성 유지</li>
                </ul>
                <span class="lav-sel-examples"><small>글 예시</small><b>일반 과제 · 블로그 · 후기·SNS</b></span>
-               <em class="lav-sel-cost" id="lavCostBlog">비용 계산 중</em>
+               <em class="lav-sel-cost" id="lavCostBlog">최소 10크레딧 · 100자당 2크레딧</em>
              </button>
              <button type="button" class="lav-sel-card" id="lavCardFormal" onclick="lavSelectTone('formal')">
                <span class="lav-purpose-reco" id="lavFormalRecommended" hidden>추천</span>
@@ -308,19 +297,18 @@
                  <li>전 문서 의미 검증</li>
                </ul>
                <span class="lav-sel-examples"><small>글 예시</small><b>보고서 · 논문 초안 · 공식 문서</b></span>
-               <span class="lav-purpose-caveat" id="lavFormalLockNote" hidden>이 글에서는 선택할 수 없어요</span>
-               <em class="lav-sel-cost" id="lavCostFormal">비용 계산 중</em>
+               <span class="lav-purpose-caveat" id="lavFormalLockNote" hidden>원문 보존이 중요한 글이에요. 기본 휴머나이징을 선택해 주세요.</span>
+               <em class="lav-sel-cost" id="lavCostFormal">1만자 이하 200크레딧 · 근거 보강 +100</em>
              </button>
            </div>
-           <p class="lav-tone-variance"><b>외부 탐지기 결과는 보장하지 않습니다.</b> 원문의 사실과 의미를 우선해 다듬어요.</p>
-           <!-- 세부 설정(선택) — 기본값 자동. 오판별 같은 소수 케이스의 탈출구만 남긴다(2026-08-28 흐름 단순화 D1) -->
+           <p class="lav-tone-variance"><b>외부 AI 감지 결과는 보장하지 않아요.</b> 원문의 사실과 의미를 우선해 다듬어요.</p>
            <details class="lav-set-block lav-opt-acc" id="lavDetailBlock" open>
              <summary class="lav-acc-sum">
                <span class="lav-acc-main">
                  <strong>세부 설정</strong>
                  <em class="lav-acc-opt">선택</em>
                  <!-- 접힌 상태에서도 현재 값을 보여준다 — 열지 않아도 무엇이 적용 중인지 알 수 있게 -->
-                 <span class="lav-acc-now" id="lavDetailSummary">자동 판별 · 자동 문체</span>
+                 <span class="lav-acc-now" id="lavDetailSummary">자동 판별 · 문체 자동 선택</span>
                </span>
                <svg class="lav-acc-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
              </summary>
@@ -348,12 +336,12 @@
                    <option value="creative">시·창작문</option>
                    <option value="general">일반 글</option>
                  </select>
-                 <p class="lav-set-hint" id="lavDocumentProfileHint">선택해도 원문에서 장르가 뚜렷하면 안전을 위해 자동 판정을 우선합니다.</p>
+                 <p class="lav-set-hint" id="lavDocumentProfileHint">선택해도 원문에서 장르가 뚜렷하면 안전을 위해 자동 판정을 우선해요.</p>
                </div>
                <div class="lav-set-field" id="lavBasicStyleBlock">
                  <div class="lav-set-head">
                    <strong>문체 보조 힌트</strong>
-                   <span>기본 휴머나이징에서만 쓰여요. 원문 말투는 그대로 두고 단어·연결의 결만 조정합니다.</span>
+                   <span>기본 휴머나이징에서만 쓰여요. 원문 말투는 그대로 두고 단어·연결의 결만 조정해요.</span>
                  </div>
                  <div class="lav-seg" role="radiogroup" aria-label="문체 보조 힌트">
                    <label class="lav-seg-opt">
@@ -411,13 +399,12 @@
            <div id="lavBlockedAbstract" class="lav-blocked-abstract" hidden>
              <div class="lav-blocked-abstract-title">이 부분이 두루뭉술해서 AI 티 줄이기가 어려워요</div>
              <ul id="lavBlockedAbstractList" class="lav-blocked-abstract-list"></ul>
-             <div class="lav-blocked-abstract-tip">위 내용과 관련된 <b>실제 경험·사례·수치</b>를 한 줄 적고 다시 도전하면, 그 부분을 더 구체적이고 자연스럽게 바꿀 수 있어요.</div>
+             <div class="lav-blocked-abstract-tip">위 내용과 관련된 <b>실제 경험·사례·수치</b>를 한 줄 적고 다시 시도하면, 그 부분을 더 구체적이고 자연스럽게 바꿀 수 있어요.</div>
            </div>
-           <!-- 인라인 경험 메모(2026-08-28 D6): 설정 화면 아코디언 제거로, 재도전 메모는 차단 화면에서 바로 받는다 -->
            <textarea class="lav-blocked-memo" id="lavBlockedMemo" rows="2" maxlength="500" placeholder="예) 작년 겨울 편의점 야간 알바에서 정산이 30분 늦어 막차를 놓친 적이 있다 — 실제 겪은 일만 한 줄"></textarea>
            <div class="lav-blocked-actions">
-             <button type="button" class="lav-flow-cta" onclick="lavBlockedRetryMemo()">메모 반영해 다시 도전</button>
-             <button type="button" id="lavBlockedEvidence" class="lav-blocked-2nd" onclick="lavBlockedRetryEvidence()" hidden>근거 보강 켜고 다시 도전</button>
+             <button type="button" class="lav-flow-cta" onclick="lavBlockedRetryMemo()">메모 반영해 다시 시도</button>
+             <button type="button" id="lavBlockedEvidence" class="lav-blocked-2nd" onclick="lavBlockedRetryEvidence()" hidden>근거 보강 켜고 다시 시도</button>
              <button type="button" id="lavBlockedFallback" class="lav-blocked-2nd" onclick="lavBlockedAcceptFallback()" hidden>원문 보존 다듬기로 받기</button>
              <button type="button" class="lav-blocked-cancel" onclick="lavBlockedCancel()">취소</button>
            </div>
@@ -431,16 +418,16 @@
                <h3>변환 결과</h3>
              </div>
              <div class="lav-done-score" id="lavDoneScoreWrap">
-               <b id="lavDoneScore">—</b>
-               <em>AI 티 줄이기 난이도</em>
+               <b id="lavDoneScore">완료</b>
+               <em>완료한 작업</em>
              </div>
            </div>
            <div class="lav-fallback-banner" id="lavFallbackBanner" hidden style="margin:0 0 12px;padding:10px 12px;border-radius:10px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.32);font-size:12.5px;line-height:1.55;">
              <strong style="color:#d9920a;">‘원문 보존 다듬기’로 처리됐어요</strong> <span id="lavFallbackMsg" style="color:var(--text3,#6b7280);"></span>
            </div>
            <div class="lav-trust" id="lavTrust">
-             <span class="lav-trust-badge">결과 검증 대기</span>
-             <span class="lav-trust-badge">한국어 표현 점검 대기</span>
+             <span class="lav-trust-badge ok">결과 검수 완료</span>
+             <span class="lav-trust-badge ok">한국어 표현 점검 완료</span>
            </div>
            <p class="lav-done-note" id="lavDoneNote" style="margin:2px 0 12px;font-size:12.5px;line-height:1.5;color:var(--text3);">결과에서 뜻·수치·인용이 원문과 같은지 확인해 주세요. 외부 AI 감지 결과는 글과 검사 도구에 따라 달라질 수 있어요.</p>
            <div class="lav-result-notice is-effect" id="lavResultEffectNotice" role="status" hidden></div>
@@ -455,7 +442,7 @@
            </div>
            <!-- 사후 문단 보강(코칭 프레이밍): 결과 품질 경고가 아니라 "원문에 없던 구체성"을 사용자 한 줄로 여는 섹션 -->
            <div class="lav-done-refine" id="lavDoneRefine" hidden>
-             <strong class="lav-refine-title">✍️ 더 사람답게 — 실제 경험 한 줄</strong>
+             <strong class="lav-refine-title">실제 경험으로 문단 보강</strong>
              <p class="lav-refine-lead">자연스러운 문장 다듬기는 이미 끝났어요. 위 결과에서 <b class="lav-refine-mark-sample">보라색으로 칠해진 문단</b>은 <b>원문에 구체적인 장면·수치가 없어서</b>, 지어내지 않는 한 어떤 도구도 채울 수 없는 부분이에요. 실제 겪은 일 한 줄이면 그 문단만 다시 다듬어 드려요.</p>
              <div id="lavDoneRefineList"></div>
              <p class="lav-refine-ok" id="lavDoneRefineOk" hidden>✓ 모든 문단에 구체적인 내용이 충분해요 — 보강 없이 그대로 써도 좋아요.</p>
@@ -472,278 +459,10 @@
          </section>
        </div>
 
-       <div class="gp-lav-result" id="lavResultSlot"></div>
+       <div class="gp-lav-result" id="lavResultSlot"><div id="result" aria-live="polite"></div></div>
      </section>
 
      <div class="gp-lav-tabs" id="lavTabSlot"></div>
    </div>
  </div>
-
-
- <div class="gp-main-stage">
-   <div class="gp-paper-nav" aria-hidden="true">
-     <div class="gp-paper-brand">
-       <span class="gp-paper-mark"></span>
-       <strong>교수님 피하기</strong>
-     </div>
-     <nav>
-       <button type="button">기능</button>
-       <button type="button" onclick="switchTab('pricing')">가격</button>
-       <button type="button">후기</button>
-       <button type="button">가이드</button>
-     </nav>
-     <div class="gp-paper-nav-actions">
-       <button type="button" onclick="showScreen('login')">로그인</button>
-       <button type="button" onclick="document.getElementById('inputText').focus()">지금 시작하기</button>
-     </div>
-   </div>
-
-   <section class="gp-hero">
-     <div class="gp-hero-copy">
-       <p class="gp-eyebrow">제출 전, 한 번 더 확인</p>
-       <h1>AI 초안의 어색한 흐름을,<br><span>내 글에 맞게.</span></h1>
-       <p class="gp-hero-sub">AI식 문체 신호를 확인하고 원문의 뜻과 장르를 지키며 자연스럽게 다듬어요.</p>
-       <div class="gp-hero-actions">
-         <button type="button" class="gp-hero-primary" onclick="document.getElementById('inputText').focus()">지금 시작하기</button>
-         <button type="button" class="gp-hero-secondary" onclick="setMainDesign('paper')">
-           변환 예시 보기
-           <span aria-hidden="true">▶</span>
-         </button>
-       </div>
-     </div>
-     <div class="gp-hero-art">
-       <img loading="lazy" decoding="async" src="/assets/img/hero-shield.png" alt="">
-     </div>
-   </section>
-
-   <section class="gp-paper-demo">
-     <div class="gp-paper-demo-head">
-       <strong>변환 예시</strong>
-       <span><i></i> EXAMPLE</span>
-     </div>
-     <div class="gp-paper-demo-compare">
-       <article class="before">
-         <span>Before</span>
-         <p>본 연구에서는 다양한 요인을 고려하여 분석을 진행하였다. 이러한 결과는 <mark>여러 선행연구</mark>와 맥락을 같이 하며, <mark>중요한 시사점</mark>을 제공할 수 있을 것으로 판단된다.</p>
-       </article>
-       <b aria-hidden="true">→</b>
-       <article class="after">
-         <span>After</span>
-         <p>이 연구에서는 여러 요인을 함께 살펴봤습니다. 분석 결과는 선행연구와 비슷한 흐름을 보였지만, 어떤 점이 중요한지는 연구 맥락에 맞춰 구체적으로 설명할 필요가 있습니다.</p>
-       </article>
-     </div>
-     <div class="gp-paper-score">
-       <div>
-         <span>AI 티 지수 예시</span>
-         <strong class="bad">높음</strong>
-         <b>→</b>
-         <strong class="good">낮음</strong>
-       </div>
-       <div class="gp-paper-scorebar"><i></i><em></em></div>
-       <footer><span>변환 전</span><span>변환 후</span></footer>
-     </div>
-   </section>
-
-   <section class="ls-card gp-workbench">
-   <div class="gp-workbench-tabs">
-     <div class="ls-task-list" id="lsTaskList">
-       <button class="ls-task-item active" onclick="lsSelectTask(this,'detect')" data-lsmode="detect">
-         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
-         AI 검사
-       </button>
-       <button class="ls-task-item" onclick="lsSelectTask(this,'assignment')" data-lsmode="assignment">
-         <svg viewBox="0 0 24 24"><path d="M4 19.5V5.8A2.8 2.8 0 0 1 6.8 3H20v15H6.8A2.8 2.8 0 0 0 4 20.8Z"/></svg>
-         자기소개서
-       </button>
-       <button class="ls-task-item" onclick="lsSelectTask(this,'thesis')" data-lsmode="thesis">
-         <svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
-         논문
-       </button>
-       <button class="ls-task-item" onclick="lsSelectTask(this,'blog')" data-lsmode="blog">
-         <svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4V5Z"/></svg>
-         블로그
-       </button>
-       <button class="ls-task-item" onclick="lsSelectTask(this,'resume')" data-lsmode="resume">
-         <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>
-         기타
-       </button>
-     </div>
-     <div class="gp-language">
-       <span>언어</span>
-       <button id="langKo" class="lang-btn active" onclick="setLang('ko')">한국어</button>
-       <button id="langEn" class="lang-btn" onclick="setLang('en')">English</button>
-     </div>
-   </div>
-
-   <div class="ls-input-area">
-     <div id="pdfBadge" class="gp-pdf-badge" style="display:none">
-       <span class="pdf-badge" id="pdfName">PDF 선택됨</span>
-       <button onclick="clearPDF()">제거</button>
-     </div>
-     <div id="langMismatchWarn" class="gp-lang-warn" style="display:none"></div>
-     <textarea id="inputText" placeholder="검사하고 싶은 텍스트를 입력하거나 붙여넣기 해주세요." oninput="updateCount(this)"></textarea>
-     <div class="ls-card-footer">
-       <div class="gp-input-tools">
-         <label class="ls-pro-btn" for="pdfInput">
-           <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M5 15v4h14v-4"/></svg>
-           파일 업로드
-         </label>
-         <button type="button" class="ls-pro-btn" onclick="document.getElementById('inputText').value='';updateCount(document.getElementById('inputText'))">
-           <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 13h8l1-13"/></svg>
-           전체 지우기
-         </button>
-       </div>
-       <div class="gp-submit-row">
-         <span id="ccount">0 / 30,000자</span>
-         <span id="chint">100자당 1크레딧</span>
-         <select id="mobileTaskSelect" onchange="lsSelectTaskMobile(this.value)">
-           <option value="detect">AI 감지</option>
-           <option value="assignment">대학 과제</option>
-           <option value="resume">자기소개서</option>
-           <option value="thesis">논문/학술지</option>
-           <option value="blog">블로그/SNS</option>
-         </select>
-         <button class="ls-send-btn" id="lsSendBtn" onclick="runAnalysis()">
-           <span id="lsSendLabel">AI 검사 시작</span>
-         </button>
-       </div>
-     </div>
-     </div>
-   </section>
-
-   <div class="gp-stat-row">
-     <div><strong>사실 보존</strong><span>수치·인용 보호</span><small>원문의 핵심 사실을 감사하고 전달해요</small></div>
-     <div><strong>장르 판별</strong><span>문서별 처리</span><small>과제·자소서·논문·후기를 구분해요</small></div>
-     <div><strong>한국어 점검</strong><span>표현 보정</span><small>맞춤법·띄어쓰기·문장 연결을 살펴봐요</small></div>
-     <div><strong>작업 복구</strong><span>진행 상태 저장</span><small>창을 닫아도 서버에서 작업을 이어가요</small></div>
-   </div>
-
-   <div class="gp-paper-bottom-grid">
-     <article class="gp-paper-feature-card">
-       <h3>핵심 기능</h3>
-       <div>
-         <span><b>문맥 유지</b><em>원문의 핵심 의미와 흐름 보존</em></span>
-         <span><b>톤 조절</b><em>격식과 친근함을 상황에 맞게</em></span>
-         <span><b>학생 글 최적화</b><em>논문, 리포트, 에세이에 맞춘 표현</em></span>
-         <span><b>작업 이어보기</b><em>창을 닫아도 진행 중인 작업을 다시 확인</em></span>
-       </div>
-       <button type="button">기능 더 보기 <b>→</b></button>
-     </article>
-     <article class="gp-paper-review-card">
-       <h3>결과 확인 팁</h3>
-       <i aria-hidden="true"></i>
-       <strong>변환 뒤 원문과 한 번 대조해 주세요</strong>
-       <p>핵심 주장과 수치·기관명·직접 인용이 유지됐는지 확인하면 결과를 더 안전하게 활용할 수 있어요.</p>
-       <span>의미 · 사실 · 구조</span>
-       <footer><button type="button">‹</button><em></em><em></em><em></em><button type="button">›</button></footer>
-     </article>
-     <article class="gp-paper-price-card">
-       <h3>요금제</h3>
-       <small>사용한 만큼 크레딧 차감</small>
-       <div>
-         <span>AI 감지<em>100자당 1크레딧</em><button type="button">시작하기</button></span>
-         <span class="active">기본<em>최소 10크레딧</em><button type="button">시작하기</button></span>
-         <span>고급<em>글 길이별 정액</em><button type="button">가격 보기</button></span>
-       </div>
-       <p>구매한 크레딧은 유효기간 없이 사용할 수 있어요.</p>
-     </article>
-     <article class="gp-paper-faq-card">
-       <h3>자주 묻는 질문</h3>
-       <button type="button">기본과 고급은 무엇이 다른가요? <b>+</b></button>
-       <button type="button">어떤 언어를 지원하나요? <b>+</b></button>
-       <button type="button">원문의 의미와 수치는 유지되나요? <b>+</b></button>
-       <button type="button">외부 검사 점수를 보장하나요? <b>+</b></button>
-       <a onclick="switchTab('qna')">더 궁금한 점이 있으신가요?</a>
-     </article>
-   </div>
-
-   <div class="gp-paper-school-strip">
-     <strong>글의 종류에 맞는 처리 방식을 선택하세요.</strong>
-     <span>과제·보고서</span><span>자기소개서</span><span>논문·학술글</span><span>후기·블로그</span><span>메일·안내문</span><span>창작문</span>
-   </div>
- </div>
-
- <input type="file" id="pdfInput" accept=".pdf" style="display:none;" onchange="handlePDF(this)">
- <div id="result"></div>
-
- <section class="gp-section gp-compare">
-   <div class="gp-section-head">
-     <h2>휴머나이징, 문장이 이렇게 달라집니다</h2>
-     <p>원문의 뜻을 지키면서 반복 표현과 균일한 흐름을 조정해요.</p>
-   </div>
-   <div class="gp-compare-grid">
-     <article class="gp-detect-card before">
-       <div class="gp-card-kicker">휴머나이징 전</div>
-       <span>AI 티 지수 예시</span>
-       <strong>높음</strong>
-       <div class="gp-meter"><i style="width:92%"></i></div>
-       <ul>
-         <li>반복적인 표현과 문장 구조 감지</li>
-         <li>AI 패턴이 뚜렷하게 나타남</li>
-         <li>자연스러움 부족</li>
-       </ul>
-     </article>
-     <div class="gp-compare-arrow">›</div>
-     <article class="gp-detect-card after">
-       <div class="gp-card-kicker">휴머나이징 후</div>
-       <span>AI 티 지수 예시</span>
-       <strong>낮음</strong>
-       <div class="gp-meter"><i style="width:7%"></i></div>
-       <ul>
-         <li>자연스러운 문장 흐름</li>
-         <li>다양한 어휘와 표현 사용</li>
-         <li>원문 장르에 맞는 표현 유지</li>
-       </ul>
-     </article>
-   </div>
- </section>
-
- <section class="gp-section">
-   <div class="gp-section-head">
-     <h2>3단계로 확인하는 글쓰기</h2>
-   </div>
-   <div class="gp-steps">
-     <article><span>01</span><strong>텍스트 입력</strong><p>검사할 텍스트를 붙여넣거나 파일을 업로드하세요.</p></article>
-     <article><span>02</span><strong>AI 검사 &amp; 분석</strong><p>AI 티 지수와 상세 분석 결과를 빠르게 확인합니다.</p></article>
-     <article><span>03</span><strong>휴머나이징 적용</strong><p>결과를 원문과 비교한 뒤 필요한 곳에 활용하세요.</p></article>
-   </div>
- </section>
-
- <section class="gp-section">
-   <div class="gp-section-head">
-     <h2>교수님 피하기가 특별한 이유</h2>
-   </div>
-   <div class="gp-feature-grid">
-     <article><span>AI</span><strong>AI 문체 패턴 분석</strong><p>추상성·반복·정형성처럼 AI식 문체로 보일 수 있는 신호를 문단별로 보여 줍니다.</p></article>
-     <article><span>WR</span><strong>자연스러운 휴머나이징</strong><p>원문의 문맥과 장르를 지키면서 반복적이고 균일한 문장 흐름을 다시 구성합니다.</p></article>
-      <article><span>PR</span><strong>학습 사용 없음</strong><p>입력한 글은 서비스 처리와 사용자 보관함 제공 목적에만 사용되며 외부 학습에 쓰지 않습니다.</p></article>
-     <article><span>국어</span><strong>한국어 표현 보조 점검</strong><p>국립국어원 공개 어문규범과 로컬 언어 자료를 참고해 맞춤법·띄어쓰기·용어 표기를 살펴봅니다.</p></article>
-     <article><span>AR</span><strong>결과 보관 &amp; 관리</strong><p>검사 기록과 결과를 한곳에서 보관하고 필요할 때 다시 확인할 수 있습니다.</p></article>
-     <article><span>KR</span><strong>글 종류별 처리</strong><p>과제·자기소개서·논문·후기 등 원문의 종류에 맞는 표현과 구조를 우선합니다.</p></article>
-   </div>
- </section>
-
- <section class="gp-section gp-faq">
-   <div class="gp-section-head">
-     <h2>자주 묻는 질문</h2>
-   </div>
-   <div class="faq-list">
-    <div class="faq-item">
-     <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>교수님 피하기는 어떤 서비스인가요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-     <div class="faq-a">AI식 문체 신호를 확인하고, 원문의 뜻과 장르를 지키며 문장을 다듬는 서비스입니다.</div>
-    </div>
-    <div class="faq-item">
-     <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>결과는 얼마나 정확한가요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-     <div class="faq-a">AI 감지는 문체 신호를 바탕으로 한 참고 결과이며 작성 여부를 확정하지 않습니다. 외부 검사 도구마다 결과가 다를 수 있어요.</div>
-    </div>
-    <div class="faq-item">
-     <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>휴머나이징 후에도 제 글의 의미가 유지되나요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-     <div class="faq-a">핵심 주장과 논지 흐름을 보존하도록 감사하고, 반복 표현과 균일한 문장 흐름을 조정합니다. 제출 전에는 핵심 수치와 인용을 원문과 다시 확인해 주세요.</div>
-    </div>
-    <div class="faq-item">
-     <button type="button" class="faq-q" onclick="toggleFaq(this)"><span>제 글이 저장되거나 다른 곳에 사용되나요?</span><svg class="faq-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
-     <div class="faq-a">결과 보관함과 이용 기록 제공을 위해 일부 결과가 저장될 수 있습니다. 외부 학습 데이터로는 사용하지 않으며, 자세한 내용은 개인정보처리방침에서 확인할 수 있습니다.</div>
-    </div>
-   </div>
- </section>
 </div>

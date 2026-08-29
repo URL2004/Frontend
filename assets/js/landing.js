@@ -63,10 +63,6 @@
     return requested === 'detect' || requested === 'humanize';
   }
 
-  // ?lp= 강제 스위치(2026-08-26 사장님): 광고 소재별 지정과 관리자 확인용.
-  //  · lp=1 → 로그인·경로·둘러보기 이력과 무관하게 랜딩 강제
-  //  · lp=0 → 비로그인 홈이어도 랜딩 스킵(앱 직행)
-  //  그 외 값·부재 → 기본 규칙.
   function landingOverride() {
     var lp = new URLSearchParams(window.location.search || '').get('lp');
     if (lp === '1') return 'force';
@@ -125,11 +121,12 @@
     if (screen) delete screen.dataset.viewed;
   };
 
-  window.gpLandingStart = function (source) {
+  window.gpLandingStart = async function (source) {
     track('landing_signup_click', { source: source || 'landing', surface: 'landing' });
     setLandingLoginPending(true);
+    if (typeof window.gpLoadApp === 'function') await window.gpLoadApp({ screen: 'login' });
+    else if (typeof window.showScreen === 'function') window.showScreen('login');
     if (typeof window.gpWarmAuthBackend === 'function') window.gpWarmAuthBackend();
-    if (typeof window.showScreen === 'function') window.showScreen('login');
   };
 
   // 랜딩에서 시작한 로그인만 완료 처리한다. 관리자 미리보기 등 로그인 상태에서
@@ -142,12 +139,15 @@
     return true;
   };
 
-  window.gpLandingEnterApp = function (tabName, source) {
+  window.gpLandingEnterApp = async function (tabName, source) {
     track('landing_enter_app', { source: source || 'landing', target_tab: tabName || 'main', surface: 'landing' });
     setLandingLoginPending(false);
     setDismissed(true);
-    if (typeof window.showScreen === 'function') window.showScreen('app');
-    if (typeof window.switchTab === 'function') window.switchTab(tabName || 'main');
+    if (typeof window.gpLoadApp === 'function') await window.gpLoadApp({ screen: 'app', tab: tabName || 'main' });
+    else {
+      if (typeof window.showScreen === 'function') window.showScreen('app');
+      if (typeof window.switchTab === 'function') window.switchTab(tabName || 'main');
+    }
     if (tabName === 'qna' && typeof window.loadQuestions === 'function') window.loadQuestions();
     if (tabName === 'notice' && typeof window.loadNotices === 'function') window.loadNotices();
     window.scrollTo({ top: 0, behavior: 'auto' });
@@ -167,24 +167,23 @@
   };
 
   // ── 공지 바(글쓰기 랩 예고) ─────────────────────────────────────────────
-  window.gpLandingNotice = function () {
+  window.gpLandingNotice = async function () {
     track('landing_notice_click', { surface: 'landing', topic: 'writing_lab_soon' });
     setLandingLoginPending(true);
+    if (typeof window.gpLoadApp === 'function') await window.gpLoadApp({ screen: 'login' });
+    else if (typeof window.showScreen === 'function') window.showScreen('login');
     if (typeof window.gpWarmAuthBackend === 'function') window.gpWarmAuthBackend();
-    if (typeof window.showScreen === 'function') window.showScreen('login');
   };
 
-  // ── 서비스 블렌드 탭(코다 벤치마킹) ─────────────────────────────────────
-  // 좌측 항목을 고르면 우측 실제 화면이 바뀐다. 글쓰기 랩은 오픈 전이라 오버레이로 정직하게 표시.
   var BLEND = [
     { img: '/assets/img/landing/shot-detect.webp',   alt: 'AI 감지 보고서 화면',        soon: false,
-      note: '글 전체의 AI 티 지수와 함께 어느 문단이 위험한지 문단별로 보여줍니다.' },
+      note: '글 전체의 AI 티 지수와 함께 주의가 필요한 문단을 보여줘요.' },
     { img: '/assets/img/landing/shot-done.webp',     alt: '기본 휴머나이징 결과 화면',   soon: false,
-      note: '원문의 장르와 말투와 사실을 지키면서 AI식 반복과 균일한 문장 흐름을 다시 구성합니다.' },
+      note: '원문의 장르와 말투와 사실을 지키면서 AI식 반복과 균일한 문장 흐름을 다시 구성해요.' },
     { img: '/assets/img/landing/shot-settings.webp', alt: '고급 휴머나이징 설정 화면',   soon: false,
-      note: '더 넓은 범위를 재구성하고 모든 글에 의미·사실·구조 정밀 검증을 적용합니다. 직접 승인한 근거만 인용해요.' },
-    { img: '/assets/img/landing/shot-composer.webp', alt: '글쓰기 랩(오픈 준비 중)',     soon: true,
-      note: '장르별 질문에 아는 것만 답하면 자기소개서·후기·소개 글을 만들어요. 답하지 않은 내용은 지어내지 않습니다.' }
+      note: '더 넓은 범위를 재구성하고 모든 글에 의미·사실·구조 정밀 검증을 적용해요. 직접 승인한 근거만 인용해요.' },
+    { img: '/assets/img/landing/shot-composer.webp', alt: '글쓰기 랩(준비 중)',     soon: true,
+      note: '장르별 질문에 아는 것만 답하면 자기소개서·후기·소개 글을 만들어요. 답하지 않은 내용은 지어내지 않아요.' }
   ];
 
   window.gpLandingBlendPick = function (index) {
@@ -227,14 +226,10 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initDeferredLandingImages, { once: true });
   else initDeferredLandingImages();
 
-  // ── 히어로 라이브 데모(사장님 지시: 실제 사용 장면처럼) ───────────────────
-  // 영상 파일이 아니라 DOM 애니메이션으로 5장면 루프:
-  //   1 타이핑 → 2 예상 비용 → 3 분석 중 → 4 감지 보고서(게이지) → 5 휴머나이징 결과.
-  // 수치는 실제 단가와 일치(아래 문장 85자 → 감지 ceil(85/100)=1크레딧).
-  // reduced-motion이면 마지막 장면 정지, 화면 밖이면 일시정지, 리셋 시 타이머 전부 정리.
-  var DEMO_TEXT = '본 연구에서는 다양한 요인을 종합적으로 고려하여 분석을 진행하였다. 이러한 결과는 여러 선행연구와 맥락을 같이 하는 것으로 판단된다.';
+  var DEMO_TEXT = '본 연구에서는 다양한 요인을 함께 살펴보고 분석을 진행했다. 먼저 관련 선행연구의 기준을 정리한 뒤 실제 사례와 비교했다. 그 결과 일부 변화는 기존 연구와 비슷했지만, 조사 시점과 참여 집단에 따라 다른 흐름도 확인할 수 있었다.';
   var demoTimers = [];
   var demoRunning = false;
+  var demoStartTimer = 0;
 
   function demoEl(id) { return document.getElementById(id); }
   function demoLater(fn, ms) { demoTimers.push(setTimeout(fn, ms)); }
@@ -278,10 +273,10 @@
       if (i < DEMO_TEXT.length) demoLater(typeStep, 40);
     })();
 
-    // 장면 2: 예상 비용(카운트 1)
+    // 장면 2: 예상 비용
     demoLater(function () {
       demoScene(2);
-      if (costEl) costEl.textContent = '1';
+      if (costEl) costEl.textContent = String(Math.ceil(DEMO_TEXT.length / 100));
     }, 2600);
 
     // 장면 3: 전송 눌림 → 분석
@@ -314,7 +309,17 @@
   }
   function demoStop() {
     demoRunning = false;
+    clearTimeout(demoStartTimer);
+    demoStartTimer = 0;
     demoClear();
+  }
+  function demoQueueStart() {
+    if (demoRunning || demoStartTimer) return;
+    if (demoReduced()) { demoStart(); return; }
+    demoStartTimer = setTimeout(function () {
+      demoStartTimer = 0;
+      demoStart();
+    }, 3200);
   }
   function demoFinalFrame() {
     // 모션 최소화 환경: 마지막 결과 장면을 정지 화면으로
@@ -331,21 +336,54 @@
     if ('IntersectionObserver' in window) {
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (e) {
-          if (e.isIntersecting) demoStart();
+          if (e.isIntersecting) demoQueueStart();
           else demoStop();
         });
       }, { threshold: 0.25 });
       io.observe(box);
     } else {
-      demoStart();
+      demoQueueStart();
     }
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) demoStop();
-      else if (demoEl('lpDemo') && !document.getElementById('landingScreen').hidden) demoStart();
+      else if (demoEl('lpDemo') && !document.getElementById('landingScreen').hidden) demoQueueStart();
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demoInit);
   else demoInit();
+
+  function initVerifiedMetrics() {
+    var policy = document.getElementById('lpPolicyFacts');
+    var metrics = document.getElementById('lpVerifiedMetrics');
+    if (!policy || !metrics) return;
+    var base = String((window.APP_CONFIG && window.APP_CONFIG.API_BASE) || '').replace(/\/$/, '');
+    if (!base) return;
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timeout = setTimeout(function () { if (controller) controller.abort(); }, 4000);
+    fetch(base + '/public/metrics', controller ? { signal: controller.signal } : {})
+      .then(function (response) { if (!response.ok) throw new Error('metrics unavailable'); return response.json(); })
+      .then(function (data) {
+        var totals = data && data.totals;
+        var processed = Number(totals && totals.processedCharacters);
+        var jobs = Number(totals && totals.completedJobs);
+        var asOf = Date.parse(data && data.asOf);
+        var fresh = Number.isFinite(asOf) && Date.now() - asOf >= 0 && Date.now() - asOf <= 48 * 60 * 60 * 1000;
+        if (!data || data.schemaVersion !== 1 || data.verified !== true || !fresh
+          || !Number.isSafeInteger(processed) || processed < 0
+          || !Number.isSafeInteger(jobs) || jobs < 0) throw new Error('invalid metrics');
+        document.getElementById('lpProcessedCharacters').textContent = processed.toLocaleString('ko-KR');
+        document.getElementById('lpCompletedJobs').textContent = jobs.toLocaleString('ko-KR');
+        policy.hidden = true;
+        metrics.hidden = false;
+      })
+      .catch(function () {
+        metrics.hidden = true;
+        policy.hidden = false;
+      })
+      .finally(function () { clearTimeout(timeout); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initVerifiedMetrics, { once: true });
+  else initVerifiedMetrics();
 
   // 로그인 화면의 '홈으로 돌아가기' — 비로그인이면 랜딩으로, 그 외에는 앱 메인으로.
   window.gpLandingBackHome = function () {
@@ -358,29 +396,26 @@
   };
 })();
 
-// ── 용도별 랜딩 변형(2026-08-28 P0-6): 광고의 use_case 맥락(utm_content 접두·use_case 파라미터,
-//    head-tracking이 파생·보존)에 맞춰 히어로 카피만 스왑한다. 크롤러는 기본 카피를 본다(JS 적용).
-//    카피는 검수 언어 원칙 준수 — 통과·점수 보장 표현 금지(광고 구현 명세 2026-08-26 정합).
 (function () {
   var LP_VARIANTS = {
     assignment: {
       h1: '과제의 AI 문체 신호,<br>제출 전에 확인한다.',
-      sub: '수치·인용·내 주장은 유지하고, 확인이 필요한 문단부터 보여드립니다.',
+      sub: '수치·인용·내 주장은 유지하고, 확인이 필요한 문단부터 보여드려요.',
       cta: '과제 1,000자 무료 감지'
     },
     resume: {
       h1: '내 경험은 그대로,<br>AI식 상투어만 덜어낸다.',
-      sub: '회사명·직무·내 행동·결과를 구분해 없는 경험을 만들지 않습니다.',
+      sub: '회사명·직무·내 행동·결과를 구분해 없는 경험을 만들지 않아요.',
       cta: '자소서 문단 점검하기'
     },
     paper: {
       h1: '수치·기관명·인용을 지키는<br>장문 검수.',
-      sub: '긴 글은 구간별로 감지하고 변경된 부분을 원문과 비교할 수 있게 보여드립니다.',
+      sub: '긴 글은 구간별로 감지하고 변경된 부분을 원문과 비교할 수 있게 보여드려요.',
       cta: '보고서 점검 시작하기'
     },
     blog: {
       h1: '후기의 사실과 말투는 그대로,<br>반복 표현만 정리한다.',
-      sub: '직접 경험하지 않은 장점이나 성과는 추가하지 않습니다.',
+      sub: '직접 경험하지 않은 장점이나 성과는 추가하지 않아요.',
       cta: '후기 문장 점검하기'
     }
   };

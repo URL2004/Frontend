@@ -1,4 +1,4 @@
-// 글쓰기 랩 v2 — 확인 사실 원장 → 작성 가능성 → 구조화 생성 → 기존 휴머나이징 → 최종 공개 검사
+// 글쓰기 랩 v2 — 확인 사실 원장 → 작성 가능성 → 구조화 생성 → 기존 휴머나이징 → 제출 전 최종 점검
 (function () {
  'use strict';
 
@@ -879,7 +879,7 @@ async function finalCheck(finalText, generation, runToken) {
    });
    if (runToken !== state.pollToken) return;
    if (!report.release || report.release.pass !== true) {
-    useSafeDraft(generation, '휴머나이징 결과가 최종 공개 기준을 통과하지 못해 검증된 초안을 대신 보여드려요.', 4, report);
+    useSafeDraft(generation, '휴머나이징 결과가 제출 전 점검 기준을 통과하지 못해 검증된 초안을 대신 보여드려요.', 4, report);
     return;
    }
    var delivery = report.delivery || {};
@@ -888,7 +888,7 @@ async function finalCheck(finalText, generation, runToken) {
    if (delivery.source === 'verified_generation_fallback') {
     setProgress(3, 'fail');
     finishResult(deliveredText, report, {
-     message: '휴머나이징 결과는 공개 기준을 벗어나 사용하지 않았고, 검증된 초안을 안전하게 복구했어요.',
+     message: '휴머나이징 결과는 검수 기준을 벗어나 사용하지 않았고, 검증된 초안을 안전하게 복구했어요.',
      warning: true,
      failedReport: report.rejectedReport || report,
      clientEvent: 'HUMANIZE_FALLBACK'
@@ -897,7 +897,7 @@ async function finalCheck(finalText, generation, runToken) {
    }
    finishResult(deliveredText, report, {
     message: delivery.source === 'humanized_repaired'
-     ? '휴머나이징 결과를 사실 원장 안에서 자동 수리해 공개 기준을 통과했어요.'
+     ? '휴머나이징 결과를 사실 원장 안에서 자동 수리해 검수 기준을 통과했어요.'
      : '글이 완성됐어요. 근거·수치·분량·정책 검사를 모두 통과했습니다.',
     clientEvent: 'HUMANIZE_READY'
    });
@@ -924,9 +924,9 @@ async function finalCheck(finalText, generation, runToken) {
   emitClientEvent(options.clientEvent);
   if (el('wlFinal')) el('wlFinal').value = state.lastFinal;
   updateFinalCount();
-  setResultState(state.releasePass ? (options.warning ? '검증된 초안' : '공개 가능') : '공개 보류', state.releasePass ? 'ready' : 'blocked');
+  setResultState(state.releasePass ? (options.warning ? '검증된 초안' : '검수 완료') : '검수 필요', state.releasePass ? 'ready' : 'blocked');
   renderReport(report, options.failedReport);
-  setStatus('wlStatus5', options.message || (state.releasePass ? '완성됐어요.' : '공개 기준을 확인해 주세요.'), options.warning ? 'warn' : state.releasePass ? 'success' : 'error');
+  setStatus('wlStatus5', options.message || (state.releasePass ? '완성됐어요.' : '검수 기준을 확인해 주세요.'), options.warning ? 'warn' : state.releasePass ? 'success' : 'error');
   setGenerationBusy(false);
  }
 
@@ -969,10 +969,10 @@ async function finalCheck(finalText, generation, runToken) {
    state.edited = !state.releasePass;
    state.lastFinal = text;
    setProgress(4, state.releasePass ? 'done' : 'fail');
-   setResultState(state.releasePass ? '공개 가능' : '공개 보류', state.releasePass ? 'ready' : 'blocked');
+   setResultState(state.releasePass ? '검수 완료' : '검수 필요', state.releasePass ? 'ready' : 'blocked');
    if (el('wlEditHint')) el('wlEditHint').classList.toggle('on', !state.releasePass);
    renderReport(report);
-   setStatus('wlStatus5', state.releasePass ? '수정본이 모든 공개 기준을 통과했어요.' : '수정본이 공개 기준을 통과하지 못했어요. 아래 항목을 확인해 주세요.', state.releasePass ? 'success' : 'error');
+   setStatus('wlStatus5', state.releasePass ? '수정본이 모든 검수 기준을 통과했어요.' : '수정본이 검수 기준을 통과하지 못했어요. 아래 항목을 확인해 주세요.', state.releasePass ? 'success' : 'error');
   } catch (error) {
    setProgress(4, 'fail');
    state.releasePass = false;
@@ -1000,13 +1000,13 @@ async function finalCheck(finalText, generation, runToken) {
   var pills = [
    pill('공백 포함 ' + Number(counts.withSpace || 0).toLocaleString('ko-KR') + '자'),
    pill('공백 제외 ' + Number(counts.noSpace || 0).toLocaleString('ko-KR') + '자'),
-   pill('2byte ' + Number(counts.byte2 || 0).toLocaleString('ko-KR')),
+   pill('2바이트 ' + Number(counts.byte2 || 0).toLocaleString('ko-KR')),
    length.applicable ? pill(length.pass ? '분량 통과 · ' + Math.round(Number(length.usageRatio || 0) * 100) + '%' : (length.status === 'under' ? '분량 부족 ' + Number(length.under || 0) + '자' : '분량 초과 ' + Number(length.over || 0) + '자'), length.pass ? 'ok' : 'bad') : pill('분량 제한 없음', 'ok'),
    pill(numbers.pass === false ? '근거 없는 수치 있음' : '수치 근거 통과', numbers.pass === false ? 'bad' : 'ok'),
    pill(meta.pass === false ? '정보 부족 설명문 감지' : '메타 문구 없음', meta.pass === false ? 'bad' : 'ok'),
    pill(policy.pass === false ? '정책 표현 확인 필요' : '정책 검사 통과', policy.pass === false ? 'bad' : 'ok'),
    pill(semantic.pass === true ? '사실 의미 일치' : '사실 의미 확인 실패', semantic.pass === true ? 'ok' : 'bad'),
-   pill(release.pass === true ? '공개 가능' : '공개 보류', release.pass === true ? 'ok' : 'bad')
+   pill(release.pass === true ? '검수 완료' : '검수 필요', release.pass === true ? 'ok' : 'bad')
   ];
   if (cliches.total) pills.push(pill('상투 표현 ' + cliches.total + '개', 'warn'));
   var details = [];
@@ -1015,9 +1015,9 @@ async function finalCheck(finalText, generation, runToken) {
   if (meta.pass === false) details.push('<div><b>정보 부족 설명문</b> — ' + esc((meta.found || []).join(', ')) + '</div>');
   if (policy.pass === false) details.push('<div><b>정책 위반 후보</b> — ' + esc((policy.violations || []).map(function (item) { return item.phrase || item.code; }).join(', ')) + '</div>');
   if (semantic.pass !== true && semantic.violations && semantic.violations.length) details.push('<div><b>사실 의미 불일치</b> — ' + esc(semantic.violations.map(function (item) { return item.detail || item.span || item.type; }).join(' / ')) + '</div>');
-  if (release.reasons && release.reasons.length) details.push('<div><b>공개 보류 사유</b> — ' + esc(release.reasons.map(reasonLabel).join(', ')) + '</div>');
+  if (release.reasons && release.reasons.length) details.push('<div><b>검수 필요 사유</b> — ' + esc(release.reasons.map(reasonLabel).join(', ')) + '</div>');
   if (failedReport && failedReport.release && !failedReport.release.pass) details.push('<div><b>참고</b> — 휴머나이징 결과는 ' + esc(failedReport.release.reasons.map(reasonLabel).join(', ')) + ' 때문에 사용하지 않았고, 현재 결과에는 검증된 초안을 표시했어요.</div>');
-  box.innerHTML = '<h4>공개 전 검사 결과</h4><div class="gp-wl-pills">' + pills.join('') + '</div>' + (details.length ? '<div class="gp-wl-report-detail">' + details.join('') + '</div>' : '');
+  box.innerHTML = '<h4>제출 전 최종 점검</h4><div class="gp-wl-pills">' + pills.join('') + '</div>' + (details.length ? '<div class="gp-wl-report-detail">' + details.join('') + '</div>' : '');
   box.hidden = false;
  }
 
@@ -1065,7 +1065,7 @@ async function finalCheck(finalText, generation, runToken) {
  window.wlCopy = async function () {
   var text = el('wlFinal') ? el('wlFinal').value : state.lastFinal;
   if (!text) return;
-  if (!state.releasePass) { setStatus('wlStatus5', '공개 검사를 통과한 글만 복사할 수 있어요. “수정본 다시 확인”을 눌러 주세요.', 'warn'); return; }
+  if (!state.releasePass) { setStatus('wlStatus5', '최종 점검을 통과한 글만 복사할 수 있어요. “수정본 다시 확인”을 눌러 주세요.', 'warn'); return; }
   var copied = false;
   var usedFallback = false;
   try {
@@ -1084,7 +1084,7 @@ async function finalCheck(finalText, generation, runToken) {
  window.wlDownload = function () {
   var text = el('wlFinal') ? el('wlFinal').value : state.lastFinal;
   if (!text) return;
-  if (!state.releasePass) { setStatus('wlStatus5', '공개 검사를 통과한 글만 저장할 수 있어요. “수정본 다시 확인”을 눌러 주세요.', 'warn'); return; }
+  if (!state.releasePass) { setStatus('wlStatus5', '최종 점검을 통과한 글만 저장할 수 있어요. “수정본 다시 확인”을 눌러 주세요.', 'warn'); return; }
   var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
   var anchor = document.createElement('a');
   anchor.href = URL.createObjectURL(blob);

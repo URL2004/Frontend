@@ -1,7 +1,7 @@
 (function (global) {
   'use strict';
 
-  var DISCLAIMER = 'AI 감지 결과는 문체 패턴을 바탕으로 한 추정치이며, 실제 작성 주체를 확정하지 않습니다.';
+  var DISCLAIMER = 'AI 감지 결과는 문체 패턴을 바탕으로 한 추정치이며, 실제 작성 주체를 확정하지 않아요.';
   var BANDS = {
     low: {
       level: 'low',
@@ -13,13 +13,13 @@
       level: 'moderate',
       label: 'AI 티 지수 중간',
       summary: 'AI 생성 가능성 신호가 일부 감지됐어요.',
-      detail: function (p) { return '최종 점수 ' + p + '%는 중간 구간입니다. 일부 정형적인 문체 특징이 관찰됐지만 작성 주체를 단정하기는 어렵습니다.'; }
+      detail: function (p) { return '최종 점수 ' + p + '%는 중간 구간이에요. 일부 정형적인 문체 특징이 관찰됐지만 작성 주체를 단정하기는 어려워요.'; }
     },
     high: {
       level: 'high',
       label: 'AI 티 지수 높음',
       summary: 'AI 생성 가능성 신호가 높게 감지됐어요.',
-      detail: function (p) { return '최종 점수 ' + p + '%는 높은 구간입니다. 표시된 문체 특징이 점수를 높인 신호로 관찰됐습니다.'; }
+      detail: function (p) { return '최종 점수 ' + p + '%는 높은 구간이에요. 표시된 문체 특징이 점수를 높인 신호로 관찰됐어요.'; }
     }
   };
 

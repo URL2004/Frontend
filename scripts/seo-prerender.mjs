@@ -11,9 +11,8 @@
 //   - 각 공개 라우트마다 dist/<route>/index.html 생성(홈은 dist/index.html 덮어쓰기)
 //   - <title>/description/og/canonical 을 라우트별로 치환
 //   - <head>에 JSON-LD(Organization/WebSite/FAQPage/BreadcrumbList) 주입
-//   - <div id="page-root"> 뒤에 <noscript>{해당 페이지 본문}</noscript> 주입
-//   - JS 브라우저에서는 정적 본문이 렌더되지 않고, page-loader.js가 noscript 노드를 제거한 뒤
-//     기존 SPA가 그대로 렌더 → 사용자 UX/동작은 변하지 않는다.
+//   - 홈은 실제 랜딩 본문을 #page-root에 서버 렌더하고 런타임에서 그대로 활성화
+//   - 나머지 공개 라우트는 #page-root 뒤에 <noscript>{해당 페이지 본문}</noscript> 주입
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -42,7 +41,7 @@ function buildJsonLdBlocks(route) {
       url: SITE,
       logo: LOGO,
       image: OG_IMAGE,
-      description: 'AI로 작성한 글을 자연스럽게 다듬는 AI 휴머나이저 · AI 감지 서비스'
+      description: 'AI로 작성한 글을 자연스럽게 다듬는 AI 감지 · 휴머나이징 서비스'
     })
   );
 
@@ -153,14 +152,32 @@ export async function prerenderSeo({ root, dist }) {
 
     // 본문 주입: #page-root 바로 뒤에 크롤러용 정적 콘텐츠
     const partialPath = path.join(root, 'pages', route.partial);
-    const partialHtml = cleanPartial(await fs.readFile(partialPath, 'utf8'));
+    const partialSource = String(await fs.readFile(partialPath, 'utf8')).replace(/^\uFEFF/u, '');
+    const partialHtml = cleanPartial(partialSource);
     // 랜딩 파셜은 자체 h1을 가지므로 홈이라고 무조건 덧붙이지 않는다(h1 중복 방지).
     const h1 = !/<h1[\s>]/i.test(partialHtml) ? `<h1>${route.h1}</h1>\n` : '';
-    const seoBlock = `<noscript id="seo-prerender-static" data-seo-route="${route.url}">\n<div id="seo-prerender">\n${h1}${partialHtml}\n</div>\n</noscript>`;
-    html = html.replace(
-      /(<div id="page-root"><\/div>)/i,
-      `$1\n${seoBlock}`
-    );
+    if (route.url === '/' && route.partial === 'landing.html') {
+      const deferredMarker = '<section class="gp-lp-principle">';
+      const deferredStart = partialSource.indexOf(deferredMarker);
+      const landingClose = partialSource.lastIndexOf('</div>');
+      if (deferredStart < 0 || landingClose <= deferredStart) {
+        throw new Error('seo-prerender: landing deferred boundary not found');
+      }
+      const immediateLanding = `${partialSource.slice(0, deferredStart).trimEnd()}\n</div>`;
+      const deferredLanding = partialSource.slice(deferredStart, landingClose).trim();
+      const deferredSeo = cleanPartial(deferredLanding);
+      html = html.replace(
+        /<div id="page-root"><\/div>/i,
+        `<div id="page-root">\n${immediateLanding}\n<template id="landingDeferredTemplate">\n${deferredLanding}\n</template>\n</div>\n`
+          + `<noscript id="seo-prerender-static" data-seo-route="/">\n<div id="seo-prerender">\n${deferredSeo}\n</div>\n</noscript>`
+      );
+    } else {
+      const seoBlock = `<noscript id="seo-prerender-static" data-seo-route="${route.url}">\n<div id="seo-prerender">\n${h1}${partialHtml}\n</div>\n</noscript>`;
+      html = html.replace(
+        /(<div id="page-root"><\/div>)/i,
+        `$1\n${seoBlock}`
+      );
+    }
 
     const outPath = path.join(dist, route.out);
     await fs.mkdir(path.dirname(outPath), { recursive: true });

@@ -1,54 +1,192 @@
 (function () {
+  'use strict';
+
   if (window.GP_MAINTENANCE_BLOCKED) {
     document.documentElement.classList.add('design-ready');
     return;
   }
 
-  var v = 'lav-193';
-  function script(src, attrs) {
-    attrs = attrs || '';
-    document.write('<script ' + attrs + ' src="' + src + '"><\/script>');
+  var assetManifest = {};
+  function assetPath(src) {
+    return assetManifest[src] || src;
   }
 
-  script('/assets/js/page-loader.js?v=' + v);
-  script('/assets/js/ui-feedback.js?v=' + v);
-  script('/assets/js/conversion-flow.js?v=' + v);
-  script('/assets/js/detect-presentation.js?v=' + v);
-  script('/assets/js/app-main.js?v=' + v);
-  script('/assets/js/input-quality.js?v=' + v);
-  script('/assets/js/main-designs.js?v=' + v);
-  script('/assets/js/landing.js?v=' + v);
-  script('/assets/js/evasion-flow.js?v=' + v);
-  script('/assets/js/writing-lab.js?v=' + v);
-  script('/assets/js/app-module.js?v=' + v, 'type="module"');
-  script('/assets/js/payment-callbacks.js?v=' + v, 'type="module"');
-  function loadEnhancement(src) {
+  async function loadAssetManifest() {
+    try {
+      var response = await fetch('/asset-manifest.json', { cache: 'no-cache' });
+      if (!response.ok) return;
+      var body = await response.json();
+      if (body && body.schemaVersion === 1 && body.assets) assetManifest = body.assets;
+    } catch (_) {
+      assetManifest = {};
+    }
+  }
+
+  function loadScript(src, options) {
+    options = options || {};
     return new Promise(function (resolve, reject) {
-      var el = document.createElement('script');
-      el.src = src;
-      el.async = true;
-      el.onload = resolve;
-      el.onerror = reject;
-      document.head.appendChild(el);
+      var existing = document.querySelector('script[data-gp-src="' + src + '"]');
+      if (existing) {
+        if (existing.dataset.loaded === '1') resolve();
+        else existing.addEventListener('load', resolve, { once: true });
+        return;
+      }
+      var script = document.createElement('script');
+      script.src = assetPath(src);
+      script.dataset.gpSrc = src;
+      if (options.module) script.type = 'module';
+      if (options.async) script.async = true;
+      script.addEventListener('load', function () { script.dataset.loaded = '1'; resolve(); }, { once: true });
+      script.addEventListener('error', function () { reject(new Error('Failed to load ' + src)); }, { once: true });
+      document.head.appendChild(script);
     });
   }
 
-  function scheduleEnhancements() {
-    var run = function () {
-      Promise.all([
-        loadEnhancement('https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js'),
-        loadEnhancement('https://cdn.jsdelivr.net/npm/vanilla-tilt@1.8.1/dist/vanilla-tilt.min.js'),
-        loadEnhancement('https://cdn.jsdelivr.net/npm/countup.js@2.8.0/dist/countUp.umd.js')
-      ]).then(function () {
-        return loadEnhancement('/assets/js/animations.js?v=' + v);
-      }).catch(function (error) {
-        console.warn('Optional visual enhancements were skipped.', error);
-      });
-    };
-    if ('requestIdleCallback' in window) requestIdleCallback(run, { timeout: 1800 });
-    else setTimeout(run, 900);
+  function loadStyle(href, id) {
+    if (id && document.getElementById(id)) return Promise.resolve();
+    return new Promise(function (resolve, reject) {
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = assetPath(href);
+      if (id) link.id = id;
+      link.addEventListener('load', resolve, { once: true });
+      link.addEventListener('error', function () { reject(new Error('Failed to load ' + href)); }, { once: true });
+      document.head.appendChild(link);
+    });
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleEnhancements, { once: true });
-  else scheduleEnhancements();
+  function idle(task, timeout) {
+    var run = function () {
+      if ('requestIdleCallback' in window) requestIdleCallback(task, { timeout: timeout || 1800 });
+      else setTimeout(task, 400);
+    };
+    if (document.readyState === 'complete') run();
+    else window.addEventListener('load', run, { once: true });
+  }
+
+  function loadTrackingAfterFirstRender() {
+    var started = false;
+    var timer = 0;
+    function start() {
+      if (started) return;
+      started = true;
+      clearTimeout(timer);
+      window.removeEventListener('pointerdown', start);
+      window.removeEventListener('keydown', start);
+      idle(function () {
+        loadScript('/assets/js/head-tracking.js').catch(function (error) {
+          console.warn('Tracking was skipped.', error);
+        });
+      }, 1800);
+    }
+    window.addEventListener('pointerdown', start, { once: true, passive: true });
+    window.addEventListener('keydown', start, { once: true });
+    timer = setTimeout(start, 6500);
+  }
+
+  function scheduleLandingHydration() {
+    if (!document.getElementById('landingDeferredTemplate')) return;
+    var hydrated = false;
+    var timer = 0;
+    function hydrate() {
+      if (hydrated) return;
+      hydrated = true;
+      clearTimeout(timer);
+      window.removeEventListener('scroll', hydrate);
+      window.removeEventListener('pointerdown', hydrate);
+      window.removeEventListener('keydown', hydrate);
+      if (window.GPPageLoader) window.GPPageLoader.hydrateLandingDeferred();
+    }
+    window.addEventListener('scroll', hydrate, { once: true, passive: true });
+    window.addEventListener('pointerdown', hydrate, { once: true, passive: true });
+    window.addEventListener('keydown', hydrate, { once: true });
+    timer = setTimeout(hydrate, 7000);
+  }
+
+  var appAssetsPromise = null;
+  function loadAppAssets() {
+    if (appAssetsPromise) return appAssetsPromise;
+    appAssetsPromise = (async function () {
+      await Promise.all([
+        loadStyle('/assets/css/app.css', 'gpAppCss'),
+        loadStyle('/assets/css/redesign.css', 'gpRedesignCss'),
+        loadStyle('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css', 'gpPretendardCss'),
+        loadStyle('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0', 'gpMaterialSymbols')
+      ]);
+      if (/^\/writing-lab(?:\/|$)/.test(window.location.pathname)) {
+        await loadStyle('/assets/css/writing-lab.css', 'gpWritingLabCss');
+      }
+      await loadScript('/assets/js/vendor-init.js');
+      await loadScript('/assets/js/api.js');
+      await loadScript('/assets/js/ui-feedback.js');
+      await loadScript('/assets/js/modal-manager.js');
+      await loadScript('/assets/js/conversion-flow.js');
+      await loadScript('/assets/js/detect-presentation.js');
+      await loadScript('/assets/js/app-main.js');
+      await loadScript('/assets/js/input-quality.js');
+      await loadScript('/assets/js/main-designs.js');
+      await loadScript('/assets/js/evasion-flow.js');
+      if (/^\/writing-lab(?:\/|$)/.test(window.location.pathname)) await loadScript('/assets/js/writing-lab.js');
+      await loadScript('/assets/js/app-module.js', { module: true });
+      await loadScript('/assets/js/payment-callbacks.js', { module: true });
+      idle(function () {
+        loadScript('https://developers.kakao.com/sdk/js/kakao.min.js', { async: true })
+          .then(function () { if (typeof window.onKakaoLoad === 'function') window.onKakaoLoad(); })
+          .catch(function () { if (typeof window.onKakaoError === 'function') window.onKakaoError(); });
+        loadScript('https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js', { async: true })
+          .then(function () { return loadScript('/assets/js/email-init.js'); })
+          .catch(function () {});
+      }, 2400);
+      loadTrackingAfterFirstRender();
+      return true;
+    })();
+    return appAssetsPromise;
+  }
+
+  window.gpEnsureWritingLab = async function () {
+    await loadStyle('/assets/css/writing-lab.css', 'gpWritingLabCss');
+    await loadScript('/assets/js/writing-lab.js');
+  };
+
+  window.gpLoadApp = async function (options) {
+    options = options || {};
+    await Promise.all([window.GPPageLoader.loadApp(options), loadAppAssets()]);
+    if (options.screen === 'login' && typeof window.showScreen === 'function') window.showScreen('login');
+    else if (typeof window.showScreen === 'function') window.showScreen('app');
+    if (options.tab && typeof window.switchTab === 'function') window.switchTab(options.tab);
+    document.documentElement.classList.add('design-ready');
+    return true;
+  };
+
+  async function boot() {
+    await loadAssetManifest();
+    await loadScript('/assets/js/page-loader.js');
+    var mode = await window.GP_PAGE_READY;
+    if (mode === 'landing') {
+      await loadScript('/assets/js/landing.js');
+      document.documentElement.classList.add('design-ready');
+      scheduleLandingHydration();
+      loadTrackingAfterFirstRender();
+      return;
+    }
+    if (mode === 'public-pricing') {
+      await Promise.all([
+        loadStyle('/assets/css/app.css', 'gpAppCss'),
+        loadStyle('/assets/css/redesign.css', 'gpRedesignCss'),
+        loadStyle('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css', 'gpPretendardCss')
+      ]);
+      document.documentElement.classList.add('design-ready');
+      loadTrackingAfterFirstRender();
+      return;
+    }
+    await loadAppAssets();
+    document.documentElement.classList.add('design-ready');
+  }
+
+  boot().catch(function (error) {
+    console.error('Application boot failed.', error);
+    document.documentElement.classList.add('design-ready');
+    var root = document.getElementById('page-root');
+    if (root && !root.textContent.trim()) root.innerHTML = '<main class="gp-boot-error"><h1>화면을 불러오지 못했어요</h1><p>잠시 후 새로고침해 주세요.</p></main>';
+  });
 })();

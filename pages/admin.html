@@ -38,6 +38,7 @@
     <!-- 탭: 섹션이 계속 늘며 세로 스크롤이 과도해져, 성격별로 나눠 한 번에 한 그룹만 보여준다 -->
     <nav class="gp-admin-tabs" id="adminTabs" aria-label="관리자 섹션 탭">
       <button type="button" class="gp-admin-tab active" data-tab="ops" onclick="adminSwitchTab('ops')">운영 현황</button>
+      <button type="button" class="gp-admin-tab" data-tab="incidents" onclick="adminSwitchTab('incidents')">장애 로그 <span id="adminOpsTabBadge" class="gp-ops-tab-badge" hidden>0</span></button>
       <button type="button" class="gp-admin-tab" data-tab="quality" onclick="adminSwitchTab('quality')">휴머나이징 품질</button>
       <button type="button" class="gp-admin-tab" data-tab="users" onclick="adminSwitchTab('users')">사용자</button>
       <button type="button" class="gp-admin-tab" data-tab="ledger" onclick="adminSwitchTab('ledger')">크레딧 원장</button>
@@ -82,7 +83,7 @@
             <li><span class="gp-admin-patch-area engine">문단 보강</span><span>기본 휴머나이징·다듬기 결과에서 원문에 구체성이 부족한 문단만 표시하고, 사용자가 적은 실제 경험 한 줄을 바탕으로 해당 문단 하나만 다시 다듬습니다. 날조·분량 검증을 통과한 변경만 적용합니다.</span></li>
             <li><span class="gp-admin-patch-area billing">과금 보호</span><span>문단 보강의 무변화·시간 초과·안전 검증 실패는 크레딧과 무료 횟수를 소진하지 않습니다. 보강 요청의 경험 메모 원문은 작업 이력에 중복 저장하지 않습니다.</span></li>
             <li><span class="gp-admin-patch-area layout">3택 흐름</span><span>다듬기·기본·고급 선택을 한 화면의 세 카드로 정리하고 광고 유입 용도를 진단·선택 이벤트까지 이어 사용자가 처리 범위를 바로 비교할 수 있게 했습니다.</span></li>
-            <li><span class="gp-admin-patch-area observe">연구노트·SEO</span><span>연구노트 허브와 글 8편, 템플릿 6종을 정적 페이지로 구성하고 검색 가능한 경로·사이트맵·메타데이터·내부 링크·비공개 화면 noindex를 함께 적용했습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">연구노트·SEO</span><span>연구노트 허브와 글 10편, 템플릿 6종을 정적 페이지로 구성하고 검색 가능한 경로·사이트맵·메타데이터·내부 링크·비공개 화면 noindex를 함께 적용했습니다.</span></li>
             <li><span class="gp-admin-patch-area billing">요금·정책</span><span>8,700원 라이트 충전 상품을 350크레딧으로 확대하고, 유료 충전 크레딧은 유효기간 없이 사용할 수 있도록 화면·이용약관·회귀 테스트를 같은 기준으로 맞췄습니다. 기존 주문의 환불 계산은 실제 지급량을 유지합니다.</span></li>
             <li><span class="gp-admin-patch-area frontend">공지</span><span>공지사항 상단을 v2.5.41과 문단 보강 안내로 교체하고, 엔진 업데이트·유료 크레딧 유효기간·라이트 상품 지급량을 각각 검색 가능한 공지로 게시했습니다.</span></li>
             <li><span class="gp-admin-patch-area safety">검증·배포</span><span>백엔드 전체 849개, 문단 보강 상태기계 32개, 프런트 87개 테스트와 양쪽 운영 의존성 감사를 통과했습니다. Render·Vercel 운영 응답에서 기능 플래그, 가격, 연구노트, 보안·검색 헤더를 재확인했습니다.</span></li>
@@ -787,7 +788,7 @@
     <section class="gp-admin-panel" data-admin-tab="settings">
       <div class="gp-admin-section-head">
         <h3>글쓰기 랩 (생성 + 휴머나이징)</h3>
-        <p>확인한 정보만으로 장르에 맞는 글을 만들고, 기존 휴머나이징 엔진과 최종 공개 검사까지 한 번에 실행합니다. 관리자는 무과금으로 열립니다.</p>
+        <p>확인한 정보만으로 장르에 맞는 글을 만들고, 기존 휴머나이징 엔진과 제출 전 최종 점검까지 한 번에 실행합니다. 관리자는 무과금으로 열립니다.</p>
       </div>
       <div class="gp-admin-exp-grid">
         <div class="gp-admin-exp-copy">
@@ -1000,6 +1001,52 @@
     </section>
 
     <!-- 작업 모니터: 전체 사용자의 실패·중단·진행 작업(transformJobArchive) 일괄 조회 -->
+    <!-- 장애 로그(2026-08-29): 서버 error/warn 중 등급이 매겨진 사건을 Firestore(opsLogs)에 남기고
+         여기서 검색·확인한다. Render 로그는 보존 기간이 짧아 며칠 지난 사고 분석이 불가능했다.
+         등급/도메인/대응 안내는 Backend lib/opsEvents.js 카탈로그가 단일 진실 원천. -->
+    <section class="gp-admin-panel gp-ops-panel" data-admin-tab="incidents">
+      <div class="gp-admin-section-head">
+        <div>
+          <h3>장애 현황 <span id="adminOpsSourceTag" class="gp-admin-count"></span></h3>
+          <p>SEV1은 돈·정합성 문제라 지금 확인해야 하고, SEV3는 추세만 봅니다. 확인(ack)하면 미확인 목록에서 빠져요.</p>
+        </div>
+        <div class="gp-admin-filter-row">
+          <select id="adminOpsHours" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminOpsLogs()">
+            <option value="6">최근 6시간</option>
+            <option value="24" selected>최근 24시간</option>
+            <option value="72">최근 3일</option>
+            <option value="168">최근 7일</option>
+            <option value="720">최근 30일</option>
+          </select>
+          <button type="button" class="gp-admin-mini-btn" onclick="loadAdminOpsLogs()">새로고침</button>
+        </div>
+      </div>
+
+      <div id="adminOpsSummary" class="gp-ops-summary" aria-live="polite">
+        <div class="gp-admin-empty">불러오는 중...</div>
+      </div>
+
+      <div id="adminOpsHeartbeats" class="gp-ops-beats" aria-live="polite"></div>
+
+      <div class="gp-admin-filter-row gp-ops-filters">
+        <select id="adminOpsSeverity" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminOpsLogs()">
+          <option value="">전체 등급</option>
+          <option value="SEV1">SEV1 — 돈·정합성</option>
+          <option value="SEV2">SEV2 — 기능 장애</option>
+          <option value="SEV3">SEV3 — 기록만</option>
+        </select>
+        <select id="adminOpsDomain" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminOpsLogs()">
+          <option value="">전체 영역</option>
+        </select>
+        <input type="text" id="adminOpsQuery" class="gp-admin-input gp-admin-input-sm" placeholder="uid·주문번호·requestId·메시지 검색" oninput="window.adminOpsQueryInput()">
+        <label class="gp-ops-check"><input type="checkbox" id="adminOpsOnlyOpen" onchange="loadAdminOpsLogs()"> 미확인만</label>
+      </div>
+
+      <div id="adminOpsList">
+        <div class="gp-admin-empty">불러오는 중...</div>
+      </div>
+    </section>
+
     <section class="gp-admin-panel" data-admin-tab="ops">
       <div class="gp-admin-section-head">
         <h3>작업 모니터 <span id="adminJobsCount" class="gp-admin-count"></span></h3>

@@ -13,10 +13,10 @@ export const ROUTES = [
     out: 'index.html',
     url: '/',
     partial: 'landing.html',
-    title: '교수님 피하기 – AI 휴머나이저 · AI 감지',
-    h1: '교수님 피하기 AI 휴머나이저',
+    title: '교수님 피하기 – AI 감지 · 휴머나이징',
+    h1: '교수님 피하기 AI 감지 · 휴머나이징',
     description:
-      'AI로 작성한 글을 자연스럽고 사람답게 다듬는 AI 휴머나이저. AI 티 지수를 확인하고, 휴머나이징으로 문장을 사람답게 바꿔보세요.',
+      'AI로 작성한 글을 원문의 뜻과 장르에 맞게 자연스럽게 다듬어요. AI 티 지수를 확인하고 필요한 문장을 휴머나이징해 보세요.',
     breadcrumb: null,
     faq: false
   },
@@ -24,10 +24,10 @@ export const ROUTES = [
     out: 'pricing/index.html',
     url: '/pricing',
     partial: 'pricing.html',
-    title: '요금제 · 충전 · 구독 – 교수님 피하기 AI 휴머나이저',
+    title: '요금 · 충전 – 교수님 피하기 AI 감지 · 휴머나이징',
     h1: '교수님 피하기 요금제',
     description:
-      '교수님 피하기 크레딧 충전과 구독 플랜 안내. AI 감지는 100자당 1크레딧, 휴머나이징은 최소 10크레딧부터 사용할 수 있으며 충전 크레딧은 소멸 기한 없이 사용할 수 있습니다.',
+      '교수님 피하기 크레딧 충전 안내. AI 감지는 100자당 1크레딧, 휴머나이징은 최소 10크레딧부터 사용할 수 있으며 충전 크레딧은 유효기간 없이 사용할 수 있습니다.',
     breadcrumb: '요금제',
     faq: false
   },
