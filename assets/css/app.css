@@ -950,11 +950,6 @@ body::after{
  font-size:26px !important; margin-bottom:3px !important;
  font-variant-numeric:tabular-nums;
 }
-.plan-unitcost{
- font-size:12px; color:var(--text3); font-weight:500;
-}
-.plan-unitcost strong{color:var(--text); font-weight:700;}
-
 /* 혜택 리스트 — 체크 아이콘 + 컴팩트 */
 .plan-feats{
  border-top:none !important; padding-top:0 !important;

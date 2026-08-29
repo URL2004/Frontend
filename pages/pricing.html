@@ -11,27 +11,12 @@
   </div>
  </section>
 
- <section class="gp-coupon-panel" aria-labelledby="pricingCouponTitle">
-  <div class="gp-coupon-copy">
-   <strong id="pricingCouponTitle">쿠폰이 있나요?</strong>
-   <span>사용할 수 있는 쿠폰 코드가 있다면 입력해 주세요.</span>
-  </div>
-  <div class="gp-coupon-entry">
-   <label for="couponInput">쿠폰 코드</label>
-   <div class="gp-coupon-form">
-    <input id="couponInput" maxlength="14" placeholder="쿠폰 코드를 입력하세요" autocomplete="off" oninput="formatCouponInput(this)" onkeydown="if(event.key==='Enter')redeemCoupon()">
-    <button type="button" onclick="redeemCoupon()">적용</button>
-   </div>
-  </div>
-  <div id="couponMsg" role="status"></div>
- </section>
-
  <div id="pricingTabCredit">
   <section class="gp-pricing-plans" aria-labelledby="pricingPlansTitle">
    <header class="gp-pricing-section-head">
     <div class="gp-pricing-section-copy">
      <h2 id="pricingPlansTitle">충전 금액 선택</h2>
-     <p id="gpPlanListHint">5개 상품의 총 지급 크레딧과 이용 가능 횟수를 한눈에 비교하세요. 작은 화면에서는 옆으로 밀어 확인할 수 있어요.</p>
+     <p id="gpPlanListHint">총 지급 크레딧과 이용 횟수를 한눈에 비교하세요. 작은 화면에서는 옆으로 밀어 확인해요.</p>
     </div>
    </header>
    <aside class="gp-pricing-event" aria-label="추가 크레딧 이벤트 안내">
@@ -49,9 +34,7 @@
    <article class="plan-card" data-plan-amount="2900" data-plan-credits="105">
     <div class="plan-hd-row"><span class="plan-tag">100 크레딧</span></div>
     <div class="plan-price-main">2,900<span class="plan-won">원</span></div>
-    <div class="plan-unitcost">이벤트 포함 1크레딧당 <strong>약 28원</strong></div>
-    <p class="gp-plan-audience">짧은 글 몇 건을 먼저 시험할 때</p>
-    <ul class="plan-feats">
+     <ul class="plan-feats">
      <li><span>기준 크레딧</span><strong>100 크레딧</strong></li>
      <li class="feat-bonus"><span>이벤트 추가 <em>+5%</em></span><strong>+5 크레딧</strong></li>
     </ul>
@@ -68,9 +51,7 @@
    <article class="plan-card" data-plan-amount="8700" data-plan-credits="330">
     <div class="plan-hd-row"><span class="plan-tag">300 크레딧</span></div>
     <div class="plan-price-main">8,700<span class="plan-won">원</span></div>
-    <div class="plan-unitcost">이벤트 포함 1크레딧당 <strong>약 26원</strong></div>
-    <p class="gp-plan-audience">과제를 주 1~2회 처리할 때</p>
-    <ul class="plan-feats">
+     <ul class="plan-feats">
      <li><span>기준 크레딧</span><strong>300 크레딧</strong></li>
      <li class="feat-bonus"><span>이벤트 추가 <em>+10%</em></span><strong>+30 크레딧</strong></li>
     </ul>
@@ -88,9 +69,7 @@
     <div class="plan-badge">가장 인기</div>
     <div class="plan-hd-row"><span class="plan-tag">500 크레딧</span></div>
     <div class="plan-price-main">14,500<span class="plan-won">원</span></div>
-    <div class="plan-unitcost">이벤트 포함 1크레딧당 <strong>약 25원</strong></div>
-    <p class="gp-plan-audience">리포트와 발표 자료를 꾸준히 다듬을 때</p>
-    <ul class="plan-feats">
+     <ul class="plan-feats">
      <li><span>기준 크레딧</span><strong>500 크레딧</strong></li>
      <li class="feat-bonus"><span>이벤트 추가 <em>+15%</em></span><strong>+75 크레딧</strong></li>
     </ul>
@@ -107,9 +86,7 @@
    <article class="plan-card" data-plan-amount="29000" data-plan-credits="1200">
     <div class="plan-hd-row"><span class="plan-tag">1,000 크레딧</span></div>
     <div class="plan-price-main">29,000<span class="plan-won">원</span></div>
-    <div class="plan-unitcost">이벤트 포함 1크레딧당 <strong>약 24원</strong></div>
-    <p class="gp-plan-audience">여러 과목과 장문 작업을 자주 처리할 때</p>
-    <ul class="plan-feats">
+     <ul class="plan-feats">
      <li><span>기준 크레딧</span><strong>1,000 크레딧</strong></li>
      <li class="feat-bonus"><span>이벤트 추가 <em>+20%</em></span><strong>+200 크레딧</strong></li>
     </ul>
@@ -127,9 +104,7 @@
     <div class="plan-badge">최대 혜택</div>
     <div class="plan-hd-row"><span class="plan-tag">2,000 크레딧</span></div>
     <div class="plan-price-main">58,000<span class="plan-won">원</span></div>
-    <div class="plan-unitcost">이벤트 포함 1크레딧당 <strong>약 23원</strong></div>
-    <p class="gp-plan-audience">논문과 장문 작업량이 많은 기간에</p>
-    <ul class="plan-feats">
+     <ul class="plan-feats">
      <li><span>기준 크레딧</span><strong>2,000 크레딧</strong></li>
      <li class="feat-bonus"><span>이벤트 추가 <em>+25%</em></span><strong>+500 크레딧</strong></li>
     </ul>
@@ -158,6 +133,33 @@
     <div role="row"><span role="cell">고급 · 3만자 이하</span><strong role="cell">600</strong></div>
     <div role="row"><span role="cell">고급 · 근거 보강 선택</span><strong role="cell">+100</strong></div>
    </div>
+  </section>
+
+  <section class="gp-pricing-refund" aria-labelledby="pricingRefundTitle">
+   <div class="gp-pricing-refund-copy">
+    <h2 id="pricingRefundTitle">환불 기준</h2>
+    <p>일반 환불은 결제 후 7일 이내 신청할 수 있어요. 사용량은 기준 크레딧부터 반영하며, 이벤트 크레딧은 현금 환불 대상이 아니에요.</p>
+   </div>
+   <ul>
+    <li>남은 기준 크레딧에 해당하는 금액을 환불해요.</li>
+    <li>환불이 완료되면 해당 주문에 남아 있는 기준·이벤트 크레딧을 모두 회수해요.</li>
+   </ul>
+   <button type="button" onclick="showPolicy('refund')">환불규정 전체 보기</button>
+  </section>
+
+  <section class="gp-coupon-panel" aria-labelledby="pricingCouponTitle">
+   <div class="gp-coupon-copy">
+    <strong id="pricingCouponTitle">쿠폰이 있나요?</strong>
+    <span>사용할 수 있는 쿠폰 코드가 있다면 입력해 주세요.</span>
+   </div>
+   <div class="gp-coupon-entry">
+    <label for="couponInput">쿠폰 코드</label>
+    <div class="gp-coupon-form">
+     <input id="couponInput" maxlength="14" placeholder="쿠폰 코드를 입력하세요" autocomplete="off" oninput="formatCouponInput(this)" onkeydown="if(event.key==='Enter')redeemCoupon()">
+     <button type="button" onclick="redeemCoupon()">적용</button>
+    </div>
+   </div>
+   <div id="couponMsg" role="status"></div>
   </section>
 
  </div>

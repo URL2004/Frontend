@@ -6,7 +6,7 @@
     <div class="gp-page-head">
      <div>
       <h1>문의하기</h1>
-      <p>결제·계정·오류처럼 확인이 필요한 내용을 1:1 문의로 남겨 주세요. 문의 내용과 운영팀 답변은 작성한 계정에서만 확인할 수 있고, 평일 기준 1영업일 이내 답변해요.</p>
+      <p>결제·계정·오류처럼 확인이 필요한 내용을 1:1로 남겨 주세요. 작성한 계정에서만 확인할 수 있으며 평일 기준 1영업일 이내 답변해요.</p>
      </div>
      <div class="gp-qna-action">
       <button class="wbtn" type="button" data-auth-required="qna" onclick="openQnaComposer()">문의 남기기</button>
@@ -15,19 +15,31 @@
     </div>
 
     <div class="wform" id="qform">
-     <input id="qtitle" type="text" placeholder="제목">
-     <textarea id="qbody" placeholder="문제 상황을 자세히 적어 주세요. 사용 환경과 오류 메시지를 함께 적으면 빠른 답변에 도움이 돼요."></textarea>
+     <label class="sr-only" for="qtitle">문의 제목</label>
+     <input id="qtitle" type="text" maxlength="120" placeholder="제목">
+     <label class="sr-only" for="qbody">문의 내용</label>
+     <textarea id="qbody" maxlength="5000" placeholder="문제 상황을 자세히 적어 주세요. 사용 환경과 오류 메시지를 함께 적으면 빠른 답변에 도움이 돼요."></textarea>
      <div class="wform-ft">
       <label class="anon-label"><input type="checkbox" id="qAnon">익명으로 작성</label>
       <div class="wform-btns">
-       <button class="cancelbtn" onclick="document.getElementById('qform').style.display='none'">취소</button>
-       <button class="postsubmit" id="qsubmit" onclick="submitQuestion()">문의 등록</button>
+       <button class="cancelbtn" type="button" onclick="document.getElementById('qform').style.display='none'">취소</button>
+       <button class="postsubmit" id="qsubmit" type="button" onclick="submitQuestion()">문의 등록</button>
       </div>
      </div>
     </div>
 
-    <div class="gp-inq-list-head">문의 내역</div>
-    <div id="questionList" class="gp-board-list"></div>
+    <section class="gp-table-panel gp-support-list" aria-labelledby="questionListTitle">
+     <div class="gp-table-toolbar gp-board-toolbar">
+      <strong id="questionListTitle" class="gp-board-heading">문의 내역</strong>
+      <div class="qna-sort-btns" role="group" aria-label="문의 정렬">
+       <button type="button" class="cat-fbtn active" data-qsort="pending" aria-pressed="true" onclick="loadQuestions('pending')">답변 대기 먼저</button>
+       <button type="button" class="cat-fbtn" data-qsort="recent" aria-pressed="false" onclick="loadQuestions('recent')">최신순</button>
+      </div>
+     </div>
+     <div id="questionResultStatus" class="gp-board-result-status" role="status" aria-live="polite"></div>
+     <div id="questionList" class="gp-board-list"></div>
+     <nav id="questionPagination" class="gp-board-pagination" aria-label="문의 목록 페이지" hidden></nav>
+    </section>
    </div>
 
    <aside class="gp-page-aside">

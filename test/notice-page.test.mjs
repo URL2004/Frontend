@@ -57,7 +57,7 @@ test('하단 공지는 제외 요청한 주제를 숨기고 남은 중요 공지
   assert.match(baseItems, /제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요/u);
   assert.match(baseItems, /2026년 9월 30일까지 결제 요청분/u);
   assert.match(baseItems, /사용량을 기준 크레딧에서 먼저 차감/u);
-  assert.match(baseItems, /남아 있는 기준·이벤트 크레딧은 모두 회수/u);
+  assert.match(baseItems, /남아 있는 기준·이벤트 크레딧(?:을|은) 모두 회수/u);
   assert.match(source, /\.filter\(item => !NOTICE_RETIRED_TITLES\.has\(item\.title\.trim\(\)\)\)/u);
   assert.match(baseItems, /(?:해요|했어요|돼요|됐어요|드려요|있어요|없어요|않아요)/u);
 });
@@ -73,7 +73,8 @@ test('공지 분류 탭·검색·정렬·상세보기가 하나의 필터 상태
     source.indexOf('// ===== MY PAGE =====')
   );
 
-  assert.equal(page.match(/data-notice-category=/gu)?.length, 5);
+  assert.equal(page.match(/data-notice-category=/gu)?.length, 6);
+  assert.match(page, /onclick="setNoticeCategory\('공지',this\)"/u);
   assert.match(page, /onclick="setNoticeCategory\('업데이트',this\)"/u);
   assert.match(page, /onclick="setNoticeCategory\('정책',this\)"/u);
   assert.match(page, /data-notice-search="true"[^>]*oninput="applyNoticeFilters\(\)"/u);

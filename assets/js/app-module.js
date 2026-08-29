@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, GoogleAuthProvider, EmailAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signOut, onAuthStateChanged, deleteUser, reauthenticateWithPopup, reauthenticateWithCredential, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, orderBy, query, where, limit, startAfter, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { compactPageNumbers, paginateItems } from './board-pagination.js';
 
 // XSS 방어: 사용자 입력이 innerHTML에 들어갈 때 escape 필수
 function escapeHtml(s) {
@@ -1835,18 +1836,122 @@ window.delComment = async (postId, commentId) =>{
 };
 
 // ===== Q&A =====
+const QNA_PAGE_SIZE = 10;
+let qnaItems = [];
+let qnaContext = { isAdmin: false, uid: null };
+
+function renderBoardPagination(container, { page, totalPages, totalItems, label, onChange }) {
+ if (!container) return;
+ if (totalItems <= 0 || totalPages <= 1) {
+  container.hidden = true;
+  container.innerHTML = '';
+  return;
+ }
+ const pages = compactPageNumbers(page, totalPages, 1);
+ const parts = [
+  '<button type="button" class="gp-board-page-nav" data-board-page="' + (page - 1) + '" aria-label="이전 페이지"' + (page <= 1 ? ' disabled' : '') + '>이전</button>'
+ ];
+ pages.forEach((pageNumber, index) => {
+  if (index > 0 && pageNumber - pages[index - 1] > 1) {
+   parts.push('<span class="gp-board-page-gap" aria-hidden="true">…</span>');
+  }
+  parts.push('<button type="button" class="gp-board-page-number' + (pageNumber === page ? ' is-current' : '') + '" data-board-page="' + pageNumber + '" aria-label="' + label + ' ' + pageNumber + '페이지"' + (pageNumber === page ? ' aria-current="page"' : '') + '>' + pageNumber + '</button>');
+ });
+ parts.push('<button type="button" class="gp-board-page-nav" data-board-page="' + (page + 1) + '" aria-label="다음 페이지"' + (page >= totalPages ? ' disabled' : '') + '>다음</button>');
+ container.innerHTML = parts.join('');
+ container.hidden = false;
+ container.querySelectorAll('button[data-board-page]').forEach(button => {
+  button.addEventListener('click', () => {
+   const nextPage = Number(button.dataset.boardPage);
+   if (!button.disabled && Number.isInteger(nextPage)) onChange(nextPage);
+  });
+ });
+}
+
 window.qnaSort = window.qnaSort || 'pending';
+window.qnaPage = Number.isInteger(window.qnaPage) && window.qnaPage > 0 ? window.qnaPage : 1;
+
+function renderQuestionListPage() {
+ const el = document.getElementById('questionList');
+ const statusEl = document.getElementById('questionResultStatus');
+ const pager = document.getElementById('questionPagination');
+ if (!el) return;
+ const pageData = paginateItems(qnaItems, window.qnaPage, QNA_PAGE_SIZE);
+ const { totalItems, totalPages, startIndex, endIndex, items: pageItems } = pageData;
+ window.qnaPage = pageData.page;
+ el.setAttribute('aria-busy', 'false');
+ if (statusEl) {
+  const scope = qnaContext.isAdmin ? '전체 문의' : '내 문의';
+  statusEl.textContent = totalItems
+   ? scope + ' ' + totalItems.toLocaleString('ko-KR') + '건 · ' + (startIndex + 1).toLocaleString('ko-KR') + '–' + endIndex.toLocaleString('ko-KR') + '건 표시'
+   : scope + ' 0건';
+ }
+ if (!totalItems) {
+  el.innerHTML = qnaContext.isAdmin
+   ? '<div class="qna-empty">접수된 문의가 없어요.</div>'
+   : '<div class="qna-empty">아직 남긴 문의가 없어요. 위에서 문의를 남겨보세요.</div>';
+  renderBoardPagination(pager, { page: 1, totalPages: 1, totalItems: 0, label: '문의 목록', onChange: () => {} });
+  return;
+ }
+ const lockIco = '<svg class="lock-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+ el.innerHTML = pageItems.map(q => {
+  const date = q.createdAt ? new Date(q.createdAt.toDate()).toLocaleDateString('ko-KR') : '';
+  const qnaStatus = q.status === 'answered' ? 'answered' : 'pending';
+  const statusText = qnaStatus === 'answered' ? '답변 완료' : '답변 대기';
+  const canView = qnaContext.isAdmin || (qnaContext.uid && q.authorId === qnaContext.uid);
+  const displayTitle = canView ? escapeHtml(q.title || '') : '비공개 질문입니다.';
+  const authorMeta = qnaContext.isAdmin ? '<span>' + escapeHtml(q.authorName || '') + '</span>' : '';
+  return '<button type="button" class="gp-board-row gp-board-row-button" data-qna-id="' + escapeHtml(q.id) + '" aria-label="' + displayTitle + ', ' + statusText + '">'
+   + '<span class="gbr-main">'
+   +  '<span class="gbr-ttl">' + (canView ? '' : lockIco) + '<span class="gbr-ttl-text">' + displayTitle + '</span></span>'
+   +  '<span class="gbr-sub">' + authorMeta + '<span>' + date + '</span>' + (canView ? '' : '<span class="gbr-cat">비공개</span>') + '</span>'
+   + '</span>'
+   + '<span class="gbr-stats"><span class="qna-status ' + qnaStatus + '">' + statusText + '</span></span>'
+   + '</button>';
+ }).join('');
+ el.querySelectorAll('[data-qna-id]').forEach(row => {
+  row.addEventListener('click', () => window.viewQuestion(row.dataset.qnaId));
+ });
+ renderBoardPagination(pager, {
+  page: window.qnaPage,
+  totalPages,
+  totalItems,
+  label: '문의 목록',
+  onChange: nextPage => {
+   window.qnaPage = nextPage;
+   renderQuestionListPage();
+   const heading = document.getElementById('questionListTitle');
+   if (heading) heading.scrollIntoView({ block: 'start', behavior: 'auto' });
+  }
+ });
+}
 
 window.loadQuestions = async (sort) =>{
- if (sort) window.qnaSort = sort;
- document.querySelectorAll('[data-qsort]').forEach(b => b.classList.toggle('active', b.dataset.qsort === window.qnaSort));
+ if (sort) {
+  window.qnaSort = sort;
+  window.qnaPage = 1;
+ }
+ document.querySelectorAll('[data-qsort]').forEach(button => {
+  const active = button.dataset.qsort === window.qnaSort;
+  button.classList.toggle('active', active);
+  button.setAttribute('aria-pressed', String(active));
+ });
  const el = document.getElementById('questionList');
+ const statusEl = document.getElementById('questionResultStatus');
+ const pager = document.getElementById('questionPagination');
  if (!el) return;
  if (!CU) {
   // 1:1 문의는 로그인 필요 — 공개 게시판이 아니므로 데모 목록 대신 로그인 유도
+  qnaItems = [];
+  qnaContext = { isAdmin: false, uid: null };
+  if (statusEl) statusEl.textContent = '로그인이 필요해요.';
+  if (pager) { pager.hidden = true; pager.innerHTML = ''; }
   el.innerHTML = '<div class="qna-empty">로그인하면 1:1 문의를 남기고 답변을 확인할 수 있어요.</div>';
   return;
  }
+ el.setAttribute('aria-busy', 'true');
+ if (statusEl) statusEl.textContent = '문의 내역을 불러오는 중이에요.';
+ if (pager) { pager.hidden = true; pager.innerHTML = ''; }
  el.innerHTML = '<div class="qna-empty">불러오는 중...</div>';
  try {
   const isAdm = window.isAdmin && window.isAdmin();
@@ -1870,35 +1975,13 @@ window.loadQuestions = async (sort) =>{
    questions.sort((a,b) => (b.createdAt?.toDate()||0) - (a.createdAt?.toDate()||0));
   }
 
-  if (!questions.length) {
-   el.innerHTML = isAdm
-    ? '<div class="qna-empty">접수된 문의가 없어요.</div>'
-    : '<div class="qna-empty">아직 남긴 문의가 없어요. 위에서 문의를 남겨보세요.</div>';
-   return;
-  }
-  const lockIco = '<svg class="lock-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
-  el.innerHTML = questions.map(q => {
-   const date = q.createdAt ? new Date(q.createdAt.toDate()).toLocaleDateString('ko-KR') : '';
-   const status = q.status === 'answered' ? 'answered' : 'pending';
-   const statusTxt = status === 'answered' ? '답변 완료' : '답변 대기';
-   const canView = isAdm || (myUid && q.authorId === myUid);
-   const displayTitle = canView ? escapeHtml(q.title||'') : '비공개 질문입니다.';
-   const lockHtml = canView ? '' : lockIco;
-   return '<div class="gp-board-row" onclick="viewQuestion(\''+q.id+'\')">'
-    + '<div class="gbr-main">'
-    +  '<div class="gbr-ttl">'+lockHtml+displayTitle+'</div>'
-    +  '<div class="gbr-sub">'
-    +   '<span>'+escapeHtml(q.authorName||'')+'</span>'
-    +   '<span>'+date+'</span>'
-    +   (canView ? '' : '<span class="gbr-cat">비공개</span>')
-    +  '</div>'
-    + '</div>'
-    + '<div class="gbr-stats">'
-    +  '<span class="qna-status '+status+'">'+statusTxt+'</span>'
-    + '</div>'
-    + '</div>';
-  }).join('');
+  qnaItems = questions;
+  qnaContext = { isAdmin: Boolean(isAdm), uid: myUid };
+  renderQuestionListPage();
  } catch(e) {
+  el.setAttribute('aria-busy', 'false');
+  qnaItems = [];
+  if (statusEl) statusEl.textContent = '문의 내역을 불러오지 못했어요.';
   const isPerm = /permission|insufficient/i.test(e.message||'');
   el.innerHTML = isPerm
    ? '<div class="qna-empty">작성자와 관리자만 볼 수 있어요.</div>'
@@ -1934,6 +2017,7 @@ window.submitQuestion = async () =>{
   document.getElementById('qbody').value = '';
   document.getElementById('qAnon').checked = false;
   document.getElementById('qform').style.display = 'none';
+  window.qnaPage = 1;
   await window.loadQuestions();
  } catch(e) {
   alert('등록 실패: '+e.message);
@@ -1959,7 +2043,6 @@ window.viewQuestion = async (qid) =>{
    document.getElementById('curQuestionId').value = '';
    return;
   }
-  await updateDoc(doc(db,'qna',qid), {views: increment(1)}).catch(()=>{});
   document.getElementById('curQuestionId').value = qid;
   const date = q.createdAt ? new Date(q.createdAt.toDate()).toLocaleDateString('ko-KR') : '';
   const status = q.status === 'answered' ? 'answered' : 'pending';
@@ -2005,11 +2088,12 @@ window.viewQuestion = async (qid) =>{
  }
 };
 
-window.backToQList = () =>{
+window.backToQList = (refresh = false) =>{
  document.getElementById('qnaDetailView').style.display = 'none';
  document.getElementById('qnaListView').style.display = 'block';
  document.getElementById('curQuestionId').value = '';
- window.loadQuestions();
+ if (refresh || !qnaItems.length) window.loadQuestions();
+ else renderQuestionListPage();
 };
 
 async function notifyQnaAnswered(qid, message) {
@@ -2042,6 +2126,7 @@ window.submitAnswer = async (qid) =>{
    status: 'answered',
    answer: { body, answeredBy, answeredAt: new Date() }
   });
+  qnaItems = [];
   await notifyQnaAnswered(qid, '남겨주신 문의에 운영팀 답변이 등록됐어요.');
   await window.viewQuestion(qid);
  } catch(e) {
@@ -2066,6 +2151,7 @@ window.editAnswer = async (qid) =>{
    answer: { body: trimmed, answeredBy, answeredAt: new Date() },
    status: 'answered'
   });
+  qnaItems = [];
   await notifyQnaAnswered(qid, '문의 답변이 수정됐어요. 다시 확인해 주세요.');
   await window.viewQuestion(qid);
  } catch(e) {
@@ -2081,6 +2167,7 @@ window.delAnswer = async (qid) =>{
  if (!ok) return;
  try {
   await updateDoc(doc(db,'qna',qid), {status: 'pending', answer: null});
+  qnaItems = [];
   await window.viewQuestion(qid);
  } catch(e) {
   alert('삭제 실패: '+e.message);
@@ -2094,7 +2181,8 @@ window.delQuestion = async (qid) =>{
  if (!ok) return;
  try {
   await deleteDoc(doc(db,'qna',qid));
-  window.backToQList();
+  qnaItems = [];
+  window.backToQList(true);
  } catch(e) {
   alert('삭제 실패: '+e.message);
  }
@@ -2117,7 +2205,7 @@ const NOTICE_BASE_ITEMS = [
   title: '추가 크레딧 이벤트와 환불 기준을 안내해요',
   date: '2026.08.29',
   views: 0,
-  body: '2026년 9월 30일까지 결제 요청분에는 상품별 기준 크레딧의 5~25%를 이벤트 크레딧으로 더 드려요. 기준 크레딧과 이벤트 크레딧은 모두 유효기간 없이 사용할 수 있어요.\n\n환불할 때는 사용량을 기준 크레딧에서 먼저 차감하고, 남은 기준 크레딧에 해당하는 금액을 환불해요. 해당 주문에서 남아 있는 기준·이벤트 크레딧은 모두 회수합니다.'
+  body: '2026년 9월 30일까지 결제 요청분에는 상품별 기준 크레딧의 5~25%를 이벤트 크레딧으로 더 드려요. 기준 크레딧과 이벤트 크레딧은 모두 유효기간 없이 사용할 수 있어요.\n\n일반 환불은 결제 후 7일 이내 신청할 수 있어요. 환불할 때는 사용량을 기준 크레딧에서 먼저 차감하고 남은 기준 크레딧에 해당하는 금액을 환불해요. 이벤트 크레딧은 현금 환불 대상이 아니며, 환불이 완료되면 해당 주문에 남아 있는 기준·이벤트 크레딧을 모두 회수합니다.'
  },
  {
   id: 'humanize-v25',
@@ -2196,6 +2284,8 @@ const noticeState = {
  category: '',
  query: '',
  sort: 'desc',
+ page: 1,
+ pageSize: 10,
  items: NOTICE_BASE_ITEMS.map(item => ({ ...item, source: 'local', authorName: '교수님 피하기' })),
  detail: null
 };
@@ -2255,51 +2345,66 @@ function noticeHighlightLabel(item) {
 function renderNoticeList() {
  const el = document.getElementById('noticeList');
  const status = document.getElementById('noticeResultStatus');
+ const pager = document.getElementById('noticePagination');
  if (!el) return;
  noticeState.detail = null;
- const items = noticeFilteredItems();
+ el.setAttribute('aria-busy', 'false');
+ const filteredItems = noticeFilteredItems();
+ const pageData = paginateItems(filteredItems, noticeState.page, noticeState.pageSize);
+ const { totalPages, startIndex, endIndex, items } = pageData;
+ noticeState.page = pageData.page;
  if (status) {
   const scope = noticeState.category || '전체';
   const suffix = noticeState.query ? ' · 검색 결과' : '';
-  status.textContent = scope + ' ' + items.length.toLocaleString('ko-KR') + '개' + suffix;
+  status.textContent = filteredItems.length
+   ? scope + ' ' + filteredItems.length.toLocaleString('ko-KR') + '개 · ' + (startIndex + 1).toLocaleString('ko-KR') + '–' + endIndex.toLocaleString('ko-KR') + '개 표시' + suffix
+   : scope + ' 0개' + suffix;
  }
- if (!items.length) {
+ if (!filteredItems.length) {
   el.innerHTML = '<div class="gp-notice-empty">조건에 맞는 공지사항이 없어요.<small>다른 분류를 선택하거나 검색어를 바꿔 보세요.</small></div>';
+  renderBoardPagination(pager, { page: 1, totalPages: 1, totalItems: 0, label: '공지사항', onChange: () => {} });
   return;
  }
  el.innerHTML = items.map((item, index) => {
   const highlightLabel = noticeHighlightLabel(item);
-  return '<div class="gp-board-row notice-row' + (highlightLabel ? ' is-highlighted' : '') + '" role="button" tabindex="0" data-notice-index="' + index + '">'
-  + '<div class="gbr-main">'
-  +  '<div class="gbr-ttl">'
+  return '<button type="button" class="gp-board-row gp-board-row-button notice-row' + (highlightLabel ? ' is-highlighted' : '') + '" data-notice-index="' + index + '">'
+  + '<span class="gbr-main">'
+  +  '<span class="gbr-ttl">'
   +   (highlightLabel ? '<span class="gp-notice-row-badge">' + escapeHtml(highlightLabel) + '</span>' : '')
   +   '<span class="gbr-ttl-text">' + escapeHtml(item.title) + '</span>'
-  +  '</div>'
-  +  '<div class="gbr-sub"><span class="gbr-cat">' + escapeHtml(item.category) + '</span><span>' + escapeHtml(item.date) + '</span></div>'
-  + '</div>'
-  + '<div class="gbr-stats">' + _gbrStat(_SICO_VIEW, Number(item.views || 0).toLocaleString('ko-KR'), 'views') + '</div>'
-  + '</div>';
+  +  '</span>'
+  +  '<span class="gbr-sub"><span class="gbr-cat">' + escapeHtml(item.category) + '</span><span>' + escapeHtml(item.date) + '</span></span>'
+  + '</span>'
+  + '</button>';
  }).join('');
  el.querySelectorAll('[data-notice-index]').forEach(row => {
-  const openItem = () => {
+  row.addEventListener('click', () => {
    const index = Number(row.dataset.noticeIndex);
    if (Number.isInteger(index) && items[index]) renderNoticeDetail(items[index]);
-  };
-  row.addEventListener('click', openItem);
-  row.addEventListener('keydown', event => {
-   if (event.key !== 'Enter' && event.key !== ' ') return;
-   event.preventDefault();
-   openItem();
   });
+ });
+ renderBoardPagination(pager, {
+  page: noticeState.page,
+  totalPages,
+  totalItems: filteredItems.length,
+  label: '공지사항',
+  onChange: nextPage => {
+   noticeState.page = nextPage;
+   renderNoticeList();
+   const resultStatus = document.getElementById('noticeResultStatus');
+   if (resultStatus) resultStatus.scrollIntoView({ block: 'start', behavior: 'auto' });
+  }
  });
 }
 
 function renderNoticeDetail(item) {
  const el = document.getElementById('noticeList');
  const status = document.getElementById('noticeResultStatus');
+ const pager = document.getElementById('noticePagination');
  if (!el || !item) return;
  noticeState.detail = item;
  if (status) status.textContent = '공지 상세';
+ if (pager) { pager.hidden = true; pager.innerHTML = ''; }
  const canDelete = item.source === 'remote' && window.isAdmin();
  el.innerHTML =
   '<button type="button" class="backbtn" id="noticeBackBtn">← 목록으로</button>'
@@ -2317,23 +2422,25 @@ function renderNoticeDetail(item) {
 
 window.setNoticeCategory = (category, btn) => {
  noticeState.category = NOTICE_CATEGORIES.includes(category) ? category : '';
+ noticeState.page = 1;
  document.querySelectorAll('#noticeContent [data-notice-category]').forEach(button => {
   const active = (button.dataset.noticeCategory || '') === noticeState.category;
   button.classList.toggle('active', active);
   button.setAttribute('aria-pressed', String(active));
  });
- if (btn) btn.blur();
  renderNoticeList();
 };
 
 window.applyNoticeFilters = () => {
  const input = document.getElementById('noticeSearchInput');
  noticeState.query = input ? input.value.trim() : '';
+ noticeState.page = 1;
  renderNoticeList();
 };
 
 window.toggleNoticeSort = btn => {
  noticeState.sort = noticeState.sort === 'desc' ? 'asc' : 'desc';
+ noticeState.page = 1;
  if (btn) {
   const isOldest = noticeState.sort === 'asc';
   btn.textContent = isOldest ? '오래된순' : '최신순';
@@ -2354,6 +2461,7 @@ window.loadNotices = async () =>{
    adminBtn.innerHTML = '';
   }
  }
+ noticeState.page = 1;
  noticeState.items = NOTICE_BASE_ITEMS.map(item => ({ ...item, source: 'local', authorName: '교수님 피하기' }));
  renderNoticeList();
  if (!CU) return;

@@ -9,6 +9,7 @@
   </div>
 
   <div class="gp-search">
+   <label class="sr-only" for="noticeSearchInput">공지사항 검색</label>
    <input id="noticeSearchInput" data-notice-search="true" type="search" placeholder="공지사항을 검색하세요" oninput="applyNoticeFilters()" onkeydown="if(event.key==='Escape'){this.value='';applyNoticeFilters();}" autocomplete="off">
    <button type="button" aria-label="검색" onclick="applyNoticeFilters()">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/></svg>
@@ -38,6 +39,7 @@
    <div class="gp-table-toolbar">
     <div class="cat-filter" role="group" aria-label="공지 분류">
      <button type="button" class="cat-fbtn active" data-notice-category="" aria-pressed="true" onclick="setNoticeCategory('',this)">전체</button>
+     <button type="button" class="cat-fbtn" data-notice-category="공지" aria-pressed="false" onclick="setNoticeCategory('공지',this)">공지</button>
      <button type="button" class="cat-fbtn" data-notice-category="업데이트" aria-pressed="false" onclick="setNoticeCategory('업데이트',this)">업데이트</button>
      <button type="button" class="cat-fbtn" data-notice-category="점검" aria-pressed="false" onclick="setNoticeCategory('점검',this)">점검</button>
      <button type="button" class="cat-fbtn" data-notice-category="이벤트" aria-pressed="false" onclick="setNoticeCategory('이벤트',this)">이벤트</button>
@@ -45,8 +47,9 @@
     </div>
     <button type="button" id="noticeSortBtn" class="gp-sort-select" aria-label="공지 정렬: 최신순" aria-pressed="false" onclick="toggleNoticeSort(this)">최신순</button>
    </div>
-   <div id="noticeResultStatus" class="gp-notice-result-status" role="status" aria-live="polite"></div>
-   <div id="noticeList" class="gp-board-list" aria-live="polite"></div>
+   <div id="noticeResultStatus" class="gp-board-result-status" role="status" aria-live="polite"></div>
+   <div id="noticeList" class="gp-board-list"></div>
+   <nav id="noticePagination" class="gp-board-pagination" aria-label="공지사항 목록 페이지" hidden></nav>
   </section>
  </section>
 

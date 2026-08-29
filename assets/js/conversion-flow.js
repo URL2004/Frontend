@@ -181,18 +181,6 @@
     return catalog.find(function (plan) { return planTotal(plan) >= gap; }) || catalog[catalog.length - 1];
   }
 
-  function actionLabel(action) {
-    var labels = {
-      main_analysis: '작성 중인 분석',
-      evasion_detect: '작성 중인 AI 감지',
-      evasion_transform: '작성 중인 휴머나이징',
-      evasion_fallback: '원문 보존형 작업',
-      writing_lab_generate: '작성 중인 글쓰기 작업',
-      composer_draft: '입력해 둔 글'
-    };
-    return labels[action] || '현재 작업';
-  }
-
   function modalCopy(context, pending, plan) {
     var payload = pending.payload || {};
     var work = pending.action === 'evasion_detect' || (pending.action === 'composer_draft' && payload.mode === 'detect') || (pending.action === 'main_analysis' && payload.mode === 'detect')
@@ -204,39 +192,18 @@
           : pending.action === 'paragraph_refine'
             ? '문단 다시 다듬기'
             : '기본 휴머나이징';
-    if (context.segment === 'returning_low_balance' && context.lastPackage && number(context.lastPackage.amount) === plan.amount) {
+    if (pending.action === 'pricing_purchase') {
       return {
-        title: '이전에 쓰던 상품으로 바로 이어가세요',
-        description: '결제가 끝나면 ' + work + ' 작업을 자동으로 다시 시작해요.',
-        badge: '빠른 재충전'
-      };
-    }
-    if (context.segment === 'trial_unused') {
-      return {
-        title: work + '에 부족한 크레딧만 채우세요',
-        description: '입력한 내용과 설정을 보관했어요. 결제가 끝나면 중단된 지점에서 바로 이어져요.',
-        badge: '작업 자동 재개'
+        title: '결제 내용을 확인해 주세요',
+        description: '지급 크레딧과 결제금액, 환불 기준을 확인한 뒤 결제를 진행해 주세요.',
+        badge: '크레딧 충전'
       };
     }
     return {
-      title: work + ' 작업을 이어갈 충전 상품이에요',
-      description: actionLabel(pending.action) + '에 필요한 부족분을 기준으로 계산했어요.',
+      title: work + '에 필요한 크레딧을 충전해요',
+      description: '입력한 내용과 설정을 보관했어요. 결제가 끝나면 중단된 작업을 자동으로 이어가요.',
       badge: '작업 자동 재개'
     };
-  }
-
-  function workUses(pending, totalCredits, neededCredits) {
-    var payload = pending.payload || {};
-    if (pending.action === 'evasion_detect' || (pending.action === 'composer_draft' && payload.mode === 'detect') || (pending.action === 'main_analysis' && payload.mode === 'detect')) {
-      return '100자 AI 감지 약 ' + Math.floor(totalCredits) + '회 가능';
-    }
-    if (pending.action === 'evasion_transform' && payload.flowMode === 'formal') {
-      return '이번 고급 휴머나이징 후 같은 규모 작업 약 ' + Math.floor(totalCredits / Math.max(1, neededCredits)) + '회 가능';
-    }
-    if (pending.action === 'writing_lab_generate') {
-      return '이번 글쓰기 랩 작업 후 추가 가능 횟수는 결제 전에 다시 확인해요.';
-    }
-    return '500자 기본 휴머나이징 약 ' + Math.floor(totalCredits / 10) + '회 · 1,000자 약 ' + Math.floor(totalCredits / 20) + '회';
   }
 
   function renderModalLoading() {
@@ -245,10 +212,17 @@
     setText('gpCreditCheckoutDesc', '작업 종류와 부족한 크레딧을 확인한 뒤 결제를 시작할 수 있어요.');
     setText('gpCreditCheckoutPlan', '상품 확인 중');
     setText('gpCreditCheckoutPrice', '—');
+    setText('gpCreditCheckoutPaid', '—');
+    setText('gpCreditCheckoutEvent', '—');
     setText('gpCreditCheckoutCredits', '—');
-    setText('gpCreditCheckoutUses', '계산이 끝나면 가능한 작업 횟수를 보여드려요.');
     setText('gpCreditCheckoutNeeded', '—');
     setText('gpCreditCheckoutAfter', '—');
+    var eventRow = byId('gpCreditCheckoutEventRow');
+    if (eventRow) eventRow.hidden = true;
+    var bonus = byId('gpCreditCheckoutBonus');
+    if (bonus) bonus.hidden = true;
+    var offer = document.querySelector('.gp-credit-offer');
+    if (offer) offer.setAttribute('aria-busy', 'true');
     var button = byId('gpCreditCheckoutButton');
     if (button) {
       button.disabled = true;
@@ -282,18 +256,23 @@
     setText('gpCreditCheckoutDesc', copy.description);
     setText('gpCreditCheckoutPlan', plan.label + ' 충전');
     setText('gpCreditCheckoutPrice', format(plan.amount) + '원');
+    setText('gpCreditCheckoutPaid', format(plan.paidCredits) + '크레딧');
+    setText('gpCreditCheckoutEvent', '+' + format(bonus) + '크레딧');
     setText('gpCreditCheckoutCredits', format(totalCredits) + '크레딧');
-    setText('gpCreditCheckoutUses', workUses(pending, totalCredits, neededCredits));
     setText('gpCreditCheckoutCurrent', format(currentCredits) + '크레딧');
     setText('gpCreditCheckoutNeeded', format(neededCredits) + '크레딧');
     setText('gpCreditCheckoutAfter', format(afterCredits) + '크레딧');
     setText('gpCreditCheckoutButton', format(plan.amount) + '원 결제하고 ' + (pending.action === 'pricing_purchase' ? '충전하기' : '작업 이어가기'));
 
+    var eventRow = byId('gpCreditCheckoutEventRow');
+    if (eventRow) eventRow.hidden = bonus <= 0;
     var bonusNode = byId('gpCreditCheckoutBonus');
     if (bonusNode) {
       bonusNode.hidden = bonus <= 0;
-      bonusNode.textContent = bonus > 0 ? '추가 크레딧 이벤트 +' + format(bonus) + ' · 2026년 9월 30일까지 결제 요청분' : '';
+      bonusNode.textContent = bonus > 0 ? '2026년 9월 30일까지 결제 요청분에 적용돼요.' : '';
     }
+    var offer = document.querySelector('.gp-credit-offer');
+    if (offer) offer.setAttribute('aria-busy', 'false');
     var summary = byId('gpCreditCheckoutSummary');
     if (summary) summary.hidden = neededCredits <= 0;
     var button = byId('gpCreditCheckoutButton');
@@ -561,8 +540,6 @@
         var bonusStrong = bonusRow.querySelector('strong');
         if (bonusStrong) bonusStrong.textContent = '+' + format(plan.eventBonusCredits) + ' 크레딧';
       }
-      var unit = card.querySelector('.plan-unitcost strong');
-      if (unit) unit.textContent = '약 ' + Math.round(plan.amount / Math.max(1, plan.credits)) + '원';
       card.querySelectorAll('[data-work-cost]').forEach(function (node) {
         var cost = Math.max(1, number(node.dataset.workCost));
         node.dataset.planCredits = String(plan.credits);

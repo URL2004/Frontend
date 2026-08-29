@@ -22,7 +22,7 @@
     <div id="refundModalList" class="lav-refund-list">
       <div class="lav-confirm-empty">불러오는 중...</div>
     </div>
-    <p class="lav-confirm-fine">환불 사용량은 기준 크레딧부터 반영하며 이벤트 보너스에는 현금 환불 가치가 없어요. 환불이 완료되면 해당 주문의 남은 지급 크레딧을 모두 회수해요. 기존 주문은 주문 당시 기준을 적용합니다.</p>
+    <p class="lav-confirm-fine">환불 사용량은 기준 크레딧부터 반영하며 이벤트 크레딧은 현금 환불 대상이 아니에요. 환불이 완료되면 해당 주문에 남아 있는 기준·이벤트 크레딧을 모두 회수해요. 기존 주문은 주문 당시 기준을 적용합니다.</p>
   </div>
 </div>
 
@@ -36,16 +36,17 @@
     <h2 id="gpCreditCheckoutTitle">이번 작업에 맞는 충전 상품을 계산하고 있어요</h2>
     <p id="gpCreditCheckoutDesc">작업 종류와 부족한 크레딧을 확인한 뒤 결제를 시작할 수 있어요.</p>
 
-    <div class="gp-credit-offer">
+    <div class="gp-credit-offer" aria-live="polite" aria-busy="true">
       <div class="gp-credit-offer-head">
-        <div>
-          <strong id="gpCreditCheckoutPlan">상품 확인 중</strong>
-          <span id="gpCreditCheckoutCredits">—</span>
-        </div>
+        <strong id="gpCreditCheckoutPlan">상품 확인 중</strong>
         <b id="gpCreditCheckoutPrice">—</b>
       </div>
-      <p id="gpCreditCheckoutUses">계산이 끝나면 가능한 작업 횟수를 보여드려요.</p>
-      <span id="gpCreditCheckoutBonus" class="gp-credit-offer-bonus" hidden></span>
+      <dl class="gp-credit-grant" aria-label="지급 크레딧 구성">
+        <div><dt>기준 크레딧</dt><dd id="gpCreditCheckoutPaid">—</dd></div>
+        <div id="gpCreditCheckoutEventRow" hidden><dt>이벤트 크레딧</dt><dd id="gpCreditCheckoutEvent">—</dd></div>
+        <div class="is-total"><dt>총 지급</dt><dd id="gpCreditCheckoutCredits">—</dd></div>
+      </dl>
+      <p id="gpCreditCheckoutBonus" class="gp-credit-offer-bonus" hidden>2026년 9월 30일까지 결제 요청분에 적용돼요.</p>
     </div>
 
     <dl id="gpCreditCheckoutSummary" class="gp-credit-checkout-summary">
@@ -56,7 +57,15 @@
 
     <button id="gpCreditCheckoutButton" class="gp-credit-checkout-primary" type="button" onclick="gpPurchaseCreditOffer()" disabled>상품을 계산하고 있어요</button>
     <button class="gp-credit-checkout-secondary" type="button" onclick="gpViewAllCreditPlans()">다른 충전 상품 비교하기</button>
-    <p class="gp-credit-checkout-policy">전달 가능한 결과를 만들지 못하면 크레딧을 차감하지 않아요. 추가 크레딧 이벤트는 2026년 9월 30일까지 결제 요청분에 적용돼요. 지급된 크레딧에는 유효기간이 없으며, 환불액은 기준 크레딧 사용량으로 계산합니다.</p>
+    <p class="gp-credit-checkout-safe">전달 가능한 결과를 만들지 못하면 크레딧을 차감하지 않아요.</p>
+    <div class="gp-credit-checkout-policy">
+      <strong>환불 기준</strong>
+      <ul>
+        <li>일반 환불은 결제 후 7일 이내 신청할 수 있어요.</li>
+        <li>사용량은 기준 크레딧부터 반영하며, 이벤트 크레딧은 현금 환불 대상이 아니에요.</li>
+        <li>환불 시 해당 주문에 남아 있는 기준·이벤트 크레딧을 모두 회수해요.</li>
+      </ul>
+    </div>
   </div>
 </div>
 

@@ -1759,16 +1759,33 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
   const shownCredits = grant ? grant.totalGrantedCredits : (Number(checkoutOptions.displayCredits) || Number(credits));
   // 구 주문 재구매 컨텍스트에 과거 지급량이 남아 있어도 현재 상품 지급량으로 주문·추적 값을 통일한다.
   credits = shownCredits;
-  const grantLine = grant
-   ? (grant.eventBonusCredits > 0
-     ? `· 기준 ${grant.paidCredits.toLocaleString('ko-KR')} + 이벤트 ${grant.eventBonusCredits.toLocaleString('ko-KR')} = 총 ${shownCredits.toLocaleString('ko-KR')}크레딧\n· 추가 크레딧 이벤트는 2026년 9월 30일까지 결제 요청분에 적용되며, 지급 후 유효기간은 없어요.\n`
-     : `· 기준 ${grant.paidCredits.toLocaleString('ko-KR')} = 총 ${shownCredits.toLocaleString('ko-KR')}크레딧 · 유효기간 없음\n`)
+  const paidCredits = grant ? grant.paidCredits : shownCredits;
+  const eventCredits = grant ? grant.eventBonusCredits : 0;
+  const purchaseSummary = [
+   { label: '결제 금액', value: Number(amount).toLocaleString('ko-KR') + '원' },
+   { label: '기준 크레딧', value: Number(paidCredits).toLocaleString('ko-KR') + '크레딧' }
+  ];
+  if (eventCredits > 0) {
+   purchaseSummary.push({ label: '이벤트 크레딧', value: '+' + Number(eventCredits).toLocaleString('ko-KR') + '크레딧' });
+  }
+  purchaseSummary.push({ label: '총 지급', value: Number(shownCredits).toLocaleString('ko-KR') + '크레딧', emphasis: true });
+  const refundNotice = '일반 환불은 결제 후 7일 이내 신청할 수 있어요. 사용량은 기준 크레딧부터 반영하며, 이벤트 크레딧은 현금 환불 대상이 아니에요. 환불이 완료되면 해당 주문에 남아 있는 기준·이벤트 크레딧을 모두 회수해요.';
+  const eventNotice = eventCredits > 0
+   ? '이벤트 크레딧은 2026년 9월 30일까지 결제 요청분에 추가돼요. '
    : '';
-  const confirmMsg = `${shownCredits.toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n\n${grantLine}· 작업이 실패하면 크레딧은 차감되지 않아요.\n· 일반 환불은 결제 후 7일 이내 가능하며, 기준 크레딧 사용량을 반영해요.`;
+  const confirmMsg = `${Number(shownCredits).toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n${eventNotice}지급된 크레딧은 유효기간이 없어요.\n${refundNotice}`;
  const buyOk = checkoutOptions.skipConfirm === true
   ? true
   : (window.gpConfirm
-    ? await window.gpConfirm({ title: '구매를 진행할까요?', message: confirmMsg, confirmText: '구매하기' })
+    ? await window.gpConfirm({
+      title: '총 ' + Number(shownCredits).toLocaleString('ko-KR') + '크레딧을 충전할까요?',
+      message: '선택한 충전 내역을 확인해 주세요.',
+      summary: purchaseSummary,
+      safeText: (eventNotice + '지급된 기준·이벤트 크레딧은 모두 유효기간 없이 사용할 수 있어요.').trim(),
+      note: refundNotice,
+      icon: '₩',
+      confirmText: Number(amount).toLocaleString('ko-KR') + '원 결제하기'
+     })
     : confirm(confirmMsg));
  if (!buyOk) {
   if (window.gpTrack) window.gpTrack('checkout_cancel', { checkout_type: 'credits', value: amount, currency: 'KRW', code: 'PRE_CONFIRM_CANCEL' });
@@ -1909,7 +1926,8 @@ function showPolicy(type) {
 2. 결제는 토스페이먼츠를 통해 이루어집니다.
 3. 유료로 충전한 기준 크레딧과 결제 이벤트로 추가 지급된 크레딧은 유효기간 없이 사용할 수 있습니다.
 4. 2026년 9월 30일까지 결제 요청분에는 상품별 기준 크레딧의 5~25%를 이벤트 크레딧으로 추가 지급합니다.
-5. 단순 변심에 따른 일반 환불 신청기간은 결제일로부터 7일이며, 기준 크레딧 사용분을 반영한 환불 계산과 이벤트 크레딧 회수 및 예외 사항은 환불규정에 따릅니다.
+5. 단순 변심에 따른 일반 환불 신청기간은 결제일로부터 7일입니다.
+6. 일반 환불 시 사용량은 기준 크레딧부터 먼저 차감된 것으로 처리하며, 이벤트 크레딧은 현금 환불 가치가 없습니다. 환불이 완료되면 해당 주문에 남아 있는 기준·이벤트 크레딧을 모두 회수합니다. 세부 계산식과 예외 사항은 환불규정에 따릅니다.
 
 제4조 (이용자 책임 및 면책 - Disclaimer)
 1. 본 서비스는 AI 작성 여부 진단(감지) 및 텍스트 휴머나이징(문장 다듬기·재작성) 도구를 제공하며, 해당 도구의 활용 방법과 목적은 전적으로 이용자의 판단과 책임에 따릅니다.

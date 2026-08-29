@@ -5,6 +5,11 @@ import vm from 'node:vm';
 
 const moduleSource = fs.readFileSync(new URL('../assets/js/app-module.js', import.meta.url), 'utf8');
 const mainSource = fs.readFileSync(new URL('../assets/js/app-main.js', import.meta.url), 'utf8');
+const modalSource = fs.readFileSync(new URL('../partials/modals.html', import.meta.url), 'utf8');
+const pricingSource = fs.readFileSync(new URL('../pages/pricing.html', import.meta.url), 'utf8');
+const landingSource = fs.readFileSync(new URL('../pages/landing.html', import.meta.url), 'utf8');
+const guideSource = fs.readFileSync(new URL('../pages/guide.html', import.meta.url), 'utf8');
+const faqSource = fs.readFileSync(new URL('../pages/faq.html', import.meta.url), 'utf8');
 
 function loadRefundHelpers() {
   const start = moduleSource.indexOf("const REFUND_POLICY_VERSION = 'credit-grant-base-v1';");
@@ -101,6 +106,23 @@ test('이용약관과 환불규정은 유효기간·환불기간 및 3영업일 
   assert.match(mainSource, /요청일로부터 3영업일 이내에 결제 취소 조치/u);
   assert.doesNotMatch(mainSource, /처리 기간: 영업일 기준 3~5일/u);
   assert.doesNotMatch(mainSource, /제3조의2 \(정기 구독 결제\)|구독 플랜 환불 정책|잔여 쿠폰/u);
+});
+
+test('구매 전 주요 화면은 기준 우선 차감·이벤트 비환불·주문 잔여 전량 회수를 함께 고지한다', () => {
+  const surfaces = {
+    결제확인: mainSource,
+    부족크레딧결제: modalSource,
+    가격표: pricingSource,
+    랜딩: landingSource,
+    이용가이드: guideSource,
+    FAQ: faqSource
+  };
+  for (const [name, source] of Object.entries(surfaces)) {
+    assert.match(source, /결제 후 7일 이내/u, `${name}: 환불 신청기간`);
+    assert.match(source, /기준 크레딧(?:에서|부터)/u, `${name}: 기준 크레딧 우선 반영`);
+    assert.match(source, /이벤트 크레딧은 현금 환불 대상이 아니/u, `${name}: 이벤트 크레딧 비환불`);
+    assert.match(source, /해당 주문(?:에서|에) 남아 있는 기준·이벤트 크레딧(?:을|은) 모두 회수/u, `${name}: 해당 주문 잔여 전량 회수`);
+  }
 });
 
 test('관리자 크레딧 환불 UI는 정책 환불만 허용한다', () => {

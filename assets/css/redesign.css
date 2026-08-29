@@ -1180,10 +1180,6 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
  font-size:14px !important;
  color:#8a91a3 !important;
 }
-#mainContent[data-main-design="lavender"] .plan-unitcost{
- font-size:12.5px;
- color:#8a91a3;
-}
 #mainContent[data-main-design="lavender"] .plan-feats li{
  font-size:13px;
  color:#525a6e;
@@ -2174,7 +2170,7 @@ body[data-main-design="lavender"] #loginScreen .lhome:hover{
 #mainContent[data-main-design="lavender"] :is(.gp-rank-list li,.gp-faq-rank li,.gp-guide-list li span){
  font-weight:500 !important;
 }
-#mainContent[data-main-design="lavender"] :is(.plan-feats li,.plan-unitcost,.gp-coupon-panel > div > span){
+#mainContent[data-main-design="lavender"] :is(.plan-feats li,.gp-coupon-panel > div > span){
  font-weight:500 !important;
 }
 #mainContent[data-main-design="lavender"] .plan-tag{
@@ -2713,15 +2709,6 @@ body[data-main-design="lavender"] #loginScreen .ldesc{
  border-radius:7px !important;
  font-size:11.5px !important;
  font-weight:700 !important;
-}
-#mainContent[data-main-design="lavender"] .plan-unitcost{
- margin:2px 0 0;
- color:#8a91a3 !important;
- font-size:12.5px !important;
-}
-#mainContent[data-main-design="lavender"] .plan-unitcost strong{
- color:#5d6477 !important;
- font-weight:600 !important;
 }
 #mainContent[data-main-design="lavender"] .plan-feats{
  margin:14px 0 0 !important;
@@ -5628,7 +5615,7 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  align-items:end;
  gap:12px 28px;
  padding:20px !important;
- margin:0 0 40px !important;
+ margin:32px 0 0 !important;
  border:1px solid var(--border) !important;
  border-radius:var(--radius-card) !important;
  background:var(--surface) !important;
@@ -5809,27 +5796,6 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  font-size:14px !important;
  font-weight:700 !important;
 }
-#mainContent[data-main-design="lavender"] #pricingContent .plan-unitcost{
- margin:6px 0 0;
- color:#656c80 !important;
- font-size:12.5px !important;
- line-height:1.5;
-}
-#mainContent[data-main-design="lavender"] #pricingContent .plan-unitcost strong{
- color:var(--text2) !important;
- font-weight:700 !important;
-}
-#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-audience{
- min-height:48px;
- margin:16px 0 0;
- padding:12px 0 0;
- border-top:1px solid #eceef5;
- color:var(--text2);
- font-size:13px;
- font-weight:650;
- line-height:1.55;
- word-break:keep-all;
-}
 #mainContent[data-main-design="lavender"] #pricingContent .plan-feats{
  flex:none;
  margin:14px 0 0 !important;
@@ -5889,12 +5855,65 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  border-top:1px solid var(--border);
 }
 #mainContent[data-main-design="lavender"] #pricingContent .gp-credit-rates .gp-guide-credit-table{margin-top:20px;}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-refund{
+ display:grid;
+ grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr) auto;
+ align-items:center;
+ gap:24px;
+ margin:40px 0 0;
+ padding:22px 24px;
+ border:1px solid var(--border);
+ border-radius:var(--radius-card);
+ background:#f8f8fc;
+ color:var(--text);
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-refund h2{
+ margin:0;
+ font-size:18px;
+ line-height:1.4;
+ letter-spacing:-.015em;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-refund p{
+ margin:6px 0 0;
+ color:#656c80;
+ font-size:13px;
+ line-height:1.6;
+ word-break:keep-all;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-refund ul{
+ margin:0;
+ padding-left:18px;
+ color:#525a6e;
+ font-size:12.5px;
+ line-height:1.65;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-refund button{
+ min-height:42px;
+ padding:0 15px;
+ border:1px solid #d5d7e6;
+ border-radius:var(--radius-control);
+ background:#fff;
+ color:#4b4cc6;
+ font-family:inherit;
+ font-size:12.5px;
+ font-weight:800;
+ white-space:nowrap;
+ cursor:pointer;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-refund button:hover{border-color:#b8bae0;background:#fdfdff;}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-refund button:focus-visible{outline:3px solid rgba(90,91,216,.22);outline-offset:3px;}
 @media(max-width:760px){
  #mainContent[data-main-design="lavender"] #pricingContent .gp-coupon-panel{
   grid-template-columns:1fr;
   align-items:start;
   gap:16px;
  }
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-refund{
+  grid-template-columns:1fr;
+  align-items:start;
+  gap:14px;
+ }
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-refund button{width:100%;}
 }
 @media(max-width:560px){
  #mainContent.gp-public-main[data-main-design="lavender"]{
@@ -5904,7 +5923,7 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  #mainContent[data-main-design="lavender"] #pricingContent{padding-bottom:48px;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-hero{padding-top:0 !important;margin-bottom:20px !important;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-hero h1{font-size:28px !important;}
- #mainContent[data-main-design="lavender"] #pricingContent .gp-coupon-panel{padding:16px !important;margin-bottom:32px !important;}
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-coupon-panel{padding:16px !important;margin-top:28px !important;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-coupon-form button{min-width:72px;padding:0 13px;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-section-head{
   align-items:flex-start;
@@ -5915,7 +5934,6 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-section-head h2,
  #mainContent[data-main-design="lavender"] #pricingContent .gp-credit-rates h2{font-size:20px;}
  #mainContent[data-main-design="lavender"] #pricingContent .plan-card{padding:20px !important;}
- #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-audience{min-height:0;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-svc-note{text-align:left;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-credit-rates{margin-top:40px;padding-top:32px;}
 }
@@ -6174,10 +6192,10 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 @keyframes gpDialogIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 .gp-dialog-x{
   position:absolute;
-  right:14px;
-  top:14px;
-  width:30px;
-  height:30px;
+  right:10px;
+  top:10px;
+  width:44px;
+  height:44px;
   border:1px solid rgba(255,255,255,.08);
   border-radius:10px;
   background:rgba(255,255,255,.06);
@@ -6201,7 +6219,7 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
   box-shadow:0 10px 26px rgba(91,94,255,.32);
 }
 .gp-dialog-root.danger .gp-dialog-icon{background:linear-gradient(135deg,#ef4444,#fb7185)}
-.gp-dialog-card h2{margin:0 34px 8px 0;font-size:20px;line-height:1.28;letter-spacing:0;font-weight:850}
+.gp-dialog-card h2{margin:0 46px 8px 0;font-size:20px;line-height:1.28;letter-spacing:0;font-weight:850}
 .gp-dialog-card p{margin:0;color:rgba(226,232,240,.78);font-size:14px;line-height:1.6;word-break:keep-all}
 .gp-prompt-wrap{margin-top:16px}
 .gp-prompt-wrap textarea{
@@ -8325,7 +8343,7 @@ body.gp-modal-open{overflow:hidden;}
  width:min(480px,100%);
  max-height:min(760px,calc(100vh - 48px));
  overflow:auto;
- padding:30px;
+ padding:28px;
  border-radius:16px;
  background:#fff;
  color:#191c2b;
@@ -8339,11 +8357,11 @@ body.gp-modal-open{overflow:hidden;}
 }
 .gp-credit-checkout-close{
  position:absolute;
- top:16px;
- right:16px;
+ top:12px;
+ right:12px;
  display:grid;
- width:34px;
- height:34px;
+ width:44px;
+ height:44px;
  place-items:center;
  padding:0;
  border:0;
@@ -8388,27 +8406,33 @@ body.gp-modal-open{overflow:hidden;}
  word-break:keep-all;
 }
 .gp-credit-offer{
- margin:22px 0 16px;
- padding:18px;
+ margin:20px 0 16px;
+ padding:0;
  border:1px solid #dddff0;
  border-radius:14px;
- background:#f8f8fc;
+ background:#fff;
+ overflow:hidden;
 }
-.gp-credit-offer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;}
-.gp-credit-offer-head > div{display:flex;flex-direction:column;gap:3px;}
-.gp-credit-offer-head strong{color:#202438;font-size:15px;}
-.gp-credit-offer-head span{color:#585fd0;font-size:21px;font-weight:850;letter-spacing:-.02em;}
-.gp-credit-offer-head b{color:#202438;font-size:22px;font-variant-numeric:tabular-nums;white-space:nowrap;}
-.gp-credit-offer p{margin:13px 0 0;color:#5e657a;font-size:12.5px;line-height:1.55;}
+.gp-credit-offer-head{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 17px;background:#f8f8fc;}
+.gp-credit-offer-head strong{color:#202438;font-size:14px;}
+.gp-credit-offer-head b{color:#202438;font-size:19px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.gp-credit-grant{margin:0;padding:4px 17px;}
+.gp-credit-grant div{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:10px 0;}
+.gp-credit-grant div + div{border-top:1px solid #efeff5;}
+.gp-credit-grant div[hidden]{display:none!important;}
+.gp-credit-grant dt{color:#73798b;font-size:12.5px;line-height:1.5;}
+.gp-credit-grant dd{margin:0;color:#25293a;font-size:13.5px;font-weight:750;font-variant-numeric:tabular-nums;}
+.gp-credit-grant .is-total dt,.gp-credit-grant .is-total dd{color:#4b4cc6;font-weight:850;}
 .gp-credit-offer-bonus{
- display:inline-flex;
- margin-top:10px;
- padding:5px 9px;
- border-radius:999px;
- background:#e7f5ed;
- color:#24734a;
- font-size:11.5px;
- font-weight:800;
+ display:block;
+ margin:0;
+ padding:10px 17px;
+ border-top:1px solid #e1efe6;
+ background:#f3f8f4;
+ color:#39704a;
+ font-size:12px;
+ font-weight:700;
+ line-height:1.5;
 }
 .gp-credit-offer-bonus[hidden]{display:none!important;}
 .gp-credit-checkout-summary{
@@ -8440,9 +8464,31 @@ body.gp-modal-open{overflow:hidden;}
 }
 .gp-credit-checkout-primary:hover{background:#4d4ec7;transform:translateY(-1px);}
 .gp-credit-checkout-primary:disabled{cursor:wait;opacity:.68;transform:none;}
-.gp-credit-checkout-secondary{margin-top:8px;border:1px solid #dddfea;background:#fff;color:#555c71;}
-.gp-credit-checkout-secondary:hover{border-color:#b9b9dc;color:#4142a8;}
-.gp-credit-checkout-card .gp-credit-checkout-policy{margin-top:13px;color:#7b8192;font-size:11.5px;line-height:1.55;}
+.gp-credit-checkout-secondary{min-height:40px;margin-top:7px;border:0;background:transparent;color:#656c80;box-shadow:none;}
+.gp-credit-checkout-secondary:hover{background:#f6f6fa;color:#4142a8;}
+.gp-credit-checkout-card .gp-credit-checkout-safe{
+ margin:13px 0 0;
+ padding:10px 12px;
+ border:1px solid #dce9df;
+ border-radius:11px;
+ background:#f3f8f4;
+ color:#39704a;
+ font-size:12.5px;
+ font-weight:650;
+ line-height:1.5;
+}
+.gp-credit-checkout-card .gp-credit-checkout-policy{
+ margin-top:12px;
+ padding:13px 14px;
+ border-radius:11px;
+ background:#f7f7fa;
+ color:#656c80;
+ font-size:12px;
+ line-height:1.55;
+}
+.gp-credit-checkout-policy strong{display:block;margin-bottom:5px;color:#363b4f;font-size:12.5px;}
+.gp-credit-checkout-policy ul{margin:0;padding-left:17px;}
+.gp-credit-checkout-policy li + li{margin-top:3px;}
 
 .gp-pricing-segment{
  display:flex;
@@ -8473,15 +8519,6 @@ body.gp-modal-open{overflow:hidden;}
  font-weight:800;
  cursor:pointer;
 }
-.gp-plan-use{
- min-height:34px;
- margin:-7px 0 13px;
- color:rgba(233,235,255,.66);
- font-size:11.5px;
- line-height:1.45;
- text-align:center;
- word-break:keep-all;
-}
 .plan-feats li[hidden]{display:none!important;}
 
 @media(max-width:560px){
@@ -8489,8 +8526,7 @@ body.gp-modal-open{overflow:hidden;}
  .gp-credit-checkout-card{width:100%;max-height:92vh;padding:25px 20px calc(20px + env(safe-area-inset-bottom));border-radius:16px 16px 0 0;}
  .gp-credit-checkout-card h2{font-size:21px;}
  .gp-credit-offer{margin-top:18px;}
- .gp-credit-offer-head span{font-size:19px;}
- .gp-credit-offer-head b{font-size:20px;}
+ .gp-credit-offer-head b{font-size:18px;}
  .gp-pricing-segment{align-items:flex-start;flex-direction:column;gap:14px;padding:17px;}
  .gp-pricing-segment button{width:100%;}
 }
@@ -9721,4 +9757,228 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
 @media(max-width:560px){
  #mainContent[data-main-design="lavender"] .gp-notice-card img{width:110px;max-width:30%;}
  #mainContent[data-main-design="lavender"] .gp-visual-card img{width:110px;}
+}
+
+/* ── 결제·문의·공지 레이아웃 회귀 복구(2026-08-29) ── */
+/* 상단 충전 CTA: 삭제된 공통 액션 규격을 복구하고, 남아 있던 3px 내부 박스 효과를 제거한다. */
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn{
+ display:inline-flex !important;
+ width:auto;
+ min-width:104px;
+ height:42px !important;
+ min-height:42px !important;
+ align-items:center;
+ justify-content:center;
+ padding:0 18px !important;
+ border:1px solid #171a2b !important;
+ border-radius:10px !important;
+ background:#171a2b !important;
+ color:#fff !important;
+ box-shadow:none !important;
+ white-space:nowrap;
+ line-height:1;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn::before{
+ content:none !important;
+ display:none !important;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn:hover{
+ border-color:#292d43 !important;
+ background:#292d43 !important;
+ transform:none;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn:active{transform:translateY(1px);}
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn:focus-visible{
+ outline:3px solid rgba(90,91,216,.24);
+ outline-offset:3px;
+}
+
+/* 충전 설명은 넓은 화면에서 불필요하게 70ch로 끊지 않는다. */
+#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-section-copy{
+ flex:1 1 auto;
+ width:100%;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-section-head p{max-width:none;}
+
+/* 문의 페이지의 사라진 본문/도움말 2열 계약을 명시한다. */
+#mainContent[data-main-design="lavender"] #qnaContent .gp-qna-page{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) minmax(240px,280px);
+ align-items:start;
+ gap:28px;
+}
+#mainContent[data-main-design="lavender"] #qnaContent :is(.gp-page-primary,.gp-page-aside){min-width:0;}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-page-aside{
+ display:flex;
+ flex-direction:column;
+ gap:18px;
+}
+
+/* 공지·문의 공통 목록: 한 화면에는 10개만, 같은 행/상태/페이지 컨트롤을 사용한다. */
+#mainContent[data-main-design="lavender"] :is(#qnaContent,#noticeContent) .gp-table-panel{
+ width:100%;
+ min-width:0;
+}
+#mainContent[data-main-design="lavender"] :is(#qnaContent,#noticeContent) .gp-board-toolbar{
+ min-height:52px;
+ margin:0 0 4px;
+}
+#mainContent[data-main-design="lavender"] .gp-board-heading{
+ color:#1a1f2e;
+ font-size:14.5px;
+ font-weight:800;
+ line-height:1.4;
+ white-space:nowrap;
+}
+.gp-board-row-button{
+ width:100%;
+ margin:0;
+ appearance:none;
+ text-align:left;
+ font:inherit;
+ color:inherit;
+}
+#mainContent[data-main-design="lavender"] .gp-board-row-button:focus-visible{
+ outline:3px solid rgba(90,91,216,.22);
+ outline-offset:2px;
+}
+#mainContent[data-main-design="lavender"] :is(#questionList,#noticeList) .gbr-ttl-text{
+ min-width:0;
+ overflow:hidden;
+ text-overflow:ellipsis;
+}
+.gp-board-result-status{
+ min-height:30px;
+ padding:8px 2px 10px;
+ color:var(--text3);
+ font-size:12.5px;
+ font-weight:600;
+}
+.gp-board-pagination{
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:6px;
+ margin-top:18px;
+ padding-top:18px;
+ border-top:1px solid #eceef5;
+}
+.gp-board-pagination[hidden]{display:none !important;}
+.gp-board-pagination button{
+ min-width:44px;
+ height:44px;
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ padding:0 12px;
+ border:1px solid #e0e3ed;
+ border-radius:10px;
+ background:#fff;
+ color:#51586d;
+ font:700 13px/1 var(--font,Pretendard,sans-serif);
+ cursor:pointer;
+ transition:background .16s ease,border-color .16s ease,color .16s ease;
+}
+.gp-board-pagination button:hover:not(:disabled){border-color:#c5c2e8;background:#f7f6ff;color:#4b4cc6;}
+.gp-board-pagination button.is-current{
+ border-color:#5a5bd8;
+ background:#5a5bd8;
+ color:#fff;
+}
+.gp-board-pagination button:disabled{opacity:.42;cursor:not-allowed;}
+.gp-board-pagination button:focus-visible{outline:3px solid rgba(90,91,216,.22);outline-offset:2px;}
+.gp-board-page-gap{min-width:20px;color:#9ca2b4;text-align:center;}
+
+/* 공지 필터/검색의 터치 영역과 현재 분류를 목록 계약에 맞춘다. */
+#mainContent[data-main-design="lavender"] #noticeContent .gp-search button{
+ flex:0 0 44px;
+ width:44px;
+ height:44px;
+}
+#mainContent[data-main-design="lavender"] #noticeContent .gp-sort-select{min-height:44px;}
+
+@media(max-width:960px){
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-qna-page{grid-template-columns:1fr;}
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-page-aside{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+ }
+}
+@media(max-width:640px){
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-page-head{
+  align-items:stretch;
+  flex-direction:column;
+  gap:14px;
+ }
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-qna-action,
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-qna-action .wbtn{
+  width:100%;
+ }
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-qna-action .wbtn{
+  min-height:44px;
+  justify-content:center;
+ }
+ #mainContent[data-main-design="lavender"] :is(#qnaContent,#noticeContent) .gp-table-toolbar{
+  align-items:stretch;
+  flex-direction:column;
+  gap:4px;
+  padding-bottom:8px !important;
+ }
+ #mainContent[data-main-design="lavender"] #noticeContent .gp-table-toolbar .cat-filter{
+  width:100%;
+  max-width:100%;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  overscroll-behavior-x:contain;
+  scrollbar-width:none;
+ }
+ #mainContent[data-main-design="lavender"] #noticeContent .gp-table-toolbar .cat-filter::-webkit-scrollbar{display:none;}
+ #mainContent[data-main-design="lavender"] #noticeContent .gp-table-toolbar .cat-fbtn{flex:0 0 auto;}
+ #mainContent[data-main-design="lavender"] #noticeContent .gp-sort-select{
+  align-self:flex-end;
+  margin:0 !important;
+ }
+ #mainContent[data-main-design="lavender"] #qnaContent .qna-sort-btns{
+  display:flex;
+  width:100%;
+  margin:0;
+  overflow-x:auto;
+ }
+ #mainContent[data-main-design="lavender"] #qnaContent .qna-sort-btns .cat-fbtn{flex:0 0 auto;}
+ #mainContent[data-main-design="lavender"] .gp-board-row{align-items:flex-start;}
+ #mainContent[data-main-design="lavender"] :is(#questionList,#noticeList) .gbr-ttl{
+  align-items:flex-start;
+  white-space:normal;
+ }
+ #mainContent[data-main-design="lavender"] :is(#questionList,#noticeList) .gbr-ttl-text{
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  line-clamp:2;
+  white-space:normal;
+  overflow:hidden;
+ }
+ #mainContent[data-main-design="lavender"] #questionList .gbr-stats{padding-top:1px;}
+ .gp-board-pagination{gap:4px;}
+ .gp-board-pagination button{min-width:42px;height:42px;padding:0 10px;}
+}
+@media(max-width:560px){
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-page-aside{grid-template-columns:1fr;}
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-qna-help{
+  display:grid;
+  grid-template-columns:72px minmax(0,1fr);
+  align-items:center;
+  gap:14px;
+  padding:18px !important;
+ }
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-qna-help img{
+  width:72px;
+  max-width:72px;
+  margin:0;
+ }
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-qna-help p{margin:6px 0 10px;}
+ #mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn{display:none !important;}
+}
+@media(prefers-reduced-motion:reduce){
+ .gp-board-pagination button{transition:none !important;}
 }
