@@ -4,6 +4,17 @@ import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
+test('모바일 랜딩 헤더는 요금 바로가기를 유지하고 작은 폭에 맞춘다', async () => {
+  const [landing, css] = await Promise.all([
+    read('pages/landing.html'),
+    read('assets/css/landing.css')
+  ]);
+  assert.match(landing, /class="gp-lp-ghost gp-lp-price-shortcut"[^>]+gpLandingScrollTo\('lpPricing'\)[^>]*>요금<\/button>/u);
+  assert.match(css, /\.gp-lp-price-shortcut\{display:none\}/u);
+  assert.match(css, /@media \(max-width:960px\)\{[\s\S]*?\.gp-lp-price-shortcut\{display:inline-flex;align-items:center\}/u);
+  assert.match(css, /@media \(max-width:560px\)\{[\s\S]*?\.gp-lp-nav\{gap:8px;padding:10px\}[\s\S]*?\.gp-lp-brand img\{height:26px\}/u);
+});
+
 test('컴포저는 붙여넣는 즉시 이 글의 크레딧과 잔액을 같은 단가로 계산해 보여준다', async () => {
   const [main, evasion, designs] = await Promise.all([
     read('pages/main.html'),
