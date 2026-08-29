@@ -355,6 +355,9 @@ test('익명 홈은 서버 렌더 랜딩을 즉시 활성화하고 앱·인증 �
   assert.match(loader, /function initialMode\(\)/u);
   assert.match(loader, /firebase:authUser:/u);
   assert.match(loader, /window\.GP_PAGE_READY = mode === 'landing'/u);
+  assert.match(loader, /publicMain\.id = 'mainContent'/u, '공개 요금에도 라벤더 레이아웃 범위가 필요함');
+  assert.match(loader, /publicMain\.dataset\.mainDesign = 'lavender'/u);
+  assert.match(loader, /pricingContent\.style\.display = 'block'/u, '익명 요금 본문을 숨긴 채 두면 안 됨');
   assert.match(appModule, /window\.gpAuthResolved = true/u);
   assert.match(appModule, /if \(u\) \{[\s\S]{0,100}?showAuthenticatedShell\(u, 'auth_state'\);[\s\S]{0,100}?await loadUser\(u\)/u);
 

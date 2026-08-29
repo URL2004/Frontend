@@ -146,14 +146,22 @@
 
   async function loadPublicPricing() {
     var pricing = await fetchText('/pages/pricing.html');
-    root().innerHTML = '<div class="gp-public-shell">'
+    var pageRoot = root();
+    pageRoot.innerHTML = '<div class="gp-public-shell">'
       + '<header class="gp-public-nav"><a href="/" class="gp-lp-brand"><img src="/assets/img/brand-logo-menu.webp" alt="교수님 피하기"></a>'
       + '<button type="button" data-public-login>로그인</button></header>'
       + '<main class="gp-public-main">' + pricing + '</main>'
       + '<footer class="gp-public-footer"><a href="/faq">자주 묻는 질문</a><a href="/qna">문의하기</a><span>지피코리아 · 213-11-67637</span></footer>'
       + '</div>';
-    root().querySelectorAll('[onclick]').forEach(function (element) { element.removeAttribute('onclick'); });
-    root().addEventListener('click', function (event) {
+    var publicMain = pageRoot.querySelector('.gp-public-main');
+    var pricingContent = pageRoot.querySelector('#pricingContent');
+    if (publicMain) {
+      publicMain.id = 'mainContent';
+      publicMain.dataset.mainDesign = 'lavender';
+    }
+    if (pricingContent) pricingContent.style.display = 'block';
+    pageRoot.querySelectorAll('[onclick]').forEach(function (element) { element.removeAttribute('onclick'); });
+    pageRoot.addEventListener('click', function (event) {
       var publicShell = event.target.closest('.gp-public-shell');
       if (!publicShell) return;
       if (event.target.closest('a[href]') && !event.target.closest('[data-public-login]')) return;
