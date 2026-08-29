@@ -1845,8 +1845,6 @@ body[data-main-design="lavender"] #loginScreen .lhome:hover{
  align-items:center;
  gap:10px;
 }
-.gp-lav-mobile-pricing{display:none;align-items:center;justify-content:center;min-height:40px;padding:0 12px;border:1px solid #dfe3ee;border-radius:10px;background:#fff;color:#4b4cc6;font-size:13px;font-weight:750;text-decoration:none;}
-@media(max-width:760px){.gp-lav-mobile-pricing{display:inline-flex;}}
 .gp-lav-rate-note{margin:9px 0 0;color:#697085;font-size:12px;font-weight:650;text-align:center;}
 .gp-detect-credit-rate{display:inline-flex!important;align-items:center;min-height:30px;margin-top:11px!important;padding:5px 10px;border-radius:999px;background:var(--brand-soft);color:var(--brand-strong)!important;font-size:13px!important;font-weight:750;}
 #mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-credit-btn{
@@ -10330,8 +10328,4 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
  .gp-lav-side-bottom .gp-invite-btn.gp-gradient-action,
  #mainContent[data-main-design="lavender"] :is(.ls-upgrade-btn.gp-gradient-action,.gp-support-cta.gp-gradient-action)::before,
  .gp-lav-side-bottom .gp-invite-btn.gp-gradient-action::before{transition:none !important;}
-}
-@media(max-width:760px){
- /* 충전하기를 직접 유지하므로 같은 목적의 모바일 '요금' 링크는 중복 노출하지 않는다. */
- #mainContent[data-main-design="lavender"] .gp-lav-mobile-pricing{display:none !important;}
 }
