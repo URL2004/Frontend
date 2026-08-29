@@ -10285,9 +10285,9 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
  flex-wrap:nowrap;
  align-items:center;
 }
-#mainContent[data-main-design="lavender"] .gp-lav-top-right :is(.ls-credit-btn,.ls-upgrade-btn.gp-gradient-action){
- height:52px !important;
- min-height:52px !important;
+#mainContent[data-main-design="lavender"] .gp-lav-top-right :is(.ls-credit-btn,.ls-upgrade-btn.gp-gradient-action,.gp-lav-guide){
+ height:42px !important;
+ min-height:42px !important;
 }
 #mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn.gp-gradient-action::before,
 .gp-lav-side-bottom .gp-invite-btn.gp-gradient-action::before,
