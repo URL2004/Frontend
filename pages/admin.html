@@ -50,10 +50,10 @@
     <section class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">45개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">46개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 08.29</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 08.30</span>
       </div>
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
@@ -71,7 +71,21 @@
       </dl>
 
       <div class="gp-admin-patch-timeline">
-        <div class="gp-admin-patch-month"><strong>2026년 8월</strong><span>13개 변경 묶음</span></div>
+        <div class="gp-admin-patch-month"><strong>2026년 8월</strong><span>14개 변경 묶음</span></div>
+        <details class="gp-admin-patch-release" open>
+          <summary>
+            <span class="gp-admin-patch-version">가격 정책 2026.09</span>
+            <span class="gp-admin-patch-title"><b>상시 상품 보너스·9월 이벤트·환불 기준 분리</b><small>2026.08.30 · Backend/Frontend</small></span>
+            <span class="gp-admin-patch-state is-live">운영 반영</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area billing">지급량</span><span>9월 이벤트 총 지급량을 스타터 105, 라이트 345, 스탠다드 650, 프로 1,400, 맥스 3,000크레딧으로 조정했습니다.</span></li>
+            <li><span class="gp-admin-patch-area billing">보너스 분리</span><span>라이트 이상 상품의 상시 보너스와 9월 30일까지 기준 크레딧의 5%를 더 주는 기간 이벤트를 주문·결제창·가격표에서 각각 표시합니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">구매 화면</span><span>스탠다드를 ‘균형 추천’으로 안내하고 모든 가격 카드의 테두리를 같게 맞췄습니다. 용도별 장문 설명 대신 총 지급량과 기본 1,000자 기준 금액만 비교합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">추천·측정</span><span>최근 상품 70% 소진과 반복 충전 이력을 기준으로 다음 상품을 안내하고, 가격 정책 버전을 가격표 조회·결제·주문에 연결해 30일 순매출과 60일 기여이익 분석 기반을 마련했습니다.</span></li>
+            <li><span class="gp-admin-patch-area billing">환불</span><span>사용량은 기준 크레딧부터 반영하고 상품·이벤트 추가 크레딧은 현금 환불 대상에서 제외하며, 환불 시 해당 주문의 남은 지급량을 모두 회수합니다. 기존 주문은 주문 당시 정책을 유지합니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary>
             <span class="gp-admin-patch-version">v2.5.41 + UX</span>
@@ -84,7 +98,7 @@
             <li><span class="gp-admin-patch-area billing">과금 보호</span><span>문단 보강의 무변화·시간 초과·안전 검증 실패는 크레딧과 무료 횟수를 소진하지 않습니다. 보강 요청의 경험 메모 원문은 작업 이력에 중복 저장하지 않습니다.</span></li>
             <li><span class="gp-admin-patch-area layout">3택 흐름</span><span>다듬기·기본·고급 선택을 한 화면의 세 카드로 정리하고 광고 유입 용도를 진단·선택 이벤트까지 이어 사용자가 처리 범위를 바로 비교할 수 있게 했습니다.</span></li>
             <li><span class="gp-admin-patch-area observe">연구노트·SEO</span><span>연구노트 허브와 글 10편, 템플릿 6종을 정적 페이지로 구성하고 검색 가능한 경로·사이트맵·메타데이터·내부 링크·비공개 화면 noindex를 함께 적용했습니다.</span></li>
-            <li><span class="gp-admin-patch-area billing">요금·정책</span><span>기준 크레딧 100·300·500·1,000·2,000에 2026년 9월 30일까지 결제 요청분 이벤트 5·10·15·20·25%를 적용했습니다. 기준·이벤트 크레딧은 유효기간 없이 사용할 수 있습니다.</span></li>
+            <li><span class="gp-admin-patch-area billing">요금·정책</span><span>기준 크레딧과 결제 이벤트 추가 크레딧을 분리하고 유효기간 없이 사용할 수 있도록 초기 정책을 적용했습니다. 2026년 8월 30일 가격 정책에서 상시 상품 보너스와 9월 이벤트를 다시 분리했습니다.</span></li>
             <li><span class="gp-admin-patch-area frontend">환불·공지</span><span>새 주문은 기준 크레딧 사용량으로 환불액을 계산하고 해당 주문의 남은 지급 크레딧을 모두 회수하도록 미리보기와 관리자 도구를 단일 정책으로 맞췄습니다. 기존 주문은 주문 당시 총 지급량 비례 기준을 유지합니다.</span></li>
             <li><span class="gp-admin-patch-area safety">검증·배포</span><span>백엔드 전체 849개, 문단 보강 상태기계 32개, 프런트 87개 테스트와 양쪽 운영 의존성 감사를 통과했습니다. Render·Vercel 운영 응답에서 기능 플래그, 가격, 연구노트, 보안·검색 헤더를 재확인했습니다.</span></li>
           </ul>

@@ -21,10 +21,10 @@
     if (eventNotice) eventNotice.hidden = true;
     document.querySelectorAll('.gp-lp-plan[data-paid-credits]').forEach(function (plan) {
       var paid = Math.max(0, Number(plan.dataset.paidCredits) || 0);
+      var packageBonus = Math.max(0, Number(plan.dataset.packageCredits) || 0);
+      var ongoingTotal = paid + packageBonus;
       var total = plan.querySelector('span');
-      var detail = plan.querySelector('em');
-      if (total) total.textContent = '총 ' + paid.toLocaleString('ko-KR') + '크레딧';
-      if (detail) detail.textContent = '기준 ' + paid.toLocaleString('ko-KR') + ' · 유효기간 없음';
+      if (total) total.textContent = '총 ' + ongoingTotal.toLocaleString('ko-KR') + '크레딧';
     });
   }
 

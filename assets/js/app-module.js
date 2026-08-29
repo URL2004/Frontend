@@ -2202,10 +2202,10 @@ const NOTICE_BASE_ITEMS = [
  {
   id: 'paid-credit-no-expiry-20260829',
   category: '정책',
-  title: '추가 크레딧 이벤트와 환불 기준을 안내해요',
-  date: '2026.08.29',
+  title: '상시 상품 보너스와 9월 이벤트를 안내해요',
+  date: '2026.08.30',
   views: 0,
-  body: '2026년 9월 30일까지 결제 요청분에는 상품별 기준 크레딧의 5~25%를 이벤트 크레딧으로 더 드려요. 기준 크레딧과 이벤트 크레딧은 모두 유효기간 없이 사용할 수 있어요.\n\n일반 환불은 결제 후 7일 이내 신청할 수 있어요. 환불할 때는 사용량을 기준 크레딧에서 먼저 차감하고 남은 기준 크레딧에 해당하는 금액을 환불해요. 이벤트 크레딧은 현금 환불 대상이 아니며, 환불이 완료되면 해당 주문에 남아 있는 기준·이벤트 크레딧을 모두 회수합니다.'
+  body: '라이트·스탠다드·프로·맥스에는 상품별 상시 보너스가 포함됩니다. 여기에 2026년 9월 30일까지 결제 요청분에는 기준 크레딧의 5%를 이벤트 크레딧으로 더 드려요. 이번 이벤트 총 지급량은 스타터 105, 라이트 345, 스탠다드 650, 프로 1,400, 맥스 3,000크레딧입니다. 기준 크레딧과 상품·이벤트 추가 크레딧은 모두 유효기간 없이 사용할 수 있어요.\n\n일반 환불은 결제 후 7일 이내 신청할 수 있어요. 환불할 때는 사용량을 기준 크레딧에서 먼저 차감하고 남은 기준 크레딧에 해당하는 금액을 환불해요. 상품·이벤트 추가 크레딧은 현금 환불 대상이 아니며, 환불이 완료되면 해당 주문에 남아 있는 기준·추가 크레딧을 모두 회수합니다. 정책 적용 전 주문은 주문 당시 지급 기준을 유지합니다.'
  },
  {
   id: 'humanize-v25',
@@ -3582,13 +3582,18 @@ function gpCreditRefundPreview(order, currentCredits) {
   && Math.floor(Number(order.paidCredits) || 0) > 0;
  if (isBasePolicy) {
   const paidCredits = Math.max(0, Math.floor(Number(order.paidCredits) || 0));
+  const packageBonusCredits = Math.max(0, Math.floor(Number(order.packageBonusCredits) || 0));
   const eventBonusCredits = Math.max(0, Math.floor(Number(order.eventBonusCredits) || 0));
+  const bonusCredits = Math.max(
+   packageBonusCredits + eventBonusCredits,
+   Math.floor(Number(order.bonusCredits) || 0)
+  );
   const totalGrantedCredits = Math.max(
-   paidCredits + eventBonusCredits,
+   paidCredits + bonusCredits,
    Math.floor(Number(order.totalGrantedCredits) || 0)
   );
   const lotPaidRemaining = Number(order.refundPaidCreditsRemaining);
-  const lotBonusRemaining = Number(order.refundEventBonusCreditsRemaining);
+  const lotBonusRemaining = Number(order.refundBonusCreditsRemaining ?? order.refundEventBonusCreditsRemaining);
   const hasOrderLot = Number.isFinite(lotPaidRemaining) && lotPaidRemaining >= 0
    && Number.isFinite(lotBonusRemaining) && lotBonusRemaining >= 0;
   // 새 주문은 서버가 유지하는 주문별 잔여량을 우선한다. 과거 신규 주문처럼 lot 필드가
@@ -3599,7 +3604,7 @@ function gpCreditRefundPreview(order, currentCredits) {
    ? Math.min(paidCredits, Math.floor(lotPaidRemaining))
    : Math.max(0, paidCredits - Math.min(paidCredits, balanceUsedCredits));
   const recoverCredits = hasOrderLot
-   ? refundablePaidCredits + Math.min(eventBonusCredits, Math.floor(lotBonusRemaining))
+   ? refundablePaidCredits + Math.min(bonusCredits, Math.floor(lotBonusRemaining))
    : balanceRecoverCredits;
   const usedCredits = Math.max(0, totalGrantedCredits - recoverCredits);
   const paidUsedCredits = Math.max(0, paidCredits - refundablePaidCredits);
@@ -3608,7 +3613,7 @@ function gpCreditRefundPreview(order, currentCredits) {
    : 0;
   return {
    policy: 'base', refundAmount, recoverCredits, usedCredits, paidUsedCredits,
-   refundablePaidCredits, paidCredits, eventBonusCredits, totalGrantedCredits
+   refundablePaidCredits, paidCredits, packageBonusCredits, eventBonusCredits, bonusCredits, totalGrantedCredits
   };
  }
  const purchased = Math.max(0, Math.floor(Number(order.safeCredits ?? order.credits) || 0));
@@ -3767,7 +3772,7 @@ window.loadRefundModalList = async () =>{
     refundAmount = calc.refundAmount;
     if (calc.policy === 'base') {
      eligibilityNote = calc.paidUsedCredits > 0
-      ? `사용량 ${calc.usedCredits.toLocaleString()}크레딧을 기준 크레딧부터 반영했어요. 이벤트 크레딧은 현금 환불 대상이 아닙니다.`
+      ? `사용량 ${calc.usedCredits.toLocaleString()}크레딧을 기준 크레딧부터 반영했어요. 상품·이벤트 추가 크레딧은 현금 환불 대상이 아닙니다.`
       : '기준 크레딧 미사용 · 전액 환불 대상입니다. 환불 시 남은 지급 크레딧을 모두 회수해요.';
      refundPreview = `예상 환불액: ${refundAmount.toLocaleString()}원 · 기준 잔여 ${calc.refundablePaidCredits.toLocaleString()}/${calc.paidCredits.toLocaleString()} · 회수 ${calc.recoverCredits.toLocaleString()}크레딧`;
     } else {
@@ -3881,7 +3886,7 @@ window.loadAdminRefundList = async () =>{
  } else {
    const calc = gpCreditRefundPreview(o, userCredits);
    if (calc.policy === 'base') {
-    itemLabel = `크레딧 · 기준 ${calc.paidCredits.toLocaleString()} + 이벤트 ${calc.eventBonusCredits.toLocaleString()}`;
+    itemLabel = `크레딧 · 기준 ${calc.paidCredits.toLocaleString()} + 추가 ${calc.bonusCredits.toLocaleString()}`;
     refundDetail = `<div class="gp-admin-refund-detail">기준 사용 <b>${calc.paidUsedCredits.toLocaleString()}</b> · 기준 잔여 <b>${calc.refundablePaidCredits.toLocaleString()}</b> · 환불 예정 <b class="neg">${calc.refundAmount.toLocaleString()}원</b> · 남은 지급량 <b>${calc.recoverCredits.toLocaleString()}</b>크레딧 전부 회수</div>`;
    } else {
     itemLabel = `크레딧 · 기존 주문 ${calc.totalGrantedCredits.toLocaleString()}크레딧`;
@@ -4388,7 +4393,7 @@ function adminRenderUserBundle(data) {
          <span class="gp-admin-mode is-active" data-mode="policy">정책 환불</span>
        </div>
        <p class="gp-admin-refund-policy-note">${basePolicyOrder
-        ? '기준 크레딧 사용량으로 금액을 계산하고 남은 기준·이벤트 크레딧을 모두 회수합니다.'
+        ? '기준 크레딧 사용량으로 금액을 계산하고 남은 기준·추가 크레딧을 모두 회수합니다.'
         : '기존 주문은 주문 당시 총 지급 크레딧 기준 비례 환불만 허용합니다.'} 전액·직접입력 우회는 사용할 수 없습니다.</p>
        <input type="text" class="gp-admin-input gp-admin-input-sm" id="refundReason-${orderIndex}" maxlength="120" placeholder="환불 사유 (필수)">
        <div class="gp-admin-refund-preview" id="refundPreview-${orderIndex}"></div>

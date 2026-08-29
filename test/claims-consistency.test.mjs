@@ -96,7 +96,7 @@ test('신뢰·가격·준비 중 표면은 확정된 정책 문구와 런타임 
 
   assert.equal((pricing.match(/data-credit-balance/gu) || []).length, 0, '본문에는 공통 상단 잔액을 중복 표시하지 않음');
   assert.doesNotMatch(pricing, /data-credit-work-count="current"/u);
-  assert.match(pricing, /data-credit-work-count="additional"/u);
+  assert.equal((pricing.match(/data-plan-efficiency/gu) || []).length, 5, '상품마다 기본 1,000자 기준 금액 한 줄');
   assert.doesNotMatch(pricing, /보유 크레딧 10|업그레이드|구독 시작/u);
   for (const claim of ['최소 10크레딧 · 100자당 2크레딧', '고급 · 1만자 이하', '고급 · 2만자 이하', '고급 · 3만자 이하', '고급 · 근거 보강 선택']) {
     assert.ok(pricing.includes(claim) || guide.includes(claim), `단가 문구 누락: ${claim}`);
@@ -104,7 +104,7 @@ test('신뢰·가격·준비 중 표면은 확정된 정책 문구와 런타임 
 
   assert.match(faq, /결제 후 7일 이내/u);
   assert.match(faq, /사용량은 기준 크레딧에서 먼저 차감/u);
-  assert.match(faq, /남아 있는 기준·이벤트 크레딧은 모두 회수/u);
+  assert.match(faq, /남아 있는 기준·추가 크레딧은 모두 회수/u);
   assert.doesNotMatch(faq, /구독 쿠폰/u);
   assert.match(qna, /평일 기준 1영업일 이내 답변/u);
   assert.match(qna, /data-auth-required="qna"/u);
@@ -127,18 +127,18 @@ test('가격·크레딧 수치는 단일 원천(conversion-flow PLANS)과 pricin
     read('pages/landing.html')
   ]);
   const plansBlock = flow.slice(flow.indexOf('var PLANS = ['), flow.indexOf('];', flow.indexOf('var PLANS = [')));
-  const plans = [...plansBlock.matchAll(/amount:\s*(\d+),\s*paidCredits:\s*(\d+),\s*eventBonusCredits:\s*(\d+),\s*credits:\s*(\d+)/gu)]
-    .map((m) => ({ amount: Number(m[1]), paidCredits: Number(m[2]), eventBonusCredits: Number(m[3]), credits: Number(m[4]) }));
+  const plans = [...plansBlock.matchAll(/amount:\s*(\d+),\s*paidCredits:\s*(\d+),\s*packageBonusCredits:\s*(\d+),\s*eventBonusCredits:\s*(\d+),\s*credits:\s*(\d+)/gu)]
+    .map((m) => ({ amount: Number(m[1]), paidCredits: Number(m[2]), packageBonusCredits: Number(m[3]), eventBonusCredits: Number(m[4]), credits: Number(m[5]) }));
   assert.equal(plans.length, 5, 'PLANS 5종이어야 함');
   assert.deepEqual(plans, [
-    { amount: 2900, paidCredits: 100, eventBonusCredits: 5, credits: 105 },
-    { amount: 8700, paidCredits: 300, eventBonusCredits: 30, credits: 330 },
-    { amount: 14500, paidCredits: 500, eventBonusCredits: 75, credits: 575 },
-    { amount: 29000, paidCredits: 1000, eventBonusCredits: 200, credits: 1200 },
-    { amount: 58000, paidCredits: 2000, eventBonusCredits: 500, credits: 2500 }
+    { amount: 2900, paidCredits: 100, packageBonusCredits: 0, eventBonusCredits: 5, credits: 105 },
+    { amount: 8700, paidCredits: 300, packageBonusCredits: 30, eventBonusCredits: 15, credits: 345 },
+    { amount: 14500, paidCredits: 500, packageBonusCredits: 125, eventBonusCredits: 25, credits: 650 },
+    { amount: 29000, paidCredits: 1000, packageBonusCredits: 350, eventBonusCredits: 50, credits: 1400 },
+    { amount: 58000, paidCredits: 2000, packageBonusCredits: 900, eventBonusCredits: 100, credits: 3000 }
   ]);
-  for (const { amount, paidCredits, eventBonusCredits, credits } of plans) {
-    assert.equal(paidCredits + eventBonusCredits, credits, `${amount} 지급량 합계 불일치`);
+  for (const { amount, paidCredits, packageBonusCredits, eventBonusCredits, credits } of plans) {
+    assert.equal(paidCredits + packageBonusCredits + eventBonusCredits, credits, `${amount} 지급량 합계 불일치`);
     assert.ok(pricing.includes(`payToss(${amount},${credits}`), `pricing.html payToss(${amount},${credits}) 부재`);
     const fmt = credits.toLocaleString('en-US');
     assert.ok(pricing.includes(`총 ${fmt} 크레딧`), `pricing.html 총 ${fmt} 크레딧 부재`);
@@ -158,7 +158,7 @@ test('크레딧 유효기간 표기는 약관까지 포함해 전 표면에서 �
   ]);
   const all = files.join('\n');
   assert.doesNotMatch(all, /크레딧의?\s*이용기간은?\s*결제일로부터\s*1년/u, '약관 1년 문구 재유입(2026-08-28 무기한 개정)');
-  assert.match(files[0], /유료로 충전한 기준 크레딧과 결제 이벤트로 추가 지급된 크레딧은 유효기간 없이 사용할 수 있습니다/u);
+  assert.match(files[0], /유료로 충전한 기준 크레딧과 상품 보너스·결제 이벤트로 추가 지급된 크레딧은 유효기간 없이 사용할 수 있습니다/u);
   // 보장형 금지 주장(마케팅·스키마 공통)
   assert.doesNotMatch(all, /100%\s*(보장|통과)|무조건 통과|탐지\s*통과를?\s*보장/u);
 });
@@ -168,7 +168,7 @@ test('프리렌더 공개상태: /pricing 검색 본문은 크레딧 충전만 �
   try {
     await prerenderSeo({ root: repoRoot, dist });
     const pricingOut = await readFile(join(dist, 'pricing/index.html'), 'utf8');
-    assert.match(pricingOut, /기준 크레딧과 지급된 이벤트 크레딧은 모두 <strong>유효기간 없이<\/strong>/u, '크레딧 충전 정책이 검색 본문에 있어야 함');
+    assert.match(pricingOut, /기준 크레딧과 상품·이벤트로 받은 추가 크레딧은 모두 <strong>유효기간 없이<\/strong>/u, '크레딧 충전 정책이 검색 본문에 있어야 함');
     assert.doesNotMatch(pricingOut, /정기구독|정기 구독|openSubscribeConfirm|구독 시작|11,900|54,900|99,000|290,000/u, '비활성 구독 UI가 검색 본문에 노출');
     assert.doesNotMatch(pricingOut, /첫 결제 실험 혜택/u, 'A/B 실험 문구가 검색 본문에 노출');
     const faqOut = await readFile(join(dist, 'faq/index.html'), 'utf8');

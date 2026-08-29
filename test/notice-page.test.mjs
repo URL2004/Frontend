@@ -41,7 +41,7 @@ test('하단 공지는 제외 요청한 주제를 숨기고 남은 중요 공지
   assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 9);
   for (const title of [
     '긴 글 구조 보존과 문단 보강을 개선했어요',
-    '추가 크레딧 이벤트와 환불 기준을 안내해요',
+    '상시 상품 보너스와 9월 이벤트를 안내해요',
     '문단 구조 보존을 강화했어요',
     'AI 감지 보고서를 열었어요',
     'AI 감지 크레딧 이용 방식 전환 안내 (100자당 1크레딧)',
@@ -57,7 +57,7 @@ test('하단 공지는 제외 요청한 주제를 숨기고 남은 중요 공지
   assert.match(baseItems, /제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요/u);
   assert.match(baseItems, /2026년 9월 30일까지 결제 요청분/u);
   assert.match(baseItems, /사용량을 기준 크레딧에서 먼저 차감/u);
-  assert.match(baseItems, /남아 있는 기준·이벤트 크레딧(?:을|은) 모두 회수/u);
+  assert.match(baseItems, /남아 있는 기준·추가 크레딧(?:을|은) 모두 회수/u);
   assert.match(source, /\.filter\(item => !NOTICE_RETIRED_TITLES\.has\(item\.title\.trim\(\)\)\)/u);
   assert.match(baseItems, /(?:해요|했어요|돼요|됐어요|드려요|있어요|없어요|않아요)/u);
 });

@@ -13,18 +13,30 @@ test('크레딧 부족 결제창은 작업을 보관하고 주문 번호에 결�
   assert.match(boot, /conversion-flow\.js/u);
   assert.match(flow, /gp_pending_paid_job_v1/u);
   assert.match(flow, /window\.gpBindPendingCheckout/u);
+  assert.match(flow, /meta\.purchaseKind !== 'credit_package'/u);
+  assert.match(flow, /window\.gpPendingCheckoutContract/u);
   assert.match(flow, /pending\.orderId !== orderId/u);
   assert.match(flow, /gp_resumed_paid_job_/u);
   assert.match(modal, /id="gpCreditCheckoutModal"[^>]+role="dialog"[^>]+aria-modal="true"/u);
   assert.match(modal, /id="gpCreditCheckoutSummary"/u);
   assert.match(modal, /id="gpCreditCheckoutPaid"/u);
+  assert.match(modal, /id="gpCreditCheckoutPackage"/u);
   assert.match(modal, /id="gpCreditCheckoutEvent"/u);
   assert.doesNotMatch(modal, /gpCreditCheckoutUses/u);
   assert.match(modal, /전달 가능한 결과를 만들지 못하면 크레딧을 차감하지 않아요/u);
   assert.match(modal, /사용량은 기준 크레딧부터 반영/u);
-  assert.match(modal, /이벤트 크레딧은 현금 환불 대상이 아니/u);
-  assert.match(modal, /해당 주문에 남아 있는 기준·이벤트 크레딧을 모두 회수/u);
+  assert.match(modal, /상품·이벤트 추가 크레딧은 현금 환불 대상이 아니/u);
+  assert.match(modal, /해당 주문에 남아 있는 기준·추가 크레딧을 모두 회수/u);
   assert.match(flow, /pending\.action === 'pricing_purchase'/u);
+  assert.match(flow, /context\.starterUpgradeEnabled === true \? context\.upgradeOffer : null/u, '서버가 활성화하기 전 업그레이드 UI는 숨김');
+  const pricingAction = flow.slice(
+    flow.indexOf('window.gpPricingSegmentAction = async function'),
+    flow.indexOf('window.gpRefreshPricingOffer = async function')
+  );
+  assert.match(pricingAction, /panel\.dataset\.action === 'recommendation'/u, '사용량 추천 버튼은 가격표 동작에서 처리');
+  assert.match(pricingAction, /panel\.dataset\.action === 'upgrade'/u, '업그레이드 버튼은 가격표 동작에서 처리');
+  const heroAction = flow.slice(flow.indexOf('async function runOfferAction'), flow.indexOf('window.gpHeroOfferAction'));
+  assert.doesNotMatch(heroAction, /panel\.dataset/u, '히어로 CTA에서 가격표 panel 변수를 잘못 참조하지 않음');
   assert.doesNotMatch(flow, /function workUses/u);
 });
 
@@ -55,7 +67,7 @@ test('전환 퍼널과 사용자 단계별 제안 이벤트를 개인정보 없�
     read('assets/js/head-tracking.js')
   ]);
   const combined = `${flow}\n${main}\n${callbacks}\n${tracking}`;
-  for (const event of ['paywall_view', 'starter_offer_click', 'begin_checkout', 'purchase', 'job_resumed']) {
+  for (const event of ['paywall_view', 'pricing_policy_view', 'starter_offer_click', 'begin_checkout', 'purchase', 'job_resumed']) {
     assert.match(combined, new RegExp(`['"]${event}['"]`, 'u'));
   }
   assert.match(flow, /activation_prompt_view/u);
@@ -65,32 +77,28 @@ test('전환 퍼널과 사용자 단계별 제안 이벤트를 개인정보 없�
   assert.doesNotMatch(flow, /track\([^\n]+(?:text|email|uid):/u);
 });
 
-test('가격표 카드는 서비스별로 몇 번 쓸 수 있는지 보여준다', async () => {
+test('가격표 카드는 가격→총 지급량→스타터 비교→기본 1,000자 기준 금액 순으로 비교한다', async () => {
   const pricing = await read('pages/pricing.html');
-  // 사용량 목록은 카드마다 하나씩(2026-08-29 운영 결정으로 카드 내부 복귀)
-  assert.equal((pricing.match(/class="gp-plan-svc"/gu) || []).length, 5, '카드마다 사용량 목록');
-  assert.equal((pricing.match(/class="svc-r"/gu) || []).length, 15, '카드 5 × 작업 3종');
-  // 상품별 크레딧과 단가가 맞는 횟수(1,000자 기본=20 · 감지=10 · 1만자 고급=200, 내림)
-  for (const [credits, basic, detect, formal] of [
-    [105, 5, 10, 0], [330, 16, 33, 1], [575, 28, 57, 2], [1200, 60, 120, 6], [2500, 125, 250, 12]
-  ]) {
-    assert.match(pricing, new RegExp(`data-plan-credits="${credits}" data-work-cost="20">${basic}회<`, 'u'), `${credits} 기본 횟수`);
-    assert.match(pricing, new RegExp(`data-plan-credits="${credits}" data-work-cost="10">${detect}회<`, 'u'), `${credits} 감지 횟수`);
-    assert.match(pricing, new RegExp(`data-plan-credits="${credits}" data-work-cost="200">${formal}회<`, 'u'), `${credits} 고급 횟수`);
-  }
-  // 무엇 대비 할인인지 전달되지 않던 배지와, 길어서 읽히지 않던 분할 비교 줄은 제거(2026-08-29)
+  assert.equal((pricing.match(/data-plan-efficiency/gu) || []).length, 5, '카드마다 기준 금액 한 줄');
+  for (const value of [552, 504, 446, 414, 387]) assert.match(pricing, new RegExp(`기본 1,000자 기준 약 ${value}원`, 'u'));
+  assert.match(pricing, /스타터 5회와 같은 금액으로 <strong>125크레딧 더<\/strong>/u);
+  assert.match(pricing, /스타터 20회와 같은 금액으로 <strong>900크레딧 더<\/strong>/u);
+  assert.equal((pricing.match(/class="gp-plan-breakdown"/gu) || []).length, 5, '지급 구성은 카드마다 접어서 표시');
+  assert.doesNotMatch(pricing, /이 크레딧으로 할 수 있는 일|1,000자 AI 감지|1만자 고급/u, '용도별 장문 목록 재유입');
+  // 무엇 대비 할인인지 전달되지 않던 별도 할인율 배지는 제거한다.
   assert.ok(!pricing.includes('plan-discount'), '할인율 배지가 되살아남');
-  assert.ok(!pricing.includes('plan-vs-starter'), '분할 구매 비교 줄이 되살아남');
+  assert.ok(!pricing.includes('plan-vs-starter'), '구형 분할 구매 컴포넌트가 되살아남');
   assert.match(pricing, /class="gp-plan-svc-note"/u);
   assert.match(pricing, /id="gpPricingSegmentPanel"/u);
   assert.doesNotMatch(pricing, /plan-unitcost|gp-plan-audience|1크레딧당/u, '단가·추천 상황 문구 재유입');
-  assert.equal((pricing.match(/aria-label="기준 [^"]+크레딧과 이벤트 [^"]+크레딧, 총 [^"]+크레딧을 [^"]+원에 충전하기"/gu) || []).length, 5, '결제 버튼마다 기준·이벤트·총 지급량 맥락');
+  assert.equal((pricing.match(/class="plan-btn"/gu) || []).length, 5, '결제 버튼 5개');
+  assert.equal((pricing.match(/aria-label="[^"]*기준 [^"]+총 [^"]+크레딧을 [^"]+원에 충전하기"/gu) || []).length, 5, '결제 버튼마다 기준·추가·총 지급량 맥락');
   assert.ok(pricing.indexOf('class="gp-coupon-panel"') > pricing.indexOf('class="gp-pricing-refund"'), '쿠폰 입력은 가격·환불 안내 다음 맨 아래');
   assert.doesNotMatch(pricing, /class="gp-top-actions"|class="pc-fx"|class="pc-tr/u, '중복 상단 버튼 또는 장식 트래커 재유입');
   assert.doesNotMatch(pricing, /class="plan-card[^"]*"[^>]+onclick=/u, '카드 전체 클릭 재유입');
 });
 
-test('기간 이벤트 종료·서버 비활성화 시 표시와 결제 스냅샷이 기준 크레딧으로 함께 복귀한다', async () => {
+test('기간 이벤트 종료·서버 비활성화 시 상시 상품 보너스는 유지하고 이벤트만 제거한다', async () => {
   const [flow, main, pricing, landing, landingJs] = await Promise.all([
     read('assets/js/conversion-flow.js'),
     read('assets/js/app-main.js'),
@@ -109,9 +117,10 @@ test('기간 이벤트 종료·서버 비활성화 시 표시와 결제 스냅�
   assert.match(main, /eventCredits > 0/u);
 
   assert.match(landing, /id="lpCreditEvent"/u);
-  assert.equal((landing.match(/data-paid-credits="\d+" data-event-credits="\d+"/gu) || []).length, 5, '랜딩 상품 5개');
+  assert.equal((landing.match(/data-paid-credits="\d+" data-package-credits="\d+" data-event-credits="\d+"/gu) || []).length, 5, '랜딩 상품 5개');
   assert.match(landingJs, /function syncLandingCreditEvent/u);
   assert.match(landingJs, /eventNotice\.hidden = true/u);
+  assert.match(landingJs, /ongoingTotal = paid \+ packageBonus/u);
 });
 
 test('직접 충전 확인창은 금액·지급 구성·환불 기준을 구조화해 보여준다', async () => {
@@ -123,7 +132,8 @@ test('직접 충전 확인창은 금액·지급 구성·환불 기준을 구조�
   assert.match(main, /summary:\s*purchaseSummary/u);
   assert.match(main, /label:\s*'결제 금액'/u);
   assert.match(main, /label:\s*'기준 크레딧'/u);
-  assert.match(main, /label:\s*'이벤트 크레딧'/u);
+  assert.match(main, /label:\s*'상품 보너스'/u);
+  assert.match(main, /label:\s*'9월 이벤트 추가'/u);
   assert.match(main, /label:\s*'총 지급'[\s\S]{0,80}?emphasis:\s*true/u);
   assert.match(main, /safeText:/u);
   assert.match(main, /note:\s*refundNotice/u);
@@ -152,6 +162,7 @@ test('요금 카드는 넓은 화면에서 다섯 상품을 한 줄에 펼치고
   assert.doesNotMatch(css, /pcLineGrow|pcScan|pcFloat|\.pc-tr|\.pc-fx/u, '사이버 카드 장식 재유입');
   assert.doesNotMatch(css, /@media\(max-width:(?:1240|860)px\)/u, '비표준 중단점이 되살아남');
   assert.match(css, /\.gp-plan-grid \.plan-popular,[\s\S]{0,120}?transform:none !important/u, '인기 카드 돌출 제거');
+  assert.match(css, /\.plan-card\.plan-popular\{[\s\S]{0,100}?border:1px solid var\(--border\) !important/u, '추천 카드는 일반 카드와 같은 테두리');
   // 내비 앵커 밑줄 제거(button→a 전환 후 브라우저 기본 밑줄이 살아나던 문제)
   assert.match(css, /\.gp-lav-menu a,\.gp-lav-side-link,\.gp-footer-links a,a\.mnav-btn,a\.snav-btn\{text-decoration:none;\}/u);
 });

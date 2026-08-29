@@ -282,13 +282,14 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>패치노트</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 45);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 46);
+  assert.match(admin, /상시 상품 보너스·9월 이벤트·환불 기준 분리/u);
   assert.match(admin, /구조 무결성·문단 보강·3택 흐름·연구노트·공지/u);
   assert.match(admin, /Backend 34c8b26 · Frontend bfc3d2f/u);
   assert.match(admin, /운영 Git<\/dt><dd>745건/u);
   assert.match(admin, /Backend \/ Frontend<\/dt><dd>495 \/ 250/u);
-  assert.match(admin, /기준 크레딧 100·300·500·1,000·2,000/u);
-  assert.match(admin, /2026년 9월 30일까지 결제 요청분 이벤트 5·10·15·20·25%/u);
+  assert.match(admin, /스타터 105, 라이트 345, 스탠다드 650, 프로 1,400, 맥스 3,000크레딧/u);
+  assert.match(admin, /9월 30일까지 기준 크레딧의 5%/u);
   assert.match(admin, /새 주문은 기준 크레딧 사용량으로 환불액을 계산/u);
   assert.match(admin, /기존 주문은 주문 당시 총 지급량 비례 기준을 유지/u);
   assert.match(admin, /백엔드 전체 849개, 문단 보강 상태기계 32개, 프런트 87개 테스트/u);
@@ -368,8 +369,8 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
-  assert.equal(releases.length, 45);
-  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 5);
+  assert.equal(releases.length, 46);
+  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 6);
   for (const [, attrs, body] of releases) {
     if (/gp-admin-patch-state is-live/u.test(body)) assert.match(attrs, /\bopen\b/u);
     if (/gp-admin-patch-state is-superseded/u.test(body)) assert.doesNotMatch(attrs, /\bopen\b/u);

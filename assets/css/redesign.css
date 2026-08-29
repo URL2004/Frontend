@@ -5744,12 +5744,12 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  box-shadow:none !important;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .plan-card.plan-popular{
- border:2px solid var(--brand) !important;
- background:#fbfbff !important;
+ border:1px solid var(--border) !important;
+ background:var(--surface) !important;
  box-shadow:none !important;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .plan-card.plan-premium{
- border-color:#cfd3e4 !important;
+ border:1px solid var(--border) !important;
  background:var(--surface) !important;
  box-shadow:none !important;
 }
@@ -5819,6 +5819,41 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  font-size:14px !important;
  font-weight:800 !important;
  text-align:left;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-efficiency{
+ margin:7px 0 12px;
+ color:#656c80;
+ font-size:12.5px;
+ font-weight:700;
+ line-height:1.5;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-comparison{
+ min-height:38px;
+ margin:13px 0 0;
+ color:#34394a;
+ font-size:12.5px;
+ font-weight:650;
+ line-height:1.5;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-comparison strong{
+ color:var(--brand);
+ font-weight:850;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-breakdown{
+ margin:0 0 16px;
+ padding:0;
+ border-top:1px solid #eceef5;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-breakdown summary{
+ padding:10px 0 0;
+ color:#73798b;
+ font-size:12px;
+ font-weight:750;
+ cursor:pointer;
+ list-style-position:inside;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-breakdown .plan-feats{
+ margin-top:10px;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .plan-btn{
  width:100%;
@@ -5941,10 +5976,10 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
   font-size:12px !important;
  }
  #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-grid .plan-feats li > span{white-space:nowrap;}
- #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-grid .plan-feats li:is(.feat-bonus,.feat-first){
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-grid .plan-feats li:is(.feat-package,.feat-event){
   grid-template-columns:1fr !important;
  }
- #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-grid .plan-feats li:is(.feat-bonus,.feat-first) > strong{
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-grid .plan-feats li:is(.feat-package,.feat-event) > strong{
   justify-self:end;
  }
 }
@@ -8518,6 +8553,8 @@ body.gp-modal-open{overflow:hidden;}
  cursor:pointer;
 }
 .plan-feats li[hidden]{display:none!important;}
+.plan-feats li.feat-package strong,
+.plan-feats li.feat-event strong{color:#4b4cc6!important;}
 
 @media(max-width:560px){
  .gp-credit-checkout{align-items:flex-end;padding:0;}

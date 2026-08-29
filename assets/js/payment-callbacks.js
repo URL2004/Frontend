@@ -108,7 +108,7 @@
       const res = await fetch(window.apiUrl('/confirm-payment'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(Object.assign({
           paymentKey: pKey,
           orderId: orderId,
           amount: amount,
@@ -116,7 +116,7 @@
           uid: uid,
           idToken: idToken,
           meta: window.gpMetaContext ? window.gpMetaContext() : {}
-        })
+        }, typeof window.gpPendingCheckoutContract === 'function' ? window.gpPendingCheckoutContract() : {}))
       });
 
       let data = {};
@@ -136,6 +136,9 @@
           items: [{ item_id: _plan || ('credits_' + _cred), item_name: _plan || ('크레딧 ' + _cred), quantity: 1, price: _amt }],
           traffic_source: localStorage.getItem('traffic_source') || 'direct',
           bonus_credits: Number(data.bonusCredits) || 0,
+          package_bonus_credits: Number(data.packageBonusCredits) || 0,
+          event_bonus_credits: Number(data.eventBonusCredits) || 0,
+          pricing_policy_version: data.offerPolicyVersion || conversionMeta.pricing_policy_version || '',
           offer_variant: data.experimentVariant || conversionMeta.offer_variant || ''
         }));
         await refreshCreditBalance(uid);

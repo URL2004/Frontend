@@ -242,35 +242,35 @@ test('홈 프리렌더 본문은 작업 화면이 아니라 랜딩을 크롤러�
   assert.doesNotMatch(seo, /route\.url === '\/' \|\| !/u);
 });
 
-test('충전 사다리는 기준 크레딧과 기간 이벤트 지급량을 일치시킨다', async () => {
+test('충전 사다리는 기준·상품 보너스·기간 이벤트 지급량을 일치시킨다', async () => {
   const [pricing, flow, landing] = await Promise.all([
     read('pages/pricing.html'),
     read('assets/js/conversion-flow.js'),
     read('pages/landing.html')
   ]);
-  assert.match(pricing, /payToss\(8700,330,/u);
-  assert.match(pricing, /총 330 크레딧/u);
-  assert.match(flow, /\{ amount: 8700, paidCredits: 300, eventBonusCredits: 30, credits: 330, label: '라이트' \}/u);
-  assert.match(landing, /8,700원<\/b><span>총 330크레딧/u);
+  assert.match(pricing, /payToss\(8700,345,/u);
+  assert.match(pricing, /총 345 크레딧/u);
+  assert.match(flow, /\{ amount: 8700, paidCredits: 300, packageBonusCredits: 30, eventBonusCredits: 15, credits: 345, label: '라이트' \}/u);
+  assert.match(landing, /8,700원<\/b><span>총 345크레딧/u);
   assert.ok(!pricing.includes('plan-discount'), '할인율 배지 재유입');
-  assert.match(pricing, /data-plan-credits="330" data-work-cost="20">16회</u);
-  assert.match(pricing, /data-plan-credits="330" data-work-cost="10">33회</u);
+  assert.match(pricing, /기본 1,000자 기준 약 504원/u);
 });
 
-test('가격 카드는 5~25% 기간 이벤트만 표시하고 구형 추가 지급을 노출하지 않는다', async () => {
+test('가격 카드는 상시 상품 보너스와 5% 기간 이벤트를 분리해 표시한다', async () => {
   const [pricing, landing, flow, modals] = await Promise.all([
     read('pages/pricing.html'),
     read('pages/landing.html'),
     read('assets/js/conversion-flow.js'),
     read('partials/modals.html')
   ]);
-  const rates = [...pricing.matchAll(/이벤트 추가 <em>\+(\d+)%<\/em>/gu)].map((m) => Number(m[1]));
-  assert.deepEqual(rates, [5, 10, 15, 20, 25]);
+  const rates = [...pricing.matchAll(/9월 이벤트 <em>\+(\d+)%<\/em>/gu)].map((m) => Number(m[1]));
+  assert.deepEqual(rates, [5, 5, 5, 5, 5]);
+  assert.deepEqual([...pricing.matchAll(/class="feat-package"[^>]*>[\s\S]*?<strong>\+(\d+) 크레딧<\/strong>/gu)].map((m) => Number(m[1])), [0, 30, 125, 350, 900]);
   for (const amount of [2900, 8700, 14500, 29000, 58000]) {
     assert.match(pricing, new RegExp(`data-plan-total-for="${amount}"`, 'u'), `${amount} 총 크레딧 훅 부재`);
   }
   for (const surface of [pricing, landing, flow, modals]) {
-    assert.match(surface, /2026년 9월 30일까지 결제 요청분/u);
+    assert.match(surface, /2026년 9월 30일까지/u);
     assert.doesNotMatch(surface, /첫 구매|첫 결제|firstPurchase|firstBonus/u);
   }
   assert.ok(!pricing.includes('나눠 사면'), '분할 비교 문구 재유입');

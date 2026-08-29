@@ -37,7 +37,7 @@ test('신규 주문은 기준 크레딧 우선 사용·잔여 지급량 전부 �
     {
       policy: 'base', refundAmount: 43500, recoverCredits: 2000, usedCredits: 500,
       paidUsedCredits: 500, refundablePaidCredits: 1500, paidCredits: 2000,
-      eventBonusCredits: 500, totalGrantedCredits: 2500
+      packageBonusCredits: 0, eventBonusCredits: 500, bonusCredits: 500, totalGrantedCredits: 2500
     }
   );
   assert.equal(helpers.gpCreditRefundPreview(order, 2500).refundAmount, 58000);
@@ -61,7 +61,31 @@ test('주문별 잔여 필드가 있으면 계정 전체 잔액보다 우선해 
     {
       policy: 'base', refundAmount: 34800, recoverCredits: 1700, usedCredits: 800,
       paidUsedCredits: 800, refundablePaidCredits: 1200, paidCredits: 2000,
-      eventBonusCredits: 500, totalGrantedCredits: 2500
+      packageBonusCredits: 0, eventBonusCredits: 500, bonusCredits: 500, totalGrantedCredits: 2500
+    }
+  );
+});
+
+test('현행 상품·이벤트 보너스는 하나의 비환불 잔액으로 회수한다', () => {
+  const helpers = loadRefundHelpers();
+  const order = {
+    amount: 58000,
+    paidCredits: 2000,
+    packageBonusCredits: 900,
+    eventBonusCredits: 100,
+    bonusCredits: 1000,
+    totalGrantedCredits: 3000,
+    creditGrantPolicyVersion: 'credit-grant-base-v1',
+    refundPaidCreditsRemaining: 1500,
+    refundBonusCreditsRemaining: 700,
+    refundEventBonusCreditsRemaining: 10
+  };
+  assert.deepEqual(
+    { ...helpers.gpCreditRefundPreview(order, 9999) },
+    {
+      policy: 'base', refundAmount: 43500, recoverCredits: 2200, usedCredits: 800,
+      paidUsedCredits: 500, refundablePaidCredits: 1500, paidCredits: 2000,
+      packageBonusCredits: 900, eventBonusCredits: 100, bonusCredits: 1000, totalGrantedCredits: 3000
     }
   );
 });
@@ -95,11 +119,11 @@ test('환불 버튼은 크레딧과 구독 모두 7일을 검사하고 사용 �
 
 test('이용약관과 환불규정은 유효기간·환불기간 및 3영업일 처리를 구분한다', () => {
   // 2026-08-28 약관 개정(D2): 크레딧 만료 로직이 없고 전 마케팅 표면이 무기한 표기 → 약관도 무기한으로 통일
-  assert.match(mainSource, /유료로 충전한 기준 크레딧과 결제 이벤트로 추가 지급된 크레딧은 유효기간 없이 사용할 수 있습니다/u);
+  assert.match(mainSource, /유료로 충전한 기준 크레딧과 상품 보너스·결제 이벤트로 추가 지급된 크레딧은 유효기간 없이 사용할 수 있습니다/u);
   assert.match(mainSource, /2026년 9월 30일까지 결제 요청분/u);
   assert.match(mainSource, /기준 크레딧부터 먼저 차감/u);
-  assert.match(mainSource, /남아 있는 기준·이벤트 크레딧을 모두 회수/u);
-  assert.match(mainSource, /시행일: 2026년 8월 29일/u);
+  assert.match(mainSource, /남아 있는 기준·추가 크레딧을 모두 회수/u);
+  assert.match(mainSource, /시행일: 2026년 8월 30일/u);
   assert.doesNotMatch(mainSource, /크레딧의?\s*이용기간은?\s*결제일로부터\s*1년/u);
   assert.match(mainSource, /일반 환불 신청기간은 결제일로부터 7일/u);
   assert.match(mainSource, /남은 크레딧은 유효기간 없이 사용할 수 있습니다/u);
@@ -108,7 +132,7 @@ test('이용약관과 환불규정은 유효기간·환불기간 및 3영업일 
   assert.doesNotMatch(mainSource, /제3조의2 \(정기 구독 결제\)|구독 플랜 환불 정책|잔여 쿠폰/u);
 });
 
-test('구매 전 주요 화면은 기준 우선 차감·이벤트 비환불·주문 잔여 전량 회수를 함께 고지한다', () => {
+test('구매 전 주요 화면은 기준 우선 차감·추가분 비환불·주문 잔여 전량 회수를 함께 고지한다', () => {
   const surfaces = {
     결제확인: mainSource,
     부족크레딧결제: modalSource,
@@ -120,8 +144,8 @@ test('구매 전 주요 화면은 기준 우선 차감·이벤트 비환불·주
   for (const [name, source] of Object.entries(surfaces)) {
     assert.match(source, /결제 후 7일 이내/u, `${name}: 환불 신청기간`);
     assert.match(source, /기준 크레딧(?:에서|부터)/u, `${name}: 기준 크레딧 우선 반영`);
-    assert.match(source, /이벤트 크레딧은 현금 환불 대상이 아니/u, `${name}: 이벤트 크레딧 비환불`);
-    assert.match(source, /해당 주문(?:에서|에) 남아 있는 기준·이벤트 크레딧(?:을|은) 모두 회수/u, `${name}: 해당 주문 잔여 전량 회수`);
+    assert.match(source, /상품·이벤트 추가 크레딧은 현금 환불 대상이 아니/u, `${name}: 추가 크레딧 비환불`);
+    assert.match(source, /해당 주문(?:에서|에) 남아 있는 기준·추가 크레딧(?:을|은) 모두 회수/u, `${name}: 해당 주문 잔여 전량 회수`);
   }
 });
 

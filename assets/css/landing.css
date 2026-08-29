@@ -404,7 +404,7 @@ button,input,select,textarea{font:inherit}
  position:relative;padding:20px 18px;
  border:1px solid var(--lp-line);border-radius:16px;background:#fff;
 }
-.gp-lp-plan.is-popular{border-color:var(--lp-ink);box-shadow:5px 6px 0 rgba(23,26,43,.85)}
+.gp-lp-plan.is-popular{border-color:var(--lp-line);box-shadow:none}
 .gp-lp-plan i{display:block;margin-bottom:6px;color:var(--lp-accent);font-size:11.5px;font-weight:800;font-style:normal}
 .gp-lp-plan b{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em}
 .gp-lp-plan span{display:block;margin-top:3px;font-size:13.5px;font-weight:700}
