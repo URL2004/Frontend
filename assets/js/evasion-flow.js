@@ -370,10 +370,9 @@
     var lockNote = $('lavFormalLockNote'); if (lockNote) lockNote.hidden = !unfit;
     // 근거 보강은 모달 안 옵션(2026-08-29) — 잠긴 글에선 비활성화만 걸어두고 노출은 lavOpenConfirm이 판단
     var ev = $('lavEvidence'); if (ev) { ev.disabled = unfit; if (unfit) ev.checked = false; }
-    var basicRecommended = $('lavBasicRecommended');
     var formalRecommended = $('lavFormalRecommended');
-    if (basicRecommended) basicRecommended.hidden = recommendAdvanced;
-    if (formalRecommended) formalRecommended.hidden = !recommendAdvanced;
+    // 추천은 선택 상태가 아니라 상품 안내다. 고급이 가능한 글에서만 고급 카드에 고정한다.
+    if (formalRecommended) formalRecommended.hidden = unfit;
     var advancedNote = $('lavToneAdvancedNote');
     var advancedText = $('lavToneAdvancedText');
     if (advancedNote) advancedNote.hidden = !recommendAdvanced;

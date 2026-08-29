@@ -166,8 +166,9 @@ test('한국어 장르 판정은 고급을 잠그지 않고 고급 차단 작업
     read('pages/main.html'),
     read('assets/js/evasion-flow.js')
   ]);
-  assert.match(main, /id="lavBasicRecommended"/u);
-  assert.match(main, /id="lavFormalRecommended"[^>]*hidden/u);
+  assert.doesNotMatch(main, /id="lavBasicRecommended"|class="lav-sel-card accent"/u);
+  assert.match(main, /id="lavFormalRecommended"[^>]*>추천<\/span>/u);
+  assert.doesNotMatch(main, /id="lavFormalRecommended"[^>]*hidden/u);
   assert.match(main, /id="lavToneAdvancedNote"[^>]*role="status"[^>]*hidden/u);
   // 3택 1화면(2026-08-28): 카드 클릭이 숨김 라디오를 정하고 확인 모달로 직행한다
   assert.match(main, /lavSelectTone\('blog'\)/u);
@@ -177,6 +178,7 @@ test('한국어 장르 판정은 고급을 잠그지 않고 고급 차단 작업
   assert.match(evasion, /window\.lavSelectTone = function/u);
   assert.doesNotMatch(main, /lavPersonalBlock|lavAutoCoach|lavCoachPicks|data-flow="reduce"/u);
   assert.match(evasion, /function advancedUnavailable\(d\)/u);
+  assert.match(evasion, /formalRecommended\.hidden = unfit/u);
   assert.match(evasion, /if \(d\.advancedEligible === false\) return true/u);
   assert.match(evasion, /lastDiag\.recommendedMode === 'formal'/u);
   assert.match(evasion, /formalRadio\.checked = recommendAdvanced/u);
