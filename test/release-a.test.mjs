@@ -34,7 +34,7 @@ test('기본·고급 설명은 체감 재구성 범위와 검증 범위를 구�
   assert.match(main, /외부 탐지기 결과는 보장하지 않습니다/u);
   assert.doesNotMatch(main, /id="lavEvidenceRow"/u);
   assert.match(modals, /class="lav-confirm-opt" id="lavEvidenceRow" hidden/u);
-  assert.match(evasion, /var evAvailable = s\.tone === 'formal'/u);
+  assert.match(evasion, /setConfirmEvidenceAvailability\(!!\(tone && tone\.value === 'formal'\)\)/u);
   assert.match(evasion, /renderConfirmCost\(\);\s+\/\/ 모달을 연 뒤 호출/u);
   assert.match(guide, /AI식 반복과 균일한 흐름을 다시 구성/u);
   assert.match(faq, /고급은 기본보다 더 넓은 문장 범위를 재구성/u);
@@ -47,6 +47,19 @@ test('기본·고급 설명은 체감 재구성 범위와 검증 범위를 구�
   assert.doesNotMatch(copy, /고급은 더 많이 바꾸는 모드가 아니|고급이 더 강한 재작성 모드는 아닙니다|차이는 변환 세기가 아니라/u);
   assert.doesNotMatch(copy, /칼럼처럼 다시 써요|원문의 약 60%|격식 유지·문장 새로 짜기|어투와 구조를 다시 짜서 가장 자연스러운/u);
   assert.doesNotMatch(main, /검사기는.*의심|숫자가 들어가면 의심이 크게|효과를 크게 높여|훨씬 사람이 쓴 글/u);
+});
+
+test('세부 설정은 기본으로 펼치고 다듬기 전환 시 고급 근거 보강 상태를 지운다', async () => {
+  const [main, evasion] = await Promise.all([
+    read('pages/main.html'),
+    read('assets/js/evasion-flow.js')
+  ]);
+  assert.match(main, /<details class="lav-set-block lav-opt-acc" id="lavDetailBlock" open>/u);
+  assert.match(evasion, /function setConfirmEvidenceAvailability\(available\)/u);
+  assert.match(evasion, /if \(cleared\) checkbox\.checked = false/u);
+  assert.equal((evasion.match(/document\.querySelector\('#lavConfirmModal \.lav-confirm-title'\)/gu) || []).length, 2);
+  const polish = evasion.slice(evasion.indexOf('window.lavRunPolish = function'), evasion.indexOf('// ── P3+P4', evasion.indexOf('window.lavRunPolish = function')));
+  assert.match(polish, /setConfirmEvidenceAvailability\(false\)/u);
 });
 
 test('다듬기·기본·고급 명칭과 설명은 선택부터 결과·이력까지 같은 의미를 사용한다', async () => {
@@ -387,10 +400,10 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-190/u);
-  assert.match(boot, /var v = 'lav-190'/u);
+  assert.match(index, /app-boot\.js\?v=lav-192/u);
+  assert.match(boot, /var v = 'lav-192'/u);
   assert.match(boot, /input-quality\.js\?v=/u);
-  assert.match(loader, /var ASSET_V = 'lav-190'/u);
+  assert.match(loader, /var ASSET_V = 'lav-192'/u);
   assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166|167|168|170|185|186)/u);
 });
 

@@ -2915,7 +2915,10 @@ function historyVisibleItems() {
   if (historyState.filter === 'detect' && item.type !== 'detect') return false;
   if (historyState.filter === 'humanize' && item.type === 'detect') return false;
   if (!queryText) return true;
-  const haystack = [item.inputText, item.outputText, item.summary, item.detail, item.humanSummary, item.humanDetail]
+  const searchableFields = item.type === 'detect'
+   ? [item.inputText, item.summary, item.detail]
+   : [item.inputText, item.outputText];
+  const haystack = searchableFields
    .map(historyCleanLine).join(' ').toLocaleLowerCase('ko-KR');
   return haystack.includes(queryText);
  });
@@ -3048,7 +3051,7 @@ function historyRenderDetail() {
  const hasOutput = !!historyCleanLine(item.outputText);
  const details = isDetect
   ? `${historyDetailBlock('분석 요약', view.summary, true)}${historyDetailBlock('상세 분석', view.detail, false)}`
-  : `${historyDetailBlock('휴머나이징 결과', item.outputText, true)}${historyDetailBlock('작업 요약', item.humanSummary, false)}${historyDetailBlock('상세 정보', item.humanDetail, false)}`;
+  : historyDetailBlock('휴머나이징 결과', item.outputText, true);
  const actions = isDetect
   ? `<button type="button" class="primary" onclick="historyContinueHumanize()">휴머나이징으로 이어서</button>
      <button type="button" onclick="historyRunAgain('detect')">다시 감지</button>

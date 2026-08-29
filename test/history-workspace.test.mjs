@@ -54,6 +54,17 @@ test('상세 기록에서 결과를 복사·저장·편집하고 감지 원문�
   assert.match(source, /window\.lavSetMode\(mode\)/u);
 });
 
+test('사용자 휴머나이징 기록은 결과만 보여주고 모델의 작업 설명은 노출하지 않는다', async () => {
+  const source = await read('assets/js/app-module.js');
+  const search = source.slice(source.indexOf('function historyVisibleItems'), source.indexOf('function historyIsMobile'));
+  const detail = source.slice(source.indexOf('function historyRenderDetail'), source.indexOf('function historyRender()'));
+  assert.match(detail, /historyDetailBlock\('휴머나이징 결과', item\.outputText, true\)/u);
+  assert.match(detail, /historyDetailBlock\('분석 요약', view\.summary, true\)/u);
+  assert.match(detail, /historyDetailBlock\('상세 분석', view\.detail, false\)/u);
+  assert.doesNotMatch(detail, /작업 요약|상세 정보|item\.humanSummary|item\.humanDetail/u);
+  assert.doesNotMatch(search, /item\.humanSummary|item\.humanDetail/u);
+});
+
 test('작업 상태와 이용 내역을 분리하고 복구 가능한 화면 상태를 제공한다', async () => {
   const source = await read('assets/js/app-module.js');
   assert.match(source, /<small>작업 상태<\/small>/u);

@@ -1084,10 +1084,25 @@
     };
   }
 
+  // 확인 모달은 여러 모드가 같은 DOM을 공유한다. 모드를 바꿀 때 이전 고급 옵션이
+  // 다듬기·기본 확인창에 남지 않도록, 열 때마다 노출과 선택값을 함께 동기화한다.
+  function setConfirmEvidenceAvailability(available) {
+    var row = $('lavEvidenceRow');
+    var checkbox = $('lavEvidence');
+    var enabled = available === true && !(checkbox && checkbox.disabled);
+    var cleared = !!(checkbox && checkbox.checked && !enabled);
+    if (cleared) checkbox.checked = false;
+    if (row) row.hidden = !enabled;
+    if (cleared) renderSelectCosts();
+    return enabled;
+  }
+
   window.lavOpenConfirm = function () {
     pendingPolish = false;   // 휴머나이징 확인 — 다듬기 플래그 정리
-    var ttl = document.querySelector('.lav-confirm-title');
+    var ttl = document.querySelector('#lavConfirmModal .lav-confirm-title');
     if (ttl) ttl.textContent = '이 설정으로 시작할까요?';
+    var tone = document.querySelector('input[name="lavTone"]:checked');
+    setConfirmEvidenceAvailability(!!(tone && tone.value === 'formal'));
     var s = currentSettings();
     lavStartBtnState(false);   // 코칭 잠금 제거(2026-08-28) — 잔여 잠금 방어
     renderEffectNotice(s);
@@ -1105,11 +1120,6 @@
       }).join('');
     }
     // 근거 보강 옵션: 고급이고 잠기지 않은 글에서만 노출(2026-08-29 선택화면 → 모달 이동)
-    var evRow = $('lavEvidenceRow');
-    var evBox = $('lavEvidence');
-    var evAvailable = s.tone === 'formal' && !(evBox && evBox.disabled);
-    if (!evAvailable && evBox && evBox.checked) evBox.checked = false;   // 기본 선택 시 잔여 체크 정리
-    if (evRow) evRow.hidden = !evAvailable;
     var subC = $('lavConfirmSub'); if (subC) subC.hidden = false;   // 회피는 탐지율 안내 노출
     var modal = $('lavConfirmModal');
     if (modal) modal.hidden = false;
@@ -1389,9 +1399,10 @@
     if (!text) { if (src) src.focus(); return; }
     trackModeSelection('polish');
     pendingPolish = true;
+    setConfirmEvidenceAvailability(false);   // 직전 고급 확인창의 근거 보강 상태를 다듬기에 넘기지 않는다
     renderEffectNotice({ tone: 'polish' });
     lavStartBtnState(false);   // 잔여 시작버튼 잠금 방어
-    var ttl = document.querySelector('.lav-confirm-title');
+    var ttl = document.querySelector('#lavConfirmModal .lav-confirm-title');
     if (ttl) ttl.textContent = '원문 보존 다듬기를 시작할까요?';
     var sum = $('lavConfirmSummary');
     if (sum) {
