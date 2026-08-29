@@ -292,72 +292,30 @@
     if (d && d.diagnosisUnavailable) {
       return {
         state: 'neutral',
-        label: '기본 설정으로 진행',
         title: '맞춤 진단을 불러오지 못했어요',
-        desc: '처리는 계속할 수 있어요. 지금은 대부분의 글에 맞는 기본 휴머나이징부터 안내합니다.'
+        desc: '기본 설정으로 계속 진행할 수 있어요.'
       };
     }
     var grade = String(d && d.grade || 'B').toUpperCase();
     if (grade === 'A') {
       return {
         state: 'ready',
-        label: '바로 진행 가능',
-        title: '구체적인 내용이 충분해요',
-        desc: '원문의 사례와 정보가 분명해서 필요한 문장만 골라 자연스럽게 다듬을 수 있어요.'
+        title: '구체성이 충분해요',
+        desc: '사례와 정보는 유지하고 필요한 표현만 다듬습니다.'
       };
     }
     if (grade === 'C') {
       return {
         state: 'needs-info',
-        label: '정보 보완 추천',
-        title: '문장만 바꿔도 일반적인 내용은 남을 수 있어요',
-        desc: '실제 사례·수치·근거가 적어요. 없는 내용을 만들지 않기 때문에 한 줄을 더하면 더 구체적으로 다듬을 수 있어요.'
+        title: '구체적인 근거가 부족해요',
+        desc: '일반적인 표현이 많아 문장만 바꿔도 비슷하게 느껴질 수 있어요.'
       };
     }
     return {
       state: 'partial',
-      label: '부분 보완 추천',
-      title: '일부 문장은 조금 더 구체적이면 좋아요',
-      desc: '구체적인 내용은 지키고, 일반적인 표현이 남은 문장을 중심으로 다듬을 수 있어요.'
+      title: '일부 표현이 추상적이에요',
+      desc: '구체적인 내용은 지키고 일반적인 표현만 골라 다듬습니다.'
     };
-  }
-
-  function unfitNotice(d) {
-    var kind = d && d.restructureUnfitKind;
-    if (kind === 'resume') return '개인 경험과 성과를 지켜야 하는 글이라 고급 재구성은 선택할 수 없어요. 기본 휴머나이징은 원문의 경험·화자·사실을 유지합니다.';
-    if (kind === 'reflection') return '개인의 감상과 해석을 지켜야 하는 글이라 고급 재구성은 선택할 수 없어요. 기본 휴머나이징으로 필요한 문장만 다듬어 주세요.';
-    if (kind === 'thin') return '구체적인 재료가 적어 고급 재구성은 선택할 수 없어요. 원문에 실제 내용을 더하거나 기본 휴머나이징으로 진행해 주세요.';
-    if (kind === 'english') return '현재 고급 휴머나이징은 한국어 글만 지원해요. 기본 휴머나이징이나 원문 보존 다듬기를 선택해 주세요.';
-    return d && d.restructureUnfitReason || '이 글은 원문의 사실을 더 강하게 보존하는 기본 휴머나이징이 적합해요.';
-  }
-
-  function anchorGuideKind(d) {
-    var selected = currentDocumentProfile();
-    var profile = selected || String(d && d.documentProfile || '');
-    if (['academic_paper', 'report_assignment', 'long_explainer', 'clinical_record', 'legal_contract', 'student_record_teacher'].indexOf(profile) >= 0) return 'evidence';
-    if (['resume_application', 'student_self_assessment', 'personal_essay', 'review_blog'].indexOf(profile) >= 0) return 'experience';
-    return 'general';
-  }
-
-  function renderAnchorGuide(d) {
-    var guide = $('lavAnchorGuide');
-    if (!guide) return;
-    var needsAnchor = !!(d && !d.diagnosisUnavailable && (d.needsUserAnchor || d.grade === 'C'));
-    guide.hidden = !needsAnchor;
-    if (!needsAnchor) return;
-    var kind = anchorGuideKind(d);
-    var text = $('lavAnchorText');
-    var button = $('lavAnchorEdit');
-    var copy = kind === 'evidence'
-      ? ['출처·조사 수치·확인된 사례 중 하나를 원문에 한 줄 더해 주세요. 지금 내용으로 바로 진행해도 됩니다.', '원문에 근거 추가']
-      : (kind === 'experience'
-        ? ['언제·어디서 무엇을 했고 결과가 어땠는지, 실제 경험 한 줄을 원문에 더해 주세요. 지금 내용으로 바로 진행해도 됩니다.', '원문에 경험 추가']
-        : ['실제 사례·수치·관찰 중 확인된 내용을 원문에 한 줄 더해 주세요. 지금 내용으로 바로 진행해도 됩니다.', '원문에 내용 추가']);
-    if (text) text.textContent = copy[0];
-    if (button) {
-      button.textContent = copy[1];
-      button.dataset.anchorKind = kind;
-    }
   }
 
   function trackDiagnosisView(d) {
@@ -370,26 +328,6 @@
       recommended_mode: d && d.recommendedMode || 'blog'
     });
   }
-
-  window.lavEditForAnchor = function () {
-    var button = $('lavAnchorEdit');
-    if (window.gpTrack) {
-      window.gpTrack('humanize_anchor_action', {
-        action: 'edit_source',
-        anchor_kind: button && button.dataset.anchorKind || 'general',
-        diagnosis_grade: lastDiag && lastDiag.grade || 'unavailable',
-        document_profile: lastDiag && lastDiag.documentProfile || 'unknown'
-      });
-    }
-    cameFromReport = false;
-    if (!window.lavFlowReset()) return;
-    var src = $('lavInput');
-    if (src) {
-      src.scrollIntoView({ behavior: lavReducedMotion() ? 'auto' : 'smooth', block: 'center' });
-      src.focus();
-    }
-    if (window.gpToast) window.gpToast('원문에 실제 내용을 더한 뒤 다시 분석해 주세요.', { type: 'info' });
-  };
 
   function isRecommendedMode(mode) {
     if (mode === 'polish') return false;
@@ -410,23 +348,11 @@
 
   function applyDiag(d) {
     lastDiag = d;
-    // resumeLike는 구형 관측 신호다. 실제 잠금은 v2 장르 판정까지 조정한 canonical 값만 사용한다.
-    var unfit = advancedUnavailable(d);
-    var hasAdv = !!d.advisory && !unfit;                  // 회피 난이도 안내(STEM 스펙·구조화 보고서) — 소프트, 자소서 안내가 우선
-    var rn = $('lavResumeNote');
-    if (rn) { rn.hidden = !unfit; if (unfit) rn.textContent = unfitNotice(d); }
-    var adv = $('lavAdvisoryNote');
-    if (adv) { adv.hidden = !hasAdv; var at = $('lavAdvisoryText'); if (hasAdv && at) at.textContent = d.advisory; }
-    var fdn = $('lavFactDenseNote'); if (fdn) fdn.hidden = !(d.factDense && !unfit && !hasAdv);   // 연도·수치 빼곡 안내(advisory 있으면 중복이라 숨김)
     var view = diagnosisPresentation(d);
-    var state = $('lavDiagGrade');
-    if (state) {
-      state.textContent = view.label;
-      state.dataset.state = view.state;
-    }
+    var summary = $('lavChoiceSummary');
+    if (summary) summary.dataset.state = view.state;
     if ($('lavDiagTitle')) $('lavDiagTitle').textContent = view.title;
     if ($('lavDiagDesc')) $('lavDiagDesc').textContent = view.desc;
-    renderAnchorGuide(d);
     var b = d.bands || {};
     if ($('lavBandPolish') && b.polish) $('lavBandPolish').textContent = b.polish;
     if ($('lavBandBlog') && b.blog) $('lavBandBlog').textContent = b.blog;
@@ -437,6 +363,7 @@
   window.lavFlowDiagnose = function () {
     var src = $('lavInput');
     var text = src ? src.value : '';
+    if (typeof window.lavEnsureReadableInput === 'function' && !window.lavEnsureReadableInput(text)) return;
     resetToneChoice();
     cameFromReport = false;   // 진단 경유 동선 — 방법선택 뒤로가기는 입력 화면으로
     show('analyzing');
@@ -446,12 +373,23 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: text })
-    }).then(function (r) { return r.json(); }).catch(function (e) { console.warn('[evasion] /diagnose 실패 — 폴백 진단 사용:', e && e.message); return null; });
+    }).then(function (r) {
+      return r.json().catch(function () { return null; }).then(function (body) {
+        return { ok: r.ok, status: r.status, body: body };
+      });
+    }).catch(function (e) { console.warn('[evasion] /diagnose 실패 — 폴백 진단 사용:', e && e.message); return null; });
     Promise.all([req, minWait]).then(function (out) {
-      var d = out[0];
-      if (!(d && d.ok)) console.warn('[evasion] 진단 폴백 동작 중 — 백엔드 미연결 상태(블로그 변환은 실패함)');
-      var diag = d && d.ok ? d : fakeDiagnose();
-      diag.diagnosisSource = d && d.ok ? 'backend' : 'fallback';
+      var response = out[0];
+      var d = response && response.body;
+      if (response && response.status === 422 && d && d.code === 'UNREADABLE_INPUT') {
+        exitWorkspace();
+        if (typeof window.lavShowInputError === 'function') window.lavShowInputError(d.error, d.reason || 'unreadable_input', true);
+        return;
+      }
+      var backendOk = !!(response && response.ok && d && d.ok);
+      if (!backendOk) console.warn('[evasion] 진단 폴백 동작 중 — 백엔드 미연결 상태(블로그 변환은 실패함)');
+      var diag = backendOk ? d : fakeDiagnose();
+      diag.diagnosisSource = backendOk ? 'backend' : 'fallback';
       applyDiag(diag);
       applyAdvancedRouting();   // 3택 화면 진입 시 고급 잠금·추천을 즉시 반영(구 reduce 진입 로직 이동)
       applyUseCasePreset();     // 광고 use_case 맥락 → 세부 설정 글 종류 프리셋(P0-6, 1회만)
@@ -510,20 +448,6 @@
     var basicCard = $('lavCardBasic');
     if (basicCard) basicCard.classList.toggle('is-recommended', !recommendAdvanced);
     if (formalCard) formalCard.classList.toggle('is-recommended', recommendAdvanced && !unfit);
-    var routeMode = $('lavRecommendedMode');
-    var routeReason = $('lavRecommendedReason');
-    if (routeMode) routeMode.textContent = recommendAdvanced ? '고급 휴머나이징' : '기본 휴머나이징';
-    if (routeReason) {
-      if (lastDiag && lastDiag.diagnosisUnavailable) {
-        routeReason.textContent = '맞춤 진단을 확인하지 못해 넓게 재구성하지 않는 기본 방식부터 안내해요.';
-      } else if (unfit) {
-        routeReason.textContent = '개인 경험과 원문 사실을 지키면서 필요한 문장만 바꾸는 방식이 더 안전해요.';
-      } else if (recommendAdvanced) {
-        routeReason.textContent = '긴 논문·보고서처럼 구조와 검증 범위가 큰 글에 적합해요.';
-      } else {
-        routeReason.textContent = '원문의 장르와 사실을 지키면서 필요한 문장만 바꾸기 좋아요.';
-      }
-    }
   }
 
   // 3택 카드 클릭: 숨김 라디오에 값 반영 후 확인 모달 직행(구 reduce 화면 생략 — 2026-08-28 단계 축소)
@@ -594,6 +518,7 @@
       alert('한 번에 최대 30,000자까지 감지할 수 있어요.');
       return;
     }
+    if (typeof window.lavEnsureReadableInput === 'function' && !window.lavEnsureReadableInput(text)) return;
     // ★ 무료 제공 제거(사장님 결정 2026-07-20): 감지는 항상 유료(100자당 1크레딧·로그인 필수).
     //   시작 전에 비용을 고지하고 동의받는다 — 서버도 같은 계약(비로그인 401·잔액 선검증).
     var cost = Math.ceil(text.length / 100);
@@ -644,6 +569,11 @@
         if (res.status === 401 && d && d.code === 'LOGIN_REQUIRED') {
           window.lavFlowReset();
           alert('AI 감지는 로그인이 필요해요.');
+          return;
+        }
+        if (res.status === 422 && d && d.code === 'UNREADABLE_INPUT') {
+          window.lavFlowReset();
+          if (typeof window.lavShowInputError === 'function') window.lavShowInputError(d.error, d.reason || 'unreadable_input', true);
           return;
         }
         if (!res.ok || !d || !d.ok) {
@@ -1650,6 +1580,7 @@
         var e = new Error(b.error);
         e.httpStatus = res.status;
         e.code = b.code || '';
+        e.reason = b.reason || '';
         e.activeJobId = b.activeJobId || '';
         e.activeStatus = b.activeStatus || '';
         e.effectExpectation = b.effectExpectation || '';
@@ -1729,6 +1660,14 @@
   async function handleTransformStartError(err, fallbackStep, expectedGen) {
     if (expectedGen !== pollGen) return;
     stopFormalTicker();
+    if (err && err.httpStatus === 422 && err.code === 'UNREADABLE_INPUT') {
+      clearJobRef();
+      clearActiveJobUi();
+      exitWorkspace();
+      if (typeof window.lavShowInputError === 'function') window.lavShowInputError(err.message, err.reason || 'unreadable_input', true);
+      else alert(err.message);
+      return;
+    }
     if (err && err.httpStatus === 422 && err.code === 'NO_EDITABLE_CONTENT') {
       clearJobRef();
       clearActiveJobUi();

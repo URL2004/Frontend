@@ -338,9 +338,58 @@
   };
 
   window.LAV_MAX_CHARS = 30000;
+  function lavInputError(message) {
+    var error = document.getElementById('lavInputError');
+    var src = document.getElementById('lavInput');
+    var composer = src ? src.closest('.gp-lav-composer') : null;
+    if (error) {
+      error.textContent = message || '';
+      error.hidden = !message;
+    }
+    if (src) src.setAttribute('aria-invalid', message ? 'true' : 'false');
+    if (composer) composer.classList.toggle('has-error', !!message);
+  }
+
+  window.lavClearInputError = function () {
+    lavInputError('');
+  };
+
+  window.lavShowInputError = function (message, reason, track) {
+    var src = document.getElementById('lavInput');
+    var fallback = window.gpInputQuality && window.gpInputQuality.message
+      ? window.gpInputQuality.message
+      : '문장으로 인식하기 어려운 입력이에요. 의미가 있는 문장이나 문단을 붙여넣어 주세요.';
+    lavInputError(message || fallback);
+    if (track !== false && window.gpTrack) {
+      var length = src ? (src.value || '').length : 0;
+      window.gpTrack('humanize_input_rejected', {
+        reason: reason || 'unreadable_input',
+        length_bucket: window.gpInputQuality && window.gpInputQuality.lengthBucket
+          ? window.gpInputQuality.lengthBucket(length)
+          : 'unknown'
+      });
+    }
+    if (src) {
+      src.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      src.focus();
+    }
+  };
+
+  window.lavEnsureReadableInput = function (text) {
+    if (!window.gpInputQuality || typeof window.gpInputQuality.assess !== 'function') return true;
+    var result = window.gpInputQuality.assess(text);
+    if (result.readable) {
+      window.lavClearInputError();
+      return true;
+    }
+    window.lavShowInputError(window.gpInputQuality.message, result.reason, true);
+    return false;
+  };
+
   window.lavSyncCount = function (textarea) {
     var count = document.getElementById('lavCount');
     if (!count || !textarea) return;
+    window.lavClearInputError();
     var len = (textarea.value || '').length;
     count.textContent = len ? len.toLocaleString() + ' / 30,000자' : '';
     count.classList.toggle('over', len > window.LAV_MAX_CHARS);
@@ -365,6 +414,7 @@
       if (src) src.focus();
       return;
     }
+    if (!window.lavEnsureReadableInput(text)) return;
     // 숨겨진 이전 작업이 있으면 새 진단·변환을 시작하지 않고 기존 진행 화면을 연다.
     if (typeof window.lavPrepareNewSentence === 'function' && !window.lavPrepareNewSentence()) return;
     // 모드 토글(컴포저 세그먼트): AI 감지 선택 시 무료 감지 보고서로 — 전송 버튼은 하나.
@@ -381,6 +431,7 @@
       if (src) src.focus();
       return;
     }
+    if (!window.lavEnsureReadableInput(text)) return;
     // 워크스페이스를 닫고 입력 화면 컨텍스트로 복귀 후 결과 렌더(결과 슬롯이 입력 화면 안)
     if (typeof window.lavFlowReset === 'function') window.lavFlowReset();
     if (target) {

@@ -143,7 +143,8 @@
        </div>
 
        <div class="gp-lav-composer">
-         <textarea id="lavInput" rows="5" placeholder="AI 느낌이 나는 문장을 붙여넣어 보세요..." onkeydown="lavComposerKey(event)" oninput="lavSyncCount(this)"></textarea>
+         <textarea id="lavInput" rows="5" placeholder="AI 느낌이 나는 문장을 붙여넣어 보세요..." aria-describedby="lavInputError" onkeydown="lavComposerKey(event)" oninput="lavSyncCount(this)"></textarea>
+         <p class="gp-lav-input-error" id="lavInputError" role="alert" hidden></p>
          <div class="gp-lav-composer-bar">
            <label class="gp-lav-add gp-upload-uiverse" for="pdfInput" title="파일 업로드 (.pdf)" aria-label="파일 업로드">
              <span class="gp-upload-plus" aria-hidden="true"></span>
@@ -253,52 +254,18 @@
 
          <!-- 진단을 이해한 뒤 원하는 결과를 고르는 한 화면 -->
          <section class="lav-flow-card lav-choose" data-flow="select" aria-labelledby="lavChoiceHeading" hidden>
-           <div class="lav-choice-summary">
+           <div class="lav-choice-summary" id="lavChoiceSummary" data-state="needs-info">
              <div class="lav-diag2" role="status" aria-live="polite">
-               <span class="lav-diag-state" id="lavDiagGrade" data-state="needs-info">정보 보완 추천</span>
                <div class="lav-diag2-text">
-                 <strong id="lavDiagTitle">구체적인 내용이 조금 더 필요해요</strong>
-                 <p id="lavDiagDesc">없는 경험이나 근거는 새로 만들지 않아요. 실제 사례나 수치를 원문에 더하면 더 구체적으로 다듬을 수 있어요.</p>
+                 <strong id="lavDiagTitle">구체적인 근거가 부족해요</strong>
+                 <p id="lavDiagDesc">일반적인 표현이 많아 문장만 바꿔도 비슷하게 느껴질 수 있어요.</p>
                </div>
-             </div>
-             <div class="lav-route-pick" aria-label="추천 처리 방식">
-               <span>이 글의 추천 시작점</span>
-               <strong id="lavRecommendedMode">기본 휴머나이징</strong>
-               <p id="lavRecommendedReason">원문의 장르와 사실을 지키면서 필요한 문장만 바꾸기 좋아요.</p>
-             </div>
-           </div>
-
-           <div class="lav-anchor-guide" id="lavAnchorGuide" hidden>
-             <div>
-               <strong>결과를 더 좋게 만드는 가장 빠른 방법 <span>선택</span></strong>
-               <p id="lavAnchorText">실제 사례·수치·근거 중 확인된 내용을 원문에 한 줄만 더해 주세요. 지금 내용으로 바로 진행해도 됩니다.</p>
-             </div>
-             <button type="button" id="lavAnchorEdit" onclick="lavEditForAnchor()">원문에 내용 추가</button>
-           </div>
-
-           <div class="lav-context-notes">
-             <!-- 개인 경험 중심 글: 넓은 재구성보다 사실 보존 우선 -->
-             <div class="lav-resume-note" id="lavResumeNote" hidden>
-               <strong>개인 경험을 지키는 것이 먼저예요.</strong>
-               기본 휴머나이징은 원문의 경험·성과·화자를 유지합니다. 맞춤법과 연결만 고치려면 원문 보존 다듬기를 선택하세요.
-             </div>
-
-             <!-- STEM 실험·방법론 보고서 / 구조화 데이터 보고서: 진행 가능하지만 효과 한계 고지 -->
-             <div class="lav-resume-note" id="lavAdvisoryNote" hidden>
-               <strong>효과가 제한될 수 있는 글 유형이에요.</strong>
-               <span id="lavAdvisoryText"></span>
-             </div>
-
-             <!-- 연도·수치·인용이 많은 글: 제출 전 대조 안내 -->
-             <div class="lav-resume-note" id="lavFactDenseNote" hidden>
-               <strong>수치와 인용은 제출 전에 한 번 더 확인해 주세요.</strong>
-               기본과 고급 모두 원문의 수치·기관·인용을 보호하지만 자동 검증도 완벽하지는 않아요. 긴 보고서·논문은 전체 문서를 검증하는 고급 휴머나이징이 더 적합합니다.
              </div>
            </div>
 
            <div class="lav-choice-heading">
-             <h3 class="lav-flow-h" id="lavChoiceHeading">원하는 결과를 선택하세요</h3>
-             <p>카드를 누르면 비용과 예상 시간을 확인한 뒤 시작합니다.</p>
+             <h3 class="lav-flow-h" id="lavChoiceHeading">어떻게 다듬을까요?</h3>
+             <p>선택 후 비용과 시간을 확인합니다.</p>
            </div>
            <!-- 기존 설정 수집·잠금·추천 로직(currentSettings·applyAdvancedRouting)이 그대로 쓰는 숨김 라디오 — 카드가 값을 정한다 -->
            <div hidden aria-hidden="true">
@@ -309,38 +276,26 @@
              <button type="button" class="lav-sel-card" id="lavCardPolish" onclick="lavRunPolish()">
                <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">edit_note</span></span>
                <strong class="lav-sel-title">원문 보존 다듬기</strong>
-               <p>문장은 거의 그대로 두고 오류만 정리해요.</p>
-               <ul class="lav-sel-list">
-                 <li>맞춤법·어색한 연결 정리</li>
-                 <li>문장 재작성 없이 원문 유지</li>
-               </ul>
+               <span class="lav-sel-copy"><b>맞춤법·연결만 정리</b><small>문장 재작성 없음</small></span>
                <em class="lav-sel-cost" id="lavCostPolish">비용 계산 중</em>
              </button>
              <button type="button" class="lav-sel-card" id="lavCardBasic" onclick="lavSelectTone('blog')">
                <span class="lav-purpose-reco" id="lavBasicRecommended" hidden>추천</span>
                <span class="lav-purpose-ico reduce" aria-hidden="true"><span class="material-symbols-outlined">shield</span></span>
                <strong class="lav-sel-title">기본 휴머나이징</strong>
-               <p>필요한 문장만 골라 자연스럽게 다시 써요.</p>
-               <ul class="lav-sel-list">
-                 <li>두드러진 표현만 선택적으로 재작성</li>
-                 <li>장르·말투·사실 유지</li>
-               </ul>
+               <span class="lav-sel-copy"><b>필요한 문장만 재작성</b><small>장르·말투·사실 유지</small></span>
                <em class="lav-sel-cost" id="lavCostBlog">비용 계산 중</em>
              </button>
              <button type="button" class="lav-sel-card" id="lavCardFormal" onclick="lavSelectTone('formal')">
                <span class="lav-purpose-reco" id="lavFormalRecommended" hidden>추천</span>
                <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">science</span></span>
                <strong class="lav-sel-title">고급 휴머나이징</strong>
-               <p>긴 글의 흐름과 표현을 넓게 다시 구성해요.</p>
-               <ul class="lav-sel-list">
-                 <li>전체 흐름 재구성</li>
-                 <li>전 문서 의미 검증</li>
-               </ul>
+               <span class="lav-sel-copy"><b>전체 흐름 재구성</b><small>전 문서 의미 검증</small></span>
                <span class="lav-purpose-caveat" id="lavFormalLockNote" hidden>이 글에서는 선택할 수 없어요</span>
                <em class="lav-sel-cost" id="lavCostFormal">비용 계산 중</em>
              </button>
            </div>
-           <p class="lav-tone-variance"><b>모든 방식은 원문의 장르·화자·사실을 우선합니다.</b> 외부 검사 결과는 도구마다 달라 특정 점수를 보장하지 않아요.</p>
+           <p class="lav-tone-variance"><b>외부 탐지기 결과는 보장하지 않습니다.</b> 원문의 사실과 의미를 우선해 다듬어요.</p>
            <!-- 세부 설정(선택) — 기본값 자동. 오판별 같은 소수 케이스의 탈출구만 남긴다(2026-08-28 흐름 단순화 D1) -->
            <details class="lav-set-block lav-opt-acc" id="lavDetailBlock">
              <summary class="lav-acc-sum">
@@ -350,7 +305,6 @@
                  <!-- 접힌 상태에서도 현재 값을 보여준다 — 열지 않아도 무엇이 적용 중인지 알 수 있게 -->
                  <span class="lav-acc-now" id="lavDetailSummary">자동 판별 · 자동 문체</span>
                </span>
-               <span class="lav-acc-desc">대부분 기본값으로 충분해요. 글 종류가 잘못 잡혔을 때만 여세요.</span>
                <svg class="lav-acc-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
              </summary>
              <div class="lav-acc-body">
