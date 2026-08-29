@@ -256,13 +256,17 @@
     if (edit) edit.hidden = name === 'analyzing' || name === 'job' || name === 'blocked' || name === 'done';
   }
 
-  // 오프라인 폴백 진단: /diagnose 실패 시 입력 길이로 등급만 흉내(서비스 연속성용).
-  function fakeDiagnose(text) {
-    var len = (text || '').replace(/\s/g, '').length;
-    // 백엔드 BLOG_BAND/POLISH_BAND/RESTRUCTURE_BAND와 동일한 보수 표기(/diagnose 실패 시 폴백)
-    if (len < 400) return { grade: 'A', bands: { polish: '30~55%', blog: '30~45%', restructure: '35~60%' }, title: '구체적인 정보가 충분한 글이에요', desc: '사례와 수치가 구체적이라 필요한 문장만 골라 다듬을 수 있어요.' };
-    if (len < 1200) return { grade: 'B', bands: { polish: '60~85%', blog: '35~50%', restructure: '35~60%' }, title: '구체적인 내용과 일반적인 설명이 섞여 있어요', desc: '일부 문단에서 반복적이거나 추상적인 표현이 보여요. 해당 문장을 중심으로 다시 구성할 수 있어요.' };
-    return { grade: 'C', bands: { polish: '85%+', blog: '40~55%', restructure: '35~60%' }, title: '일반적인 설명의 비중이 높은 글이에요', desc: '구체적인 사례와 수치가 적어 AI식 문체 신호가 두드러질 수 있어요. 원하는 처리 방식을 골라 주세요.' };
+  // /diagnose 실패 시 글 길이로 등급을 추측하지 않는다. 추천만 기본값으로 낮춰
+  // 서비스는 이어가되, 확인하지 못한 위험을 사용자에게 사실처럼 말하지 않는다.
+  function fakeDiagnose() {
+    return {
+      grade: null,
+      diagnosisUnavailable: true,
+      diagnosisSource: 'fallback',
+      needsUserAnchor: false,
+      recommendedMode: 'blog',
+      bands: { polish: '확인 필요', blog: '확인 필요', restructure: '확인 필요' }
+    };
   }
 
   var lastDiag = null;   // 결과 화면의 예상 밴드 표기에 재사용
@@ -284,19 +288,145 @@
     if (blogRadio) blogRadio.checked = true;
   }
 
+  function diagnosisPresentation(d) {
+    if (d && d.diagnosisUnavailable) {
+      return {
+        state: 'neutral',
+        label: '기본 설정으로 진행',
+        title: '맞춤 진단을 불러오지 못했어요',
+        desc: '처리는 계속할 수 있어요. 지금은 대부분의 글에 맞는 기본 휴머나이징부터 안내합니다.'
+      };
+    }
+    var grade = String(d && d.grade || 'B').toUpperCase();
+    if (grade === 'A') {
+      return {
+        state: 'ready',
+        label: '바로 진행 가능',
+        title: '구체적인 내용이 충분해요',
+        desc: '원문의 사례와 정보가 분명해서 필요한 문장만 골라 자연스럽게 다듬을 수 있어요.'
+      };
+    }
+    if (grade === 'C') {
+      return {
+        state: 'needs-info',
+        label: '정보 보완 추천',
+        title: '문장만 바꿔도 일반적인 내용은 남을 수 있어요',
+        desc: '실제 사례·수치·근거가 적어요. 없는 내용을 만들지 않기 때문에 한 줄을 더하면 더 구체적으로 다듬을 수 있어요.'
+      };
+    }
+    return {
+      state: 'partial',
+      label: '부분 보완 추천',
+      title: '일부 문장은 조금 더 구체적이면 좋아요',
+      desc: '구체적인 내용은 지키고, 일반적인 표현이 남은 문장을 중심으로 다듬을 수 있어요.'
+    };
+  }
+
+  function unfitNotice(d) {
+    var kind = d && d.restructureUnfitKind;
+    if (kind === 'resume') return '개인 경험과 성과를 지켜야 하는 글이라 고급 재구성은 선택할 수 없어요. 기본 휴머나이징은 원문의 경험·화자·사실을 유지합니다.';
+    if (kind === 'reflection') return '개인의 감상과 해석을 지켜야 하는 글이라 고급 재구성은 선택할 수 없어요. 기본 휴머나이징으로 필요한 문장만 다듬어 주세요.';
+    if (kind === 'thin') return '구체적인 재료가 적어 고급 재구성은 선택할 수 없어요. 원문에 실제 내용을 더하거나 기본 휴머나이징으로 진행해 주세요.';
+    if (kind === 'english') return '현재 고급 휴머나이징은 한국어 글만 지원해요. 기본 휴머나이징이나 원문 보존 다듬기를 선택해 주세요.';
+    return d && d.restructureUnfitReason || '이 글은 원문의 사실을 더 강하게 보존하는 기본 휴머나이징이 적합해요.';
+  }
+
+  function anchorGuideKind(d) {
+    var selected = currentDocumentProfile();
+    var profile = selected || String(d && d.documentProfile || '');
+    if (['academic_paper', 'report_assignment', 'long_explainer', 'clinical_record', 'legal_contract', 'student_record_teacher'].indexOf(profile) >= 0) return 'evidence';
+    if (['resume_application', 'student_self_assessment', 'personal_essay', 'review_blog'].indexOf(profile) >= 0) return 'experience';
+    return 'general';
+  }
+
+  function renderAnchorGuide(d) {
+    var guide = $('lavAnchorGuide');
+    if (!guide) return;
+    var needsAnchor = !!(d && !d.diagnosisUnavailable && (d.needsUserAnchor || d.grade === 'C'));
+    guide.hidden = !needsAnchor;
+    if (!needsAnchor) return;
+    var kind = anchorGuideKind(d);
+    var text = $('lavAnchorText');
+    var button = $('lavAnchorEdit');
+    var copy = kind === 'evidence'
+      ? ['출처·조사 수치·확인된 사례 중 하나를 원문에 한 줄 더해 주세요. 지금 내용으로 바로 진행해도 됩니다.', '원문에 근거 추가']
+      : (kind === 'experience'
+        ? ['언제·어디서 무엇을 했고 결과가 어땠는지, 실제 경험 한 줄을 원문에 더해 주세요. 지금 내용으로 바로 진행해도 됩니다.', '원문에 경험 추가']
+        : ['실제 사례·수치·관찰 중 확인된 내용을 원문에 한 줄 더해 주세요. 지금 내용으로 바로 진행해도 됩니다.', '원문에 내용 추가']);
+    if (text) text.textContent = copy[0];
+    if (button) {
+      button.textContent = copy[1];
+      button.dataset.anchorKind = kind;
+    }
+  }
+
+  function trackDiagnosisView(d) {
+    if (!window.gpTrack) return;
+    window.gpTrack('humanize_diagnosis_view', {
+      diagnosis_grade: d && d.grade || 'unavailable',
+      diagnosis_source: d && d.diagnosisSource || 'backend',
+      needs_user_anchor: !!(d && d.needsUserAnchor),
+      document_profile: d && d.documentProfile || 'unknown',
+      recommended_mode: d && d.recommendedMode || 'blog'
+    });
+  }
+
+  window.lavEditForAnchor = function () {
+    var button = $('lavAnchorEdit');
+    if (window.gpTrack) {
+      window.gpTrack('humanize_anchor_action', {
+        action: 'edit_source',
+        anchor_kind: button && button.dataset.anchorKind || 'general',
+        diagnosis_grade: lastDiag && lastDiag.grade || 'unavailable',
+        document_profile: lastDiag && lastDiag.documentProfile || 'unknown'
+      });
+    }
+    cameFromReport = false;
+    if (!window.lavFlowReset()) return;
+    var src = $('lavInput');
+    if (src) {
+      src.scrollIntoView({ behavior: lavReducedMotion() ? 'auto' : 'smooth', block: 'center' });
+      src.focus();
+    }
+    if (window.gpToast) window.gpToast('원문에 실제 내용을 더한 뒤 다시 분석해 주세요.', { type: 'info' });
+  };
+
+  function isRecommendedMode(mode) {
+    if (mode === 'polish') return false;
+    var formal = !advancedUnavailable(lastDiag) && !!(lastDiag && lastDiag.recommendedMode === 'formal');
+    return mode === (formal ? 'formal' : 'blog');
+  }
+
+  function trackModeSelection(mode) {
+    if (!window.gpTrack) return;
+    window.gpTrack('humanize_mode_select', {
+      selected_mode: mode,
+      is_recommended: isRecommendedMode(mode),
+      diagnosis_grade: lastDiag && lastDiag.grade || 'unavailable',
+      needs_user_anchor: !!(lastDiag && lastDiag.needsUserAnchor),
+      document_profile: lastDiag && lastDiag.documentProfile || 'unknown'
+    });
+  }
+
   function applyDiag(d) {
     lastDiag = d;
     // resumeLike는 구형 관측 신호다. 실제 잠금은 v2 장르 판정까지 조정한 canonical 값만 사용한다.
     var unfit = advancedUnavailable(d);
     var hasAdv = !!d.advisory && !unfit;                  // 회피 난이도 안내(STEM 스펙·구조화 보고서) — 소프트, 자소서 안내가 우선
     var rn = $('lavResumeNote');
-    if (rn) { rn.hidden = !unfit; if (unfit && d.restructureUnfitReason) rn.textContent = d.restructureUnfitReason; }   // 명확한 사유 노출
+    if (rn) { rn.hidden = !unfit; if (unfit) rn.textContent = unfitNotice(d); }
     var adv = $('lavAdvisoryNote');
     if (adv) { adv.hidden = !hasAdv; var at = $('lavAdvisoryText'); if (hasAdv && at) at.textContent = d.advisory; }
     var fdn = $('lavFactDenseNote'); if (fdn) fdn.hidden = !(d.factDense && !unfit && !hasAdv);   // 연도·수치 빼곡 안내(advisory 있으면 중복이라 숨김)
-    if ($('lavDiagGrade')) $('lavDiagGrade').textContent = d.grade;
-    if ($('lavDiagTitle')) $('lavDiagTitle').textContent = d.title;
-    if ($('lavDiagDesc')) $('lavDiagDesc').textContent = d.desc;
+    var view = diagnosisPresentation(d);
+    var state = $('lavDiagGrade');
+    if (state) {
+      state.textContent = view.label;
+      state.dataset.state = view.state;
+    }
+    if ($('lavDiagTitle')) $('lavDiagTitle').textContent = view.title;
+    if ($('lavDiagDesc')) $('lavDiagDesc').textContent = view.desc;
+    renderAnchorGuide(d);
     var b = d.bands || {};
     if ($('lavBandPolish') && b.polish) $('lavBandPolish').textContent = b.polish;
     if ($('lavBandBlog') && b.blog) $('lavBandBlog').textContent = b.blog;
@@ -320,12 +450,15 @@
     Promise.all([req, minWait]).then(function (out) {
       var d = out[0];
       if (!(d && d.ok)) console.warn('[evasion] 진단 폴백 동작 중 — 백엔드 미연결 상태(블로그 변환은 실패함)');
-      applyDiag(d && d.ok ? d : fakeDiagnose(text));
+      var diag = d && d.ok ? d : fakeDiagnose();
+      diag.diagnosisSource = d && d.ok ? 'backend' : 'fallback';
+      applyDiag(diag);
       applyAdvancedRouting();   // 3택 화면 진입 시 고급 잠금·추천을 즉시 반영(구 reduce 진입 로직 이동)
       applyUseCasePreset();     // 광고 use_case 맥락 → 세부 설정 글 종류 프리셋(P0-6, 1회만)
       renderSelectCosts();
       renderDetailSummary();    // 접힌 세부 설정에 현재 값(프리셋 포함) 표시
       show('select');
+      trackDiagnosisView(diag);
     });
   };
 
@@ -370,20 +503,26 @@
     var lockNote = $('lavFormalLockNote'); if (lockNote) lockNote.hidden = !unfit;
     // 근거 보강은 모달 안 옵션(2026-08-29) — 잠긴 글에선 비활성화만 걸어두고 노출은 lavOpenConfirm이 판단
     var ev = $('lavEvidence'); if (ev) { ev.disabled = unfit; if (unfit) ev.checked = false; }
+    var basicRecommended = $('lavBasicRecommended');
     var formalRecommended = $('lavFormalRecommended');
-    // 추천은 선택 상태가 아니라 상품 안내다. 고급이 가능한 글에서만 고급 카드에 고정한다.
-    if (formalRecommended) formalRecommended.hidden = unfit;
-    var advancedNote = $('lavToneAdvancedNote');
-    var advancedText = $('lavToneAdvancedText');
-    if (advancedNote) advancedNote.hidden = !recommendAdvanced;
-    if (advancedText && recommendAdvanced) {
-      advancedText.textContent = lastDiag.recommendationReason || '긴 논문·구조화 보고서는 고급의 더 넓은 재구성과 전체 문서 검증이 적합해요. 실행 전 예상 시간과 크레딧을 확인해 주세요.';
-    }
-    var note = $('lavToneResumeNote');
-    if (note) {
-      note.hidden = !unfit;
-      var reason = lastDiag && lastDiag.restructureUnfitReason;   // 명확한 사유를 잠금 안내에 그대로 노출
-      if (unfit && reason) note.textContent = reason;
+    if (basicRecommended) basicRecommended.hidden = recommendAdvanced;
+    if (formalRecommended) formalRecommended.hidden = !recommendAdvanced || unfit;
+    var basicCard = $('lavCardBasic');
+    if (basicCard) basicCard.classList.toggle('is-recommended', !recommendAdvanced);
+    if (formalCard) formalCard.classList.toggle('is-recommended', recommendAdvanced && !unfit);
+    var routeMode = $('lavRecommendedMode');
+    var routeReason = $('lavRecommendedReason');
+    if (routeMode) routeMode.textContent = recommendAdvanced ? '고급 휴머나이징' : '기본 휴머나이징';
+    if (routeReason) {
+      if (lastDiag && lastDiag.diagnosisUnavailable) {
+        routeReason.textContent = '맞춤 진단을 확인하지 못해 넓게 재구성하지 않는 기본 방식부터 안내해요.';
+      } else if (unfit) {
+        routeReason.textContent = '개인 경험과 원문 사실을 지키면서 필요한 문장만 바꾸는 방식이 더 안전해요.';
+      } else if (recommendAdvanced) {
+        routeReason.textContent = '긴 논문·보고서처럼 구조와 검증 범위가 큰 글에 적합해요.';
+      } else {
+        routeReason.textContent = '원문의 장르와 사실을 지키면서 필요한 문장만 바꾸기 좋아요.';
+      }
     }
   }
 
@@ -393,6 +532,7 @@
     if (!radio || radio.disabled) return;   // 고급 잠금 상태 방어
     radio.checked = true;
     toneSelectionTouched = true;
+    trackModeSelection(tone);
     window.lavOpenConfirm();
   };
 
@@ -715,6 +855,9 @@
         grade: d.grade,
         title: d.title,
         desc: d.summary || '',
+        abstractRiskRatio: Number(d.abstractRiskRatio) || 0,
+        needsUserAnchor: Number(d.abstractRiskRatio) >= 0.5 || d.grade === 'C',
+        diagnosisSource: 'paid_report',
         restructureUnfit: d.restructureUnfit === true,
         restructureUnfitReason: d.restructureUnfitReason || '',
         restructureUnfitKind: d.restructureUnfitKind || null,
@@ -735,6 +878,7 @@
     applyAdvancedRouting();   // 보고서 경유 진입도 3택 카드 상태·비용을 즉시 준비
     renderSelectCosts();
     show('select');
+    trackDiagnosisView(lastDiag);
   };
 
   window.lavFlowReset = function () {
@@ -940,10 +1084,12 @@
     var hint = $('lavDocumentProfileHint');
     var profile = currentDocumentProfile();
     renderDetailSummary();
-    if (!hint) return;
-    hint.textContent = profile
-      ? '자동 판정이 애매할 때만 이 선택을 사용해요. 원문 장르가 뚜렷하면 안전을 위해 자동 판정을 우선합니다.'
-      : '원문의 구성·어휘·종결체를 보고 엔진이 글 종류를 판별합니다.';
+    renderAnchorGuide(lastDiag);
+    if (hint) {
+      hint.textContent = profile
+        ? '자동 판정이 애매할 때만 이 선택을 사용해요. 원문 장르가 뚜렷하면 안전을 위해 자동 판정을 우선합니다.'
+        : '원문의 구성·어휘·종결체를 보고 엔진이 글 종류를 판별합니다.';
+    }
   };
   function currentSettings() {
     var tone = document.querySelector('input[name="lavTone"]:checked');
@@ -990,6 +1136,7 @@
     var subC = $('lavConfirmSub'); if (subC) subC.hidden = false;   // 회피는 탐지율 안내 노출
     var modal = $('lavConfirmModal');
     if (modal) modal.hidden = false;
+    if (window.gpTrack) window.gpTrack('humanize_confirm_view', { selected_mode: s.tone, is_recommended: isRecommendedMode(s.tone) });
     // 과금(서버와 동일): 기본 휴머나이징=최소 10크레딧 + 100자당 2크레딧, 고급=건당 정액.
     renderConfirmCost();   // 모달을 연 뒤 호출 — 같은 공식을 근거 토글과 공유한다
   };
@@ -1263,6 +1410,7 @@
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
     if (!text) { if (src) src.focus(); return; }
+    trackModeSelection('polish');
     pendingPolish = true;
     renderEffectNotice({ tone: 'polish' });
     lavStartBtnState(false);   // 잔여 시작버튼 잠금 방어
@@ -1281,6 +1429,7 @@
     if ($('lavConfirmTime')) $('lavConfirmTime').textContent = estimateTimeLabel(shortEstimateSec(text)) + ' · 대기 제외';
     var modal = $('lavConfirmModal');
     if (modal) modal.hidden = false;
+    if (window.gpTrack) window.gpTrack('humanize_confirm_view', { selected_mode: 'polish', is_recommended: false });
   };
 
   // ── P3+P4 실연결: 격식 유지 재구성 = POST /transform(job) + 폴링 + 근거 승인 ──────────

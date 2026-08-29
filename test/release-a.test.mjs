@@ -24,13 +24,14 @@ test('기본·고급 설명은 체감 재구성 범위와 검증 범위를 구�
     read('assets/js/evasion-flow.js'),
     read('partials/modals.html')
   ]);
-  // 3택 1화면(2026-08-28, 2026-08-29 설명 항목화): 기본·고급 설명은 select 카드 2항목으로 구분된다
-  assert.match(main, /AI 티 문장만 다시 씀/u);
+  // 진단 이해 → 추천 시작점 → 3택: 기본·고급 설명은 처리 범위와 검증 범위를 구분한다
+  assert.match(main, /두드러진 표현만 선택적으로 재작성/u);
   assert.match(main, /장르·말투·사실 유지/u);
-  assert.match(main, /넓은 재구성 \+ 전 문서 검증/u);
+  assert.match(main, /전체 흐름 재구성/u);
+  assert.match(main, /전 문서 의미 검증/u);
   assert.match(main, /기본 휴머나이징에서만 쓰여요\. 원문 말투는 그대로 두고 단어·연결의 결만 조정합니다/u);
   assert.match(main, /id="lavDetailSummary">자동 판별 · 자동 문체/u);
-  assert.match(main, /외부 검사기 점수는 검사기마다 다르게 나오며, 특정 점수를 보장하지 않아요/u);
+  assert.match(main, /외부 검사 결과는 도구마다 달라 특정 점수를 보장하지 않아요/u);
   assert.doesNotMatch(main, /id="lavEvidenceRow"/u);
   assert.match(modals, /class="lav-confirm-opt" id="lavEvidenceRow" hidden/u);
   assert.match(evasion, /var evAvailable = s\.tone === 'formal'/u);
@@ -59,8 +60,8 @@ test('다듬기·기본·고급 명칭과 설명은 선택부터 결과·이력�
     read('pages/admin-humanize-lab.html')
   ]);
   assert.match(main, /원문 보존 다듬기/u);
-  assert.match(main, /맞춤법·비문·연결만 정리/u);
-  assert.match(main, /문장 재작성 없음/u);
+  assert.match(main, /맞춤법·어색한 연결 정리/u);
+  assert.match(main, /문장 재작성 없이 원문 유지/u);
   assert.match(evasion, /문체 보조[^\n]+원문 장르 우선/u);
   assert.match(evasion, /원문 보존 다듬기를 시작할까요/u);
   assert.match(evasion, /label = '기본 휴머나이징'/u);
@@ -74,6 +75,25 @@ test('다듬기·기본·고급 명칭과 설명은 선택부터 결과·이력�
   assert.match(faq, /원문 보존 다듬기와 휴머나이징은 무엇이 다른가요/u);
   const activeCopy = `${main}\n${guide}\n${faq}\n${evasion}\n${legacy}\n${module}\n${lab}`;
   assert.doesNotMatch(activeCopy, /과제 어투로 다듬기|기본 휴머나이징\(블로그\)|다듬기\(보존형\)|그대로 다듬기/u);
+});
+
+test('진단 선택 섹션은 등급 대신 다음 행동과 실제 추천 근거를 보여준다', async () => {
+  const [main, evasion] = await Promise.all([
+    read('pages/main.html'),
+    read('assets/js/evasion-flow.js')
+  ]);
+  assert.match(main, /id="lavDiagGrade"[^>]*>정보 보완 추천<\/span>/u);
+  assert.match(evasion, /문장만 바꿔도 일반적인 내용은 남을 수 있어요/u);
+  assert.match(main, /id="lavAnchorGuide"[^>]*hidden/u);
+  assert.match(main, /onclick="lavEditForAnchor\(\)"/u);
+  assert.match(main, /원하는 결과를 선택하세요/u);
+  assert.doesNotMatch(main, /id="lavDiagGrade"[^>]*>C<\/span>/u);
+  assert.doesNotMatch(main, /그대로 제출하면 AI 탐지 위험이 높아요/u);
+  assert.match(evasion, /window\.lavEditForAnchor = function/u);
+  assert.match(evasion, /humanize_diagnosis_view/u);
+  assert.match(evasion, /humanize_anchor_action/u);
+  assert.match(evasion, /humanize_mode_select/u);
+  assert.match(evasion, /needsUserAnchor: Number\(d\.abstractRiskRatio\) >= 0\.5/u);
 });
 
 test('고급 예상 시간은 서버 청크 범위를 시작·확인·진행 화면에 일관되게 사용한다', async () => {
@@ -166,10 +186,11 @@ test('한국어 장르 판정은 고급을 잠그지 않고 고급 차단 작업
     read('pages/main.html'),
     read('assets/js/evasion-flow.js')
   ]);
-  assert.doesNotMatch(main, /id="lavBasicRecommended"|class="lav-sel-card accent"/u);
-  assert.match(main, /id="lavFormalRecommended"[^>]*>추천<\/span>/u);
-  assert.doesNotMatch(main, /id="lavFormalRecommended"[^>]*hidden/u);
-  assert.match(main, /id="lavToneAdvancedNote"[^>]*role="status"[^>]*hidden/u);
+  assert.match(main, /id="lavBasicRecommended"[^>]*hidden[^>]*>추천<\/span>/u);
+  assert.match(main, /id="lavFormalRecommended"[^>]*hidden[^>]*>추천<\/span>/u);
+  assert.match(main, /id="lavRecommendedMode"/u);
+  assert.match(main, /id="lavRecommendedReason"/u);
+  assert.doesNotMatch(main, /id="lavToneAdvancedNote"/u);
   // 3택 1화면(2026-08-28): 카드 클릭이 숨김 라디오를 정하고 확인 모달로 직행한다
   assert.match(main, /lavSelectTone\('blog'\)/u);
   assert.match(main, /lavSelectTone\('formal'\)/u);
@@ -178,12 +199,15 @@ test('한국어 장르 판정은 고급을 잠그지 않고 고급 차단 작업
   assert.match(evasion, /window\.lavSelectTone = function/u);
   assert.doesNotMatch(main, /lavPersonalBlock|lavAutoCoach|lavCoachPicks|data-flow="reduce"/u);
   assert.match(evasion, /function advancedUnavailable\(d\)/u);
-  assert.match(evasion, /formalRecommended\.hidden = unfit/u);
+  assert.match(evasion, /basicRecommended\.hidden = recommendAdvanced/u);
+  assert.match(evasion, /formalRecommended\.hidden = !recommendAdvanced \|\| unfit/u);
   assert.match(evasion, /if \(d\.advancedEligible === false\) return true/u);
   assert.match(evasion, /lastDiag\.recommendedMode === 'formal'/u);
   assert.match(evasion, /formalRadio\.checked = recommendAdvanced/u);
   assert.match(evasion, /recommendedMode:\s*d\.recommendedMode \|\| 'blog'/u);
-  assert.match(evasion, /실행 전 예상 시간과 크레딧을 확인/u);
+  assert.match(evasion, /routeMode\.textContent = recommendAdvanced \? '고급 휴머나이징' : '기본 휴머나이징'/u);
+  assert.match(evasion, /function fakeDiagnose\(\)[\s\S]*?diagnosisUnavailable: true/u);
+  assert.doesNotMatch(evasion, /if \(len < 400\) return \{ grade: 'A'/u);
   assert.doesNotMatch(evasion, /restructureUnfit \|\| (?:d|lastDiag)\.resumeLike/u);
   assert.match(evasion, /offer\.fallbackOffer === true && st && st\.mode === 'blog'/u);
 });
@@ -359,9 +383,9 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-183/u);
-  assert.match(boot, /var v = 'lav-183'/u);
-  assert.match(loader, /var ASSET_V = 'lav-183'/u);
+  assert.match(index, /app-boot\.js\?v=lav-184/u);
+  assert.match(boot, /var v = 'lav-184'/u);
+  assert.match(loader, /var ASSET_V = 'lav-184'/u);
   assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166|167|168|170)/u);
 });
 

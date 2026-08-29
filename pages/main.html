@@ -251,37 +251,55 @@
            <p class="lav-rep-note" id="lavRepRemain"></p>
          </section>
 
-         <!-- 분석 결과 + 처리 방식 3택(한 화면) — 2026-08-28 흐름 단순화: 카드 클릭 = 선택 + 확인 모달 직행 -->
-         <section class="lav-flow-card lav-choose" data-flow="select" hidden>
-           <!-- ① 진단 요약 -->
-           <div class="lav-diag2">
-             <span class="lav-diag-grade" id="lavDiagGrade">C</span>
-             <div class="lav-diag2-text">
-               <strong id="lavDiagTitle">추상적 일반론 비중이 높은 글이에요</strong>
-               <p id="lavDiagDesc">구체적 사례·수치가 적어, AI가 쓴 글처럼 보이기 쉬워요.</p>
+         <!-- 진단을 이해한 뒤 원하는 결과를 고르는 한 화면 -->
+         <section class="lav-flow-card lav-choose" data-flow="select" aria-labelledby="lavChoiceHeading" hidden>
+           <div class="lav-choice-summary">
+             <div class="lav-diag2" role="status" aria-live="polite">
+               <span class="lav-diag-state" id="lavDiagGrade" data-state="needs-info">정보 보완 추천</span>
+               <div class="lav-diag2-text">
+                 <strong id="lavDiagTitle">구체적인 내용이 조금 더 필요해요</strong>
+                 <p id="lavDiagDesc">없는 경험이나 근거는 새로 만들지 않아요. 실제 사례나 수치를 원문에 더하면 더 구체적으로 다듬을 수 있어요.</p>
+               </div>
+             </div>
+             <div class="lav-route-pick" aria-label="추천 처리 방식">
+               <span>이 글의 추천 시작점</span>
+               <strong id="lavRecommendedMode">기본 휴머나이징</strong>
+               <p id="lavRecommendedReason">원문의 장르와 사실을 지키면서 필요한 문장만 바꾸기 좋아요.</p>
              </div>
            </div>
 
-           <!-- 자소서·이력 유형 안내(재구성 부적합) -->
-           <div class="lav-resume-note" id="lavResumeNote" hidden>
-             <strong>자기소개서·이력 유형의 글로 보여요.</strong>
-             이 유형은 원문의 경험·성과·1인칭을 지키는 것이 가장 중요해요. <b>기본 휴머나이징</b>에도 자소서 보존 규칙과 의미 검증이 적용되므로 기본을 권장합니다. AI 티를 줄이는 목적이 아니라 맞춤법과 연결만 고치려면 <b>원문 보존 다듬기</b>를 선택하세요.
+           <div class="lav-anchor-guide" id="lavAnchorGuide" hidden>
+             <div>
+               <strong>결과를 더 좋게 만드는 가장 빠른 방법 <span>선택</span></strong>
+               <p id="lavAnchorText">실제 사례·수치·근거 중 확인된 내용을 원문에 한 줄만 더해 주세요. 지금 내용으로 바로 진행해도 됩니다.</p>
+             </div>
+             <button type="button" id="lavAnchorEdit" onclick="lavEditForAnchor()">원문에 내용 추가</button>
            </div>
 
-           <!-- 회피 난이도 사전 안내(STEM 실험·방법론 보고서 / 구조화 데이터 보고서) — 소프트(진행 가능), 솔직한 고지 -->
-           <div class="lav-resume-note" id="lavAdvisoryNote" hidden>
-             <strong>⚗️ AI 티를 줄이기 어려운 유형의 글이에요.</strong>
-             <span id="lavAdvisoryText"></span>
+           <div class="lav-context-notes">
+             <!-- 개인 경험 중심 글: 넓은 재구성보다 사실 보존 우선 -->
+             <div class="lav-resume-note" id="lavResumeNote" hidden>
+               <strong>개인 경험을 지키는 것이 먼저예요.</strong>
+               기본 휴머나이징은 원문의 경험·성과·화자를 유지합니다. 맞춤법과 연결만 고치려면 원문 보존 다듬기를 선택하세요.
+             </div>
+
+             <!-- STEM 실험·방법론 보고서 / 구조화 데이터 보고서: 진행 가능하지만 효과 한계 고지 -->
+             <div class="lav-resume-note" id="lavAdvisoryNote" hidden>
+               <strong>효과가 제한될 수 있는 글 유형이에요.</strong>
+               <span id="lavAdvisoryText"></span>
+             </div>
+
+             <!-- 연도·수치·인용이 많은 글: 제출 전 대조 안내 -->
+             <div class="lav-resume-note" id="lavFactDenseNote" hidden>
+               <strong>수치와 인용은 제출 전에 한 번 더 확인해 주세요.</strong>
+               기본과 고급 모두 원문의 수치·기관·인용을 보호하지만 자동 검증도 완벽하지는 않아요. 긴 보고서·논문은 전체 문서를 검증하는 고급 휴머나이징이 더 적합합니다.
+             </div>
            </div>
 
-           <!-- 연도·수치·인용 빼곡한 글(격식논문·보고서) — 자유 재구성 시 사실 오류 위험 -->
-           <div class="lav-resume-note" id="lavFactDenseNote" hidden>
-             <strong>연도·수치·인용이 많은 글이에요.</strong>
-             기본과 고급 모두 원문의 수치·기관·인용을 보호합니다. <b>고급 휴머나이징</b>은 문장을 더 넓게 재구성하면서 모든 글에 의미 검증을 적용하므로 긴 보고서·논문에 더 적합해요. 다만 자동 검증도 완벽하지 않으니 제출 전 핵심 수치와 인용은 원문과 한 번 대조해 주세요.
+           <div class="lav-choice-heading">
+             <h3 class="lav-flow-h" id="lavChoiceHeading">원하는 결과를 선택하세요</h3>
+             <p>카드를 누르면 비용과 예상 시간을 확인한 뒤 시작합니다.</p>
            </div>
-
-           <!-- ② 처리 방식 3택 — 카드에 인라인 비용, 클릭 즉시 확인 모달(단계 축소) -->
-           <h3 class="lav-flow-h">처리 방식을 골라주세요</h3>
            <!-- 기존 설정 수집·잠금·추천 로직(currentSettings·applyAdvancedRouting)이 그대로 쓰는 숨김 라디오 — 카드가 값을 정한다 -->
            <div hidden aria-hidden="true">
              <input type="radio" name="lavTone" value="blog" checked>
@@ -291,37 +309,38 @@
              <button type="button" class="lav-sel-card" id="lavCardPolish" onclick="lavRunPolish()">
                <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">edit_note</span></span>
                <strong class="lav-sel-title">원문 보존 다듬기</strong>
+               <p>문장은 거의 그대로 두고 오류만 정리해요.</p>
                <ul class="lav-sel-list">
-                 <li>맞춤법·비문·연결만 정리</li>
-                 <li>문장 재작성 없음</li>
+                 <li>맞춤법·어색한 연결 정리</li>
+                 <li>문장 재작성 없이 원문 유지</li>
                </ul>
                <em class="lav-sel-cost" id="lavCostPolish">비용 계산 중</em>
              </button>
              <button type="button" class="lav-sel-card" id="lavCardBasic" onclick="lavSelectTone('blog')">
+               <span class="lav-purpose-reco" id="lavBasicRecommended" hidden>추천</span>
                <span class="lav-purpose-ico reduce" aria-hidden="true"><span class="material-symbols-outlined">shield</span></span>
                <strong class="lav-sel-title">기본 휴머나이징</strong>
+               <p>필요한 문장만 골라 자연스럽게 다시 써요.</p>
                <ul class="lav-sel-list">
-                 <li>AI 티 문장만 다시 씀</li>
+                 <li>두드러진 표현만 선택적으로 재작성</li>
                  <li>장르·말투·사실 유지</li>
                </ul>
                <em class="lav-sel-cost" id="lavCostBlog">비용 계산 중</em>
              </button>
              <button type="button" class="lav-sel-card" id="lavCardFormal" onclick="lavSelectTone('formal')">
-               <span class="lav-purpose-reco" id="lavFormalRecommended">추천</span>
+               <span class="lav-purpose-reco" id="lavFormalRecommended" hidden>추천</span>
                <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">science</span></span>
                <strong class="lav-sel-title">고급 휴머나이징</strong>
+               <p>긴 글의 흐름과 표현을 넓게 다시 구성해요.</p>
                <ul class="lav-sel-list">
-                 <li>넓은 재구성 + 전 문서 검증</li>
-                 <li>긴 논문·보고서에 적합</li>
+                 <li>전체 흐름 재구성</li>
+                 <li>전 문서 의미 검증</li>
                </ul>
                <span class="lav-purpose-caveat" id="lavFormalLockNote" hidden>이 글에서는 선택할 수 없어요</span>
                <em class="lav-sel-cost" id="lavCostFormal">비용 계산 중</em>
              </button>
            </div>
-           <!-- 근거 보강은 고급 확인 모달로 이동(2026-08-29) — 선택 화면에서 어느 방식에 붙는 옵션인지 헷갈리는 문제 해소 -->
-           <p class="lav-tone-advanced-note" id="lavToneAdvancedNote" role="status" hidden><b>이 글에는 고급을 권장해요.</b> <span id="lavToneAdvancedText"></span></p>
-           <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>이 글은 개인 경험·관찰을 그대로 지키는 것이 중요해요. <b>기본 휴머나이징에도 해당 장르 보존 규칙과 의미 검증이 적용</b>됩니다. 고급은 더 넓게 재구성하므로 이 유형에는 기본을 권장합니다.</p>
-           <p class="lav-tone-variance"><b>세 방식 모두 장르·화자·사실을 보호합니다.</b> <b class="lav-warn">외부 검사기 점수는 검사기마다 다르게 나오며, 특정 점수를 보장하지 않아요.</b></p>
+           <p class="lav-tone-variance"><b>모든 방식은 원문의 장르·화자·사실을 우선합니다.</b> 외부 검사 결과는 도구마다 달라 특정 점수를 보장하지 않아요.</p>
            <!-- 세부 설정(선택) — 기본값 자동. 오판별 같은 소수 케이스의 탈출구만 남긴다(2026-08-28 흐름 단순화 D1) -->
            <details class="lav-set-block lav-opt-acc" id="lavDetailBlock">
              <summary class="lav-acc-sum">
