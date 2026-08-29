@@ -4963,7 +4963,7 @@ window.loadAdminHumanizeLab = async function() {
 
 // 관리자 탭: 섹션이 누적되며 세로 스크롤이 과도해져, 성격별 그룹만 표시 (선택은 세션 유지)
 window.adminSwitchTab = function(tab) {
- const valid = ['ops', 'quality', 'users', 'ledger', 'coupons', 'settings', 'patches'];
+ const valid = ['ops', 'incidents', 'quality', 'users', 'ledger', 'coupons', 'settings', 'patches'];
  if (!valid.includes(tab)) tab = 'ops';
  try { sessionStorage.setItem('gpAdminTab', tab); } catch (e) {}
  document.querySelectorAll('#adminContent [data-admin-tab]').forEach(s => {
@@ -5010,11 +5010,185 @@ window.loadAdminPage = async function() {
   window.loadAdminWritingPolicies(),
   window.loadAdminWritingMetrics(),
   window.loadAdminJobs(),
+  window.loadAdminOpsLogs(),
   window.loadAdminHumanizeQuality(),
   window.loadAdminRefundList(),
   window.loadAllCreditHistory(),
   window.loadCouponBatches()
  ]);
+};
+
+// ── 장애 로그(2026-08-29) ────────────────────────────────────────────────
+// 서버가 등급을 매긴 사건(Backend lib/opsEvents 카탈로그)을 목록·요약·하트비트로 보여준다.
+// 목표는 "이게 심각한가"를 목록에서 바로 판단하고, 확인(ack)까지 여기서 끝내는 것.
+let gpOpsQueryTimer = null;
+window.adminOpsQueryInput = function() {
+ clearTimeout(gpOpsQueryTimer);
+ gpOpsQueryTimer = setTimeout(() => window.loadAdminOpsLogs(), 300);
+};
+
+function gpOpsEscape(value) {
+ return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function gpOpsAgo(ms) {
+ if (!ms) return '-';
+ const diff = Math.max(0, Date.now() - Number(ms));
+ const m = Math.floor(diff / 60000);
+ if (m < 1) return '방금';
+ if (m < 60) return m + '분 전';
+ const h = Math.floor(m / 60);
+ if (h < 24) return h + '시간 전';
+ return Math.floor(h / 24) + '일 전';
+}
+
+async function gpOpsPost(path, body) {
+ const idToken = await window.CU.getIdToken();
+ const res = await fetch(window.apiUrl(path), {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+  body: JSON.stringify(body || {})
+ });
+ const data = await res.json().catch(() => ({}));
+ if (!res.ok || !data.ok) throw new Error(data.error || '요청에 실패했어요.');
+ return data;
+}
+
+window.loadAdminOpsLogs = async function() {
+ const listEl = document.getElementById('adminOpsList');
+ if (!listEl || !window.CU || !window.isAdmin()) return;
+ const hours = Number((document.getElementById('adminOpsHours') || {}).value) || 24;
+ const severity = (document.getElementById('adminOpsSeverity') || {}).value || '';
+ const domain = (document.getElementById('adminOpsDomain') || {}).value || '';
+ const q = ((document.getElementById('adminOpsQuery') || {}).value || '').trim();
+ const onlyOpen = !!(document.getElementById('adminOpsOnlyOpen') || {}).checked;
+
+ try {
+  const [summary, logs] = await Promise.all([
+   gpOpsPost('/admin/ops-summary', { hours }),
+   gpOpsPost('/admin/ops-logs', { hours, severity, domain, q, onlyOpen, limit: 80 })
+  ]);
+  gpOpsRenderSummary(summary);
+  gpOpsRenderBeats(summary.heartbeats || []);
+  gpOpsRenderDomains(logs.domains || []);
+  gpOpsRenderList(logs);
+  const tag = document.getElementById('adminOpsSourceTag');
+  if (tag) tag.textContent = logs.source === 'firestore' ? '' : '메모리 보관분';
+ } catch (e) {
+  listEl.innerHTML = '<div class="gp-admin-empty">장애 로그를 불러오지 못했어요. ' + gpOpsEscape(e.message || '') + '</div>';
+ }
+};
+
+function gpOpsRenderSummary(s) {
+ const el = document.getElementById('adminOpsSummary');
+ if (!el) return;
+ const sev = s.bySeverity || {};
+ const alerting = s.alerting || {};
+ const hook = alerting.webhook || {};
+ // 알림 자체가 죽었는지 보여준다 — 예전에는 웹훅이 실패해도 아무도 몰랐다.
+ const hookState = !alerting.discord
+  ? '<span class="gp-ops-pill warn">디스코드 미설정</span>'
+  : (hook.failed ? '<span class="gp-ops-pill warn">전송 실패 ' + hook.failed + '건</span>' : '<span class="gp-ops-pill ok">알림 정상</span>');
+ const store = alerting.store || {};
+ const storeState = store.writeErrors ? '<span class="gp-ops-pill warn">저장 실패 ' + store.writeErrors + '건</span>' : '';
+
+ el.innerHTML =
+  '<div class="gp-ops-cards">' +
+   '<div class="gp-ops-card sev1"><b>' + (sev.SEV1 || 0) + '</b><span>SEV1 · 돈·정합성</span></div>' +
+   '<div class="gp-ops-card sev2"><b>' + (sev.SEV2 || 0) + '</b><span>SEV2 · 기능 장애</span></div>' +
+   '<div class="gp-ops-card sev3"><b>' + (sev.SEV3 || 0) + '</b><span>SEV3 · 기록만</span></div>' +
+   '<div class="gp-ops-card open"><b>' + (s.openSev1 || 0) + '</b><span>미확인 SEV1</span></div>' +
+  '</div>' +
+  '<div class="gp-ops-meta">최근 ' + (s.hours || 24) + '시간 · 사건 ' + (s.incidents || 0) + '건(발생 ' + (s.occurrences || 0) + '회) ' + hookState + ' ' + storeState + '</div>' +
+  (s.topEvents && s.topEvents.length
+   ? '<div class="gp-ops-top">' + s.topEvents.slice(0, 5).map(t =>
+      '<span class="gp-ops-topitem"><i>' + gpOpsEscape(t.event) + '</i><b>' + t.count + '</b></span>').join('') + '</div>'
+   : '');
+}
+
+function gpOpsRenderBeats(beats) {
+ const el = document.getElementById('adminOpsHeartbeats');
+ if (!el) return;
+ if (!beats.length) { el.innerHTML = ''; return; }
+ // 부재 감지: "일어나야 할 일이 안 일어난 것"은 이 줄에서만 보인다.
+ el.innerHTML = '<div class="gp-ops-beatrow">' + beats.map(b => {
+  const cls = b.state === 'stale' ? 'stale' : (b.state === 'ok' ? 'ok' : 'unknown');
+  const label = b.state === 'stale' ? (b.ageMinutes + '분째 멈춤') : (b.state === 'ok' ? gpOpsAgo(b.lastBeatMs) : '기록 없음');
+  return '<span class="gp-ops-beat ' + cls + '"><i>' + gpOpsEscape(b.label || b.name) + '</i>' + gpOpsEscape(label) + '</span>';
+ }).join('') + '</div>';
+}
+
+function gpOpsRenderDomains(domains) {
+ const sel = document.getElementById('adminOpsDomain');
+ if (!sel) return;
+ const current = sel.value;
+ const options = ['<option value="">전체 영역</option>'].concat(domains.map(d =>
+  '<option value="' + gpOpsEscape(d) + '">' + gpOpsEscape(d) + '</option>'));
+ sel.innerHTML = options.join('');
+ if (domains.includes(current)) sel.value = current;
+}
+
+function gpOpsRenderList(data) {
+ const el = document.getElementById('adminOpsList');
+ if (!el) return;
+ const items = data.items || [];
+ const badge = document.getElementById('adminOpsTabBadge');
+ if (badge) {
+  const open = items.filter(i => i.severity === 'SEV1' && !i.acked).length;
+  badge.hidden = !open;
+  badge.textContent = String(open);
+ }
+ if (!items.length) {
+  el.innerHTML = '<div class="gp-admin-empty">조건에 맞는 장애 기록이 없어요.</div>';
+  return;
+ }
+ el.innerHTML = items.map(item => {
+  const sev = item.severity || 'SEV3';
+  const ids = [
+   item.uid ? ['회원', item.uid] : null,
+   item.orderId ? ['주문', item.orderId] : null,
+   item.jobId ? ['작업', item.jobId] : null,
+   item.amount != null ? ['금액', '₩' + Number(item.amount).toLocaleString('ko-KR')] : null,
+   item.credits != null ? ['크레딧', item.credits] : null,
+   item.code ? ['코드', item.code] : null,
+   item.stage ? ['단계', item.stage] : null,
+   item.requestId ? ['requestId', item.requestId] : null,
+   item.statusCode ? ['status', item.statusCode] : null
+  ].filter(Boolean);
+  return '' +
+   '<article class="gp-ops-item ' + sev.toLowerCase() + (item.acked ? ' acked' : '') + '">' +
+    '<div class="gp-ops-item-head">' +
+     '<span class="gp-ops-sev ' + sev.toLowerCase() + '">' + sev + '</span>' +
+     '<span class="gp-ops-domain">' + gpOpsEscape(item.domain || 'ops') + '</span>' +
+     '<b class="gp-ops-event">' + gpOpsEscape(item.event) + '</b>' +
+     (Number(item.count) > 1 ? '<span class="gp-ops-count">' + item.count + '건</span>' : '') +
+     '<span class="gp-ops-time">' + gpOpsAgo(item.lastSeenMs || item.createdMs) + '</span>' +
+    '</div>' +
+    (item.message ? '<p class="gp-ops-msg">' + gpOpsEscape(item.message) + '</p>' : '') +
+    (item.action ? '<p class="gp-ops-action"><i>대응</i>' + gpOpsEscape(item.action) + '</p>' : '') +
+    (ids.length ? '<div class="gp-ops-ids">' + ids.map(([k, v]) =>
+      '<span><i>' + gpOpsEscape(k) + '</i>' + gpOpsEscape(v) + '</span>').join('') + '</div>' : '') +
+    (item.stack ? '<details class="gp-ops-stack"><summary>스택 보기</summary><pre>' + gpOpsEscape(item.stack) + '</pre></details>' : '') +
+    '<div class="gp-ops-item-foot">' +
+     (item.acked
+      ? '<span class="gp-ops-ackinfo">확인함 · ' + gpOpsEscape(item.ackedAt ? item.ackedAt.slice(0, 16).replace('T', ' ') : '') + '</span>' +
+        (item.memoryOnly ? '' : '<button type="button" class="gp-admin-mini-btn" onclick="adminOpsAck(\'' + gpOpsEscape(item.id) + '\', false)">확인 취소</button>')
+      : (item.memoryOnly
+         ? '<span class="gp-ops-ackinfo">메모리 보관분(저장 전)</span>'
+         : '<button type="button" class="gp-admin-mini-btn" onclick="adminOpsAck(\'' + gpOpsEscape(item.id) + '\', true)">확인 처리</button>')) +
+    '</div>' +
+   '</article>';
+ }).join('');
+}
+
+window.adminOpsAck = async function(id, acked) {
+ if (!id) return;
+ try {
+  await gpOpsPost('/admin/ops-ack', { id, acked });
+  await window.loadAdminOpsLogs();
+ } catch (e) {
+  if (window.gpToast) window.gpToast(e.message || '확인 처리에 실패했어요.', { type: 'error' });
+ }
 };
 
 window.loadAdminWritingPolicies = async function() {

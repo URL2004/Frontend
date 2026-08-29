@@ -18162,3 +18162,118 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
  #historyContent .gp-history-skeleton :is(i,b,em){animation:none;}
  #historyContent .gp-history-row,#historyContent .gp-history-actions button{transition:none;}
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   장애 로그 패널(2026-08-29 운영 로그 개편)
+   등급을 색이 아니라 "형태 + 색 + 라벨"로 함께 표시한다 — 색만으로 구분하면
+   색각 이상 사용자와 흑백 캡처에서 SEV1과 SEV3가 구분되지 않는다.
+   토큰은 기존 --admin-* 를 그대로 쓴다(별도 팔레트를 만들지 않는다).
+   ═══════════════════════════════════════════════════════════════════════ */
+.gp-ops-tab-badge{
+ display:inline-flex;align-items:center;justify-content:center;
+ min-width:18px;height:18px;padding:0 5px;margin-left:6px;
+ border-radius:999px;background:var(--admin-red);color:#fff;
+ font-size:11px;font-weight:800;line-height:1;
+}
+.gp-ops-tab-badge[hidden]{display:none !important;}
+
+.gp-ops-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px;}
+.gp-ops-card{
+ border:1px solid var(--admin-border);border-left-width:3px;border-radius:9px;
+ background:var(--admin-soft);padding:10px 12px;display:flex;flex-direction:column;gap:1px;
+}
+.gp-ops-card b{font-size:20px;font-weight:800;line-height:1.1;color:var(--admin-text);}
+.gp-ops-card span{font-size:11px;font-weight:700;color:var(--admin-text3);}
+.gp-ops-card.sev1{border-left-color:var(--admin-red);}
+.gp-ops-card.sev1 b{color:var(--admin-red);}
+.gp-ops-card.sev2{border-left-color:var(--admin-amber);}
+.gp-ops-card.sev2 b{color:var(--admin-amber);}
+.gp-ops-card.sev3{border-left-color:var(--admin-text3);}
+.gp-ops-card.open{border-left-color:var(--admin-blue);}
+.gp-ops-card.open b{color:var(--admin-blue);}
+
+.gp-ops-meta{font-size:11.5px;color:var(--admin-text3);font-weight:600;display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px;}
+.gp-ops-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:800;}
+.gp-ops-pill.ok{background:#e6f4ec;color:var(--admin-green);}
+.gp-ops-pill.warn{background:#fdeeea;color:var(--admin-red);}
+
+.gp-ops-top{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.gp-ops-topitem{
+ display:inline-flex;align-items:center;gap:6px;
+ border:1px solid var(--admin-line);border-radius:7px;background:var(--admin-surface);
+ padding:4px 9px;font-size:11px;color:var(--admin-text2);
+}
+.gp-ops-topitem i{font-style:normal;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+.gp-ops-topitem b{font-weight:800;color:var(--admin-text);}
+
+/* 부재 감지 줄: 주기 작업이 멈춘 것은 여기서만 보인다 */
+.gp-ops-beatrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.gp-ops-beat{
+ display:inline-flex;align-items:center;gap:6px;
+ border:1px solid var(--admin-line);border-radius:7px;padding:4px 9px;
+ background:var(--admin-surface);font-size:11px;font-weight:700;color:var(--admin-text2);
+}
+.gp-ops-beat i{font-style:normal;color:var(--admin-text3);font-weight:600;}
+.gp-ops-beat::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--admin-text3);flex:none;}
+.gp-ops-beat.ok::before{background:var(--admin-green);}
+.gp-ops-beat.stale::before{background:var(--admin-red);}
+.gp-ops-beat.stale{border-color:#f0c3bb;color:var(--admin-red);}
+
+.gp-ops-filters{margin-bottom:10px;}
+.gp-ops-check{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--admin-text2);cursor:pointer;}
+
+.gp-ops-item{
+ border:1px solid var(--admin-border);border-left-width:3px;border-radius:9px;
+ background:var(--admin-surface);padding:11px 13px;margin-bottom:8px;
+}
+.gp-ops-item.sev1{border-left-color:var(--admin-red);}
+.gp-ops-item.sev2{border-left-color:var(--admin-amber);}
+.gp-ops-item.sev3{border-left-color:var(--admin-text3);}
+.gp-ops-item.acked{opacity:.62;}
+.gp-ops-item-head{display:flex;flex-wrap:wrap;align-items:center;gap:7px;}
+.gp-ops-sev{
+ display:inline-flex;align-items:center;padding:2px 7px;border-radius:5px;
+ font-size:10.5px;font-weight:800;letter-spacing:.03em;
+}
+.gp-ops-sev.sev1{background:#fdeeea;color:var(--admin-red);}
+.gp-ops-sev.sev2{background:#fcf3e2;color:var(--admin-amber);}
+.gp-ops-sev.sev3{background:var(--admin-soft);color:var(--admin-text3);}
+.gp-ops-domain{font-size:10.5px;font-weight:800;color:var(--admin-blue);background:#eef0fc;padding:2px 7px;border-radius:5px;}
+.gp-ops-event{
+ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+ font-size:12px;font-weight:700;color:var(--admin-text);word-break:break-all;
+}
+.gp-ops-count{font-size:10.5px;font-weight:800;color:var(--admin-red);background:#fdeeea;padding:2px 7px;border-radius:5px;}
+.gp-ops-time{margin-left:auto;font-size:11px;color:var(--admin-text3);font-weight:600;white-space:nowrap;}
+.gp-ops-msg{margin:6px 0 0;font-size:12.5px;line-height:1.55;color:var(--admin-text2);}
+.gp-ops-action{
+ margin:7px 0 0;padding:7px 10px;border-radius:7px;background:var(--admin-soft);
+ font-size:12px;line-height:1.55;color:var(--admin-text);
+}
+.gp-ops-action i{
+ font-style:normal;font-size:10px;font-weight:800;letter-spacing:.06em;
+ color:var(--admin-green);margin-right:7px;
+}
+.gp-ops-ids{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.gp-ops-ids span{
+ display:inline-flex;align-items:center;gap:5px;
+ border:1px solid var(--admin-line);border-radius:6px;padding:3px 8px;
+ font-size:11px;color:var(--admin-text2);
+ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+ max-width:100%;overflow-wrap:anywhere;
+}
+.gp-ops-ids i{font-style:normal;font-family:var(--font);font-weight:700;color:var(--admin-text3);}
+.gp-ops-stack{margin-top:8px;}
+.gp-ops-stack summary{font-size:11.5px;font-weight:700;color:var(--admin-text2);cursor:pointer;}
+.gp-ops-stack pre{
+ margin:6px 0 0;padding:9px 11px;border-radius:7px;background:var(--admin-soft);
+ font-size:11px;line-height:1.5;color:var(--admin-text2);
+ overflow-x:auto;white-space:pre-wrap;word-break:break-word;
+}
+.gp-ops-item-foot{display:flex;align-items:center;gap:8px;margin-top:9px;}
+.gp-ops-ackinfo{font-size:11px;color:var(--admin-text3);font-weight:600;}
+
+@media(max-width:560px){
+ .gp-ops-time{margin-left:0;width:100%;}
+ .gp-ops-cards{grid-template-columns:repeat(2,1fr);}
+}

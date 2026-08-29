@@ -89,6 +89,72 @@
     });
   };
 
+  // ── 전역 JS 오류 수집(2026-08-29) ─────────────────────────────────────
+  // 이전에는 프론트 장애가 결제 외에 어디에도 남지 않았다. SPA 부팅이 실패하면 요청 자체를
+  // 안 보내므로 서버 로그도 비어 있었고, 사용자는 빈 화면을 보고 조용히 이탈했다.
+  // 서버는 이 이벤트를 client.app_error(SEV3)로 기록한다 — 같은 오류가 급증하면 배포 사고 신호.
+  var errorReportCount = 0;
+  var errorReportSeen = {};
+  var ERROR_REPORT_MAX = 8;          // 한 세션당 상한(폭주 시 사용자 회선·서버 보호)
+
+  function reportClientError(detail) {
+    try {
+      if (errorReportCount >= ERROR_REPORT_MAX) return;
+      var key = (detail.message || '') + '|' + (detail.source || '') + '|' + (detail.line || '');
+      if (errorReportSeen[key]) return;   // 같은 오류는 세션당 1회만
+      errorReportSeen[key] = 1;
+      errorReportCount++;
+
+      var payload = {
+        type: 'client_error',
+        message: cleanText(detail.message, 300),
+        source: cleanText(detail.source, 200),
+        line: safeNumber(detail.line),
+        col: safeNumber(detail.col),
+        errorName: cleanText(detail.errorName, 80),
+        stack: cleanText(detail.stack, 600),
+        page: window.location.pathname,
+        release: (window.GP_BUILD_VERSION || '')
+      };
+      Promise.resolve().then(async function () {
+        try {
+          if (window.CU && typeof window.CU.getIdToken === 'function') payload.idToken = await window.CU.getIdToken();
+        } catch (e) {}
+        try {
+          await window.fetch(window.apiUrl('/events'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            keepalive: true
+          });
+        } catch (e) {}
+      });
+    } catch (e) {}
+  }
+
+  window.addEventListener('error', function (event) {
+    // 리소스 로드 실패(img/script)는 event.error가 없다 — 잡음이라 제외한다.
+    if (!event || !event.error) return;
+    reportClientError({
+      message: event.message || String(event.error),
+      source: event.filename,
+      line: event.lineno,
+      col: event.colno,
+      errorName: event.error && event.error.name,
+      stack: event.error && event.error.stack
+    });
+  });
+
+  window.addEventListener('unhandledrejection', function (event) {
+    var reason = event && event.reason;
+    if (!reason) return;
+    reportClientError({
+      message: (reason && reason.message) || String(reason),
+      errorName: (reason && reason.name) || 'UnhandledRejection',
+      stack: reason && reason.stack
+    });
+  });
+
   function getMaintenanceBypass() {
     try {
       return localStorage.getItem('gp_maintenance_bypass') || sessionStorage.getItem('gp_maintenance_bypass') || '';
