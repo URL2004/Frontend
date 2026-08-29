@@ -1,4 +1,4 @@
-<div id="landingScreen" class="screen gp-lp">
+<div id="landingScreen" class="screen gp-lp" role="main">
 
   <!-- 0. 공지 바 -->
   <div class="gp-lp-notice">
@@ -127,10 +127,10 @@
       <div class="gp-lp-blend-copy">
         <h2>하나의 크레딧으로,<br>글의 모든 단계를.</h2>
         <ul class="gp-lp-blend-list" role="tablist" aria-label="서비스 선택">
-          <li><button type="button" role="tab" aria-selected="true" class="on" data-blend="0" onclick="gpLandingBlendPick(0)">AI 감지<small>100자당 1크레딧 · 문단별 진단</small></button></li>
-          <li><button type="button" role="tab" aria-selected="false" data-blend="1" onclick="gpLandingBlendPick(1)">기본 휴머나이징<small>100자당 2크레딧 · 최소 10크레딧</small></button></li>
-          <li><button type="button" role="tab" aria-selected="false" data-blend="2" onclick="gpLandingBlendPick(2)">고급 휴머나이징<small>1만자 이하 200크레딧 · 정밀 검증</small></button></li>
-          <li><button type="button" role="tab" aria-selected="false" data-blend="3" onclick="gpLandingBlendPick(3)">글쓰기 랩<small>가격 확정 전 · 준비 중</small></button></li>
+          <li role="presentation"><button type="button" role="tab" aria-selected="true" class="on" data-blend="0" onclick="gpLandingBlendPick(0)">AI 감지<small>100자당 1크레딧 · 문단별 진단</small></button></li>
+          <li role="presentation"><button type="button" role="tab" aria-selected="false" data-blend="1" onclick="gpLandingBlendPick(1)">기본 휴머나이징<small>100자당 2크레딧 · 최소 10크레딧</small></button></li>
+          <li role="presentation"><button type="button" role="tab" aria-selected="false" data-blend="2" onclick="gpLandingBlendPick(2)">고급 휴머나이징<small>1만자 이하 200크레딧 · 정밀 검증</small></button></li>
+          <li role="presentation"><button type="button" role="tab" aria-selected="false" data-blend="3" onclick="gpLandingBlendPick(3)">글쓰기 랩<small>가격 확정 전 · 준비 중</small></button></li>
         </ul>
         <p class="gp-lp-blend-note" id="lpBlendNote">글 전체의 AI 티 지수와 함께 주의가 필요한 문단을 보여줘요.</p>
         <button type="button" class="gp-lp-primary" onclick="gpLandingStart('blend')">무료로 시작하기</button>
