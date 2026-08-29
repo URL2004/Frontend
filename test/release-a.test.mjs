@@ -23,9 +23,10 @@ test('기본·고급 설명은 체감 재구성 범위와 검증 범위를 구�
     read('pages/faq.html'),
     read('assets/js/evasion-flow.js')
   ]);
-  // 3택 1화면(2026-08-28, 2026-08-29 카드 카피 압축): 기본·고급 설명은 select 카드에서 구분된다
-  assert.match(main, /장르·말투·사실은 지키고, AI 티가 나는 문장만 자연스럽게 다시 써요/u);
-  assert.match(main, /더 넓게 재구성하고 전 문서 정밀 검증까지/u);
+  // 3택 1화면(2026-08-28, 2026-08-29 설명 항목화): 기본·고급 설명은 select 카드 2항목으로 구분된다
+  assert.match(main, /AI 티 문장만 다시 씀/u);
+  assert.match(main, /장르·말투·사실 유지/u);
+  assert.match(main, /넓은 재구성 \+ 전 문서 검증/u);
   assert.match(main, /기본 휴머나이징에서 단어 선택과 문장 연결의 친근함·격식/u);
   assert.match(main, /외부 검사 점수는 글과 도구에 따라 달라지며 보장되지 않아요/u);
   assert.match(guide, /AI식 반복과 균일한 흐름을 다시 구성/u);
@@ -52,8 +53,8 @@ test('다듬기·기본·고급 명칭과 설명은 선택부터 결과·이력�
     read('pages/admin-humanize-lab.html')
   ]);
   assert.match(main, /원문 보존 다듬기/u);
-  assert.match(main, /맞춤법·비문·어색한 연결만 정리해요\. 문장을 넓게 다시 쓰지는 않아요/u);
-  assert.match(main, /AI 티가 나는 문장만 자연스럽게 다시 써요/u);
+  assert.match(main, /맞춤법·비문·연결만 정리/u);
+  assert.match(main, /문장 재작성 없음/u);
   assert.match(evasion, /문체 보조[^\n]+원문 장르 우선/u);
   assert.match(evasion, /원문 보존 다듬기를 시작할까요/u);
   assert.match(evasion, /label = '기본 휴머나이징'/u);

@@ -291,21 +291,30 @@
              <button type="button" class="lav-sel-card" id="lavCardPolish" onclick="lavRunPolish()">
                <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">edit_note</span></span>
                <strong class="lav-sel-title">원문 보존 다듬기</strong>
-               <p>맞춤법·비문·어색한 연결만 정리해요. 문장을 넓게 다시 쓰지는 않아요.</p>
+               <ul class="lav-sel-list">
+                 <li>맞춤법·비문·연결만 정리</li>
+                 <li>문장 재작성 없음</li>
+               </ul>
                <em class="lav-sel-cost" id="lavCostPolish">비용 계산 중</em>
              </button>
              <button type="button" class="lav-sel-card accent" id="lavCardBasic" onclick="lavSelectTone('blog')">
                <span class="lav-purpose-reco" id="lavBasicRecommended">추천</span>
                <span class="lav-purpose-ico reduce" aria-hidden="true"><span class="material-symbols-outlined">shield</span></span>
                <strong class="lav-sel-title">기본 휴머나이징</strong>
-               <p>장르·말투·사실은 지키고, AI 티가 나는 문장만 자연스럽게 다시 써요.</p>
+               <ul class="lav-sel-list">
+                 <li>AI 티 문장만 다시 씀</li>
+                 <li>장르·말투·사실 유지</li>
+               </ul>
                <em class="lav-sel-cost" id="lavCostBlog">비용 계산 중</em>
              </button>
              <button type="button" class="lav-sel-card" id="lavCardFormal" onclick="lavSelectTone('formal')">
                <span class="lav-purpose-reco" id="lavFormalRecommended" hidden>추천</span>
                <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">science</span></span>
                <strong class="lav-sel-title">고급 휴머나이징</strong>
-               <p>더 넓게 재구성하고 전 문서 정밀 검증까지. 긴 논문·보고서에 적합해요.</p>
+               <ul class="lav-sel-list">
+                 <li>넓은 재구성 + 전 문서 검증</li>
+                 <li>긴 논문·보고서에 적합</li>
+               </ul>
                <span class="lav-purpose-caveat" id="lavFormalLockNote" hidden>이 글에서는 선택할 수 없어요</span>
                <em class="lav-sel-cost" id="lavCostFormal">비용 계산 중</em>
              </button>
