@@ -274,23 +274,41 @@
            </div>
            <div class="lav-select-grid">
              <button type="button" class="lav-sel-card" id="lavCardPolish" onclick="lavRunPolish()">
-               <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">edit_note</span></span>
-               <strong class="lav-sel-title">원문 보존 다듬기</strong>
-               <span class="lav-sel-copy"><b>맞춤법·연결만 정리</b><small>문장 재작성 없음</small></span>
+               <span class="lav-sel-head">
+                 <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">edit_note</span></span>
+                 <strong class="lav-sel-title">원문 보존 다듬기</strong>
+               </span>
+               <ul class="lav-sel-list">
+                 <li>맞춤법·연결만 정리</li>
+                 <li>문장 재작성 없음</li>
+                 <li>문단 구조 그대로 유지</li>
+               </ul>
                <em class="lav-sel-cost" id="lavCostPolish">비용 계산 중</em>
              </button>
              <button type="button" class="lav-sel-card" id="lavCardBasic" onclick="lavSelectTone('blog')">
                <span class="lav-purpose-reco" id="lavBasicRecommended" hidden>추천</span>
-               <span class="lav-purpose-ico reduce" aria-hidden="true"><span class="material-symbols-outlined">shield</span></span>
-               <strong class="lav-sel-title">기본 휴머나이징</strong>
-               <span class="lav-sel-copy"><b>필요한 문장만 재작성</b><small>장르·말투·사실 유지</small></span>
+               <span class="lav-sel-head">
+                 <span class="lav-purpose-ico reduce" aria-hidden="true"><span class="material-symbols-outlined">shield</span></span>
+                 <strong class="lav-sel-title">기본 휴머나이징</strong>
+               </span>
+               <ul class="lav-sel-list">
+                 <li>필요한 문장만 재작성</li>
+                 <li>장르·말투·사실 유지</li>
+                 <li>문단 순서와 구성 유지</li>
+               </ul>
                <em class="lav-sel-cost" id="lavCostBlog">비용 계산 중</em>
              </button>
              <button type="button" class="lav-sel-card" id="lavCardFormal" onclick="lavSelectTone('formal')">
                <span class="lav-purpose-reco" id="lavFormalRecommended" hidden>추천</span>
-               <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">science</span></span>
-               <strong class="lav-sel-title">고급 휴머나이징</strong>
-               <span class="lav-sel-copy"><b>전체 흐름 재구성</b><small>전 문서 의미 검증</small></span>
+               <span class="lav-sel-head">
+                 <span class="lav-purpose-ico" aria-hidden="true"><span class="material-symbols-outlined">science</span></span>
+                 <strong class="lav-sel-title">고급 휴머나이징</strong>
+               </span>
+               <ul class="lav-sel-list">
+                 <li>전체 흐름 재구성</li>
+                 <li>문단 구조까지 다시 설계</li>
+                 <li>전 문서 의미 검증</li>
+               </ul>
                <span class="lav-purpose-caveat" id="lavFormalLockNote" hidden>이 글에서는 선택할 수 없어요</span>
                <em class="lav-sel-cost" id="lavCostFormal">비용 계산 중</em>
              </button>

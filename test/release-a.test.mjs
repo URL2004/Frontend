@@ -180,7 +180,7 @@ test('구조만 있는 입력의 422는 일반 서버 장애가 아니라 입력
   assert.ok(handler.indexOf("NO_EDITABLE_CONTENT") < handler.indexOf('LIMITED_EFFECT_CONFIRMATION_REQUIRED'));
 });
 
-test('한국어 장르 판정은 고급을 잠그지 않고 고급 차단 작업도 보존형으로 낮추지 않는다', async () => {
+test('모드 추천은 닫고 한국어 장르 판정의 고급 사용 가능 여부만 유지한다', async () => {
   const [main, evasion] = await Promise.all([
     read('pages/main.html'),
     read('assets/js/evasion-flow.js')
@@ -194,11 +194,16 @@ test('한국어 장르 판정은 고급을 잠그지 않고 고급 차단 작업
   assert.match(main, /lavSelectTone\('formal'\)/u);
   assert.match(main, /id="lavCostBlog"/u);
   assert.match(main, /id="lavCostFormal"/u);
+  assert.equal((main.match(/class="lav-sel-head"/gu) || []).length, 3);
+  assert.equal((main.match(/class="lav-sel-list"/gu) || []).length, 3);
+  assert.match(main, /문장 재작성 없음[\s\S]*문단 순서와 구성 유지[\s\S]*전 문서 의미 검증/u);
   assert.match(evasion, /window\.lavSelectTone = function/u);
   assert.doesNotMatch(main, /lavPersonalBlock|lavAutoCoach|lavCoachPicks|data-flow="reduce"/u);
   assert.match(evasion, /function advancedUnavailable\(d\)/u);
-  assert.match(evasion, /basicRecommended\.hidden = recommendAdvanced/u);
-  assert.match(evasion, /formalRecommended\.hidden = !recommendAdvanced \|\| unfit/u);
+  assert.match(evasion, /MODE_RECOMMENDATION_ENABLED = false/u);
+  assert.match(evasion, /basicRecommended\.hidden = !MODE_RECOMMENDATION_ENABLED \|\| recommendAdvanced/u);
+  assert.match(evasion, /formalRecommended\.hidden = !MODE_RECOMMENDATION_ENABLED \|\| !recommendAdvanced \|\| unfit/u);
+  assert.match(evasion, /recommendation_exposed: MODE_RECOMMENDATION_ENABLED/u);
   assert.match(evasion, /if \(d\.advancedEligible === false\) return true/u);
   assert.match(evasion, /lastDiag\.recommendedMode === 'formal'/u);
   assert.match(evasion, /formalRadio\.checked = recommendAdvanced/u);
@@ -381,11 +386,11 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-185/u);
-  assert.match(boot, /var v = 'lav-185'/u);
+  assert.match(index, /app-boot\.js\?v=lav-186/u);
+  assert.match(boot, /var v = 'lav-186'/u);
   assert.match(boot, /input-quality\.js\?v=/u);
-  assert.match(loader, /var ASSET_V = 'lav-185'/u);
-  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166|167|168|170)/u);
+  assert.match(loader, /var ASSET_V = 'lav-186'/u);
+  assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166|167|168|170|185)/u);
 });
 
 test('진행 중 휴머나이징은 어디서든 복귀하고 이전 퍼센트가 새 작업을 덮지 않는다', async () => {

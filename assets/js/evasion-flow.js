@@ -256,7 +256,7 @@
     if (edit) edit.hidden = name === 'analyzing' || name === 'job' || name === 'blocked' || name === 'done';
   }
 
-  // /diagnose 실패 시 글 길이로 등급을 추측하지 않는다. 추천만 기본값으로 낮춰
+  // /diagnose 실패 시 글 길이로 등급을 추측하지 않는다. 기본 처리값으로
   // 서비스는 이어가되, 확인하지 못한 위험을 사용자에게 사실처럼 말하지 않는다.
   function fakeDiagnose() {
     return {
@@ -271,6 +271,9 @@
 
   var lastDiag = null;   // 결과 화면의 예상 밴드 표기에 재사용
   var toneSelectionTouched = false;
+  // 운영 결정(2026-08-29): 모드 추천은 닫아 둔다. 서버 판정값은 호환을 위해
+  // 보존하되 배지·강조·자동 선택·추천 분석값을 사용자 흐름에 노출하지 않는다.
+  var MODE_RECOMMENDATION_ENABLED = false;
   var lavMemoOverride = '';   // 차단 화면 인라인 메모(재도전 시 1회 사용) — 사전 메모 아코디언 제거(2026-08-28) 후 유일한 사전 메모 경로
 
   function advancedUnavailable(d) {
@@ -325,12 +328,12 @@
       diagnosis_source: d && d.diagnosisSource || 'backend',
       needs_user_anchor: !!(d && d.needsUserAnchor),
       document_profile: d && d.documentProfile || 'unknown',
-      recommended_mode: d && d.recommendedMode || 'blog'
+      recommendation_exposed: MODE_RECOMMENDATION_ENABLED
     });
   }
 
   function isRecommendedMode(mode) {
-    if (mode === 'polish') return false;
+    if (!MODE_RECOMMENDATION_ENABLED || mode === 'polish') return false;
     var formal = !advancedUnavailable(lastDiag) && !!(lastDiag && lastDiag.recommendedMode === 'formal');
     return mode === (formal ? 'formal' : 'blog');
   }
@@ -391,7 +394,7 @@
       var diag = backendOk ? d : fakeDiagnose();
       diag.diagnosisSource = backendOk ? 'backend' : 'fallback';
       applyDiag(diag);
-      applyAdvancedRouting();   // 3택 화면 진입 시 고급 잠금·추천을 즉시 반영(구 reduce 진입 로직 이동)
+      applyAdvancedRouting();   // 3택 화면 진입 시 고급 사용 가능 여부를 즉시 반영
       applyUseCasePreset();     // 광고 use_case 맥락 → 세부 설정 글 종류 프리셋(P0-6, 1회만)
       renderSelectCosts();
       renderDetailSummary();    // 접힌 세부 설정에 현재 값(프리셋 포함) 표시
@@ -422,11 +425,13 @@
     show(name);
   };
 
-  // v2 진단 결과에 따라 고급 잠금과 추천 선택을 한 곳에서 동기화한다.
-  // 3택 화면(select)의 카드 상태(잠금·추천 배지)와 숨김 라디오를 함께 갱신한다.
+  // v2 진단 결과에 따라 고급 선택 가능 여부를 동기화한다. 모드 추천 기능은
+  // 플래그가 닫힌 동안 세 카드를 중립적으로 유지하고 기본 라디오만 초기화한다.
   function applyAdvancedRouting() {
     var unfit = advancedUnavailable(lastDiag);
-    var recommendAdvanced = !unfit && !!(lastDiag && lastDiag.recommendedMode === 'formal');
+    var recommendAdvanced = MODE_RECOMMENDATION_ENABLED
+      && !unfit
+      && !!(lastDiag && lastDiag.recommendedMode === 'formal');
     var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
     var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');
     if (formalRadio) {
@@ -443,11 +448,11 @@
     var ev = $('lavEvidence'); if (ev) { ev.disabled = unfit; if (unfit) ev.checked = false; }
     var basicRecommended = $('lavBasicRecommended');
     var formalRecommended = $('lavFormalRecommended');
-    if (basicRecommended) basicRecommended.hidden = recommendAdvanced;
-    if (formalRecommended) formalRecommended.hidden = !recommendAdvanced || unfit;
+    if (basicRecommended) basicRecommended.hidden = !MODE_RECOMMENDATION_ENABLED || recommendAdvanced;
+    if (formalRecommended) formalRecommended.hidden = !MODE_RECOMMENDATION_ENABLED || !recommendAdvanced || unfit;
     var basicCard = $('lavCardBasic');
-    if (basicCard) basicCard.classList.toggle('is-recommended', !recommendAdvanced);
-    if (formalCard) formalCard.classList.toggle('is-recommended', recommendAdvanced && !unfit);
+    if (basicCard) basicCard.classList.toggle('is-recommended', MODE_RECOMMENDATION_ENABLED && !recommendAdvanced);
+    if (formalCard) formalCard.classList.toggle('is-recommended', MODE_RECOMMENDATION_ENABLED && recommendAdvanced && !unfit);
   }
 
   // 3택 카드 클릭: 숨김 라디오에 값 반영 후 확인 모달 직행(구 reduce 화면 생략 — 2026-08-28 단계 축소)
