@@ -4,15 +4,17 @@
   var PENDING_KEY = 'gp_pending_paid_job_v1';
   var RESUMED_PREFIX = 'gp_resumed_paid_job_';
   var MAX_PENDING_AGE = 2 * 60 * 60 * 1000;
+  var CREDIT_EVENT_STARTS_AT_MS = Date.parse('2026-08-29T00:00:00+09:00');
+  var CREDIT_EVENT_ENDS_AT_MS = Date.parse('2026-10-01T00:00:00+09:00');
   // 지급량 소스 오브 트루스는 Backend/lib/conversionOffers.js의 CREDIT_PRODUCTS다.
   // 여기·pricing.html·landing.html 표기가 어긋나면 claims-consistency 테스트가 깨진다.
-  // firstBonus = 첫 구매 보너스(상품 총 크레딧 × 5/8/10/12/15%, 반올림) — 서버 계산과 같은 값.
+  // 2026-09-30 결제 요청분까지 모든 구매자에게 기준 크레딧의 5/10/15/20/25%를 추가 지급한다.
   var PLANS = [
-    { amount: 2900, credits: 110, firstBonus: 6, label: '스타터' },
-    { amount: 8700, credits: 400, firstBonus: 32, label: '라이트' },
-    { amount: 14500, credits: 700, firstBonus: 70, label: '스탠다드' },
-    { amount: 29000, credits: 1500, firstBonus: 180, label: '플러스' },
-    { amount: 58000, credits: 3300, firstBonus: 495, label: '맥스' }
+    { amount: 2900, paidCredits: 100, eventBonusCredits: 5, credits: 105, label: '스타터' },
+    { amount: 8700, paidCredits: 300, eventBonusCredits: 30, credits: 330, label: '라이트' },
+    { amount: 14500, paidCredits: 500, eventBonusCredits: 75, credits: 575, label: '스탠다드' },
+    { amount: 29000, paidCredits: 1000, eventBonusCredits: 200, credits: 1200, label: '플러스' },
+    { amount: 58000, paidCredits: 2000, eventBonusCredits: 500, credits: 2500, label: '맥스' }
   ];
   var contextCache = null;
   var contextUid = '';
@@ -27,16 +29,71 @@
     if (typeof window.gpTrack === 'function') window.gpTrack(name, params || {});
   }
 
+  function localEventActive(now) {
+    var at = number(now == null ? Date.now() : now);
+    return at >= CREDIT_EVENT_STARTS_AT_MS && at < CREDIT_EVENT_ENDS_AT_MS;
+  }
+
+  function localPlanCatalog(now) {
+    var active = localEventActive(now);
+    return PLANS.map(function (plan) {
+      var bonus = active ? plan.eventBonusCredits : 0;
+      return {
+        amount: plan.amount,
+        paidCredits: plan.paidCredits,
+        eventBonusCredits: bonus,
+        credits: plan.paidCredits + bonus,
+        label: plan.label
+      };
+    });
+  }
+
+  function planCatalog(context) {
+    var offers = context && Array.isArray(context.creditOffers) ? context.creditOffers : null;
+    if (!offers || !offers.length) return localPlanCatalog();
+    var fallbackCatalog = localPlanCatalog();
+    var eventDeclaredInactive = !!(context && context.creditEvent && context.creditEvent.active === false);
+    return PLANS.map(function (plan) {
+      var offer = offers.find(function (candidate) { return number(candidate.amount) === plan.amount; });
+      if (!offer) return fallbackCatalog.find(function (candidate) { return candidate.amount === plan.amount; }) || plan;
+      var paid = number(offer.paidCredits || offer.baseCredits) || plan.paidCredits;
+      var bonus = eventDeclaredInactive ? 0 : number(offer.eventBonusCredits);
+      var total = eventDeclaredInactive ? paid : (number(offer.totalCredits || offer.credits) || paid + bonus);
+      return {
+        amount: plan.amount,
+        paidCredits: paid,
+        eventBonusCredits: bonus,
+        credits: Math.max(paid, total),
+        label: String(offer.label || plan.label)
+      };
+    });
+  }
+
   function fallbackContext() {
     var balance = number(window.UC);
+    var offers = localPlanCatalog();
+    var eventActive = offers.some(function (offer) { return offer.eventBonusCredits > 0; });
     return {
       segment: balance === 10 ? 'trial_unused' : (balance < 10 ? 'trial_engaged' : 'new_unfunded'),
       balance: balance,
       paidOrderCount: 0,
-      eligibleForFirstPurchaseOffer: false,
-      experiment: { key: 'first_purchase_bonus_v2', variant: 'unknown' },
-      starterOffer: { amount: 2900, baseCredits: 110, bonusCredits: 0, totalCredits: 110 },
-      firstPurchaseOffers: [],
+      experiment: { key: 'credit_event_20260930', variant: 'all_users' },
+      creditEvent: { active: eventActive, displayEndsOn: '2026-09-30', endsAtMs: CREDIT_EVENT_ENDS_AT_MS },
+      creditOffers: offers.map(function (offer) {
+        return {
+          amount: offer.amount,
+          label: offer.label,
+          baseCredits: offer.paidCredits,
+          eventBonusCredits: offer.eventBonusCredits,
+          totalCredits: offer.credits
+        };
+      }),
+      starterOffer: {
+        amount: offers[0].amount,
+        paidCredits: offers[0].paidCredits,
+        eventBonusCredits: offers[0].eventBonusCredits,
+        totalCredits: offers[0].credits
+      },
       lastPackage: null
     };
   }
@@ -104,31 +161,24 @@
     return contextPromise;
   }
 
-  // 첫 구매 보너스는 전 상품에 적용된다(2026-08-29) — 종전엔 스타터만 반영해
-  // 라이트 이상을 권하는 결제 모달이 실제 지급량보다 적게 표시했다.
-  function planBonus(plan, context) {
-    if (!context || !context.eligibleForFirstPurchaseOffer) return 0;
-    var offers = context.firstPurchaseOffers || [];
-    for (var i = 0; i < offers.length; i++) {
-      if (number(offers[i].amount) === plan.amount) return number(offers[i].bonusCredits);
-    }
-    if (plan.amount === 2900 && context.starterOffer) return number(context.starterOffer.bonusCredits);
-    return 0;
+  function planBonus(plan) {
+    return number(plan && plan.eventBonusCredits);
   }
 
-  function planTotal(plan, context) {
-    return plan.credits + planBonus(plan, context);
+  function planTotal(plan) {
+    return number(plan && plan.credits);
   }
 
   function choosePlan(options, context) {
     var current = number(options.currentCredits == null ? window.UC : options.currentCredits);
     var gap = Math.max(1, number(options.neededCredits) - current);
     var last = context && context.lastPackage;
+    var catalog = planCatalog(context);
     if (context && context.segment === 'returning_low_balance' && last) {
-      var previous = PLANS.find(function (plan) { return plan.amount === number(last.amount); });
-      if (previous && planTotal(previous, context) >= gap) return previous;
+      var previous = catalog.find(function (plan) { return plan.amount === number(last.amount); });
+      if (previous && planTotal(previous) >= gap) return previous;
     }
-    return PLANS.find(function (plan) { return planTotal(plan, context) >= gap; }) || PLANS[PLANS.length - 1];
+    return catalog.find(function (plan) { return planTotal(plan) >= gap; }) || catalog[catalog.length - 1];
   }
 
   function actionLabel(action) {
@@ -217,12 +267,12 @@
     var options = modalState.options;
     var pending = readPending() || modalState.pending;
     var plan = choosePlan(options, context);
-    var totalCredits = planTotal(plan, context);
+    var totalCredits = planTotal(plan);
     var currentCredits = number(options.currentCredits == null ? window.UC : options.currentCredits);
     var neededCredits = number(options.neededCredits);
     var afterCredits = Math.max(0, currentCredits + totalCredits - neededCredits);
     var copy = modalCopy(context, pending, plan);
-    var bonus = planBonus(plan, context);
+    var bonus = planBonus(plan);
     modalState.context = context;
     modalState.plan = plan;
     modalState.totalCredits = totalCredits;
@@ -242,7 +292,7 @@
     var bonusNode = byId('gpCreditCheckoutBonus');
     if (bonusNode) {
       bonusNode.hidden = bonus <= 0;
-      bonusNode.textContent = bonus > 0 ? '첫 구매 보너스 +' + format(bonus) + '크레딧 포함' : '';
+      bonusNode.textContent = bonus > 0 ? '추가 크레딧 이벤트 +' + format(bonus) + ' · 2026년 9월 30일까지 결제 요청분' : '';
     }
     var summary = byId('gpCreditCheckoutSummary');
     if (summary) summary.hidden = neededCredits <= 0;
@@ -488,40 +538,53 @@
   };
 
   function starterBonusCopy(context) {
-    var bonus = number(context && context.starterOffer && context.starterOffer.bonusCredits);
-    return bonus > 0 ? '첫 결제 보너스 +' + format(bonus) + '크레딧' : '';
+    var starter = planCatalog(context)[0];
+    if (!starter.eventBonusCredits) return '기준 ' + format(starter.paidCredits) + '크레딧';
+    return '기준 ' + format(starter.paidCredits) + ' + 이벤트 ' + format(starter.eventBonusCredits)
+      + ' = 총 ' + format(starter.credits) + '크레딧 · 2026년 9월 30일까지 결제 요청분';
   }
 
-  // 첫 구매 보너스 행(다섯 카드 전부) — 자격이 있을 때만 노출한다.
-  // 카드는 정적으로 보너스를 적어두고, 재구매자에게는 여기서 숨긴다(받지도 않는 혜택을 보여주지 않기 위함).
-  function applyFirstPurchaseRows(context) {
-    var eligible = !!(context && context.eligibleForFirstPurchaseOffer);
-    var offers = (context && context.firstPurchaseOffers) || [];
-    var byAmount = {};
-    offers.forEach(function (o) { byAmount[number(o.amount)] = o; });
-    PLANS.forEach(function (plan) {
-      var row = document.querySelector('[data-first-bonus-for="' + plan.amount + '"]');
-      if (!row) return;
-      var served = byAmount[plan.amount];
-      // 서버가 상품별 값을 주면 그것을, 아직 못 받았으면 정적 표기를 쓴다
-      var bonus = served ? number(served.bonusCredits) : plan.firstBonus;
-      row.hidden = !eligible || bonus <= 0;
-      var strong = row.querySelector('strong');
-      if (strong) strong.textContent = '+' + format(bonus) + ' 크레딧';
-      var totalEl = document.querySelector('[data-plan-total-for="' + plan.amount + '"]');
-      if (totalEl) {
-        var total = (!eligible || bonus <= 0) ? plan.credits : plan.credits + bonus;
-        totalEl.textContent = '총 ' + format(total) + ' 크레딧';
+  function applyPricingCards(context) {
+    var catalog = planCatalog(context);
+    var anyEvent = catalog.some(function (plan) { return plan.eventBonusCredits > 0; });
+    var eventPanel = document.querySelector('.gp-pricing-event');
+    if (eventPanel) eventPanel.hidden = !anyEvent;
+    catalog.forEach(function (plan) {
+      var card = document.querySelector('[data-plan-amount="' + plan.amount + '"]');
+      if (!card) return;
+      card.dataset.planCredits = String(plan.credits);
+      var total = card.querySelector('[data-plan-total-for="' + plan.amount + '"]');
+      if (total) total.textContent = '총 ' + format(plan.credits) + ' 크레딧';
+      var bonusRow = card.querySelector('.feat-bonus');
+      if (bonusRow) {
+        bonusRow.hidden = plan.eventBonusCredits <= 0;
+        var bonusStrong = bonusRow.querySelector('strong');
+        if (bonusStrong) bonusStrong.textContent = '+' + format(plan.eventBonusCredits) + ' 크레딧';
+      }
+      var unit = card.querySelector('.plan-unitcost strong');
+      if (unit) unit.textContent = '약 ' + Math.round(plan.amount / Math.max(1, plan.credits)) + '원';
+      card.querySelectorAll('[data-work-cost]').forEach(function (node) {
+        var cost = Math.max(1, number(node.dataset.workCost));
+        node.dataset.planCredits = String(plan.credits);
+        node.textContent = Math.floor(plan.credits / cost) + '회';
+      });
+      var button = card.querySelector('.plan-btn');
+      if (button) {
+        button.setAttribute('onclick', "payToss(" + plan.amount + ',' + plan.credits + ",'크레딧 충전','')");
+        var grantLabel = plan.eventBonusCredits > 0
+          ? '기준 ' + format(plan.paidCredits) + '크레딧과 이벤트 ' + format(plan.eventBonusCredits) + '크레딧, 총 '
+          : '기준 ';
+        button.setAttribute('aria-label', grantLabel + format(plan.credits) + '크레딧을 ' + format(plan.amount) + '원에 충전하기');
       }
     });
+    return catalog;
   }
 
   function applyPricingContext(context) {
     if (!context) return;
-    var offer = context.starterOffer || fallbackContext().starterOffer;
-    applyFirstPurchaseRows(context);
-    // 스타터 카드 사용량: 보너스 포함 총 크레딧으로 서비스별 횟수를 다시 계산(500자 기본=10 · 1,000자 기본=20 · 감지=10)
-    var starterTotal = number(offer.totalCredits);
+    var catalog = applyPricingCards(context);
+    // 스타터 카드 사용량: 이벤트 보너스 포함 총 지급량으로 계산한다.
+    var starterTotal = catalog[0].credits;
     setText('gpStarterSvcShort', Math.floor(starterTotal / 10) + '회');
     setText('gpStarterSvcBasic', Math.floor(starterTotal / 20) + '회');
     setText('gpStarterSvcDetect', Math.floor(starterTotal / 10) + '회');
@@ -543,14 +606,15 @@
       panel.hidden = false;
       panel.dataset.action = 'starter';
       if (title) title.textContent = '무료 체험 다음 작업을 이어가세요';
-      if (desc) desc.textContent = starterBonusCopy(context) || '2,900원 스타터 충전으로 짧은 글부터 부담 없이 이어갈 수 있어요.';
+      if (desc) desc.textContent = starterBonusCopy(context) + ' · 짧은 글부터 부담 없이 이어갈 수 있어요.';
       if (button) button.textContent = '스타터 충전 보기';
       viewEvent = 'starter_offer_view';
     } else if (context.segment === 'returning_low_balance' && context.lastPackage) {
+      var previous = catalog.find(function (plan) { return plan.amount === number(context.lastPackage.amount); });
       panel.hidden = false;
       panel.dataset.action = 'repurchase';
       if (title) title.textContent = '지난번 상품으로 빠르게 다시 충전하세요';
-      if (desc) desc.textContent = format(context.lastPackage.amount) + '원 · ' + format(context.lastPackage.credits) + '크레딧 상품을 바로 선택할 수 있어요.';
+      if (desc) desc.textContent = format(context.lastPackage.amount) + '원 · ' + format(previous ? previous.credits : context.lastPackage.credits) + '크레딧 상품을 바로 선택할 수 있어요.';
       if (button) button.textContent = '이전 상품 다시 충전';
       viewEvent = 'repurchase_offer_view';
     } else {
@@ -574,9 +638,11 @@
       return;
     }
     if (panel.dataset.action === 'repurchase' && context.lastPackage) {
+      var previous = planCatalog(context).find(function (plan) { return plan.amount === number(context.lastPackage.amount); });
+      var currentCredits = previous ? previous.credits : context.lastPackage.credits;
       track('repurchase_offer_click', { segment: context.segment, value: context.lastPackage.amount, currency: 'KRW' });
       if (typeof window.payToss === 'function') {
-        return window.payToss(context.lastPackage.amount, context.lastPackage.credits, '크레딧 충전', '', {
+        return window.payToss(context.lastPackage.amount, currentCredits, '크레딧 충전', '', {
           segment: context.segment,
           offerVariant: 'repurchase_previous',
           pendingAction: 'pricing_purchase',
@@ -633,21 +699,22 @@
       };
     }
     if (context.segment === 'trial_engaged') {
+      var starter = planCatalog(context)[0];
       return {
         badge: '이어하기',
         title: '체험 크레딧이 ' + format(balance) + '크레딧 남았어요',
-        desc: format(context.starterOffer.amount) + '원 스타터 충전이면 500자 휴머나이징을 약 ' + Math.floor(number(context.starterOffer.totalCredits) / 10) + '번 더 할 수 있어요.'
-          + (starterBonusCopy(context) ? ' (' + starterBonusCopy(context) + ')' : ''),
+        desc: format(starter.amount) + '원 스타터 충전이면 500자 휴머나이징을 약 ' + Math.floor(starter.credits / 10) + '번 더 할 수 있어요. (' + starterBonusCopy(context) + ')',
         cta: '스타터 충전 보기',
         action: 'starter',
         event: 'starter_offer'
       };
     }
     if (context.segment === 'returning_low_balance' && context.lastPackage) {
+      var previous = planCatalog(context).find(function (plan) { return plan.amount === number(context.lastPackage.amount); });
       return {
         badge: '빠른 재충전',
         title: '잔액이 ' + format(balance) + '크레딧 남았어요',
-        desc: '지난번 쓰신 ' + format(context.lastPackage.amount) + '원 · ' + format(context.lastPackage.credits) + '크레딧 상품으로 바로 충전할 수 있어요.',
+        desc: '지난번 쓰신 ' + format(context.lastPackage.amount) + '원 · ' + format(previous ? previous.credits : context.lastPackage.credits) + '크레딧 상품으로 바로 충전할 수 있어요.',
         cta: '이전 상품 다시 충전',
         action: 'repurchase',
         event: 'repurchase_offer'
@@ -721,10 +788,9 @@
       segment: segment,
       balance: balances[segment] == null ? 0 : balances[segment],
       paidOrderCount: segment.indexOf('returning') === 0 ? 3 : 0,
-      eligibleForFirstPurchaseOffer: segment === 'trial_engaged',
-      experiment: { key: 'first_purchase_bonus_v1', variant: 'bonus_10' },
-      starterOffer: { amount: 2900, baseCredits: 110, bonusCredits: segment === 'trial_engaged' ? 10 : 0, totalCredits: segment === 'trial_engaged' ? 120 : 110 },
-      lastPackage: segment === 'returning_low_balance' ? { amount: 14500, credits: 600 } : null
+      experiment: { key: 'credit_event_20260930', variant: 'all_users' },
+      starterOffer: { amount: 2900, paidCredits: 100, eventBonusCredits: 5, totalCredits: 105 },
+      lastPackage: segment === 'returning_low_balance' ? { amount: 14500, credits: 575 } : null
     };
   }
 
@@ -782,7 +848,8 @@
     }
     var context = await fetchContext(false);
     if (state.action === 'repurchase' && context.lastPackage && typeof window.payToss === 'function') {
-      return window.payToss(context.lastPackage.amount, context.lastPackage.credits, '크레딧 충전', '', {
+      var previous = planCatalog(context).find(function (plan) { return plan.amount === number(context.lastPackage.amount); });
+      return window.payToss(context.lastPackage.amount, previous ? previous.credits : context.lastPackage.credits, '크레딧 충전', '', {
         segment: context.segment,
         offerVariant: 'repurchase_previous',
         pendingAction: 'pricing_purchase',
@@ -798,6 +865,11 @@
 
   window.gpConversionContext = function (force) {
     return fetchContext(!!force);
+  };
+
+  window.gpCreditOfferForAmount = async function (amount, force) {
+    var context = await fetchContext(!!force);
+    return planCatalog(context).find(function (plan) { return plan.amount === number(amount); }) || null;
   };
 
   // ── 인라인 오퍼(3순위) ───────────────────────────────────────────────────────
@@ -915,7 +987,7 @@
     if (window.authReady && typeof window.authReady.then === 'function') {
       window.authReady.then(function () {
         window.gpRefreshHeroOffer(false);
-        if (window.CU) window.gpRefreshPricingOffer(false);
+        window.gpRefreshPricingOffer(false);
       });
       return;
     }
@@ -929,9 +1001,8 @@
       segment: 'trial_engaged',
       balance: 4,
       paidOrderCount: 0,
-      eligibleForFirstPurchaseOffer: true,
-      experiment: { key: 'first_purchase_bonus_v1', variant: 'bonus_10' },
-      starterOffer: { amount: 2900, baseCredits: 110, bonusCredits: 10, totalCredits: 120 },
+      experiment: { key: 'credit_event_20260930', variant: 'all_users' },
+      starterOffer: { amount: 2900, paidCredits: 100, eventBonusCredits: 5, totalCredits: 105 },
       lastPackage: null
     };
     var previewPending = { action: 'main_analysis', source: 'local_preview' };
@@ -940,7 +1011,7 @@
       pending: previewPending,
       context: previewContext,
       plan: PLANS[0],
-      totalCredits: 120
+      totalCredits: 105
     };
     renderModal(previewContext);
     var modal = byId('gpCreditCheckoutModal');

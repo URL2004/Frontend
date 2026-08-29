@@ -64,7 +64,7 @@ test('가격표 카드는 서비스별로 몇 번 쓸 수 있는지 보여준다
   assert.equal((pricing.match(/class="svc-r"/gu) || []).length, 15, '카드 5 × 작업 3종');
   // 상품별 크레딧과 단가가 맞는 횟수(1,000자 기본=20 · 감지=10 · 1만자 고급=200, 내림)
   for (const [credits, basic, detect, formal] of [
-    [110, 5, 11, 0], [400, 20, 40, 2], [700, 35, 70, 3], [1500, 75, 150, 7], [3300, 165, 330, 16]
+    [105, 5, 10, 0], [330, 16, 33, 1], [575, 28, 57, 2], [1200, 60, 120, 6], [2500, 125, 250, 12]
   ]) {
     assert.match(pricing, new RegExp(`data-plan-credits="${credits}" data-work-cost="20">${basic}회<`, 'u'), `${credits} 기본 횟수`);
     assert.match(pricing, new RegExp(`data-plan-credits="${credits}" data-work-cost="10">${detect}회<`, 'u'), `${credits} 감지 횟수`);
@@ -76,9 +76,33 @@ test('가격표 카드는 서비스별로 몇 번 쓸 수 있는지 보여준다
   assert.match(pricing, /class="gp-plan-svc-note"/u);
   assert.match(pricing, /id="gpPricingSegmentPanel"/u);
   assert.equal((pricing.match(/class="gp-plan-audience"/gu) || []).length, 5, '상품마다 추천 사용 상황');
-  assert.equal((pricing.match(/aria-label="총 [^"]+크레딧을 [^"]+원에 충전하기"/gu) || []).length, 5, '결제 버튼마다 상품 맥락 이름');
+  assert.equal((pricing.match(/aria-label="기준 [^"]+크레딧과 이벤트 [^"]+크레딧, 총 [^"]+크레딧을 [^"]+원에 충전하기"/gu) || []).length, 5, '결제 버튼마다 기준·이벤트·총 지급량 맥락');
   assert.doesNotMatch(pricing, /class="gp-top-actions"|class="pc-fx"|class="pc-tr/u, '중복 상단 버튼 또는 장식 트래커 재유입');
   assert.doesNotMatch(pricing, /class="plan-card[^"]*"[^>]+onclick=/u, '카드 전체 클릭 재유입');
+});
+
+test('기간 이벤트 종료·서버 비활성화 시 표시와 결제 스냅샷이 기준 크레딧으로 함께 복귀한다', async () => {
+  const [flow, main, pricing, landing, landingJs] = await Promise.all([
+    read('assets/js/conversion-flow.js'),
+    read('assets/js/app-main.js'),
+    read('pages/pricing.html'),
+    read('pages/landing.html'),
+    read('assets/js/landing.js')
+  ]);
+  assert.match(flow, /CREDIT_EVENT_ENDS_AT_MS = Date\.parse\('2026-10-01T00:00:00\+09:00'\)/u);
+  assert.match(flow, /eventDeclaredInactive[\s\S]*?context\.creditEvent\.active === false/u);
+  assert.match(flow, /eventPanel\.hidden = !anyEvent/u);
+  assert.match(flow, /window\.gpCreditOfferForAmount = async function/u);
+  assert.equal((pricing.match(/data-plan-amount="\d+"/gu) || []).length, 5, '서버 오퍼를 덮어쓸 상품 키 5개');
+
+  assert.match(main, /await window\.gpCreditOfferForAmount\(amount, true\)/u);
+  assert.match(main, /creditGrantPolicyVersion: grant \? CREDIT_GRANT_POLICY_VERSION/u);
+  assert.match(main, /grant\.eventBonusCredits > 0/u);
+
+  assert.match(landing, /id="lpCreditEvent"/u);
+  assert.equal((landing.match(/data-paid-credits="\d+" data-event-credits="\d+"/gu) || []).length, 5, '랜딩 상품 5개');
+  assert.match(landingJs, /function syncLandingCreditEvent/u);
+  assert.match(landingJs, /eventNotice\.hidden = true/u);
 });
 
 test('요금 카드는 넓은 화면에서 다섯 상품을 한 줄에 펼치고 작은 화면에서도 같은 가로 순서를 유지한다', async () => {

@@ -2,7 +2,7 @@
  <section class="gp-page-hero gp-pricing-hero">
   <div class="gp-pricing-hero-copy">
    <h1 id="pricingHeroTitle">크레딧 충전</h1>
-   <p id="pricingHeroDesc">구매한 크레딧은 <strong>유효기간 없이</strong> 사용할 수 있어요. AI 감지는 100자당 1크레딧이며, 휴머나이징은 선택한 모드와 글자 수에 따라 차감돼요.</p>
+   <p id="pricingHeroDesc">기준 크레딧과 지급된 이벤트 크레딧은 모두 <strong>유효기간 없이</strong> 사용할 수 있어요. AI 감지는 100자당 1크레딧이며, 휴머나이징은 선택한 모드와 글자 수에 따라 차감돼요.</p>
    <div class="phero-badges">
     <span class="phero-badge">SSL 보안결제</span>
     <span class="phero-badge">토스</span>
@@ -34,6 +34,10 @@
      <p id="gpPlanListHint">5개 상품의 총 지급 크레딧과 이용 가능 횟수를 한눈에 비교하세요. 작은 화면에서는 옆으로 밀어 확인할 수 있어요.</p>
     </div>
    </header>
+   <aside class="gp-pricing-event" aria-label="추가 크레딧 이벤트 안내">
+    <strong>추가 크레딧 이벤트 · 2026년 9월 30일까지 결제 요청분</strong>
+    <span>모든 구매자에게 상품별 기준 크레딧의 5~25%를 더 드려요. 이벤트 크레딧도 지급 후 유효기간이 없습니다.</span>
+   </aside>
   <section id="gpPricingSegmentPanel" class="gp-pricing-segment" hidden aria-live="polite">
    <div>
     <strong id="gpPricingSegmentTitle">내 사용 단계에 맞는 다음 선택</strong>
@@ -42,109 +46,104 @@
    <button id="gpPricingSegmentButton" type="button" onclick="gpPricingSegmentAction()">확인하기</button>
   </section>
    <div class="plan-grid gp-plan-grid" id="gpPlanList" role="region" aria-label="크레딧 충전 상품 5개" aria-describedby="gpPlanListHint" tabindex="0">
-   <article class="plan-card" data-plan-credits="110">
+   <article class="plan-card" data-plan-amount="2900" data-plan-credits="105">
     <div class="plan-hd-row"><span class="plan-tag">100 크레딧</span></div>
     <div class="plan-price-main">2,900<span class="plan-won">원</span></div>
-    <div class="plan-unitcost">보너스 포함 1크레딧당 <strong>약 26원</strong></div>
+    <div class="plan-unitcost">이벤트 포함 1크레딧당 <strong>약 28원</strong></div>
     <p class="gp-plan-audience">짧은 글 몇 건을 먼저 시험할 때</p>
     <ul class="plan-feats">
-     <li><span>기본 제공</span><strong>100 크레딧</strong></li>
-     <li class="feat-bonus"><span>보너스 지급 <em>+10%</em></span><strong>+10 크레딧</strong></li>
-     <li class="feat-first" id="gpStarterExperimentBonus" data-first-bonus-for="2900" hidden data-seo-exclude><span>첫 구매 보너스 <em>+5%</em></span><strong>+6 크레딧</strong></li>
+     <li><span>기준 크레딧</span><strong>100 크레딧</strong></li>
+     <li class="feat-bonus"><span>이벤트 추가 <em>+5%</em></span><strong>+5 크레딧</strong></li>
     </ul>
-    <div class="gp-plan-total" id="gpStarterTotal" data-plan-total-for="2900">총 110 크레딧</div>
+    <div class="gp-plan-total" id="gpStarterTotal" data-plan-total-for="2900">총 105 크레딧</div>
     <div class="gp-plan-svc">
      <span class="svc-t">이 크레딧으로 할 수 있는 일</span>
-     <span class="svc-r"><span>1,000자 휴머나이징</span><strong data-credit-work-count="additional" data-plan-credits="110" data-work-cost="20">5회</strong></span>
-     <span class="svc-r"><span>1,000자 AI 감지</span><strong data-credit-work-count="additional" data-plan-credits="110" data-work-cost="10">11회</strong></span>
-     <span class="svc-r"><span>1만자 고급</span><strong data-credit-work-count="additional" data-plan-credits="110" data-work-cost="200">0회</strong></span>
+     <span class="svc-r"><span>1,000자 휴머나이징</span><strong data-credit-work-count="additional" data-plan-credits="105" data-work-cost="20">5회</strong></span>
+     <span class="svc-r"><span>1,000자 AI 감지</span><strong data-credit-work-count="additional" data-plan-credits="105" data-work-cost="10">10회</strong></span>
+     <span class="svc-r"><span>1만자 고급</span><strong data-credit-work-count="additional" data-plan-credits="105" data-work-cost="200">0회</strong></span>
     </div>
-    <button type="button" class="plan-btn" onclick="payToss(2900,110,'크레딧 충전','')" aria-label="총 110크레딧을 2,900원에 충전하기">충전하기</button>
+    <button type="button" class="plan-btn" onclick="payToss(2900,105,'크레딧 충전','')" aria-label="기준 100크레딧과 이벤트 5크레딧, 총 105크레딧을 2,900원에 충전하기">충전하기</button>
    </article>
 
-   <article class="plan-card" data-plan-credits="400">
+   <article class="plan-card" data-plan-amount="8700" data-plan-credits="330">
     <div class="plan-hd-row"><span class="plan-tag">300 크레딧</span></div>
     <div class="plan-price-main">8,700<span class="plan-won">원</span></div>
-    <div class="plan-unitcost">보너스 포함 1크레딧당 <strong>약 22원</strong></div>
+    <div class="plan-unitcost">이벤트 포함 1크레딧당 <strong>약 26원</strong></div>
     <p class="gp-plan-audience">과제를 주 1~2회 처리할 때</p>
     <ul class="plan-feats">
-     <li><span>기본 제공</span><strong>300 크레딧</strong></li>
-     <li class="feat-bonus"><span>보너스 지급 <em>+33%</em></span><strong>+100 크레딧</strong></li>
-     <li class="feat-first" data-first-bonus-for="8700" hidden data-seo-exclude><span>첫 구매 보너스 <em>+8%</em></span><strong>+32 크레딧</strong></li>
+     <li><span>기준 크레딧</span><strong>300 크레딧</strong></li>
+     <li class="feat-bonus"><span>이벤트 추가 <em>+10%</em></span><strong>+30 크레딧</strong></li>
     </ul>
-    <div class="gp-plan-total" data-plan-total-for="8700">총 400 크레딧</div>
+    <div class="gp-plan-total" data-plan-total-for="8700">총 330 크레딧</div>
     <div class="gp-plan-svc">
      <span class="svc-t">이 크레딧으로 할 수 있는 일</span>
-     <span class="svc-r"><span>1,000자 휴머나이징</span><strong data-credit-work-count="additional" data-plan-credits="400" data-work-cost="20">20회</strong></span>
-     <span class="svc-r"><span>1,000자 AI 감지</span><strong data-credit-work-count="additional" data-plan-credits="400" data-work-cost="10">40회</strong></span>
-     <span class="svc-r"><span>1만자 고급</span><strong data-credit-work-count="additional" data-plan-credits="400" data-work-cost="200">2회</strong></span>
+     <span class="svc-r"><span>1,000자 휴머나이징</span><strong data-credit-work-count="additional" data-plan-credits="330" data-work-cost="20">16회</strong></span>
+     <span class="svc-r"><span>1,000자 AI 감지</span><strong data-credit-work-count="additional" data-plan-credits="330" data-work-cost="10">33회</strong></span>
+     <span class="svc-r"><span>1만자 고급</span><strong data-credit-work-count="additional" data-plan-credits="330" data-work-cost="200">1회</strong></span>
     </div>
-    <button type="button" class="plan-btn" onclick="payToss(8700,400,'크레딧 충전','')" aria-label="총 400크레딧을 8,700원에 충전하기">충전하기</button>
+    <button type="button" class="plan-btn" onclick="payToss(8700,330,'크레딧 충전','')" aria-label="기준 300크레딧과 이벤트 30크레딧, 총 330크레딧을 8,700원에 충전하기">충전하기</button>
    </article>
 
-   <article class="plan-card plan-popular" data-plan-credits="700">
+   <article class="plan-card plan-popular" data-plan-amount="14500" data-plan-credits="575">
     <div class="plan-badge">가장 인기</div>
     <div class="plan-hd-row"><span class="plan-tag">500 크레딧</span></div>
     <div class="plan-price-main">14,500<span class="plan-won">원</span></div>
-    <div class="plan-unitcost">보너스 포함 1크레딧당 <strong>약 21원</strong></div>
+    <div class="plan-unitcost">이벤트 포함 1크레딧당 <strong>약 25원</strong></div>
     <p class="gp-plan-audience">리포트와 발표 자료를 꾸준히 다듬을 때</p>
     <ul class="plan-feats">
-     <li><span>기본 제공</span><strong>500 크레딧</strong></li>
-     <li class="feat-bonus"><span>보너스 지급 <em>+40%</em></span><strong>+200 크레딧</strong></li>
-     <li class="feat-first" data-first-bonus-for="14500" hidden data-seo-exclude><span>첫 구매 보너스 <em>+10%</em></span><strong>+70 크레딧</strong></li>
+     <li><span>기준 크레딧</span><strong>500 크레딧</strong></li>
+     <li class="feat-bonus"><span>이벤트 추가 <em>+15%</em></span><strong>+75 크레딧</strong></li>
     </ul>
-    <div class="gp-plan-total" data-plan-total-for="14500">총 700 크레딧</div>
+    <div class="gp-plan-total" data-plan-total-for="14500">총 575 크레딧</div>
     <div class="gp-plan-svc">
      <span class="svc-t">이 크레딧으로 할 수 있는 일</span>
-     <span class="svc-r"><span>1,000자 휴머나이징</span><strong data-credit-work-count="additional" data-plan-credits="700" data-work-cost="20">35회</strong></span>
-     <span class="svc-r"><span>1,000자 AI 감지</span><strong data-credit-work-count="additional" data-plan-credits="700" data-work-cost="10">70회</strong></span>
-     <span class="svc-r"><span>1만자 고급</span><strong data-credit-work-count="additional" data-plan-credits="700" data-work-cost="200">3회</strong></span>
+     <span class="svc-r"><span>1,000자 휴머나이징</span><strong data-credit-work-count="additional" data-plan-credits="575" data-work-cost="20">28회</strong></span>
+     <span class="svc-r"><span>1,000자 AI 감지</span><strong data-credit-work-count="additional" data-plan-credits="575" data-work-cost="10">57회</strong></span>
+     <span class="svc-r"><span>1만자 고급</span><strong data-credit-work-count="additional" data-plan-credits="575" data-work-cost="200">2회</strong></span>
     </div>
-    <button type="button" class="plan-btn" onclick="payToss(14500,700,'크레딧 충전','')" aria-label="총 700크레딧을 14,500원에 충전하기">충전하기</button>
+    <button type="button" class="plan-btn" onclick="payToss(14500,575,'크레딧 충전','')" aria-label="기준 500크레딧과 이벤트 75크레딧, 총 575크레딧을 14,500원에 충전하기">충전하기</button>
    </article>
 
-   <article class="plan-card" data-plan-credits="1500">
+   <article class="plan-card" data-plan-amount="29000" data-plan-credits="1200">
     <div class="plan-hd-row"><span class="plan-tag">1,000 크레딧</span></div>
     <div class="plan-price-main">29,000<span class="plan-won">원</span></div>
-    <div class="plan-unitcost">보너스 포함 1크레딧당 <strong>약 19원</strong></div>
+    <div class="plan-unitcost">이벤트 포함 1크레딧당 <strong>약 24원</strong></div>
     <p class="gp-plan-audience">여러 과목과 장문 작업을 자주 처리할 때</p>
     <ul class="plan-feats">
-     <li><span>기본 제공</span><strong>1,000 크레딧</strong></li>
-     <li class="feat-bonus"><span>보너스 지급 <em>+50%</em></span><strong>+500 크레딧</strong></li>
-     <li class="feat-first" data-first-bonus-for="29000" hidden data-seo-exclude><span>첫 구매 보너스 <em>+12%</em></span><strong>+180 크레딧</strong></li>
+     <li><span>기준 크레딧</span><strong>1,000 크레딧</strong></li>
+     <li class="feat-bonus"><span>이벤트 추가 <em>+20%</em></span><strong>+200 크레딧</strong></li>
     </ul>
-    <div class="gp-plan-total" data-plan-total-for="29000">총 1,500 크레딧</div>
+    <div class="gp-plan-total" data-plan-total-for="29000">총 1,200 크레딧</div>
     <div class="gp-plan-svc">
      <span class="svc-t">이 크레딧으로 할 수 있는 일</span>
-     <span class="svc-r"><span>1,000자 휴머나이징</span><strong data-credit-work-count="additional" data-plan-credits="1500" data-work-cost="20">75회</strong></span>
-     <span class="svc-r"><span>1,000자 AI 감지</span><strong data-credit-work-count="additional" data-plan-credits="1500" data-work-cost="10">150회</strong></span>
-     <span class="svc-r"><span>1만자 고급</span><strong data-credit-work-count="additional" data-plan-credits="1500" data-work-cost="200">7회</strong></span>
+     <span class="svc-r"><span>1,000자 휴머나이징</span><strong data-credit-work-count="additional" data-plan-credits="1200" data-work-cost="20">60회</strong></span>
+     <span class="svc-r"><span>1,000자 AI 감지</span><strong data-credit-work-count="additional" data-plan-credits="1200" data-work-cost="10">120회</strong></span>
+     <span class="svc-r"><span>1만자 고급</span><strong data-credit-work-count="additional" data-plan-credits="1200" data-work-cost="200">6회</strong></span>
     </div>
-    <button type="button" class="plan-btn" onclick="payToss(29000,1500,'크레딧 충전','')" aria-label="총 1,500크레딧을 29,000원에 충전하기">충전하기</button>
+    <button type="button" class="plan-btn" onclick="payToss(29000,1200,'크레딧 충전','')" aria-label="기준 1,000크레딧과 이벤트 200크레딧, 총 1,200크레딧을 29,000원에 충전하기">충전하기</button>
    </article>
 
-   <article class="plan-card plan-premium" data-plan-credits="3300">
+   <article class="plan-card plan-premium" data-plan-amount="58000" data-plan-credits="2500">
     <div class="plan-badge">최대 혜택</div>
     <div class="plan-hd-row"><span class="plan-tag">2,000 크레딧</span></div>
     <div class="plan-price-main">58,000<span class="plan-won">원</span></div>
-    <div class="plan-unitcost">보너스 포함 1크레딧당 <strong>약 18원</strong></div>
+    <div class="plan-unitcost">이벤트 포함 1크레딧당 <strong>약 23원</strong></div>
     <p class="gp-plan-audience">논문과 장문 작업량이 많은 기간에</p>
     <ul class="plan-feats">
-     <li><span>기본 제공</span><strong>2,000 크레딧</strong></li>
-     <li class="feat-bonus"><span>보너스 지급 <em>+65%</em></span><strong>+1,300 크레딧</strong></li>
-     <li class="feat-first" data-first-bonus-for="58000" hidden data-seo-exclude><span>첫 구매 보너스 <em>+15%</em></span><strong>+495 크레딧</strong></li>
+     <li><span>기준 크레딧</span><strong>2,000 크레딧</strong></li>
+     <li class="feat-bonus"><span>이벤트 추가 <em>+25%</em></span><strong>+500 크레딧</strong></li>
     </ul>
-    <div class="gp-plan-total" data-plan-total-for="58000">총 3,300 크레딧</div>
+    <div class="gp-plan-total" data-plan-total-for="58000">총 2,500 크레딧</div>
     <div class="gp-plan-svc">
      <span class="svc-t">이 크레딧으로 할 수 있는 일</span>
-     <span class="svc-r"><span>1,000자 휴머나이징</span><strong data-credit-work-count="additional" data-plan-credits="3300" data-work-cost="20">165회</strong></span>
-     <span class="svc-r"><span>1,000자 AI 감지</span><strong data-credit-work-count="additional" data-plan-credits="3300" data-work-cost="10">330회</strong></span>
-     <span class="svc-r"><span>1만자 고급</span><strong data-credit-work-count="additional" data-plan-credits="3300" data-work-cost="200">16회</strong></span>
+     <span class="svc-r"><span>1,000자 휴머나이징</span><strong data-credit-work-count="additional" data-plan-credits="2500" data-work-cost="20">125회</strong></span>
+     <span class="svc-r"><span>1,000자 AI 감지</span><strong data-credit-work-count="additional" data-plan-credits="2500" data-work-cost="10">250회</strong></span>
+     <span class="svc-r"><span>1만자 고급</span><strong data-credit-work-count="additional" data-plan-credits="2500" data-work-cost="200">12회</strong></span>
     </div>
-    <button type="button" class="plan-btn" onclick="payToss(58000,3300,'크레딧 충전','')" aria-label="총 3,300크레딧을 58,000원에 충전하기">충전하기</button>
+    <button type="button" class="plan-btn" onclick="payToss(58000,2500,'크레딧 충전','')" aria-label="기준 2,000크레딧과 이벤트 500크레딧, 총 2,500크레딧을 58,000원에 충전하기">충전하기</button>
    </article>
   </div>
-  <p class="gp-plan-svc-note">1,000자는 A4 약 반 장 분량이에요. 기본 휴머나이징은 500자 이하 짧은 글도 10크레딧으로 이용할 수 있고, 크레딧은 서비스 구분 없이 자유롭게 나눠 쓸 수 있어요.</p>
+  <p class="gp-plan-svc-note">1,000자는 A4 약 반 장 분량이에요. 기본 휴머나이징은 500자 이하 짧은 글도 10크레딧으로 이용할 수 있고, 크레딧은 서비스 구분 없이 자유롭게 나눠 쓸 수 있어요. 이벤트 기간에 지급된 추가 크레딧도 유효기간이 없습니다.</p>
   </section>
 
   <section class="gp-credit-rates" aria-labelledby="pricingCreditRatesTitle">

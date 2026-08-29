@@ -1705,6 +1705,27 @@ function maintenancePreviewQuery() {
   return '&preview_key=' + encodeURIComponent(window.APP_CONFIG.MAINTENANCE_PREVIEW_KEY);
 }
 
+const CREDIT_GRANT_POLICY_VERSION = 'credit-grant-base-v1';
+const CREDIT_EVENT_LOCAL_START_MS = Date.parse('2026-08-29T00:00:00+09:00');
+const CREDIT_EVENT_LOCAL_END_MS = Date.parse('2026-10-01T00:00:00+09:00');
+function localCreditEventProduct(paidCredits, configuredBonusCredits) {
+ const now = Date.now();
+ const eventActive = now >= CREDIT_EVENT_LOCAL_START_MS && now < CREDIT_EVENT_LOCAL_END_MS;
+ const eventBonusCredits = eventActive ? configuredBonusCredits : 0;
+ return {
+  paidCredits,
+  eventBonusCredits,
+  totalGrantedCredits: paidCredits + eventBonusCredits
+ };
+}
+const CREDIT_EVENT_PRODUCTS = {
+ 2900: localCreditEventProduct(100, 5),
+ 8700: localCreditEventProduct(300, 30),
+ 14500: localCreditEventProduct(500, 75),
+ 29000: localCreditEventProduct(1000, 200),
+ 58000: localCreditEventProduct(2000, 500)
+};
+
 async function payToss(amount, credits, name, plan, checkoutOptions) {
   checkoutOptions = checkoutOptions || {};
   if (!window.CU) {
@@ -1715,13 +1736,40 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
   }
 
  // 오결제 방지: 결제 전 1회 확인 + 환불/차감 정책 명시(실수 클릭·기대 불일치 환불 감소)
- const shownCredits = Number(checkoutOptions.displayCredits) || Number(credits);
- const confirmMsg = `${shownCredits.toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n\n· 작업이 실패하면 크레딧은 차감되지 않아요.\n· 일반 환불은 결제 후 7일 이내 가능하며, 사용한 크레딧 금액은 제외돼요.`;
+  let grant = CREDIT_EVENT_PRODUCTS[Number(amount)] || null;
+  // 로그인 결제에서는 서버의 현재 오퍼를 최종 기준으로 삼는다. 이벤트 조기 종료나
+  // 마감 직후에도 화면의 정적 지급량이 실제 주문 스냅샷보다 앞서지 않게 한다.
+  if (typeof window.gpCreditOfferForAmount === 'function') {
+   try {
+    const currentOffer = await window.gpCreditOfferForAmount(amount, true);
+    if (currentOffer && Number(currentOffer.paidCredits) > 0) {
+     const paidCredits = Number(currentOffer.paidCredits);
+     const eventBonusCredits = Math.max(0, Number(currentOffer.eventBonusCredits) || 0);
+     const offeredTotal = Number(currentOffer.credits) || Number(currentOffer.totalGrantedCredits) || 0;
+     grant = {
+      paidCredits,
+      eventBonusCredits,
+      totalGrantedCredits: Math.max(paidCredits + eventBonusCredits, offeredTotal)
+     };
+    }
+   } catch (_) {
+    // 네트워크 오류 때는 기간을 반영한 로컬 상품표를 사용하고, 실제 지급량은 서버가 다시 검증한다.
+   }
+  }
+  const shownCredits = grant ? grant.totalGrantedCredits : (Number(checkoutOptions.displayCredits) || Number(credits));
+  // 구 주문 재구매 컨텍스트에 과거 지급량이 남아 있어도 현재 상품 지급량으로 주문·추적 값을 통일한다.
+  credits = shownCredits;
+  const grantLine = grant
+   ? (grant.eventBonusCredits > 0
+     ? `· 기준 ${grant.paidCredits.toLocaleString('ko-KR')} + 이벤트 ${grant.eventBonusCredits.toLocaleString('ko-KR')} = 총 ${shownCredits.toLocaleString('ko-KR')}크레딧\n· 추가 크레딧 이벤트는 2026년 9월 30일까지 결제 요청분에 적용되며, 지급 후 유효기간은 없어요.\n`
+     : `· 기준 ${grant.paidCredits.toLocaleString('ko-KR')} = 총 ${shownCredits.toLocaleString('ko-KR')}크레딧 · 유효기간 없음\n`)
+   : '';
+  const confirmMsg = `${shownCredits.toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n\n${grantLine}· 작업이 실패하면 크레딧은 차감되지 않아요.\n· 일반 환불은 결제 후 7일 이내 가능하며, 기준 크레딧 사용량을 반영해요.`;
  const buyOk = checkoutOptions.skipConfirm === true
   ? true
   : (window.gpConfirm
     ? await window.gpConfirm({ title: '구매를 진행할까요?', message: confirmMsg, confirmText: '구매하기' })
-    : confirm(`${shownCredits.toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n· 작업 실패 시 크레딧 차감 없음\n· 결제 후 7일 이내 사용분 제외 환불`));
+    : confirm(confirmMsg));
  if (!buyOk) {
   if (window.gpTrack) window.gpTrack('checkout_cancel', { checkout_type: 'credits', value: amount, currency: 'KRW', code: 'PRE_CONFIRM_CANCEL' });
   return;
@@ -1765,8 +1813,12 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
   if (typeof window.gpBindPendingCheckout === 'function') {
    window.gpBindPendingCheckout(orderId, {
     amount: Number(amount),
-    credits: Number(credits),
-    displayCredits: shownCredits,
+     credits: Number(credits),
+     displayCredits: shownCredits,
+     paidCredits: grant?.paidCredits || Number(credits),
+     eventBonusCredits: grant?.eventBonusCredits || 0,
+     totalGrantedCredits: shownCredits,
+     creditGrantPolicyVersion: grant ? CREDIT_GRANT_POLICY_VERSION : '',
     segment: checkoutOptions.segment || pendingMeta.segment || '',
     offerVariant: checkoutOptions.offerVariant || pendingMeta.offer_variant || ''
    });
@@ -1812,7 +1864,7 @@ function switchPricingTab() {
   if (credit) credit.style.display = 'block';
   if (heroTitle && heroDesc) {
     heroTitle.textContent = '크레딧 충전';
-    heroDesc.innerHTML = '구매한 크레딧은 <strong>유효기간 없이</strong> 사용할 수 있어요. AI 감지는 100자당 1크레딧이며, 휴머나이징은 선택한 모드와 글자 수에 따라 차감돼요.';
+    heroDesc.innerHTML = '기준 크레딧과 지급된 이벤트 크레딧은 모두 <strong>유효기간 없이</strong> 사용할 수 있어요. AI 감지는 100자당 1크레딧이며, 휴머나이징은 선택한 모드와 글자 수에 따라 차감돼요.';
   }
   if (window.gpTrack) window.gpTrack('pricing_tab_change', { pricing_tab: 'credit' });
 }
@@ -1855,8 +1907,9 @@ function showPolicy(type) {
 제3조 (크레딧 및 결제)
 1. 크레딧은 유료 결제 또는 무료 지급을 통해 획득할 수 있습니다.
 2. 결제는 토스페이먼츠를 통해 이루어집니다.
-3. 유료로 충전한 크레딧은 유효기간 없이 사용할 수 있습니다.
-4. 단순 변심에 따른 일반 환불 신청기간은 결제일로부터 7일이며, 사용분을 제외한 환불 계산과 예외 사항은 환불규정에 따릅니다.
+3. 유료로 충전한 기준 크레딧과 결제 이벤트로 추가 지급된 크레딧은 유효기간 없이 사용할 수 있습니다.
+4. 2026년 9월 30일까지 결제 요청분에는 상품별 기준 크레딧의 5~25%를 이벤트 크레딧으로 추가 지급합니다.
+5. 단순 변심에 따른 일반 환불 신청기간은 결제일로부터 7일이며, 기준 크레딧 사용분을 반영한 환불 계산과 이벤트 크레딧 회수 및 예외 사항은 환불규정에 따릅니다.
 
 제4조 (이용자 책임 및 면책 - Disclaimer)
 1. 본 서비스는 AI 작성 여부 진단(감지) 및 텍스트 휴머나이징(문장 다듬기·재작성) 도구를 제공하며, 해당 도구의 활용 방법과 목적은 전적으로 이용자의 판단과 책임에 따릅니다.
@@ -1943,9 +1996,11 @@ function showPolicy(type) {
 
 1. 크레딧 환불 정책
 - 일반 환불은 결제일로부터 7일 이내 요청할 수 있습니다.
-- 구매한 유료 크레딧을 전혀 사용하지 않은 경우 결제금액 전액을 환불합니다.
-- 일부 사용한 경우 '결제금액 × (환불 대상 유료 크레딧 ÷ 해당 주문의 구매 크레딧)'으로 계산하고 1원 미만은 버립니다.
-- 무료로 지급된 크레딧은 환불 대상이 아닙니다.
+- 기준 크레딧을 전혀 사용하지 않은 경우 결제금액 전액을 환불합니다.
+- 일부 사용한 경우 '결제금액 × (남은 기준 크레딧 ÷ 해당 주문의 기준 크레딧)'으로 계산하고 1원 미만은 버립니다.
+- 환불 계산상 크레딧 사용량은 기준 크레딧부터 먼저 차감된 것으로 처리합니다.
+- 이벤트로 추가 지급된 크레딧은 현금 환불 가치가 없으며, 환불 완료 시 해당 주문에 남아 있는 기준·이벤트 크레딧을 모두 회수합니다.
+- 본 정책 시행 전 주문은 주문 당시 저장된 총 지급 크레딧을 기준으로 기존 비례 환불 산식을 적용합니다.
 - 결제 후 7일이 지난 단순 변심은 환불 대상이 아니며, 남은 크레딧은 유효기간 없이 사용할 수 있습니다.
 
 2. 예외 처리
@@ -1965,7 +2020,7 @@ function showPolicy(type) {
 - 이미 사용된 크레딧
 - 결제 후 7일이 지난 단순 변심
 - 부정 사용으로 적립된 크레딧
-- 무료 지급 크레딧
+- 회원가입·추천·쿠폰 및 결제 이벤트로 무료 지급된 크레딧의 현금 가치
 
 5. 소비자 분쟁 해결
 환불 관련 분쟁이 해결되지 않는 경우 공정거래위원회 소비자분쟁조정위원회(1372.go.kr)에 분쟁 조정을 신청하실 수 있습니다.

@@ -287,8 +287,10 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /Backend 34c8b26 · Frontend bfc3d2f/u);
   assert.match(admin, /운영 Git<\/dt><dd>745건/u);
   assert.match(admin, /Backend \/ Frontend<\/dt><dd>495 \/ 250/u);
-  assert.match(admin, /8,700원 라이트 충전 상품을 350크레딧으로 확대/u);
-  assert.match(admin, /신규·엔진 업데이트를 한 줄로 강조/u);
+  assert.match(admin, /기준 크레딧 100·300·500·1,000·2,000/u);
+  assert.match(admin, /2026년 9월 30일까지 결제 요청분 이벤트 5·10·15·20·25%/u);
+  assert.match(admin, /새 주문은 기준 크레딧 사용량으로 환불액을 계산/u);
+  assert.match(admin, /기존 주문은 주문 당시 총 지급량 비례 기준을 유지/u);
   assert.match(admin, /백엔드 전체 849개, 문단 보강 상태기계 32개, 프런트 87개 테스트/u);
   assert.match(admin, /최종 문서 무결성·안전 후보 원장/u);
   assert.match(admin, /Backend 6e51d4c/u);

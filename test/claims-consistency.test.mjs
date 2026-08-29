@@ -77,7 +77,7 @@ test('사용 가이드는 현재 작업 흐름·기능·단가와 직접 행동�
   assert.match(guide, /100자당 1크레딧/u);
   assert.match(guide, /최소 10 · 100자당 2/u);
   assert.match(guide, /길이별 200~600크레딧/u);
-  assert.match(guide, /스타터는 2,900원에 110크레딧/u);
+  assert.match(guide, /스타터는 기준 100크레딧에 이벤트 5크레딧을 더해 총 105크레딧/u);
   assert.match(guide, /외부 탐지기 결과는 보장하지 않아요/u);
   assert.match(guide, /작업 기록/u);
   assert.doesNotMatch(guide, /gpg-shot|assets\/img\/guide\/step|보관함에서/u);
@@ -103,7 +103,8 @@ test('신뢰·가격·준비 중 표면은 확정된 정책 문구와 런타임 
   }
 
   assert.match(faq, /결제 후 7일 이내/u);
-  assert.match(faq, /사용한 크레딧에 해당하는 금액은 환불 대상에서 제외/u);
+  assert.match(faq, /사용량은 기준 크레딧에서 먼저 차감/u);
+  assert.match(faq, /남아 있는 기준·이벤트 크레딧은 모두 회수/u);
   assert.doesNotMatch(faq, /구독 쿠폰/u);
   assert.match(qna, /평일 기준 1영업일 이내 답변/u);
   assert.match(qna, /data-auth-required="qna"/u);
@@ -126,17 +127,24 @@ test('가격·크레딧 수치는 단일 원천(conversion-flow PLANS)과 pricin
     read('pages/landing.html')
   ]);
   const plansBlock = flow.slice(flow.indexOf('var PLANS = ['), flow.indexOf('];', flow.indexOf('var PLANS = [')));
-  const plans = [...plansBlock.matchAll(/amount:\s*(\d+),\s*credits:\s*(\d+)/gu)]
-    .map((m) => ({ amount: Number(m[1]), credits: Number(m[2]) }));
+  const plans = [...plansBlock.matchAll(/amount:\s*(\d+),\s*paidCredits:\s*(\d+),\s*eventBonusCredits:\s*(\d+),\s*credits:\s*(\d+)/gu)]
+    .map((m) => ({ amount: Number(m[1]), paidCredits: Number(m[2]), eventBonusCredits: Number(m[3]), credits: Number(m[4]) }));
   assert.equal(plans.length, 5, 'PLANS 5종이어야 함');
-  for (const { amount, credits } of plans) {
+  assert.deepEqual(plans, [
+    { amount: 2900, paidCredits: 100, eventBonusCredits: 5, credits: 105 },
+    { amount: 8700, paidCredits: 300, eventBonusCredits: 30, credits: 330 },
+    { amount: 14500, paidCredits: 500, eventBonusCredits: 75, credits: 575 },
+    { amount: 29000, paidCredits: 1000, eventBonusCredits: 200, credits: 1200 },
+    { amount: 58000, paidCredits: 2000, eventBonusCredits: 500, credits: 2500 }
+  ]);
+  for (const { amount, paidCredits, eventBonusCredits, credits } of plans) {
+    assert.equal(paidCredits + eventBonusCredits, credits, `${amount} 지급량 합계 불일치`);
     assert.ok(pricing.includes(`payToss(${amount},${credits}`), `pricing.html payToss(${amount},${credits}) 부재`);
     const fmt = credits.toLocaleString('en-US');
     assert.ok(pricing.includes(`총 ${fmt} 크레딧`), `pricing.html 총 ${fmt} 크레딧 부재`);
     assert.ok(landing.includes(`${fmt}크레딧`), `landing.html ${fmt}크레딧 부재`);
   }
-  // 과거 사고 수치(8700원=330) 재유입 방지
-  assert.ok(!pricing.includes('payToss(8700,330'), '구버전 330크레딧 재유입');
+  assert.doesNotMatch(`${flow}\n${pricing}\n${landing}`, /firstPurchase|firstBonus|첫 구매|첫 결제/u, '종료된 추가 지급 경로 재유입');
 });
 
 test('크레딧 유효기간 표기는 약관까지 포함해 전 표면에서 무기한으로 일치한다', async () => {
@@ -150,7 +158,7 @@ test('크레딧 유효기간 표기는 약관까지 포함해 전 표면에서 �
   ]);
   const all = files.join('\n');
   assert.doesNotMatch(all, /크레딧의?\s*이용기간은?\s*결제일로부터\s*1년/u, '약관 1년 문구 재유입(2026-08-28 무기한 개정)');
-  assert.match(files[0], /유료로 충전한 크레딧은 유효기간 없이 사용할 수 있습니다/u);
+  assert.match(files[0], /유료로 충전한 기준 크레딧과 결제 이벤트로 추가 지급된 크레딧은 유효기간 없이 사용할 수 있습니다/u);
   // 보장형 금지 주장(마케팅·스키마 공통)
   assert.doesNotMatch(all, /100%\s*(보장|통과)|무조건 통과|탐지\s*통과를?\s*보장/u);
 });
@@ -160,7 +168,7 @@ test('프리렌더 공개상태: /pricing 검색 본문은 크레딧 충전만 �
   try {
     await prerenderSeo({ root: repoRoot, dist });
     const pricingOut = await readFile(join(dist, 'pricing/index.html'), 'utf8');
-    assert.match(pricingOut, /구매한 크레딧은 <strong>유효기간 없이<\/strong>/u, '크레딧 충전 정책이 검색 본문에 있어야 함');
+    assert.match(pricingOut, /기준 크레딧과 지급된 이벤트 크레딧은 모두 <strong>유효기간 없이<\/strong>/u, '크레딧 충전 정책이 검색 본문에 있어야 함');
     assert.doesNotMatch(pricingOut, /정기구독|정기 구독|openSubscribeConfirm|구독 시작|11,900|54,900|99,000|290,000/u, '비활성 구독 UI가 검색 본문에 노출');
     assert.doesNotMatch(pricingOut, /첫 결제 실험 혜택/u, 'A/B 실험 문구가 검색 본문에 노출');
     const faqOut = await readFile(join(dist, 'faq/index.html'), 'utf8');

@@ -38,11 +38,10 @@ test('하단 공지는 제외 요청한 주제를 숨기고 남은 중요 공지
     source.indexOf('const NOTICE_RETIRED_TITLES')
   );
 
-  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 10);
+  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 9);
   for (const title of [
     '긴 글 구조 보존과 문단 보강을 개선했어요',
-    '유료 충전 크레딧은 유효기간이 없어요',
-    '라이트 충전 상품이 350크레딧으로 늘었어요',
+    '추가 크레딧 이벤트와 환불 기준을 안내해요',
     '문단 구조 보존을 강화했어요',
     'AI 감지 보고서를 열었어요',
     'AI 감지 크레딧 이용 방식 전환 안내 (100자당 1크레딧)',
@@ -56,8 +55,9 @@ test('하단 공지는 제외 요청한 주제를 숨기고 남은 중요 공지
   assert.doesNotMatch(baseItems, /(?:고급 휴머나이징|최대 3만 자|결과 보관함|환불 정책|서비스 리브랜딩|원문 문단 역할과 사례·결론 연결 보존 강화|AI 감지 점수·설명 일관성 개선|논문·자소서·전문 기록 장르별 맞춤 처리 확대|서비스 안정화 점검 완료)/u);
   assert.match(baseItems, /결과가 바뀌지 않거나 안전 검증을 통과하지 못한 보강 요청은 크레딧과 무료 횟수를 사용하지 않아요/u);
   assert.match(baseItems, /제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요/u);
-  assert.match(baseItems, /현재 보유한 유료 충전 크레딧과 무료 지급 크레딧에도 같은 기준을 적용해요/u);
-  assert.match(baseItems, /각 주문에 실제 지급된 크레딧을 기준으로 계산해요/u);
+  assert.match(baseItems, /2026년 9월 30일까지 결제 요청분/u);
+  assert.match(baseItems, /사용량을 기준 크레딧에서 먼저 차감/u);
+  assert.match(baseItems, /남아 있는 기준·이벤트 크레딧은 모두 회수/u);
   assert.match(source, /\.filter\(item => !NOTICE_RETIRED_TITLES\.has\(item\.title\.trim\(\)\)\)/u);
   assert.match(baseItems, /(?:해요|했어요|돼요|됐어요|드려요|있어요|없어요|않아요)/u);
 });

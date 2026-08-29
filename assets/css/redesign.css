@@ -1194,25 +1194,30 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
  font-size:15px;
  font-weight:800;
 }
-/* ── 크레딧 사다리 명시(2026-08-29 사장님): 보너스 비율과 "스타터로 쪼개 살 때 대비 이득"을 눈에 띄게 ── */
-#mainContent[data-main-design="lavender"] .plan-feats li.feat-bonus,
-#mainContent[data-main-design="lavender"] .plan-feats li.feat-first{
+/* ── 2026-09-30까지 추가 크레딧 이벤트 ── */
+#mainContent[data-main-design="lavender"] .gp-pricing-event{
+ display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+ margin:0 0 16px;padding:14px 16px;border:1px solid #d8d9f5;border-radius:12px;
+ background:#f5f5ff;color:#30344d;font-size:13px;line-height:1.55;
+}
+#mainContent[data-main-design="lavender"] .gp-pricing-event strong{color:#4b4cc6;white-space:nowrap;}
+#mainContent[data-main-design="lavender"] .gp-pricing-event span{color:#525a6e;}
+@media(max-width:700px){
+ #mainContent[data-main-design="lavender"] .gp-pricing-event{display:block;}
+ #mainContent[data-main-design="lavender"] .gp-pricing-event strong,
+ #mainContent[data-main-design="lavender"] .gp-pricing-event span{display:block;}
+ #mainContent[data-main-design="lavender"] .gp-pricing-event span{margin-top:4px;}
+}
+#mainContent[data-main-design="lavender"] .plan-feats li.feat-bonus{
  justify-content:space-between;
  font-weight:600;
 }
 #mainContent[data-main-design="lavender"] .plan-feats li.feat-bonus strong{color:#4b4cc6;}
-#mainContent[data-main-design="lavender"] .plan-feats li.feat-bonus em,
-#mainContent[data-main-design="lavender"] .plan-feats li.feat-first em{
+#mainContent[data-main-design="lavender"] .plan-feats li.feat-bonus em{
  font-style:normal;font-weight:800;font-size:11.5px;
  padding:2px 7px;margin-left:5px;border-radius:6px;
  background:#e7e7fb;color:#4b4cc6;
 }
-#mainContent[data-main-design="lavender"] .plan-feats li.feat-first{color:#1f7a4d;}
-#mainContent[data-main-design="lavender"] .plan-feats li.feat-first strong{color:#1f7a4d;}
-#mainContent[data-main-design="lavender"] .plan-feats li.feat-first em{background:#dff3e6;color:#1f7a4d;}
-#mainContent[data-main-design="lavender"] .plan-feats li.feat-first[hidden]{display:none !important;}
-/* (분할 구매 비교 줄 제거 — 2026-08-29: 문장이 길어 카드에서 구분이 어려웠다.
-   같은 정보는 "보너스 지급 +N%" 배지가 더 짧게 전달한다) */
 #mainContent[data-main-design="lavender"] .plan-btn{
  margin-top:12px;
  min-height:42px;
@@ -7880,8 +7885,8 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-refund-modes{display:flex;gap:6px;flex-wrap:wrap;}
 .gp-admin-mode{flex:1 1 auto;min-width:88px;border:1px solid var(--admin-border);background:var(--admin-surface);color:var(--admin-text2);border-radius:7px;padding:8px 8px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
 .gp-admin-mode.is-active{border-color:var(--admin-blue);background:#eceeffe6;color:var(--admin-blue);}
-.gp-admin-refund-custom{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--admin-text3);flex-wrap:wrap;}
-.gp-admin-refund-custom input{max-width:160px;}
+.gp-admin-refund-modes .gp-admin-mode[data-mode="policy"]{display:block;text-align:center;cursor:default;}
+.gp-admin-refund-policy-note{margin:0;color:var(--admin-text3);font-size:11.5px;line-height:1.55;}
 .gp-admin-refund-preview{font-size:12px;color:var(--admin-text2);min-height:16px;}
 .gp-admin-refund-preview b{color:var(--admin-text);}
 .gp-admin-refund-preview .neg{color:var(--admin-red);}
@@ -8069,7 +8074,6 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
  .gp-admin-mode{flex:1 1 100%;}
  .gp-admin-refund-go{flex-direction:column;align-items:stretch;}
  .gp-admin-refund-go .gp-admin-primary,.gp-admin-refund-go .gp-admin-mini-btn{width:100%;}
- .gp-admin-refund-custom input{max-width:none;flex:1;}
  /* 환불 요청 카드 */
  .gp-admin-refund-top{flex-direction:column;}
  .gp-admin-refund-actions{width:100%;}

@@ -244,19 +244,19 @@
     <div class="gp-lp-pricing">
       <div class="gp-lp-pricing-copy">
         <h2>구독이 아니라,<br>쓴 만큼.</h2>
-        <p>구매한 크레딧은 유효기간 없이 사용할 수 있어요. 매달 나가는 돈 없이, 필요한 만큼만 충전해요.</p>
+        <p>기준 크레딧과 이벤트로 추가 지급된 크레딧은 모두 유효기간 없이 사용할 수 있어요. 매달 나가는 돈 없이, 필요한 만큼만 충전해요.</p>
         <div class="gp-lp-pricing-actions">
           <button type="button" class="gp-lp-primary" onclick="gpLandingStart('pricing_cta')">가입하고 10크레딧 받기</button>
           <button type="button" class="gp-lp-ghost lg" onclick="gpLandingEnterApp('pricing','pricing_detail')">요금 자세히 보기</button>
         </div>
-        <p class="gp-lp-note">토스페이먼츠·카카오페이 지원, 부가세 포함. 결제 후 7일 이내 환불 가능(사용분 제외).</p>
+        <p class="gp-lp-note" id="lpCreditEvent"><strong>추가 크레딧 이벤트 · 2026년 9월 30일까지 결제 요청분</strong><br>모든 구매자에게 기준 크레딧의 5~25%를 더 드려요. 토스페이먼츠·카카오페이 지원, 부가세 포함. 결제 후 7일 이내 환불 가능(기준 크레딧 사용분 제외).</p>
       </div>
       <div class="gp-lp-plans">
-        <div class="gp-lp-plan"><b>2,900원</b><span>110크레딧</span><em>500자 휴머나이징 약 11회</em></div>
-        <div class="gp-lp-plan"><b>8,700원</b><span>400크레딧</span><em>약 40회 · 보너스 +33%</em></div>
-        <div class="gp-lp-plan is-popular"><i>가장 인기</i><b>14,500원</b><span>700크레딧</span><em>약 70회 · 보너스 +40%</em></div>
-        <div class="gp-lp-plan"><b>29,000원</b><span>1,500크레딧</span><em>약 150회 · 보너스 +50%</em></div>
-        <div class="gp-lp-plan"><b>58,000원</b><span>3,300크레딧</span><em>약 330회 · 보너스 +65%</em></div>
+        <div class="gp-lp-plan" data-paid-credits="100" data-event-credits="5"><b>2,900원</b><span>총 105크레딧</span><em>기준 100 + 이벤트 5</em></div>
+        <div class="gp-lp-plan" data-paid-credits="300" data-event-credits="30"><b>8,700원</b><span>총 330크레딧</span><em>기준 300 + 이벤트 30</em></div>
+        <div class="gp-lp-plan is-popular" data-paid-credits="500" data-event-credits="75"><i>가장 인기</i><b>14,500원</b><span>총 575크레딧</span><em>기준 500 + 이벤트 75</em></div>
+        <div class="gp-lp-plan" data-paid-credits="1000" data-event-credits="200"><b>29,000원</b><span>총 1,200크레딧</span><em>기준 1,000 + 이벤트 200</em></div>
+        <div class="gp-lp-plan" data-paid-credits="2000" data-event-credits="500"><b>58,000원</b><span>총 2,500크레딧</span><em>기준 2,000 + 이벤트 500</em></div>
       </div>
     </div>
   </section>
@@ -285,7 +285,7 @@
       </details>
       <details>
         <summary>크레딧은 언제까지 쓸 수 있나요?</summary>
-        <p>구매한 크레딧에는 유효기간이 없습니다. 결제 후 7일 이내 환불이 가능하며, 이미 사용한 크레딧에 해당하는 금액은 제외됩니다.</p>
+        <p>기준 크레딧과 지급된 이벤트 크레딧에는 유효기간이 없습니다. 결제 후 7일 이내 환불이 가능하며, 환불액은 기준 크레딧 사용량으로 계산하고 남은 지급 크레딧은 회수합니다.</p>
       </details>
     </div>
     <div class="gp-lp-faq-help"><p>더 확인하고 싶은 내용이 있나요?</p><button type="button" class="gp-lp-ghost" onclick="gpLandingEnterApp('qna','faq_contact')">먼저 문의하기</button></div>

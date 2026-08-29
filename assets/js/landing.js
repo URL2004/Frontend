@@ -12,7 +12,24 @@
 
   var DISMISS_KEY = 'gp_landing_dismissed_v1';
   var LOGIN_PENDING_KEY = 'gp_landing_login_pending_v1';
+  var CREDIT_EVENT_ENDS_AT_MS = Date.parse('2026-10-01T00:00:00+09:00');
   var landingLoginPendingMemory = false;
+
+  function syncLandingCreditEvent() {
+    if (Date.now() < CREDIT_EVENT_ENDS_AT_MS) return;
+    var eventNotice = document.getElementById('lpCreditEvent');
+    if (eventNotice) eventNotice.hidden = true;
+    document.querySelectorAll('.gp-lp-plan[data-paid-credits]').forEach(function (plan) {
+      var paid = Math.max(0, Number(plan.dataset.paidCredits) || 0);
+      var total = plan.querySelector('span');
+      var detail = plan.querySelector('em');
+      if (total) total.textContent = '총 ' + paid.toLocaleString('ko-KR') + '크레딧';
+      if (detail) detail.textContent = '기준 ' + paid.toLocaleString('ko-KR') + ' · 유효기간 없음';
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', syncLandingCreditEvent, { once: true });
+  else syncLandingCreditEvent();
 
   function track(name, params) {
     if (typeof window.gpTrack === 'function') window.gpTrack(name, params || {});

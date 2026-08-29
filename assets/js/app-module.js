@@ -2114,18 +2114,10 @@ const NOTICE_BASE_ITEMS = [
  {
   id: 'paid-credit-no-expiry-20260829',
   category: '정책',
-  title: '유료 충전 크레딧은 유효기간이 없어요',
+  title: '추가 크레딧 이벤트와 환불 기준을 안내해요',
   date: '2026.08.29',
   views: 0,
-  body: '2026년 8월 29일부터 유료로 충전한 크레딧은 유효기간 없이 사용할 수 있어요. 현재 보유한 유료 충전 크레딧과 무료 지급 크레딧에도 같은 기준을 적용해요.\n\n환불 신청 기간과 사용분 공제 방식은 환불 규정을 따라요.'
- },
- {
-  id: 'light-credit-350-20260826',
-  category: '업데이트',
-  title: '라이트 충전 상품이 350크레딧으로 늘었어요',
-  date: '2026.08.26',
-  views: 0,
-  body: '8,700원 라이트 충전 상품의 지급량을 330크레딧에서 350크레딧으로 늘렸어요. 변경 이후 결제 건부터 적용하며, 기존 결제 내역과 환불 금액은 각 주문에 실제 지급된 크레딧을 기준으로 계산해요.'
+  body: '2026년 9월 30일까지 결제 요청분에는 상품별 기준 크레딧의 5~25%를 이벤트 크레딧으로 더 드려요. 기준 크레딧과 이벤트 크레딧은 모두 유효기간 없이 사용할 수 있어요.\n\n환불할 때는 사용량을 기준 크레딧에서 먼저 차감하고, 남은 기준 크레딧에 해당하는 금액을 환불해요. 해당 주문에서 남아 있는 기준·이벤트 크레딧은 모두 회수합니다.'
  },
  {
   id: 'humanize-v25',
@@ -3455,7 +3447,7 @@ window.historyDownload = function () {
 // 사용자: 결제 내역 + 환불 요청 버튼
 // 정기결제 티어 표시명
 const SUB_TIER_LABELS = { '1000':'베이직(1,000자×50회/월)', '5000':'스탠다드(5,000자×50회/월)', '10000':'프로(10,000자×50회/월)', 'unlimited':'무제한' };
-const REFUND_POLICY_VERSION = '2026-07-20';
+const REFUND_POLICY_VERSION = 'credit-grant-base-v1';
 const REFUND_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const UNLIMITED_REFUND_SETTLEMENT_USES = 50;
 
@@ -3477,12 +3469,48 @@ function gpOrderPaidAtMs(item) {
 
 function gpCreditRefundPreview(order, currentCredits) {
  const amount = Math.max(0, Math.floor(Number(order.amount) || 0));
- const purchased = Math.max(0, Math.floor(Number(order.safeCredits) || 0));
  const balance = Math.max(0, Math.floor(Number(currentCredits) || 0));
+ const isBasePolicy = order.creditGrantPolicyVersion === REFUND_POLICY_VERSION
+  && Math.floor(Number(order.paidCredits) || 0) > 0;
+ if (isBasePolicy) {
+  const paidCredits = Math.max(0, Math.floor(Number(order.paidCredits) || 0));
+  const eventBonusCredits = Math.max(0, Math.floor(Number(order.eventBonusCredits) || 0));
+  const totalGrantedCredits = Math.max(
+   paidCredits + eventBonusCredits,
+   Math.floor(Number(order.totalGrantedCredits) || 0)
+  );
+  const lotPaidRemaining = Number(order.refundPaidCreditsRemaining);
+  const lotBonusRemaining = Number(order.refundEventBonusCreditsRemaining);
+  const hasOrderLot = Number.isFinite(lotPaidRemaining) && lotPaidRemaining >= 0
+   && Number.isFinite(lotBonusRemaining) && lotBonusRemaining >= 0;
+  // 새 주문은 서버가 유지하는 주문별 잔여량을 우선한다. 과거 신규 주문처럼 lot 필드가
+  // 아직 없는 경우에만 계정 전체 잔액을 주문 지급량으로 cap한 기존 안전 추정을 쓴다.
+  const balanceRecoverCredits = Math.min(balance, totalGrantedCredits);
+  const balanceUsedCredits = Math.max(0, totalGrantedCredits - balanceRecoverCredits);
+  const refundablePaidCredits = hasOrderLot
+   ? Math.min(paidCredits, Math.floor(lotPaidRemaining))
+   : Math.max(0, paidCredits - Math.min(paidCredits, balanceUsedCredits));
+  const recoverCredits = hasOrderLot
+   ? refundablePaidCredits + Math.min(eventBonusCredits, Math.floor(lotBonusRemaining))
+   : balanceRecoverCredits;
+  const usedCredits = Math.max(0, totalGrantedCredits - recoverCredits);
+  const paidUsedCredits = Math.max(0, paidCredits - refundablePaidCredits);
+  const refundAmount = paidCredits > 0
+   ? Math.min(amount, Math.floor(amount * refundablePaidCredits / paidCredits))
+   : 0;
+  return {
+   policy: 'base', refundAmount, recoverCredits, usedCredits, paidUsedCredits,
+   refundablePaidCredits, paidCredits, eventBonusCredits, totalGrantedCredits
+  };
+ }
+ const purchased = Math.max(0, Math.floor(Number(order.safeCredits ?? order.credits) || 0));
  const refundableCredits = Math.min(balance, purchased);
  const usedCredits = Math.max(0, purchased - refundableCredits);
  const refundAmount = purchased > 0 ? Math.min(amount, Math.floor(amount * refundableCredits / purchased)) : 0;
- return { refundAmount, refundableCredits, usedCredits };
+ return {
+  policy: 'legacy', refundAmount, recoverCredits: refundableCredits, refundableCredits,
+  usedCredits, totalGrantedCredits: purchased
+ };
 }
 
 function gpSubscriptionRefundPreview(order, coupon) {
@@ -3541,7 +3569,7 @@ window.loadOrderHistory = async () =>{
  const statusColor = (o.status === 'refunded' || o.status === 'partially_refunded') ? 'var(--yellow)' : o.status === 'refund_requested' ? 'var(--blue)' : (o.status === 'refund_rejected' || o.status === 'failed') ? 'var(--red)' : 'var(--green)';
  const title = item.kind === 'sub'
    ? `정기결제 · ${SUB_TIER_LABELS[o.tier] || o.tier}`
-   : `크레딧 충전 · ${o.safeCredits||0}크레딧`;
+   : `크레딧 충전 · ${Number(o.totalGrantedCredits || o.safeCredits || o.credits || 0).toLocaleString('ko-KR')}크레딧`;
  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:13px;">
  <div>
  <div style="font-weight:600;color:var(--text);">${(o.amount||0).toLocaleString()}원 · ${title}</div>
@@ -3594,7 +3622,7 @@ window.loadRefundModalList = async () =>{
  const isSub = item.kind === 'sub';
  const title = isSub
    ? `정기결제 · ${SUB_TIER_LABELS[o.tier] || o.tier}`
-   : `크레딧 충전 · ${o.safeCredits||0}크레딧`;
+   : `크레딧 충전 · ${Number(o.totalGrantedCredits || o.safeCredits || o.credits || 0).toLocaleString('ko-KR')}크레딧`;
   // 일반 환불: 결제일 7일 이내 + 사용분 비례 공제. 서버에서 같은 기준으로 최종 검증한다.
   let eligibilityNote = '';
   let refundPreview = '';
@@ -3629,13 +3657,20 @@ window.loadRefundModalList = async () =>{
   } else {
     const calc = gpCreditRefundPreview(o, currentCredits);
     refundAmount = calc.refundAmount;
-    eligibilityNote = calc.usedCredits > 0
-      ? `사용한 ${calc.usedCredits.toLocaleString()}크레딧은 환불액에서 제외됩니다.`
-      : '구매한 크레딧 미사용 · 전액 환불 대상입니다.';
-    refundPreview = `예상 환불액: ${refundAmount.toLocaleString()}원 · 환불 대상 ${calc.refundableCredits.toLocaleString()}크레딧`;
-    if (calc.refundableCredits <= 0 || refundAmount <= 0) {
+    if (calc.policy === 'base') {
+     eligibilityNote = calc.paidUsedCredits > 0
+      ? `사용량 ${calc.usedCredits.toLocaleString()}크레딧을 기준 크레딧부터 반영했어요. 이벤트 크레딧은 현금 환불 대상이 아닙니다.`
+      : '기준 크레딧 미사용 · 전액 환불 대상입니다. 환불 시 남은 지급 크레딧을 모두 회수해요.';
+     refundPreview = `예상 환불액: ${refundAmount.toLocaleString()}원 · 기준 잔여 ${calc.refundablePaidCredits.toLocaleString()}/${calc.paidCredits.toLocaleString()} · 회수 ${calc.recoverCredits.toLocaleString()}크레딧`;
+    } else {
+     eligibilityNote = calc.usedCredits > 0
+      ? `기존 주문 기준으로 사용한 ${calc.usedCredits.toLocaleString()}크레딧을 환불액에서 제외합니다.`
+      : '기존 주문의 총 지급 크레딧 미사용 · 전액 환불 대상입니다.';
+     refundPreview = `예상 환불액: ${refundAmount.toLocaleString()}원 · 회수 ${calc.recoverCredits.toLocaleString()}크레딧`;
+    }
+    if (calc.recoverCredits <= 0 || refundAmount <= 0) {
       canRequest = false;
-      eligibilityNote = '구매한 크레딧을 모두 사용했습니다. 서비스 오류는 고객센터로 문의해주세요.';
+      eligibilityNote = '환불 가능한 기준 크레딧을 모두 사용했습니다. 서비스 오류는 고객센터로 문의해주세요.';
     }
   }
   return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
@@ -3736,14 +3771,14 @@ window.loadAdminRefundList = async () =>{
    const refundType = expected >= (Number(o.amount) || 0) ? '전액' : `${used}/${settlementUses}회 사용분 공제`;
    refundDetail = `<div class="gp-admin-refund-detail">환불 예정 금액 <b class="neg">${expected.toLocaleString()}원</b> (${refundType} · 승인 시 서버 재검증)</div>`;
  } else {
-   // 무료 보너스(회원가입/추천)는 결제 크레딧보다 먼저 소진된다고 가정 → 잔액은 모두 결제분으로 취급
-   const safe = parseInt(o.safeCredits) || 0;
-   const amt = parseInt(o.amount) || 0;
-   const refundable = Math.min(userCredits, safe);
-   const usedFromOrder = Math.max(0, safe - refundable);
-   const refundAmt = safe > 0 ? Math.floor(amt * refundable / safe) : 0;
-   itemLabel = `크레딧 · ${safe}크레딧 결제`;
-   refundDetail = `<div class="gp-admin-refund-detail">사용 <b>${usedFromOrder}</b> · 현재 잔액 <b>${userCredits}</b>크레딧 · 환불 예정 <b class="neg">${refundAmt.toLocaleString()}원</b> · 차감 <b>${refundable}</b>크레딧</div>`;
+   const calc = gpCreditRefundPreview(o, userCredits);
+   if (calc.policy === 'base') {
+    itemLabel = `크레딧 · 기준 ${calc.paidCredits.toLocaleString()} + 이벤트 ${calc.eventBonusCredits.toLocaleString()}`;
+    refundDetail = `<div class="gp-admin-refund-detail">기준 사용 <b>${calc.paidUsedCredits.toLocaleString()}</b> · 기준 잔여 <b>${calc.refundablePaidCredits.toLocaleString()}</b> · 환불 예정 <b class="neg">${calc.refundAmount.toLocaleString()}원</b> · 남은 지급량 <b>${calc.recoverCredits.toLocaleString()}</b>크레딧 전부 회수</div>`;
+   } else {
+    itemLabel = `크레딧 · 기존 주문 ${calc.totalGrantedCredits.toLocaleString()}크레딧`;
+    refundDetail = `<div class="gp-admin-refund-detail">기존 비례 정책 · 사용 <b>${calc.usedCredits.toLocaleString()}</b> · 환불 예정 <b class="neg">${calc.refundAmount.toLocaleString()}원</b> · 차감 <b>${calc.recoverCredits.toLocaleString()}</b>크레딧</div>`;
+   }
  }
  html += `<div class="gp-admin-refund-item">
  <div class="gp-admin-refund-top">
@@ -4217,9 +4252,11 @@ function adminRenderUserBundle(data) {
   <div class="gp-admin-order-list">` + chargeRows.map((o, i) => {
   const orderIndex = chargeStart + i;
   const isSub = o.kind === 'subscription';
+  const grantTotal = adminNumber(o.totalGrantedCredits || o.safeCredits || o.credits);
+  const basePolicyOrder = o.creditGrantPolicyVersion === REFUND_POLICY_VERSION && adminNumber(o.paidCredits) > 0;
   const title = isSub
    ? `정기결제 · ${escapeHtml(SUB_TIER_LABELS[o.tier] || o.tier || '-')}`
-   : `크레딧 · ${adminNumber(o.safeCredits).toLocaleString('ko-KR')}크레딧`;
+   : `크레딧 · ${grantTotal.toLocaleString('ko-KR')}크레딧`;
   const priorRefunded = adminNumber(o.refundedAmount || o.refundAmount);
   const remainingMoney = Math.max(0, adminNumber(o.amount) - priorRefunded);
   const canRefund = !!o.paymentKey && ['paid', 'refund_requested', 'refund_rejected', 'partially_refunded'].includes(o.status) && remainingMoney > 0;
@@ -4240,14 +4277,11 @@ function adminRenderUserBundle(data) {
    panel = `
      <div class="gp-admin-refund-panel" id="refundPanel-${orderIndex}" hidden>
        <div class="gp-admin-refund-modes">
-         <button type="button" class="gp-admin-mode is-active" data-mode="remaining" onclick="adminSetRefundMode(${orderIndex},'remaining')">남은건 환불</button>
-         <button type="button" class="gp-admin-mode" data-mode="full" onclick="adminSetRefundMode(${orderIndex},'full')">전체 환불</button>
-         <button type="button" class="gp-admin-mode" data-mode="custom" onclick="adminSetRefundMode(${orderIndex},'custom')">직접 입력</button>
+         <span class="gp-admin-mode is-active" data-mode="policy">정책 환불</span>
        </div>
-       <div class="gp-admin-refund-custom" id="refundCustom-${orderIndex}" hidden>
-         <input type="number" class="gp-admin-input gp-admin-input-sm" id="refundAmt-${orderIndex}" min="1" max="${remainingMoney}" placeholder="환불 금액" oninput="adminRefundPreview(${orderIndex})">
-         <span>원 · 최대 ${adminMoney(remainingMoney)}</span>
-       </div>
+       <p class="gp-admin-refund-policy-note">${basePolicyOrder
+        ? '기준 크레딧 사용량으로 금액을 계산하고 남은 기준·이벤트 크레딧을 모두 회수합니다.'
+        : '기존 주문은 주문 당시 총 지급 크레딧 기준 비례 환불만 허용합니다.'} 전액·직접입력 우회는 사용할 수 없습니다.</p>
        <input type="text" class="gp-admin-input gp-admin-input-sm" id="refundReason-${orderIndex}" maxlength="120" placeholder="환불 사유 (필수)">
        <div class="gp-admin-refund-preview" id="refundPreview-${orderIndex}"></div>
        <div class="gp-admin-refund-go">
@@ -4283,31 +4317,24 @@ window.adminSetChargePage = function(page) {
  if (window._adminSelectedBundle) adminRenderUserBundle(window._adminSelectedBundle);
 };
 
-// 결제건 환불 계산(백엔드 processRefund 미러, 누적 부분환불 반영) — {amount, credits} 또는 null
-function adminComputeRefund(order, mode, customAmount) {
- const orderAmount = adminNumber(order.amount);
- const safe = adminNumber(order.safeCredits);
+// 결제건 정책 환불 계산(백엔드 processRefund 미러, 누적 부분환불 반영)
+function adminComputeRefund(order) {
  const priorAmount = adminNumber(order.refundedAmount || order.refundAmount);
  const priorCredits = adminNumber(order.refundedCredits);
- const remainingMoney = Math.max(0, orderAmount - priorAmount);
- const remainingOrderCredits = Math.max(0, safe - priorCredits);
+ const remainingMoney = Math.max(0, adminNumber(order.amount) - priorAmount);
  const current = adminNumber(window._adminSelectedUser?.credits);
- const usable = Math.min(current, remainingOrderCredits);
  if (remainingMoney <= 0) return { amount: 0, credits: 0 };
- if (mode === 'full') return { amount: remainingMoney, credits: usable };
- if (mode === 'custom') {
-  const amt = Math.floor(Number(customAmount));
-  if (!Number.isFinite(amt) || amt <= 0 || amt > remainingMoney) return null;
-  return { amount: amt, credits: Math.min(usable, safe > 0 ? Math.floor(safe * amt / orderAmount) : 0) };
- }
- if (usable <= 0) return { amount: 0, credits: 0 };
- return { amount: Math.min(remainingMoney, safe > 0 ? Math.floor(orderAmount * usable / safe) : 0), credits: usable };
+ const calc = gpCreditRefundPreview(order, current);
+ const remainingGrant = Math.max(0, adminNumber(calc.totalGrantedCredits) - priorCredits);
+ return {
+  ...calc,
+  amount: Math.min(remainingMoney, adminNumber(calc.refundAmount)),
+  credits: Math.min(remainingGrant, adminNumber(calc.recoverCredits))
+ };
 }
 
-function adminGetRefundMode(i) {
- const panel = document.getElementById('refundPanel-' + i);
- const active = panel && panel.querySelector('.gp-admin-mode.is-active');
- return active ? active.dataset.mode : 'remaining';
+function adminGetRefundMode() {
+ return 'policy';
 }
 
 function adminRefundMsg(i, text) {
@@ -4319,11 +4346,12 @@ window.adminRefundPreview = function(i) {
  const order = adminSelectedChargeOrder(i);
  const prev = document.getElementById('refundPreview-' + i);
  if (!order || !prev) return;
- const amtInput = document.getElementById('refundAmt-' + i);
- const calc = adminComputeRefund(order, adminGetRefundMode(i), amtInput ? amtInput.value : null);
- if (!calc) { prev.innerHTML = '<span class="neg">금액을 확인하세요 (1원 이상, 환불 가능액 이하)</span>'; return; }
- if (calc.amount <= 0) { prev.innerHTML = '<span class="neg">환불 가능 금액이 없습니다. 전체/직접입력을 사용하세요.</span>'; return; }
- prev.innerHTML = `환불 <b>${adminMoney(calc.amount)}</b> · 크레딧 <b>${calc.credits.toLocaleString('ko-KR')}</b> 차감`;
+ const calc = adminComputeRefund(order);
+ if (!calc || calc.amount <= 0) { prev.innerHTML = '<span class="neg">정책상 환불 가능한 금액이 없습니다.</span>'; return; }
+ const basis = calc.policy === 'base'
+  ? `기준 잔여 ${calc.refundablePaidCredits.toLocaleString('ko-KR')}/${calc.paidCredits.toLocaleString('ko-KR')}`
+  : '기존 총 지급량 비례';
+ prev.innerHTML = `${basis} · 환불 <b>${adminMoney(calc.amount)}</b> · 남은 지급 크레딧 <b>${calc.credits.toLocaleString('ko-KR')}</b> 전부 회수`;
 };
 
 window.adminToggleRefund = function(i) {
@@ -4331,25 +4359,6 @@ window.adminToggleRefund = function(i) {
  if (!panel) return;
  panel.hidden = !panel.hidden;
  if (!panel.hidden) window.adminRefundPreview(i);
-};
-
-window.adminSetRefundMode = function(i, mode) {
- const panel = document.getElementById('refundPanel-' + i);
- if (!panel) return;
- panel.querySelectorAll('.gp-admin-mode').forEach(b => b.classList.toggle('is-active', b.dataset.mode === mode));
- const custom = document.getElementById('refundCustom-' + i);
- if (custom) custom.hidden = mode !== 'custom';
- if (mode === 'custom') {
-  const amtInput = document.getElementById('refundAmt-' + i);
-  const order = adminSelectedChargeOrder(i);
-  if (amtInput && order && !amtInput.value) {
-   const def = adminComputeRefund(order, 'remaining');
-   const remaining = adminNumber(order.amount) - adminNumber(order.refundedAmount || order.refundAmount);
-   amtInput.value = def && def.amount > 0 ? def.amount : Math.max(0, remaining);
-  }
-  if (amtInput) amtInput.focus();
- }
- window.adminRefundPreview(i);
 };
 
 async function adminRunRefund(i, body) {
@@ -6077,17 +6086,15 @@ window.adminDirectRefund = async function(i) {
   return;
  }
 
- // 크레딧: 패널에서 모드/금액/사유 읽기
+ // 크레딧: 서버 정책 산식만 사용한다. 전액·직접입력 우회는 허용하지 않는다.
  const mode = adminGetRefundMode(i);
  const reasonEl = document.getElementById('refundReason-' + i);
  const reason = (reasonEl?.value || '').trim();
  if (reason.length < 2) { adminRefundMsg(i, '환불 사유를 2자 이상 입력하세요.'); if (reasonEl) reasonEl.focus(); return; }
- const amtInput = document.getElementById('refundAmt-' + i);
- const customAmount = mode === 'custom' ? parseInt(amtInput?.value, 10) : null;
- const calc = adminComputeRefund(order, mode, customAmount);
- if (!calc || calc.amount <= 0) { adminRefundMsg(i, '환불 금액을 확인하세요 (남은 크레딧이 없으면 전체/직접입력 사용).'); return; }
+ const calc = adminComputeRefund(order);
+ if (!calc || calc.amount <= 0) { adminRefundMsg(i, '정책상 환불 가능한 금액이 없습니다.'); return; }
 
- const modeLabel = { remaining: '남은건 환불', full: '전체 환불', custom: '직접 입력' }[mode];
+ const modeLabel = calc.policy === 'base' ? '기준 크레딧 정책 환불' : '기존 주문 비례 환불';
  const ok = window.gpConfirm
   ? await window.gpConfirm({
     title: '실제 환불을 진행할까요?',
@@ -6098,7 +6105,7 @@ window.adminDirectRefund = async function(i) {
   : confirm(`${order.id} · ${modeLabel}\n${adminMoney(calc.amount)} / ${calc.credits}크레딧 차감으로 환불할까요?`);
  if (!ok) return;
 
- await adminRunRefund(i, { orderId: order.id, kind: order.kind, reason, mode, amount: customAmount });
+ await adminRunRefund(i, { orderId: order.id, kind: order.kind, reason, mode });
 };
 
 window.loadCreditHistory = async () =>{

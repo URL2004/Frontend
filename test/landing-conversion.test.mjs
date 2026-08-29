@@ -241,38 +241,37 @@ test('홈 프리렌더 본문은 작업 화면이 아니라 랜딩을 크롤러�
   assert.doesNotMatch(seo, /route\.url === '\/' \|\| !/u);
 });
 
-test('충전 사다리는 라이트 350으로 단조 할인(-9/-14/-17/-23/-26)을 이룬다', async () => {
+test('충전 사다리는 기준 크레딧과 기간 이벤트 지급량을 일치시킨다', async () => {
   const [pricing, flow, landing] = await Promise.all([
     read('pages/pricing.html'),
     read('assets/js/conversion-flow.js'),
     read('pages/landing.html')
   ]);
-  // 라이트 350: 스타터 3회(=330)보다 확실히 낫게 — 죽은 티어 수리(2026-08-26)
-  assert.match(pricing, /payToss\(8700,400,/u);
-  assert.match(pricing, /총 400 크레딧/u);
-  assert.match(flow, /\{ amount: 8700, credits: 400, firstBonus: 32, label: '라이트' \}/u);
-  assert.match(landing, /8,700원<\/b><span>400크레딧/u);
-  // 사다리의 세기는 "보너스 지급 +N%"로만 표기한다 — 무엇 대비인지 불분명하던
-  // 마이너스 할인율 배지는 제거(2026-08-29 운영 결정).
+  assert.match(pricing, /payToss\(8700,330,/u);
+  assert.match(pricing, /총 330 크레딧/u);
+  assert.match(flow, /\{ amount: 8700, paidCredits: 300, eventBonusCredits: 30, credits: 330, label: '라이트' \}/u);
+  assert.match(landing, /8,700원<\/b><span>총 330크레딧/u);
   assert.ok(!pricing.includes('plan-discount'), '할인율 배지 재유입');
-  assert.match(pricing, /data-plan-credits="400" data-work-cost="20">20회</u);
-  assert.match(pricing, /data-plan-credits="400" data-work-cost="10">40회</u);
+  assert.match(pricing, /data-plan-credits="330" data-work-cost="20">16회</u);
+  assert.match(pricing, /data-plan-credits="330" data-work-cost="10">33회</u);
 });
 
-test('가격 카드는 보너스 비율과 첫 구매 보너스를 상품마다 명시한다', async () => {
-  // 2026-08-29: "올라갈수록 이만큼 더 주고 첫 구매 보너스는 이만큼"을 화면에서 확실히 보이게.
-  const pricing = await read('pages/pricing.html');
-  // 상품별 보너스 비율(기본 제공 대비) — 올라갈수록 커진다
-  const rates = [...pricing.matchAll(/보너스 지급 <em>\+(\d+)%<\/em>/gu)].map((m) => Number(m[1]));
-  assert.deepEqual(rates, [10, 33, 40, 50, 65]);
-  // 첫 구매 보너스: 다섯 카드 전부에 있고(종전엔 스타터 카드만), 비율은 누진
-  const firstRates = [...pricing.matchAll(/첫 구매 보너스 <em>\+(\d+)%<\/em>/gu)].map((m) => Number(m[1]));
-  assert.deepEqual(firstRates, [5, 8, 10, 12, 15]);
+test('가격 카드는 5~25% 기간 이벤트만 표시하고 구형 추가 지급을 노출하지 않는다', async () => {
+  const [pricing, landing, flow, modals] = await Promise.all([
+    read('pages/pricing.html'),
+    read('pages/landing.html'),
+    read('assets/js/conversion-flow.js'),
+    read('partials/modals.html')
+  ]);
+  const rates = [...pricing.matchAll(/이벤트 추가 <em>\+(\d+)%<\/em>/gu)].map((m) => Number(m[1]));
+  assert.deepEqual(rates, [5, 10, 15, 20, 25]);
   for (const amount of [2900, 8700, 14500, 29000, 58000]) {
-    assert.match(pricing, new RegExp(`data-first-bonus-for="${amount}" hidden`, 'u'), `${amount} 첫 구매 행 부재`);
     assert.match(pricing, new RegExp(`data-plan-total-for="${amount}"`, 'u'), `${amount} 총 크레딧 훅 부재`);
   }
-  // 분할 구매 비교 줄은 문장이 길어 카드에서 구분되지 않아 제거(2026-08-29). 같은 정보는 위 보너스 비율이 전달한다.
+  for (const surface of [pricing, landing, flow, modals]) {
+    assert.match(surface, /2026년 9월 30일까지 결제 요청분/u);
+    assert.doesNotMatch(surface, /첫 구매|첫 결제|firstPurchase|firstBonus/u);
+  }
   assert.ok(!pricing.includes('나눠 사면'), '분할 비교 문구 재유입');
 });
 
