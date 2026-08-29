@@ -59,16 +59,31 @@ test('전환 퍼널과 사용자 단계별 제안 이벤트를 개인정보 없�
 
 test('가격표 카드는 서비스별로 몇 번 쓸 수 있는지 보여준다', async () => {
   const pricing = await read('pages/pricing.html');
-  assert.equal((pricing.match(/class="gp-plan-svc"/gu) || []).length, 5);
-  // 스타터 카드 횟수는 첫 결제 보너스에 맞춰 conversion-flow.js가 다시 채운다.
-  for (const id of ['gpStarterSvcShort', 'gpStarterSvcBasic', 'gpStarterSvcDetect']) {
-    assert.equal((pricing.match(new RegExp(`id="${id}"`, 'gu')) || []).length, 1, `${id}는 한 번만 있어야 한다`);
+  // 2026-08-29: 카드마다 반복하던 사용량 블록을 카드 밖 공용 비교표 하나로 합쳤다
+  // (카드 5장이 두 줄로 접히며 아래 내용이 스크롤 밖으로 밀리고 뱃지가 겹치던 문제 해소).
+  assert.equal((pricing.match(/class="gp-plan-svc"/gu) || []).length, 1, '사용량 비교표는 하나여야 한다');
+  assert.ok(!pricing.includes('class="svc-r"'), '카드 안 반복 사용량 줄이 남아 있음');
+  assert.equal((pricing.match(/class="svc-row"/gu) || []).length, 3, '작업 3종 행');
+  // 상품별 크레딧과 단가가 맞는 횟수(1,000자 기본=20 · 감지=10 · 1만자 고급=200, 내림)
+  for (const [credits, basic, detect, formal] of [
+    [110, 5, 11, 0], [400, 20, 40, 2], [700, 35, 70, 3], [1500, 75, 150, 7], [3300, 165, 330, 16]
+  ]) {
+    assert.match(pricing, new RegExp(`data-plan-credits="${credits}" data-work-cost="20">${basic}회<`, 'u'), `${credits} 기본 횟수`);
+    assert.match(pricing, new RegExp(`data-plan-credits="${credits}" data-work-cost="10">${detect}회<`, 'u'), `${credits} 감지 횟수`);
+    assert.match(pricing, new RegExp(`data-plan-credits="${credits}" data-work-cost="200">${formal}회<`, 'u'), `${credits} 고급 횟수`);
   }
-  // 단가와 일치하는 횟수(1,000자 기본=20 · 감지=10 · 1만자 고급=200 기준 내림)
-  assert.match(pricing, /1,000자 글 휴머나이징<strong id="gpStarterSvcBasic"[^>]*>5회 추가/u);
-  assert.match(pricing, /1,000자 글 휴머나이징<strong[^>]*data-plan-credits="3300"[^>]*data-work-cost="20"[^>]*>165회 추가/u);
-  assert.match(pricing, /1,000자 AI 감지<strong[^>]*data-plan-credits="3300"[^>]*data-work-cost="10"[^>]*>330회 추가/u);
-  assert.match(pricing, /1만자 논문 고급 휴머나이징<strong[^>]*data-plan-credits="3300"[^>]*data-work-cost="200"[^>]*>16회 추가/u);
   assert.match(pricing, /class="gp-plan-svc-note"/u);
   assert.match(pricing, /id="gpPricingSegmentPanel"/u);
+});
+
+test('요금 카드는 한 줄 배치와 겹침 방지 규칙을 갖는다', async () => {
+  // 운영 확인 2026-08-29: 5장이 두 줄로 접혀 아래 내용이 안 보이고 카드가 겹쳤다
+  const css = await read('assets/css/redesign.css');
+  assert.match(css, /\.gp-plan-grid\{\s*grid-template-columns:repeat\(5,minmax\(0,1fr\)\) !important/u);
+  assert.match(css, /@media\(max-width:1180px\)[\s\S]{0,500}?nth-last-child\(-n\+2\)\{grid-column:span 3;\}/u, '3+2 균형 배치');
+  assert.match(css, /@media\(max-width:760px\)[\s\S]{0,500}?\.plan-card:last-child\{grid-column:1 \/ -1;\}/u, '2+2+1 균형 배치');
+  assert.doesNotMatch(css, /@media\(max-width:(?:1240|860)px\)/u, '비표준 중단점이 되살아남');
+  assert.match(css, /\.gp-plan-grid \.plan-popular,[\s\S]{0,120}?transform:none !important/u, '인기 카드 돌출 제거');
+  // 내비 앵커 밑줄 제거(button→a 전환 후 브라우저 기본 밑줄이 살아나던 문제)
+  assert.match(css, /\.gp-lav-menu a,\.gp-lav-side-link,\.gp-footer-links a,a\.mnav-btn,a\.snav-btn\{text-decoration:none;\}/u);
 });

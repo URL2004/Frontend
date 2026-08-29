@@ -81,7 +81,8 @@
     }
     window.addEventListener('pointerdown', start, { once: true, passive: true });
     window.addEventListener('keydown', start, { once: true });
-    timer = setTimeout(start, 6500);
+    // 실제 상호작용에서는 즉시 시작하되, 수동 방문의 광고 스크립트는 초기 성능 측정 뒤로 미룬다.
+    timer = setTimeout(start, 12000);
   }
 
   function scheduleLandingHydration() {
@@ -100,7 +101,8 @@
     window.addEventListener('scroll', hydrate, { once: true, passive: true });
     window.addEventListener('pointerdown', hydrate, { once: true, passive: true });
     window.addEventListener('keydown', hydrate, { once: true });
-    timer = setTimeout(hydrate, 7000);
+    // 스크롤·클릭·키보드에서는 즉시 채우고, 가만히 있는 첫 화면은 가볍게 유지한다.
+    timer = setTimeout(hydrate, 12000);
   }
 
   var appAssetsPromise = null;

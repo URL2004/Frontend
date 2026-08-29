@@ -255,9 +255,9 @@ test('충전 사다리는 라이트 350으로 단조 할인(-9/-14/-17/-23/-26)�
   // 할인 표기: 기준가 29원(스타터 순정가) 대비, 커질수록 커지는 단조 사다리
   const badges = [...pricing.matchAll(/plan-discount">(-\d+%)</gu)].map(m => m[1]).slice(0, 5);
   assert.deepEqual(badges, ['-9%', '-25%', '-29%', '-33%', '-39%']);
-  // 사용량 표기는 400 기준 내림값과 일치
-  assert.match(pricing, /1,000자 글 휴머나이징<strong[^>]*data-plan-credits="400"[^>]*data-work-cost="20"[^>]*>20회 추가/u);
-  assert.match(pricing, /1,000자 AI 감지<strong[^>]*data-plan-credits="400"[^>]*data-work-cost="10"[^>]*>40회 추가/u);
+  // 사용량 표기는 400 기준 내림값과 일치(공용 비교표 — 2026-08-29 카드 밖으로 이동)
+  assert.match(pricing, /data-plan-credits="400" data-work-cost="20">20회</u);
+  assert.match(pricing, /data-plan-credits="400" data-work-cost="10">40회</u);
 });
 
 test('가격 카드는 보너스 비율과 스타터 분할 구매 대비 이득을 명시한다', async () => {
@@ -366,8 +366,8 @@ test('익명 홈은 서버 렌더 랜딩을 즉시 활성화하고 앱·인증 �
   assert.match(appModule, /if \(u\) \{[\s\S]{0,100}?showAuthenticatedShell\(u, 'auth_state'\);[\s\S]{0,100}?await loadUser\(u\)/u);
 
   assert.match(boot, /requestIdleCallback\(task, \{ timeout: timeout \|\| 1800 \}\)/u);
-  assert.match(boot, /setTimeout\(start, 6500\)/u);
-  assert.match(boot, /setTimeout\(hydrate, 7000\)/u);
+  assert.match(boot, /setTimeout\(start, 12000\)/u);
+  assert.match(boot, /setTimeout\(hydrate, 12000\)/u);
   assert.match(landingJs, /demoStartTimer = setTimeout[\s\S]{0,180}3200/u);
   assert.match(boot, /if \(mode === 'landing'\)[\s\S]*?loadScript\('\/assets\/js\/landing\.js'\)/u);
   assert.doesNotMatch(boot, /script\('https:\/\/cdn\.jsdelivr\.net\/npm\/(?:gsap|vanilla-tilt|countup)/u);
