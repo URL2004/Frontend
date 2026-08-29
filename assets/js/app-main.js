@@ -1811,7 +1811,7 @@ function switchPricingTab() {
   const heroDesc = document.getElementById('pricingHeroDesc');
   if (credit) credit.style.display = 'block';
   if (heroTitle && heroDesc) {
-    heroTitle.textContent = '지금 충전하고 바로 사용하세요';
+    heroTitle.textContent = '크레딧 충전';
     heroDesc.innerHTML = '구매한 크레딧은 <strong>유효기간 없이</strong> 사용할 수 있어요. AI 감지는 100자당 1크레딧이며, 휴머나이징은 선택한 모드와 글자 수에 따라 차감돼요.';
   }
   if (window.gpTrack) window.gpTrack('pricing_tab_change', { pricing_tab: 'credit' });

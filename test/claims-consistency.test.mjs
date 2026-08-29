@@ -94,7 +94,7 @@ test('신뢰·가격·준비 중 표면은 확정된 정책 문구와 런타임 
     read('partials/footer.html')
   ]);
 
-  assert.ok((pricing.match(/data-credit-balance/gu) || []).length >= 2, '잔액 런타임 훅이 부족함');
+  assert.equal((pricing.match(/data-credit-balance/gu) || []).length, 1, '본문 잔액 훅은 중복 없이 하나여야 함');
   assert.match(pricing, /data-credit-work-count="current"/u);
   assert.match(pricing, /data-credit-work-count="additional"/u);
   assert.doesNotMatch(pricing, /보유 크레딧 10|업그레이드|구독 시작/u);

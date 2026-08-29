@@ -165,7 +165,7 @@
       var publicShell = event.target.closest('.gp-public-shell');
       if (!publicShell) return;
       if (event.target.closest('a[href]') && !event.target.closest('[data-public-login]')) return;
-      if (event.target.closest('button, .plan-card')) {
+      if (event.target.closest('button')) {
         event.preventDefault();
         if (typeof window.gpLoadApp === 'function') window.gpLoadApp({ screen: 'login', tab: 'pricing' });
       }

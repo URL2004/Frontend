@@ -75,16 +75,24 @@ test('가격표 카드는 서비스별로 몇 번 쓸 수 있는지 보여준다
   assert.ok(!pricing.includes('plan-vs-starter'), '분할 구매 비교 줄이 되살아남');
   assert.match(pricing, /class="gp-plan-svc-note"/u);
   assert.match(pricing, /id="gpPricingSegmentPanel"/u);
+  assert.equal((pricing.match(/class="gp-plan-audience"/gu) || []).length, 5, '상품마다 추천 사용 상황');
+  assert.equal((pricing.match(/aria-label="총 [^"]+크레딧을 [^"]+원에 충전하기"/gu) || []).length, 5, '결제 버튼마다 상품 맥락 이름');
+  assert.doesNotMatch(pricing, /class="gp-top-actions"|class="pc-fx"|class="pc-tr/u, '중복 상단 버튼 또는 장식 트래커 재유입');
+  assert.doesNotMatch(pricing, /class="plan-card[^"]*"[^>]+onclick=/u, '카드 전체 클릭 재유입');
 });
 
-test('요금 카드는 한 줄 배치와 겹침 방지 규칙을 갖는다', async () => {
-  // 운영 확인 2026-08-29: 5장이 두 줄로 접혀 아래 내용이 안 보이고 카드가 겹쳤다
+test('요금 카드는 읽기 가능한 같은 너비의 3+2 · 2+2+1 · 1열 배치를 갖는다', async () => {
   const css = await read('assets/css/redesign.css');
-  assert.match(css, /\.gp-plan-grid\{\s*grid-template-columns:repeat\(5,minmax\(0,1fr\)\) !important/u);
-  assert.match(css, /@media\(max-width:1180px\)[\s\S]{0,500}?nth-last-child\(-n\+2\)\{grid-column:span 3;\}/u, '3+2 균형 배치');
-  assert.match(css, /@media\(max-width:760px\)[\s\S]{0,500}?\.plan-card:last-child\{grid-column:1 \/ -1;\}/u, '2+2+1 균형 배치');
-  assert.match(css, /@media\(max-width:760px\)[\s\S]{0,500}?\.plan-card:nth-last-child\(-n\+2\)\{grid-column:auto;\}/u, '상위 span 3 규칙 해제');
-  assert.match(css, /@media\(max-width:560px\)[\s\S]{0,500}?\.plan-card:last-child\{grid-column:auto;\}/u, '1열에서 마지막 카드 span 해제');
+  assert.match(css, /\.gp-plan-grid\{\s*grid-template-columns:repeat\(6,minmax\(0,1fr\)\) !important/u, '데스크톱 6트랙');
+  assert.match(css, /\.gp-plan-grid \.plan-card\{grid-column:span 2;\}/u, '상품 3열 동폭');
+  assert.match(css, /\.gp-plan-grid \.plan-card:nth-child\(4\)\{grid-column:2 \/ span 2;\}/u, '둘째 줄 중앙 시작');
+  assert.match(css, /\.gp-plan-grid \.plan-card:nth-child\(5\)\{grid-column:4 \/ span 2;\}/u, '둘째 줄 중앙 종료');
+  assert.match(css, /@media\(max-width:960px\)[\s\S]{0,600}?grid-template-columns:repeat\(2,minmax\(0,1fr\)\) !important/u, '중간 화면 2열');
+  assert.match(css, /@media\(max-width:960px\)[\s\S]{0,600}?nth-child\(5\)\{\s*grid-column:1 \/ -1;\s*width:calc\(50% - 8px\);/u, '마지막 상품 같은 너비 중앙 정렬');
+  assert.match(css, /@media\(max-width:560px\)[\s\S]{0,500}?grid-template-columns:1fr !important/u, '모바일 1열');
+  assert.match(css, /@media\(max-width:560px\)[\s\S]{0,500}?nth-child\(5\)\{\s*grid-column:auto;\s*width:100%;/u, '모바일 마지막 상품 폭 복원');
+  assert.doesNotMatch(css, /\.gp-plan-grid\{\s*grid-template-columns:repeat\(5,/u, '읽을 수 없는 5열 재유입');
+  assert.doesNotMatch(css, /pcLineGrow|pcScan|pcFloat|\.pc-tr|\.pc-fx/u, '사이버 카드 장식 재유입');
   assert.doesNotMatch(css, /@media\(max-width:(?:1240|860)px\)/u, '비표준 중단점이 되살아남');
   assert.match(css, /\.gp-plan-grid \.plan-popular,[\s\S]{0,120}?transform:none !important/u, '인기 카드 돌출 제거');
   // 내비 앵커 밑줄 제거(button→a 전환 후 브라우저 기본 밑줄이 살아나던 문제)

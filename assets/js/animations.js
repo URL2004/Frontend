@@ -26,14 +26,16 @@
  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initGSAP);
  else initGSAP();
 
- /* ── Phase 3: Vanilla Tilt ─ 가격 카드 3D 틸트 ── */
+ /* ── Phase 3: Vanilla Tilt ─ 비교형 충전 카드는 제외 ── */
  function initTilt() {
   if (typeof VanillaTilt === 'undefined') return;
   if (/Mobi|Android/i.test(navigator.userAgent)) return; // 모바일 비활성화
-  VanillaTilt.init(document.querySelectorAll('.plan-card'), {
-   max: 8, speed: 300,
-   glare: true, 'max-glare': 0.12,
-   scale: 1.03, gyroscope: false
+  document.querySelectorAll('.plan-card:not([data-plan-credits])').forEach(function(card) {
+   VanillaTilt.init(card, {
+    max: 8, speed: 300,
+    glare: true, 'max-glare': 0.12,
+    scale: 1.03, gyroscope: false
+   });
   });
  }
  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initTilt);
@@ -79,7 +81,7 @@
  /* ── 1) Magnetic CTA 버튼 ── */
  function bindMagnetic(){
   if (isMobile) return;
-  var sel = '#lsSendBtn, .plan-btn, .chargbtn, .wbtn, .btn-google, .btn-kakao, .buybtn';
+  var sel = '#lsSendBtn, .chargbtn, .wbtn, .btn-google, .btn-kakao, .buybtn';
   document.querySelectorAll(sel).forEach(function(btn){
    if (btn._qdMag) return; btn._qdMag = true;
    btn.addEventListener('mousemove', function(e){
