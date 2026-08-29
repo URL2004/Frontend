@@ -42,20 +42,61 @@
     </section>
    </div>
 
-   <aside class="gp-page-aside">
-    <article class="gp-visual-card gp-qna-help">
-     <img loading="lazy" decoding="async" src="/assets/img/hero-shield.png" alt="">
-     <div>
-      <strong>먼저 자주 묻는 질문을 확인해 보세요</strong>
-      <p>비슷한 내용이 FAQ에 정리돼 있다면 기다리지 않고 바로 해결할 수 있어요.</p>
-      <button type="button" onclick="switchTab('faq')">자주 묻는 질문 보기</button>
-     </div>
-    </article>
-    <article class="gp-aside-card gp-support-time">
-     <h3>운영 시간</h3>
-     <p>매일 09:00–23:59<br>주말·공휴일 포함</p>
-     <span>평일 기준 1영업일 이내 답변해요</span>
-    </article>
+   <aside class="gp-page-aside gp-support-aside" aria-label="빠른 도움과 서비스 이용 안내">
+    <div class="gp-support-dock">
+     <section class="gp-support-faq" aria-labelledby="qnaQuickHelpTitle">
+      <img loading="lazy" decoding="async" src="/assets/img/hero-shield.png" alt="">
+      <div>
+       <h2 id="qnaQuickHelpTitle">문의 전에 바로 해결해 보세요</h2>
+       <p>결제·환불·크레딧·이용 방법은 FAQ에서 기다리지 않고 확인할 수 있어요.</p>
+       <a class="gp-support-faq-link" data-tab="faq" href="/faq">
+        FAQ에서 답 찾기
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m9 18 6-6-6-6"/></svg>
+       </a>
+      </div>
+     </section>
+
+     <section class="gp-support-actions" aria-labelledby="qnaNextActionTitle">
+      <div class="gp-support-actions-head">
+       <h2 id="qnaNextActionTitle">바로 이용하기</h2>
+       <span class="gp-support-balance" data-credit-balance>가입 시 10크레딧</span>
+      </div>
+      <p>원하는 기능으로 바로 이동해 보세요. 실행 전 예상 크레딧을 먼저 확인할 수 있어요.</p>
+      <div class="gp-support-task-list">
+       <button class="gp-support-task" type="button" onclick="openProductMode('detect')">
+        <span class="gp-support-task-icon" aria-hidden="true">
+         <svg viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4 4M10.5 7.5v6M7.5 10.5h6"/></svg>
+        </span>
+        <span><strong>AI 감지 시작</strong><small>문체 신호를 먼저 확인해요</small></span>
+        <svg class="gp-support-task-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m9 18 6-6-6-6"/></svg>
+       </button>
+       <button class="gp-support-task" type="button" onclick="openProductMode('humanize')">
+        <span class="gp-support-task-icon" aria-hidden="true">
+         <svg viewBox="0 0 24 24" fill="none"><path d="m12 3 1.1 3.4L16.5 7.5l-3.4 1.1L12 12l-1.1-3.4-3.4-1.1 3.4-1.1L12 3Z"/><path d="m7 12 .8 2.2L10 15l-2.2.8L7 18l-.8-2.2L4 15l2.2-.8L7 12ZM17.5 13l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8Z"/></svg>
+        </span>
+        <span><strong>휴머나이징 시작</strong><small>뜻과 장르를 지키며 다듬어요</small></span>
+        <svg class="gp-support-task-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="m9 18 6-6-6-6"/></svg>
+       </button>
+      </div>
+      <div class="gp-support-cta-group">
+       <a class="gp-support-cta charge gp-gradient-action" data-tab="pricing" href="/pricing">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6.5A2.5 2.5 0 0 1 4 16.5v-9Z"/><path d="M4 8h14M15.5 13H20"/></svg>
+        충전하기
+       </a>
+      </div>
+     </section>
+
+     <section class="gp-support-hours" aria-labelledby="qnaHoursTitle">
+      <span class="gp-support-hours-icon" aria-hidden="true">
+       <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+      </span>
+      <div>
+       <h2 id="qnaHoursTitle">운영 시간</h2>
+       <p><strong>매일 09:00–23:59</strong><span>주말·공휴일 포함</span></p>
+      </div>
+      <p class="gp-support-response">평일 기준 1영업일 이내 답변해요.</p>
+     </section>
+    </div>
    </aside>
   </section>
  </div>

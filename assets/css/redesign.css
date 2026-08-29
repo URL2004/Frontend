@@ -9760,38 +9760,6 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
 }
 
 /* ── 결제·문의·공지 레이아웃 회귀 복구(2026-08-29) ── */
-/* 상단 충전 CTA: 삭제된 공통 액션 규격을 복구하고, 남아 있던 3px 내부 박스 효과를 제거한다. */
-#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn{
- display:inline-flex !important;
- width:auto;
- min-width:104px;
- height:42px !important;
- min-height:42px !important;
- align-items:center;
- justify-content:center;
- padding:0 18px !important;
- border:1px solid #171a2b !important;
- border-radius:10px !important;
- background:#171a2b !important;
- color:#fff !important;
- box-shadow:none !important;
- white-space:nowrap;
- line-height:1;
-}
-#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn::before{
- content:none !important;
- display:none !important;
-}
-#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn:hover{
- border-color:#292d43 !important;
- background:#292d43 !important;
- transform:none;
-}
-#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn:active{transform:translateY(1px);}
-#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn:focus-visible{
- outline:3px solid rgba(90,91,216,.24);
- outline-offset:3px;
-}
 
 /* 충전 설명은 넓은 화면에서 불필요하게 70ch로 끊지 않는다. */
 #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-section-copy{
@@ -9981,4 +9949,389 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
 }
 @media(prefers-reduced-motion:reduce){
  .gp-board-pagination button{transition:none !important;}
+}
+
+/* ───────── 문의 사이드 지원 패널(2026-08-29) ─────────
+   FAQ, 서비스 시작, 충전, 운영시간을 한 개의 읽기 흐름으로 묶는다. */
+#mainContent[data-main-design="lavender"] #qnaContent .gp-qna-page{
+ grid-template-columns:minmax(0,1fr) 304px;
+ gap:32px;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-aside{
+ display:block;
+ position:sticky;
+ top:84px;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-dock{
+ overflow:hidden;
+ border:1px solid #dde1ed;
+ border-radius:16px;
+ background:#fff;
+ color:#1a1f2e;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-faq{
+ display:grid;
+ grid-template-columns:minmax(0,1fr) 92px;
+ align-items:center;
+ gap:10px;
+ padding:24px 20px 22px;
+ background:linear-gradient(145deg,#f1f0ff 0%,#edf3ff 100%);
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-faq > div{
+ min-width:0;
+ grid-column:1;
+ grid-row:1;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-faq img{
+ grid-column:2;
+ grid-row:1;
+ align-self:start;
+ width:92px;
+ max-width:92px;
+ height:92px;
+ margin:-4px -4px 0 0;
+ object-fit:contain;
+ filter:drop-shadow(0 12px 22px rgba(80,92,255,.20));
+}
+#mainContent[data-main-design="lavender"] #qnaContent :is(.gp-support-faq,.gp-support-actions,.gp-support-hours) h2{
+ margin:0;
+ color:#171a2b;
+ font-size:16px;
+ font-weight:800;
+ line-height:1.35;
+ letter-spacing:-.015em;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-faq p{
+ margin:8px 0 14px;
+ color:#5a6175;
+ font-size:13.5px;
+ font-weight:500;
+ line-height:1.55;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-faq-link{
+ display:inline-flex;
+ align-items:center;
+ gap:5px;
+ min-height:44px;
+ color:#4f50c8;
+ font-size:13.5px;
+ font-weight:800;
+ text-decoration:none;
+ text-underline-offset:4px;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-faq-link svg{
+ width:17px;
+ height:17px;
+ stroke:currentColor;
+ stroke-width:2;
+ stroke-linecap:round;
+ stroke-linejoin:round;
+ transition:transform .16s ease;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-faq-link:hover{
+ color:#3f40b8;
+ text-decoration:underline;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-faq-link:hover svg{transform:translateX(2px);}
+
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-actions{
+ padding:22px 20px 20px;
+ border-top:1px solid rgba(218,221,237,.85);
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-actions-head{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:10px;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-balance{
+ flex:0 0 auto;
+ display:inline-flex;
+ align-items:center;
+ min-height:28px;
+ padding:0 9px;
+ border-radius:8px;
+ background:#f0effd;
+ color:#4b4cc6;
+ font-size:11.5px;
+ font-weight:800;
+ white-space:nowrap;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-actions > p{
+ margin:8px 0 16px;
+ color:#686f82;
+ font-size:13px;
+ font-weight:500;
+ line-height:1.55;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-task-list{
+ display:grid;
+ gap:8px;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-task{
+ width:100%;
+ min-height:58px;
+ display:grid;
+ grid-template-columns:34px minmax(0,1fr) 18px;
+ align-items:center;
+ gap:10px;
+ padding:8px 10px;
+ border:1px solid #e2e4ed;
+ border-radius:10px;
+ background:#fff;
+ color:#282d40;
+ text-align:left;
+ cursor:pointer;
+ transition:background .16s ease,border-color .16s ease,color .16s ease;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-task:hover{
+ border-color:#bfc1e4;
+ background:#f8f8fd;
+ color:#4546bb;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-task-icon{
+ width:34px;
+ height:34px;
+ display:grid;
+ place-items:center;
+ border-radius:9px;
+ background:#efeffc;
+ color:#5556ca;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-task-icon svg{
+ width:19px;
+ height:19px;
+ stroke:currentColor;
+ stroke-width:1.8;
+ stroke-linecap:round;
+ stroke-linejoin:round;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-task > span:nth-child(2){min-width:0;}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-task strong{
+ display:block;
+ color:currentColor;
+ font-size:13.5px;
+ font-weight:800;
+ line-height:1.35;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-task small{
+ display:block;
+ margin-top:2px;
+ color:#777e90;
+ font-size:11.5px;
+ font-weight:500;
+ line-height:1.35;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-task-arrow{
+ width:18px;
+ height:18px;
+ stroke:#9ca2b4;
+ stroke-width:2;
+ stroke-linecap:round;
+ stroke-linejoin:round;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-cta-group{margin-top:10px;}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-cta{
+ width:100%;
+ min-height:44px;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ gap:8px;
+ padding:0 14px;
+ border-radius:10px;
+ font-size:13.5px;
+ font-weight:800;
+ line-height:1;
+ text-decoration:none;
+ transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-cta svg{
+ width:17px;
+ height:17px;
+ stroke:currentColor;
+ stroke-width:1.9;
+ stroke-linecap:round;
+ stroke-linejoin:round;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-cta.charge{
+ border:1px solid #171a2b;
+ background:#171a2b;
+ color:#fff;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-cta.charge:hover{
+ border-color:#292d43;
+ background:#292d43;
+ color:#fff;
+ transform:translateY(-1px);
+}
+#mainContent[data-main-design="lavender"] #qnaContent :is(.gp-support-faq-link,.gp-support-task,.gp-support-cta):focus-visible{
+ outline:3px solid rgba(90,91,216,.24);
+ outline-offset:3px;
+}
+
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-hours{
+ display:grid;
+ grid-template-columns:38px minmax(0,1fr);
+ align-items:start;
+ gap:12px;
+ padding:18px 20px 20px;
+ border-top:1px solid #eceef5;
+ background:#fafafe;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-hours-icon{
+ width:38px;
+ height:38px;
+ display:grid;
+ place-items:center;
+ border-radius:10px;
+ background:#ececfa;
+ color:#5657ce;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-hours-icon svg{
+ width:20px;
+ height:20px;
+ stroke:currentColor;
+ stroke-width:1.8;
+ stroke-linecap:round;
+ stroke-linejoin:round;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-hours h2{font-size:14px;}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-hours div > p{
+ display:flex;
+ flex-wrap:wrap;
+ gap:2px 8px;
+ margin:5px 0 0;
+ color:#656c7e;
+ font-size:12.5px;
+ line-height:1.45;
+}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-hours strong{color:#2d3245;font-weight:800;}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-hours div > p span{color:#7c8293;}
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-response{
+ grid-column:1 / -1;
+ margin:2px 0 0;
+ padding:10px 12px;
+ border-radius:9px;
+ background:#eef3ff;
+ color:#3f63b9;
+ font-size:12.5px;
+ font-weight:700;
+ line-height:1.45;
+}
+
+@media(max-width:960px){
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-qna-page{grid-template-columns:1fr;}
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-support-aside{position:static;}
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-support-dock{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+ }
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-support-actions{border-top:0;border-left:1px solid #e5e7f0;}
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-support-hours{grid-column:1 / -1;}
+}
+@media(max-width:600px){
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-support-dock{display:block;}
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-support-faq{
+  grid-template-columns:minmax(0,1fr) 76px;
+  padding:20px 18px;
+ }
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-support-faq img{
+  width:76px;
+  max-width:76px;
+  height:76px;
+ }
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-support-actions{
+  padding:20px 18px 18px;
+  border-top:1px solid #e5e7f0;
+  border-left:0;
+ }
+ #mainContent[data-main-design="lavender"] #qnaContent .gp-support-hours{padding:18px;}
+}
+@media(prefers-reduced-motion:reduce){
+ #mainContent[data-main-design="lavender"] #qnaContent :is(.gp-support-faq-link svg,.gp-support-task,.gp-support-cta){transition:none;}
+}
+
+/* ───────── 공통 전환 버튼 복구(2026-08-29) ─────────
+   상단 충전, 사이드바 초대, 지원 패널 충전은 같은 버튼 컴포넌트를 사용한다. */
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn.gp-gradient-action,
+.gp-lav-side-bottom .gp-invite-btn.gp-gradient-action,
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-cta.gp-gradient-action{
+ position:relative;
+ z-index:0;
+ overflow:hidden;
+ display:inline-flex !important;
+ height:42px !important;
+ min-height:42px !important;
+ align-items:center;
+ justify-content:center;
+ gap:8px;
+ padding:0 18px !important;
+ border:0 !important;
+ border-radius:10px !important;
+ background:linear-gradient(144deg,#af40ff,#5b42f3 50%,#00ddeb) !important;
+ color:#fff !important;
+ box-shadow:rgba(151,65,252,.20) 0 15px 30px -5px !important;
+ font-family:var(--font,Pretendard,sans-serif);
+ font-size:13px !important;
+ font-weight:800 !important;
+ line-height:1;
+ white-space:nowrap;
+ cursor:pointer;
+ transition:transform .2s ease,box-shadow .2s ease;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn.gp-gradient-action{
+ min-width:104px;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-top-slot{
+ flex-wrap:nowrap;
+ align-items:center;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-top-right :is(.ls-credit-btn,.ls-upgrade-btn.gp-gradient-action){
+ height:52px !important;
+ min-height:52px !important;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn.gp-gradient-action::before,
+.gp-lav-side-bottom .gp-invite-btn.gp-gradient-action::before,
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-cta.gp-gradient-action::before{
+ content:"" !important;
+ display:block !important;
+ position:absolute;
+ inset:3px;
+ z-index:-1;
+ border-radius:7px;
+ background:rgb(5,6,45);
+ transition:background-color .2s ease;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn.gp-gradient-action:hover,
+.gp-lav-side-bottom .gp-invite-btn.gp-gradient-action:hover,
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-cta.gp-gradient-action:hover{
+ background:linear-gradient(144deg,#af40ff,#5b42f3 50%,#00ddeb) !important;
+ color:#fff !important;
+ transform:translateY(-1px);
+}
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn.gp-gradient-action:hover::before,
+.gp-lav-side-bottom .gp-invite-btn.gp-gradient-action:hover::before,
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-cta.gp-gradient-action:hover::before{
+ background:transparent;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn.gp-gradient-action:active,
+.gp-lav-side-bottom .gp-invite-btn.gp-gradient-action:active,
+#mainContent[data-main-design="lavender"] #qnaContent .gp-support-cta.gp-gradient-action:active{
+ transform:scale(.97);
+}
+#mainContent[data-main-design="lavender"] :is(.ls-upgrade-btn.gp-gradient-action,.gp-support-cta.gp-gradient-action):focus-visible,
+.gp-lav-side-bottom .gp-invite-btn.gp-gradient-action:focus-visible{
+ outline:3px solid rgba(90,91,216,.24);
+ outline-offset:3px;
+}
+@media(prefers-reduced-motion:reduce){
+ #mainContent[data-main-design="lavender"] :is(.ls-upgrade-btn.gp-gradient-action,.gp-support-cta.gp-gradient-action),
+ .gp-lav-side-bottom .gp-invite-btn.gp-gradient-action,
+ #mainContent[data-main-design="lavender"] :is(.ls-upgrade-btn.gp-gradient-action,.gp-support-cta.gp-gradient-action)::before,
+ .gp-lav-side-bottom .gp-invite-btn.gp-gradient-action::before{transition:none !important;}
+}
+@media(max-width:760px){
+ /* 충전하기를 직접 유지하므로 같은 목적의 모바일 '요금' 링크는 중복 노출하지 않는다. */
+ #mainContent[data-main-design="lavender"] .gp-lav-mobile-pricing{display:none !important;}
 }
