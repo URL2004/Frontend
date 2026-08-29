@@ -20,6 +20,8 @@ test('AI 감지 실행 확인은 분석 내용·비용·잔액·무차감 조건
   assert.match(source, /실제 작성 주체나 외부 검사 결과를 보장하지 않습니다/u);
   assert.match(source, /window\.UP === 'unlimited'/u);
   assert.match(source, /무제한 이용권으로 처리되며 크레딧은 차감되지 않아요/u);
+  assert.match(source, /'감지 시작 · ' \+ cost\.toLocaleString\(\) \+ '크레딧'/u);
+  assert.doesNotMatch(source, /크레딧 사용하고 감지/u);
   assert.match(source, /source:\s*'evasion_detect_preflight'/u);
   assert.match(source, /await window\.authReady/u);
   assert.match(source, /window\.gpUserDataReady === true/u);
@@ -46,7 +48,8 @@ test('공통 확인창은 감지 전용 정보 구조와 키보드 포커스 복
   assert.doesNotMatch(feedback, /class="gp-dialog-x"[^>]*>×/u);
   assert.match(styles, /\.gp-dialog-root\.variant-detect \.gp-dialog-card\{width:min\(456px,100%\)/u);
   assert.match(styles, /body\.gp-dialog-open\{overflow:hidden;/u);
-  assert.match(styles, /@media\(max-width:400px\)/u);
+  assert.match(styles, /grid-template-columns:96px minmax\(0,1fr\)/u);
+  assert.match(styles, /@media\(max-width:480px\)/u);
 });
 
 test('메인 파셜의 숨은 줄과 빈 탭 슬롯은 제거되어 사이드바 상단과 문서 높이를 밀지 않는다', async () => {
@@ -61,4 +64,12 @@ test('메인 파셜의 숨은 줄과 빈 탭 슬롯은 제거되어 사이드바
   assert.ok(loader.includes("replace(/^\\uFEFF/u, '')"));
   assert.ok(build.includes("content.replace(/^\\uFEFF/u, '')"));
   assert.match(designs, /tabs\.hidden = lavTab === 'main'/u);
+});
+
+test('라벤더 메뉴는 작업 기록과 겹치는 보관함 진입점을 노출하지 않는다', async () => {
+  const main = await read('pages/main.html');
+  const menu = main.match(/<nav class="gp-lav-menu"[\s\S]*?<\/nav>/u)?.[0] || '';
+
+  assert.match(menu, />작업 기록</u);
+  assert.doesNotMatch(menu, /lavOpenLibrary|>보관함</u);
 });

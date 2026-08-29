@@ -571,7 +571,7 @@
               ? '무제한 이용권으로 처리되며 크레딧은 차감되지 않아요.'
               : '감지에 실패하면 크레딧은 차감되지 않아요.',
             note: '결과는 문체 패턴 기반 참고값이며, 실제 작성 주체나 외부 검사 결과를 보장하지 않습니다.',
-            confirmText: unlimited ? 'AI 감지 시작' : cost.toLocaleString() + '크레딧 사용하고 감지',
+            confirmText: unlimited ? 'AI 감지 시작' : '감지 시작 · ' + cost.toLocaleString() + '크레딧',
             cancelText: '취소'
           })
         : confirm(unlimited

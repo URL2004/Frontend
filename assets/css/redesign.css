@@ -17904,6 +17904,13 @@ body.gp-dialog-open{overflow:hidden;}
 .gp-dialog-root.variant-detect .gp-dialog-card{width:min(456px,100%);}
 .gp-dialog-root.variant-detect .gp-dialog-icon{background:rgba(124,107,255,.16);color:#c4b5fd;box-shadow:none;}
 .gp-dialog-root.variant-detect .gp-dialog-card h2{margin-bottom:7px;font-size:22px;letter-spacing:-.018em;}
+.gp-dialog-root.variant-detect .gp-dialog-actions{
+ display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;
+}
+.gp-dialog-root.variant-detect .gp-dialog-actions button{
+ display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+ width:100%;min-width:0;height:44px;padding:0 16px;line-height:1.25;
+}
 .gp-dialog-root.variant-detect .gp-dialog-confirm{white-space:nowrap;}
 .gp-dialog-actions button:focus-visible,
 .gp-dialog-x:focus-visible{outline:2px solid #a78bfa;outline-offset:2px;}
@@ -17931,8 +17938,8 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
  .gp-dialog-summary-row{gap:16px;padding:10px 0;}
  .gp-dialog-actions button{min-width:0;min-height:44px;}
 }
-@media(max-width:400px){
- .gp-dialog-root.variant-detect .gp-dialog-actions{flex-direction:column-reverse;}
+@media(max-width:480px){
+ .gp-dialog-root.variant-detect .gp-dialog-actions{display:flex;flex-direction:column-reverse;}
  .gp-dialog-root.variant-detect .gp-dialog-actions button{width:100%;}
 }
 @media(prefers-reduced-motion:reduce){
