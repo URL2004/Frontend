@@ -581,22 +581,23 @@
       if (!card) return;
       card.dataset.planCredits = String(plan.credits);
       var total = card.querySelector('[data-plan-total-for="' + plan.amount + '"]');
-      var combinedRate = plan.paidCredits > 0 ? Math.round((plan.credits - plan.paidCredits) * 100 / plan.paidCredits) : 0;
-      if (total) total.textContent = '총 ' + format(plan.credits) + ' 크레딧 · ' + combinedRate + '% 추가';
+      var totalValue = total && total.querySelector('[data-plan-total-value]');
+      if (totalValue) totalValue.textContent = '총 ' + format(plan.credits) + ' 크레딧';
       var packageRow = card.querySelector('.feat-package');
       if (packageRow) {
-        packageRow.hidden = plan.packageBonusCredits <= 0;
+        packageRow.hidden = false;
         var packageStrong = packageRow.querySelector('strong');
-        if (packageStrong) packageStrong.textContent = '+' + format(plan.packageBonusCredits) + ' 크레딧';
+        if (packageStrong) packageStrong.textContent = '+' + format(plan.packageBonusCredits);
       }
       var eventRow = card.querySelector('.feat-event');
       if (eventRow) {
         eventRow.hidden = plan.eventBonusCredits <= 0;
         var eventStrong = eventRow.querySelector('strong');
-        if (eventStrong) eventStrong.textContent = '+' + format(plan.eventBonusCredits) + ' 크레딧';
+        if (eventStrong) eventStrong.textContent = '+' + format(plan.eventBonusCredits);
       }
       var efficiency = card.querySelector('[data-plan-efficiency]');
-      if (efficiency) efficiency.textContent = '기본 1,000자 기준 약 ' + format(Math.round(plan.amount * 20 / plan.credits)) + '원';
+      var efficiencyValue = efficiency && efficiency.querySelector('strong');
+      if (efficiencyValue) efficiencyValue.textContent = '약 ' + format(Math.round(plan.amount * 20 / plan.credits)) + '원';
       var button = card.querySelector('.plan-btn');
       if (button) {
         button.setAttribute('onclick', "payToss(" + plan.amount + ',' + plan.credits + ",'크레딧 충전','')");

@@ -5723,8 +5723,8 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 #mainContent[data-main-design="lavender"] #pricingContent .plan-card{
  position:relative;
  min-width:0;
- min-height:0;
- padding:18px !important;
+ min-height:480px;
+ padding:22px 18px 20px !important;
  overflow:visible;
  cursor:default;
  transform:none !important;
@@ -5802,58 +5802,92 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 }
 #mainContent[data-main-design="lavender"] #pricingContent .plan-feats li{
  min-width:0;
- padding:6px 0 !important;
+ padding:7px 0 !important;
  color:var(--text2) !important;
- font-size:12.5px !important;
+ font-size:12px !important;
  line-height:1.45;
 }
-#mainContent[data-main-design="lavender"] #pricingContent .plan-feats li span{color:#656c80 !important;}
-#mainContent[data-main-design="lavender"] #pricingContent .plan-feats li strong{color:var(--text) !important;}
+#mainContent[data-main-design="lavender"] #pricingContent .plan-feats li span{
+ color:#656c80 !important;
+ white-space:nowrap;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .plan-feats li strong{
+ color:var(--text) !important;
+ font-size:12.5px;
+}
 #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-total{
- margin:12px 0 0;
- padding:10px 12px;
+ display:flex;
+ min-height:68px;
+ margin:14px 0 0;
+ padding:12px 14px;
+ flex-direction:column;
+ justify-content:center;
+ gap:4px;
  border:0;
  border-radius:var(--radius-control);
  background:var(--brand-soft);
- color:var(--brand-strong) !important;
- font-size:14px !important;
- font-weight:800 !important;
  text-align:left;
 }
+#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-total span{
+ color:#5e6291;
+ font-size:11.5px;
+ font-weight:750;
+ line-height:1.35;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-total strong{
+ color:var(--brand-strong);
+ font-size:16px;
+ font-weight:850;
+ line-height:1.35;
+ white-space:nowrap;
+}
 #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-efficiency{
- margin:7px 0 12px;
- color:#656c80;
- font-size:12.5px;
- font-weight:700;
- line-height:1.5;
+ display:grid;
+ min-height:48px;
+ margin:10px 0 14px;
+ align-content:start;
+ gap:3px;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-comparison{
- min-height:38px;
- margin:13px 0 0;
+ display:grid;
+ min-height:48px;
+ margin:14px 0 0;
+ align-content:start;
+ gap:3px;
+}
+#mainContent[data-main-design="lavender"] #pricingContent :is(.gp-plan-comparison,.gp-plan-efficiency) span{
+ color:#73798b;
+ font-size:11.5px;
+ font-weight:700;
+ line-height:1.4;
+ white-space:nowrap;
+}
+#mainContent[data-main-design="lavender"] #pricingContent :is(.gp-plan-comparison,.gp-plan-efficiency) strong{
  color:#34394a;
- font-size:12.5px;
- font-weight:650;
- line-height:1.5;
+ font-size:13px;
+ font-weight:800;
+ line-height:1.4;
+ white-space:nowrap;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-comparison strong{
  color:var(--brand);
- font-weight:850;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-breakdown{
- margin:0 0 16px;
+ min-height:126px;
+ margin:0 0 18px;
  padding:0;
  border-top:1px solid #eceef5;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-breakdown summary{
- padding:10px 0 0;
- color:#73798b;
- font-size:12px;
- font-weight:750;
+ padding:12px 0 2px;
+ color:#5e6477;
+ font-size:12.5px;
+ font-weight:800;
  cursor:pointer;
  list-style-position:inside;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-breakdown .plan-feats{
- margin-top:10px;
+ margin-top:8px;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .plan-btn{
  width:100%;

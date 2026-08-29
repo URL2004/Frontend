@@ -78,12 +78,22 @@ test('전환 퍼널과 사용자 단계별 제안 이벤트를 개인정보 없�
 });
 
 test('가격표 카드는 가격→총 지급량→스타터 비교→기본 1,000자 기준 금액 순으로 비교한다', async () => {
-  const pricing = await read('pages/pricing.html');
+  const [pricing, css, flow] = await Promise.all([
+    read('pages/pricing.html'),
+    read('assets/css/redesign.css'),
+    read('assets/js/conversion-flow.js')
+  ]);
   assert.equal((pricing.match(/data-plan-efficiency/gu) || []).length, 5, '카드마다 기준 금액 한 줄');
-  for (const value of [552, 504, 446, 414, 387]) assert.match(pricing, new RegExp(`기본 1,000자 기준 약 ${value}원`, 'u'));
-  assert.match(pricing, /스타터 5회와 같은 금액으로 <strong>125크레딧 더<\/strong>/u);
-  assert.match(pricing, /스타터 20회와 같은 금액으로 <strong>900크레딧 더<\/strong>/u);
-  assert.equal((pricing.match(/class="gp-plan-breakdown"/gu) || []).length, 5, '지급 구성은 카드마다 접어서 표시');
+  for (const value of [552, 504, 446, 414, 387]) assert.match(pricing, new RegExp(`기본 1,000자 1회<\\/span><strong>약 ${value}원`, 'u'));
+  assert.match(pricing, /스타터 5회 대비<\/span><strong>\+125 크레딧<\/strong>/u);
+  assert.match(pricing, /스타터 20회 대비<\/span><strong>\+900 크레딧<\/strong>/u);
+  assert.equal((pricing.match(/data-plan-total-value/gu) || []).length, 5, '최종 지급량은 별도 값으로 강조');
+  assert.doesNotMatch(pricing, /총 [\d,]+ 크레딧 · \d+% 추가/u, '총 지급량 옆에 추가 지급처럼 읽히는 비율을 붙이지 않는다');
+  assert.equal((pricing.match(/class="feat-package"/gu) || []).length, 5, '상품 보너스 0도 같은 행으로 보여 카드 구조를 통일');
+  assert.equal((pricing.match(/class="gp-plan-breakdown" open/gu) || []).length, 5, '지급 구성은 카드마다 기본으로 펼쳐 표시');
+  assert.match(css, /#pricingContent \.plan-card\{[\s\S]*?min-height:480px/u, '다섯 카드의 최소 높이를 통일');
+  assert.match(flow, /totalValue\.textContent = '총 ' \+ format\(plan\.credits\) \+ ' 크레딧'/u);
+  assert.doesNotMatch(flow, /combinedRate/u, '총 지급량 표면에 합산 보너스 비율 재유입');
   assert.doesNotMatch(pricing, /이 크레딧으로 할 수 있는 일|1,000자 AI 감지|1만자 고급/u, '용도별 장문 목록 재유입');
   // 무엇 대비 할인인지 전달되지 않던 별도 할인율 배지는 제거한다.
   assert.ok(!pricing.includes('plan-discount'), '할인율 배지가 되살아남');

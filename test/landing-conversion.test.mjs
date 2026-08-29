@@ -253,7 +253,7 @@ test('충전 사다리는 기준·상품 보너스·기간 이벤트 지급량�
   assert.match(flow, /\{ amount: 8700, paidCredits: 300, packageBonusCredits: 30, eventBonusCredits: 15, credits: 345, label: '라이트' \}/u);
   assert.match(landing, /8,700원<\/b><span>총 345크레딧/u);
   assert.ok(!pricing.includes('plan-discount'), '할인율 배지 재유입');
-  assert.match(pricing, /기본 1,000자 기준 약 504원/u);
+  assert.match(pricing, /기본 1,000자 1회<\/span><strong>약 504원/u);
 });
 
 test('가격 카드는 상시 상품 보너스와 5% 기간 이벤트를 분리해 표시한다', async () => {
@@ -263,9 +263,9 @@ test('가격 카드는 상시 상품 보너스와 5% 기간 이벤트를 분리�
     read('assets/js/conversion-flow.js'),
     read('partials/modals.html')
   ]);
-  const rates = [...pricing.matchAll(/9월 이벤트 <em>\+(\d+)%<\/em>/gu)].map((m) => Number(m[1]));
+  const rates = [...pricing.matchAll(/9월 이벤트 <em>\(\+(\d+)%\)<\/em>/gu)].map((m) => Number(m[1]));
   assert.deepEqual(rates, [5, 5, 5, 5, 5]);
-  assert.deepEqual([...pricing.matchAll(/class="feat-package"[^>]*>[\s\S]*?<strong>\+(\d+) 크레딧<\/strong>/gu)].map((m) => Number(m[1])), [0, 30, 125, 350, 900]);
+  assert.deepEqual([...pricing.matchAll(/class="feat-package"[^>]*>[\s\S]*?<strong>\+(\d+)<\/strong>/gu)].map((m) => Number(m[1])), [0, 30, 125, 350, 900]);
   for (const amount of [2900, 8700, 14500, 29000, 58000]) {
     assert.match(pricing, new RegExp(`data-plan-total-for="${amount}"`, 'u'), `${amount} 총 크레딧 훅 부재`);
   }
