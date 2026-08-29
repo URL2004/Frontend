@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, EmailAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signOut, onAuthStateChanged, deleteUser, reauthenticateWithPopup, reauthenticateWithCredential, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, orderBy, query, where, limit, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, orderBy, query, where, limit, startAfter, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 // XSS 방어: 사용자 입력이 innerHTML에 들어갈 때 escape 필수
@@ -2780,123 +2780,555 @@ window.saveHistory = async (type, inputText, detectResult, humanResult, credits)
 function historyBillingInfo(disposition, credits) {
  const chargedCredits = Math.max(0, Number(credits) || 0).toLocaleString('ko-KR');
  const values = {
-  charged: { short: `${chargedCredits}크레딧 차감`, badge: '차감 완료', waived: false },
+  charged: { short: `${chargedCredits}크레딧 사용`, badge: '사용 완료', waived: false },
   waived_quality_shortfall: { short: '과거 정책 · 무차감', badge: '과거 정책 무차감', waived: true },
   waived_repeat_low_benefit: { short: '과거 정책 · 무차감', badge: '과거 정책 무차감', waived: true },
-  plan_unlimited: { short: '무제한 이용권 처리', badge: '이용권 처리', waived: true },
-  admin_no_charge: { short: '관리자 테스트 · 무차감', badge: '관리자 무차감', waived: true }
+  plan_unlimited: { short: '이용권 포함', badge: '이용권 포함', waived: true },
+  admin_no_charge: { short: '무차감 · 관리자', badge: '관리자 무차감', waived: true }
  };
- return values[disposition] || { short: `${chargedCredits}크레딧`, badge: '', waived: false };
+ if (values[disposition]) return values[disposition];
+ return Number(credits) > 0
+  ? { short: `${chargedCredits}크레딧 사용`, badge: '', waived: false }
+  : { short: '무차감', badge: '', waived: true };
 }
 
-window.loadHistory = async () =>{
- const el = document.getElementById('historyList');
- if (!el) return;
- if (!CU) {
-  el.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:14px;">로그인 후 이용할 수 있어요.</div>';
+const HISTORY_PAGE_SIZE = 50;
+const historyState = {
+ userId: '',
+ items: [],
+ cursor: null,
+ hasMore: false,
+ loading: false,
+ initialized: false,
+ filter: 'all',
+ search: '',
+ selectedId: '',
+ missingId: '',
+ error: ''
+};
+window._historyState = historyState;
+
+function historyTimestampMs(value) {
+ if (!value) return 0;
+ if (typeof value.toMillis === 'function') return value.toMillis();
+ if (typeof value.toDate === 'function') return value.toDate().getTime();
+ if (Number.isFinite(value._seconds)) return value._seconds * 1000;
+ const parsed = Date.parse(value);
+ return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function historyNormalizeDoc(snapshot) {
+ const data = snapshot.data() || {};
+ return { id: snapshot.id, ...data, createdAtMs: historyTimestampMs(data.createdAt) || Number(data.backupAtMs) || 0 };
+}
+
+function historyCleanLine(value) {
+ return String(value || '').replace(/\s+/gu, ' ').trim();
+}
+
+function historyTruncate(value, max) {
+ const text = historyCleanLine(value);
+ return text.length > max ? text.slice(0, Math.max(1, max - 1)).trimEnd() + '…' : text;
+}
+
+function historyTitle(item) {
+ const firstLine = String(item.inputText || '').split(/\r?\n/u).map(historyCleanLine).find(Boolean) || '';
+ return historyTruncate(firstLine, 42) || (item.type === 'detect' ? 'AI 감지 기록' : '휴머나이징 기록');
+}
+
+function historyPreview(item) {
+ const source = item.type === 'detect'
+  ? item.inputText
+  : (item.outputText || item.inputText);
+ return historyTruncate(source, 92) || '저장된 본문이 없어요.';
+}
+
+function historyDetectView(item) {
+ return item.type === 'detect' && typeof window.gpNormalizeDetectPresentation === 'function'
+  ? window.gpNormalizeDetectPresentation(item)
+  : item;
+}
+
+function historyProbability(item) {
+ const value = Number(historyDetectView(item).probability);
+ return Number.isFinite(value) ? Math.round(Math.max(0, Math.min(100, value))) : null;
+}
+
+function historyWorkStatus(item) {
+ if (item.type === 'detect') {
+  const probability = historyProbability(item);
+  if (probability == null) return { label: '분석 완료', tone: 'neutral' };
+  if (probability <= 20) return { label: `AI 생성 가능성 낮음 · ${probability}%`, tone: 'good' };
+  if (probability <= 49) return { label: `AI 생성 가능성 보통 · ${probability}%`, tone: 'notice' };
+  return { label: `AI 생성 가능성 높음 · ${probability}%`, tone: 'warn' };
+ }
+ return item.qualityStatus === 'needs_review'
+  ? { label: '검토 필요', tone: 'notice' }
+  : { label: '작업 완료', tone: 'good' };
+}
+
+function historyDateText(ms) {
+ if (!ms) return '날짜 정보 없음';
+ const date = new Date(ms);
+ const today = new Date();
+ const sameYear = date.getFullYear() === today.getFullYear();
+ const sameDay = sameYear && date.getMonth() === today.getMonth() && date.getDate() === today.getDate();
+ const options = sameDay
+  ? { hour: 'numeric', minute: '2-digit' }
+  : { ...(sameYear ? {} : { year: 'numeric' }), month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+ return date.toLocaleString('ko-KR', options);
+}
+
+function historyDateGroup(ms) {
+ if (!ms) return '날짜 미상';
+ const date = new Date(ms);
+ const now = new Date();
+ const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+ const target = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+ const diff = Math.round((start - target) / 86400000);
+ if (diff === 0) return '오늘';
+ if (diff === 1) return '어제';
+ if (date.getFullYear() === now.getFullYear()) return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+ return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+}
+
+function historyRequestedId() {
+ try {
+  const id = new URLSearchParams(window.location.search || '').get('item') || '';
+  return /^[A-Za-z0-9_-]{1,128}$/u.test(id) ? id : '';
+ } catch (_) { return ''; }
+}
+
+function historySetRoute(id, mode) {
+ const url = new URL(window.location.href);
+ url.pathname = '/history';
+ url.searchParams.delete('mode');
+ if (id) url.searchParams.set('item', id);
+ else url.searchParams.delete('item');
+ const state = { ...(window.history.state || {}), tab: 'history', historyId: id || '' };
+ window.history[mode === 'push' ? 'pushState' : 'replaceState'](state, '', url.pathname + url.search + url.hash);
+}
+
+function historyVisibleItems() {
+ const queryText = historyState.search.toLocaleLowerCase('ko-KR');
+ return historyState.items.filter(item => {
+  if (historyState.filter === 'detect' && item.type !== 'detect') return false;
+  if (historyState.filter === 'humanize' && item.type === 'detect') return false;
+  if (!queryText) return true;
+  const haystack = [item.inputText, item.outputText, item.summary, item.detail, item.humanSummary, item.humanDetail]
+   .map(historyCleanLine).join(' ').toLocaleLowerCase('ko-KR');
+  return haystack.includes(queryText);
+ });
+}
+
+function historyIsMobile() {
+ return !!(window.matchMedia && window.matchMedia('(max-width: 760px)').matches);
+}
+
+function historyStateMessage(kind, title, message, actionLabel, action) {
+ const icon = kind === 'error' ? '!' : kind === 'login' ? '↗' : '＋';
+ return `<div class="gp-history-state gp-history-state-${kind}">
+  <span class="gp-history-state-icon" aria-hidden="true">${icon}</span>
+  <strong>${escapeHtml(title)}</strong>
+  <p>${escapeHtml(message)}</p>
+  ${actionLabel ? `<button type="button" onclick="${action}()">${escapeHtml(actionLabel)}</button>` : ''}
+ </div>`;
+}
+
+function historyLoadingHtml() {
+ return `<div class="gp-history-skeleton" aria-hidden="true">${Array.from({ length: 5 }, () =>
+  '<span><i></i><b></b><em></em></span>').join('')}</div>`;
+}
+
+function historyRenderList() {
+ const list = document.getElementById('historyList');
+ const more = document.getElementById('historyMore');
+ const count = document.getElementById('historyCount');
+ const status = document.getElementById('historyStatus');
+ if (!list) return;
+ list.setAttribute('aria-busy', historyState.loading && !historyState.initialized ? 'true' : 'false');
+ if (historyState.loading && !historyState.initialized) {
+  list.innerHTML = historyLoadingHtml();
+  if (count) count.textContent = '기록 불러오는 중';
+  if (more) more.hidden = true;
   return;
  }
- el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3)">불러오는 중...</div>';
+ if (historyState.error && !historyState.initialized) {
+  list.innerHTML = historyStateMessage('error', '기록을 불러오지 못했어요', '네트워크 상태를 확인한 뒤 다시 시도해 주세요.', '다시 시도', 'historyRetry');
+  if (count) count.textContent = '불러오기 실패';
+  if (more) more.hidden = true;
+  return;
+ }
+ if (!CU) {
+  list.innerHTML = historyStateMessage('login', '로그인이 필요해요', '로그인하면 이전 결과를 안전하게 다시 열 수 있어요.', '로그인하기', 'historyLogin');
+  if (count) count.textContent = '로그인 필요';
+  if (more) more.hidden = true;
+  return;
+ }
+ const visible = historyVisibleItems();
+ if (!visible.length) {
+  const narrowed = !!historyState.search || historyState.filter !== 'all';
+  list.innerHTML = narrowed
+   ? historyStateMessage('empty', '일치하는 기록이 없어요', historyState.hasMore ? '현재 불러온 기록에는 없어요. 이전 기록을 더 불러오거나 조건을 지워보세요.' : '검색어나 작업 유형을 바꿔보세요.', '조건 지우기', 'historyClearFilters')
+   : historyStateMessage('empty', '아직 작업 기록이 없어요', 'AI 감지나 휴머나이징을 완료하면 이곳에서 다시 활용할 수 있어요.', '새 글 시작', 'historyStartNew');
+ } else {
+  const groups = [];
+  visible.forEach(item => {
+   const label = historyDateGroup(item.createdAtMs);
+   let group = groups[groups.length - 1];
+   if (!group || group.label !== label) {
+    group = { label, items: [] };
+    groups.push(group);
+   }
+   group.items.push(item);
+  });
+  list.innerHTML = groups.map((group, groupIndex) => {
+   const headingId = `historyGroup${groupIndex}`;
+   return `<section class="gp-history-group" aria-labelledby="${headingId}">
+    <h2 id="${headingId}">${escapeHtml(group.label)}</h2>
+    <div role="list">${group.items.map(item => {
+     const isDetect = item.type === 'detect';
+     const work = historyWorkStatus(item);
+     const billing = historyBillingInfo(item.billingDisposition, item.credits);
+     const selected = historyState.selectedId === item.id;
+     return `<div role="listitem" class="gp-history-row-wrap">
+      <button type="button" class="gp-history-row${selected ? ' is-selected' : ''}" data-history-id="${escapeHtml(item.id)}" aria-expanded="${selected ? 'true' : 'false'}" aria-controls="historyDetailPanel" onclick="historySelect(this.dataset.historyId)">
+       <span class="gp-history-row-top"><span class="gp-history-kind ${isDetect ? 'detect' : 'humanize'}">${isDetect ? 'AI 감지' : '휴머나이저'}</span><time>${escapeHtml(historyDateText(item.createdAtMs))}</time></span>
+       <strong>${escapeHtml(historyTitle(item))}</strong>
+       <span class="gp-history-row-preview">${escapeHtml(historyPreview(item))}</span>
+       <span class="gp-history-row-meta"><span class="gp-history-work ${work.tone}">${escapeHtml(work.label)}</span><span class="gp-history-billing">${escapeHtml(billing.short)}</span></span>
+      </button>
+     </div>`;
+    }).join('')}</div>
+   </section>`;
+  }).join('');
+ }
+ const loadedLabel = historyState.hasMore ? `${historyState.items.length}건 이상` : `${historyState.items.length}건`;
+ if (count) count.textContent = historyState.search || historyState.filter !== 'all' ? `${visible.length}건 표시 · ${loadedLabel} 불러옴` : loadedLabel;
+ if (status) status.textContent = `작업 기록 ${visible.length}건이 표시됐어요.`;
+ if (more) {
+  more.hidden = !historyState.hasMore;
+  more.disabled = historyState.loading;
+  more.textContent = historyState.loading ? '불러오는 중…' : '이전 기록 더 보기';
+ }
+}
+
+function historyDetailBlock(title, text, featured) {
+ if (!historyCleanLine(text)) return '';
+ return `<section class="gp-history-text-block${featured ? ' featured' : ''}">
+  <h3>${escapeHtml(title)}</h3>
+  <div class="gp-history-text">${escapeHtml(text)}</div>
+ </section>`;
+}
+
+function historyRenderDetail() {
+ const panel = document.getElementById('historyDetailPanel');
+ const workspace = document.getElementById('historyWorkspace');
+ const content = document.getElementById('historyContent');
+ if (!panel || !workspace) return;
+ const item = historyState.items.find(entry => entry.id === historyState.selectedId);
+ const detailOpen = !!historyState.selectedId;
+ workspace.classList.toggle('is-detail-open', detailOpen);
+ if (content) content.classList.toggle('history-detail-open', detailOpen);
+ if (!item) {
+  panel.innerHTML = historyState.missingId
+   ? historyStateMessage('error', '기록을 찾을 수 없어요', '삭제되었거나 현재 계정에서 열 수 없는 기록이에요.', '목록으로 돌아가기', 'historyCloseDetail')
+   : `<div class="gp-history-detail-empty">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg>
+      <strong>기록을 선택해 주세요</strong>
+      <p>원문과 결과를 확인하고 복사·다운로드·이어쓰기까지 할 수 있어요.</p>
+     </div>`;
+  return;
+ }
+ const isDetect = item.type === 'detect';
+ const view = historyDetectView(item);
+ const work = historyWorkStatus(item);
+ const billing = historyBillingInfo(item.billingDisposition, item.credits);
+ const probability = historyProbability(item);
+ const hasOutput = !!historyCleanLine(item.outputText);
+ const details = isDetect
+  ? `${historyDetailBlock('분석 요약', view.summary, true)}${historyDetailBlock('상세 분석', view.detail, false)}`
+  : `${historyDetailBlock('휴머나이징 결과', item.outputText, true)}${historyDetailBlock('작업 요약', item.humanSummary, false)}${historyDetailBlock('상세 정보', item.humanDetail, false)}`;
+ const actions = isDetect
+  ? `<button type="button" class="primary" onclick="historyContinueHumanize()">휴머나이징으로 이어서</button>
+     <button type="button" onclick="historyRunAgain('detect')">다시 감지</button>
+     <button type="button" onclick="historyCopy('input')">원문 복사</button>`
+  : `<button type="button" class="primary" onclick="historyCopy('output')"${hasOutput ? '' : ' disabled'}>결과 복사</button>
+     <button type="button" onclick="historyDownload()"${hasOutput ? '' : ' disabled'}>다운로드</button>
+     <button type="button" onclick="historyRunAgain('humanize')"${hasOutput ? '' : ' disabled'}>편집기로 열기</button>`;
+ panel.innerHTML = `<article class="gp-history-detail">
+  <header class="gp-history-detail-head">
+   <button type="button" class="gp-history-back" onclick="historyCloseDetail()" aria-label="작업 기록 목록으로 돌아가기"><span aria-hidden="true">←</span> 목록</button>
+   <div class="gp-history-detail-kicker"><span class="gp-history-kind ${isDetect ? 'detect' : 'humanize'}">${isDetect ? 'AI 감지' : '휴머나이저'}</span><time>${escapeHtml(historyDateText(item.createdAtMs))}</time></div>
+   <h2>${escapeHtml(historyTitle(item))}</h2>
+   <div class="gp-history-detail-meta">
+    <span><small>작업 상태</small><b class="${work.tone}">${escapeHtml(work.label)}${isDetect && probability != null ? ' (추정)' : ''}</b></span>
+    <span><small>이용 내역</small><b>${escapeHtml(billing.short)}</b></span>
+   </div>
+  </header>
+  <div class="gp-history-detail-body">
+   ${historyDetailBlock('원문', item.inputText, false)}
+   ${details || '<p class="gp-history-no-detail">저장된 상세 결과가 없어요.</p>'}
+  </div>
+  <footer class="gp-history-actions" aria-label="이 기록으로 할 수 있는 작업">${actions}</footer>
+ </article>`;
+}
+
+function historyRender() {
+ const visible = historyVisibleItems();
+ if (historyState.selectedId && !historyState.missingId && !visible.some(item => item.id === historyState.selectedId)) {
+  historyState.selectedId = '';
+ }
+ if (!historyState.selectedId && !historyIsMobile() && visible.length) historyState.selectedId = visible[0].id;
+ historyRenderList();
+ historyRenderDetail();
+}
+
+async function historyFetchPage(reset) {
+ if (historyState.loading || !CU) return;
+ historyState.loading = true;
+ historyState.error = '';
+ if (reset) {
+  historyState.items = [];
+  historyState.cursor = null;
+  historyState.hasMore = false;
+  historyState.initialized = false;
+ }
+ historyRenderList();
  try {
- const snap = await getDocs(query(
- collection(db,'users',CU.uid,'history'),
- orderBy('createdAt','desc')
- ));
- if (snap.empty) {
- el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3)">분석 기록이 없어요</div>';
- return;
+  const constraints = [orderBy('createdAt', 'desc')];
+  if (!reset && historyState.cursor) constraints.push(startAfter(historyState.cursor));
+  constraints.push(limit(HISTORY_PAGE_SIZE + 1));
+  const snap = await getDocs(query(collection(db, 'users', CU.uid, 'history'), ...constraints));
+  const pageDocs = snap.docs.slice(0, HISTORY_PAGE_SIZE);
+  const known = new Set(historyState.items.map(item => item.id));
+  pageDocs.forEach(snapshot => { if (!known.has(snapshot.id)) historyState.items.push(historyNormalizeDoc(snapshot)); });
+  historyState.items.sort((a, b) => b.createdAtMs - a.createdAtMs);
+  historyState.cursor = pageDocs.length ? pageDocs[pageDocs.length - 1] : historyState.cursor;
+  historyState.hasMore = snap.docs.length > HISTORY_PAGE_SIZE;
+  historyState.initialized = true;
+ } catch (error) {
+  console.warn('[history] 목록 불러오기 실패', error?.code || error?.message || error);
+  historyState.error = 'load_failed';
+ } finally {
+  historyState.loading = false;
  }
- const items = snap.docs.slice(0, 50);
- el.innerHTML = items.map(d =>{
- const h = d.data();
- const date = h.createdAt ? new Date(h.createdAt.toDate()).toLocaleString('ko-KR') : '';
- const isDetect = h.type === 'detect';
- const detectView = isDetect && typeof window.gpNormalizeDetectPresentation === 'function'
-  ? window.gpNormalizeDetectPresentation(h)
-  : h;
- const preview = h.inputText ? h.inputText.substring(0, 60) + (h.inputText.length >60 ? '...' : '') : '';
- const safeDate = escapeHtml(date);
- const safePreview = escapeHtml(preview);
- const safeInputText = escapeHtml(h.inputText || '');
- const safeSummary = escapeHtml(detectView.summary || '');
- const safeDetail = escapeHtml(detectView.detail || '');
- const safeOutputText = escapeHtml(h.outputText || '');
- const safeHumanSummary = escapeHtml(h.humanSummary || '');
- const safeCredits = Math.max(0, Number(h.credits) || 0).toLocaleString('ko-KR');
- const billingInfo = historyBillingInfo(h.billingDisposition, h.credits);
+}
 
- // 탐지 결과 배지
- let resultBadge = '';
- if (isDetect) {
- const rawProbability = Number(detectView.probability);
- const p = Number.isFinite(rawProbability) ? Math.max(0, Math.min(100, rawProbability)) : undefined;
- let badgeColor, badgeLabel;
- if (p <= 20) { badgeColor = 'var(--green)'; badgeLabel = ' 안전'; }
- else if (p <= 49) { badgeColor = 'var(--yellow)'; badgeLabel = ' 조심'; }
- else { badgeColor = 'var(--red)'; badgeLabel = ' 위험'; }
- resultBadge = `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:600;background:rgba(26,115,232,.1);color:var(--blue)">AI 감지</span>
- ${p !== undefined ? `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:600;color:${badgeColor}">${badgeLabel} · ${p}%</span>` : ''}`;
- } else {
- resultBadge = `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:600;background:rgba(30,142,62,.1);color:var(--green)">휴머나이저</span>`;
- if (billingInfo.badge) {
-  resultBadge += `<span style="padding:3px 10px;border-radius:50px;font-size:12px;font-weight:650;background:${billingInfo.waived ? 'rgba(91,104,173,.10)' : 'rgba(30,142,62,.08)'};color:${billingInfo.waived ? '#5868a7' : 'var(--green)'}">${escapeHtml(billingInfo.badge)}</span>`;
+async function historyEnsureItem(id) {
+ if (!id || historyState.items.some(item => item.id === id) || !CU) return;
+ try {
+  const snapshot = await getDoc(doc(db, 'users', CU.uid, 'history', id));
+  if (!snapshot.exists()) {
+   historyState.missingId = id;
+   return;
+  }
+  historyState.items.push(historyNormalizeDoc(snapshot));
+  historyState.items.sort((a, b) => b.createdAtMs - a.createdAtMs);
+ } catch (error) {
+  console.warn('[history] 상세 기록 불러오기 실패', error?.code || error?.message || error);
+  historyState.missingId = id;
  }
- }
+}
 
- // 상세 내용 (탐지: summary+detail / 휴머나이저: outputText+humanSummary)
- let detailHtml = '';
- if (isDetect) {
- detailHtml = `
- ${safeSummary ? `<div style="margin-top:12px;">
- <div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:4px;">요약</div>
- <div style="font-size:14px;color:var(--text2);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;">${safeSummary}</div>
-</div>` : ''}
- ${safeDetail ? `<div style="margin-top:10px;">
- <div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:4px;">상세 분석</div>
- <div style="font-size:13px;color:var(--text2);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${safeDetail}</div>
-</div>` : ''}`;
- } else {
- detailHtml = `
- ${safeOutputText ? `<div style="margin-top:12px;">
- <div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:4px;">변환 결과</div>
- <div style="font-size:14px;color:var(--text);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.8;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${safeOutputText}</div>
-</div>` : ''}
- ${safeHumanSummary ? `<div style="margin-top:10px;">
- <div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:4px;">변환 요약</div>
- <div style="font-size:13px;color:var(--text2);background:var(--surface2);padding:10px 12px;border-radius:var(--rs);line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;">${safeHumanSummary}</div>
-</div>` : ''}`;
+window.loadHistory = async function (options) {
+ const list = document.getElementById('historyList');
+ if (!list) return;
+ options = options || {};
+ if (!CU) {
+  historyState.userId = '';
+  historyState.items = [];
+  historyState.initialized = false;
+  historyState.selectedId = '';
+  historyRender();
+  return;
  }
+ const userChanged = historyState.userId !== CU.uid;
+ if (userChanged) {
+  historyState.userId = CU.uid;
+  historyState.filter = 'all';
+  historyState.search = '';
+  historyState.selectedId = '';
+  historyState.missingId = '';
+  const search = document.getElementById('historySearch');
+  if (search) search.value = '';
+ }
+ if (userChanged || options.force || !historyState.initialized) await historyFetchPage(true);
+ const requestedId = options.itemId || historyRequestedId();
+ historyState.missingId = '';
+ if (requestedId) {
+  await historyEnsureItem(requestedId);
+  historyState.selectedId = requestedId;
+ } else if (historyIsMobile()) {
+  historyState.selectedId = '';
+ }
+ historyRender();
+};
 
- return `<div class="history-item" onclick="openHistory(this)">
- <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
- <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${resultBadge}</div>
- <span style="font-size:12px;color:var(--text3);">${safeDate} · ${isDetect ? safeCredits + '크레딧' : escapeHtml(billingInfo.short)}</span>
-</div>
- <div class="history-preview" style="margin-top:8px;font-size:14px;color:var(--text2);">${safePreview}</div>
- <div class="history-detail" style="display:none;margin-top:12px;">
- <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
- <button onclick="closeHistory(event,this)" style="padding:5px 14px;border-radius:50px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:var(--font);font-size:12px;cursor:pointer;">닫기</button>
-</div>
- <div style="font-size:13px;font-weight:600;color:var(--text3);margin-bottom:6px;">입력 텍스트</div>
- <div style="font-size:14px;color:var(--text);background:var(--surface2);padding:12px;border-radius:var(--rs);line-height:1.7;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-all;">${safeInputText}</div>
- ${detailHtml}
-</div>
-</div>`;
- }).join('');
- } catch(e) {
- el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--red)">사용자 정보를 불러오지 못했습니다.</div>';
+window.historyLoadMore = async function () {
+ if (!historyState.hasMore || historyState.loading) return;
+ await historyFetchPage(false);
+ historyRender();
+};
+
+window.historySelect = async function (id, options) {
+ if (!/^[A-Za-z0-9_-]{1,128}$/u.test(String(id || ''))) return;
+ options = options || {};
+ historyState.missingId = '';
+ await historyEnsureItem(id);
+ historyState.selectedId = id;
+ if (options.updateUrl !== false) historySetRoute(id, options.replaceUrl ? 'replace' : 'push');
+ historyRender();
+ if (options.focus !== false) {
+  const panel = document.getElementById('historyDetailPanel');
+  if (panel) requestAnimationFrame(() => panel.focus({ preventScroll: !historyIsMobile() }));
  }
 };
 
-window.openHistory = (el) =>{
- const detail = el.querySelector('.history-detail');
- if (detail && detail.style.display === 'none') detail.style.display = 'block';
+window.openHistoryRecord = function (id) {
+ if (!/^[A-Za-z0-9_-]{1,128}$/u.test(String(id || ''))) return;
+ if (typeof window.switchTab === 'function') window.switchTab('history', { skipRoute: true });
+ historySetRoute(id, 'push');
+ window.loadHistory({ itemId: id });
 };
 
-window.closeHistory = (event, btn) =>{
- event.stopPropagation();
- const detail = btn.closest('.history-detail');
- if (detail) detail.style.display = 'none';
+window.openHistoryHome = function () {
+ historySetRoute('', 'replace');
+ historyState.selectedId = '';
+ historyState.missingId = '';
+ if (historyState.initialized) historyRender();
+ else window.loadHistory();
+};
+
+window.historyCloseDetail = function () {
+ const previousId = historyState.selectedId;
+ historyState.selectedId = '';
+ historyState.missingId = '';
+ historySetRoute('', 'replace');
+ historyRender();
+ const row = previousId ? document.querySelector(`[data-history-id="${CSS.escape(previousId)}"]`) : null;
+ if (row) requestAnimationFrame(() => row.focus());
+};
+
+window.historySetFilter = function (filter) {
+ historyState.filter = ['detect', 'humanize'].includes(filter) ? filter : 'all';
+ document.querySelectorAll('[data-history-filter]').forEach(button => {
+  const active = button.dataset.historyFilter === historyState.filter;
+  button.classList.toggle('active', active);
+  button.setAttribute('aria-pressed', active ? 'true' : 'false');
+ });
+ historyState.missingId = '';
+ historyRender();
+};
+
+window.historySearchInput = function (value) {
+ historyState.search = historyCleanLine(value);
+ historyState.missingId = '';
+ historyRender();
+};
+
+window.historyClearFilters = function () {
+ historyState.search = '';
+ historyState.filter = 'all';
+ const search = document.getElementById('historySearch');
+ if (search) search.value = '';
+ window.historySetFilter('all');
+ if (search) search.focus();
+};
+
+window.historyRetry = function () { window.loadHistory({ force: true }); };
+window.historyLogin = function () { if (typeof window.showScreen === 'function') window.showScreen('login'); };
+
+function historyComposerText(mode) {
+ const item = historyState.items.find(entry => entry.id === historyState.selectedId);
+ if (!item) return '';
+ return mode === 'humanize' && item.type !== 'detect' ? String(item.outputText || '') : String(item.inputText || '');
+}
+
+function historyOpenComposer(mode, text) {
+ if (typeof window.lavFlowReset === 'function' && window.lavFlowReset() === false) {
+  if (window.gpToast) window.gpToast('진행 중인 작업을 먼저 확인해 주세요.', { type: 'info' });
+  return false;
+ }
+ if (typeof window.switchTab === 'function') window.switchTab('main');
+ if (typeof window.lavSetMode === 'function') window.lavSetMode(mode);
+ else if (typeof window.gpApplyProductMode === 'function') window.gpApplyProductMode(mode);
+ const input = document.getElementById('lavInput');
+ const legacyInput = document.getElementById('inputText');
+ if (input && text) {
+  input.value = text;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  if (typeof window.lavSyncCount === 'function') window.lavSyncCount(input);
+ }
+ if (legacyInput && text) {
+  legacyInput.value = text;
+  if (typeof window.updateCount === 'function') window.updateCount(legacyInput);
+ }
+ const url = new URL(window.location.href);
+ url.searchParams.delete('item');
+ window.history.replaceState({ ...(window.history.state || {}), tab: 'main', mode }, '', url.pathname + url.search + url.hash);
+ if (input) requestAnimationFrame(() => input.focus());
+ return true;
+}
+
+window.historyStartNew = function () {
+ if (typeof window.lavNewSentence === 'function') window.lavNewSentence();
+ else historyOpenComposer('humanize', '');
+};
+window.historyContinueHumanize = function () {
+ const text = historyComposerText('detect');
+ if (text && historyOpenComposer('humanize', text) && window.gpTrack) window.gpTrack('history_reuse', { action: 'continue_humanize', source_type: 'detect' });
+};
+window.historyRunAgain = function (mode) {
+ const text = historyComposerText(mode);
+ if (text && historyOpenComposer(mode, text) && window.gpTrack) window.gpTrack('history_reuse', { action: mode === 'detect' ? 'detect_again' : 'edit_output', source_type: mode });
+};
+
+async function historyWriteClipboard(text) {
+ if (!text) return false;
+ try {
+  if (navigator.clipboard && window.isSecureContext) {
+   await navigator.clipboard.writeText(text);
+   return true;
+  }
+ } catch (_) {}
+ const area = document.createElement('textarea');
+ area.value = text;
+ area.setAttribute('readonly', '');
+ area.style.position = 'fixed';
+ area.style.opacity = '0';
+ document.body.appendChild(area);
+ area.select();
+ let copied = false;
+ try { copied = document.execCommand('copy'); } catch (_) {}
+ area.remove();
+ return copied;
+}
+
+window.historyCopy = async function (target) {
+ const item = historyState.items.find(entry => entry.id === historyState.selectedId);
+ const text = item ? (target === 'output' ? item.outputText : item.inputText) : '';
+ const copied = await historyWriteClipboard(String(text || ''));
+ if (window.gpToast) window.gpToast(copied ? '클립보드에 복사했어요.' : '복사하지 못했어요. 다시 시도해 주세요.', { type: copied ? 'success' : 'error' });
+ if (copied && window.gpTrack) window.gpTrack('history_reuse', { action: target === 'output' ? 'copy_output' : 'copy_input', source_type: item?.type || 'unknown' });
+};
+
+window.historyDownload = function () {
+ const item = historyState.items.find(entry => entry.id === historyState.selectedId);
+ const text = String(item?.outputText || '');
+ if (!text) return;
+ const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+ const href = URL.createObjectURL(blob);
+ const link = document.createElement('a');
+ const safeTitle = historyTitle(item).replace(/[\\/:*?"<>|]/gu, '').slice(0, 32) || '휴머나이징-결과';
+ link.href = href;
+ link.download = `${safeTitle}.txt`;
+ document.body.appendChild(link);
+ link.click();
+ link.remove();
+ setTimeout(() => URL.revokeObjectURL(href), 0);
+ if (window.gpToast) window.gpToast('결과를 텍스트 파일로 저장했어요.', { type: 'success' });
+ if (window.gpTrack) window.gpTrack('history_reuse', { action: 'download_output', source_type: item.type || 'humanize' });
 };
 
 // --- 환불 시스템 UI ---
@@ -5643,7 +6075,7 @@ window.loadSidebarHistory = async () => {
         ? `<span style="font-size:10px;color:var(--blue);font-weight:600;">감지</span>`
         : `<span style="font-size:10px;color:var(--green);font-weight:600;">휴머나이징</span>`;
       const preview = escapeHtml((h.inputText || '내용 없음').replace(/\s+/g,' ').trim().slice(0, 18));
-      return `<button class="sidebar-hist-item" onclick="switchTab('history');loadHistory()">
+      return `<button type="button" class="sidebar-hist-item" data-history-id="${escapeHtml(d.id)}" aria-label="${isDetect ? 'AI 감지' : '휴머나이징'} 기록 열기: ${preview}" onclick="openHistoryRecord(this.dataset.historyId)">
         <div style="display:flex;flex-direction:column;gap:2px;overflow:hidden;">
           ${badge}
           <span class="sidebar-hist-text">${preview}</span>

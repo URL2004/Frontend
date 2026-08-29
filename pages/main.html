@@ -35,10 +35,10 @@
 
 
  <div class="gp-lav-page" id="lavPage">
-   <aside class="gp-lav-sidebar" aria-label="주요 메뉴">
+   <aside class="gp-lav-sidebar" id="lavSidebar" aria-label="주요 메뉴">
      <div class="gp-lav-brand">
        <img class="gp-lav-brand-logo" src="/assets/img/brand-logo-menu.webp" alt="교수님 피하기">
-       <button type="button" class="gp-lav-collapse" onclick="lavToggleSidebar()" aria-label="사이드바 접기">«</button>
+       <button type="button" class="gp-lav-collapse" onclick="lavToggleSidebar()" aria-label="사이드바 접기" aria-controls="lavSidebar" aria-expanded="true">«</button>
      </div>
      <button type="button" class="gp-lav-new" onclick="lavNewSentence()">
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -87,7 +87,7 @@
          <span class="gp-soon-badge">준비 중</span>
        </button>
        <div class="gp-lav-side-sep" aria-hidden="true"></div>
-       <a data-tab="history" data-tab-call="loadHistory" href="/history">
+       <a data-tab="history" data-tab-call="openHistoryHome" href="/history">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14v15H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
          <span>작업 기록</span>
        </a>
@@ -97,9 +97,9 @@
    </aside>
    <div class="gp-lav-backdrop" onclick="lavCloseSidebar()" aria-hidden="true"></div>
 
-   <main class="gp-lav-main">
+   <div class="gp-lav-main">
       <header class="gp-lav-top">
-        <button type="button" class="gp-lav-hamburger" onclick="lavToggleSidebar()" aria-label="메뉴 열기"><span></span></button>
+        <button type="button" class="gp-lav-hamburger" onclick="lavToggleSidebar()" aria-label="메뉴 열기" aria-controls="lavSidebar" aria-expanded="false"><span></span></button>
         <div class="gp-lav-top-right">
           <button type="button" class="gp-lav-active-job" id="lavActiveJob" onclick="lavOpenActiveJob()" hidden>
             <span class="gp-lav-active-job-dot" aria-hidden="true"></span>
@@ -279,6 +279,7 @@
                  <li>문장 재작성 없음</li>
                  <li>문단 구조 그대로 유지</li>
                </ul>
+               <span class="lav-sel-examples"><small>글 예시</small><b>제출 전 과제 · 자기소개서 · 교정이 필요한 초안</b></span>
                <em class="lav-sel-cost" id="lavCostPolish">비용 계산 중</em>
              </button>
              <button type="button" class="lav-sel-card" id="lavCardBasic" onclick="lavSelectTone('blog')">
@@ -292,6 +293,7 @@
                  <li>장르·말투·사실 유지</li>
                  <li>문단 순서와 구성 유지</li>
                </ul>
+               <span class="lav-sel-examples"><small>글 예시</small><b>일반 과제 · 블로그 · 후기·SNS</b></span>
                <em class="lav-sel-cost" id="lavCostBlog">비용 계산 중</em>
              </button>
              <button type="button" class="lav-sel-card" id="lavCardFormal" onclick="lavSelectTone('formal')">
@@ -305,6 +307,7 @@
                  <li>문단 구조까지 다시 설계</li>
                  <li>전 문서 의미 검증</li>
                </ul>
+               <span class="lav-sel-examples"><small>글 예시</small><b>보고서 · 논문 초안 · 공식 문서</b></span>
                <span class="lav-purpose-caveat" id="lavFormalLockNote" hidden>이 글에서는 선택할 수 없어요</span>
                <em class="lav-sel-cost" id="lavCostFormal">비용 계산 중</em>
              </button>
@@ -473,7 +476,7 @@
      </section>
 
      <div class="gp-lav-tabs" id="lavTabSlot"></div>
-   </main>
+   </div>
  </div>
 
 

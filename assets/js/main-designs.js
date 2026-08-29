@@ -225,11 +225,39 @@
 
   function lavPage() { return document.getElementById('lavPage'); }
 
+  function lavSyncSidebarA11y() {
+    var page = lavPage();
+    var sidebar = document.getElementById('lavSidebar') || document.querySelector('.gp-lav-sidebar');
+    var hamburger = document.querySelector('.gp-lav-hamburger');
+    var collapse = document.querySelector('.gp-lav-collapse');
+    if (!page || !sidebar) return;
+    var mobile = window.matchMedia('(max-width: 940px)').matches;
+    var mobileOpen = mobile && page.classList.contains('menu-open');
+    if (mobile) {
+      sidebar.inert = !mobileOpen;
+      sidebar.setAttribute('aria-hidden', mobileOpen ? 'false' : 'true');
+    } else {
+      sidebar.inert = false;
+      sidebar.removeAttribute('aria-hidden');
+    }
+    if (hamburger) {
+      hamburger.setAttribute('aria-expanded', mobileOpen ? 'true' : 'false');
+      hamburger.setAttribute('aria-label', mobileOpen ? '메뉴 닫기' : '메뉴 열기');
+    }
+    if (collapse) {
+      var expanded = !page.classList.contains('side-collapsed');
+      collapse.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      collapse.setAttribute('aria-label', expanded ? '사이드바 접기' : '사이드바 펼치기');
+    }
+  }
+
   function lavInit() {
     if (lavState.inited) return;
     lavState.inited = true;
     var kbd = document.getElementById('lavNewKbd');
     if (kbd && navigator.platform && navigator.platform.indexOf('Mac') === -1) kbd.textContent = 'Ctrl N';
+    lavSyncSidebarA11y();
+    window.addEventListener('resize', lavSyncSidebarA11y, { passive: true });
     lavRestartTimer();
   }
 
@@ -263,13 +291,28 @@
   window.lavToggleSidebar = function () {
     var page = lavPage();
     if (!page) return;
-    if (window.matchMedia('(max-width: 940px)').matches) page.classList.toggle('menu-open');
+    var mobile = window.matchMedia('(max-width: 940px)').matches;
+    if (mobile) page.classList.toggle('menu-open');
     else page.classList.toggle('side-collapsed');
+    lavSyncSidebarA11y();
+    if (mobile && page.classList.contains('menu-open')) {
+      var sidebar = document.getElementById('lavSidebar') || document.querySelector('.gp-lav-sidebar');
+      var first = sidebar && sidebar.querySelector('.gp-lav-new, a[href], button:not([disabled])');
+      if (first) first.focus({ preventScroll: true });
+    }
   };
 
   window.lavCloseSidebar = function () {
     var page = lavPage();
-    if (page) page.classList.remove('menu-open');
+    if (!page) return;
+    var sidebar = document.getElementById('lavSidebar') || document.querySelector('.gp-lav-sidebar');
+    var restoreFocus = !!(sidebar && sidebar.contains(document.activeElement));
+    page.classList.remove('menu-open');
+    lavSyncSidebarA11y();
+    if (restoreFocus && window.matchMedia('(max-width: 940px)').matches) {
+      var hamburger = document.querySelector('.gp-lav-hamburger');
+      if (hamburger) requestAnimationFrame(function () { hamburger.focus(); });
+    }
   };
 
   window.lavNewSentence = function () {
@@ -493,7 +536,22 @@
   });
 
   document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') window.closeMainDesignPicker();
+    var page = lavPage();
+    if (event.key === 'Tab' && page && page.classList.contains('menu-open')) {
+      var hamburger = document.querySelector('.gp-lav-hamburger');
+      var firstMenuItem = document.querySelector('#lavSidebar .gp-lav-new');
+      if (!event.shiftKey && event.target === hamburger && firstMenuItem) {
+        event.preventDefault();
+        firstMenuItem.focus({ preventScroll: true });
+      } else if (event.shiftKey && event.target === firstMenuItem && hamburger) {
+        event.preventDefault();
+        hamburger.focus({ preventScroll: true });
+      }
+    }
+    if (event.key === 'Escape') {
+      window.closeMainDesignPicker();
+      if (page && page.classList.contains('menu-open')) window.lavCloseSidebar();
+    }
   });
 
   if (document.readyState === 'loading') {

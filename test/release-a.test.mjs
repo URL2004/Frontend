@@ -113,9 +113,10 @@ test('고급 예상 시간은 서버 청크 범위를 시작·확인·진행 화
 
 test('이용 기록의 사용자·모델 문자열은 HTML 삽입 전에 escape된다', async () => {
   const source = await read('assets/js/app-module.js');
-  for (const name of ['safePreview', 'safeInputText', 'safeOutputText', 'safeSummary', 'safeDetail']) {
-    assert.match(source, new RegExp(`const ${name}\\s*=\\s*escapeHtml`, 'u'));
-  }
+  assert.match(source, /escapeHtml\(historyTitle\(item\)\)/u);
+  assert.match(source, /escapeHtml\(historyPreview\(item\)\)/u);
+  assert.match(source, /escapeHtml\(item\.id\)/u);
+  assert.match(source, /<div class="gp-history-text">\$\{escapeHtml\(text\)\}<\/div>/u);
   assert.match(source, /const preview\s*=\s*escapeHtml\(\(h\.inputText/u);
   assert.match(source, /const safeTypeTxt\s*=\s*escapeHtml\(typeTxt\)/u);
   assert.doesNotMatch(source, /innerHTML\s*=.*(?:\+\s*e\.message|\$\{e\.message\})/u);
@@ -386,10 +387,10 @@ test('관리자 파셜과 자산은 같은 캐시 버전을 사용한다', async
     read('assets/js/app-boot.js'),
     read('assets/js/page-loader.js')
   ]);
-  assert.match(index, /app-boot\.js\?v=lav-188/u);
-  assert.match(boot, /var v = 'lav-188'/u);
+  assert.match(index, /app-boot\.js\?v=lav-190/u);
+  assert.match(boot, /var v = 'lav-190'/u);
   assert.match(boot, /input-quality\.js\?v=/u);
-  assert.match(loader, /var ASSET_V = 'lav-188'/u);
+  assert.match(loader, /var ASSET_V = 'lav-190'/u);
   assert.doesNotMatch(`${index}\n${boot}\n${loader}`, /lav-(?:164|166|167|168|170|185|186)/u);
 });
 

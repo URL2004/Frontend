@@ -1,9 +1,39 @@
 <div id="historyContent" style="display:none">
- <div class="gp-history-head">
-  <h2>작업 기록</h2>
-  <span>최근 50건</span>
+ <header class="gp-history-head">
+  <div>
+   <h1>작업 기록</h1>
+   <p>완료한 글을 찾아 다시 복사하거나 이어서 작업할 수 있어요.</p>
+  </div>
+  <span id="historyCount" aria-live="polite">기록 확인 중</span>
+ </header>
+
+ <div class="gp-history-toolbar" aria-label="작업 기록 찾기">
+  <label class="gp-history-search" for="historySearch">
+   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+   <span class="sr-only">작업 기록 검색</span>
+   <input id="historySearch" type="search" autocomplete="off" placeholder="제목이나 원문으로 검색" oninput="historySearchInput(this.value)">
+  </label>
+  <div class="gp-history-filters" role="group" aria-label="작업 유형">
+   <button type="button" class="active" data-history-filter="all" aria-pressed="true" onclick="historySetFilter('all')">전체</button>
+   <button type="button" data-history-filter="detect" aria-pressed="false" onclick="historySetFilter('detect')">AI 감지</button>
+   <button type="button" data-history-filter="humanize" aria-pressed="false" onclick="historySetFilter('humanize')">휴머나이저</button>
+  </div>
  </div>
- <div id="historyList"></div>
+
+ <div id="historyStatus" class="sr-only" role="status" aria-live="polite"></div>
+ <div id="historyWorkspace" class="gp-history-workspace">
+  <section class="gp-history-browser" aria-label="작업 기록 목록">
+   <div id="historyList" class="gp-history-list" aria-busy="false"></div>
+   <button id="historyMore" type="button" class="gp-history-more" onclick="historyLoadMore()" hidden>이전 기록 더 보기</button>
+  </section>
+  <section id="historyDetailPanel" class="gp-history-detail-panel" aria-label="선택한 작업 상세" tabindex="-1">
+   <div class="gp-history-detail-empty">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg>
+    <strong>기록을 선택해 주세요</strong>
+    <p>원문과 결과를 확인하고 복사·다운로드·이어쓰기까지 할 수 있어요.</p>
+   </div>
+  </section>
+ </div>
 </div>
 
  <!-- 공지 -->

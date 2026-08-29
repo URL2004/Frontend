@@ -207,8 +207,11 @@ function setRouteUrl(t, replace) {
  if (!ROUTE_TABS.includes(t)) return;
  const nextPath = ROUTE_PATHS[t] || '/';
  const currentPath = cleanRoutePath(window.location.pathname);
- if (currentPath === cleanRoutePath(nextPath) && !window.location.hash) return;
- const nextUrl = nextPath + window.location.search;
+ const url = new URL(window.location.href);
+ url.pathname = nextPath;
+ if (t !== 'history') url.searchParams.delete('item');
+ const nextUrl = url.pathname + url.search;
+ if (currentPath === cleanRoutePath(nextPath) && nextUrl === window.location.pathname + window.location.search && !window.location.hash) return;
  if (replace) window.history.replaceState({ tab: t }, '', nextUrl);
  else window.history.pushState({ tab: t }, '', nextUrl);
 }
