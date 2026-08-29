@@ -66,10 +66,11 @@ test('메인 파셜의 숨은 줄과 빈 탭 슬롯은 제거되어 사이드바
   assert.match(designs, /tabs\.hidden = lavTab === 'main'/u);
 });
 
-test('라벤더 메뉴는 작업 기록과 겹치는 보관함 진입점을 노출하지 않는다', async () => {
+test('라벤더 메뉴는 보관함과 커뮤니티 진입점을 노출하지 않는다', async () => {
   const main = await read('pages/main.html');
   const menu = main.match(/<nav class="gp-lav-menu"[\s\S]*?<\/nav>/u)?.[0] || '';
 
   assert.match(menu, />작업 기록</u);
   assert.doesNotMatch(menu, /lavOpenLibrary|>보관함</u);
+  assert.doesNotMatch(menu, /data-tab="community"|href="\/community"|>커뮤니티</u);
 });

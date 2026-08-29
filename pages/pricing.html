@@ -9,12 +9,6 @@
     <span class="phero-badge">카카오페이</span>
    </div>
   </div>
-  <div class="gp-pricing-balance" aria-live="polite">
-   <span class="gp-pricing-balance-label">현재 잔액</span>
-   <strong data-credit-balance>가입 시 10크레딧</strong>
-   <span class="gp-pricing-balance-detail">500자 기본 휴머나이징을 <strong data-credit-work-count="current" data-work-cost="10">1회</strong> 이용할 수 있어요.</span>
-  </div>
-  <img loading="lazy" decoding="async" src="/assets/img/hero-shield.png" alt="">
  </section>
 
  <section class="gp-coupon-panel" aria-labelledby="pricingCouponTitle">
@@ -35,8 +29,10 @@
  <div id="pricingTabCredit">
   <section class="gp-pricing-plans" aria-labelledby="pricingPlansTitle">
    <header class="gp-pricing-section-head">
-    <h2 id="pricingPlansTitle">충전 금액 선택</h2>
-    <p>총 지급 크레딧과 이용 가능 횟수를 비교한 뒤 필요한 만큼 선택하세요.</p>
+    <div class="gp-pricing-section-copy">
+     <h2 id="pricingPlansTitle">충전 금액 선택</h2>
+     <p id="gpPlanListHint">5개 상품의 총 지급 크레딧과 이용 가능 횟수를 한눈에 비교하세요. 작은 화면에서는 옆으로 밀어 확인할 수 있어요.</p>
+    </div>
    </header>
   <section id="gpPricingSegmentPanel" class="gp-pricing-segment" hidden aria-live="polite">
    <div>
@@ -45,7 +41,7 @@
    </div>
    <button id="gpPricingSegmentButton" type="button" onclick="gpPricingSegmentAction()">확인하기</button>
   </section>
-   <div class="plan-grid gp-plan-grid">
+   <div class="plan-grid gp-plan-grid" id="gpPlanList" role="region" aria-label="크레딧 충전 상품 5개" aria-describedby="gpPlanListHint" tabindex="0">
    <article class="plan-card" data-plan-credits="110">
     <div class="plan-hd-row"><span class="plan-tag">100 크레딧</span></div>
     <div class="plan-price-main">2,900<span class="plan-won">원</span></div>

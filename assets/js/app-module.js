@@ -2106,6 +2106,7 @@ const NOTICE_BASE_ITEMS = [
   id: 'humanize-v2541-refine',
   category: '업데이트',
   title: '긴 글 구조 보존과 문단 보강을 개선했어요',
+  highlightLabel: '신규 · 엔진 업데이트',
   date: '2026.08.29',
   views: 0,
   body: '긴 글을 처리할 때 제목·절·문단의 순서와 경계를 원문과 다시 대조해 서로 다른 절이 합쳐지거나 설명이 빠지는 문제를 줄였어요.\n\n다듬기·기본 결과에서는 보강이 필요한 문단에 문단 보강 기능이 표시될 수 있어요. 사용자가 직접 입력한 실제 경험이나 사실을 바탕으로 해당 문단만 다시 다듬으며, 결과가 바뀌지 않거나 안전 검증을 통과하지 못한 보강 요청은 크레딧과 무료 횟수를 사용하지 않아요.\n\n다듬기·기본·고급의 차이를 한 화면에서 비교할 수 있도록 선택 화면을 정리하고, 글쓰기 연구노트와 템플릿·가격 계산기를 추가했어요. 휴머나이징 결과는 제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요.'
@@ -2194,6 +2195,11 @@ const NOTICE_RETIRED_TITLES = new Set([
 ]);
 
 const NOTICE_CATEGORIES = ['공지', '업데이트', '점검', '이벤트', '정책'];
+const NOTICE_HIGHLIGHT_LABELS = new Map(
+ NOTICE_BASE_ITEMS
+  .filter(item => item.highlightLabel)
+  .map(item => [item.title.trim().toLowerCase(), item.highlightLabel])
+);
 const noticeState = {
  category: '',
  query: '',
@@ -2249,6 +2255,11 @@ function noticeFilteredItems() {
   });
 }
 
+function noticeHighlightLabel(item) {
+ const title = String(item && item.title || '').trim().toLowerCase();
+ return String(item && item.highlightLabel || NOTICE_HIGHLIGHT_LABELS.get(title) || '').trim();
+}
+
 function renderNoticeList() {
  const el = document.getElementById('noticeList');
  const status = document.getElementById('noticeResultStatus');
@@ -2264,15 +2275,19 @@ function renderNoticeList() {
   el.innerHTML = '<div class="gp-notice-empty">조건에 맞는 공지사항이 없어요.<small>다른 분류를 선택하거나 검색어를 바꿔 보세요.</small></div>';
   return;
  }
- el.innerHTML = items.map((item, index) =>
-  '<div class="gp-board-row notice-row" role="button" tabindex="0" data-notice-index="' + index + '">'
+ el.innerHTML = items.map((item, index) => {
+  const highlightLabel = noticeHighlightLabel(item);
+  return '<div class="gp-board-row notice-row' + (highlightLabel ? ' is-highlighted' : '') + '" role="button" tabindex="0" data-notice-index="' + index + '">'
   + '<div class="gbr-main">'
-  +  '<div class="gbr-ttl">' + escapeHtml(item.title) + '</div>'
+  +  '<div class="gbr-ttl">'
+  +   (highlightLabel ? '<span class="gp-notice-row-badge">' + escapeHtml(highlightLabel) + '</span>' : '')
+  +   '<span class="gbr-ttl-text">' + escapeHtml(item.title) + '</span>'
+  +  '</div>'
   +  '<div class="gbr-sub"><span class="gbr-cat">' + escapeHtml(item.category) + '</span><span>' + escapeHtml(item.date) + '</span></div>'
   + '</div>'
   + '<div class="gbr-stats">' + _gbrStat(_SICO_VIEW, Number(item.views || 0).toLocaleString('ko-KR'), 'views') + '</div>'
-  + '</div>'
- ).join('');
+  + '</div>';
+ }).join('');
  el.querySelectorAll('[data-notice-index]').forEach(row => {
   const openItem = () => {
    const index = Number(row.dataset.noticeIndex);

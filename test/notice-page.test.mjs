@@ -4,21 +4,31 @@ import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('메인 공지는 내부 버전명 없이 문단 보강과 구조 보존을 해요체로 안내한다', async () => {
-  const page = await read('pages/notice.html');
-  const featured = page.slice(
-    page.indexOf('gp-notice-featured'),
-    page.indexOf('noticeWriteForm')
+test('신규·엔진 업데이트는 별도 상단 카드 없이 공지 목록 한 줄에서 강조한다', async () => {
+  const [page, source, styles] = await Promise.all([
+    read('pages/notice.html'),
+    read('assets/js/app-module.js'),
+    read('assets/css/redesign.css')
+  ]);
+  const baseItems = source.slice(
+    source.indexOf('const NOTICE_BASE_ITEMS'),
+    source.indexOf('const NOTICE_RETIRED_TITLES')
   );
 
-  assert.match(featured, /필요한 문단만 한 번 더 보강할 수 있어요/u);
-  assert.match(featured, /실제 경험이나 사실을 직접 입력하면 다듬기·기본 결과의 해당 문단만 다시 다듬어요/u);
-  assert.match(featured, /긴 글의 구조 보존을 강화했어요/u);
-  assert.match(featured, /결합·누락 위험을 줄였어요/u);
-  assert.doesNotMatch(featured, /정확도 개선/u);
-  assert.doesNotMatch(featured, /AI 감지가 크레딧 이용 방식으로 바뀌었어요/u);
-  assert.doesNotMatch(featured, /v2\.5\.41/u);
-  assert.match(featured, /(?:해요|했어요|됐어요|있어요)/u);
+  assert.doesNotMatch(page, /gp-notice-featured|gp-notice-card|notice-(?:maintenance|analytics)\.png/u);
+  assert.match(baseItems, /title: '긴 글 구조 보존과 문단 보강을 개선했어요'/u);
+  assert.match(baseItems, /highlightLabel: '신규 · 엔진 업데이트'/u);
+  assert.match(baseItems, /사용자가 직접 입력한 실제 경험이나 사실/u);
+  assert.match(baseItems, /해당 문단만 다시 다듬으며/u);
+  assert.match(baseItems, /제목·절·문단의 순서와 경계를 원문과 다시 대조/u);
+  assert.match(baseItems, /서로 다른 절이 합쳐지거나 설명이 빠지는 문제를 줄였어요/u);
+  assert.doesNotMatch(baseItems, /정확도 개선|v2\.5\.41/u);
+  assert.match(source, /NOTICE_HIGHLIGHT_LABELS/u);
+  assert.match(source, /notice-row' \+ \(highlightLabel \? ' is-highlighted' : ''\)/u);
+  assert.match(source, /class="gp-notice-row-badge"/u);
+  assert.match(source, /class="gbr-ttl-text"/u);
+  assert.match(styles, /#noticeList \.notice-row\.is-highlighted/u);
+  assert.match(styles, /#noticeList \.gp-notice-row-badge/u);
 });
 
 test('하단 공지는 제외 요청한 주제를 숨기고 남은 중요 공지만 표시한다', async () => {

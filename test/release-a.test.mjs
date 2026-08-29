@@ -288,7 +288,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /운영 Git<\/dt><dd>745건/u);
   assert.match(admin, /Backend \/ Frontend<\/dt><dd>495 \/ 250/u);
   assert.match(admin, /8,700원 라이트 충전 상품을 350크레딧으로 확대/u);
-  assert.match(admin, /엔진 업데이트·유료 크레딧 유효기간·라이트 상품 지급량/u);
+  assert.match(admin, /신규·엔진 업데이트를 한 줄로 강조/u);
   assert.match(admin, /백엔드 전체 849개, 문단 보강 상태기계 32개, 프런트 87개 테스트/u);
   assert.match(admin, /최종 문서 무결성·안전 후보 원장/u);
   assert.match(admin, /Backend 6e51d4c/u);

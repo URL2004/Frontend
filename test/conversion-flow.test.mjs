@@ -81,17 +81,24 @@ test('가격표 카드는 서비스별로 몇 번 쓸 수 있는지 보여준다
   assert.doesNotMatch(pricing, /class="plan-card[^"]*"[^>]+onclick=/u, '카드 전체 클릭 재유입');
 });
 
-test('요금 카드는 읽기 가능한 같은 너비의 3+2 · 2+2+1 · 1열 배치를 갖는다', async () => {
-  const css = await read('assets/css/redesign.css');
-  assert.match(css, /\.gp-plan-grid\{\s*grid-template-columns:repeat\(6,minmax\(0,1fr\)\) !important/u, '데스크톱 6트랙');
-  assert.match(css, /\.gp-plan-grid \.plan-card\{grid-column:span 2;\}/u, '상품 3열 동폭');
-  assert.match(css, /\.gp-plan-grid \.plan-card:nth-child\(4\)\{grid-column:2 \/ span 2;\}/u, '둘째 줄 중앙 시작');
-  assert.match(css, /\.gp-plan-grid \.plan-card:nth-child\(5\)\{grid-column:4 \/ span 2;\}/u, '둘째 줄 중앙 종료');
-  assert.match(css, /@media\(max-width:960px\)[\s\S]{0,600}?grid-template-columns:repeat\(2,minmax\(0,1fr\)\) !important/u, '중간 화면 2열');
-  assert.match(css, /@media\(max-width:960px\)[\s\S]{0,600}?nth-child\(5\)\{\s*grid-column:1 \/ -1;\s*width:calc\(50% - 8px\);/u, '마지막 상품 같은 너비 중앙 정렬');
-  assert.match(css, /@media\(max-width:560px\)[\s\S]{0,500}?grid-template-columns:1fr !important/u, '모바일 1열');
-  assert.match(css, /@media\(max-width:560px\)[\s\S]{0,500}?nth-child\(5\)\{\s*grid-column:auto;\s*width:100%;/u, '모바일 마지막 상품 폭 복원');
-  assert.doesNotMatch(css, /\.gp-plan-grid\{\s*grid-template-columns:repeat\(5,/u, '읽을 수 없는 5열 재유입');
+test('요금 카드는 넓은 화면에서 다섯 상품을 한 줄에 펼치고 작은 화면에서도 같은 가로 순서를 유지한다', async () => {
+  const [pricing, css, boot, loader, appMain] = await Promise.all([
+    read('pages/pricing.html'),
+    read('assets/css/redesign.css'),
+    read('assets/js/app-boot.js'),
+    read('assets/js/page-loader.js'),
+    read('assets/js/app-main.js')
+  ]);
+  assert.match(pricing, /id="gpPlanList"[^>]+role="region"[^>]+aria-label="크레딧 충전 상품 5개"[^>]+tabindex="0"/u);
+  assert.doesNotMatch(pricing, /data-pricing-carousel-control|gpPlanPosition|aria-roledescription="캐러셀"/u, '별도 캐러셀 조작 UI 없음');
+  assert.match(css, /\.gp-plan-grid\{[\s\S]{0,180}?display:grid !important;[\s\S]{0,100}?grid-template-columns:repeat\(5,minmax\(0,1fr\)\) !important/u, '데스크톱 5열');
+  assert.match(css, /@media\(max-width:1180px\)[\s\S]{0,520}?\.gp-plan-grid\{[\s\S]{0,180}?display:flex !important/u, '작은 화면은 같은 가로 순서로 스크롤');
+  assert.match(css, /container-name:pricing-plans;[\s\S]{0,120}?container-type:inline-size;[\s\S]{0,1400}?@container pricing-plans \(max-width:999px\)[\s\S]{0,260}?\.gp-plan-grid\{[\s\S]{0,180}?display:flex !important/u, '사이드바로 본문이 좁은 PC도 카드 가독성 보호');
+  assert.match(css, /flex:0 0 280px/u, '스크롤 카드의 읽기 가능한 최소 폭');
+  assert.match(css, /flex-basis:clamp\(280px,calc\(100vw - 92px\),298px\)/u, '모바일 카드 폭');
+  assert.match(css, /scroll-snap-type:x mandatory/u);
+  assert.doesNotMatch(css, /\.gp-plan-grid \.plan-card:nth-child/u, '줄 배치용 카드 순번 규칙 재유입');
+  assert.doesNotMatch(`${boot}\n${loader}\n${appMain}`, /pricing-carousel|gpEnsurePricingCarousel/u, '삭제한 캐러셀 런타임 재유입');
   assert.doesNotMatch(css, /pcLineGrow|pcScan|pcFloat|\.pc-tr|\.pc-fx/u, '사이버 카드 장식 재유입');
   assert.doesNotMatch(css, /@media\(max-width:(?:1240|860)px\)/u, '비표준 중단점이 되살아남');
   assert.match(css, /\.gp-plan-grid \.plan-popular,[\s\S]{0,120}?transform:none !important/u, '인기 카드 돌출 제거');

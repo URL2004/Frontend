@@ -94,8 +94,8 @@ test('신뢰·가격·준비 중 표면은 확정된 정책 문구와 런타임 
     read('partials/footer.html')
   ]);
 
-  assert.equal((pricing.match(/data-credit-balance/gu) || []).length, 1, '본문 잔액 훅은 중복 없이 하나여야 함');
-  assert.match(pricing, /data-credit-work-count="current"/u);
+  assert.equal((pricing.match(/data-credit-balance/gu) || []).length, 0, '본문에는 공통 상단 잔액을 중복 표시하지 않음');
+  assert.doesNotMatch(pricing, /data-credit-work-count="current"/u);
   assert.match(pricing, /data-credit-work-count="additional"/u);
   assert.doesNotMatch(pricing, /보유 크레딧 10|업그레이드|구독 시작/u);
   for (const claim of ['최소 10크레딧 · 100자당 2크레딧', '고급 · 1만자 이하', '고급 · 2만자 이하', '고급 · 3만자 이하', '고급 · 근거 보강 선택']) {

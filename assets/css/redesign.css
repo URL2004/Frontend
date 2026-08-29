@@ -1045,35 +1045,79 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
  height:44px;
  border-radius:10px;
 }
-/* 충전 상품은 실제 콘텐츠 폭 안에서 같은 너비로 비교한다.
-   데스크톱은 3+2, 중간 화면은 2+2+1, 모바일은 1열로 읽기 순서를 유지한다. */
+/* 넓은 화면에서는 다섯 상품을 한 줄에 모두 펼치고, 좁은 화면만 같은 한 줄을 스크롤한다. */
+#mainContent[data-main-design="lavender"] .gp-pricing-plans{
+ container-name:pricing-plans;
+ container-type:inline-size;
+}
 #mainContent[data-main-design="lavender"] .gp-plan-grid{
- grid-template-columns:repeat(6,minmax(0,1fr)) !important;
- gap:24px 16px !important;
+ display:grid !important;
+ grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+ gap:12px !important;
+ width:100%;
  margin:0 0 16px;
  align-items:stretch;
  padding:0;
 }
-#mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card{grid-column:span 2;}
-#mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card:nth-child(4){grid-column:2 / span 2;}
-#mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card:nth-child(5){grid-column:4 / span 2;}
-@media(max-width:960px){
- #mainContent[data-main-design="lavender"] .gp-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
- #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card,
- #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card:nth-child(4){grid-column:auto;}
- #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card:nth-child(5){
-  grid-column:1 / -1;
-  width:calc(50% - 8px);
-  justify-self:center;
+#mainContent[data-main-design="lavender"] .gp-plan-grid:focus-visible{
+ outline:3px solid rgba(90,91,216,.2);
+ outline-offset:3px;
+}
+#mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card{
+ min-width:0;
+ max-width:none;
+}
+@media(max-width:1180px){
+ #mainContent[data-main-design="lavender"] .gp-plan-grid{
+  display:flex !important;
+  grid-template-columns:none !important;
+  gap:12px !important;
+  margin:0 -16px 16px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  padding:4px 16px 18px;
+  scroll-padding-inline:16px;
+  scroll-snap-type:x mandatory;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+ }
+ #mainContent[data-main-design="lavender"] .gp-plan-grid::-webkit-scrollbar{display:none;}
+ #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card{
+  flex:0 0 280px;
+  max-width:280px;
+  scroll-snap-align:start;
+  scroll-snap-stop:always;
+ }
+}
+/* 앱 셸의 300px 사이드바로 본문만 좁아지는 PC도 카드 폭을 기준으로 안전하게 전환한다. */
+@container pricing-plans (max-width:999px){
+ #mainContent[data-main-design="lavender"] .gp-plan-grid{
+  display:flex !important;
+  grid-template-columns:none !important;
+  gap:12px !important;
+  margin:0 -16px 16px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-x:contain;
+  padding:4px 16px 18px;
+  scroll-padding-inline:16px;
+  scroll-snap-type:x mandatory;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+ }
+ #mainContent[data-main-design="lavender"] .gp-plan-grid::-webkit-scrollbar{display:none;}
+ #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card{
+  flex:0 0 280px;
+  max-width:280px;
+  scroll-snap-align:start;
+  scroll-snap-stop:always;
  }
 }
 @media(max-width:560px){
- #mainContent[data-main-design="lavender"] .gp-plan-grid{grid-template-columns:1fr !important;}
- #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card,
- #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card:nth-child(4),
- #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card:nth-child(5){
-  grid-column:auto;
-  width:100%;
+ #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card{
+  flex-basis:clamp(280px,calc(100vw - 92px),298px);
+  max-width:clamp(280px,calc(100vw - 92px),298px);
  }
 }
 /* 돌출 금지 — 줄바꿈이 생겨도 카드끼리 겹치지 않는다(강조는 테두리·뱃지로) */
@@ -5551,10 +5595,7 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  padding-bottom:64px;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-hero{
- display:grid;
- grid-template-columns:minmax(0,1fr) minmax(280px,340px);
- align-items:end;
- gap:32px;
+ display:block;
  padding:8px 0 0 !important;
  margin:0 0 24px !important;
  border:0;
@@ -5575,38 +5616,6 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  color:var(--text2) !important;
  font-size:14.5px !important;
  line-height:1.65 !important;
-}
-#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-balance{
- display:grid;
- grid-template-columns:minmax(0,1fr) auto;
- align-items:baseline;
- gap:6px 16px;
- padding:16px 18px;
- border:1px solid var(--border);
- border-radius:var(--radius-card);
- background:var(--surface2);
-}
-#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-balance-label{
- color:#656c80;
- font-size:12.5px;
- font-weight:700;
-}
-#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-balance > strong{
- color:var(--brand-strong);
- font-size:20px;
- font-weight:800;
- font-variant-numeric:tabular-nums;
- white-space:nowrap;
-}
-#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-balance-detail{
- grid-column:1 / -1;
- color:#656c80;
- font-size:12.5px;
- line-height:1.55;
-}
-#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-balance-detail strong{
- color:var(--text);
- font-weight:800;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .gp-coupon-panel{
  display:grid;
@@ -5696,8 +5705,13 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 }
 #mainContent[data-main-design="lavender"] #pricingContent #couponMsg:empty{display:none;}
 #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-section-head{
+ display:flex;
+ align-items:flex-end;
+ justify-content:space-between;
+ gap:24px;
  margin:0 0 20px;
 }
+#mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-section-copy{min-width:0;}
 #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-section-head h2,
 #mainContent[data-main-design="lavender"] #pricingContent .gp-credit-rates h2{
  margin:0;
@@ -5713,13 +5727,14 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  color:var(--text2);
  font-size:13.5px;
  line-height:1.6;
+ word-break:keep-all;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-segment{margin-bottom:20px;}
 #mainContent[data-main-design="lavender"] #pricingContent .plan-card{
  position:relative;
  min-width:0;
  min-height:0;
- padding:24px !important;
+ padding:18px !important;
  overflow:visible;
  cursor:default;
  transform:none !important;
@@ -5870,11 +5885,6 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 }
 #mainContent[data-main-design="lavender"] #pricingContent .gp-credit-rates .gp-guide-credit-table{margin-top:20px;}
 @media(max-width:760px){
- #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-hero{
-  grid-template-columns:1fr;
-  align-items:start;
-  gap:20px;
- }
  #mainContent[data-main-design="lavender"] #pricingContent .gp-coupon-panel{
   grid-template-columns:1fr;
   align-items:start;
@@ -5889,16 +5899,33 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  #mainContent[data-main-design="lavender"] #pricingContent{padding-bottom:48px;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-hero{padding-top:0 !important;margin-bottom:20px !important;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-hero h1{font-size:28px !important;}
- #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-balance{padding:14px 16px;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-coupon-panel{padding:16px !important;margin-bottom:32px !important;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-coupon-form button{min-width:72px;padding:0 13px;}
- #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-section-head{margin-bottom:16px;}
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-section-head{
+  align-items:flex-start;
+  flex-direction:column;
+  gap:16px;
+  margin-bottom:16px;
+ }
  #mainContent[data-main-design="lavender"] #pricingContent .gp-pricing-section-head h2,
  #mainContent[data-main-design="lavender"] #pricingContent .gp-credit-rates h2{font-size:20px;}
  #mainContent[data-main-design="lavender"] #pricingContent .plan-card{padding:20px !important;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-audience{min-height:0;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-svc-note{text-align:left;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-credit-rates{margin-top:40px;padding-top:32px;}
+}
+@media(min-width:1181px){
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-grid .plan-feats li{
+  gap:4px !important;
+  font-size:12px !important;
+ }
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-grid .plan-feats li > span{white-space:nowrap;}
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-grid .plan-feats li:is(.feat-bonus,.feat-first){
+  grid-template-columns:1fr !important;
+ }
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-grid .plan-feats li:is(.feat-bonus,.feat-first) > strong{
+  justify-self:end;
+ }
 }
 
 /* ───────── lavender v64: 컴포저 전송 버튼 = modern-stingray-68 이식 ─────────
@@ -8172,6 +8199,32 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 }
 
 /* ───────── lavender v109: 공지 분류·검색·정렬 상태 ───────── */
+#mainContent[data-main-design="lavender"] #noticeList .notice-row.is-highlighted{
+ background:#f7f6ff;
+ border-color:#d8d4f4;
+ box-shadow:inset 1px 0 0 var(--brand);
+}
+#mainContent[data-main-design="lavender"] #noticeList .notice-row.is-highlighted:hover{
+ background:#f3f2fd;
+ border-color:#c8c5e8;
+}
+#mainContent[data-main-design="lavender"] #noticeList .gbr-ttl-text{
+ min-width:0;
+ overflow:hidden;
+ text-overflow:ellipsis;
+}
+#mainContent[data-main-design="lavender"] #noticeList .gp-notice-row-badge{
+ flex:0 0 auto;
+ padding:3px 7px;
+ border:1px solid #d8d4f4;
+ border-radius:6px;
+ background:#eeecfb;
+ color:var(--brand-strong);
+ font-size:10.5px;
+ font-weight:800;
+ line-height:1.3;
+ white-space:nowrap;
+}
 .gp-notice-result-status{
  min-height:24px;
  padding:3px 18px 10px;
