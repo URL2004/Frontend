@@ -160,6 +160,14 @@
     <strong class="lav-confirm-title">이 설정으로 시작할까요?</strong>
     <!-- 사전 코칭 픽 제거(2026-08-28) — 사후 문단 보강 루프가 대체 -->
     <ul class="lav-confirm-summary" id="lavConfirmSummary"></ul>
+    <!-- 근거 보강: 고급을 고른 뒤에만 보이는 옵션(2026-08-29 이동) — 켜면 아래 크레딧·시간이 즉시 갱신 -->
+    <label class="lav-confirm-opt" id="lavEvidenceRow" hidden>
+      <input type="checkbox" id="lavEvidence" onchange="lavEvidenceChange()">
+      <span class="lav-confirm-opt-t">
+        <b>근거 보강 <em>+100크레딧</em></b>
+        <i>관련 자료를 검색해 보여드리고, 직접 승인한 자료만 결과에 사용해요. 검색·검수 단계가 붙어 8분 이상 더 걸릴 수 있어요.</i>
+      </span>
+    </label>
     <div class="lav-confirm-cost">
       <div class="lav-confirm-cost-main"><span>필요한 크레딧</span><b id="lavConfirmCredit">8 크레딧</b></div>
       <div><span>걸리는 시간</span><b id="lavConfirmTime">입력 길이로 계산</b></div>

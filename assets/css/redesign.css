@@ -14651,8 +14651,11 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 /* 잠금 카드: 완전 흐림(.45) 대신 읽히는 수준 — 뱃지+클릭차단(base의 pointer-events:none)으로 비활성 전달 */
 #mainContent[data-main-design="lavender"] .lav-tone-opt.is-locked{opacity:.72;}
 /* 탐지율 편차 안내(기본·고급 공통) — 효과를 확정형으로 보이지 않게(정직 고지) */
-#mainContent[data-main-design="lavender"] .lav-tone-variance{margin:11px 0 0;padding:9px 12px;border-radius:9px;background:#f6f7fb;border:1px solid #eceef5;font-size:11.5px;line-height:1.55;color:#6a7188;font-weight:500;}
+#mainContent[data-main-design="lavender"] .lav-tone-variance{margin:11px 0 0;padding:12px 14px;border-radius:10px;background:#f6f7fb;border:1px solid #e4e6f0;font-size:13px;line-height:1.6;color:#5d6477;font-weight:500;}
 #mainContent[data-main-design="lavender"] .lav-tone-variance b{color:#4b4cc6;font-weight:700;}
+/* 외부 검사기 고지는 법적·신뢰 핵심 문구라 눈에 띄게(2026-08-29 사장님) */
+#mainContent[data-main-design="lavender"] .lav-tone-variance b.lav-warn{display:block;margin-top:6px;padding-left:22px;color:#a8690d;font-weight:700;position:relative;}
+#mainContent[data-main-design="lavender"] .lav-tone-variance b.lav-warn::before{content:'';position:absolute;left:0;top:1px;width:16px;height:16px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c8820f' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z'/%3E%3C/svg%3E") center/contain no-repeat;}
 /* 단가·시간 칩(어투 카드 하단) */
 #mainContent[data-main-design="lavender"] em.lav-tone-chips{display:flex;flex-wrap:wrap;gap:6px;}
 #mainContent[data-main-design="lavender"] em.lav-tone-chips span{
@@ -16840,6 +16843,54 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .lav-acc-body #lavMemoBlock{margin-top:16px;padding-top:16px;border-top:1px dashed #dcdef0;}
 .lav-acc-body .lav-memo-toggle-hint{margin:8px 0 0 54px;}
 
+/* ── 세부 설정 개편(2026-08-29): 접힌 상태 현재값 + 필드 단위 구조 + 세그먼트 선택 ── */
+.lav-acc-now{padding:3px 10px;border-radius:999px;background:#eef0f7;color:#5d6477;font-size:11.5px;font-weight:700;white-space:nowrap;}
+.lav-acc-now.is-custom{background:#e7e7fb;color:#4b4cc6;}
+.lav-set-field{padding:16px 0 0;}
+.lav-set-field + .lav-set-field{margin-top:16px;border-top:1px dashed #dcdef0;}
+.lav-set-head{display:block;margin-bottom:9px;}
+.lav-set-head strong{display:block;color:#1a1f2e;font-size:14px;font-weight:700;margin-bottom:3px;}
+.lav-set-head span{display:block;color:#6a7188;font-size:12.5px;font-weight:500;line-height:1.55;}
+.lav-set-field select{
+ width:100%;box-sizing:border-box;height:44px;padding:0 38px 0 13px;
+ border:1.5px solid #d6d7f3;border-radius:10px;background:#fff;
+ color:#1f2437;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+ appearance:none;-webkit-appearance:none;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a91a3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+ background-repeat:no-repeat;background-position:right 12px center;background-size:18px;
+}
+.lav-set-field select:focus{outline:none;border-color:#5a5bd8;box-shadow:0 0 0 3px rgba(90,91,216,.15);}
+.lav-set-hint{margin:8px 0 0;color:#8a91a3;font-size:12px;line-height:1.55;}
+/* 세그먼트: 라디오 두 개를 한 덩어리 스위치로 — 어느 쪽이 켜져 있는지 한눈에 */
+.lav-seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.lav-seg-opt{position:relative;display:block;cursor:pointer;}
+.lav-seg-opt input{position:absolute;opacity:0;width:0;height:0;}
+.lav-seg-opt span{
+ display:flex;flex-direction:column;gap:2px;padding:12px 14px;
+ border:1.5px solid #d6d7f3;border-radius:10px;background:#fff;transition:border-color .15s,background .15s;
+}
+.lav-seg-opt b{color:#1f2437;font-size:14px;font-weight:700;}
+.lav-seg-opt i{color:#8a91a3;font-size:12px;font-style:normal;font-weight:500;}
+.lav-seg-opt input:checked + span{border-color:#5a5bd8;background:#f2f2ff;}
+.lav-seg-opt input:checked + span b{color:#4b4cc6;}
+.lav-seg-opt input:focus-visible + span{outline:2px solid #5a5bd8;outline-offset:2px;}
+.lav-seg-opt:hover span{border-color:#b9bbee;}
+
+/* 확인 모달 안 옵션 행(근거 보강) — 켜면 아래 크레딧이 즉시 바뀐다 */
+.lav-confirm-opt{
+ display:flex;gap:11px;align-items:flex-start;margin:14px 0 0;padding:14px 15px;
+ border:1.5px solid #d6d7f3;border-radius:12px;background:#f8f8ff;cursor:pointer;
+ transition:border-color .15s,background .15s;
+}
+.lav-confirm-opt:hover{border-color:#b9bbee;}
+.lav-confirm-opt:has(input:checked){border-color:#5a5bd8;background:#f2f2ff;}
+.lav-confirm-opt[hidden]{display:none!important;}
+.lav-confirm-opt input{margin-top:3px;flex:0 0 auto;width:17px;height:17px;accent-color:#5a5bd8;cursor:pointer;}
+.lav-confirm-opt-t{display:flex;flex-direction:column;gap:4px;min-width:0;}
+.lav-confirm-opt-t b{color:#1f2437;font-size:14px;font-weight:700;}
+.lav-confirm-opt-t b em{font-style:normal;color:#4b4cc6;font-weight:800;margin-left:4px;}
+.lav-confirm-opt-t i{color:#6a7188;font-size:12.5px;font-style:normal;font-weight:500;line-height:1.55;}
+
 /* 회피설정: 근거 보강도 옵션 카드 — 잠금(ev-off)은 흐린 점선 카드+설명 접힘, 고급에선 틴트 카드+상세 설명 */
 #lavEvidenceBlock{padding:15px 16px;margin:0 0 4px;border:1px solid #d6d7f3;border-radius:13px;background:#f8f8ff;}
 #lavEvidenceBlock.ev-off{background:#fafbfd;border:1px dashed #e2e5f0;}
@@ -17726,10 +17777,7 @@ body.dark .lav-refine-ok{color:#4ade80;}
  background:rgba(90,91,216,.08);border-radius:9px;padding:7px 12px;align-self:flex-start;
  font-variant-numeric:tabular-nums;
 }
-.lav-sel-evidence{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.55;color:var(--text2,#3c4257);padding:4px 4px 0;cursor:pointer;}
-.lav-sel-evidence input{margin-top:3px;}
-.lav-sel-evidence.ev-off{opacity:.5;pointer-events:none;}
-.lav-sel-ev-tag{font-style:normal;font-size:11px;font-weight:700;color:#4749c9;background:rgba(90,91,216,.1);border-radius:6px;padding:2px 7px;margin:0 6px;vertical-align:1px;}
+/* (근거 보강 행 스타일 제거 — 2026-08-29: 선택 화면에서 확인 모달(.lav-confirm-opt)로 이동) */
 .lav-blocked-memo{
  width:100%;box-sizing:border-box;font-family:inherit;font-size:14px;line-height:1.6;
  padding:11px 13px;border:1.5px solid #c9cce6;border-radius:10px;background:#fff;color:#1f2437;

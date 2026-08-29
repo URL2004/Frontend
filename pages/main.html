@@ -319,31 +319,28 @@
                <em class="lav-sel-cost" id="lavCostFormal">비용 계산 중</em>
              </button>
            </div>
-           <label class="lav-sel-evidence" id="lavEvidenceRow">
-             <input type="checkbox" id="lavEvidence" onchange="lavEvidenceChange()">
-             <span><b>근거 보강</b><i class="lav-sel-ev-tag">고급 전용</i> +100크레딧 — 자료를 검색해 보여드리고, 직접 승인한 것만 결과에 사용해요</span>
-           </label>
-           <p class="lav-evidence-note" id="lavEvidenceNote" hidden>검색과 검수 단계가 추가되어 기본 예상 시간보다 약 8분 이상 더 걸릴 수 있어요.</p>
+           <!-- 근거 보강은 고급 확인 모달로 이동(2026-08-29) — 선택 화면에서 어느 방식에 붙는 옵션인지 헷갈리는 문제 해소 -->
            <p class="lav-tone-advanced-note" id="lavToneAdvancedNote" role="status" hidden><b>이 글에는 고급을 권장해요.</b> <span id="lavToneAdvancedText"></span></p>
            <p class="lav-tone-resume-note" id="lavToneResumeNote" hidden>이 글은 개인 경험·관찰을 그대로 지키는 것이 중요해요. <b>기본 휴머나이징에도 해당 장르 보존 규칙과 의미 검증이 적용</b>됩니다. 고급은 더 넓게 재구성하므로 이 유형에는 기본을 권장합니다.</p>
-           <p class="lav-tone-variance"><b>세 방식 모두 장르·화자·사실을 보호합니다.</b> 외부 검사 점수는 글과 도구에 따라 달라지며 보장되지 않아요.</p>
+           <p class="lav-tone-variance"><b>세 방식 모두 장르·화자·사실을 보호합니다.</b> <b class="lav-warn">외부 검사기 점수는 검사기마다 다르게 나오며, 특정 점수를 보장하지 않아요.</b></p>
            <!-- 세부 설정(선택) — 기본값 자동. 오판별 같은 소수 케이스의 탈출구만 남긴다(2026-08-28 흐름 단순화 D1) -->
            <details class="lav-set-block lav-opt-acc" id="lavDetailBlock">
              <summary class="lav-acc-sum">
-               <span class="lav-acc-main"><strong>세부 설정</strong><em class="lav-acc-opt">선택</em></span>
-               <span class="lav-acc-desc">기본값(자동 판별·자동 문체)으로 충분해요. 판정이 애매한 글만 직접 지정하세요.</span>
+               <span class="lav-acc-main">
+                 <strong>세부 설정</strong>
+                 <em class="lav-acc-opt">선택</em>
+                 <!-- 접힌 상태에서도 현재 값을 보여준다 — 열지 않아도 무엇이 적용 중인지 알 수 있게 -->
+                 <span class="lav-acc-now" id="lavDetailSummary">자동 판별 · 자동 문체</span>
+               </span>
+               <span class="lav-acc-desc">대부분 기본값으로 충분해요. 글 종류가 잘못 잡혔을 때만 여세요.</span>
                <svg class="lav-acc-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
              </summary>
              <div class="lav-acc-body">
-               <div class="lav-basic-style" id="lavBasicStyleBlock">
-                 <div class="lav-set-label"><strong>문체 보조 힌트</strong><span>기본 휴머나이징에서 단어 선택과 문장 연결의 친근함·격식을 조정해요</span></div>
-                 <div class="lav-radio-row">
-                   <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="blog" checked onchange="lavBasicStyleChange()"><span>블로그·후기에 가까워요<i>원문 말투를 지키며 단어와 연결을 조금 더 친근하게</i></span></label>
-                   <label class="lav-radio"><input type="radio" name="lavBasicStyle" value="report" onchange="lavBasicStyleChange()"><span>과제·보고서에 가까워요<i>원문 구조와 종결체를 지키며 격식과 정확성을 유지</i></span></label>
-                 </div>
-               </div>
-               <div class="lav-document-profile" id="lavDocumentProfileBlock">
-                 <label for="lavDocumentProfile"><strong>글 종류</strong><span>자동 판별을 권장해요. 판정이 애매한 글만 직접 골라 주세요.</span></label>
+               <div class="lav-set-field" id="lavDocumentProfileBlock">
+                 <label class="lav-set-head" for="lavDocumentProfile">
+                   <strong>글 종류</strong>
+                   <span>자동 판별을 권장해요. 판정이 애매한 글만 직접 골라 주세요.</span>
+                 </label>
                  <select id="lavDocumentProfile" onchange="lavDocumentProfileChange()">
                    <option value="">자동 판별 (권장)</option>
                    <option value="academic_paper">논문·학술글</option>
@@ -362,7 +359,23 @@
                    <option value="creative">시·창작문</option>
                    <option value="general">일반 글</option>
                  </select>
-                 <p id="lavDocumentProfileHint">선택해도 원문에서 장르가 뚜렷하면 안전을 위해 자동 판정을 우선합니다.</p>
+                 <p class="lav-set-hint" id="lavDocumentProfileHint">선택해도 원문에서 장르가 뚜렷하면 안전을 위해 자동 판정을 우선합니다.</p>
+               </div>
+               <div class="lav-set-field" id="lavBasicStyleBlock">
+                 <div class="lav-set-head">
+                   <strong>문체 보조 힌트</strong>
+                   <span>기본 휴머나이징에서만 쓰여요. 원문 말투는 그대로 두고 단어·연결의 결만 조정합니다.</span>
+                 </div>
+                 <div class="lav-seg" role="radiogroup" aria-label="문체 보조 힌트">
+                   <label class="lav-seg-opt">
+                     <input type="radio" name="lavBasicStyle" value="blog" checked onchange="lavBasicStyleChange()">
+                     <span><b>친근하게</b><i>블로그·후기</i></span>
+                   </label>
+                   <label class="lav-seg-opt">
+                     <input type="radio" name="lavBasicStyle" value="report" onchange="lavBasicStyleChange()">
+                     <span><b>격식 있게</b><i>과제·보고서</i></span>
+                   </label>
+                 </div>
                </div>
              </div>
            </details>

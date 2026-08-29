@@ -17,18 +17,24 @@ test('브라우저 휴머나이징 호출은 /transform job으로만 실행된�
 });
 
 test('기본·고급 설명은 체감 재구성 범위와 검증 범위를 구분한다', async () => {
-  const [main, guide, faq, evasion] = await Promise.all([
+  const [main, guide, faq, evasion, modals] = await Promise.all([
     read('pages/main.html'),
     read('pages/guide.html'),
     read('pages/faq.html'),
-    read('assets/js/evasion-flow.js')
+    read('assets/js/evasion-flow.js'),
+    read('partials/modals.html')
   ]);
   // 3택 1화면(2026-08-28, 2026-08-29 설명 항목화): 기본·고급 설명은 select 카드 2항목으로 구분된다
   assert.match(main, /AI 티 문장만 다시 씀/u);
   assert.match(main, /장르·말투·사실 유지/u);
   assert.match(main, /넓은 재구성 \+ 전 문서 검증/u);
-  assert.match(main, /기본 휴머나이징에서 단어 선택과 문장 연결의 친근함·격식/u);
-  assert.match(main, /외부 검사 점수는 글과 도구에 따라 달라지며 보장되지 않아요/u);
+  assert.match(main, /기본 휴머나이징에서만 쓰여요\. 원문 말투는 그대로 두고 단어·연결의 결만 조정합니다/u);
+  assert.match(main, /id="lavDetailSummary">자동 판별 · 자동 문체/u);
+  assert.match(main, /외부 검사기 점수는 검사기마다 다르게 나오며, 특정 점수를 보장하지 않아요/u);
+  assert.doesNotMatch(main, /id="lavEvidenceRow"/u);
+  assert.match(modals, /class="lav-confirm-opt" id="lavEvidenceRow" hidden/u);
+  assert.match(evasion, /var evAvailable = s\.tone === 'formal'/u);
+  assert.match(evasion, /renderConfirmCost\(\);\s+\/\/ 모달을 연 뒤 호출/u);
   assert.match(guide, /AI식 반복과 균일한 흐름을 다시 구성/u);
   assert.match(faq, /고급은 기본보다 더 넓은 문장 범위를 재구성/u);
   assert.match(evasion, /Math\.max\(90, Math\.min\(1200, Math\.round\(bareLength\(text\) \/ 12\)\)\)/u);

@@ -324,6 +324,7 @@
       applyAdvancedRouting();   // 3택 화면 진입 시 고급 잠금·추천을 즉시 반영(구 reduce 진입 로직 이동)
       applyUseCasePreset();     // 광고 use_case 맥락 → 세부 설정 글 종류 프리셋(P0-6, 1회만)
       renderSelectCosts();
+      renderDetailSummary();    // 접힌 세부 설정에 현재 값(프리셋 포함) 표시
       show('select');
     });
   };
@@ -367,7 +368,7 @@
     var formalCard = $('lavCardFormal');
     if (formalCard) { formalCard.classList.toggle('is-locked', unfit); formalCard.disabled = unfit; }
     var lockNote = $('lavFormalLockNote'); if (lockNote) lockNote.hidden = !unfit;
-    var evRow = $('lavEvidenceRow'); if (evRow) evRow.classList.toggle('ev-off', unfit);
+    // 근거 보강은 모달 안 옵션(2026-08-29) — 잠긴 글에선 비활성화만 걸어두고 노출은 lavOpenConfirm이 판단
     var ev = $('lavEvidence'); if (ev) { ev.disabled = unfit; if (unfit) ev.checked = false; }
     var basicRecommended = $('lavBasicRecommended');
     var formalRecommended = $('lavFormalRecommended');
@@ -832,15 +833,35 @@
   };
 
   window.lavBasicStyleChange = function () {
+    renderDetailSummary();
     if (window.lavToneChange) window.lavToneChange();
   };
 
   window.lavEvidenceChange = function () {
-    var on = $('lavEvidence') && $('lavEvidence').checked;
-    var note = $('lavEvidenceNote');
-    if (note) note.hidden = !on;
-    renderSelectCosts();   // 근거 +100크레딧을 고급 카드 비용에 즉시 반영
+    renderSelectCosts();     // 선택 화면 고급 카드 비용(모달을 닫고 돌아갈 때 정합)
+    renderConfirmCost();     // 모달 안에서 켜면 필요한 크레딧·시간이 즉시 바뀐다(2026-08-29)
   };
+
+  // 확인 모달의 크레딧·시간만 다시 계산 — 근거 보강 토글이 모달 안에서 바로 반영되게 분리
+  function renderConfirmCost() {
+    var modal = $('lavConfirmModal');
+    if (!modal || modal.hidden) return;
+    if (pendingPolish) return;   // 보존형 다듬기 확인은 자체 표기를 쓴다
+    var s = currentSettings();
+    var src = $('lavInput');
+    var text = src ? src.value : '';
+    var len = text.length;
+    var credit, time;
+    if (s.tone === 'formal') {
+      credit = formalCredit(len, s.evidence) + ' 크레딧';
+      time = estimateTimeRangeLabel(formalEstimateRange(text, s.evidence)) + ' · 대기 제외';
+    } else {
+      credit = shortHumanizeCredit(len) + ' 크레딧';
+      time = estimateTimeLabel(shortEstimateSec(text)) + ' · 대기 제외';
+    }
+    if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = credit;
+    if ($('lavConfirmTime')) $('lavConfirmTime').textContent = time;
+  }
 
   // 사전 메모는 차단 화면 인라인 입력(lavMemoOverride) 하나로 축소 — 경험·관점 아코디언과
   // 자동 코칭(coach-suggest)은 사후 문단 보강 루프가 대체한다(2026-08-28 흐름 단순화).
@@ -906,9 +927,20 @@
     var value = select ? String(select.value || '') : '';
     return DOCUMENT_PROFILE_LABELS[value] ? value : '';
   }
+  // 접힌 세부 설정에 현재 값 표시 — 열지 않아도 무엇이 적용 중인지 보이게(2026-08-29)
+  function renderDetailSummary() {
+    var el = $('lavDetailSummary');
+    if (!el) return;
+    var profile = currentDocumentProfile();
+    var style = currentBasicStyle() === 'report' ? '격식 있게' : '친근하게';
+    el.textContent = (profile ? DOCUMENT_PROFILE_LABELS[profile] : '자동 판별') + ' · ' + style;
+    el.classList.toggle('is-custom', !!profile || currentBasicStyle() === 'report');
+  }
+
   window.lavDocumentProfileChange = function () {
     var hint = $('lavDocumentProfileHint');
     var profile = currentDocumentProfile();
+    renderDetailSummary();
     if (!hint) return;
     hint.textContent = profile
       ? '자동 판정이 애매할 때만 이 선택을 사용해요. 원문 장르가 뚜렷하면 안전을 위해 자동 판정을 우선합니다.'
@@ -945,28 +977,22 @@
       if (s.tone === 'blog') rows.push(['문체 보조', s.basicStyle === 'report' ? '격식 있는 표현 보조 · 원문 장르 우선' : '친근한 표현 보조 · 원문 장르 우선']);
       if (s.tone === 'formal') rows.push(['분량', '원문에 가깝게 유지']);
       if (s.memo) rows.push(['재도전 메모', '입력함 · 글에 자연스럽게 녹여요']);
-      rows.push(['근거 보강', s.tone === 'formal' ? (s.evidence ? '켬 — 검색 후 검수·승인' : '끔') : '기본 휴머나이징에선 사용 안 함']);
+      // 근거 보강은 아래 체크박스 행이 직접 보여주므로 요약 행에서 제외(2026-08-29 중복 제거)
       sum.innerHTML = rows.map(function (r) {
         return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
       }).join('');
     }
-    // 과금(서버와 동일): 기본 휴머나이징=최소 10크레딧 + 100자당 2크레딧, 고급=건당 정액.
-    var src = $('lavInput');
-    var text = src ? src.value : '';
-    var len = text.length;
-    var credit, time;
-    if (s.tone === 'formal') {
-      credit = formalCredit(len, s.evidence) + ' 크레딧';
-      time = estimateTimeRangeLabel(formalEstimateRange(text, s.evidence)) + ' · 대기 제외';
-    } else {
-      credit = shortHumanizeCredit(len) + ' 크레딧';
-      time = estimateTimeLabel(shortEstimateSec(text)) + ' · 대기 제외';
-    }
-    if ($('lavConfirmCredit')) $('lavConfirmCredit').textContent = credit;
-    if ($('lavConfirmTime')) $('lavConfirmTime').textContent = time;
+    // 근거 보강 옵션: 고급이고 잠기지 않은 글에서만 노출(2026-08-29 선택화면 → 모달 이동)
+    var evRow = $('lavEvidenceRow');
+    var evBox = $('lavEvidence');
+    var evAvailable = s.tone === 'formal' && !(evBox && evBox.disabled);
+    if (!evAvailable && evBox && evBox.checked) evBox.checked = false;   // 기본 선택 시 잔여 체크 정리
+    if (evRow) evRow.hidden = !evAvailable;
     var subC = $('lavConfirmSub'); if (subC) subC.hidden = false;   // 회피는 탐지율 안내 노출
     var modal = $('lavConfirmModal');
     if (modal) modal.hidden = false;
+    // 과금(서버와 동일): 기본 휴머나이징=최소 10크레딧 + 100자당 2크레딧, 고급=건당 정액.
+    renderConfirmCost();   // 모달을 연 뒤 호출 — 같은 공식을 근거 토글과 공유한다
   };
 
   window.lavCloseConfirm = function () {
