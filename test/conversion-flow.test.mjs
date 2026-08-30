@@ -135,9 +135,10 @@ test('기간 이벤트 종료·서버 비활성화 시 상시 상품 보너스�
 });
 
 test('직접 충전 확인창은 금액·지급 구성·환불 기준을 구조화해 보여준다', async () => {
-  const [main, feedback] = await Promise.all([
+  const [main, feedback, css] = await Promise.all([
     read('assets/js/app-main.js'),
-    read('assets/js/ui-feedback.js')
+    read('assets/js/ui-feedback.js'),
+    read('assets/css/redesign.css')
   ]);
   assert.match(feedback, /renderDialogSummary\(opts\.summary\)/u);
   assert.match(main, /summary:\s*purchaseSummary/u);
@@ -148,7 +149,11 @@ test('직접 충전 확인창은 금액·지급 구성·환불 기준을 구조�
   assert.match(main, /label:\s*'총 지급'[\s\S]{0,80}?emphasis:\s*true/u);
   assert.match(main, /safeText:/u);
   assert.match(main, /note:\s*refundNotice/u);
+  assert.match(main, /variant:\s*'purchase'/u);
   assert.match(main, /원 결제하기/u);
+  assert.match(css, /\.gp-dialog-root\.variant-purchase \.gp-dialog-card\{width:min\(500px,100%\);\}/u);
+  assert.match(css, /grid-template-columns:120px 220px;justify-content:end/u, '결제 버튼 글자가 가장자리에 붙지 않는 고정 폭');
+  assert.match(css, /@media\(max-width:480px\)[\s\S]{0,180}?variant-purchase[\s\S]{0,120}?column-reverse/u, '작은 화면은 버튼을 세로 배치');
   assert.doesNotMatch(main, /title:\s*'구매를 진행할까요\?'/u);
 });
 

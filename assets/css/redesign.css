@@ -9277,9 +9277,10 @@ body.gp-dialog-open{overflow:hidden;}
  width:100%;min-width:0;height:44px;padding:0 16px;line-height:1.25;
 }
 .gp-dialog-root.variant-detect .gp-dialog-confirm{white-space:nowrap;}
-.gp-dialog-root.variant-purchase .gp-dialog-card{width:min(480px,100%);}
+.gp-dialog-root.variant-purchase .gp-dialog-card{width:min(500px,100%);}
 .gp-dialog-root.variant-purchase .gp-dialog-actions{
- display:grid;grid-template-columns:minmax(104px,.72fr) minmax(176px,1.28fr);gap:10px;
+ display:grid;grid-template-columns:120px 220px;justify-content:end;gap:10px;
+ box-sizing:border-box;padding-inline:8px;
 }
 .gp-dialog-root.variant-purchase .gp-dialog-actions button{
  display:flex;align-items:center;justify-content:center;box-sizing:border-box;
@@ -9315,7 +9316,7 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
  .gp-dialog-root.variant-detect .gp-dialog-actions{display:flex;flex-direction:column-reverse;}
  .gp-dialog-root.variant-detect .gp-dialog-actions button{width:100%;}
 }
-@media(max-width:420px){
+@media(max-width:480px){
  .gp-dialog-root.variant-purchase .gp-dialog-actions{display:flex;flex-direction:column-reverse;}
  .gp-dialog-root.variant-purchase .gp-dialog-actions button{width:100%;}
 }
