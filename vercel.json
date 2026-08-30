@@ -2,6 +2,23 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/community",
+      "destination": "/?mode=humanize&community=closed",
+      "permanent": true
+    },
+    {
+      "source": "/community/:path*",
+      "destination": "/?mode=humanize&community=closed",
+      "permanent": true
+    },
+    {
+      "source": "/pages/community.html",
+      "destination": "/?mode=humanize&community=closed",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/main",
@@ -10,10 +27,6 @@
     {
       "source": "/pricing",
       "destination": "/pricing/index.html"
-    },
-    {
-      "source": "/community",
-      "destination": "/community/index.html"
     },
     {
       "source": "/blog",

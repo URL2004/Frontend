@@ -42,17 +42,6 @@ export const ROUTES = [
     breadcrumb: '자주 묻는 질문',
     faq: true
   },
-  {
-    out: 'community/index.html',
-    url: '/community',
-    partial: 'community.html',
-    title: '커뮤니티 – AI 감지 · 과제 글쓰기 · 휴머나이징 경험 공유 | 교수님 피하기',
-    h1: '교수님 피하기 커뮤니티',
-    description:
-      'AI 감지, 과제 작성, 휴머나이징 활용 경험을 나누는 교수님 피하기 커뮤니티입니다. 인기 게시글과 오늘의 키워드를 확인하세요.',
-    breadcrumb: '커뮤니티',
-    faq: false
-  },
   // /blog 허브는 2026-08-28부터 SPA 프리렌더가 아니라 content-pages.mjs의 완전 독립 정적 페이지
   // (사이트맵 등록은 contentUrls()가 담당). 여기 다시 추가하면 독립 허브를 SPA 셸로 덮어쓰게 되니 금지.
   {

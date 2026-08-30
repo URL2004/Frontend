@@ -44,7 +44,6 @@ const pagePartials = [
   'pages/main.html',
   'pages/history.html',
   'pages/notice.html',
-  'pages/community.html',
   'pages/blog.html',
   'pages/detect-report.html',
   'pages/guide.html',
@@ -236,6 +235,10 @@ console.log(`[content-pages] generated ${contentPages.length} pages at repo root
 for (const entry of staticEntries) {
   await copyIfExists(entry);
 }
+
+// pages 디렉터리를 통째로 복사하더라도 종료된 커뮤니티의 직접 URL이
+// 다시 살아나지 않도록 빌드 산출물에서도 제거한다.
+await fs.rm(path.join(dist, 'pages', 'community.html'), { force: true });
 
 await writePageBundle();
 await writeRuntimeConfig();

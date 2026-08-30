@@ -13,11 +13,10 @@ function creditNeededForText(text, apiMode) {
 function currentCreditMode() {
  return mode === 'detect' ? 'detect' : 'humanize';
 }
-const ROUTE_TABS = ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','adminHumanizeLab','history','pro','writingLab'];
+const ROUTE_TABS = ['main','pricing','blog','detectReport','guide','faq','qna','notice','mypage','admin','adminHumanizeLab','history','pro','writingLab'];
 const ROUTE_PATHS = {
  main: '/',
  pricing: '/pricing',
- community: '/community',
  blog: '/blog',
  detectReport: '/detect-report',
  guide: '/guide',
@@ -35,7 +34,6 @@ const PATH_ROUTES = {
  '/': 'main',
  '/main': 'main',
  '/pricing': 'pricing',
- '/community': 'community',
  '/blog': 'blog',
  '/detect-report': 'detectReport',
  '/guide': 'guide',
@@ -58,10 +56,6 @@ main: {
   title: '요금제 · 교수님 피하기',
   description: '교수님 피하기 크레딧 충전 상품과 작업별 이용 기준을 확인하세요.'
  },
-community: {
- title: '커뮤니티 · 교수님 피하기',
- description: 'AI 감지, 과제 작성, 휴머나이징 활용 경험을 나누는 커뮤니티입니다.'
-},
 blog: {
  title: '블로그 · AI 글쓰기 다듬기 가이드 | 교수님 피하기',
  description: '과제·자기소개서·리포트에서 반복 표현과 균일한 흐름을 점검하는 글쓰기 가이드를 모았어요.'
@@ -132,6 +126,24 @@ function getRouteTab() {
  const hashTab = getHashRouteTab();
  if (hashTab) return hashTab;
  return PATH_ROUTES[cleanRoutePath(window.location.pathname)] || 'main';
+}
+
+function consumeClosedCommunityRoute() {
+ const url = new URL(window.location.href);
+ const legacyPath = /^\/community(?:\/|$)/iu.test(cleanRoutePath(url.pathname));
+ const legacyHash = /^#\/?community(?:\/|$)/iu.test(url.hash || '');
+ const redirected = url.searchParams.get('community') === 'closed';
+ if (!legacyPath && !legacyHash && !redirected) return false;
+ url.pathname = '/';
+ url.hash = '';
+ url.searchParams.delete('community');
+ if (!url.searchParams.has('mode')) url.searchParams.set('mode', 'humanize');
+ window.history.replaceState({ tab: 'main' }, '', url.pathname + url.search);
+ setTimeout(function () {
+  const message = '커뮤니티 운영을 종료했어요. AI 감지와 휴머나이징은 계속 이용할 수 있어요.';
+  if (window.gpToast) window.gpToast(message, { type: 'info', title: '커뮤니티 운영 종료' });
+ }, 0);
+ return true;
 }
 
 function routeUrl(t) {
@@ -219,7 +231,6 @@ function setRouteUrl(t, replace) {
 function runRouteSideEffects(t) {
  if (t === 'history' && typeof window.loadHistory === 'function') window.loadHistory();
  if (t === 'notice' && typeof window.loadNotices === 'function') window.loadNotices();
- if (t === 'community' && typeof window.loadPosts === 'function') window.loadPosts();
  if (t === 'qna' && typeof window.loadQuestions === 'function') window.loadQuestions();
  if (t === 'admin' && typeof window.loadAdminPage === 'function') window.loadAdminPage();
  if (t === 'adminHumanizeLab' && typeof window.loadAdminHumanizeLab === 'function') window.loadAdminHumanizeLab();
@@ -228,6 +239,7 @@ function runRouteSideEffects(t) {
 
 function applyRouteFromUrl(opts) {
  opts = opts || {};
+ consumeClosedCommunityRoute();
  const routeTab = getRouteTab();
  updateRouteMeta(routeTab);
  if (routeTab === 'mypage') {
@@ -506,7 +518,7 @@ function switchTab(t, opts) {
  tab=t;
  document.querySelectorAll('.ntab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.snav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
- ['main','pricing','community','blog','detectReport','guide','faq','qna','notice','mypage','admin','adminHumanizeLab','history','pro','writingLab'].forEach(n=>{
+ ['main','pricing','blog','detectReport','guide','faq','qna','notice','mypage','admin','adminHumanizeLab','history','pro','writingLab'].forEach(n=>{
  const el = document.getElementById(n+'Content');
  if (el) el.style.display = n===t ? 'block' : 'none';
  });
@@ -791,7 +803,13 @@ function loadPdfJs() {
 async function extractPdfText(file) {
  const pdfjsLib = await loadPdfJs();
  const buf = await file.arrayBuffer();
- const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+ // PDF.js 3.x의 CVE-2024-4367 공식 완화책. 업로드된 PDF의 eval 및
+ // 문서 내 스크립트가 호스팅 도메인 문맥에서 실행되지 않게 고정한다.
+ const pdf = await pdfjsLib.getDocument({
+  data: buf,
+  isEvalSupported: false,
+  enableScripting: false
+ }).promise;
  let out = '';
  for (let i = 1; i <= pdf.numPages; i++) {
   const page = await pdf.getPage(i);
@@ -2070,10 +2088,10 @@ function showPolicy(type) {
 3. 법정 예외와 별도 확인이 필요한 경우
 - 중복·오결제, 회사 책임으로 인한 서비스 미제공, 회사의 귀책사유로 정상적인 서비스 이용이 현저히 곤란한 오류 등은 일반 청약철회 기간과 별도로 관계 법령과 사실 확인 결과에 따라 결제를 취소합니다. 법령상 결제대금 환급 의무가 있는 경우 원래 결제수단으로 환급하며, 이용자가 동의한 경우에만 서비스 재제공이나 크레딧 복구로 처리할 수 있습니다.
 - 표시·광고 또는 계약 내용과 다르게 이행된 경우에는 서비스를 공급받은 날부터 3개월 이내이면서 그 사실을 안 날(알 수 있었던 날)부터 30일 이내에 청약철회를 신청할 수 있습니다.
-- 온라인 환불 버튼이 비활성화되어 있어도 법정 취소·환급 사유가 있으면 고객센터 이메일로 신청할 수 있습니다.
+- 온라인 환불 버튼이 비활성화되어 있어도 법정 취소·환급 사유가 있으면 사이트 내 고객센터로 신청할 수 있습니다.
 
 4. 환불 신청 및 처리
-- 마이페이지의 환불하기 메뉴 또는 고객센터 이메일(aqua0661123@naver.com)로 신청할 수 있습니다.
+- 마이페이지의 환불하기 메뉴 또는 사이트 내 고객센터로 신청할 수 있습니다.
 - 주문번호와 결제일을 알려주시면 확인이 빨라집니다. 환불 사유 입력은 선택사항입니다.
 - 법정 청약철회 또는 본 정책상 환불 요건에 해당하는 경우, 회사는 환불 신청을 받은 날부터 3영업일 이내에 원래 결제수단으로 결제 취소 조치를 진행합니다. 카드사나 결제기관의 실제 반영에는 추가 시간이 걸릴 수 있습니다.
 

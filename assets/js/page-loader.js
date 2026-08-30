@@ -7,7 +7,6 @@
     '/pages/main.html',
     '/pages/history.html',
     '/pages/notice.html',
-    '/pages/community.html',
     '/pages/blog.html',
     '/pages/detect-report.html',
     '/pages/guide.html',
