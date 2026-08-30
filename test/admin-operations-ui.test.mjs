@@ -164,4 +164,6 @@ test('크레딧 원장은 연결 가능한 작업만 안전한 상세 화면으�
   assert.match(styles, /\.gp-admin-ledger-detail-close\{[^}]*width:44px;height:44px/u);
   assert.match(styles, /\.gp-admin-ledger-detail\{[\s\S]*?--admin-text:#1a1f2e;[\s\S]*?--admin-focus-ring:/u);
   assert.match(styles, /\.gp-admin-ledger-inline-error\{[^}]*color:var\(--admin-red\)/u);
+  assert.match(styles, /\.gp-admin-ledger-open\{min-height:32px;padding-block:3px;line-height:1\.25;white-space:nowrap;\}/u);
+  assert.match(styles, /@media\(max-width:820px\)\{\.gp-admin-ledger-open\{min-height:44px;padding-block:5px;\}\}/u);
 });
