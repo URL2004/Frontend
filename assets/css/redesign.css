@@ -8151,7 +8151,7 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
  --admin-focus-ring:0 0 0 3px rgba(90,91,216,.22);
  --admin-control-h:40px;--admin-touch-h:44px;
 }
-.gp-admin-shell{max-width:1440px;padding:28px clamp(16px,2.2vw,34px) 72px;}
+.gp-admin-shell{max-width:1440px;padding:28px clamp(16px,2.2vw,34px) 72px;container:gp-admin-shell / inline-size;}
 .gp-admin-head{align-items:flex-end;margin-bottom:18px;}
 .gp-admin-head-title h1{margin:0;font-size:clamp(24px,2.3vw,32px);line-height:1.15;letter-spacing:-.025em;color:var(--admin-text);}
 .gp-admin-head-title p{max-width:68ch;margin:7px 0 0;color:var(--admin-text2);font-size:13px;line-height:1.55;}
@@ -8160,9 +8160,9 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-refresh,.gp-admin-primary{min-height:var(--admin-control-h);}
 .gp-admin-refresh:focus-visible,.gp-admin-primary:focus-visible,.gp-admin-mini-btn:focus-visible,.gp-admin-tab:focus-visible,.gp-admin-command-item:focus-visible,.gp-admin-input:focus-visible{outline:none;box-shadow:var(--admin-focus-ring);}
 .gp-admin-overview{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:14px;border-radius:14px;overflow:hidden;}
-.gp-admin-ov-item{min-width:0;padding:14px 16px;border-left:1px solid var(--admin-line);}
+.gp-admin-ov-item{min-width:0;padding:14px;border-left:1px solid var(--admin-line);}
 .gp-admin-ov-label{color:var(--admin-text3);font-size:11.5px;}
-.gp-admin-ov-item strong{font-size:clamp(18px,1.65vw,24px);font-variant-numeric:tabular-nums;}
+.gp-admin-ov-item strong{max-width:100%;font-size:clamp(18px,1.4vw,21px);font-variant-numeric:tabular-nums;line-height:1.15;white-space:nowrap;word-break:normal;overflow-wrap:normal;}
 .gp-admin-ov-item em{color:var(--admin-text3);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .gp-admin-tabs{position:sticky;top:0;z-index:12;gap:4px;margin:0 -4px 8px;padding:8px 4px 12px;background:linear-gradient(90deg,var(--admin-bg) 0,var(--admin-bg) calc(100% - 24px),rgba(246,247,251,0) 100%);scrollbar-width:thin;scrollbar-color:#c9ccea transparent;}
 .gp-admin-tabs::-webkit-scrollbar{display:block;height:3px;}
@@ -8255,7 +8255,7 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
  .gp-admin-ov-item:nth-child(odd){border-left:0;}
  .gp-admin-ov-item:nth-child(even){border-left:1px solid var(--admin-line);}
  .gp-admin-ov-item:nth-child(-n+2){border-top:0;}
- .gp-admin-ov-item strong{font-size:18px;}
+ .gp-admin-ov-item strong{font-size:clamp(17px,4.8vw,18px);}
  .gp-admin-tabs{top:0;margin-inline:-10px;padding-inline:10px;}
  .gp-admin-panel{padding:17px 14px;border-radius:12px;}
  .gp-admin-command-item{min-height:96px;padding:13px;}
@@ -8268,6 +8268,27 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
  .gp-admin-row-detail dl,.gp-ops-context dl{grid-template-columns:1fr;}
  .gp-admin-quality-filter{display:flex;flex-direction:column;align-items:stretch;}
  .gp-admin-ws-search .gp-admin-primary{min-height:var(--admin-touch-h);}
+}
+
+/* 관리자 본문은 사이드바와 1,120px 상한의 영향을 받으므로 viewport가 아니라
+   실제 사용 가능한 폭을 기준으로 KPI 열을 재배치한다. */
+@container gp-admin-shell (max-width:960px){
+ .gp-admin-overview{grid-template-columns:repeat(3,minmax(0,1fr));}
+ .gp-admin-ov-item{border-top:0;border-left:1px solid var(--admin-line);}
+ .gp-admin-ov-item:nth-child(3n+1){border-left:0;}
+ .gp-admin-ov-item:nth-child(n+4){border-top:1px solid var(--admin-line);}
+}
+@container gp-admin-shell (max-width:620px){
+ .gp-admin-overview{grid-template-columns:repeat(2,minmax(0,1fr));}
+ .gp-admin-ov-item{border-top:1px solid var(--admin-line);border-left:1px solid var(--admin-line);}
+ .gp-admin-ov-item:nth-child(odd){border-left:0;}
+ .gp-admin-ov-item:nth-child(even){border-left:1px solid var(--admin-line);}
+ .gp-admin-ov-item:nth-child(-n+2){border-top:0;}
+}
+@container gp-admin-shell (max-width:280px){
+ .gp-admin-overview{grid-template-columns:1fr;}
+ .gp-admin-ov-item,.gp-admin-ov-item:nth-child(n){border-left:0;border-top:1px solid var(--admin-line);}
+ .gp-admin-ov-item:first-child{border-top:0;}
 }
 
 /* ───────── lavender v108: 방법선택·AI티줄이기 설정 화면 단순화 ─────────

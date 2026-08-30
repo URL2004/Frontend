@@ -97,8 +97,13 @@ test('운영 화면은 실제 조회 범위와 서버 설정 계약을 정확히
 
 test('관리자 반응형·가독성 토큰은 넓은 화면과 모바일 조작을 함께 보장한다', () => {
   assert.match(styles, /\.gp-admin-shell\{max-width:1440px/u);
+  assert.match(styles, /\.gp-admin-shell\{[^}]*container:gp-admin-shell \/ inline-size/u);
   assert.match(styles, /--admin-text3:#697086/u);
   assert.match(styles, /--admin-touch-h:44px/u);
+  assert.match(styles, /\.gp-admin-ov-item strong\{[^}]*white-space:nowrap;[^}]*overflow-wrap:normal;/u);
+  assert.match(styles, /@container gp-admin-shell \(max-width:960px\)[\s\S]*?\.gp-admin-overview\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\);\}/u);
+  assert.match(styles, /@container gp-admin-shell \(max-width:620px\)[\s\S]*?\.gp-admin-overview\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);\}/u);
+  assert.match(styles, /@container gp-admin-shell \(max-width:280px\)[\s\S]*?\.gp-admin-overview\{grid-template-columns:1fr;\}/u);
   assert.match(styles, /@media\(max-width:820px\)[\s\S]*\.gp-admin-refresh,[\s\S]*min-width:var\(--admin-touch-h\);min-height:var\(--admin-touch-h\)/u);
   assert.match(styles, /@media\(max-width:560px\)[\s\S]*\.gp-admin-refresh,[\s\S]*min-height:var\(--admin-touch-h\)/u);
   assert.match(styles, /@media\(max-width:560px\)[\s\S]*\.gp-admin-refresh,[\s\S]*min-width:var\(--admin-touch-h\)/u);
