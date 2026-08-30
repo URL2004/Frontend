@@ -172,7 +172,9 @@ test('요금 카드는 넓은 화면에서 다섯 상품을 한 줄에 펼치고
   assert.doesNotMatch(css, /pcLineGrow|pcScan|pcFloat|\.pc-tr|\.pc-fx/u, '사이버 카드 장식 재유입');
   assert.doesNotMatch(css, /@media\(max-width:(?:1240|860)px\)/u, '비표준 중단점이 되살아남');
   assert.match(css, /\.gp-plan-grid \.plan-popular,[\s\S]{0,120}?transform:none !important/u, '인기 카드 돌출 제거');
-  assert.match(css, /\.plan-card\.plan-popular\{[\s\S]{0,100}?border:1px solid var\(--border\) !important/u, '추천 카드는 일반 카드와 같은 테두리');
+  assert.match(pricing, /class="plan-card plan-popular"[\s\S]{0,120}?class="plan-badge">균형 추천</u, '스탠다드는 사실 기반 추천 라벨을 유지');
+  assert.match(css, /\.plan-card\.plan-popular\{[\s\S]{0,100}?border:2px solid var\(--brand\) !important/u, '스탠다드는 선택 상태가 아닌 추천 테두리로 강조');
+  assert.match(css, /\.plan-card\.plan-popular \.plan-badge\{[\s\S]{0,100}?background:var\(--brand\) !important;[\s\S]{0,80}?color:#fff !important/u, '추천 이유는 별도 배지로 구분');
   // 내비 앵커 밑줄 제거(button→a 전환 후 브라우저 기본 밑줄이 살아나던 문제)
   assert.match(css, /\.gp-lav-menu a,\.gp-lav-side-link,\.gp-footer-links a,a\.mnav-btn,a\.snav-btn\{text-decoration:none;\}/u);
 });

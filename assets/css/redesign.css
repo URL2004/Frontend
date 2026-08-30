@@ -5744,9 +5744,16 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  box-shadow:none !important;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .plan-card.plan-popular{
- border:1px solid var(--border) !important;
+ border:2px solid var(--brand) !important;
  background:var(--surface) !important;
  box-shadow:none !important;
+}
+@media (hover:hover){
+ #mainContent[data-main-design="lavender"] #pricingContent .plan-card.plan-popular:hover{
+  border-color:var(--brand-strong) !important;
+  background:#fbfbff !important;
+  box-shadow:0 14px 32px rgba(72,74,165,.1) !important;
+ }
 }
 #mainContent[data-main-design="lavender"] #pricingContent .plan-card.plan-premium{
  border:1px solid var(--border) !important;
@@ -5767,6 +5774,10 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
  font-size:11px !important;
  font-weight:800 !important;
  letter-spacing:0;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .plan-card.plan-popular .plan-badge{
+ background:var(--brand) !important;
+ color:#fff !important;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .plan-hd-row{
  min-height:20px;

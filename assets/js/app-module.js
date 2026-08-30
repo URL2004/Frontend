@@ -2197,15 +2197,25 @@ const NOTICE_BASE_ITEMS = [
   highlightLabel: '신규 · 엔진 업데이트',
   date: '2026.08.29',
   views: 0,
-  body: '긴 글을 처리할 때 제목·절·문단의 순서와 경계를 원문과 다시 대조해 서로 다른 절이 합쳐지거나 설명이 빠지는 문제를 줄였어요.\n\n다듬기·기본 결과에서는 보강이 필요한 문단에 문단 보강 기능이 표시될 수 있어요. 사용자가 직접 입력한 실제 경험이나 사실을 바탕으로 해당 문단만 다시 다듬으며, 결과가 바뀌지 않거나 안전 검증을 통과하지 못한 보강 요청은 크레딧과 무료 횟수를 사용하지 않아요.\n\n다듬기·기본·고급의 차이를 한 화면에서 비교할 수 있도록 선택 화면을 정리하고, 글쓰기 연구노트와 템플릿·가격 계산기를 추가했어요. 휴머나이징 결과는 제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요.'
+  body: '긴 글을 처리할 때 제목·절·문단의 순서와 경계를 원문과 다시 대조해 서로 다른 절이 합쳐지거나 설명이 빠지는 문제를 줄였어요.\n\n다듬기·기본 결과에서는 보강이 필요한 문단에 문단 보강 기능이 표시될 수 있어요. 사용자가 직접 입력한 실제 경험이나 사실을 바탕으로 해당 문단만 다시 다듬으며, 결과가 바뀌지 않거나 안전 검증을 통과하지 못한 보강 요청은 크레딧과 무료 횟수를 사용하지 않아요.\n\n다듬기·기본·고급의 차이를 한 화면에서 비교할 수 있도록 선택 화면을 정리하고, 글쓰기 연구노트와 장르별 템플릿을 추가했어요. 휴머나이징 결과는 제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요.'
  },
  {
   id: 'paid-credit-no-expiry-20260829',
   category: '정책',
   title: '상시 상품 보너스와 9월 이벤트를 안내해요',
+  pinned: true,
+  highlightLabel: '고정 · 정책 안내',
   date: '2026.08.30',
   views: 0,
-  body: '라이트·스탠다드·프로·맥스에는 상품별 상시 보너스가 포함됩니다. 여기에 2026년 9월 30일까지 결제 요청분에는 기준 크레딧의 5%를 이벤트 크레딧으로 더 드려요. 이번 이벤트 총 지급량은 스타터 105, 라이트 345, 스탠다드 650, 프로 1,400, 맥스 3,000크레딧입니다. 기준 크레딧과 상품·이벤트 추가 크레딧은 모두 유효기간 없이 사용할 수 있어요.\n\n일반 환불은 결제 후 7일 이내 신청할 수 있어요. 환불할 때는 사용량을 기준 크레딧에서 먼저 차감하고 남은 기준 크레딧에 해당하는 금액을 환불해요. 상품·이벤트 추가 크레딧은 현금 환불 대상이 아니며, 환불이 완료되면 해당 주문에 남아 있는 기준·추가 크레딧을 모두 회수합니다. 정책 적용 전 주문은 주문 당시 지급 기준을 유지합니다.'
+  body: '현재 적용 중인 크레딧 지급·환불 기준이에요.\n\n상시 상품 보너스\n라이트·스탠다드·프로·맥스는 결제할 때 상품별 보너스를 함께 받아요. 9월 이벤트가 끝난 뒤에도 계속 지급됩니다.\n\n9월 이벤트\n2026년 9월 30일 23시 59분(한국 시간)까지 결제 확인 요청이 서버에 접수된 주문에는 기준 크레딧의 5%를 추가로 드려요.\n\n상품별 지급 구성 (기준 + 상시 보너스 + 9월 이벤트 = 총 지급량)\n• 스타터: 100 + 0 + 5 = 총 105크레딧\n• 라이트: 300 + 30 + 15 = 총 345크레딧\n• 스탠다드: 500 + 125 + 25 = 총 650크레딧\n• 프로: 1,000 + 350 + 50 = 총 1,400크레딧\n• 맥스: 2,000 + 900 + 100 = 총 3,000크레딧\n\n유효기간\n기준 크레딧과 상품·이벤트로 받은 추가 크레딧은 모두 유효기간 없이 사용할 수 있어요.\n\n환불 기준\n• 일반 환불은 결제 후 7일 이내 신청할 수 있어요.\n• 사용량은 기준 크레딧부터 먼저 차감하고, 남은 기준 크레딧에 해당하는 금액을 환불해요.\n• 상품·이벤트 추가 크레딧은 현금 환불 대상이 아니에요.\n• 환불이 완료되면 해당 주문에 남아 있는 기준·추가 크레딧을 모두 회수해요.\n• 새 정책 적용 전 주문은 주문 당시 저장된 지급·환불 기준을 적용해요.'
+ },
+ {
+  id: 'privacy-policy-20260824',
+  category: '정책',
+  title: '개인정보처리방침 변경 내용을 안내해요',
+  date: '2026.08.24',
+  views: 0,
+  body: '2026년 8월 24일부터 개인정보처리방침이 변경됐어요.\n\n서비스 이용 과정에서 방문 페이지와 회원가입·기능 완료·결제 이벤트가 수집될 수 있고, 광고 유입 시 UTM 정보와 광고 클릭 식별자가 함께 수집될 수 있어요. 이 정보는 Google Analytics, 네이버 애널리틱스·광고, Meta Pixel·전환 API를 통한 광고 성과 측정과 서비스 개선에 사용해요.\n\n사용자가 입력한 원문과 휴머나이징 결과는 광고 플랫폼으로 전송하지 않아요. 자세한 수집 항목과 이용자 권리는 화면 아래의 개인정보처리방침에서 확인할 수 있어요.'
  },
  {
   id: 'humanize-v25',
@@ -2280,6 +2290,11 @@ const NOTICE_HIGHLIGHT_LABELS = new Map(
   .filter(item => item.highlightLabel)
   .map(item => [item.title.trim().toLowerCase(), item.highlightLabel])
 );
+const NOTICE_PINNED_TITLES = new Set(
+ NOTICE_BASE_ITEMS
+  .filter(item => item.pinned)
+  .map(item => item.title.trim().toLowerCase())
+);
 const noticeState = {
  category: '',
  query: '',
@@ -2323,6 +2338,11 @@ function noticeCategoryOf(data) {
  return '공지';
 }
 
+function noticeIsPinned(item) {
+ const title = String(item && item.title || '').trim().toLowerCase();
+ return Boolean(item && item.pinned) || NOTICE_PINNED_TITLES.has(title);
+}
+
 function noticeFilteredItems() {
  const queryText = noticeState.query.toLowerCase();
  return noticeState.items
@@ -2332,6 +2352,8 @@ function noticeFilteredItems() {
    return [item.title, item.category, item.body].join(' ').toLowerCase().includes(queryText);
   })
   .sort((a, b) => {
+   const pinnedDiff = Number(noticeIsPinned(b)) - Number(noticeIsPinned(a));
+   if (pinnedDiff) return pinnedDiff;
    const diff = noticeDateValue(b.date) - noticeDateValue(a.date);
    return noticeState.sort === 'desc' ? diff : -diff;
   });
@@ -2480,7 +2502,8 @@ window.loadNotices = async () =>{
     date,
     views: Number(n.views || 0)
    };
-  }).filter(item => !NOTICE_RETIRED_TITLES.has(item.title.trim()));
+  }).filter(item => !NOTICE_RETIRED_TITLES.has(item.title.trim()))
+    .filter(item => !NOTICE_PINNED_TITLES.has(item.title.trim().toLowerCase()));
   const remoteTitles = new Set(remoteItems.map(item => item.title.trim().toLowerCase()));
   noticeState.items = remoteItems.concat(
    NOTICE_BASE_ITEMS
