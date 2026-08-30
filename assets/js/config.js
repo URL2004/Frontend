@@ -45,7 +45,6 @@
     MAINTENANCE_MODE: truthy(runtime.MAINTENANCE_MODE),
     MAINTENANCE_PREVIEW_KEY: runtime.MAINTENANCE_PREVIEW_KEY || '',
     MAINTENANCE_MESSAGE: runtime.MAINTENANCE_MESSAGE || '',
-    EMAILJS_PUBLIC_KEY: 'Cl-t76hcNwZUra4y-',
     TOSS_CLIENT_KEY: tossClientKey,
     FIREBASE: runtime.FIREBASE || prodFirebase
   });

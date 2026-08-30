@@ -134,9 +134,6 @@
         loadScript('https://developers.kakao.com/sdk/js/kakao.min.js', { async: true })
           .then(function () { if (typeof window.onKakaoLoad === 'function') window.onKakaoLoad(); })
           .catch(function () { if (typeof window.onKakaoError === 'function') window.onKakaoError(); });
-        loadScript('https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js', { async: true })
-          .then(function () { return loadScript('/assets/js/email-init.js'); })
-          .catch(function () {});
       }, 2400);
       loadTrackingAfterFirstRender();
       return true;

@@ -2848,15 +2848,6 @@ window.sendNotification = async (postId, postAuthorId, commenterName, postTitle)
  postId, read: false, createdAt: serverTimestamp(), createdAtMs: Date.now()
  });
  updateNotifBadge(postAuthorId);
- const authorSnap = await getDoc(doc(db,'users',postAuthorId));
- if (authorSnap.exists()) {
- const ad = authorSnap.data();
- await window.sendEmailNotification(
- ad.email, ad.name, commenterName,
- postTitle || '게시글',
- commenterName + '님이 댓글을 달았어요. 확인해보세요!'
- );
- }
  } catch(e) { console.log('알림 오류:', e); }
 };
 
@@ -2873,18 +2864,6 @@ window.updateNotifBadge = async (uid) =>{
   if (badge) { badge.textContent = unread >0 ? unread : ''; badge.style.display = unread >0 ? 'inline-flex' : 'none'; }
  }
  } catch(e) {}
-};
-
-window.sendEmailNotification = async (toEmail, toName, fromName, postTitle, message) =>{
- try {
- await window.emailjs.send('gpkorea', 'gpkorea', {
- to_email: toEmail,
- to_name: toName,
- from_name: fromName,
- post_title: postTitle,
- message: message
- });
- } catch(e) { console.log('이메일 발송 실패:', e); }
 };
 
 window.toggleLike = async (postId) =>{

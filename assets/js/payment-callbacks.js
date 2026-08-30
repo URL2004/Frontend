@@ -180,8 +180,8 @@
         message: data.error || data.message || 'confirm failed',
         endpoint: '/confirm-payment'
       });
-      if (window.gpToast) window.gpToast('충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 고객센터 이메일로 문의해 주세요.', { type: 'error' });
-      else alert('충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 고객센터 이메일로 문의해 주세요.');
+      if (window.gpToast) window.gpToast('충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 사이트 내 고객센터로 문의해 주세요.', { type: 'error' });
+      else alert('충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 사이트 내 고객센터로 문의해 주세요.');
       return false;
     } catch(err) {
       if (window.gpTrackPaymentError) window.gpTrackPaymentError('confirm_network_failed', {
