@@ -442,6 +442,57 @@ document.addEventListener('click', e => {
   if (modal && e.target === modal) closeInviteModal();
 });
 
+function setAdminAuthHydrationPending(pending) {
+ const overlay = document.getElementById('authTransition');
+ const appScreen = document.getElementById('appScreen');
+ if (pending) {
+  window.GP_REQUESTED_APP_SCREEN = 'app';
+  window.gpAdminAuthHydrationPending = true;
+  showScreen('app');
+  const title = document.getElementById('authTransitionTitle');
+  const message = document.getElementById('authTransitionMessage');
+  if (title) title.textContent = '로그인 상태 확인 중';
+  if (message) message.textContent = '관리자 화면을 안전하게 준비하고 있어요.';
+  if (appScreen) {
+   appScreen.inert = true;
+   appScreen.setAttribute('aria-busy', 'true');
+  }
+  if (overlay) {
+   overlay.hidden = false;
+   overlay.setAttribute('aria-hidden', 'false');
+  }
+  document.body.classList.add('gp-auth-transitioning');
+  return;
+ }
+ if (!window.gpAdminAuthHydrationPending) return;
+ window.gpAdminAuthHydrationPending = false;
+ if (overlay) {
+  overlay.hidden = true;
+  overlay.setAttribute('aria-hidden', 'true');
+ }
+ if (appScreen) {
+  appScreen.inert = false;
+  appScreen.removeAttribute('aria-busy');
+ }
+ document.body.classList.remove('gp-auth-transitioning');
+}
+
+function requireResolvedAdminAuth() {
+ if (window.CU) {
+  setAdminAuthHydrationPending(false);
+  return true;
+ }
+ // Firebase가 로컬 세션을 복원하기 전에는 비로그인으로 단정하지 않는다.
+ // 직접 /admin 진입 시 로그인 화면이 잠깐 노출됐다가 뒤집히는 현상을 막는다.
+ if (window.gpAuthResolved !== true && window.GP_REQUESTED_APP_SCREEN !== 'login') {
+  setAdminAuthHydrationPending(true);
+  return false;
+ }
+ setAdminAuthHydrationPending(false);
+ showScreen('login');
+ return false;
+}
+
 function openMyPage() {
  if (!window.CU) { showScreen('login'); return; }
  switchTab('mypage');
@@ -452,7 +503,7 @@ function openMyPage() {
  tryLoad(10);
 }
 function openAdminPage() {
- if (!window.CU) { showScreen('login'); return; }
+ if (!requireResolvedAdminAuth()) return;
  if (typeof window.isAdmin === 'function' && !window.isAdmin()) {
   if (window.gpToast) window.gpToast('관리자 권한이 필요합니다.', { type: 'error', title: '접근 제한' });
   else alert('관리자 권한이 필요합니다.');
@@ -468,7 +519,7 @@ function openAdminPage() {
 }
 window.openAdminPage = openAdminPage;
 function openAdminHumanizeLab() {
- if (!window.CU) { showScreen('login'); return; }
+ if (!requireResolvedAdminAuth()) return;
  if (typeof window.isAdmin === 'function' && !window.isAdmin()) {
   if (window.gpToast) window.gpToast('관리자 권한이 필요합니다.', { type: 'error', title: '접근 제한' });
   else alert('관리자 권한이 필요합니다.');
