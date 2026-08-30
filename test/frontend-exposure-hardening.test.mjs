@@ -29,3 +29,10 @@ test('결제 오류의 환불·문의 안내는 사이트 내 고객센터만 �
   assert.match(callbacks, /사이트 내 고객센터로 문의/u);
   assert.doesNotMatch(callbacks, /고객센터 이메일|@naver\.com/u);
 });
+
+test('마이페이지의 사용자 닉네임과 이메일은 HTML 삽입 전에 이스케이프한다', () => {
+  const module = read('assets/js/app-module.js');
+  assert.match(module, /escapeHtml\(window\.getAdminName\(\)\|\|CU\.displayName\)/u);
+  assert.match(module, /escapeHtml\(CU\.email\)/u);
+  assert.doesNotMatch(module, /font-weight:700;[^\n]+\+\(window\.getAdminName\(\)\|\|CU\.displayName\)\+/u);
+});
