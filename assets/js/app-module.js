@@ -7009,6 +7009,15 @@ function adminHistoryCreatedMs(h) {
  return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function adminHistoryHasLinkedTask(h) {
+ const type = String(h?.type || '');
+ const requestId = String(h?.requestId || '');
+ if (!h?.uid || !(h.creditHistoryId || h.id) || !requestId) return false;
+ if (type === 'detect') return !/^job_/u.test(requestId) && /^[A-Za-z0-9:_-]{1,180}$/u.test(requestId);
+ if (!['humanize', 'restructure'].includes(type) || /_refine\d+$/u.test(requestId)) return false;
+ return /^job_[A-Za-z0-9_-]{1,128}$/u.test(requestId);
+}
+
 function adminHistoryDateText(h) {
  const ms = adminHistoryCreatedMs(h);
  return ms ? new Date(ms).toLocaleString('ko-KR') : '';
@@ -7111,7 +7120,7 @@ window.filterAdminHistory = async () => {
   }
   const histSnap = await getDocs(query(collection(db, 'users', uid, 'creditHistory'), orderBy('createdAt', 'desc')));
   if (generation !== adminHistoryFilterGeneration) return;
-  let filtered = histSnap.docs.map(d => ({ ...d.data(), userName, userEmail: email, uid }));
+  let filtered = histSnap.docs.map(d => ({ ...d.data(), id: d.id, creditHistoryId: d.id, userName, userEmail: email, uid }));
   if (from) filtered = filtered.filter(h => {
    const ms = adminHistoryCreatedMs(h);
    return ms && ms >= new Date(from).getTime();
@@ -7197,18 +7206,24 @@ window.renderAdminHistory = () =>{
  html += `<p class="gp-admin-limit-note">${window._adminHistory.emailFilter ? '정확한 이메일로 조회한 사용자 전체 원장' : '전체 사용자 최신 1,000건 범위'} · 현재 필터 ${total.toLocaleString('ko-KR')}건</p><div class="gp-admin-table-wrap" tabindex="0" aria-label="크레딧 원장 가로 스크롤"><table class="gp-admin-table">
  <caption>크레딧 충전·사용·환불·조정 원장</caption>
  <thead><tr>
- <th scope="col">날짜</th><th scope="col">유저</th><th scope="col">종류</th><th scope="col" class="num">증감</th><th scope="col" class="num">잔여</th>
+ <th scope="col">날짜</th><th scope="col">유저</th><th scope="col">종류</th><th scope="col" class="num">증감</th><th scope="col" class="num">잔여</th><th scope="col">작업</th>
  </tr></thead><tbody>`
  + items.map(h =>{
  const date = adminHistoryDateText(h);
  const typeTxt = adminHistoryLabel(h);
  const amountTxt = adminHistoryAmountHtml(h);
+ const creditHistoryId = String(h.creditHistoryId || h.id || '');
+ const canOpenTask = adminHistoryHasLinkedTask(h);
+ const taskCell = canOpenTask
+  ? `<button type="button" class="gp-admin-mini-btn gp-admin-ledger-open" onclick="adminOpenLedgerDetail(this,'${jsAttr(h.uid)}','${jsAttr(creditHistoryId)}')">작업 열기</button>`
+  : '<span class="gp-admin-ledger-unavailable">연결 없음</span>';
  return `<tr>
  <td class="muted">${date}</td>
  <td>${escapeHtml(h.userName)}<br><span class="muted">${escapeHtml(h.userEmail)}</span></td>
  <td>${escapeHtml(typeTxt)}</td>
  <td class="num">${amountTxt}</td>
  <td class="num muted">${adminNumber(h.remaining).toLocaleString('ko-KR')}</td>
+ <td>${taskCell}</td>
 </tr>`;
  }).join('')
  + `</tbody></table></div>
@@ -7220,6 +7235,174 @@ window.renderAdminHistory = () =>{
 
  el.innerHTML = html;
 };
+
+let adminLedgerDetailGeneration = 0;
+let adminLedgerDetailController = null;
+let adminLedgerDetailReturnFocus = null;
+
+function adminLedgerText(value) {
+ return value == null ? '' : String(value);
+}
+
+function adminLedgerStatusBadge(label, value) {
+ if (!value) return '';
+ return `<span class="gp-admin-ledger-detail-badge"><span>${escapeHtml(label)}</span>${escapeHtml(value)}</span>`;
+}
+
+function adminLedgerDetailPairs(title, pairs) {
+ const rows = pairs.filter(([, value]) => value !== '' && value != null);
+ if (!rows.length) return '';
+ return `<section class="gp-admin-ledger-detail-section"><h3>${escapeHtml(title)}</h3><dl>${rows.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl></section>`;
+}
+
+function adminLedgerTextBlock(label, text) {
+ if (!text) return '';
+ return `<section class="gp-admin-log-block gp-admin-ledger-text-block">
+  <div class="gp-admin-log-block-head"><h3>${escapeHtml(label)}</h3><button type="button" class="gp-admin-mini-btn" onclick="adminCopyText(this)">복사</button></div>
+  <div class="gp-admin-log-text" tabindex="0" role="region" aria-label="${escapeHtml(label)} 전체 내용">${escapeHtml(text)}</div>
+ </section>`;
+}
+
+function adminLedgerCodes(...sources) {
+ return [...new Set(sources.flatMap(source => Array.isArray(source) ? source : [])
+  .map(code => String(code || '').trim())
+  .filter(Boolean))].slice(0, 30).join(', ');
+}
+
+function adminRenderLedgerDetail(data) {
+ if (data.available === false) {
+  const reasonLabels = {
+   legacy_missing_request_id: '과거 원장이라 연결할 작업 식별자가 없습니다.',
+   refine_result_not_archived: '문단 보강 결과는 별도 원문·결과로 보관되지 않았습니다.',
+   history_not_found: '연결된 작업 이력이 보관 기간을 지나 조회되지 않습니다.',
+   non_task_ledger: '충전·환불·조정 내역에는 연결할 글 작업이 없습니다.'
+  };
+  return `<div class="gp-admin-empty">${escapeHtml(reasonLabels[data.reason] || '이 원장 행에 연결된 작업 상세가 없습니다.')}</div>`;
+ }
+ const ledger = data.ledger || {};
+ const link = data.link || {};
+ const history = data.history || {};
+ const engineBundle = data.engine || {};
+ const engine = engineBundle.engineMeta || history.engineMeta || {};
+ const archive = engineBundle.archive || {};
+ const ops = Array.isArray(data.ops) ? data.ops.slice(0, 30) : [];
+ const qualityCodes = adminLedgerCodes(history.qualityWarningCodes, engine.qualityWarningCodes, archive.qualityWarningCodes);
+ const effectCodes = adminLedgerCodes(history.effectNoticeCodes, engine.effectNoticeCodes, archive.effectNoticeCodes);
+ const sourceReviewCodes = adminLedgerCodes(history.sourceReviewWarningCodes, engine.sourceReviewWarningCodes, archive.sourceReviewWarningCodes);
+ const koreanCodes = adminLedgerCodes(engine.koreanRefinementIssueCodes, archive.koreanRefinementIssueCodes);
+ const integrityRestoreCodes = adminLedgerCodes(engine.finalSourceIntegrityRestoreCodes, archive.finalSourceIntegrityRestoreCodes);
+ const isDetect = history.type === 'detect';
+ const detectView = isDetect && typeof window.gpNormalizeDetectPresentation === 'function'
+  ? window.gpNormalizeDetectPresentation(history)
+  : history;
+ const detectProbability = typeof detectView.probability === 'number' && Number.isFinite(detectView.probability)
+  ? detectView.probability
+  : null;
+ const detectRawProbability = typeof history.rawProbability === 'number' && Number.isFinite(history.rawProbability)
+  ? history.rawProbability
+  : null;
+ const status = adminLedgerText(history.status || archive.status || '연결됨');
+ const badges = [
+  adminLedgerStatusBadge('상태', status),
+  adminLedgerStatusBadge('품질', history.qualityStatus || archive.qualityStatus),
+  adminLedgerStatusBadge('효과', history.effectStatus || engine.effectStatus || archive.effectStatus),
+  adminLedgerStatusBadge('과금', history.billingDisposition || engine.billingDisposition || archive.billingDisposition || ledger.billingDisposition),
+  adminLedgerStatusBadge('AI 감지', isDetect && Number.isFinite(detectProbability) ? `${Math.round(detectProbability)}%` : '')
+ ].join('');
+ const opsStatus = data.opsStatus === 'error' ? 'error' : (ops.length ? 'ok' : 'empty');
+ const opsHtml = opsStatus === 'error'
+  ? '<section class="gp-admin-ledger-detail-section"><h3>작업·감사 로그</h3><div class="gp-admin-ledger-inline-error" role="alert">관련 운영 로그를 불러오지 못했습니다. 작업 원문과 결과는 정상적으로 확인할 수 있습니다.</div></section>'
+  : ops.length
+   ? `<section class="gp-admin-ledger-detail-section"><h3>작업·감사 로그</h3><ol class="gp-admin-ledger-ops">${ops.map(item => `<li><div><strong>${escapeHtml(item.event || item.code || '운영 기록')}</strong><time>${escapeHtml(adminDateText(item.createdAtMs || item.createdMs || item.atMs))}</time></div><p>${escapeHtml(item.message || item.action || item.reason || '')}</p></li>`).join('')}</ol></section>`
+   : '<section class="gp-admin-ledger-detail-section"><h3>작업·감사 로그</h3><div class="gp-admin-ledger-empty-note">이 작업과 연결된 별도 운영 로그가 없습니다.</div></section>';
+ const detectHtml = isDetect ? `${adminLedgerDetailPairs('AI 감지 결과', [
+  ['보정 감지율', Number.isFinite(detectProbability) ? `${Math.round(detectProbability)}%` : ''],
+  ['원 감지율', Number.isFinite(detectRawProbability) ? `${Math.round(detectRawProbability)}%` : ''],
+  ['보정 방식', history.probabilityCalibration?.match]
+ ])}${adminLedgerTextBlock('탐지 요약', detectView.summary)}${adminLedgerTextBlock('탐지 상세', detectView.detail)}` : '';
+ return `<div class="gp-admin-ledger-detail-badges">${badges}</div>
+  <div class="gp-admin-ledger-detail-grid">
+   ${adminLedgerDetailPairs('원장 연결', [
+    ['사용자 UID', ledger.uid], ['원장 ID', ledger.id || ledger.creditHistoryId], ['요청 ID', ledger.requestId], ['작업 ID', link.jobId], ['이력 ID', link.historyId], ['완료 시각', adminDateText(archive.updatedAtMs || archive.createdAtMs || history.createdAtMs)], ['사용 크레딧', ledger.used]
+   ])}
+   ${adminLedgerDetailPairs('엔진 감사', [
+    ['엔진 버전', engine.engineVersion || archive.engineVersion], ['요청 모드', engine.requestedMode || archive.requestedMode || history.mode], ['적용 모드', engine.effectiveMode || archive.effectiveMode], ['문서 프로필', engine.documentProfile || archive.documentProfile], ['전달 결정', engine.deliveryDecision || archive.deliveryDecision || history.deliveryDecision], ['승인 청크', engine.approvedModelChunkCount ?? archive.approvedModelChunkCount], ['모델 실패', engine.modelFailureChunkCount ?? archive.modelFailureChunkCount], ['구조 검사', (engine.structureSignaturePass ?? archive.structureSignaturePass) === true ? '통과' : (engine.structureSignaturePass ?? archive.structureSignaturePass) === false ? '확인 필요' : ''], ['처리 시간', archive.processingDurationMs ? `${Math.round(archive.processingDurationMs / 100) / 10}초` : ''], ['예상 API 비용', Number.isFinite(Number(engine.estimatedUsd ?? archive.estimatedUsd)) ? `$${Number(engine.estimatedUsd ?? archive.estimatedUsd).toFixed(4)}` : ''], ['품질 경고', qualityCodes], ['효과 알림', effectCodes], ['원문 확인', sourceReviewCodes], ['한국어 감사', koreanCodes], ['안전 복원', integrityRestoreCodes], ['구체 성과 감사', (engine.unsupportedSpecificityPass ?? archive.unsupportedSpecificityPass) === false ? `잔여 ${engine.unsupportedSpecificityResidualCount ?? archive.unsupportedSpecificityResidualCount ?? 0}건` : (engine.unsupportedSpecificityPass ?? archive.unsupportedSpecificityPass) === true ? '통과' : '']
+   ])}
+  </div>
+  ${adminLedgerTextBlock('원문', history.inputText)}
+  ${isDetect ? detectHtml : adminLedgerTextBlock('휴머나이징 결과', history.outputText)}
+  ${opsHtml}
+  ${!history.inputText && !history.outputText && !detectView.summary && !detectView.detail ? '<div class="gp-admin-empty">이 원장 행에 연결된 작업 내용이 없습니다.</div>' : ''}`;
+}
+
+function adminLedgerDetailFocusable(root) {
+ return [...root.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(el => !el.hidden && el.offsetParent !== null);
+}
+
+window.adminOpenLedgerDetail = async function(trigger, uid, creditHistoryId) {
+ if (!uid || !creditHistoryId) return;
+ const root = document.getElementById('adminLedgerDetail');
+ const body = document.getElementById('adminLedgerDetailBody');
+ const status = document.getElementById('adminLedgerDetailStatus');
+ if (!root || !body || !status) return;
+ adminLedgerDetailGeneration += 1;
+ const generation = adminLedgerDetailGeneration;
+ if (adminLedgerDetailController) adminLedgerDetailController.abort();
+ adminLedgerDetailController = new AbortController();
+ adminLedgerDetailReturnFocus = trigger instanceof HTMLElement ? trigger : document.activeElement;
+ root.hidden = false;
+ const shell = document.getElementById('adminShell');
+ if (shell) shell.inert = true;
+ document.body.classList.add('gp-admin-ledger-detail-open');
+ body.setAttribute('aria-busy', 'true');
+ body.innerHTML = '<div class="gp-admin-ledger-detail-loading"><span aria-hidden="true"></span><p>원장과 작업 기록을 안전하게 연결하고 있습니다.</p></div>';
+ status.textContent = '작업 정보를 불러오는 중입니다.';
+ document.getElementById('adminLedgerDetailClose')?.focus();
+ try {
+  const data = await adminPost('/admin/credit-history-item', { uid, creditHistoryId }, { signal: adminLedgerDetailController.signal });
+  if (generation !== adminLedgerDetailGeneration || root.hidden) return;
+  body.innerHTML = adminRenderLedgerDetail(data);
+  body.setAttribute('aria-busy', 'false');
+  status.textContent = '원장과 작업 기록 연결을 완료했습니다.';
+ } catch (error) {
+  if (error?.name === 'AbortError' || generation !== adminLedgerDetailGeneration || root.hidden) return;
+  body.setAttribute('aria-busy', 'false');
+  status.textContent = '작업 정보를 불러오지 못했습니다.';
+  body.innerHTML = `<div class="gp-admin-ledger-detail-error" role="alert"><strong>작업 상세를 열 수 없습니다.</strong><p>${escapeHtml(error.message || '잠시 후 다시 시도해 주세요.')}</p><button type="button" class="gp-admin-mini-btn" onclick="adminOpenLedgerDetail(adminLedgerDetailReturnFocus,'${jsAttr(uid)}','${jsAttr(creditHistoryId)}')">다시 시도</button></div>`;
+ }
+};
+
+window.adminCloseLedgerDetail = function() {
+ const root = document.getElementById('adminLedgerDetail');
+ if (!root || root.hidden) return;
+ adminLedgerDetailGeneration += 1;
+ if (adminLedgerDetailController) adminLedgerDetailController.abort();
+ adminLedgerDetailController = null;
+ root.hidden = true;
+ const shell = document.getElementById('adminShell');
+ if (shell) shell.inert = false;
+ document.body.classList.remove('gp-admin-ledger-detail-open');
+ const target = adminLedgerDetailReturnFocus;
+ adminLedgerDetailReturnFocus = null;
+ if (target && target.isConnected && typeof target.focus === 'function') target.focus();
+};
+
+document.addEventListener('keydown', event => {
+ const root = document.getElementById('adminLedgerDetail');
+ if (!root || root.hidden) return;
+ if (event.key === 'Escape') {
+  event.preventDefault();
+  window.adminCloseLedgerDetail();
+  return;
+ }
+ if (event.key !== 'Tab') return;
+ const focusable = adminLedgerDetailFocusable(root);
+ if (!focusable.length) return;
+ const first = focusable[0];
+ const last = focusable[focusable.length - 1];
+ if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+ else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
 
 // 이메일 필터: 입력마다 Firestore 조회를 피하려고 디바운스
 window.adminHistoryEmailInput = () => {
