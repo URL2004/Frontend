@@ -10416,10 +10416,17 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
    충전 버튼을 다시 노출해 우측 여백을 없애지 못하도록 마지막에 고정한다. */
 @media(max-width:560px){
  #mainContent[data-main-design="lavender"] .gp-lav-top-right{
+  gap:8px;
   margin-right:max(8px,env(safe-area-inset-right));
  }
  #mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn.gp-gradient-action{
   display:none !important;
+ }
+}
+@media(max-width:360px){
+ html,
+ body{
+  min-width:0 !important;
  }
 }
 @media(max-width:420px){

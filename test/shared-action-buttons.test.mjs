@@ -27,7 +27,8 @@ test('모바일 상단은 공통 버튼 복구 뒤에도 중복 충전 버튼을
  const mobileHide = styles.lastIndexOf('#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn.gp-gradient-action{');
  assert.ok(sharedRestore >= 0, '공통 전환 버튼 복구 규칙이 있어야 한다');
  assert.ok(mobileHide > sharedRestore, '모바일 숨김 규칙이 공통 복구 규칙보다 뒤에 있어야 한다');
- assert.match(styles.slice(sharedRestore), /@media\(max-width:560px\)\{[\s\S]*?\.gp-lav-top-right\{[\s\S]*?margin-right:max\(8px,env\(safe-area-inset-right\)\);/u);
+ assert.match(styles.slice(sharedRestore), /@media\(max-width:560px\)\{[\s\S]*?\.gp-lav-top-right\{[\s\S]*?gap:8px;[\s\S]*?margin-right:max\(8px,env\(safe-area-inset-right\)\);/u);
  assert.match(styles.slice(mobileHide), /display:none !important;/u);
+ assert.match(styles.slice(mobileHide), /@media\(max-width:360px\)\{[\s\S]*?html,[\s\S]*?body\{[\s\S]*?min-width:0 !important;/u);
  assert.match(styles.slice(mobileHide), /@media\(max-width:420px\)\{[\s\S]*?\.gp-lav-active-job:not\(\[hidden\]\) ~ \.gp-lav-top-slot\{[\s\S]*?display:none !important;/u);
 });
