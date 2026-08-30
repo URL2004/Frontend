@@ -20,3 +20,13 @@ test('공통 전환 버튼은 동일한 높이, 모서리, 내부 면을 유지�
  assert.doesNotMatch(styles, /gp-lav-mobile-pricing/u);
  assert.match(styles, /\.gp-invite-btn\.gp-gradient-action::before,[\s\S]*?\.gp-support-cta\.gp-gradient-action::before\{[\s\S]*?inset:3px;[\s\S]*?background:rgb\(5,6,45\)/u);
 });
+
+test('모바일 상단은 공통 버튼 복구 뒤에도 중복 충전 버튼을 다시 노출하지 않는다', async () => {
+ const styles = await read('assets/css/redesign.css');
+ const sharedRestore = styles.lastIndexOf('display:inline-flex !important;');
+ const mobileHide = styles.lastIndexOf('#mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn.gp-gradient-action{');
+ assert.ok(sharedRestore >= 0, '공통 전환 버튼 복구 규칙이 있어야 한다');
+ assert.ok(mobileHide > sharedRestore, '모바일 숨김 규칙이 공통 복구 규칙보다 뒤에 있어야 한다');
+ assert.match(styles.slice(mobileHide), /display:none !important;/u);
+ assert.match(styles.slice(mobileHide), /@media\(max-width:420px\)\{[\s\S]*?\.gp-lav-active-job:not\(\[hidden\]\) ~ \.gp-lav-top-slot\{[\s\S]*?display:none !important;/u);
+});
