@@ -102,9 +102,10 @@ test('신뢰·가격·준비 중 표면은 확정된 정책 문구와 런타임 
     assert.ok(pricing.includes(claim) || guide.includes(claim), `단가 문구 누락: ${claim}`);
   }
 
-  assert.match(faq, /결제 후 7일 이내/u);
-  assert.match(faq, /사용량은 기준 크레딧에서 먼저 차감/u);
-  assert.match(faq, /남아 있는 기준·추가 크레딧은 모두 회수/u);
+  assert.match(faq, /서면 또는 전자문서로 계약 내용을 받은 날부터 7일 이내/u);
+  assert.match(faq, /각 주문 안에서는 기준 크레딧을 먼저 사용/u);
+  assert.match(faq, /같은 주문의 남은 추가 크레딧은 함께 회수/u);
+  assert.match(faq, /환불 사유 입력은 선택사항/u);
   assert.doesNotMatch(faq, /구독 쿠폰/u);
   assert.match(qna, /평일 기준 1영업일 이내 답변/u);
   assert.match(qna, /data-auth-required="qna"/u);

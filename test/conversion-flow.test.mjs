@@ -24,9 +24,10 @@ test('크레딧 부족 결제창은 작업을 보관하고 주문 번호에 결�
   assert.match(modal, /id="gpCreditCheckoutEvent"/u);
   assert.doesNotMatch(modal, /gpCreditCheckoutUses/u);
   assert.match(modal, /전달 가능한 결과를 만들지 못하면 크레딧을 차감하지 않아요/u);
-  assert.match(modal, /사용량은 기준 크레딧부터 반영/u);
-  assert.match(modal, /상품·이벤트 추가 크레딧은 현금 환불 대상이 아니/u);
-  assert.match(modal, /해당 주문에 남아 있는 기준·추가 크레딧을 모두 회수/u);
+  assert.match(modal, /서면 또는 전자문서로 계약 내용을 받은 날부터 7일/u);
+  assert.match(modal, /각 주문 안에서는 기준 크레딧을 먼저 사용/u);
+  assert.match(modal, /같은 주문의 남은 추가 크레딧은 함께 회수/u);
+  assert.match(modal, /관계 법령상 환불·취소 사유는 별도로 확인/u);
   assert.match(flow, /pending\.action === 'pricing_purchase'/u);
   assert.match(flow, /context\.starterUpgradeEnabled === true \? context\.upgradeOffer : null/u, '서버가 활성화하기 전 업그레이드 UI는 숨김');
   const pricingAction = flow.slice(
@@ -103,7 +104,7 @@ test('가격표 카드는 가격→총 지급량→스타터 비교→기본 1,0
   assert.doesNotMatch(pricing, /plan-unitcost|gp-plan-audience|1크레딧당/u, '단가·추천 상황 문구 재유입');
   assert.equal((pricing.match(/class="plan-btn"/gu) || []).length, 5, '결제 버튼 5개');
   assert.equal((pricing.match(/aria-label="[^"]*기준 [^"]+총 [^"]+크레딧을 [^"]+원에 충전하기"/gu) || []).length, 5, '결제 버튼마다 기준·추가·총 지급량 맥락');
-  assert.ok(pricing.indexOf('class="gp-coupon-panel"') > pricing.indexOf('class="gp-pricing-refund"'), '쿠폰 입력은 가격·환불 안내 다음 맨 아래');
+  assert.ok(pricing.indexOf('class="gp-coupon-panel"') > pricing.indexOf('id="gpPlanList"'), '쿠폰 입력은 가격 카드 다음 맨 아래');
   assert.doesNotMatch(pricing, /class="gp-top-actions"|class="pc-fx"|class="pc-tr/u, '중복 상단 버튼 또는 장식 트래커 재유입');
   assert.doesNotMatch(pricing, /class="plan-card[^"]*"[^>]+onclick=/u, '카드 전체 클릭 재유입');
 });

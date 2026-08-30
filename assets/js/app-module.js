@@ -1080,7 +1080,7 @@ window.deleteAccount = async () =>{
      }
      if (sub.status === 'cancelled' && nextMs > Date.now()) {
        const nextDate = new Date(nextMs).toLocaleDateString('ko-KR');
-       alert('해지 예정인 구독이 ' + nextDate + '까지 남아 있습니다.\n남은 쿠폰을 사용하거나, 결제 후 7일 이내이고 사용하지 않았다면 환불을 신청한 뒤 다시 시도해 주세요.');
+       alert('해지 예정인 구독이 ' + nextDate + '까지 남아 있습니다.\n남은 쿠폰을 사용하거나 마이페이지의 환불하기에서 환불 가능 여부를 확인한 뒤 다시 시도해 주세요.');
        return;
      }
    }
@@ -3574,6 +3574,7 @@ const SUB_TIER_LABELS = { '1000':'베이직(1,000자×50회/월)', '5000':'스�
 const REFUND_POLICY_VERSION = 'credit-grant-base-v1';
 const REFUND_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const UNLIMITED_REFUND_SETTLEMENT_USES = 50;
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 function gpTimestampMs(value) {
  if (!value) return 0;
@@ -3589,6 +3590,23 @@ function gpOrderPaidAtMs(item) {
  return item.kind === 'sub'
   ? gpTimestampMs(o.approvedAt || o.cycleStartedAt || o.requestedAt)
   : gpTimestampMs(o.createdAt || o.approvedAt || o.requestedAt);
+}
+
+function gpRefundWindowEndMs(item) {
+ const o = item.data || {};
+ const explicitEnd = gpTimestampMs(o.refundWindowEndsAt);
+ const explicitStart = gpTimestampMs(o.refundWindowStartsAt);
+ const contractDeliveredAt = gpTimestampMs(o.contractDocumentDeliveredAt);
+ const serviceAvailableAt = gpTimestampMs(o.serviceAvailableAt);
+ const contractualStart = Math.max(contractDeliveredAt, serviceAvailableAt);
+ const startsAt = explicitStart || contractualStart || gpOrderPaidAtMs(item);
+ const storedDays = Math.floor(Number(o.refundWindowDaysAtPurchase));
+ const windowDays = Number.isFinite(storedDays) && storedDays > 0 ? storedDays : 7;
+ if (!startsAt) return explicitEnd;
+ const kstStart = new Date(startsAt + KST_OFFSET_MS);
+ const kstDayStartAsUtc = Date.UTC(kstStart.getUTCFullYear(), kstStart.getUTCMonth(), kstStart.getUTCDate());
+ const calendarDayEnd = kstDayStartAsUtc + windowDays * 24 * 60 * 60 * 1000 + (24 * 60 * 60 * 1000 - 1) - KST_OFFSET_MS;
+ return Math.max(explicitEnd, calendarDayEnd);
 }
 
 function gpCreditRefundPreview(order, currentCredits) {
@@ -3752,19 +3770,17 @@ window.loadRefundModalList = async () =>{
  const title = isSub
    ? `정기결제 · ${SUB_TIER_LABELS[o.tier] || o.tier}`
    : `크레딧 충전 · ${Number(o.totalGrantedCredits || o.safeCredits || o.credits || 0).toLocaleString('ko-KR')}크레딧`;
-  // 일반 환불: 결제일 7일 이내 + 사용분 비례 공제. 서버에서 같은 기준으로 최종 검증한다.
+  // 일반 청약철회 기간은 주문에 저장된 계약·이용 가능 시점 기준을 우선한다.
+  // 기간이 지난 주문은 추가 확인을 허용하고, 기준일 자체가 없으면 고객센터로 안내한다.
   let eligibilityNote = '';
   let refundPreview = '';
   let canRequest = true;
   let refundAmount = 0;
-  const within7 = ts && Math.max(0, Date.now() - ts) <= REFUND_WINDOW_MS;
-  if (!ts) {
-    canRequest = false;
-    eligibilityNote = '결제일을 확인할 수 없습니다. 고객센터로 문의해주세요.';
-  } else if (!within7) {
-    canRequest = false;
-    eligibilityNote = '결제일로부터 7일이 지났습니다. 중복 결제·서비스 오류는 고객센터로 문의해주세요.';
-  } else if (isSub) {
+  const refundWindowEndMs = gpRefundWindowEndMs(item);
+  const within7 = refundWindowEndMs > 0 && Date.now() <= refundWindowEndMs;
+  const missingWindowBasis = refundWindowEndMs <= 0;
+  const requiresEligibilityReview = !missingWindowBasis && !within7;
+  if (isSub) {
     const sameCycle = !!(
       window.SUB && coupon &&
       window.SUB.tier === o.tier && coupon.tier === o.tier &&
@@ -3788,7 +3804,7 @@ window.loadRefundModalList = async () =>{
     refundAmount = calc.refundAmount;
     if (calc.policy === 'base') {
      eligibilityNote = calc.paidUsedCredits > 0
-      ? `사용량 ${calc.usedCredits.toLocaleString()}크레딧을 기준 크레딧부터 반영했어요. 상품·이벤트 추가 크레딧은 현금 환불 대상이 아닙니다.`
+      ? `사용량 ${calc.usedCredits.toLocaleString()}크레딧을 기준 크레딧부터 반영했어요. 별도 결제대가 없이 지급된 추가 크레딧에는 독립된 현금 환불액을 계산하지 않아요.`
       : '기준 크레딧 미사용 · 전액 환불 대상입니다. 환불 시 남은 지급 크레딧을 모두 회수해요.';
      refundPreview = `예상 환불액: ${refundAmount.toLocaleString()}원 · 기준 잔여 ${calc.refundablePaidCredits.toLocaleString()}/${calc.paidCredits.toLocaleString()} · 회수 ${calc.recoverCredits.toLocaleString()}크레딧`;
     } else {
@@ -3802,6 +3818,13 @@ window.loadRefundModalList = async () =>{
       eligibilityNote = '환불 가능한 기준 크레딧을 모두 사용했습니다. 서비스 오류는 고객센터로 문의해주세요.';
     }
   }
+  if (missingWindowBasis) {
+    canRequest = false;
+    eligibilityNote = '청약철회 기준일을 확인할 수 없습니다. 주문번호와 함께 고객센터로 문의해 주세요.';
+  } else if (requiresEligibilityReview) {
+    const reviewNotice = '일반 청약철회 기간이 지났지만 관계 법령상 잔액 환급·취소 사유가 있는지 추가 확인을 요청할 수 있어요.';
+    eligibilityNote = `${eligibilityNote ? eligibilityNote + ' ' : ''}${reviewNotice}`;
+  }
   return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
   <div style="flex:1;min-width:0;">
@@ -3810,7 +3833,7 @@ window.loadRefundModalList = async () =>{
   ${refundPreview ? `<div style="color:var(--text);font-size:12px;font-weight:700;margin-top:7px;">${refundPreview}</div>` : ''}
   ${eligibilityNote ? `<div style="color:${canRequest?'var(--text3)':'var(--red)'};font-size:11px;margin-top:4px;">${eligibilityNote}</div>` : ''}
   </div>
- <button ${canRequest ? '' : 'disabled'} onclick="window.requestRefund('${item.id}','${item.kind}',${refundAmount})" style="padding:6px 14px;border-radius:6px;border:1px solid var(--red);background:none;color:${canRequest?'var(--red)':'var(--text3)'};font-size:12px;font-weight:600;cursor:${canRequest?'pointer':'not-allowed'};white-space:nowrap;opacity:${canRequest?'1':'.5'};">${canRequest ? '환불 요청' : '환불 불가'}</button>
+ <button ${canRequest ? '' : 'disabled'} onclick="window.requestRefund('${item.id}','${item.kind}',${refundAmount},${requiresEligibilityReview})" style="padding:6px 14px;border-radius:6px;border:1px solid var(--red);background:none;color:${canRequest?'var(--red)':'var(--text3)'};font-size:12px;font-weight:600;cursor:${canRequest?'pointer':'not-allowed'};white-space:nowrap;opacity:${canRequest?'1':'.5'};">${canRequest ? (requiresEligibilityReview ? '확인 요청' : '환불 요청') : '문의 필요'}</button>
  </div>
 </div>`;
  }).join('');
@@ -3821,27 +3844,36 @@ window.loadRefundModalList = async () =>{
 };
 
 // 사용자: 환불 요청 (크레딧/정기결제 분기)
-window.requestRefund = async (orderId, kind, estimatedRefundAmount) =>{
+window.requestRefund = async (orderId, kind, estimatedRefundAmount, requiresEligibilityReview) =>{
  kind = kind || 'credit';
  const estimate = Math.max(0, Math.floor(Number(estimatedRefundAmount) || 0));
- const promptMessage = (estimate ? `현재 예상 환불액은 ${estimate.toLocaleString('ko-KR')}원입니다.\n` : '')
-  + '최종 금액은 서버가 사용량을 다시 확인해 확정합니다. 환불 사유를 남겨주세요.';
+ const reviewMessage = requiresEligibilityReview
+  ? '일반 청약철회 기간이 지나거나 기준일 확인이 필요한 주문이에요. 관계 법령과 구매 당시 기준에 따라 환불 가능 여부를 추가로 확인합니다.\n'
+  : '';
+ const promptMessage = reviewMessage
+  + (estimate ? `현재 예상 환불액은 ${estimate.toLocaleString('ko-KR')}원입니다.\n` : '')
+  + '신청이 접수되면 서버가 당시 잔액을 기록하고, 크레딧 주문은 남은 기준·추가 크레딧을 처리 중 사용되지 않도록 예약해요. 다만 접수 전에 시작되어 아직 정산되지 않은 작업이나 교정 요청은 최종 금액에 반영될 수 있어요. 환불 사유 입력은 선택사항입니다.';
  const reason = window.gpPrompt
-  ? await window.gpPrompt({ title: '환불 사유', message: promptMessage, placeholder: '예: 단순 변심 / 중복 결제 / 결과를 받지 못했어요', confirmText: '환불 요청', required: true })
-  : prompt('환불 사유를 입력해 주세요:');
- if (!reason || reason.trim().length < 2) { alert('환불 사유를 2자 이상 입력해 주세요.'); return; }
+  ? await window.gpPrompt({ title: requiresEligibilityReview ? '환불 가능 여부 확인' : '환불 요청', message: promptMessage, placeholder: '선택 입력: 단순 변심 / 중복 결제 / 결과를 받지 못했어요', confirmText: '환불 요청', required: false })
+  : prompt('환불 사유를 입력해 주세요. 입력하지 않아도 신청할 수 있어요:');
+ if (reason === null) return;
+ const cancelReason = String(reason || '').trim();
  try {
  const idToken = await CU.getIdToken();
  const res = await fetch(window.apiUrl('/request-refund'), {
  method:'POST', headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ orderId, idToken, cancelReason: reason.trim(), kind })
+ body: JSON.stringify({ orderId, idToken, cancelReason, kind })
  });
  const data = await res.json();
  if (res.ok && data.ok) {
   const acceptedAmount = Math.max(0, Math.floor(Number(data.estimatedRefundAmount) || 0));
-  const acceptedMessage = acceptedAmount
-   ? `예상 환불액 ${acceptedAmount.toLocaleString('ko-KR')}원으로 접수됐어요. 최종 승인 결과는 알림에서 확인할 수 있습니다.`
-   : '환불 요청이 접수됐어요. 처리 결과는 알림으로 확인할 수 있습니다.';
+  const needsReview = data.requiresEligibilityReview === true;
+  const reserveMessage = kind === 'credit' ? ' 해당 주문의 남은 크레딧은 처리 중 사용되지 않도록 예약했어요.' : '';
+  const acceptedMessage = needsReview
+   ? `환불 요청이 접수됐어요. 관계 법령과 구매 당시 기준에 따른 추가 확인 후 처리 결과를 알려드릴게요.${reserveMessage}`
+   : acceptedAmount
+    ? `환불 예정액 ${acceptedAmount.toLocaleString('ko-KR')}원으로 접수됐어요.${reserveMessage} 환불 요건에 해당하는 요청은 신청을 받은 날부터 3영업일 이내에 원래 결제수단으로 취소 조치를 진행해요.`
+    : `환불 요청이 접수됐어요.${reserveMessage} 처리 결과는 알림에서 확인할 수 있어요.`;
   if (window.gpNotify) window.gpNotify({ clientId: 'refund_requested_' + orderId, type: 'refund', title: '환불 요청 접수', message: acceptedMessage, action: { tab: 'mypage' } }, { persist: true });
   else alert('환불 요청이 접수되었습니다.');
   await window.loadOrderHistory(); await window.loadRefundModalList();

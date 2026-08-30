@@ -18,11 +18,11 @@
   <div class="lav-confirm-card">
     <button type="button" class="lav-confirm-x" onclick="document.getElementById('refundModal').style.display='none'" aria-label="닫기">×</button>
     <strong class="lav-confirm-title" id="refundModalTitle">환불하기</strong>
-    <p class="lav-refund-lead" id="refundModalDesc">결제 후 7일 이내라면 기준 크레딧 사용량을 반영한 <b>예상 환불액</b>을 확인하고 요청할 수 있어요.</p>
+    <p class="lav-refund-lead" id="refundModalDesc">서면 또는 전자문서로 계약 내용을 받은 날부터 7일 이내라면 <b>예상 환불액</b>을 확인하고 신청할 수 있어요. 크레딧 이용 가능 시점이 더 늦으면 그날부터 계산해요.</p>
     <div id="refundModalList" class="lav-refund-list">
       <div class="lav-confirm-empty">불러오는 중...</div>
     </div>
-    <p class="lav-confirm-fine">환불 사용량은 기준 크레딧부터 반영하며 상품·이벤트 추가 크레딧은 현금 환불 대상이 아니에요. 환불이 완료되면 해당 주문에 남아 있는 기준·추가 크레딧을 모두 회수해요. 기존 주문은 주문 당시 기준을 적용합니다.</p>
+    <p class="lav-confirm-fine">신청이 접수되면 서버가 당시 잔액을 기록하고, 크레딧 주문의 남은 기준·추가 크레딧을 처리 중 사용되지 않도록 예약해요. 접수 전에 시작되어 아직 정산되지 않은 작업은 최종 금액에 반영될 수 있어요. 환불 사유 입력은 선택사항이며, 7일 이후에도 관계 법령상 환불·취소 사유는 별도로 확인해요.</p>
   </div>
 </div>
 
@@ -62,9 +62,10 @@
     <div class="gp-credit-checkout-policy">
       <strong>환불 기준</strong>
       <ul>
-        <li>일반 환불은 결제 후 7일 이내 신청할 수 있어요.</li>
-        <li>사용량은 기준 크레딧부터 반영하며, 상품·이벤트 추가 크레딧은 현금 환불 대상이 아니에요.</li>
-        <li>환불 시 해당 주문에 남아 있는 기준·추가 크레딧을 모두 회수해요.</li>
+        <li>일반 청약철회는 서면 또는 전자문서로 계약 내용을 받은 날부터 7일 이내 신청할 수 있어요. 크레딧 이용 가능 시점이 더 늦으면 그날부터 계산해요.</li>
+        <li>크레딧은 주문에 귀속되지 않은 기존 잔액, 먼저 결제한 주문 순으로 사용하고, 각 주문 안에서는 기준 크레딧을 먼저 사용해요.</li>
+        <li>환불액은 신청 접수 시점에 남은 기준 크레딧에 따라 계산하며, 같은 주문의 남은 추가 크레딧은 함께 회수해요.</li>
+        <li>7일 이후에도 관계 법령상 환불·취소 사유는 별도로 확인해요.</li>
       </ul>
     </div>
   </div>
