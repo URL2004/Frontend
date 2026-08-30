@@ -254,7 +254,7 @@ test('관리자 품질 탭은 본문 없이 장르 교차표와 깊이·한국�
   ]);
   assert.match(admin, /data-tab="quality"/u);
   assert.match(admin, /id="adminHumanizeQualityBody"/u);
-  assert.match(source, /adminPost\('\/admin\/humanize-quality', \{ hours, limit: 2000 \}\)/u);
+  assert.match(source, /adminPost\('\/admin\/humanize-quality', \{ hours, limit: 2000 \}, \{ signal: controller\.signal \}\)/u);
   assert.match(source, /requestedModeDocumentProfileEngineQuality/u);
   assert.match(source, /rhetoricalRemediationCoverage/u);
   assert.match(source, /koreanRefinementPass/u);
@@ -279,9 +279,9 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
     read('assets/js/app-module.js'),
     read('assets/css/redesign.css')
   ]);
-  assert.match(admin, /data-tab="patches"[^>]*>패치노트</u);
+  assert.match(admin, /data-tab="patches"[^>]*>변경 이력</u);
   assert.match(admin, /data-admin-tab="patches"/u);
-  assert.match(source, /'settings', 'patches'/u);
+  assert.match(source, /'settings', 'labs', 'patches'/u);
   assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 47);
   assert.match(admin, /상시 상품 보너스·9월 이벤트·환불 기준 분리/u);
   assert.match(admin, /구조 무결성·문단 보강·3택 흐름·연구노트·공지/u);

@@ -554,7 +554,9 @@ window.adminCreateCoupons = async function() {
  const expEl = document.getElementById('couponExpires');
  const msg = document.getElementById('couponCreateMsg');
  const result = document.getElementById('couponCreateResult');
+ const submit = document.getElementById('adminCouponCreateButton');
  if (!credEl || !cntEl || !msg || !result) return;
+ if (submit && submit.disabled) return;
  if (!window.CU || !window.isAdmin()) { msg.style.color = 'var(--red)'; msg.textContent = '관리자 권한이 필요해요.'; return; }
  const credits = parseInt(credEl.value, 10);
  const count = parseInt(cntEl.value, 10);
@@ -563,6 +565,7 @@ window.adminCreateCoupons = async function() {
  if (!Number.isInteger(count) || count < 1) { msg.style.color = 'var(--red)'; msg.textContent = '발급할 쿠폰 수를 올바르게 입력해 주세요.'; return; }
  msg.style.color = 'var(--text3)'; msg.textContent = '발급 중...';
  result.innerHTML = '';
+ adminSetBusy(submit, true, '발급 중');
  try {
   const token = await window.CU.getIdToken();
   const body = { credits, count };
@@ -610,6 +613,8 @@ window.adminCreateCoupons = async function() {
  } catch (e) {
   msg.style.color = 'var(--red)';
   msg.textContent = '네트워크 오류: ' + e.message;
+ } finally {
+  adminSetBusy(submit, false);
  }
 };
 
@@ -4066,6 +4071,22 @@ window.requestRefund = async (orderId, kind, estimatedRefundAmount, requiresElig
 };
 
 // 관리자: 환불 요청 목록 (크레딧 + 정기결제 통합)
+window.loadAdminRefundSummary = async () => {
+ if (!window.isAdmin()) return;
+ const attention = document.getElementById('adminAttentionRefunds');
+ if (attention) delete attention.dataset.loadState;
+ try {
+  const [orderSnap, subSnap] = await Promise.all([
+   getDocs(query(collection(db, 'orders'), where('status', '==', 'refund_requested'), orderBy('createdAt', 'desc'))),
+   getDocs(query(collection(db, 'subscriptionOrders'), where('status', '==', 'refund_requested')))
+  ]);
+  adminSetRefundStat(orderSnap.size + subSnap.size);
+  if (attention) attention.dataset.loadState = 'ok';
+ } catch (error) {
+  if (attention) { attention.textContent = '측정 실패'; attention.dataset.state = 'danger'; attention.dataset.loadState = 'error'; }
+ }
+};
+
 window.loadAdminRefundList = async () =>{
  if (!window.isAdmin()) return;
  const el = document.getElementById('adminRefundList');
@@ -4147,13 +4168,18 @@ window.loadAdminRefundList = async () =>{
  }
 };
 
+const adminRefundPending = new Set();
+
 // 관리자: 환불 승인
 window.approveRefund = async (orderId, kind) =>{
  kind = kind || 'order';
  const ok = window.gpConfirm
   ? await window.gpConfirm({ title: '환불을 승인할까요?', message: '승인하면 토스에서 실제 환불이 진행됩니다.', confirmText: '승인하기', danger: true })
-  : confirm('이 환불을 승인하시겠습니까? 토스에서 실제 환불이 진행됩니다.');
+ : confirm('이 환불을 승인하시겠습니까? 토스에서 실제 환불이 진행됩니다.');
  if (!ok) return;
+ const pendingKey = `refund:${kind}:${orderId}`;
+ if (adminRefundPending.has(pendingKey)) return;
+ adminRefundPending.add(pendingKey);
  try {
  const idToken = await CU.getIdToken();
  const res = await fetch(window.apiUrl('/approve-refund'), {
@@ -4172,6 +4198,7 @@ window.approveRefund = async (orderId, kind) =>{
  }
  else alert(data.error || '환불 승인 실패');
  } catch(e) { alert('네트워크 오류: ' + e.message); }
+ finally { adminRefundPending.delete(pendingKey); }
 };
 
 // 관리자: 환불 거절
@@ -4179,8 +4206,11 @@ window.rejectRefund = async (orderId, kind) =>{
  kind = kind || 'order';
  const reason = window.gpPrompt
   ? await window.gpPrompt({ title: '환불 거절 사유', message: '사용자에게 안내할 사유를 입력해 주세요.', placeholder: '거절 사유', confirmText: '거절 처리', required: true })
-  : prompt('거절 사유를 입력해 주세요:');
+ : prompt('거절 사유를 입력해 주세요:');
  if (!reason || reason.trim().length < 2) { alert('거절 사유를 2자 이상 입력해 주세요.'); return; }
+ const pendingKey = `refund:${kind}:${orderId}`;
+ if (adminRefundPending.has(pendingKey)) return;
+ adminRefundPending.add(pendingKey);
  try {
  const idToken = await CU.getIdToken();
  const res = await fetch(window.apiUrl('/reject-refund'), {
@@ -4198,6 +4228,7 @@ window.rejectRefund = async (orderId, kind) =>{
  }
  else alert(data.error || '환불 거절 실패');
  } catch(e) { alert('네트워크 오류: ' + e.message); }
+ finally { adminRefundPending.delete(pendingKey); }
 };
 
 // ===== ADMIN PAGE =====
@@ -4315,13 +4346,14 @@ function adminSelectedChargeOrder(index) {
  return adminChargeHistory(window._adminSelectedBundle)[index];
 }
 
-async function adminPost(path, body) {
+async function adminPost(path, body, options) {
  if (!window.CU || !window.isAdmin()) throw new Error('관리자 권한이 필요합니다.');
  const idToken = await window.CU.getIdToken();
  const res = await fetch(window.apiUrl(path), {
   method: 'POST',
   headers: bearerJsonHeaders(idToken),
-  body: JSON.stringify(body || {})
+  body: JSON.stringify(body || {}),
+  signal: options && options.signal
  });
  let data = {};
  try { data = await res.json(); } catch (_) {}
@@ -4329,11 +4361,27 @@ async function adminPost(path, body) {
  return data;
 }
 
+function adminSetBusy(button, busy, busyText) {
+ if (!button) return;
+ if (busy) {
+  if (!button.dataset.idleHtml) button.dataset.idleHtml = button.innerHTML;
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+  if (busyText) button.textContent = busyText;
+ } else {
+  button.disabled = false;
+  button.removeAttribute('aria-busy');
+  if (button.dataset.idleHtml) button.innerHTML = button.dataset.idleHtml;
+ }
+}
+
 function adminSetMessage(id, text, type) {
  const el = document.getElementById(id);
  if (!el) return;
  el.textContent = text || '';
- el.style.color = type === 'error' ? 'var(--red)' : type === 'success' ? 'var(--green)' : 'var(--text3)';
+ el.classList.toggle('error', type === 'error' && !!text);
+ el.classList.toggle('success', type === 'success' && !!text);
+ el.style.color = type === 'error' ? 'var(--admin-danger-fg)' : type === 'success' ? 'var(--admin-success-fg)' : 'var(--admin-text3)';
 }
 
 function adminPagerHtml(page, pageCount, total, fnName) {
@@ -4527,6 +4575,12 @@ function adminRenderUserBundle(data) {
  const sub = user.subscription || null;
  const coupon = user.coupon || null;
  const hist = adminUsageHistory(data);
+ const orders = adminChargeHistory(data);
+ const successfulOrders = orders.filter(order => !['failed', 'cancelled'].includes(String(order.status || '')));
+ const paidGross = successfulOrders.reduce((sum, order) => sum + adminNumber(order.amount), 0);
+ const refundedTotal = successfulOrders.reduce((sum, order) => sum + adminNumber(order.refundedAmount || order.refundAmount), 0);
+ const netPaid = Math.max(0, paidGross - refundedTotal);
+ const usedCredits = hist.reduce((sum, row) => sum + Math.max(0, adminNumber(row.used)), 0);
  const auditHtml = adminRenderCreditAudit(data.creditAudit);
  const ledgerPageSize = 30;
  const ledgerTotal = hist.length;
@@ -4566,7 +4620,11 @@ function adminRenderUserBundle(data) {
       <div class="gp-admin-fig"><span>가입일</span><strong>${escapeHtml(adminDateShortText(user.createdAtMs))}</strong></div>
       <div class="gp-admin-fig"><span>구독</span><strong>${sub ? escapeHtml((SUB_TIER_LABELS[sub.tier] || sub.tier || '-')) : '없음'}</strong></div>
       <div class="gp-admin-fig"><span>쿠폰 잔여</span><strong>${coupon ? `${adminNumber(coupon.remaining).toLocaleString('ko-KR')} / ${adminNumber(coupon.granted).toLocaleString('ko-KR')}` : '없음'}</strong></div>
-    </div>
+      <div class="gp-admin-fig"><span>최근 조회분 순결제</span><strong>${adminMoney(netPaid)}</strong></div>
+      <div class="gp-admin-fig"><span>조회분 결제 / 환불</span><strong>${successfulOrders.length.toLocaleString('ko-KR')}건 / ${adminMoney(refundedTotal)}</strong></div>
+      <div class="gp-admin-fig"><span>최근 조회분 사용</span><strong>${usedCredits.toLocaleString('ko-KR')}크레딧</strong></div>
+     </div>
+    <p class="gp-admin-limit-note">결제·환불·사용 합계는 사용자 요약 API가 반환한 최근 기록 범위이며 계정 전체 누적값이 아닙니다.</p>
     ${auditHtml}
     <div>
       <div class="gp-admin-ledger-head">사용 내역 <span>${ledgerRange}</span></div>
@@ -4576,7 +4634,6 @@ function adminRenderUserBundle(data) {
     </div>
   </div>`;
 
- const orders = adminChargeHistory(data);
  if (!orders.length) {
   ordersEl.innerHTML = '<div class="gp-admin-empty gp-admin-empty-compact">충전 내역이 없습니다.</div>';
   return;
@@ -4706,6 +4763,9 @@ window.adminToggleRefund = function(i) {
 };
 
 async function adminRunRefund(i, body) {
+ const pendingKey = `direct:${body.kind || 'order'}:${body.orderId || i}`;
+ if (adminRefundPending.has(pendingKey)) return;
+ adminRefundPending.add(pendingKey);
  try {
   const data = await adminPost('/admin/direct-refund', body);
   const isPartial = data.fullyRefunded === false;
@@ -4722,6 +4782,8 @@ async function adminRunRefund(i, body) {
  } catch (e) {
   adminRefundMsg(i, e.message || '환불 처리에 실패했습니다.');
   alert(e.message || '환불 처리에 실패했습니다.');
+ } finally {
+  adminRefundPending.delete(pendingKey);
  }
 }
 
@@ -4777,6 +4839,8 @@ window.loadAdminDetectCalibration = async function() {
 
 window.adminSaveDetectCalibration = async function() {
  if (!window.isAdmin()) return;
+ const button = document.getElementById('adminDetectSaveButton');
+ if (button && button.disabled) return;
  const cfg = adminReadDetectCalibrationForm();
  if (!Number.isFinite(cfg.limit) || cfg.limit < 1 || cfg.limit > 100) {
   adminSetMessage('adminDetectCalMsg', '최근 작업 조회 수는 1~100 사이여야 합니다.', 'error');
@@ -4795,52 +4859,15 @@ window.adminSaveDetectCalibration = async function() {
   return;
  }
  adminSetMessage('adminDetectCalMsg', '저장 중...', 'info');
+ adminSetBusy(button, true, '저장 중');
  try {
   const data = await adminPost('/admin/update-detect-calibration', { config: cfg });
   adminSetDetectCalibrationForm(data.config || cfg);
   adminSetMessage('adminDetectCalMsg', '저장 완료 · ' + adminDetectCalibrationExample(data.config || cfg), 'success');
  } catch (e) {
   adminSetMessage('adminDetectCalMsg', e.message || '감지 보정 설정 저장에 실패했습니다.', 'error');
- }
-};
-
-function adminSetBasicHumanizeExperimentForm(cfg) {
- cfg = cfg || {};
- const enabled = document.getElementById('adminBasicExpEnabled');
- const source = document.getElementById('adminBasicExpSource');
- if (enabled) enabled.checked = cfg.enabled === true;
- if (source) source.textContent = cfg.source || '-';
- adminSetMessage('adminBasicExpMsg', cfg.enabled ? '현재 켜짐 · 기본 휴머나이징에 개발테스트 프로필이 적용됩니다.' : '현재 꺼짐 · 기본 휴머나이징은 기존 운영 프로필을 사용합니다.', 'info');
-}
-
-function adminReadBasicHumanizeExperimentForm() {
- return {
-  enabled: document.getElementById('adminBasicExpEnabled')?.checked === true
- };
-}
-
-window.loadAdminBasicHumanizeExperiment = async function() {
- if (!window.isAdmin()) return;
- const msg = document.getElementById('adminBasicExpMsg');
- if (msg) msg.textContent = '불러오는 중...';
- try {
-  const data = await adminPost('/admin/basic-humanize-experiment', {});
-  adminSetBasicHumanizeExperimentForm(data.config || {});
- } catch (e) {
-  adminSetMessage('adminBasicExpMsg', e.message || '기본 휴머나이징 개발테스트 설정을 불러오지 못했습니다.', 'error');
- }
-};
-
-window.adminSaveBasicHumanizeExperiment = async function() {
- if (!window.isAdmin()) return;
- const cfg = adminReadBasicHumanizeExperimentForm();
- adminSetMessage('adminBasicExpMsg', '저장 중...', 'info');
- try {
-  const data = await adminPost('/admin/update-basic-humanize-experiment', { config: cfg });
-  adminSetBasicHumanizeExperimentForm(data.config || cfg);
-  adminSetMessage('adminBasicExpMsg', cfg.enabled ? '저장 완료 · 개발테스트 적용 중' : '저장 완료 · 개발테스트 꺼짐', 'success');
- } catch (e) {
-  adminSetMessage('adminBasicExpMsg', e.message || '기본 휴머나이징 개발테스트 설정 저장에 실패했습니다.', 'error');
+ } finally {
+  adminSetBusy(button, false);
  }
 };
 
@@ -4905,7 +4932,7 @@ function adminSetGptRuntimeForm(cfg) {
  adminGptSetChecked('adminGptEscalationEnabled', escalation.enabled !== false);
  adminGptSetValue('adminGptEscLongTextChars', escalation.longTextChars || 9000);
  adminGptSetValue('adminGptEscProtectedTermThreshold', escalation.protectedTermThreshold || 35);
- adminGptSetValue('adminGptEscPatchTargetThreshold', escalation.patchTargetThreshold || 24);
+ adminGptSetValue('adminGptEscPatchTargetThreshold', escalation.patchTargetThreshold || 12);
 
  const cacheLabel = cache.enabled === false ? '캐싱 꺼짐' : '캐싱 켜짐';
  adminSetMessage('adminGptRuntimeMsg', `GPT 운영 중 · ${models.humanizePrimary || 'gpt-5.6-luna'} · ${cacheLabel}`, 'info');
@@ -4952,7 +4979,7 @@ function adminReadGptRuntimeForm() {
    enabled: document.getElementById('adminGptEscalationEnabled')?.checked !== false,
    longTextChars: num('adminGptEscLongTextChars', 9000),
    protectedTermThreshold: num('adminGptEscProtectedTermThreshold', 35),
-   patchTargetThreshold: num('adminGptEscPatchTargetThreshold', 24)
+   patchTargetThreshold: num('adminGptEscPatchTargetThreshold', 12)
   }
  };
 }
@@ -4964,6 +4991,7 @@ window.loadAdminGptRuntimeConfig = async function() {
  try {
   const data = await adminPost('/admin/gpt-runtime-config', {});
   adminSetGptRuntimeForm(data.config || {});
+  window._adminLoadedGptConfig = adminReadGptRuntimeForm();
  } catch (e) {
   adminSetMessage('adminGptRuntimeMsg', e.message || '운영 LLM 설정을 불러오지 못했습니다.', 'error');
  }
@@ -4971,30 +4999,59 @@ window.loadAdminGptRuntimeConfig = async function() {
 
 window.adminSaveGptRuntimeConfig = async function() {
  if (!window.isAdmin()) return;
+ const button = document.getElementById('adminGptSaveButton');
+ if (button && button.disabled) return;
  const cfg = adminReadGptRuntimeForm();
+ if (cfg.escalation.protectedTermThreshold < 1 || cfg.escalation.protectedTermThreshold > 120 || cfg.escalation.patchTargetThreshold < 1 || cfg.escalation.patchTargetThreshold > 12) {
+  adminSetMessage('adminGptRuntimeMsg', '보호표현 기준은 1~120, 패치 대상 기준은 1~12 사이여야 합니다.', 'error');
+  return;
+ }
+ const before = JSON.stringify(window._adminLoadedGptConfig || {});
+ const after = JSON.stringify(cfg);
+ if (before === after) {
+  adminSetMessage('adminGptRuntimeMsg', '변경된 설정이 없습니다.', 'info');
+  return;
+ }
+ const ok = window.gpConfirm
+  ? await window.gpConfirm({ title: '운영 LLM 설정을 바꿀까요?', message: '새 요청부터 즉시 적용됩니다. 저장 전 현재 입력값 테스트를 권장합니다.', confirmText: '운영에 저장' })
+  : confirm('운영 LLM 설정을 저장할까요? 새 요청부터 즉시 적용됩니다.');
+ if (!ok) return;
  adminSetMessage('adminGptRuntimeMsg', '저장 중...', 'info');
+ adminSetBusy(button, true, '저장 중');
  try {
   const data = await adminPost('/admin/update-gpt-runtime-config', { config: cfg });
   adminSetGptRuntimeForm(data.config || cfg);
+  window._adminLoadedGptConfig = adminReadGptRuntimeForm();
   adminSetMessage('adminGptRuntimeMsg', 'GPT 운영 설정 저장 완료', 'success');
  } catch (e) {
   adminSetMessage('adminGptRuntimeMsg', e.message || '운영 LLM 설정 저장에 실패했습니다.', 'error');
+ } finally {
+  adminSetBusy(button, false);
  }
 };
 
 window.adminTestGptRuntimeConfig = async function() {
  if (!window.isAdmin()) return;
+ const button = document.getElementById('adminGptTestButton');
+ if (button && button.disabled) return;
  const cfg = adminReadGptRuntimeForm();
- const task = document.getElementById('adminGptTestTask')?.value || 'judge';
+ const task = document.getElementById('adminGptTestTask')?.value || 'detect';
  adminSetMessage('adminGptRuntimeMsg', '테스트 호출 중...', 'info');
+ adminSetBusy(button, true, '테스트 중');
  try {
   const data = await adminPost('/admin/test-gpt-runtime-config', { config: cfg, task });
   const result = data.result || {};
-  const model = result.selectedModel || data.selectedModel || cfg.models.humanizePrimary;
-  const ok = result.ok === false ? '실패' : '성공';
-  adminSetMessage('adminGptRuntimeMsg', `테스트 ${ok} · ${task} · ${model}`, ok === '성공' ? 'success' : 'error');
+  const meta = result.meta || {};
+  const model = meta.selectedModel || meta.model || result.selectedModel || data.selectedModel || (task === 'detect' ? cfg.models.detect : cfg.models.humanizePrimary);
+  const succeeded = task === 'humanize'
+   ? result.status === 'done' && !!String(result.outputText || '').trim()
+   : result.ok !== false && result.status !== 'error' && result.status !== 'blocked';
+  const statusText = succeeded ? '성공' : `실패${result.status ? ` (${result.status})` : ''}`;
+  adminSetMessage('adminGptRuntimeMsg', `테스트 ${statusText} · ${task} · ${model}`, succeeded ? 'success' : 'error');
  } catch (e) {
   adminSetMessage('adminGptRuntimeMsg', e.message || 'GPT 런타임 테스트 호출에 실패했습니다.', 'error');
+ } finally {
+  adminSetBusy(button, false);
  }
 };
 
@@ -5426,25 +5483,197 @@ window.loadAdminHumanizeLab = async function() {
  window.adminHumanizeLabCount();
 };
 
-// 관리자 탭: 섹션이 누적되며 세로 스크롤이 과도해져, 성격별 그룹만 표시 (선택은 세션 유지)
-window.adminSwitchTab = function(tab) {
- const valid = ['ops', 'incidents', 'quality', 'users', 'ledger', 'coupons', 'settings', 'patches'];
- if (!valid.includes(tab)) tab = 'ops';
+// 관리자 탭: 선택한 영역만 조회한다. 숨겨진 품질 2,000건·원장 1,000건을
+// 관리자 진입 때마다 모두 요청하던 구조를 탭별 지연 로딩으로 바꾼다.
+const ADMIN_TABS = ['overview', 'incidents', 'billing', 'users', 'quality', 'ledger', 'coupons', 'settings', 'labs', 'patches'];
+const ADMIN_TAB_CACHE_MS = 45000;
+const ADMIN_FILTER_IDS = ['adminOpsHours','adminOpsSeverity','adminOpsDomain','adminOpsQuery','adminOpsOnlyOpen','adminJobsFilter','adminJobsHours','adminQualityHours','adminQualityMode','adminQualityStatus','adminDateFrom','adminDateTo','adminEmailFilter','adminHistoryType','adminHistoryPageSize'];
+window._adminTabLoadState = window._adminTabLoadState || {};
+
+function adminRememberFilters() {
+ const values = {};
+ ADMIN_FILTER_IDS.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) values[id] = el.type === 'checkbox' ? el.checked : el.value;
+ });
+ try { sessionStorage.setItem('gpAdminFilters', JSON.stringify(values)); } catch (_) {}
+}
+
+function adminRestoreFilters() {
+ let values = {};
+ try { values = JSON.parse(sessionStorage.getItem('gpAdminFilters') || '{}'); } catch (_) {}
+ ADMIN_FILTER_IDS.forEach(id => {
+  const el = document.getElementById(id);
+  if (!el || values[id] === undefined) return;
+  if (el.type === 'checkbox') el.checked = !!values[id];
+  else {
+   el.value = values[id];
+   // 영역 옵션은 첫 API 응답 뒤 생성된다. 옵션이 아직 없어서 값이 사라져도
+   // 의도한 복원값을 보관했다가 gpOpsRenderDomains에서 다시 적용한다.
+   if (id === 'adminOpsDomain' && values[id] && el.value !== values[id]) el.dataset.restoredValue = values[id];
+  }
+ });
+ const pageSize = document.getElementById('adminHistoryPageSize');
+ if (pageSize) window._adminHistory = { ...(window._adminHistory || {}), pageSize: parseInt(pageSize.value, 10) || 25 };
+}
+
+function adminTabLoaders(tab) {
+ return ({
+  overview: [window.loadAdminOverview, window.loadAdminOverviewHealth, window.loadAdminRefundSummary, window.loadAdminCreditUsageSummary],
+  incidents: [window.loadAdminOpsLogs, window.loadAdminJobs],
+  billing: [window.loadAdminOverview, window.loadAdminRefundList],
+  users: [],
+  quality: [window.loadAdminHumanizeQuality],
+  ledger: [window.loadAllCreditHistory],
+  coupons: [window.loadCouponBatches],
+  settings: [window.loadAdminGptRuntimeConfig, window.loadAdminDetectCalibration],
+  labs: [window.loadAdminWritingPolicies, window.loadAdminWritingMetrics],
+  patches: [window.adminFilterPatches]
+ })[tab] || [];
+}
+
+window.adminLoadTab = async function(tab, options) {
+ const force = !!(options && options.force);
+ const state = window._adminTabLoadState[tab] || {};
+ if (!force && state.promise) return state.promise;
+ if (!force && state.loadedAt && Date.now() - state.loadedAt < ADMIN_TAB_CACHE_MS) return;
+ const runId = adminNumber(state.runId) + 1;
+ const status = document.getElementById('adminTabStatus');
+ if (status && window._adminActiveTab === tab) status.textContent = '데이터를 불러오는 중입니다.';
+ const panels = [...document.querySelectorAll(`#adminContent [data-admin-tab="${tab}"]`)];
+ panels.forEach(panel => panel.setAttribute('aria-busy', 'true'));
+ const loaders = adminTabLoaders(tab).filter(fn => typeof fn === 'function');
+ const promise = Promise.allSettled(loaders.map(fn => fn())).then(results => {
+  const current = window._adminTabLoadState[tab] || {};
+  if (current.runId !== runId) return results;
+  const rejected = results.filter(result => result.status === 'rejected').length;
+  const renderedFailure = panels.some(panel =>
+   panel.querySelector('[data-load-state="error"], .gp-admin-error-text, .gp-admin-msg.error')
+  );
+  const statusFailure = !!(status && window._adminActiveTab === tab && status.textContent && status.textContent !== '데이터를 불러오는 중입니다.');
+  const failed = rejected + (renderedFailure || statusFailure ? 1 : 0);
+  window._adminTabLoadState[tab] = { loadedAt: failed ? 0 : Date.now(), promise: null, runId };
+  panels.forEach(panel => panel.removeAttribute('aria-busy'));
+  if (status && window._adminActiveTab === tab) {
+   const existing = status.textContent;
+   status.textContent = failed
+    ? (existing && existing !== '데이터를 불러오는 중입니다.' ? existing : `${failed}개 영역을 불러오지 못했습니다. 현재 화면 새로고침으로 다시 시도하세요.`)
+    : '';
+  }
+  const updated = document.getElementById('adminLastUpdated');
+  if (updated && !failed) updated.textContent = `마지막 갱신 ${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`;
+  return results;
+ }).catch(error => {
+  const current = window._adminTabLoadState[tab] || {};
+  if (current.runId !== runId) return;
+  window._adminTabLoadState[tab] = { loadedAt: 0, promise: null, runId };
+  panels.forEach(panel => panel.removeAttribute('aria-busy'));
+  if (status && window._adminActiveTab === tab) status.textContent = error.message || '데이터를 불러오지 못했습니다.';
+ });
+ window._adminTabLoadState[tab] = { loadedAt: state.loadedAt || 0, promise, runId };
+ return promise;
+};
+
+function adminSyncTabPanels() {
+ ADMIN_TABS.forEach(tab => {
+  const owner = document.querySelector(`#adminTabs [data-tab="${tab}"]`);
+  const panels = [...document.querySelectorAll(`#adminContent [data-admin-tab="${tab}"]`)];
+  panels.forEach((panel, index) => {
+   if (!panel.id) panel.id = `adminPanel-${tab}-${index + 1}`;
+   panel.setAttribute('role', 'tabpanel');
+   if (owner?.id) panel.setAttribute('aria-labelledby', owner.id);
+  });
+  if (owner) owner.setAttribute('aria-controls', panels.map(panel => panel.id).join(' '));
+ });
+}
+
+window.adminSwitchTab = function(tab, options) {
+ if (tab === 'ops') tab = 'overview';
+ if (!ADMIN_TABS.includes(tab)) tab = 'overview';
+ window._adminActiveTab = tab;
  try { sessionStorage.setItem('gpAdminTab', tab); } catch (e) {}
  document.querySelectorAll('#adminContent [data-admin-tab]').forEach(s => {
-  s.style.display = s.dataset.adminTab === tab ? '' : 'none';
+  const selected = s.dataset.adminTab === tab;
+  s.hidden = !selected;
+  s.style.display = selected ? '' : 'none';
+  s.setAttribute('role', 'tabpanel');
+  const owner = document.querySelector(`#adminTabs [data-tab="${s.dataset.adminTab}"]`);
+  if (owner?.id) s.setAttribute('aria-labelledby', owner.id);
  });
  document.querySelectorAll('#adminTabs .gp-admin-tab').forEach(b => {
-  b.classList.toggle('active', b.dataset.tab === tab);
+  const selected = b.dataset.tab === tab;
+  b.classList.toggle('active', selected);
+  b.setAttribute('aria-selected', selected ? 'true' : 'false');
+  b.tabIndex = selected ? 0 : -1;
+  if (selected && !(options && options.restore)) {
+   const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+   b.scrollIntoView({ block: 'nearest', inline: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
  });
+ window.adminLoadTab(tab, options);
+};
+
+window.adminRefreshCurrent = async function() {
+ const button = document.getElementById('adminRefreshButton');
+ if (button && button.disabled) return;
+ adminSetBusy(button, true, '새로고침 중');
+ try {
+  const tab = window._adminActiveTab || 'overview';
+  window._adminTabLoadState[tab] = { ...(window._adminTabLoadState[tab] || {}), loadedAt: 0, promise: null };
+  if (tab !== 'overview' && typeof window.loadAdminOverview === 'function') await window.loadAdminOverview();
+  await window.adminLoadTab(tab, { force: true });
+ } finally {
+  adminSetBusy(button, false);
+ }
+};
+
+window.adminTabsKeydown = function(event) {
+ if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+ const tabs = [...document.querySelectorAll('#adminTabs [role="tab"]')];
+ if (!tabs.length) return;
+ const current = Math.max(0, tabs.indexOf(document.activeElement));
+ const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+ event.preventDefault();
+ tabs[next].focus();
+ window.adminSwitchTab(tabs[next].dataset.tab);
+};
+
+window.adminFilterPatches = function() {
+ const query = (document.getElementById('adminPatchQuery')?.value || '').trim().toLocaleLowerCase('ko-KR');
+ const status = document.getElementById('adminPatchStatus')?.value || '';
+ const releases = [...document.querySelectorAll('.gp-admin-patch-release')];
+ let visible = 0;
+ releases.forEach(release => {
+  const matchesQuery = !query || release.textContent.toLocaleLowerCase('ko-KR').includes(query);
+  const matchesStatus = !status || !!release.querySelector(`.gp-admin-patch-state.${status}`);
+  release.hidden = !(matchesQuery && matchesStatus);
+  if (!release.hidden) visible += 1;
+ });
+ document.querySelectorAll('.gp-admin-patch-month').forEach(month => {
+  let sibling = month.nextElementSibling;
+  let hasVisible = false;
+  while (sibling && !sibling.classList.contains('gp-admin-patch-month')) {
+   if (sibling.classList.contains('gp-admin-patch-release') && !sibling.hidden) hasVisible = true;
+   sibling = sibling.nextElementSibling;
+  }
+  month.hidden = !hasVisible;
+ });
+ const count = document.getElementById('adminPatchMatchCount');
+ if (count) count.textContent = `${visible}개 표시`;
+};
+
+window.adminTogglePatches = function(open) {
+ document.querySelectorAll('.gp-admin-patch-release:not([hidden])').forEach(release => { release.open = !!open; });
 };
 
 window.loadAdminPage = async function() {
  const el = document.getElementById('adminContent');
  if (!el) return;
- el.style.display = 'block';
- window.scrollTo(0, 0);
+ const shell = document.getElementById('adminShell');
  const gate = document.getElementById('adminGateMsg');
+ el.style.display = 'block';
+ el.inert = false;
+ if (shell) { shell.hidden = true; shell.inert = true; }
  if (!window.CU) {
   if (gate) {
    gate.hidden = false;
@@ -5464,32 +5693,68 @@ window.loadAdminPage = async function() {
   gate.hidden = true;
   gate.textContent = '';
  }
- let savedTab = 'ops';
- try { savedTab = sessionStorage.getItem('gpAdminTab') || 'ops'; } catch (e) {}
- window.adminSwitchTab(savedTab);
- await Promise.allSettled([
- window.loadAdminOverview(),
- window.loadAdminGptRuntimeConfig(),
- window.loadAdminDetectCalibration(),
-  window.loadAdminBasicHumanizeExperiment(),
-  window.loadAdminWritingPolicies(),
-  window.loadAdminWritingMetrics(),
-  window.loadAdminJobs(),
-  window.loadAdminOpsLogs(),
-  window.loadAdminHumanizeQuality(),
-  window.loadAdminRefundList(),
-  window.loadAllCreditHistory(),
-  window.loadCouponBatches()
- ]);
+ if (shell) { shell.hidden = false; shell.inert = false; }
+ window.scrollTo(0, 0);
+ let savedTab = 'overview';
+ try { savedTab = sessionStorage.getItem('gpAdminTab') || 'overview'; } catch (e) {}
+ if (savedTab === 'ops') savedTab = 'overview';
+ const tabs = document.getElementById('adminTabs');
+ if (tabs && !tabs.dataset.keyboardReady) {
+  tabs.addEventListener('keydown', window.adminTabsKeydown);
+  tabs.dataset.keyboardReady = '1';
+ }
+ adminSyncTabPanels();
+ if (!el.dataset.adminFilterReady) {
+  el.addEventListener('change', adminRememberFilters);
+  el.dataset.adminFilterReady = '1';
+ }
+ if (!el.dataset.adminDetailReady) {
+  el.addEventListener('toggle', event => {
+   const opened = event.target;
+   if (!(opened instanceof HTMLDetailsElement) || !opened.matches('.gp-admin-row-detail') || !opened.open) return;
+   el.querySelectorAll('.gp-admin-row-detail[open]').forEach(details => { if (details !== opened) details.open = false; });
+  }, true);
+  el.addEventListener('keydown', event => {
+   if (event.key !== 'Escape') return;
+   const details = event.target?.closest?.('.gp-admin-row-detail[open]');
+   if (!details) return;
+   event.preventDefault();
+   details.open = false;
+   details.querySelector('summary')?.focus();
+  });
+  el.dataset.adminDetailReady = '1';
+ }
+ adminRestoreFilters();
+ window.adminSwitchTab(savedTab, { restore: true });
+ if (savedTab !== 'overview') window.adminLoadTab('overview');
 };
 
 // ── 장애 로그(2026-08-29) ────────────────────────────────────────────────
 // 서버가 등급을 매긴 사건(Backend lib/opsEvents 카탈로그)을 목록·요약·하트비트로 보여준다.
 // 목표는 "이게 심각한가"를 목록에서 바로 판단하고, 확인(ack)까지 여기서 끝내는 것.
 let gpOpsQueryTimer = null;
+let adminOpsGeneration = 0;
+let adminOpsController = null;
 window.adminOpsQueryInput = function() {
  clearTimeout(gpOpsQueryTimer);
+ adminOpsGeneration += 1;
+ if (adminOpsController) adminOpsController.abort();
+ adminRememberFilters();
  gpOpsQueryTimer = setTimeout(() => window.loadAdminOpsLogs(), 300);
+};
+
+window.adminResetOpsFilters = function() {
+ clearTimeout(gpOpsQueryTimer);
+ adminOpsGeneration += 1;
+ if (adminOpsController) adminOpsController.abort();
+ const values = { adminOpsHours: '24', adminOpsSeverity: '', adminOpsDomain: '', adminOpsQuery: '' };
+ Object.entries(values).forEach(([id, value]) => { const el = document.getElementById(id); if (el) el.value = value; });
+ const open = document.getElementById('adminOpsOnlyOpen');
+ if (open) open.checked = false;
+ const domain = document.getElementById('adminOpsDomain');
+ if (domain) delete domain.dataset.restoredValue;
+ adminRememberFilters();
+ window.loadAdminOpsLogs();
 };
 
 function gpOpsEscape(value) {
@@ -5507,40 +5772,51 @@ function gpOpsAgo(ms) {
  return Math.floor(h / 24) + '일 전';
 }
 
-async function gpOpsPost(path, body) {
- const idToken = await window.CU.getIdToken();
- const res = await fetch(window.apiUrl(path), {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
-  body: JSON.stringify(body || {})
- });
- const data = await res.json().catch(() => ({}));
- if (!res.ok || !data.ok) throw new Error(data.error || '요청에 실패했어요.');
- return data;
+async function gpOpsPost(path, body, options) {
+ return adminPost(path, body, options);
 }
 
 window.loadAdminOpsLogs = async function() {
  const listEl = document.getElementById('adminOpsList');
  if (!listEl || !window.CU || !window.isAdmin()) return;
+ const generation = ++adminOpsGeneration;
+ if (adminOpsController) adminOpsController.abort();
+ const controller = new AbortController();
+ adminOpsController = controller;
  const hours = Number((document.getElementById('adminOpsHours') || {}).value) || 24;
  const severity = (document.getElementById('adminOpsSeverity') || {}).value || '';
  const domain = (document.getElementById('adminOpsDomain') || {}).value || '';
  const q = ((document.getElementById('adminOpsQuery') || {}).value || '').trim();
  const onlyOpen = !!(document.getElementById('adminOpsOnlyOpen') || {}).checked;
+ listEl.setAttribute('aria-busy', 'true');
 
  try {
-  const [summary, logs] = await Promise.all([
-   gpOpsPost('/admin/ops-summary', { hours }),
-   gpOpsPost('/admin/ops-logs', { hours, severity, domain, q, onlyOpen, limit: 80 })
+  const [summaryResult, logsResult] = await Promise.allSettled([
+   gpOpsPost('/admin/ops-summary', { hours }, { signal: controller.signal }),
+   gpOpsPost('/admin/ops-logs', { hours, severity, domain, q, onlyOpen, limit: 80 }, { signal: controller.signal })
   ]);
-  gpOpsRenderSummary(summary);
-  gpOpsRenderBeats(summary.heartbeats || []);
-  gpOpsRenderDomains(logs.domains || []);
-  gpOpsRenderList(logs);
-  const tag = document.getElementById('adminOpsSourceTag');
-  if (tag) tag.textContent = logs.source === 'firestore' ? '' : '메모리 보관분';
+  if (generation !== adminOpsGeneration) return;
+  if (summaryResult.status === 'fulfilled') {
+   gpOpsRenderSummary(summaryResult.value);
+   gpOpsRenderBeats(summaryResult.value.heartbeats || []);
+  } else if (summaryResult.reason?.name !== 'AbortError') {
+   const summaryEl = document.getElementById('adminOpsSummary');
+   if (summaryEl) summaryEl.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">장애 요약을 불러오지 못했어요. ${gpOpsEscape(summaryResult.reason?.message || '')}</div>`;
+  }
+  if (logsResult.status === 'fulfilled') {
+   const logs = logsResult.value;
+   gpOpsRenderDomains(logs.domains || []);
+   gpOpsRenderList(logs);
+   const tag = document.getElementById('adminOpsSourceTag');
+   if (tag) tag.textContent = logs.source === 'firestore' ? '' : '메모리 보관분';
+  } else if (logsResult.reason?.name !== 'AbortError') {
+   listEl.innerHTML = '<div class="gp-admin-empty gp-admin-error-text">장애 로그를 불러오지 못했어요. ' + gpOpsEscape(logsResult.reason?.message || '') + '</div>';
+  }
  } catch (e) {
-  listEl.innerHTML = '<div class="gp-admin-empty">장애 로그를 불러오지 못했어요. ' + gpOpsEscape(e.message || '') + '</div>';
+  if (e?.name === 'AbortError' || generation !== adminOpsGeneration) return;
+  listEl.innerHTML = '<div class="gp-admin-empty gp-admin-error-text">장애 로그를 불러오지 못했어요. ' + gpOpsEscape(e.message || '') + '</div>';
+ } finally {
+  if (generation === adminOpsGeneration) listEl.removeAttribute('aria-busy');
  }
 };
 
@@ -5568,13 +5844,19 @@ function gpOpsRenderSummary(s) {
   (s.topEvents && s.topEvents.length
    ? '<div class="gp-ops-top">' + s.topEvents.slice(0, 5).map(t =>
       '<span class="gp-ops-topitem"><i>' + gpOpsEscape(t.event) + '</i><b>' + t.count + '</b></span>').join('') + '</div>'
-   : '');
+  : '');
+ const badge = document.getElementById('adminOpsTabBadge');
+ if (badge) {
+  const openCount = Number(s.openSev1 || 0);
+  badge.hidden = openCount <= 0;
+  badge.textContent = String(openCount);
+ }
 }
 
 function gpOpsRenderBeats(beats) {
  const el = document.getElementById('adminOpsHeartbeats');
  if (!el) return;
- if (!beats.length) { el.innerHTML = ''; return; }
+ if (!beats.length) { el.innerHTML = '<div class="gp-ops-beatrow"><span class="gp-ops-beat unknown"><i>정기 작업</i>하트비트 기록 없음</span></div>'; return; }
  // 부재 감지: "일어나야 할 일이 안 일어난 것"은 이 줄에서만 보인다.
  el.innerHTML = '<div class="gp-ops-beatrow">' + beats.map(b => {
   const cls = b.state === 'stale' ? 'stale' : (b.state === 'ok' ? 'ok' : 'unknown');
@@ -5586,25 +5868,20 @@ function gpOpsRenderBeats(beats) {
 function gpOpsRenderDomains(domains) {
  const sel = document.getElementById('adminOpsDomain');
  if (!sel) return;
- const current = sel.value;
+ const current = sel.dataset.restoredValue || sel.value;
  const options = ['<option value="">전체 영역</option>'].concat(domains.map(d =>
   '<option value="' + gpOpsEscape(d) + '">' + gpOpsEscape(d) + '</option>'));
  sel.innerHTML = options.join('');
  if (domains.includes(current)) sel.value = current;
+ delete sel.dataset.restoredValue;
 }
 
 function gpOpsRenderList(data) {
  const el = document.getElementById('adminOpsList');
  if (!el) return;
  const items = data.items || [];
- const badge = document.getElementById('adminOpsTabBadge');
- if (badge) {
-  const open = items.filter(i => i.severity === 'SEV1' && !i.acked).length;
-  badge.hidden = !open;
-  badge.textContent = String(open);
- }
  if (!items.length) {
-  el.innerHTML = '<div class="gp-admin-empty">조건에 맞는 장애 기록이 없어요.</div>';
+  el.innerHTML = '<div class="gp-admin-empty">조건에 맞는 장애 기록이 없어요.</div><p class="gp-admin-limit-note">장애 목록은 선택 기간의 최근 80건을 표시합니다. 미확인 SEV1 수는 전체 요약값입니다.</p>';
   return;
  }
  el.innerHTML = items.map(item => {
@@ -5620,6 +5897,16 @@ function gpOpsRenderList(data) {
    item.requestId ? ['requestId', item.requestId] : null,
    item.statusCode ? ['status', item.statusCode] : null
   ].filter(Boolean);
+  const context = [
+   item.errorName ? ['오류', item.errorName] : null,
+   item.method || item.path ? ['요청', [item.method, item.path].filter(Boolean).join(' ')] : null,
+   item.reason ? ['원인', item.reason] : null,
+   item.authSource ? ['인증', item.authSource] : null,
+   item.service ? ['서비스', item.service] : null,
+   item.commit ? ['커밋', item.commit] : null,
+   item.environment ? ['환경', item.environment] : null,
+   item.userAgent ? ['브라우저', item.userAgent] : null
+  ].filter(Boolean);
   return '' +
    '<article class="gp-ops-item ' + sev.toLowerCase() + (item.acked ? ' acked' : '') + '">' +
     '<div class="gp-ops-item-head">' +
@@ -5633,6 +5920,7 @@ function gpOpsRenderList(data) {
     (item.action ? '<p class="gp-ops-action"><i>대응</i>' + gpOpsEscape(item.action) + '</p>' : '') +
     (ids.length ? '<div class="gp-ops-ids">' + ids.map(([k, v]) =>
       '<span><i>' + gpOpsEscape(k) + '</i>' + gpOpsEscape(v) + '</span>').join('') + '</div>' : '') +
+    (context.length ? '<details class="gp-ops-context"><summary>기술 정보</summary><dl>' + context.map(([k, v]) => '<div><dt>' + gpOpsEscape(k) + '</dt><dd>' + gpOpsEscape(v) + '</dd></div>').join('') + '</dl></details>' : '') +
     (item.stack ? '<details class="gp-ops-stack"><summary>스택 보기</summary><pre>' + gpOpsEscape(item.stack) + '</pre></details>' : '') +
     '<div class="gp-ops-item-foot">' +
      (item.acked
@@ -5643,16 +5931,21 @@ function gpOpsRenderList(data) {
          : '<button type="button" class="gp-admin-mini-btn" onclick="adminOpsAck(\'' + jsAttr(item.id) + '\', true)">확인 처리</button>')) +
     '</div>' +
    '</article>';
- }).join('');
+ }).join('') + '<p class="gp-admin-limit-note">장애 목록은 선택 기간의 최근 80건을 표시합니다. 미확인 SEV1 수는 전체 요약값입니다.</p>';
 }
 
+const adminOpsAckPending = new Set();
 window.adminOpsAck = async function(id, acked) {
  if (!id) return;
+ if (adminOpsAckPending.has(id)) return;
+ adminOpsAckPending.add(id);
  try {
   await gpOpsPost('/admin/ops-ack', { id, acked });
   await window.loadAdminOpsLogs();
  } catch (e) {
   if (window.gpToast) window.gpToast(e.message || '확인 처리에 실패했어요.', { type: 'error' });
+ } finally {
+  adminOpsAckPending.delete(id);
  }
 };
 
@@ -5731,6 +6024,7 @@ window.loadAdminOverview = async function() {
  if (!window.isAdmin()) return;
  const todayEl = document.getElementById('adminStatRevToday');
  const monthEl = document.getElementById('adminStatRevMonth');
+ if (todayEl) delete todayEl.dataset.loadState;
  try {
   const data = await adminPost('/admin/revenue-summary', {});
   const won = (n) => '₩' + adminNumber(n).toLocaleString('ko-KR');
@@ -5740,9 +6034,56 @@ window.loadAdminOverview = async function() {
   if (monthEl) monthEl.textContent = won(data.month.totalPaid);
   const mCnt = document.getElementById('adminStatRevMonthCnt');
   if (mCnt) mCnt.textContent = `${adminNumber(data.month.totalCount)}건`;
+  const monthCount = adminNumber(data.month.totalCount);
+  const aov = document.getElementById('adminStatRevMonthAov');
+  if (aov) aov.textContent = monthCount ? won(Math.round(adminNumber(data.month.totalPaid) / monthCount)) : '₩0';
+  const refundMonth = document.getElementById('adminStatRefundMonth');
+  if (refundMonth) refundMonth.textContent = won(data.month.refundAmount);
+  const refundMonthCnt = document.getElementById('adminStatRefundMonthCnt');
+  if (refundMonthCnt) refundMonthCnt.textContent = `${adminNumber(data.month.refundCount)}건`;
+  if (todayEl) todayEl.dataset.loadState = 'ok';
  } catch (e) {
   if (todayEl) todayEl.textContent = '—';
   if (monthEl) monthEl.textContent = '—';
+  ['adminStatRevMonthAov', 'adminStatRefundMonth'].forEach(id => { const node = document.getElementById(id); if (node) node.textContent = '측정 실패'; });
+  const status = document.getElementById('adminTabStatus');
+  if (status && window._adminActiveTab === 'overview') status.textContent = '매출 요약을 불러오지 못했습니다. 현재 화면 새로고침으로 다시 시도하세요.';
+  if (todayEl) todayEl.dataset.loadState = 'error';
+ }
+};
+
+window.loadAdminOverviewHealth = async function() {
+ const grid = document.getElementById('adminCommandGrid');
+ const line = document.getElementById('adminOverviewHealth');
+ if (!grid || !window.isAdmin()) return;
+ delete grid.dataset.loadState;
+ grid.setAttribute('aria-busy', 'true');
+ try {
+  const summary = await gpOpsPost('/admin/ops-summary', { hours: 24 });
+  const alerting = summary.alerting || {};
+  const webhook = alerting.webhook || {};
+  const beats = Array.isArray(summary.heartbeats) ? summary.heartbeats : [];
+  const stale = beats.filter(item => item.state === 'stale').length;
+  const missing = beats.length ? beats.filter(item => item.state !== 'ok' && item.state !== 'stale').length : 1;
+  const set = (id, value, state) => {
+   const el = document.getElementById(id);
+   if (!el) return;
+   el.textContent = value;
+   el.dataset.state = state || 'ok';
+  };
+  set('adminAttentionSev1', `${adminNumber(summary.openSev1)}건`, adminNumber(summary.openSev1) ? 'danger' : 'ok');
+  set('adminAttentionWebhook', !alerting.discord ? '미설정' : webhook.failed ? `실패 ${adminNumber(webhook.failed)}건` : '정상', (!alerting.discord || webhook.failed) ? 'danger' : 'ok');
+  set('adminAttentionCron', stale ? `중단 ${stale}개` : missing ? `미측정 ${missing}개` : '정상', stale ? 'danger' : missing ? 'warn' : 'ok');
+  if (line) line.textContent = `최근 24시간 사건 ${adminNumber(summary.incidents)}건 · 발생 ${adminNumber(summary.occurrences)}회 · 하트비트 ${beats.length}개`;
+  const badge = document.getElementById('adminOpsTabBadge');
+  if (badge) { badge.hidden = !adminNumber(summary.openSev1); badge.textContent = String(adminNumber(summary.openSev1)); }
+  grid.dataset.loadState = 'ok';
+ } catch (error) {
+  ['adminAttentionSev1', 'adminAttentionWebhook', 'adminAttentionCron'].forEach(id => { const el = document.getElementById(id); if (el) { el.textContent = '측정 실패'; el.dataset.state = 'danger'; } });
+  if (line) line.textContent = `운영 상태를 불러오지 못했습니다. ${error.message || ''}`;
+  grid.dataset.loadState = 'error';
+ } finally {
+  grid.removeAttribute('aria-busy');
  }
 };
 
@@ -5758,6 +6099,17 @@ function adminSetRefundStat(count) {
   if (count > 0) { badge.hidden = false; badge.textContent = count; badge.classList.add('is-alert'); }
   else { badge.hidden = true; badge.classList.remove('is-alert'); }
  }
+ const attention = document.getElementById('adminAttentionRefunds');
+ if (attention) { attention.textContent = `${count}건`; attention.dataset.state = count > 0 ? 'warn' : 'ok'; }
+ const tabBadge = document.getElementById('adminBillingTabBadge');
+ if (tabBadge) { tabBadge.hidden = count <= 0; tabBadge.textContent = String(count); }
+}
+
+let adminUserSearchGeneration = 0;
+let adminUserSearchController = null;
+
+function adminSetUserActionsEnabled(enabled) {
+ document.querySelectorAll('[data-admin-user-action]').forEach(control => { control.disabled = !enabled; });
 }
 
 window.adminSearchUser = async function(quiet) {
@@ -5769,21 +6121,32 @@ window.adminSearchUser = async function(quiet) {
   if (resultEl) resultEl.innerHTML = '<div class="gp-admin-empty">검색어를 입력하세요.</div>';
   return;
  }
+ const generation = ++adminUserSearchGeneration;
+ if (adminUserSearchController) adminUserSearchController.abort();
+ adminUserSearchController = new AbortController();
+ const searchButton = document.getElementById('adminUserSearchButton');
+ adminSetBusy(searchButton, true, '검색 중');
+ adminSetUserActionsEnabled(false);
  if (resultEl) resultEl.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
  if (ordersEl) ordersEl.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
  try {
-  const data = await adminPost('/admin/user-summary', { query: raw });
+  const data = await adminPost('/admin/user-summary', { query: raw }, { signal: adminUserSearchController.signal });
+  if (generation !== adminUserSearchGeneration) return;
   window._adminSelectedBundle = data;
   window._adminSelectedUser = data.user;
   if (input) input.value = data.user.uid || raw;
   adminSetMessage('adminCreditAdjustMsg', '', 'info');
   adminSetMessage('adminUserNotifyMsg', '', 'info');
   adminRenderUserBundle(data);
+  adminSetUserActionsEnabled(true);
   window.loadAdminUserLog(data.user.uid);
   if (!quiet && window.gpTrack) window.gpTrack('admin_user_search');
  } catch (e) {
+  if (e && e.name === 'AbortError') return;
+  if (generation !== adminUserSearchGeneration) return;
   window._adminSelectedBundle = null;
   window._adminSelectedUser = null;
+  adminSetUserActionsEnabled(false);
   const msg = escapeHtml(e.message);
   if (resultEl) resultEl.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">${msg}</div>`;
   if (ordersEl) ordersEl.innerHTML = '<div class="gp-admin-empty">사용자를 먼저 선택하세요.</div>';
@@ -5791,6 +6154,8 @@ window.adminSearchUser = async function(quiet) {
   if (logEl) logEl.innerHTML = '<div class="gp-admin-empty">사용자를 먼저 선택하세요.</div>';
   const logCnt = document.getElementById('adminUserLogCount');
   if (logCnt) logCnt.textContent = '';
+ } finally {
+  if (generation === adminUserSearchGeneration) adminSetBusy(searchButton, false);
  }
 };
 
@@ -5811,11 +6176,15 @@ function adminProbBadge(p) {
  return `<span class="gp-admin-log-prob ${cls}">AI ${v}%</span>`;
 }
 
+let adminUserLogGeneration = 0;
+let adminUserLogController = null;
+
 window.loadAdminUserLog = async function(uid, direction) {
  const el = document.getElementById('adminUserLog');
  if (!el || !uid) return;
  const st = window._adminUserLog;
- if (st.loading) return;
+ const requestKey = `${uid}:${direction || 'first'}`;
+ if (st.loading && st.requestKey === requestKey) return;
  const sameUser = st.uid === uid;
  let cursors = sameUser ? (st.cursors || [0]).slice() : [0];
  let page = sameUser ? adminNumber(st.page) : 0;
@@ -5830,17 +6199,22 @@ window.loadAdminUserLog = async function(uid, direction) {
   cursors = [0];
  }
  const cursorMs = cursors[page] || 0;
- st.loading = true;
+ const generation = ++adminUserLogGeneration;
+ if (adminUserLogController) adminUserLogController.abort();
+ adminUserLogController = new AbortController();
+ window._adminUserLog = { ...st, uid, loading: true, requestKey };
  el.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
  try {
-  const data = await adminPost('/admin/user-history', { uid, limit: 20, cursorMs });
+  const data = await adminPost('/admin/user-history', { uid, limit: 20, cursorMs }, { signal: adminUserLogController.signal });
+  if (generation !== adminUserLogGeneration || (window._adminSelectedUser?.uid && window._adminSelectedUser.uid !== uid)) return;
   window._adminUserLog = {
    uid,
    items: data.items || [],
    page,
    cursors,
    nextCursorMs: data.nextCursorMs || null,
-   loading: true
+   loading: true,
+   requestKey
   };
   window.renderAdminUserLog();
   if (direction === 'next' || direction === 'prev') {
@@ -5849,9 +6223,11 @@ window.loadAdminUserLog = async function(uid, direction) {
    if (panel) panel.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   }
  } catch (e) {
+  if (e && e.name === 'AbortError') return;
+  if (generation !== adminUserLogGeneration) return;
   el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">${escapeHtml(e.message)}</div>`;
  } finally {
-  window._adminUserLog.loading = false;
+  if (generation === adminUserLogGeneration) window._adminUserLog.loading = false;
  }
 };
 
@@ -6040,6 +6416,16 @@ const ADMIN_JOB_STATUS = {
  cancelled: { l: '취소', c: 'muted' }
 };
 window._adminJobsPager = { key: '', page: 0, cursors: [0], nextCursorMs: null, hasMore: false };
+let adminJobsGeneration = 0;
+let adminJobsController = null;
+window.adminResetJobFilters = function() {
+ const status = document.getElementById('adminJobsFilter');
+ const hours = document.getElementById('adminJobsHours');
+ if (status) status.value = 'issues';
+ if (hours) hours.value = '24';
+ adminRememberFilters();
+ window.loadAdminJobs();
+};
 
 window.loadAdminJobs = async function(direction) {
  if (!window.isAdmin()) return;
@@ -6062,15 +6448,30 @@ window.loadAdminJobs = async function(direction) {
   cursors = [0];
  }
  const cursorMs = cursors[page] || 0;
+ const generation = ++adminJobsGeneration;
+ if (adminJobsController) adminJobsController.abort();
+ const controller = new AbortController();
+ adminJobsController = controller;
+ el.setAttribute('aria-busy', 'true');
  el.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
  try {
-  const data = await adminPost('/admin/jobs', { filter, hours, limit: 25, cursorMs });
+  const data = await adminPost('/admin/jobs', { filter, hours, limit: 25, cursorMs }, { signal: controller.signal });
+  if (generation !== adminJobsGeneration) return;
   window._adminJobsPager = { key, page, cursors, nextCursorMs: data.nextCursorMs || null, hasMore: !!data.hasMore };
   window._adminJobs = data;
   renderAdminJobs(data);
  } catch (e) {
+  if (e?.name === 'AbortError' || generation !== adminJobsGeneration) return;
   el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">${escapeHtml(e.message)}</div>`;
+ } finally {
+  if (generation === adminJobsGeneration) el.removeAttribute('aria-busy');
  }
+};
+window.adminCloseJobDetail = function(button) {
+ const details = button?.closest?.('.gp-admin-row-detail');
+ if (!details) return;
+ details.open = false;
+ details.querySelector('summary')?.focus();
 };
 
 function adminJobsPagerHtml(data) {
@@ -6098,8 +6499,20 @@ function renderAdminJobs(data) {
  const rows = data.rows.map(r => {
    const s = ADMIN_JOB_STATUS[r.status] || { l: r.status || '-', c: 'muted' };
    const billing = historyBillingInfo(r.billingDisposition, r.needed);
+   const detail = [
+    ['엔진', r.engineVersion],
+    ['요청/적용', [ADMIN_MODE_LABELS[r.requestedMode] || r.requestedMode, ADMIN_MODE_LABELS[r.effectiveMode] || r.effectiveMode].filter(Boolean).join(' → ')],
+    ['글 종류', ADMIN_PROFILE_LABELS[r.documentProfile] || r.documentProfile],
+    ['처리 시간', r.processingDurationMs ? adminQualityDuration(r.processingDurationMs) : ''],
+    ['길이', r.sourceLength || r.inputLength ? `${adminNumber(r.sourceLength || r.inputLength)} → ${adminNumber(r.resultLength || r.outputLength)}자` : ''],
+    ['실질 편집', r.substantiveEditRatio == null ? '' : adminQualityPercent(r.substantiveEditRatio)],
+    ['청크', r.editableChunkCount == null ? '' : `${adminNumber(r.approvedModelChunkCount)}/${adminNumber(r.editableChunkCount)} 승인 · 실패 ${adminNumber(r.modelFailureChunkCount)}`],
+    ['구조', r.structureSignaturePass === true ? '통과' : r.structureSignaturePass === false ? `오류 ${adminNumber(r.sectionPathErrorCount)}` : ''],
+    ['품질/효과', [r.qualityStatus, r.effectStatus].filter(Boolean).join(' · ')],
+    ['예상 API 비용', r.estimatedUsd == null ? '' : `$${Number(r.estimatedUsd).toFixed(4)}`]
+   ].filter(([, value]) => value);
    return `<tr>
-    <td><input type="checkbox" class="gp-admin-job-cb" data-uid="${jsAttr(r.uid)}"></td>
+    <td><input type="checkbox" class="gp-admin-job-cb" data-uid="${jsAttr(r.uid)}" aria-label="${escapeHtml(r.email || (r.uid || '').slice(0, 8))} 작업 선택"></td>
     <td>${escapeHtml(r.email || '(이메일 없음)')}<br><span class="muted">${escapeHtml((r.uid || '').slice(0, 8))}</span></td>
     <td><span class="gp-admin-jobst ${s.c}">${escapeHtml(s.l)}</span></td>
     <td>${r.billingDisposition
@@ -6108,17 +6521,17 @@ function renderAdminJobs(data) {
     <td class="num">${adminNumber(r.needed)}</td>
     <td class="muted">${escapeHtml(r.stage || '')}</td>
     <td class="muted">${escapeHtml(adminDateText(r.createdAtMs))}</td>
-    <td><button type="button" class="gp-admin-mini-btn" onclick="adminOpenUser('${jsAttr(r.uid)}')">열기</button></td>
+    <td><details class="gp-admin-row-detail"><summary>상세</summary><div class="gp-admin-row-detail-panel"><button type="button" class="gp-admin-detail-close" aria-label="작업 상세 닫기" onclick="adminCloseJobDetail(this)">×</button><dl>${detail.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl><button type="button" class="gp-admin-mini-btn" onclick="adminOpenUser('${jsAttr(r.uid)}')">사용자 열기</button></div></details></td>
   </tr>`;
  }).join('');
  el.innerHTML = `
   <div class="gp-admin-jobs-bar">
-    <label class="gp-admin-jobs-all"><input type="checkbox" onclick="adminJobsToggleAll(this)"> 전체 선택</label>
+    <label class="gp-admin-jobs-all"><input type="checkbox" onclick="adminJobsToggleAll(this)" aria-label="현재 페이지 작업 전체 선택"> 전체 선택</label>
     <button type="button" class="gp-admin-primary" onclick="adminNotifyAffected()">선택 사용자에게 알림</button>
     <span class="gp-admin-jobs-note ${charged ? 'alert' : ''}">${charged ? `⚠ 실제 차감된 작업 ${charged}건 — 확인 필요` : '차감된 작업 없음'}</span>
   </div>
-  <div class="gp-admin-table-wrap"><table class="gp-admin-table gp-admin-jobs-table">
-   <thead><tr><th></th><th>사용자</th><th>상태</th><th>차감</th><th class="num">크레딧</th><th>단계</th><th>시각</th><th></th></tr></thead>
+  <div class="gp-admin-table-wrap" tabindex="0" aria-label="작업 목록 가로 스크롤"><table class="gp-admin-table gp-admin-jobs-table"><caption>선택 기간의 작업 상태와 과금 정보</caption>
+   <thead><tr><th scope="col">선택</th><th scope="col">사용자</th><th scope="col">상태</th><th scope="col">차감</th><th scope="col" class="num">크레딧</th><th scope="col">단계</th><th scope="col">시각</th><th scope="col">세부</th></tr></thead>
    <tbody>${rows}</tbody>
   </table></div>
   ${adminJobsPagerHtml(data)}`;
@@ -6178,18 +6591,40 @@ function adminQualityCodeList(title, rows, emptyText) {
   : `<p>${escapeHtml(emptyText || '기록 없음')}</p>`}</div>`;
 }
 
+let adminQualityGeneration = 0;
+let adminQualityController = null;
+window.adminResetQualityFilters = function() {
+ const hours = document.getElementById('adminQualityHours');
+ const mode = document.getElementById('adminQualityMode');
+ const status = document.getElementById('adminQualityStatus');
+ if (hours) hours.value = '24';
+ if (mode) mode.value = '';
+ if (status) status.value = '';
+ adminRememberFilters();
+ window.loadAdminHumanizeQuality();
+};
+
 window.loadAdminHumanizeQuality = async function() {
  if (!window.isAdmin()) return;
  const el = document.getElementById('adminHumanizeQualityBody');
  if (!el) return;
+ const generation = ++adminQualityGeneration;
+ if (adminQualityController) adminQualityController.abort();
+ const controller = new AbortController();
+ adminQualityController = controller;
  const hours = parseInt(document.getElementById('adminQualityHours')?.value, 10) || 24;
+ el.setAttribute('aria-busy', 'true');
  el.innerHTML = adminQualityLoadingHtml();
  try {
-  const data = await adminPost('/admin/humanize-quality', { hours, limit: 2000 });
+  const data = await adminPost('/admin/humanize-quality', { hours, limit: 2000 }, { signal: controller.signal });
+  if (generation !== adminQualityGeneration) return;
   window._adminHumanizeQuality = data;
   renderAdminHumanizeQuality(data);
  } catch (e) {
+  if (e?.name === 'AbortError' || generation !== adminQualityGeneration) return;
   el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">${escapeHtml(e.message)}</div>`;
+ } finally {
+  if (generation === adminQualityGeneration) el.removeAttribute('aria-busy');
  }
 };
 
@@ -6198,6 +6633,8 @@ function renderAdminHumanizeQuality(data) {
  if (!el) return;
  const report = data?.report;
  const summary = report?.summary || {};
+ const selectedMode = document.getElementById('adminQualityMode')?.value || '';
+ const selectedStatus = document.getElementById('adminQualityStatus')?.value || '';
  const total = adminNumber(summary.total);
  const count = document.getElementById('adminQualityCount');
  if (count) count.textContent = total ? `${total}${data?.truncated ? '+' : ''}건` : '';
@@ -6252,7 +6689,10 @@ function renderAdminHumanizeQuality(data) {
   adminQualityStat('조회 전체 · 리듬 균일화', adminQualityAverage(report, 'rhythmUniformityDelta', true), 'shadow 지표 · 엔진 혼합', Number(report?.metrics?.rhythmUniformityDelta?.average) > 0)
  ].join('');
 
- const crossRows = (report.requestedModeDocumentProfileEngineQuality || []).slice(0, 60).map(row => `<tr>
+ const filteredCross = (report.requestedModeDocumentProfileEngineQuality || []).filter(row =>
+  (!selectedMode || row.requestedMode === selectedMode) && (!selectedStatus || row.qualityStatus === selectedStatus)
+ );
+ const crossRows = filteredCross.slice(0, 60).map(row => `<tr>
   <td>${escapeHtml(ADMIN_MODE_LABELS[row.requestedMode] || row.requestedMode || '미상')}</td>
   <td>${escapeHtml(ADMIN_PROFILE_LABELS[row.documentProfile] || row.documentProfile || '미분류')}</td>
   <td><code>${escapeHtml(row.engineVersion || '미상')}</code></td>
@@ -6260,7 +6700,10 @@ function renderAdminHumanizeQuality(data) {
   <td class="num">${adminNumber(row.count)}</td>
  </tr>`).join('');
 
-  const recentRows = (report.recent || []).slice(0, 80).map(row => `<tr>
+  const filteredRecent = (report.recent || []).filter(row =>
+   (!selectedMode || row.requestedMode === selectedMode) && (!selectedStatus || row.qualityStatus === selectedStatus)
+  );
+  const recentRows = filteredRecent.slice(0, 80).map(row => `<tr>
   <td class="muted">${escapeHtml(adminDateText(row.createdAtMs))}</td>
   <td>${escapeHtml(ADMIN_MODE_LABELS[row.requestedMode] || row.requestedMode || '미상')}</td>
   <td>${escapeHtml(ADMIN_PROFILE_LABELS[row.documentProfile] || row.documentProfile || '미분류')}</td>
@@ -6288,8 +6731,8 @@ function renderAdminHumanizeQuality(data) {
   ${latestEngineSummary}
   <div class="gp-admin-quality-stats">${stats}</div>
   <div class="gp-admin-quality-section">
-   <div class="gp-admin-quality-section-head"><h4>모드 × 글 종류 × 엔진 × 품질 상태</h4><span>상위 ${Math.min(60, (report.requestedModeDocumentProfileEngineQuality || []).length)}개 조합</span></div>
-   <div class="gp-admin-table-wrap"><table class="gp-admin-table gp-admin-quality-cross"><thead><tr><th>요청</th><th>글 종류</th><th>엔진</th><th>품질</th><th class="num">건수</th></tr></thead><tbody>${crossRows}</tbody></table></div>
+   <div class="gp-admin-quality-section-head"><h4>모드 × 글 종류 × 엔진 × 품질 상태</h4><span>${filteredCross.length ? `상위 ${Math.min(60, filteredCross.length)}개 조합` : '선택 조건 결과 없음'}</span></div>
+   <div class="gp-admin-table-wrap" tabindex="0" aria-label="품질 교차표 가로 스크롤"><table class="gp-admin-table gp-admin-quality-cross"><caption>요청 모드, 글 종류, 엔진, 품질 상태별 작업 건수</caption><thead><tr><th scope="col">요청</th><th scope="col">글 종류</th><th scope="col">엔진</th><th scope="col">품질</th><th scope="col" class="num">건수</th></tr></thead><tbody>${crossRows || '<tr><td colspan="5" class="muted">선택 조건에 맞는 조합이 없습니다.</td></tr>'}</tbody></table></div>
   </div>
   <div class="gp-admin-quality-codes">
    ${adminQualityCodeList('결과 품질 경고', report.warningCounts, '결과 경고 없음')}
@@ -6301,10 +6744,14 @@ function renderAdminHumanizeQuality(data) {
    ${adminQualityCodeList('깊이 미달 사유', report.depthReasonCounts, '깊이 미달 없음')}
   </div>
   <div class="gp-admin-quality-section">
-   <div class="gp-admin-quality-section-head"><h4>최근 작업</h4><span>본문 없이 관측값만 표시</span></div>
-    <div class="gp-admin-table-wrap"><table class="gp-admin-table gp-admin-quality-recent"><thead><tr><th>시각</th><th>요청</th><th>글 종류</th><th>효과</th><th class="num">편집</th><th class="num">승인/편집청크</th><th class="num">모델 실패</th><th>구조</th><th>한국어</th><th>품질</th><th>과금</th></tr></thead><tbody>${recentRows}</tbody></table></div>
+   <div class="gp-admin-quality-section-head"><h4>최근 작업</h4><span>본문 없이 관측값 ${filteredRecent.length}건</span></div>
+    <div class="gp-admin-table-wrap" tabindex="0" aria-label="최근 품질 작업 가로 스크롤"><table class="gp-admin-table gp-admin-quality-recent"><caption>최근 휴머나이징 작업의 품질 관측값</caption><thead><tr><th scope="col">시각</th><th scope="col">요청</th><th scope="col">글 종류</th><th scope="col">효과</th><th scope="col" class="num">편집</th><th scope="col" class="num">승인/편집청크</th><th scope="col" class="num">모델 실패</th><th scope="col">구조</th><th scope="col">한국어</th><th scope="col">품질</th><th scope="col">과금</th></tr></thead><tbody>${recentRows || '<tr><td colspan="11" class="muted">선택 조건에 맞는 최근 작업이 없습니다.</td></tr>'}</tbody></table></div>
   </div>`;
 }
+
+window.adminRenderHumanizeQualityFilters = function() {
+ if (window._adminHumanizeQuality) renderAdminHumanizeQuality(window._adminHumanizeQuality);
+};
 
 window.adminJobsToggleAll = function(cb) {
  document.querySelectorAll('.gp-admin-job-cb').forEach(x => { x.checked = cb.checked; });
@@ -6347,6 +6794,13 @@ window.adminNotifySelectedUser = async function() {
   ? await window.gpPrompt({ title: '사용자 알림', message: `${who} 사용자에게 인앱 알림을 보냅니다.`, placeholder: '알림 메시지', defaultValue: defMsg, confirmText: '발송', required: true })
   : prompt('알림 메시지', defMsg);
  if (!message || message.trim().length < 2) return;
+ if (!window._adminSelectedUser || window._adminSelectedUser.uid !== user.uid) {
+  adminSetMessage('adminUserNotifyMsg', '검색 대상이 바뀌었습니다. 사용자를 다시 확인하세요.', 'error');
+  return;
+ }
+ const button = document.getElementById('adminUserNotifyButton');
+ if (button && button.disabled) return;
+ adminSetBusy(button, true, '발송 중');
  try {
   const data = await adminPost('/admin/notify-users', {
    uids: [user.uid],
@@ -6358,6 +6812,8 @@ window.adminNotifySelectedUser = async function() {
   if (window.gpToast) window.gpToast('사용자에게 알림을 보냈어요.', { type: 'success', title: '알림 발송' });
  } catch (e) {
   adminSetMessage('adminUserNotifyMsg', e.message || '알림 발송에 실패했습니다.', 'error');
+ } finally {
+  adminSetBusy(button, false);
  }
 };
 
@@ -6392,7 +6848,15 @@ window.adminAdjustCredits = async function() {
   : confirm(`${user.email || user.uid}에게 ${delta > 0 ? '+' : ''}${delta}크레딧을 적용할까요?`);
  if (!ok) return;
 
+ if (!window._adminSelectedUser || window._adminSelectedUser.uid !== user.uid) {
+  adminSetMessage('adminCreditAdjustMsg', '검색 대상이 바뀌었습니다. 사용자를 다시 확인하세요.', 'error');
+  return;
+ }
+ const button = document.getElementById('adminCreditAdjustButton');
+ if (button && button.disabled) return;
+
  adminSetMessage('adminCreditAdjustMsg', '처리 중...', 'info');
+ adminSetBusy(button, true, '처리 중');
  try {
   const data = await adminPost('/admin/adjust-credits', { uid: user.uid, delta, reason });
   adminSetMessage('adminCreditAdjustMsg', `완료: ${data.before.toLocaleString('ko-KR')} → ${data.after.toLocaleString('ko-KR')}크레딧`, 'success');
@@ -6406,6 +6870,8 @@ window.adminAdjustCredits = async function() {
   await window.loadAllCreditHistory();
  } catch (e) {
   adminSetMessage('adminCreditAdjustMsg', e.message, 'error');
+ } finally {
+  adminSetBusy(button, false);
  }
 };
 
@@ -6521,7 +6987,16 @@ window.loadCreditHistory = async () =>{
  }
 };
 
-window._adminHistory = { data: [], page: 0, pageSize: 10, filtered: [] };
+window._adminHistory = { data: [], page: 0, pageSize: 25, filtered: [] };
+let adminHistoryFilterGeneration = 0;
+
+function adminHistoryMatchesType(h, type) {
+ if (!type) return true;
+ const value = String(h?.type || '');
+ if (type === 'usage') return !['charge', 'refund', 'admin_adjust', 'coupon_redeem', 'referral'].includes(value) && !value.endsWith('_restore');
+ if (type === 'restore') return value.endsWith('_restore');
+ return value === type;
+}
 
 function adminHistoryCreatedMs(h) {
  const c = h && h.createdAt;
@@ -6571,17 +7046,42 @@ window.loadAllCreditHistory = async () =>{
  window._adminHistory.data = allHistory;
  window._adminHistory.filtered = allHistory;
  window._adminHistory.page = 0;
- window.renderAdminHistory();
+ await window.filterAdminHistory();
  } catch(e) {
  console.log('전체 사용자 내역 로드 실패:', e);
- el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">품질 지표를 불러오지 못했습니다. ${escapeHtml(e.message || '')}</div>`;
+ el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">크레딧 원장을 불러오지 못했습니다. ${escapeHtml(e.message || '')} <button type="button" class="gp-admin-mini-btn" onclick="loadAllCreditHistory()">다시 시도</button></div>`;
+ }
+};
+
+window.loadAdminCreditUsageSummary = async () => {
+ if (!window.isAdmin()) return;
+ const stat7d = document.getElementById('adminStatCredit7d');
+ if (!stat7d) return;
+ delete stat7d.dataset.loadState;
+ try {
+  const data = await adminPost('/admin/credit-history', { limit: 1000 });
+  const sum = Object.values(data.dailyUsed || {}).reduce((total, used) => total + (Number(used) || 0), 0);
+  stat7d.textContent = sum.toLocaleString('ko-KR');
+  stat7d.title = '전체 사용자 최신 원장 1,000건 안에서 최근 7일 사용량을 합산한 값입니다.';
+  stat7d.dataset.loadState = 'ok';
+ } catch (_) {
+  stat7d.textContent = '측정 실패';
+  stat7d.dataset.loadState = 'error';
  }
 };
 
 window.filterAdminHistory = async () => {
+ const generation = ++adminHistoryFilterGeneration;
+ try {
  const from = document.getElementById('adminDateFrom').value;
  const to = document.getElementById('adminDateTo').value;
  const email = (document.getElementById('adminEmailFilter')?.value || '').trim().toLowerCase();
+ const type = document.getElementById('adminHistoryType')?.value || '';
+ if (from && to && from > to) {
+  const el = document.getElementById('adminCreditHistory');
+  if (el) el.innerHTML = '<div class="gp-admin-empty gp-admin-error-text">시작일은 종료일보다 늦을 수 없습니다.</div>';
+  return;
+ }
  window._adminHistory.dateFrom = from;
  window._adminHistory.dateTo = to;
  window._adminHistory.emailFilter = email;
@@ -6597,6 +7097,7 @@ window.filterAdminHistory = async () => {
   } else {
    // 캐시에 없으면 Firestore에서 직접 이메일로 유저 조회
    const userSnap = await getDocs(query(collection(db, 'users'), where('email', '==', email), limit(1)));
+   if (generation !== adminHistoryFilterGeneration) return;
    if (!userSnap.empty) {
     uid = userSnap.docs[0].id;
     userName = userSnap.docs[0].data().name || '알 수 없음';
@@ -6609,6 +7110,7 @@ window.filterAdminHistory = async () => {
    return;
   }
   const histSnap = await getDocs(query(collection(db, 'users', uid, 'creditHistory'), orderBy('createdAt', 'desc')));
+  if (generation !== adminHistoryFilterGeneration) return;
   let filtered = histSnap.docs.map(d => ({ ...d.data(), userName, userEmail: email, uid }));
   if (from) filtered = filtered.filter(h => {
    const ms = adminHistoryCreatedMs(h);
@@ -6618,6 +7120,7 @@ window.filterAdminHistory = async () => {
    const ms = adminHistoryCreatedMs(h);
    return ms && ms <= new Date(to + 'T23:59:59').getTime();
   });
+  filtered = filtered.filter(h => adminHistoryMatchesType(h, type));
   window._adminHistory.filtered = filtered;
   window._adminHistory.page = 0;
   window.renderAdminHistory();
@@ -6634,8 +7137,34 @@ window.filterAdminHistory = async () => {
   const ms = adminHistoryCreatedMs(h);
   return ms && ms <= new Date(to + 'T23:59:59').getTime();
  });
+ filtered = filtered.filter(h => adminHistoryMatchesType(h, type));
  window._adminHistory.filtered = filtered;
  window._adminHistory.page = 0;
+ window.renderAdminHistory();
+ } catch (error) {
+  if (generation !== adminHistoryFilterGeneration) return;
+  const el = document.getElementById('adminCreditHistory');
+  if (el) el.innerHTML = `<div class="gp-admin-empty gp-admin-error-text">원장 필터를 적용하지 못했습니다. ${escapeHtml(error.message || '')}</div>`;
+ }
+};
+
+window.adminSetHistoryPageSize = function(value) {
+ const size = Math.min(50, Math.max(10, parseInt(value, 10) || 25));
+ window._adminHistory.pageSize = size;
+ window._adminHistory.page = 0;
+ window.renderAdminHistory();
+};
+
+window.adminResetHistoryFilters = function() {
+ adminHistoryFilterGeneration += 1;
+ clearTimeout(window._adminHistory._emailTimer);
+ ['adminDateFrom', 'adminDateTo', 'adminEmailFilter', 'adminHistoryType'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+ window._adminHistory.dateFrom = '';
+ window._adminHistory.dateTo = '';
+ window._adminHistory.emailFilter = '';
+ window._adminHistory.filtered = window._adminHistory.data.slice();
+ window._adminHistory.page = 0;
+ adminRememberFilters();
  window.renderAdminHistory();
 };
 
@@ -6665,9 +7194,10 @@ window.renderAdminHistory = () =>{
  return;
  }
 
- html += `<div class="gp-admin-table-wrap"><table class="gp-admin-table">
+ html += `<p class="gp-admin-limit-note">${window._adminHistory.emailFilter ? '정확한 이메일로 조회한 사용자 전체 원장' : '전체 사용자 최신 1,000건 범위'} · 현재 필터 ${total.toLocaleString('ko-KR')}건</p><div class="gp-admin-table-wrap" tabindex="0" aria-label="크레딧 원장 가로 스크롤"><table class="gp-admin-table">
+ <caption>크레딧 충전·사용·환불·조정 원장</caption>
  <thead><tr>
- <th>날짜</th><th>유저</th><th>종류</th><th class="num">사용</th><th class="num">잔여</th>
+ <th scope="col">날짜</th><th scope="col">유저</th><th scope="col">종류</th><th scope="col" class="num">증감</th><th scope="col" class="num">잔여</th>
  </tr></thead><tbody>`
  + items.map(h =>{
  const date = adminHistoryDateText(h);
@@ -6693,8 +7223,9 @@ window.renderAdminHistory = () =>{
 
 // 이메일 필터: 입력마다 Firestore 조회를 피하려고 디바운스
 window.adminHistoryEmailInput = () => {
+ adminHistoryFilterGeneration += 1;
  clearTimeout(window._adminHistory._emailTimer);
- window._adminHistory._emailTimer = setTimeout(() => window.filterAdminHistory(), 350);
+ window._adminHistory._emailTimer = setTimeout(() => { adminRememberFilters(); window.filterAdminHistory(); }, 350);
 };
 
 window.backToList = () =>{

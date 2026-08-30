@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>관리자 운영 센터 v2 시각 검증</title>
+  <link rel="stylesheet" href="../../assets/css/redesign.css">
+  <style>
+    body { margin: 0; min-height: 100vh; background: #f7f7fb; }
+    .gp-admin-page { display: block !important; }
+    .preview-table-wrap { overflow-x: auto; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main id="adminContent" class="gp-admin-page">
+    <div class="gp-admin-shell">
+      <header class="gp-admin-head">
+        <div class="gp-admin-head-title">
+          <h1>운영 센터</h1>
+          <p>처리가 필요한 일부터 확인하고, 세부 데이터는 각 영역에서 조회하세요.</p>
+        </div>
+        <div class="gp-admin-head-actions">
+          <span class="gp-admin-updated">방금 갱신됨</span>
+          <button type="button" class="gp-admin-refresh">현재 화면 새로고침</button>
+        </div>
+      </header>
+
+      <div class="gp-admin-overview">
+        <div class="gp-admin-ov-item"><span class="gp-admin-ov-label">오늘 매출</span><strong>184,000원</strong><em>승인 12건</em></div>
+        <div class="gp-admin-ov-item"><span class="gp-admin-ov-label">이번 달 매출</span><strong>4,762,000원</strong><em>승인 318건</em></div>
+        <div class="gp-admin-ov-item"><span class="gp-admin-ov-label">이번 달 객단가</span><strong>14,975원</strong><em>승인 결제 기준</em></div>
+        <div class="gp-admin-ov-item"><span class="gp-admin-ov-label">이번 달 결제분 환불</span><strong>58,000원</strong><em>완료 4건</em></div>
+        <div class="gp-admin-ov-item"><span class="gp-admin-ov-label">환불 대기</span><strong class="gp-admin-ov-warn">2건</strong><em>처리 필요</em></div>
+        <div class="gp-admin-ov-item"><span class="gp-admin-ov-label">최근 7일 크레딧 사용</span><strong>18,420</strong><em>최신 원장 1,000건 범위</em></div>
+      </div>
+
+      <nav class="gp-admin-tabs" role="tablist" aria-label="관리자 영역">
+        <button type="button" role="tab" aria-selected="true" tabindex="0" class="gp-admin-tab active" data-preview-tab="overview">개요</button>
+        <button type="button" role="tab" aria-selected="false" tabindex="-1" class="gp-admin-tab" data-preview-tab="incidents">장애·작업 <span class="gp-ops-tab-badge">2</span></button>
+        <button type="button" role="tab" aria-selected="false" tabindex="-1" class="gp-admin-tab">결제·환불</button>
+        <button type="button" role="tab" aria-selected="false" tabindex="-1" class="gp-admin-tab">사용자</button>
+        <button type="button" role="tab" aria-selected="false" tabindex="-1" class="gp-admin-tab">품질</button>
+        <button type="button" role="tab" aria-selected="false" tabindex="-1" class="gp-admin-tab">원장</button>
+        <button type="button" role="tab" aria-selected="false" tabindex="-1" class="gp-admin-tab">쿠폰</button>
+        <button type="button" role="tab" aria-selected="false" tabindex="-1" class="gp-admin-tab">운영 설정</button>
+        <button type="button" role="tab" aria-selected="false" tabindex="-1" class="gp-admin-tab">랩·도구</button>
+        <button type="button" role="tab" aria-selected="false" tabindex="-1" class="gp-admin-tab">변경 이력</button>
+      </nav>
+
+      <section id="previewOverview" class="gp-admin-panel gp-admin-command" role="tabpanel">
+        <div class="gp-admin-section-head">
+          <div><h3>지금 확인할 일</h3><p>미확인 장애, 환불 대기, 알림·정기 작업 상태를 한곳에서 확인합니다.</p></div>
+        </div>
+        <div class="gp-admin-command-grid">
+          <button type="button" class="gp-admin-command-item"><span>미확인 SEV1</span><strong>1건</strong><em>돈·정합성 사고</em></button>
+          <button type="button" class="gp-admin-command-item"><span>환불 대기</span><strong>2건</strong><em>고객 요청 처리</em></button>
+          <button type="button" class="gp-admin-command-item"><span>장애 알림</span><strong>정상</strong><em>Discord 전송</em></button>
+          <button type="button" class="gp-admin-command-item"><span>정기 작업</span><strong>정상</strong><em>하트비트 상태</em></button>
+        </div>
+        <div class="gp-admin-health-line">최근 확인 10:42 · 미확인 SEV1 1건과 환불 2건을 먼저 확인하세요.</div>
+      </section>
+
+      <section id="previewIncidents" class="gp-admin-panel" role="tabpanel" hidden>
+        <div class="gp-admin-section-head">
+          <div><h3>장애·작업</h3><p>기술 장애와 사용자 작업 상태를 분리해 조회합니다. 장애 집계는 서버 전체 요약을 사용합니다.</p></div>
+        </div>
+        <div class="gp-admin-filter-row">
+          <label class="gp-admin-filter-field"><span>등급</span><select class="gp-admin-input gp-admin-input-sm"><option>전체 등급</option><option>SEV1</option><option>SEV2</option></select></label>
+          <label class="gp-admin-filter-field"><span>영역</span><select class="gp-admin-input gp-admin-input-sm"><option>전체 영역</option><option>결제</option><option>AI 작업</option></select></label>
+          <label class="gp-admin-filter-field gp-admin-filter-grow"><span>검색</span><input class="gp-admin-input gp-admin-input-sm" type="search" placeholder="UID·주문번호·requestId"></label>
+          <button type="button" class="gp-admin-mini-btn">필터 초기화</button>
+        </div>
+        <div class="preview-table-wrap">
+          <table class="gp-admin-table">
+            <caption class="sr-only">최근 장애 로그</caption>
+            <thead><tr><th scope="col">등급</th><th scope="col">발생 시각</th><th scope="col">영역</th><th scope="col">이벤트</th><th scope="col">건수</th><th scope="col">상태</th></tr></thead>
+            <tbody>
+              <tr><td><span class="gp-ops-severity sev1">SEV1</span></td><td>10:31</td><td>구독</td><td>cron_secret_rejected</td><td>3건</td><td><button class="gp-admin-mini-btn">확인 처리</button></td></tr>
+              <tr><td><span class="gp-ops-severity sev2">SEV2</span></td><td>09:48</td><td>AI 작업</td><td>provider_timeout</td><td>1건</td><td>확인됨</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script>
+    const tabs = document.querySelectorAll('[data-preview-tab]');
+    tabs.forEach((tab) => tab.addEventListener('click', () => {
+      tabs.forEach((item) => { item.classList.toggle('active', item === tab); item.setAttribute('aria-selected', String(item === tab)); });
+      document.getElementById('previewOverview').hidden = tab.dataset.previewTab !== 'overview';
+      document.getElementById('previewIncidents').hidden = tab.dataset.previewTab !== 'incidents';
+    }));
+  </script>
+</body>
+</html>

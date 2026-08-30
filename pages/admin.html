@@ -1,17 +1,19 @@
 <div id="adminContent" class="gp-admin-page" style="display:none;">
-  <div class="gp-admin-shell">
+  <div id="adminGateMsg" class="gp-admin-gate" hidden></div>
+  <div id="adminShell" class="gp-admin-shell">
     <header class="gp-admin-head">
       <div class="gp-admin-head-title">
-        <div class="gp-admin-kicker">Admin</div>
-        <h2>운영 관리</h2>
+        <h1>운영 센터</h1>
+        <p>처리가 필요한 일부터 확인하고, 세부 데이터는 각 영역에서 조회하세요.</p>
       </div>
-      <button type="button" class="gp-admin-refresh" onclick="loadAdminPage()">
+      <div class="gp-admin-head-actions">
+        <span id="adminLastUpdated" class="gp-admin-updated" aria-live="polite">아직 갱신하지 않음</span>
+        <button id="adminRefreshButton" type="button" class="gp-admin-refresh" onclick="adminRefreshCurrent()">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.4 6.4M3 12A9 9 0 0 1 18.4 5.6"/><path d="M21 4v6h-6M3 20v-6h6"/></svg>
-        새로고침
-      </button>
+          현재 화면 새로고침
+        </button>
+      </div>
     </header>
-
-    <div id="adminGateMsg" class="gp-admin-gate" hidden></div>
 
     <!-- 개요 바: 박스 대신 구분선으로 나눈 핵심 지표 -->
     <div class="gp-admin-overview" id="adminOverview">
@@ -26,34 +28,73 @@
         <em id="adminStatRevMonthCnt"></em>
       </div>
       <div class="gp-admin-ov-item">
+        <span class="gp-admin-ov-label">이번 달 객단가</span>
+        <strong id="adminStatRevMonthAov">—</strong>
+        <em>승인 결제 기준</em>
+      </div>
+      <div class="gp-admin-ov-item">
+        <span class="gp-admin-ov-label">이번 달 결제분 환불</span>
+        <strong id="adminStatRefundMonth">—</strong>
+        <em id="adminStatRefundMonthCnt"></em>
+      </div>
+      <div class="gp-admin-ov-item">
         <span class="gp-admin-ov-label">환불 대기</span>
         <strong id="adminStatRefund" class="gp-admin-ov-warn">—</strong>
       </div>
       <div class="gp-admin-ov-item">
         <span class="gp-admin-ov-label">최근 7일 크레딧 사용</span>
         <strong id="adminStatCredit7d">—</strong>
+        <em>최신 원장 1,000건 범위</em>
       </div>
     </div>
 
     <!-- 탭: 섹션이 계속 늘며 세로 스크롤이 과도해져, 성격별로 나눠 한 번에 한 그룹만 보여준다 -->
-    <nav class="gp-admin-tabs" id="adminTabs" aria-label="관리자 섹션 탭">
-      <button type="button" class="gp-admin-tab active" data-tab="ops" onclick="adminSwitchTab('ops')">운영 현황</button>
-      <button type="button" class="gp-admin-tab" data-tab="incidents" onclick="adminSwitchTab('incidents')">장애 로그 <span id="adminOpsTabBadge" class="gp-ops-tab-badge" hidden>0</span></button>
-      <button type="button" class="gp-admin-tab" data-tab="quality" onclick="adminSwitchTab('quality')">휴머나이징 품질</button>
-      <button type="button" class="gp-admin-tab" data-tab="users" onclick="adminSwitchTab('users')">사용자</button>
-      <button type="button" class="gp-admin-tab" data-tab="ledger" onclick="adminSwitchTab('ledger')">크레딧 원장</button>
-      <button type="button" class="gp-admin-tab" data-tab="coupons" onclick="adminSwitchTab('coupons')">쿠폰</button>
-      <button type="button" class="gp-admin-tab" data-tab="settings" onclick="adminSwitchTab('settings')">설정·실험</button>
-      <button type="button" class="gp-admin-tab" data-tab="patches" onclick="adminSwitchTab('patches')">패치노트</button>
+    <nav class="gp-admin-tabs" id="adminTabs" role="tablist" aria-label="관리자 영역">
+      <button id="adminTabOverview" type="button" role="tab" aria-selected="true" aria-controls="adminPanelOverview" tabindex="0" class="gp-admin-tab active" data-tab="overview" onclick="adminSwitchTab('overview')">개요</button>
+      <button id="adminTabIncidents" type="button" role="tab" aria-selected="false" aria-controls="adminPanelIncidents" tabindex="-1" class="gp-admin-tab" data-tab="incidents" onclick="adminSwitchTab('incidents')">장애·작업 <span id="adminOpsTabBadge" class="gp-ops-tab-badge" hidden>0</span></button>
+      <button id="adminTabBilling" type="button" role="tab" aria-selected="false" aria-controls="adminPanelBilling" tabindex="-1" class="gp-admin-tab" data-tab="billing" onclick="adminSwitchTab('billing')">결제·환불 <span id="adminBillingTabBadge" class="gp-ops-tab-badge" hidden>0</span></button>
+      <button id="adminTabUsers" type="button" role="tab" aria-selected="false" aria-controls="adminPanelUsers" tabindex="-1" class="gp-admin-tab" data-tab="users" onclick="adminSwitchTab('users')">사용자</button>
+      <button id="adminTabQuality" type="button" role="tab" aria-selected="false" aria-controls="adminPanelQuality" tabindex="-1" class="gp-admin-tab" data-tab="quality" onclick="adminSwitchTab('quality')">품질</button>
+      <button id="adminTabLedger" type="button" role="tab" aria-selected="false" aria-controls="adminPanelLedger" tabindex="-1" class="gp-admin-tab" data-tab="ledger" onclick="adminSwitchTab('ledger')">원장</button>
+      <button id="adminTabCoupons" type="button" role="tab" aria-selected="false" aria-controls="adminPanelCoupons" tabindex="-1" class="gp-admin-tab" data-tab="coupons" onclick="adminSwitchTab('coupons')">쿠폰</button>
+      <button id="adminTabSettings" type="button" role="tab" aria-selected="false" aria-controls="adminPanelSettings" tabindex="-1" class="gp-admin-tab" data-tab="settings" onclick="adminSwitchTab('settings')">운영 설정</button>
+      <button id="adminTabLabs" type="button" role="tab" aria-selected="false" aria-controls="adminPanelLabs" tabindex="-1" class="gp-admin-tab" data-tab="labs" onclick="adminSwitchTab('labs')">랩·도구</button>
+      <button id="adminTabPatches" type="button" role="tab" aria-selected="false" aria-controls="adminPanelPatches" tabindex="-1" class="gp-admin-tab" data-tab="patches" onclick="adminSwitchTab('patches')">변경 이력</button>
     </nav>
 
-    <section class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
+    <div id="adminTabStatus" class="gp-admin-tab-status" role="status" aria-live="polite"></div>
+
+    <section id="adminPanelOverview" class="gp-admin-panel gp-admin-command" data-admin-tab="overview" role="tabpanel" aria-labelledby="adminTabOverview">
+      <div class="gp-admin-section-head">
+        <div>
+          <h3>지금 확인할 일</h3>
+          <p>미확인 장애, 환불 대기, 알림·정기 작업 상태를 한곳에서 확인합니다.</p>
+        </div>
+      </div>
+      <div class="gp-admin-command-grid" id="adminCommandGrid" aria-live="polite" aria-busy="true">
+        <button type="button" class="gp-admin-command-item" onclick="adminSwitchTab('incidents')"><span>미확인 SEV1</span><strong id="adminAttentionSev1">—</strong><em>돈·정합성 사고</em></button>
+        <button type="button" class="gp-admin-command-item" onclick="adminSwitchTab('billing')"><span>환불 대기</span><strong id="adminAttentionRefunds">—</strong><em>고객 요청 처리</em></button>
+        <button type="button" class="gp-admin-command-item" onclick="adminSwitchTab('incidents')"><span>장애 알림</span><strong id="adminAttentionWebhook">—</strong><em>Discord 전송</em></button>
+        <button type="button" class="gp-admin-command-item" onclick="adminSwitchTab('incidents')"><span>정기 작업</span><strong id="adminAttentionCron">—</strong><em>하트비트 상태</em></button>
+      </div>
+      <div id="adminOverviewHealth" class="gp-admin-health-line">운영 상태를 불러오는 중입니다.</div>
+    </section>
+
+    <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
           <h3>운영 패치노트 <span class="gp-admin-count">47개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
         <span class="gp-admin-patch-range">2026.06.04 — 08.30</span>
+      </div>
+
+      <div class="gp-admin-filter-row gp-admin-patch-filters">
+        <label class="gp-admin-filter-field gp-admin-filter-grow" for="adminPatchQuery"><span>변경 검색</span><input id="adminPatchQuery" class="gp-admin-input gp-admin-input-sm" type="search" placeholder="버전·기능·커밋·검증 내용" oninput="adminFilterPatches()"></label>
+        <label class="gp-admin-filter-field" for="adminPatchStatus"><span>상태</span><select id="adminPatchStatus" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="adminFilterPatches()"><option value="">전체 상태</option><option value="is-live">운영 반영</option><option value="is-foundation">기반</option><option value="is-superseded">후속 대체</option><option value="is-experiment">실험</option></select></label>
+        <button type="button" class="gp-admin-mini-btn" onclick="adminTogglePatches(true)">모두 펼치기</button>
+        <button type="button" class="gp-admin-mini-btn" onclick="adminTogglePatches(false)">모두 접기</button>
+        <span id="adminPatchMatchCount" class="gp-admin-filter-result" aria-live="polite"></span>
       </div>
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
@@ -799,7 +840,7 @@
       </div>
     </section>
 
-    <section class="gp-admin-panel" data-admin-tab="settings">
+    <section id="adminPanelLabs" class="gp-admin-panel" data-admin-tab="labs">
       <div class="gp-admin-section-head">
         <h3>휴머나이징 보존형 테스트</h3>
         <p>운영 기능에 덮지 않고, 관리자 전용 테스트 페이지에서 새 엔진 분기를 확인합니다.</p>
@@ -817,7 +858,7 @@
       </div>
     </section>
 
-    <section class="gp-admin-panel" data-admin-tab="settings">
+    <section class="gp-admin-panel" data-admin-tab="labs">
       <div class="gp-admin-section-head">
         <h3>글쓰기 랩 (생성 + 휴머나이징)</h3>
         <p>확인한 정보만으로 장르에 맞는 글을 만들고, 기존 휴머나이징 엔진과 제출 전 최종 점검까지 한 번에 실행합니다. 관리자는 무과금으로 열립니다.</p>
@@ -866,7 +907,7 @@
       </div>
     </section>
 
-    <section class="gp-admin-panel" data-admin-tab="settings">
+    <section class="gp-admin-panel" data-admin-tab="labs">
       <div class="gp-admin-section-head">
         <h3>Meta 캐러셀 시안 랩</h3>
         <p>메타 광고 캐러셀 시안 5종 × 카드 5장을 한 페이지에서 넘겨보며 비교합니다.</p>
@@ -884,7 +925,7 @@
       </div>
     </section>
 
-    <section class="gp-admin-panel" data-admin-tab="settings">
+    <section id="adminPanelSettings" class="gp-admin-panel" data-admin-tab="settings">
       <div class="gp-admin-section-head">
         <h3>운영 LLM 설정 <span id="adminGptRuntimeSource" class="gp-admin-count"></span></h3>
         <p>GPT-5.6 Luna 기본·Terra 승격 모델과 작업별 reasoning·캐싱 정책을 저장합니다. 복귀는 검증된 직전 live 배포로 수행합니다.</p>
@@ -927,21 +968,18 @@
           <span>Luna 실패 시 Terra 승격</span>
         </label>
         <label class="gp-admin-label"><span>긴 글 기준</span><input id="adminGptEscLongTextChars" class="gp-admin-input" type="number" min="1000" max="100000" step="500"></label>
-        <label class="gp-admin-label"><span>보호표현 기준</span><input id="adminGptEscProtectedTermThreshold" class="gp-admin-input" type="number" min="1" max="500" step="1"></label>
-        <label class="gp-admin-label"><span>패치 대상 기준</span><input id="adminGptEscPatchTargetThreshold" class="gp-admin-input" type="number" min="1" max="100" step="1"></label>
+        <label class="gp-admin-label"><span>보호표현 기준</span><input id="adminGptEscProtectedTermThreshold" class="gp-admin-input" type="number" min="1" max="120" step="1"></label>
+        <label class="gp-admin-label"><span>패치 대상 기준</span><input id="adminGptEscPatchTargetThreshold" class="gp-admin-input" type="number" min="1" max="12" step="1"></label>
 
         <label class="gp-admin-label">
           <span>테스트 호출</span>
           <select id="adminGptTestTask" class="gp-admin-input gp-admin-select">
-            <option value="judge">judge</option>
             <option value="detect">detect</option>
-            <option value="repair">repair</option>
-            <option value="evidence">evidence</option>
             <option value="humanize">humanize</option>
           </select>
         </label>
-        <button type="button" class="gp-admin-primary" onclick="adminSaveGptRuntimeConfig()">저장</button>
-        <button type="button" class="gp-admin-refresh" onclick="adminTestGptRuntimeConfig()">테스트 호출</button>
+        <button id="adminGptSaveButton" type="button" class="gp-admin-primary" onclick="adminSaveGptRuntimeConfig()">운영 설정 저장</button>
+        <button id="adminGptTestButton" type="button" class="gp-admin-refresh" onclick="adminTestGptRuntimeConfig()">현재 입력값 테스트</button>
       </div>
       <div id="adminGptRuntimeMsg" class="gp-admin-msg"></div>
     </section>
@@ -1002,54 +1040,29 @@
           </span>
           <input id="adminDetectCalFloor" class="gp-admin-input" type="number" min="0" max="100" step="1">
         </label>
-        <button type="button" class="gp-admin-primary" onclick="adminSaveDetectCalibration()">저장</button>
+        <button id="adminDetectSaveButton" type="button" class="gp-admin-primary" onclick="adminSaveDetectCalibration()">보정 설정 저장</button>
       </div>
       <div id="adminDetectCalMsg" class="gp-admin-msg"></div>
-    </section>
-
-    <section class="gp-admin-panel" data-admin-tab="settings">
-      <div class="gp-admin-section-head">
-        <h3>기본 휴머나이징 개발테스트 <span id="adminBasicExpSource" class="gp-admin-count"></span></h3>
-        <p>실기능을 덮지 않고, 저장 후 기본 휴머나이징에만 문체 안정화 프로필을 적용합니다.</p>
-      </div>
-      <div class="gp-admin-exp-grid">
-        <div class="gp-admin-cal-toggle">
-          <label class="gp-admin-cal-check">
-            <input id="adminBasicExpEnabled" type="checkbox">
-            <span>개발테스트 사용</span>
-          </label>
-          <span class="gp-admin-tip" tabindex="0" aria-label="켜고 저장하면 기본 휴머나이징에만 테스트 프로필이 적용됩니다. 관리자만 이 설정을 볼 수 있습니다." onclick="event.preventDefault();event.stopPropagation();">
-            <span class="gp-admin-tip-icon">?</span>
-            <span class="gp-admin-tip-pop" role="tooltip">켜고 저장하면 기본 휴머나이징에만 테스트 프로필이 적용됩니다. 관리자만 이 설정을 볼 수 있습니다.</span>
-          </span>
-        </div>
-        <div class="gp-admin-exp-copy">
-          <b>적용 내용</b>
-          <span>원문 인칭 유지, 말투 통일, 짧은 문장 과다 완화, 1문장 문단 연속 정리</span>
-        </div>
-        <button type="button" class="gp-admin-primary" onclick="adminSaveBasicHumanizeExperiment()">저장</button>
-      </div>
-      <div id="adminBasicExpMsg" class="gp-admin-msg"></div>
     </section>
 
     <!-- 작업 모니터: 전체 사용자의 실패·중단·진행 작업(transformJobArchive) 일괄 조회 -->
     <!-- 장애 로그(2026-08-29): 서버 error/warn 중 등급이 매겨진 사건을 Firestore(opsLogs)에 남기고
          여기서 검색·확인한다. Render 로그는 보존 기간이 짧아 며칠 지난 사고 분석이 불가능했다.
          등급/도메인/대응 안내는 Backend lib/opsEvents.js 카탈로그가 단일 진실 원천. -->
-    <section class="gp-admin-panel gp-ops-panel" data-admin-tab="incidents">
+    <section id="adminPanelIncidents" class="gp-admin-panel gp-ops-panel" data-admin-tab="incidents">
       <div class="gp-admin-section-head">
         <div>
           <h3>장애 현황 <span id="adminOpsSourceTag" class="gp-admin-count"></span></h3>
           <p>SEV1은 돈·정합성 문제라 지금 확인해야 하고, SEV3는 추세만 봅니다. 확인(ack)하면 미확인 목록에서 빠져요.</p>
         </div>
         <div class="gp-admin-filter-row">
-          <select id="adminOpsHours" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminOpsLogs()">
+          <label class="gp-admin-filter-field" for="adminOpsHours"><span>조회 기간</span><select id="adminOpsHours" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminOpsLogs()">
             <option value="6">최근 6시간</option>
             <option value="24" selected>최근 24시간</option>
             <option value="72">최근 3일</option>
             <option value="168">최근 7일</option>
             <option value="720">최근 30일</option>
-          </select>
+          </select></label>
           <button type="button" class="gp-admin-mini-btn" onclick="loadAdminOpsLogs()">새로고침</button>
         </div>
       </div>
@@ -1061,17 +1074,18 @@
       <div id="adminOpsHeartbeats" class="gp-ops-beats" aria-live="polite"></div>
 
       <div class="gp-admin-filter-row gp-ops-filters">
-        <select id="adminOpsSeverity" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminOpsLogs()">
+        <label class="gp-admin-filter-field" for="adminOpsSeverity"><span>심각도</span><select id="adminOpsSeverity" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminOpsLogs()">
           <option value="">전체 등급</option>
           <option value="SEV1">SEV1 — 돈·정합성</option>
           <option value="SEV2">SEV2 — 기능 장애</option>
           <option value="SEV3">SEV3 — 기록만</option>
-        </select>
-        <select id="adminOpsDomain" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminOpsLogs()">
+        </select></label>
+        <label class="gp-admin-filter-field" for="adminOpsDomain"><span>영역</span><select id="adminOpsDomain" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminOpsLogs()">
           <option value="">전체 영역</option>
-        </select>
-        <input type="text" id="adminOpsQuery" class="gp-admin-input gp-admin-input-sm" placeholder="uid·주문번호·requestId·메시지 검색" oninput="window.adminOpsQueryInput()">
+        </select></label>
+        <label class="gp-admin-filter-field gp-admin-filter-grow" for="adminOpsQuery"><span>검색</span><input type="search" id="adminOpsQuery" class="gp-admin-input gp-admin-input-sm" placeholder="UID·주문번호·requestId·메시지" oninput="window.adminOpsQueryInput()"></label>
         <label class="gp-ops-check"><input type="checkbox" id="adminOpsOnlyOpen" onchange="loadAdminOpsLogs()"> 미확인만</label>
+        <button type="button" class="gp-admin-mini-btn" onclick="adminResetOpsFilters()">필터 초기화</button>
       </div>
 
       <div id="adminOpsList">
@@ -1079,39 +1093,40 @@
       </div>
     </section>
 
-    <section class="gp-admin-panel" data-admin-tab="ops">
+    <section class="gp-admin-panel" data-admin-tab="incidents">
       <div class="gp-admin-section-head">
         <h3>작업 모니터 <span id="adminJobsCount" class="gp-admin-count"></span></h3>
         <div class="gp-admin-filter-row">
-          <select id="adminJobsFilter" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminJobs()">
+          <label class="gp-admin-filter-field" for="adminJobsFilter"><span>작업 상태</span><select id="adminJobsFilter" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminJobs()">
             <option value="issues">문제 작업 (오류·차단·취소·승인대기)</option>
             <option value="active">진행 중 (queued·running·승인대기)</option>
             <option value="all">전체</option>
-          </select>
-          <select id="adminJobsHours" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminJobs()">
+          </select></label>
+          <label class="gp-admin-filter-field" for="adminJobsHours"><span>조회 기간</span><select id="adminJobsHours" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminJobs()">
             <option value="6">최근 6시간</option>
             <option value="24" selected>최근 24시간</option>
             <option value="72">최근 3일</option>
             <option value="168">최근 7일</option>
             <option value="720">최근 30일</option>
             <option value="2160">최근 90일</option>
-          </select>
+          </select></label>
           <button type="button" class="gp-admin-mini-btn" onclick="loadAdminJobs()">새로고침</button>
+          <button type="button" class="gp-admin-mini-btn" onclick="adminResetJobFilters()">필터 초기화</button>
         </div>
       </div>
-      <div id="adminJobsBody">
+      <div id="adminJobsBody" aria-live="polite" aria-busy="true">
         <div class="gp-admin-empty">불러오는 중...</div>
       </div>
     </section>
 
-    <section class="gp-admin-panel gp-admin-quality" data-admin-tab="quality">
+    <section id="adminPanelQuality" class="gp-admin-panel gp-admin-quality" data-admin-tab="quality">
       <div class="gp-admin-section-head">
         <div>
           <h3>휴머나이징 품질 관측 <span id="adminQualityCount" class="gp-admin-count"></span></h3>
           <p>원문·결과 없이 엔진 깊이, 장르 판정, 한국어 교정, 경고 비율만 집계합니다.</p>
         </div>
         <div class="gp-admin-filter-row gp-admin-quality-filter">
-          <label class="gp-admin-label" for="adminQualityHours"><span>조회 기간</span></label>
+          <label class="gp-admin-label" for="adminQualityHours"><span>전체 지표 기간</span></label>
           <select id="adminQualityHours" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="loadAdminHumanizeQuality()">
             <option value="6">최근 6시간</option>
             <option value="24" selected>최근 24시간</option>
@@ -1120,7 +1135,11 @@
             <option value="720">최근 30일</option>
             <option value="2160">최근 90일</option>
           </select>
+          <label class="gp-admin-label" for="adminQualityMode"><span>세부 목록 요청</span><select id="adminQualityMode" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="adminRenderHumanizeQualityFilters()"><option value="">전체</option><option value="blog">기본</option><option value="formal">고급</option><option value="polish">다듬기</option></select></label>
+          <label class="gp-admin-label" for="adminQualityStatus"><span>세부 목록 품질</span><select id="adminQualityStatus" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="adminRenderHumanizeQualityFilters()"><option value="">전체</option><option value="clean">정상</option><option value="needs_review">검토 필요</option></select></label>
           <button type="button" class="gp-admin-mini-btn" onclick="loadAdminHumanizeQuality()">새로고침</button>
+          <button type="button" class="gp-admin-mini-btn" onclick="adminResetQualityFilters()">필터 초기화</button>
+          <p class="gp-admin-filter-scope">기간은 상단 KPI와 경고 코드 전체에 적용됩니다. 요청·품질은 아래 교차표와 최근 작업만 좁힙니다.</p>
         </div>
       </div>
       <div id="adminHumanizeQualityBody" aria-live="polite">
@@ -1131,14 +1150,15 @@
     </section>
 
     <!-- 사용자 워크스페이스: 검색 → 요약 + 크레딧 조정 + 환불을 한 화면에 -->
-    <section class="gp-admin-panel gp-admin-ws" data-admin-tab="users">
+    <section id="adminPanelUsers" class="gp-admin-panel gp-admin-ws" data-admin-tab="users">
       <div class="gp-admin-section-head">
         <h3>사용자 관리</h3>
         <span id="adminSelectedUid" class="gp-admin-muted"></span>
       </div>
       <div class="gp-admin-ws-search">
-        <input id="adminUserQuery" class="gp-admin-input" type="text" autocomplete="off" placeholder="이메일 또는 UID로 검색" onkeydown="if(event.key==='Enter')window.adminSearchUser()">
-        <button type="button" class="gp-admin-primary" onclick="adminSearchUser()">
+        <label class="gp-admin-sr-only" for="adminUserQuery">사용자 이메일 또는 UID</label>
+        <input id="adminUserQuery" class="gp-admin-input" type="search" autocomplete="off" placeholder="이메일 또는 UID로 검색" onkeydown="if(event.key==='Enter')window.adminSearchUser()">
+        <button id="adminUserSearchButton" type="button" class="gp-admin-primary" onclick="adminSearchUser()">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.4-3.4"/></svg>
           검색
         </button>
@@ -1151,19 +1171,19 @@
           <div class="gp-admin-action-block">
             <div class="gp-admin-action-title">크레딧 조정</div>
             <div class="gp-admin-adjust-row">
-              <select id="adminCreditSign" class="gp-admin-input gp-admin-select">
+              <label class="gp-admin-sr-only" for="adminCreditSign">조정 방식</label><select id="adminCreditSign" class="gp-admin-input gp-admin-select" data-admin-user-action disabled>
                 <option value="1">추가 +</option>
                 <option value="-1">차감 −</option>
               </select>
-              <input id="adminCreditAmount" class="gp-admin-input" type="number" min="1" step="1" inputmode="numeric" placeholder="크레딧 수량">
-              <button type="button" class="gp-admin-primary" onclick="adminAdjustCredits()">적용</button>
+              <label class="gp-admin-sr-only" for="adminCreditAmount">크레딧 수량</label><input id="adminCreditAmount" class="gp-admin-input" type="number" min="1" step="1" inputmode="numeric" placeholder="크레딧 수량" data-admin-user-action disabled>
+              <button id="adminCreditAdjustButton" type="button" class="gp-admin-primary" onclick="adminAdjustCredits()" data-admin-user-action disabled>적용</button>
             </div>
-            <input id="adminCreditReason" class="gp-admin-input" type="text" maxlength="120" placeholder="사유 (예: 중복 차감 보정)">
-            <div id="adminCreditAdjustMsg" class="gp-admin-msg"></div>
+            <label class="gp-admin-sr-only" for="adminCreditReason">크레딧 조정 사유</label><input id="adminCreditReason" class="gp-admin-input" type="text" maxlength="120" placeholder="사유 (예: 중복 차감 보정)" data-admin-user-action disabled>
+            <div id="adminCreditAdjustMsg" class="gp-admin-msg" role="status" aria-live="polite"></div>
           </div>
           <div class="gp-admin-action-block">
             <div class="gp-admin-action-title">사용자 알림</div>
-            <button type="button" class="gp-admin-primary gp-admin-notify-btn" onclick="adminNotifySelectedUser()">선택 사용자에게 알림 보내기</button>
+            <button id="adminUserNotifyButton" type="button" class="gp-admin-primary gp-admin-notify-btn" onclick="adminNotifySelectedUser()" data-admin-user-action disabled>선택 사용자에게 알림 보내기</button>
             <div id="adminUserNotifyMsg" class="gp-admin-msg"></div>
           </div>
           <div class="gp-admin-action-block">
@@ -1184,7 +1204,7 @@
       </div>
     </section>
 
-    <section class="gp-admin-panel" data-admin-tab="ops">
+    <section id="adminPanelBilling" class="gp-admin-panel" data-admin-tab="billing">
       <div class="gp-admin-section-head">
         <h3>환불 요청 <span id="adminRefundCount" class="gp-admin-count" hidden></span></h3>
         <p>고객이 요청한 환불 처리</p>
@@ -1194,9 +1214,9 @@
       </div>
     </section>
 
-    <section class="gp-admin-panel" data-admin-tab="ledger">
+    <section id="adminPanelLedger" class="gp-admin-panel" data-admin-tab="ledger">
       <div class="gp-admin-section-head">
-        <h3>전체 크레딧 원장 <span id="adminHistoryCount" class="gp-admin-count"></span></h3>
+        <div><h3>최근 크레딧 원장 <span id="adminHistoryCount" class="gp-admin-count"></span></h3><p>전체 사용자 기준 최신 1,000건입니다. 이메일을 정확히 검색하면 해당 사용자의 전체 원장을 조회합니다.</p></div>
       </div>
       <div class="gp-admin-filter-row">
         <div class="gp-admin-date-range">
@@ -1205,13 +1225,16 @@
           <input type="date" id="adminDateTo" class="gp-admin-input gp-admin-input-sm" onchange="window.filterAdminHistory()" aria-label="종료일">
         </div>
         <input type="text" id="adminEmailFilter" class="gp-admin-input gp-admin-input-sm gp-admin-filter-email" placeholder="이메일로 검색" oninput="window.adminHistoryEmailInput()">
+        <label class="gp-admin-filter-field" for="adminHistoryType"><span>거래 유형</span><select id="adminHistoryType" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="window.filterAdminHistory()"><option value="">전체 유형</option><option value="usage">사용</option><option value="charge">충전</option><option value="refund">환불</option><option value="admin_adjust">관리자 조정</option><option value="coupon_redeem">쿠폰</option><option value="restore">복구</option></select></label>
+        <label class="gp-admin-filter-field" for="adminHistoryPageSize"><span>페이지</span><select id="adminHistoryPageSize" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="adminSetHistoryPageSize(this.value)"><option value="10">10건</option><option value="25" selected>25건</option><option value="50">50건</option></select></label>
+        <button type="button" class="gp-admin-mini-btn" onclick="adminResetHistoryFilters()">필터 초기화</button>
       </div>
       <div id="adminCreditHistory">
         <div class="gp-admin-empty">불러오는 중...</div>
       </div>
     </section>
 
-    <div class="gp-admin-grid" data-admin-tab="coupons">
+    <div id="adminPanelCoupons" class="gp-admin-grid" data-admin-tab="coupons">
       <section class="gp-admin-panel">
         <div class="gp-admin-section-head">
           <h3>쿠폰 발급</h3>
@@ -1229,7 +1252,7 @@
             만료일
             <input id="couponExpires" class="gp-admin-input" type="date">
           </label>
-          <button type="button" class="gp-admin-primary" onclick="adminCreateCoupons()">
+          <button id="adminCouponCreateButton" type="button" class="gp-admin-primary" onclick="adminCreateCoupons()">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5A2.5 2.5 0 1 1 10 4.5C10 6 12 7 12 7Z"/><path d="M12 7h4.5A2.5 2.5 0 1 0 14 4.5C14 6 12 7 12 7Z"/></svg>
             발급
           </button>
