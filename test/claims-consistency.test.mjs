@@ -241,14 +241,14 @@ test('use_case 흐름: 랜딩 변형·3택 프리셋·이벤트 파라미터가 
   assert.match(tracking, /use_case:\s*clean\(payload\.use_case, 40\)/u);
 });
 
-test('콘텐츠 데이터(블로그 10편·템플릿 6종)도 금지 주장·유효기간 규칙을 지킨다', async () => {
+test('콘텐츠 데이터(연구노트 12편·템플릿 6종)도 금지 주장·유효기간 규칙을 지킨다', async () => {
   const [blog, templates] = await Promise.all([
     read('scripts/blog-data.mjs'),
     read('scripts/templates-data.mjs')
   ]);
   const { BLOG_ARTICLES } = await import('../scripts/blog-data.mjs');
   const { TEMPLATE_PAGES } = await import('../scripts/templates-data.mjs');
-  assert.equal(BLOG_ARTICLES.length, 10, '블로그 10편이어야 함');
+  assert.equal(BLOG_ARTICLES.length, 12, '연구노트 12편이어야 함');
   assert.equal(TEMPLATE_PAGES.length, 6, '템플릿 파일럿 6종이어야 함');
   const all = blog + '\n' + templates;
   // 보장·날조형 표현 금지(감사보고서 §6·§8 게이트)
@@ -270,10 +270,20 @@ test('콘텐츠 데이터(블로그 10편·템플릿 6종)도 금지 주장·유
     const cover = await readFile(new URL(`../assets/img/blog/${a.slug}.webp`, import.meta.url));
     assert.ok(cover.byteLength > 1000, `블로그 커버 이미지 누락 또는 비정상: ${a.slug}`);
   }
+  const pdfGuide = BLOG_ARTICLES.find((article) => article.slug === 'pdf-long-document-humanizing-guide');
+  const appMain = await read('assets/js/app-main.js');
+  assert.ok(pdfGuide, 'PDF 장문 입력 가이드가 있어야 함');
+  assert.match(appMain, /PDF_MAX_PAGES\s*=\s*100/u);
+  assert.match(appMain, /PDF_MAX_EXTRACTED_CHARS\s*=\s*30000/u);
+  assert.match(appMain, /PDF_EXTRACT_TIMEOUT_MS\s*=\s*20000/u);
+  assert.match(appMain, /file\.size\s*>\s*10\s*\*\s*1024\s*\*\s*1024/u);
+  for (const currentLimit of ['10MB', '100쪽', '30,000자', '20초']) {
+    assert.ok(pdfGuide.body.includes(currentLimit), `PDF 가이드의 현재 제한값 누락: ${currentLimit}`);
+  }
   for (const t of TEMPLATE_PAGES) {
     assert.ok(t.genre && t.subtype && t.title && t.date && t.reviewer, `템플릿 메타 누락: ${t.genre}/${t.subtype}`);
   }
-  // 허브에 10편 전부 실링크로 연결
+  // SPA 폴백 허브에도 12편 전부 실링크로 연결
   const hub = await read('pages/blog.html');
   for (const a of BLOG_ARTICLES) {
     assert.ok(hub.includes(`/blog/${a.slug}`), `허브에 /blog/${a.slug} 링크 부재`);
