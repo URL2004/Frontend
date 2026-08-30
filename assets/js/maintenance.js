@@ -1,23 +1,14 @@
 (function () {
   var config = window.APP_CONFIG || {};
-  var storageKey = 'gp_maintenance_preview_key';
   var query = new URLSearchParams(window.location.search || '');
-  var suppliedKey = query.get('preview_key') || '';
-  var expectedKey = config.MAINTENANCE_PREVIEW_KEY || '';
 
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
-  function getStoredKey() {
-    try { return localStorage.getItem(storageKey) || ''; } catch (e) { return ''; }
-  }
-  function setStoredKey(value) {
-    try { localStorage.setItem(storageKey, value); } catch (e) {}
-  }
   function clearPreviewParam() {
-    if (!suppliedKey) return;
+    if (!query.has('preview_key')) return;
     try {
       var next = new URL(window.location.href);
       next.searchParams.delete('preview_key');
@@ -25,14 +16,13 @@
     } catch (e) {}
   }
 
-  if (expectedKey && suppliedKey && suppliedKey === expectedKey) {
-    setStoredKey(suppliedKey);
-    clearPreviewParam();
-  }
-
-  var previewAllowed = expectedKey && getStoredKey() === expectedKey;
-  window.GP_MAINTENANCE_BYPASSED = !!previewAllowed;
-  window.GP_MAINTENANCE_BLOCKED = !!config.MAINTENANCE_MODE && !previewAllowed;
+  // 과거 공개 런타임 키 기반 우회 상태는 더 이상 신뢰하지 않는다. URL에는
+  // 민감해 보이는 레거시 파라미터가 남지 않게 지우고, 점검 모드는 모두에게
+  // 동일하게 적용한다.
+  clearPreviewParam();
+  try { localStorage.removeItem('gp_maintenance_preview_key'); } catch (e) {}
+  window.GP_MAINTENANCE_BYPASSED = false;
+  window.GP_MAINTENANCE_BLOCKED = !!config.MAINTENANCE_MODE;
 
   if (!window.GP_MAINTENANCE_BLOCKED) return;
 

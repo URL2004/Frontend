@@ -9,6 +9,12 @@ const root = process.cwd();
 const dist = path.join(root, 'dist');
 const viteScratch = path.join(root, '.vite-static-build');
 const viteOut = path.join(root, '.vite-static-out');
+const maintenancePreviewKey = String(process.env.VITE_MAINTENANCE_PREVIEW_KEY || '').trim();
+if (maintenancePreviewKey) {
+  throw new Error(
+    'VITE_MAINTENANCE_PREVIEW_KEY must be unset: browser runtime configuration is public and cannot contain a maintenance bypass secret.'
+  );
+}
 const staticEntries = [
   'index.html',
   'carousel-lab.html',
@@ -102,7 +108,6 @@ window.APP_RUNTIME_CONFIG = {
   KAKAO_JS_KEY: ${literal(process.env.VITE_KAKAO_JS_KEY || '')},
   KAKAO_REST_KEY: ${literal(process.env.VITE_KAKAO_REST_KEY || '')},
   MAINTENANCE_MODE: ${literal(process.env.VITE_MAINTENANCE_MODE || '')},
-  MAINTENANCE_PREVIEW_KEY: ${literal(process.env.VITE_MAINTENANCE_PREVIEW_KEY || '')},
   MAINTENANCE_MESSAGE: ${literal(process.env.VITE_MAINTENANCE_MESSAGE || '')}${firebaseLine}
 };
 `;

@@ -51,7 +51,11 @@ window.authPersistenceReady = authPersistenceReady;
 (function() {
  const urlParams = new URLSearchParams(window.location.search);
  const refCode = urlParams.get('ref');
- if (refCode) localStorage.setItem('pendingRef', refCode);
+ // 서버 추천 코드 계약과 같은 보수적인 문자 집합만 보관한다. URL에서 온 임의
+ // 문자열이 브라우저 저장소에 남거나 이후 API 요청으로 전달되지 않게 한다.
+ if (refCode && /^[A-Za-z0-9_-]{1,64}$/.test(refCode)) {
+  try { localStorage.setItem('pendingRef', refCode); } catch (_) {}
+ }
 })();
 
 let _authResolve;

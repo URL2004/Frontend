@@ -19,6 +19,38 @@ test('추천 링크는 innerHTML이나 inline JavaScript에 사용자 ref 값을
   assert.doesNotMatch(popup, /writeText\('\$\{link\}'\)/u);
 });
 
+test('추천 코드 쿼리는 제한된 형식만 저장하고 Storage 예외를 페이지 오류로 만들지 않는다', () => {
+  const module = read('assets/js/app-module.js');
+  const start = module.indexOf('// 추천 링크: ?ref= 파라미터 저장');
+  const end = module.indexOf('let _authResolve', start);
+  const captureSource = module.slice(start, end);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+
+  function capture(search, options = {}) {
+    const stored = [];
+    const localStorage = {
+      setItem(key, value) {
+        if (options.throwOnWrite) throw new Error('storage disabled');
+        stored.push([key, value]);
+      }
+    };
+    vm.runInNewContext(captureSource, {
+      window: { location: { search } },
+      URLSearchParams,
+      localStorage
+    });
+    return stored;
+  }
+
+  assert.deepEqual(capture('?ref=AbC_123-xyz'), [['pendingRef', 'AbC_123-xyz']]);
+  assert.equal(capture(`?ref=${'a'.repeat(64)}`).length, 1);
+  assert.equal(capture(`?ref=${'a'.repeat(65)}`).length, 0);
+  assert.equal(capture('?ref=%3Cscript%3Ealert(1)%3C%2Fscript%3E').length, 0);
+  assert.equal(capture('?ref=abc%20def').length, 0);
+  assert.doesNotThrow(() => capture('?ref=valid_code-1', { throwOnWrite: true }));
+});
+
 test('종료된 커뮤니티는 숨은 런타임 경로에서도 Firestore와 Storage에 접근하지 않는다', () => {
   const module = read('assets/js/app-module.js');
   const appMain = read('assets/js/app-main.js');
