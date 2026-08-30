@@ -450,9 +450,12 @@ test('카카오 로그인은 콜백을 즉시 처리하고 메인 전환 중 진
   // 리다이렉트 OAuth는 192-bit crypto state를 요청에 싣고 10분·1회로 검증한다.
   assert.match(appModule, /crypto\.getRandomValues\(bytes\)/u);
   assert.match(appModule, /KAKAO_OAUTH_STATE_TTL_MS = 10 \* 60 \* 1000/u);
-  assert.match(appModule, /authorizeUrl\.searchParams\.set\('state', state\)/u);
-  assert.match(appModule, /sessionStorage\.removeItem\(KAKAO_OAUTH_STATE_KEY\)[\s\S]{0,500}?saved\.value === received/u);
-  assert.match(appModule, /if \(!consumeKakaoOAuthState\(params\.get\('state'\)\)\)/u);
+  assert.match(appModule, /authorizeUrl\.searchParams\.set\('state', context\.value\)/u);
+  assert.match(appModule, /authorizeUrl\.searchParams\.set\('code_challenge', challenge\)/u);
+  assert.match(appModule, /authorizeUrl\.searchParams\.set\('code_challenge_method', 'S256'\)/u);
+  assert.match(appModule, /sessionStorage\.removeItem\(KAKAO_OAUTH_STATE_KEY\)[\s\S]{0,700}?saved\.value === received \? saved\.verifier/u);
+  assert.match(appModule, /const verifier = consumeKakaoOAuthState\(params\.get\('state'\)\)/u);
+  assert.match(appModule, /code_verifier: verifier/u);
 
   // 랜딩에서 로그인 화면으로 이동하기 전 서버는 깨우되 인증 호스트는 초기 HTML에서 연결하지 않는다.
   assert.match(landingJs, /gpWarmAuthBackend/u);

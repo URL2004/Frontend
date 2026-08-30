@@ -98,6 +98,18 @@ test('account deletion reauthenticates the same social account and sends the fre
   assert.match(deleteFlow, /구독 상태를 확인하지 못해 탈퇴를 중단/u);
 });
 
+test('Kakao redirect login binds the code with PKCE and scrubs it before asynchronous work', async () => {
+  const source = await read('assets/js/app-module.js');
+  const authorize = source.slice(source.indexOf('window.kakaoRedirectLogin = async'), source.indexOf('function waitForKakaoSdk'));
+  const callback = source.slice(source.indexOf('window.handleKakaoCallback = async'), source.indexOf('window.kakaoLogin = async'));
+  assert.match(authorize, /code_challenge/u);
+  assert.match(authorize, /code_challenge_method', 'S256'/u);
+  assert.match(source, /crypto\.subtle\.digest\('SHA-256'/u);
+  assert.match(callback, /code_verifier: verifier/u);
+  assert.ok(callback.indexOf('clearKakaoCallbackQuery();') < callback.indexOf("fetch('https://kauth.kakao.com/oauth/token'"));
+  assert.ok(callback.indexOf('clearKakaoCallbackQuery();') < callback.indexOf('beginAuthTransition('));
+});
+
 test('strict CSP is observation-only and App Check is intentionally not enabled in the frontend', async () => {
   const [vercel, boot, app] = await Promise.all([
     read('vercel.json'),

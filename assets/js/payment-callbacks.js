@@ -78,7 +78,6 @@
           orderId,
           amount,
           credits,
-          uid: url.get('uid'),
           endpoint: '/confirm-payment',
           reason: options && options.reason
         });
@@ -88,7 +87,6 @@
       }
 
       const uid = user.uid;
-      const userEmail = user.email || '';
       let idToken;
       try {
         idToken = await user.getIdToken();
@@ -112,8 +110,6 @@
           paymentKey: pKey,
           orderId: orderId,
           amount: amount,
-          customerEmail: userEmail,
-          uid: uid,
           meta: window.gpMetaContext ? window.gpMetaContext() : {}
         }, typeof window.gpPendingCheckoutContract === 'function' ? window.gpPendingCheckoutContract() : {}))
       });

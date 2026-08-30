@@ -50,7 +50,7 @@
     <section class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">46개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">47개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
         <span class="gp-admin-patch-range">2026.06.04 — 08.30</span>
@@ -58,9 +58,9 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.41 · 구조 무결성·문단 보강·공지 최신화</strong>
-          <code>Backend 34c8b26 · Frontend bfc3d2f</code>
-        <span>2026.08.29 운영 배포</span>
+          <strong>휴머나이징 v2.5.41 · 운영 보안·결제 무결성 보강</strong>
+          <code>Backend/Frontend 보안 릴리스</code>
+        <span>2026.08.30 운영 배포</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="패치노트 검토 범위">
@@ -71,7 +71,22 @@
       </dl>
 
       <div class="gp-admin-patch-timeline">
-        <div class="gp-admin-patch-month"><strong>2026년 8월</strong><span>14개 변경 묶음</span></div>
+        <div class="gp-admin-patch-month"><strong>2026년 8월</strong><span>15개 변경 묶음</span></div>
+        <details class="gp-admin-patch-release" open>
+          <summary>
+            <span class="gp-admin-patch-version">Security 2026.08.30</span>
+            <span class="gp-admin-patch-title"><b>인증·결제·데이터 쓰기·AI 경계 전수 보강</b><small>2026.08.30 · Backend/Frontend/Firebase Rules</small></span>
+            <span class="gp-admin-patch-state is-live">운영 반영</span>
+          </summary>
+          <ul>
+            <li><span class="gp-admin-patch-area safety">인증</span><span>관리자 API 인증과 토큰 폐기 확인을 공통화하고, 토큰을 요청 본문에 남기지 않도록 Bearer 헤더로 통일했습니다. 카카오 리다이렉트 로그인에는 일회용 state와 PKCE(S256)를 함께 적용하고 인증 코드를 즉시 주소에서 제거합니다.</span></li>
+            <li><span class="gp-admin-patch-area billing">결제·구독</span><span>동시 결제·중복 웹훅·갱신과 해지·만료와 재구독이 겹쳐도 한 번만 반영되도록 서버 트랜잭션과 복구 원장을 보강했습니다. 계정 탈퇴 중에는 새 결제와 구독 적용을 막고, 외부 승인 뒤 충돌은 취소 또는 재처리 대상으로 남깁니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">데이터 경계</span><span>작업 기록·문의·답변·알림처럼 크기와 빈도 제한이 필요한 쓰기는 서버 검증과 지속형 쿼터를 거치게 하고, 닫힌 커뮤니티와 서버 전용 원장은 Firebase Rules에서 직접 접근을 거부합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">AI·외부 호출</span><span>주 엔진 밖의 AI 입력도 임의 경계로 분리하고 결과의 프롬프트·도구 지시 유출을 검사합니다. 근거 URL은 허용된 외부 경로와 DNS·리다이렉트 검증을 통과한 요청만 처리합니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">브라우저</span><span>악성·과대 PDF는 스크립트와 eval을 끈 상태에서 페이지·문자 수·처리시간 상한을 적용합니다. 로그아웃과 계정 전환 때 다른 사용자의 임시 원문·복구 상태가 이어지지 않게 세션을 분리했습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">운영 원칙</span><span>reCAPTCHA/Firebase App Check는 향후 선택적으로 켤 수 있는 서버 경계와 테스트만 준비했으며, 이번 운영에서는 프런트 SDK·토큰 전송·강제 검증을 활성화하지 않았습니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary>
             <span class="gp-admin-patch-version">가격 정책 2026.09</span>

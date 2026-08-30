@@ -53,7 +53,7 @@ window.authPersistenceReady = authPersistenceReady;
  const refCode = urlParams.get('ref');
  // 서버 추천 코드 계약과 같은 보수적인 문자 집합만 보관한다. URL에서 온 임의
  // 문자열이 브라우저 저장소에 남거나 이후 API 요청으로 전달되지 않게 한다.
- if (refCode && /^[A-Za-z0-9_-]{1,64}$/.test(refCode)) {
+ if (refCode && /^[A-Za-z0-9_-]{8}$/.test(refCode)) {
   try { localStorage.setItem('pendingRef', refCode); } catch (_) {}
  }
 })();
@@ -327,25 +327,27 @@ window.gpNotifyEvent = gpNotifyEvent;
 
 async function loadUser(u) {
  const uRef = doc(db,'users',u.uid);
- const snap = await getDoc(uRef);
+ let snap = await getDoc(uRef);
+ let createdNow = false;
+ let signupMetaEventId = '';
  if (!snap.exists()) {
- const myRefCode = u.uid.substring(0,8);
  const signupAttribution = window.gpAttribution && typeof window.gpAttribution.snapshot === 'function'
   ? window.gpAttribution.snapshot()
   : null;
- const newUser = { email:u.email, name:u.displayName, credits:10, plan:'free', refCode:myRefCode, createdAt:new Date().toISOString() };
- if (signupAttribution) newUser.signupAttribution = signupAttribution;
- const metaSignupEventId = window.gpMetaStableEventId
-  ? window.gpMetaStableEventId('sign_up', u.uid + '|' + newUser.createdAt)
-  : '';
- await setDoc(uRef, newUser);
- window.UC = 10; window.UP = 'free';
- window.SUB = null; window.COUPON = null;
- const trafficSource = localStorage.getItem('traffic_source') || 'direct';
- const signMethod = (u.providerData[0]?.providerId === 'google.com') ? 'google' : (u.email?.includes('@kakao.com')) ? 'kakao' : 'email';
- if (window.gpTrack) window.gpTrack('sign_up', { method: signMethod, traffic_source: trafficSource, meta_event_id: metaSignupEventId });
- gpNotifyEvent('signup', { via: signMethod, metaEventId: metaSignupEventId });   // 운영 알림 + 서버 전환(신규 가입)
- } else {
+ let initialized;
+ try {
+  initialized = await postAuthedJson('/account/initialize', signupAttribution ? { signupAttribution } : {}, u);
+ } catch (error) {
+  // 유입 태그가 구형·손상된 경우 가입 자체를 막지 않는다. 서버가 허용 필드만
+  // 저장하도록 빈 attribution으로 멱등 재시도한다.
+  if (error?.code !== 'INVALID_ATTRIBUTION') throw error;
+  initialized = await postAuthedJson('/account/initialize', {}, u);
+ }
+ createdNow = initialized?.duplicate === false;
+ signupMetaEventId = String(initialized?.metaEventId || '');
+ snap = await getDoc(uRef);
+ if (!snap.exists()) throw new Error('계정 정보를 준비하지 못했어요. 잠시 후 다시 시도해 주세요.');
+ }
  const d = snap.data();
  window.UC = d.credits||0; window.UP = d.plan||'free';
  // 구독/쿠폰 상태 정규화
@@ -366,6 +368,11 @@ async function loadUser(u) {
  if (subValid && window.SUB.tier === 'unlimited') window.UP = 'unlimited';
  else if (subValid) window.UP = 'pro';
  if (!d.refCode) await updateDoc(uRef, { refCode: u.uid.substring(0,8) });
+ if (createdNow) {
+  const trafficSource = localStorage.getItem('traffic_source') || 'direct';
+  const signMethod = (u.providerData[0]?.providerId === 'google.com') ? 'google' : (u.email?.includes('@kakao.com')) ? 'kakao' : 'email';
+  if (window.gpTrack) window.gpTrack('sign_up', { method: signMethod, traffic_source: trafficSource, meta_event_id: signupMetaEventId });
+  gpNotifyEvent('signup', { via: signMethod, metaEventId: signupMetaEventId });
  }
  // Pro 탭 잠금 아이콘 표시
  const lock = document.getElementById('snavProLock');
@@ -373,7 +380,7 @@ async function loadUser(u) {
  if (lock) lock.style.display = isPro ? 'none' : 'inline';
  // 추천 코드가 있으면 백엔드에 요청 (신규/기존 유저 모두)
  const pendingRef = localStorage.getItem('pendingRef');
- const myRefCode = snap.exists() ? (snap.data().refCode || u.uid.substring(0,8)) : u.uid.substring(0,8);
+ const myRefCode = d.refCode || u.uid.substring(0,8);
  if (pendingRef && pendingRef !== myRefCode) {
   try {
    const token = await u.getIdToken();
@@ -444,6 +451,56 @@ function bearerJsonHeaders(idToken) {
   'Content-Type': 'application/json',
   Authorization: 'Bearer ' + idToken
  };
+}
+
+function newClientRequestId(prefix) {
+ const safePrefix = String(prefix || 'req').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 20) || 'req';
+ let randomPart = '';
+ try {
+  if (window.crypto?.randomUUID) randomPart = window.crypto.randomUUID().replace(/-/g, '');
+  else if (window.crypto?.getRandomValues) {
+   const bytes = new Uint8Array(16);
+   window.crypto.getRandomValues(bytes);
+   randomPart = Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+  }
+ } catch (_) { /* 아래 호환 폴백 사용 */ }
+ if (!randomPart) randomPart = Date.now().toString(36) + Math.random().toString(36).slice(2, 14);
+ return `${safePrefix}_${randomPart}`.slice(0, 120);
+}
+
+async function postAuthedJson(path, body, user) {
+ const authUser = user || CU || window.CU;
+ if (!authUser?.getIdToken) {
+  const error = new Error('로그인이 필요해요.');
+  error.status = 401;
+  error.code = 'AUTH_REQUIRED';
+  throw error;
+ }
+ const idToken = await authUser.getIdToken();
+ let response;
+ try {
+  response = await fetch(window.apiUrl(path), {
+   method: 'POST',
+   headers: bearerJsonHeaders(idToken),
+   credentials: 'omit',
+   body: JSON.stringify(body || {})
+  });
+ } catch (cause) {
+  const error = new Error('네트워크 연결을 확인한 뒤 다시 시도해 주세요.');
+  error.code = 'NETWORK_ERROR';
+  error.cause = cause;
+  throw error;
+ }
+ let data = null;
+ try { data = await response.json(); } catch (_) { data = null; }
+ if (!response.ok || !data?.ok) {
+  const error = new Error(String(data?.error || '요청을 처리하지 못했어요.'));
+  error.status = response.status;
+  error.code = String(data?.code || 'REQUEST_FAILED');
+  error.retryAfter = response.headers.get('Retry-After') || '';
+  throw error;
+ }
+ return data;
 }
 
 window.formatCouponInput = function(el) {
@@ -953,10 +1010,29 @@ function randomKakaoOAuthState() {
  return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
+function randomKakaoPkceVerifier() {
+ const bytes = new Uint8Array(32);
+ window.crypto.getRandomValues(bytes);
+ let binary = '';
+ bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+ return btoa(binary).replace(/\+/gu, '-').replace(/\//gu, '_').replace(/=+$/gu, '');
+}
+
+async function kakaoPkceChallenge(verifier) {
+ if (!window.crypto?.subtle || typeof TextEncoder !== 'function') {
+  throw new Error('안전한 카카오 로그인을 지원하지 않는 브라우저예요. 브라우저를 업데이트해 주세요.');
+ }
+ const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+ let binary = '';
+ new Uint8Array(digest).forEach(byte => { binary += String.fromCharCode(byte); });
+ return btoa(binary).replace(/\+/gu, '-').replace(/\//gu, '_').replace(/=+$/gu, '');
+}
+
 function createKakaoOAuthState() {
  const value = randomKakaoOAuthState();
- sessionStorage.setItem(KAKAO_OAUTH_STATE_KEY, JSON.stringify({ value, createdAt: Date.now() }));
- return value;
+ const verifier = randomKakaoPkceVerifier();
+ sessionStorage.setItem(KAKAO_OAUTH_STATE_KEY, JSON.stringify({ value, verifier, createdAt: Date.now() }));
+ return { value, verifier };
 }
 
 function consumeKakaoOAuthState(received) {
@@ -965,21 +1041,25 @@ function consumeKakaoOAuthState(received) {
  catch (_) { saved = null; }
  // OAuth state is single-use even when malformed or expired.
  try { sessionStorage.removeItem(KAKAO_OAUTH_STATE_KEY); } catch (_) {}
- if (!saved || typeof saved.value !== 'string' || typeof received !== 'string') return false;
- if (!/^[a-f0-9]{48}$/u.test(saved.value) || !/^[a-f0-9]{48}$/u.test(received)) return false;
+ if (!saved || typeof saved.value !== 'string' || typeof received !== 'string') return '';
+ if (!/^[a-f0-9]{48}$/u.test(saved.value) || !/^[a-f0-9]{48}$/u.test(received)) return '';
+ if (typeof saved.verifier !== 'string' || !/^[A-Za-z0-9_-]{43}$/u.test(saved.verifier)) return '';
  const createdAt = Number(saved.createdAt);
  const age = Date.now() - createdAt;
- if (!Number.isFinite(createdAt) || age < 0 || age > KAKAO_OAUTH_STATE_TTL_MS) return false;
- return saved.value === received;
+ if (!Number.isFinite(createdAt) || age < 0 || age > KAKAO_OAUTH_STATE_TTL_MS) return '';
+ return saved.value === received ? saved.verifier : '';
 }
 
-window.kakaoRedirectLogin = function () {
- const state = createKakaoOAuthState();
+window.kakaoRedirectLogin = async function () {
+ const context = createKakaoOAuthState();
+ const challenge = await kakaoPkceChallenge(context.verifier);
  const authorizeUrl = new URL('https://kauth.kakao.com/oauth/authorize');
  authorizeUrl.searchParams.set('client_id', window.APP_CONFIG.KAKAO_REST_KEY);
  authorizeUrl.searchParams.set('redirect_uri', window.APP_CONFIG.SITE_URL);
  authorizeUrl.searchParams.set('response_type', 'code');
- authorizeUrl.searchParams.set('state', state);
+ authorizeUrl.searchParams.set('state', context.value);
+ authorizeUrl.searchParams.set('code_challenge', challenge);
+ authorizeUrl.searchParams.set('code_challenge_method', 'S256');
  window.location.assign(authorizeUrl.toString());
 };
 
@@ -1000,8 +1080,11 @@ window.handleKakaoCallback = async () =>{
  const params = new URLSearchParams(location.search);
  const code = params.get('code');
  if (!code || !isKakaoOAuthCallback(params)) return false;
- if (!consumeKakaoOAuthState(params.get('state'))) {
-  clearKakaoCallbackQuery();
+ const verifier = consumeKakaoOAuthState(params.get('state'));
+ // The authorization code is a short-lived credential. Remove it from the
+ // address bar before any await, analytics call or third-party script can see it.
+ clearKakaoCallbackQuery();
+ if (!verifier) {
   failAuthTransition();
   const message = '카카오 로그인 요청이 만료됐거나 일치하지 않아요. 로그인 버튼을 다시 눌러 주세요.';
   if (window.gpTrack) window.gpTrack('login_error', { method: 'kakao', flow: 'redirect', code: 'oauth_state_invalid' });
@@ -1020,17 +1103,16 @@ window.handleKakaoCallback = async () =>{
     grant_type: 'authorization_code',
     client_id: window.APP_CONFIG.KAKAO_REST_KEY,
     redirect_uri: window.APP_CONFIG.SITE_URL,
-    code
+    code,
+    code_verifier: verifier
    })
   });
   const tokenData = await tokenRes.json().catch(() => ({}));
   timing.tokenMs = Math.round(performance.now() - tokenStartedAt);
   if (!tokenRes.ok || !tokenData.access_token) throw new Error('카카오 인증 정보를 확인하지 못했어요.');
-  clearKakaoCallbackQuery();
   await exchangeKakaoIdentity(tokenData.access_token, timing);
   return true;
  } catch(e) {
-  clearKakaoCallbackQuery();
   failAuthTransition();
   if (window.gpTrack) window.gpTrack('login_error', { method: 'kakao', flow: 'redirect', message: String(e.message || '').slice(0, 120) });
   if (window.gpToast) window.gpToast(e.message || '카카오 로그인에 실패했어요.', { type: 'error', title: '로그인 확인 필요' });
@@ -2163,28 +2245,34 @@ window.submitQuestion = async () =>{
  const btn = document.getElementById('qsubmit');
  btn.disabled = true;
  btn.textContent = '등록 중...';
+ const fingerprint = JSON.stringify([title, body, anon]);
+ if (!btn.dataset.requestId || btn.dataset.requestFingerprint !== fingerprint) {
+  btn.dataset.requestId = newClientRequestId('qna');
+  btn.dataset.requestFingerprint = fingerprint;
+ }
  try {
-  const authorName = anon ? '익명' : ((window.getAdminName && window.getAdminName()) || CU.displayName || '사용자');
-  const _qref = await addDoc(collection(db,'qna'), {
+  const result = await postAuthedJson('/qna/create', {
+   requestId: btn.dataset.requestId,
    title,
    body,
-   authorId: CU.uid,
-   authorName,
-   isAnon: anon,
-   status: 'pending',
-   answer: null,
-   createdAt: serverTimestamp(),
-   views: 0
+   isAnon: anon
   });
-  if (window.gpTrack) window.gpTrack('qna_submit', { qna_id: _qref.id, is_anon: anon });
-  gpNotifyEvent('inquiry', { id: _qref.id });   // 운영 알림(새 문의)
+  if (window.gpTrack) window.gpTrack('qna_submit', { qna_id: result.id, is_anon: anon });
   document.getElementById('qtitle').value = '';
   document.getElementById('qbody').value = '';
   document.getElementById('qAnon').checked = false;
+  delete btn.dataset.requestId;
+  delete btn.dataset.requestFingerprint;
   document.getElementById('qform').style.display = 'none';
   window.qnaPage = 1;
   await window.loadQuestions();
  } catch(e) {
+  // 서버가 명시적으로 거절한 요청은 실제 저장이 없으므로 다음 제출에 새 ID를 쓴다.
+  // 네트워크 단절·5xx는 응답만 유실됐을 수 있어 같은 ID를 유지해 멱등 재시도한다.
+  if (Number(e?.status) > 0 && Number(e.status) < 500) {
+   delete btn.dataset.requestId;
+   delete btn.dataset.requestFingerprint;
+  }
   alert('등록 실패: '+e.message);
  } finally {
   btn.disabled = false;
@@ -2261,25 +2349,6 @@ window.backToQList = (refresh = false) =>{
  else renderQuestionListPage();
 };
 
-async function notifyQnaAnswered(qid, message) {
- try {
-  const snap = await getDoc(doc(db,'qna',qid));
-  if (!snap.exists()) return;
-  const q = snap.data() || {};
-  if (!q.authorId) return;
-  await setDoc(doc(db,'users',q.authorId,'notifications','qna_answered_' + qid), {
-   clientId: 'qna_answered_' + qid,
-   type: 'qna',
-   title: '문의 답변',
-   message: message || '남겨주신 문의에 답변이 등록됐어요.',
-   action: { tab: 'qna' },
-   read: false,
-   createdAt: serverTimestamp(),
-   createdAtMs: Date.now()
-  }, { merge: true });
- } catch(e) { console.log('Q&A 알림 저장 오류:', e); }
-}
-
 window.submitAnswer = async (qid) =>{
  if (!window.isAdmin || !window.isAdmin()) { alert('관리자만 답변할 수 있어요.'); return; }
  const ta = document.getElementById('answerBody');
@@ -2287,12 +2356,8 @@ window.submitAnswer = async (qid) =>{
  if (!body) { alert('답변 내용을 입력해 주세요.'); return; }
  try {
   const answeredBy = (window.getAdminName && window.getAdminName()) || '운영팀';
-  await updateDoc(doc(db,'qna',qid), {
-   status: 'answered',
-   answer: { body, answeredBy, answeredAt: new Date() }
-  });
+  await postAuthedJson('/admin/qna/answer', { id: qid, body, answeredBy });
   qnaItems = [];
-  await notifyQnaAnswered(qid, '남겨주신 문의에 운영팀 답변이 등록됐어요.');
   await window.viewQuestion(qid);
  } catch(e) {
   alert('답변 등록 실패: '+e.message);
@@ -2312,12 +2377,8 @@ window.editAnswer = async (qid) =>{
  if (!trimmed) { alert('빈 답변은 등록할 수 없어요.'); return; }
  try {
   const answeredBy = (window.getAdminName && window.getAdminName()) || '운영팀';
-  await updateDoc(doc(db,'qna',qid), {
-   answer: { body: trimmed, answeredBy, answeredAt: new Date() },
-   status: 'answered'
-  });
+  await postAuthedJson('/admin/qna/answer', { id: qid, body: trimmed, answeredBy });
   qnaItems = [];
-  await notifyQnaAnswered(qid, '문의 답변이 수정됐어요. 다시 확인해 주세요.');
   await window.viewQuestion(qid);
  } catch(e) {
   alert('수정 실패: '+e.message);
@@ -2331,7 +2392,7 @@ window.delAnswer = async (qid) =>{
   : confirm('답변을 삭제하시겠어요?');
  if (!ok) return;
  try {
-  await updateDoc(doc(db,'qna',qid), {status: 'pending', answer: null});
+  await postAuthedJson('/admin/qna/answer-delete', { id: qid });
   qnaItems = [];
   await window.viewQuestion(qid);
  } catch(e) {
@@ -2345,7 +2406,7 @@ window.delQuestion = async (qid) =>{
   : confirm('질문을 삭제하시겠어요?');
  if (!ok) return;
  try {
-  await deleteDoc(doc(db,'qna',qid));
+  await postAuthedJson('/qna/delete', { id: qid });
   qnaItems = [];
   window.backToQList(true);
  } catch(e) {
@@ -2901,27 +2962,15 @@ function notifFromDoc(d) {
  };
 }
 
-function notifDocId(n) {
- return String((n && (n.clientId || n.id)) || Date.now())
-  .replace(/[^\w.-]/g, '_')
-  .slice(0, 120);
-}
-
 window.persistUserNotification = async (n) =>{
  if (!CU || !n) return;
  try {
-  const cleanAction = n.action ? JSON.parse(JSON.stringify(n.action)) : null;
-  await setDoc(doc(db,'users',CU.uid,'notifications',notifDocId(n)), {
-   clientId: n.clientId || n.id || null,
-   type: n.type || 'notice',
-   title: n.title || '알림',
-   message: n.message || '',
-   action: cleanAction,
-   postId: n.postId || null,
-   read: !!n.read,
-   createdAt: serverTimestamp(),
-   createdAtMs: n.createdAt || Date.now()
-  }, { merge: true });
+  await postAuthedJson('/notifications/create-self', {
+   clientId: String(n.clientId || n.id || ''),
+   type: String(n.type || ''),
+   message: String(n.message || ''),
+   action: n.action && n.action.tab ? { tab: String(n.action.tab) } : null
+  });
   if (typeof window.updateNotifBadge === 'function') await window.updateNotifBadge(CU.uid);
  } catch(e) { console.log('알림 저장 오류:', e); }
 };
@@ -3061,11 +3110,19 @@ window.submitReply = async (postId, commentId, parentAuthorName) =>{
 //   ① localStorage 백업(결과 유실 방지) ② 사용자에게 토스트 안내 ③ 다음 로드·온라인 복귀 시 자동 재시도.
 //   (서버측 /analyze 저장과 별개의 클라 폴백 — 청크·구형서버·비과금 경로 대비.)
 const PENDING_HISTORY_KEY = 'gp_pending_history';
-function backupHistoryLocal(uid, data) {
+function legacyHistoryRequestId(uid, item) {
+ const seed = `${uid}|${Number(item?.ts) || 0}|${JSON.stringify(item?.data || {})}`;
+ let hash = 2166136261;
+ for (let i = 0; i < seed.length; i++) {
+  hash ^= seed.charCodeAt(i);
+  hash = Math.imul(hash, 16777619);
+ }
+ return `legacy_${Number(item?.ts) || 0}_${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
+function backupHistoryLocal(uid, data, requestId) {
  try {
   const q = JSON.parse(localStorage.getItem(PENDING_HISTORY_KEY) || '[]');
-  const { createdAt, ...rest } = data;   // serverTimestamp()는 직렬화 불가 → 제거(재시도 때 재생성)
-  q.push({ uid, data: rest, ts: Date.now() });
+  q.push({ uid, data, requestId, ts: Date.now() });
   while (q.length > 50) q.shift();        // 적체 상한
   localStorage.setItem(PENDING_HISTORY_KEY, JSON.stringify(q));
  } catch (e) { /* localStorage 불가·용량 초과 — 백업 생략(토스트는 이미 안내) */ }
@@ -3080,7 +3137,11 @@ window.flushPendingHistory = async function flushPendingHistory() {
  for (const item of q) {
   if (!item || item.uid !== CU.uid) { if (item) remaining.push(item); continue; }   // 다른 계정 항목은 보존
   try {
-   await addDoc(collection(db,'users',CU.uid,'history'), { ...item.data, createdAt: serverTimestamp(), backupAtMs: item.ts });
+   const requestId = item.requestId || legacyHistoryRequestId(CU.uid, item);
+   await postAuthedJson('/history/backup', {
+    requestId,
+    entry: { ...(item.data || {}), backupAtMs: Number(item.ts) || Date.now() }
+   });
    restored++;
   } catch (e) { remaining.push(item); }   // 여전히 실패 → 다음 기회에
  }
@@ -3094,11 +3155,11 @@ window.addEventListener('online', () => { try { window.flushPendingHistory(); } 
 
 window.saveHistory = async (type, inputText, detectResult, humanResult, credits) =>{
  if (!CU) return false;
+ const requestId = newClientRequestId('history');
  const data = {
   type: type || 'unknown',
   inputText: inputText || '',
-  credits: typeof credits === 'number' ? credits : 0,
-  createdAt: serverTimestamp()
+  credits: typeof credits === 'number' ? credits : 0
  };
  if (detectResult) {
   data.probability = typeof detectResult.probability === 'number' ? detectResult.probability : null;
@@ -3116,13 +3177,13 @@ window.saveHistory = async (type, inputText, detectResult, humanResult, credits)
    }
    if (humanResult.qualityStatus === 'needs_review' || humanResult.qualityStatus === 'clean') data.qualityStatus = humanResult.qualityStatus;
    if (Array.isArray(humanResult.qualityWarnings)) data.qualityWarningCodes = humanResult.qualityWarnings.map(item => item?.code).filter(Boolean).slice(0, 20);
-  }
+ }
  try {
-  await addDoc(collection(db,'users',CU.uid,'history'), data);
+  await postAuthedJson('/history/backup', { requestId, entry: data });
   return true;
  } catch(e) {
   console.error('[saveHistory] 실패', { code: e?.code, message: e?.message, name: e?.name });
-  backupHistoryLocal(CU.uid, data);   // 결과 유실 방지 — 로컬 백업 후 자동 재시도
+  backupHistoryLocal(CU.uid, data, requestId);   // 결과 유실 방지 — 같은 requestId로 멱등 재시도
   if (window.gpToast) window.gpToast('결과를 기록에 저장하지 못했어요. 결과는 안전하게 백업해뒀고, 잠시 후 자동으로 다시 저장할게요.', { type: 'warning', title: '기록 저장 지연' });
   return false;
  }

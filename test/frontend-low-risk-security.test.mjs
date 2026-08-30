@@ -43,12 +43,12 @@ test('추천 코드 쿼리는 제한된 형식만 저장하고 Storage 예외를
     return stored;
   }
 
-  assert.deepEqual(capture('?ref=AbC_123-xyz'), [['pendingRef', 'AbC_123-xyz']]);
-  assert.equal(capture(`?ref=${'a'.repeat(64)}`).length, 1);
-  assert.equal(capture(`?ref=${'a'.repeat(65)}`).length, 0);
+  assert.deepEqual(capture('?ref=AbC_123-'), [['pendingRef', 'AbC_123-']]);
+  assert.equal(capture(`?ref=${'a'.repeat(8)}`).length, 1);
+  assert.equal(capture(`?ref=${'a'.repeat(9)}`).length, 0);
   assert.equal(capture('?ref=%3Cscript%3Ealert(1)%3C%2Fscript%3E').length, 0);
   assert.equal(capture('?ref=abc%20def').length, 0);
-  assert.doesNotThrow(() => capture('?ref=valid_code-1', { throwOnWrite: true }));
+  assert.doesNotThrow(() => capture('?ref=code_123', { throwOnWrite: true }));
 });
 
 test('종료된 커뮤니티는 숨은 런타임 경로에서도 Firestore와 Storage에 접근하지 않는다', () => {

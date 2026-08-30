@@ -780,6 +780,25 @@ function updateHint() {
 }
 // pdf.js lazy loader — 첨부 시점에 1회만 로드
 let pdfJsPromise = null;
+const PDF_MAX_PAGES = 100;
+const PDF_MAX_EXTRACTED_CHARS = 30000;
+const PDF_EXTRACT_TIMEOUT_MS = 20000;
+function pdfDeadlineError() {
+ return new Error('PDF 처리 시간이 20초를 넘었어요. 더 짧은 문서로 나눠 주세요.');
+}
+async function withPdfDeadline(promise, deadlineMs) {
+ const remaining = deadlineMs - Date.now();
+ if (remaining <= 0) throw pdfDeadlineError();
+ let timer = null;
+ try {
+  return await Promise.race([
+   promise,
+   new Promise((_, reject) => { timer = setTimeout(() => reject(pdfDeadlineError()), remaining); })
+  ]);
+ } finally {
+  if (timer) clearTimeout(timer);
+ }
+}
 function loadPdfJs() {
  if (pdfJsPromise) return pdfJsPromise;
  pdfJsPromise = new Promise((resolve, reject) => {
@@ -805,18 +824,34 @@ async function extractPdfText(file) {
  const buf = await file.arrayBuffer();
  // PDF.js 3.x의 CVE-2024-4367 공식 완화책. 업로드된 PDF의 eval 및
  // 문서 내 스크립트가 호스팅 도메인 문맥에서 실행되지 않게 고정한다.
- const pdf = await pdfjsLib.getDocument({
+ const loadingTask = pdfjsLib.getDocument({
   data: buf,
   isEvalSupported: false,
   enableScripting: false
- }).promise;
- let out = '';
- for (let i = 1; i <= pdf.numPages; i++) {
-  const page = await pdf.getPage(i);
-  const content = await page.getTextContent();
-  out += content.items.map(it => it.str).join(' ') + '\n\n';
+ });
+ const deadline = Date.now() + PDF_EXTRACT_TIMEOUT_MS;
+ let pdf = null;
+ try {
+  pdf = await withPdfDeadline(loadingTask.promise, deadline);
+  if (pdf.numPages > PDF_MAX_PAGES) {
+   throw new Error('PDF는 한 번에 100쪽까지만 불러올 수 있어요. 문서를 나눠 주세요.');
+  }
+  let out = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+   const page = await withPdfDeadline(pdf.getPage(i), deadline);
+   const content = await withPdfDeadline(page.getTextContent(), deadline);
+   out += content.items.map(it => it.str).join(' ') + '\n\n';
+   if (out.length > PDF_MAX_EXTRACTED_CHARS) {
+    throw new Error('PDF에서 읽은 글이 30,000자를 넘어요. 필요한 부분만 나눠서 올려 주세요.');
+   }
+  }
+  return out.trim();
+ } finally {
+  try {
+   if (pdf && typeof pdf.destroy === 'function') await pdf.destroy();
+   else if (typeof loadingTask.destroy === 'function') await loadingTask.destroy();
+  } catch (_) {}
  }
- return out.trim();
 }
 
 function handlePDF(input) {
@@ -1878,7 +1913,43 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
    return;
   }
   const tp = window.TossPayments(clientKey);
-  const orderId = 'order_' + Date.now();
+  let orderEntropy = '';
+  try {
+   const bytes = new Uint8Array(8);
+   window.crypto.getRandomValues(bytes);
+   orderEntropy = Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+  } catch (_) { orderEntropy = Math.random().toString(36).slice(2, 14); }
+  const orderId = `order_${Date.now()}_${orderEntropy}`.slice(0, 64);
+  // 결제창을 열기 전에 주문번호·금액·로그인 UID를 서버에서 원자적으로 묶는다.
+  // 성공 URL이 유출되거나 다른 계정에서 먼저 제출돼도 confirm 단계가 소유자를
+  // 바꿀 수 없도록 하는 선점 단계다.
+  try {
+   const idToken = await window.CU.getIdToken();
+   const prepareResponse = await fetch(window.apiUrl('/prepare-payment'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+    credentials: 'omit',
+    body: JSON.stringify({
+     orderId,
+     amount: Number(amount),
+     purchaseKind: checkoutOptions.purchaseKind || 'credit_package',
+     sourceOrderId: checkoutOptions.sourceOrderId || ''
+    })
+   });
+   let prepared = null;
+   try { prepared = await prepareResponse.json(); } catch (_) { prepared = null; }
+   if (!prepareResponse.ok || !prepared?.ok) {
+    const error = new Error(prepared?.error || '결제를 준비하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    error.code = prepared?.code || 'PAYMENT_PREPARE_FAILED';
+    throw error;
+   }
+  } catch (prepareError) {
+   if (window.gpTrackPaymentError) window.gpTrackPaymentError('checkout_prepare_failed', {
+    checkoutType: 'credits', amount, credits, plan, orderId
+   }, prepareError);
+   alert(prepareError?.message || '결제를 준비하지 못했어요. 잠시 후 다시 시도해 주세요.');
+   return;
+  }
   if (typeof window.gpBindPendingCheckout === 'function') {
    window.gpBindPendingCheckout(orderId, {
     amount: Number(amount),
@@ -1905,7 +1976,7 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
   orderName: name + ' ' + credits + '크레딧',
   customerName: window.CU.displayName,
  // 2. 결제 성공/실패 시 돌아올 URL 설정
- successUrl: `${window.location.origin + window.location.pathname}?credits=${credits}&plan=${encodeURIComponent(creditSku)}&uid=${encodeURIComponent(window.CU.uid)}${maintenancePreviewQuery()}`,
+ successUrl: `${window.location.origin + window.location.pathname}?credits=${credits}&plan=${encodeURIComponent(creditSku)}${maintenancePreviewQuery()}`,
  failUrl: location.origin + location.pathname + '?fail=1' + maintenancePreviewQuery()
  });
  } catch(e) {
