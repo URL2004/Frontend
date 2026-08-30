@@ -59,7 +59,7 @@
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
           <strong>휴머나이징 v2.5.41 · 운영 보안·결제 무결성 보강</strong>
-          <code>Backend/Frontend 보안 릴리스</code>
+          <code>Backend c2db0e6 · Frontend security release</code>
         <span>2026.08.30 운영 배포</span>
       </div>
 
@@ -84,6 +84,8 @@
             <li><span class="gp-admin-patch-area safety">데이터 경계</span><span>작업 기록·문의·답변·알림처럼 크기와 빈도 제한이 필요한 쓰기는 서버 검증과 지속형 쿼터를 거치게 하고, 닫힌 커뮤니티와 서버 전용 원장은 Firebase Rules에서 직접 접근을 거부합니다.</span></li>
             <li><span class="gp-admin-patch-area safety">AI·외부 호출</span><span>주 엔진 밖의 AI 입력도 임의 경계로 분리하고 결과의 프롬프트·도구 지시 유출을 검사합니다. 근거 URL은 허용된 외부 경로와 DNS·리다이렉트 검증을 통과한 요청만 처리합니다.</span></li>
             <li><span class="gp-admin-patch-area frontend">브라우저</span><span>악성·과대 PDF는 스크립트와 eval을 끈 상태에서 페이지·문자 수·처리시간 상한을 적용합니다. 로그아웃과 계정 전환 때 다른 사용자의 임시 원문·복구 상태가 이어지지 않게 세션을 분리했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">삭제·결제 경합</span><span>회원 탈퇴와 변환·글쓰기·결제·환불이 동시에 실행되지 않도록 서버 트랜잭션으로 직렬화했습니다. 새 형식 주문번호도 취소·회수·재처리 경로에서 동일하게 인식하고, 외부 결제 결과가 불명확하면 제한 재시도 뒤 수동 검토로 격리합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">검증</span><span>백엔드 전체 1,084개와 프런트 176개 테스트, Firestore·Storage 에뮬레이터 규칙, 운영 import 그래프와 양쪽 운영 의존성 감사를 통과했습니다.</span></li>
             <li><span class="gp-admin-patch-area observe">운영 원칙</span><span>reCAPTCHA/Firebase App Check는 향후 선택적으로 켤 수 있는 서버 경계와 테스트만 준비했으며, 이번 운영에서는 프런트 SDK·토큰 전송·강제 검증을 활성화하지 않았습니다.</span></li>
           </ul>
         </details>
