@@ -132,11 +132,10 @@ test('이용약관과 환불규정은 유효기간·환불기간 및 3영업일 
   assert.doesNotMatch(mainSource, /제3조의2 \(정기 구독 결제\)|구독 플랜 환불 정책|잔여 쿠폰/u);
 });
 
-test('구매 전 주요 화면은 기준 우선 차감·추가분 비환불·주문 잔여 전량 회수를 함께 고지한다', () => {
+test('결제 직전과 정책 안내 화면은 환불 계산 기준을 고지하고 가격표는 상세 규정을 중복하지 않는다', () => {
   const surfaces = {
     결제확인: mainSource,
     부족크레딧결제: modalSource,
-    가격표: pricingSource,
     랜딩: landingSource,
     이용가이드: guideSource,
     FAQ: faqSource
@@ -147,6 +146,7 @@ test('구매 전 주요 화면은 기준 우선 차감·추가분 비환불·주
     assert.match(source, /상품·이벤트 추가 크레딧은 현금 환불 대상이 아니/u, `${name}: 추가 크레딧 비환불`);
     assert.match(source, /해당 주문(?:에서|에) 남아 있는 기준·추가 크레딧(?:을|은) 모두 회수/u, `${name}: 해당 주문 잔여 전량 회수`);
   }
+  assert.doesNotMatch(pricingSource, /gp-pricing-refund|환불 기준|환불규정 전체 보기/u, '가격 비교 화면은 환불 규정을 중복하지 않아야 함');
 });
 
 test('관리자 크레딧 환불 UI는 정책 환불만 허용한다', () => {

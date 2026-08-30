@@ -14,7 +14,7 @@ test('충전하기와 초대하기, 문의 충전 CTA는 같은 공통 버튼 �
 test('공통 전환 버튼은 동일한 높이, 모서리, 내부 면을 유지한다', async () => {
  const [main, styles] = await Promise.all([read('pages/main.html'), read('assets/css/redesign.css')]);
  assert.match(styles, /\.ls-upgrade-btn\.gp-gradient-action,[\s\S]*?\.gp-invite-btn\.gp-gradient-action,[\s\S]*?\.gp-support-cta\.gp-gradient-action\{[\s\S]*?height:42px !important;[\s\S]*?border-radius:10px !important;[\s\S]*?linear-gradient\(144deg,#af40ff,#5b42f3 50%,#00ddeb\)/u);
- assert.match(styles, /\.ls-upgrade-btn\.gp-gradient-action\{\s*min-width:104px;/u);
+ assert.match(styles, /\.ls-upgrade-btn\.gp-gradient-action\{\s*min-width:110px;[\s\S]*?\.gp-lav-top-right \.ls-credit-btn\{\s*min-width:110px;/u);
  assert.match(styles, /\.gp-lav-top-right :is\(\.ls-credit-btn,\.ls-upgrade-btn\.gp-gradient-action,\.gp-lav-guide\)\{\s*height:42px !important;\s*min-height:42px !important;/u);
  assert.doesNotMatch(main, /gp-lav-mobile-pricing/u);
  assert.doesNotMatch(styles, /gp-lav-mobile-pricing/u);
