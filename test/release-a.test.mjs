@@ -286,6 +286,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /원장 작업 상세·108건 전수평가·최종 문장 무결성/u);
   assert.match(admin, /결과 평균은 96\.0점, 원문 대비 평균은 \+12\.7점/u);
   assert.match(admin, /근거 없는 구체화/u);
+  assert.match(admin, /Backend 76fdc98 · Frontend 3f5ac3a/u);
   assert.match(admin, /상시 상품 보너스·9월 이벤트·환불 기준 분리/u);
   assert.match(admin, /구조 무결성·문단 보강·3택 흐름·연구노트·공지/u);
   assert.match(admin, /Backend 34c8b26 · Frontend bfc3d2f/u);
