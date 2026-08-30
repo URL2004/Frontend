@@ -193,6 +193,7 @@ function showAuthenticatedShell(user, reason) {
  if (!user) return;
  CU = user;
  window.CU = user;
+ window.GP_REQUESTED_APP_SCREEN = 'app';
  if (typeof window.gpLandingCompleteLogin === 'function') window.gpLandingCompleteLogin();
  if (typeof window.showScreen === 'function') window.showScreen('app');
  if (typeof window.updateAuthUI === 'function') window.updateAuthUI(true);
@@ -202,6 +203,7 @@ function showAuthenticatedShell(user, reason) {
 }
 
 function failAuthTransition() {
+ window.GP_REQUESTED_APP_SCREEN = 'login';
  finishAuthTransition('error');
  if (typeof window.showScreen === 'function') window.showScreen('login');
 }
@@ -268,9 +270,13 @@ onAuthStateChanged(auth, async u =>{
   CU = null; window.CU = null;
   window.gpUserDataReady = false;
   if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications([]);
-  showScreen('app');
-  if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });
-  else switchTab('main');
+  if (window.GP_REQUESTED_APP_SCREEN === 'login') {
+   showScreen('login');
+  } else {
+   showScreen('app');
+   if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });
+   else switchTab('main');
+  }
   window.updateAuthUI(false);
   }
  } catch (e) {

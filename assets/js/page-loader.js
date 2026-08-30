@@ -180,6 +180,7 @@
     options = options || {};
     if (!appMarkupPromise) appMarkupPromise = appMarkup();
     root().innerHTML = await appMarkupPromise;
+    window.dispatchEvent(new CustomEvent('gp:app-markup-ready'));
     document.documentElement.dataset.gpInitialScreen = 'app';
     window.PAGE_PARTIALS = APP_PARTIALS.slice();
     showOnly(options.screen === 'login' ? 'login' : 'app');

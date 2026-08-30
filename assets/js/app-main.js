@@ -258,7 +258,20 @@ function applyRouteFromUrl(opts) {
  if (typeof window.gpMaybeShowLanding === 'function') window.gpMaybeShowLanding();
 }
 window.applyRouteFromUrl = applyRouteFromUrl;
-window.addEventListener('DOMContentLoaded', () => applyRouteFromUrl({ replace: true }));
+function applyInitialRouteWhenAppMarkupReady() {
+ if (!document.getElementById('appScreen')) return false;
+ applyRouteFromUrl({ replace: true });
+ return true;
+}
+if (document.readyState === 'loading') {
+ document.addEventListener('DOMContentLoaded', function () {
+  if (!applyInitialRouteWhenAppMarkupReady()) {
+   window.addEventListener('gp:app-markup-ready', applyInitialRouteWhenAppMarkupReady, { once: true });
+  }
+ }, { once: true });
+} else if (!applyInitialRouteWhenAppMarkupReady()) {
+ window.addEventListener('gp:app-markup-ready', applyInitialRouteWhenAppMarkupReady, { once: true });
+}
 
 function selectHumanizeMode(element) {
  document.querySelectorAll('.mode-tab').forEach(t =>t.classList.remove('active'));
@@ -365,12 +378,15 @@ function setMode(m) {
  const inputCard = document.getElementById('inputCard');
  if (inputCard) inputCard.className = 'card ' + (isH ? 'human-mode' : 'detect-mode');
  
- document.getElementById('inputLabel').textContent = isH ? '변환할 텍스트' : '분석할 텍스트';
- document.getElementById('btxt').textContent = isH ? '변환 시작' : '분석 시작';
- document.getElementById('sbtn').className = 'sbtn ' + (isH ? 'hb' : 'db');
- 
- document.getElementById('result').innerHTML = '';
- updateHint();
+ const inputLabel = document.getElementById('inputLabel');
+ const buttonText = document.getElementById('btxt');
+ const sendButton = document.getElementById('sbtn');
+ const result = document.getElementById('result');
+ if (inputLabel) inputLabel.textContent = isH ? '변환할 텍스트' : '분석할 텍스트';
+ if (buttonText) buttonText.textContent = isH ? '변환 시작' : '분석 시작';
+ if (sendButton) sendButton.className = 'sbtn ' + (isH ? 'hb' : 'db');
+ if (result) result.innerHTML = '';
+ if (document.getElementById('inputText')) updateHint();
 }
 function toggleSidebar() {
   const sidebar = document.querySelector('.sidebar');

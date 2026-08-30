@@ -24,11 +24,11 @@
  <div class="llogo"><img src="/assets/img/brand-logo.webp" alt="교수님 피하기"></div>
  <div class="ltitle">AI 초안, 내 글의 흐름에 맞게</div>
  <div class="ldesc">AI식 문체 신호를 확인하고 원문의 뜻과 장르를 지키며 다듬어요.<br>과제·자소서·논문을 한곳에서 관리할 수 있어요.</div>
- <button id="googleLoginBtn" class="btn-google" type="button" onclick="googleLogin()">
+ <button id="googleLoginBtn" class="btn-google" type="button" onclick="gpRequestSocialLogin('google')">
  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
  Google로 시작하기
 </button>
- <button id="kakaoLoginBtn" class="btn-kakao" type="button" onclick="kakaoLogin()" aria-describedby="socialLoginStatus">
+ <button id="kakaoLoginBtn" class="btn-kakao" type="button" onclick="gpRequestSocialLogin('kakao')" aria-describedby="socialLoginStatus">
  <img src="https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_medium.png" alt="kakao" style="width:20px;height:20px;">
  카카오로 시작하기
 </button>

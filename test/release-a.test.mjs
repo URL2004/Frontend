@@ -102,7 +102,7 @@ test('진단 선택 섹션은 상태 라벨과 중복 유도 없이 핵심 정�
   assert.match(main, /외부 AI 감지 결과는 보장하지 않아요/u);
   assert.doesNotMatch(main, /lavDiagGrade|lavAnchorGuide|lavEditForAnchor|추천 시작점|효과가 제한될 수 있는 글 유형/u);
   assert.doesNotMatch(main, /그대로 제출하면 AI 탐지 위험이 높아요/u);
-  assert.doesNotMatch(evasion, /window\.lavEditForAnchor = function|humanize_anchor_action/u);
+  assert.doesNotMatch(evasion, /window\.lavEditForAnchor = function|humanize_anchor_action|renderAnchorGuide/u);
   assert.match(evasion, /humanize_diagnosis_view/u);
   assert.match(evasion, /humanize_mode_select/u);
   assert.match(evasion, /needsUserAnchor: Number\(d\.abstractRiskRatio\) >= 0\.5/u);

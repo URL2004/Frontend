@@ -324,10 +324,11 @@ test('랜딩 v2는 코다 구조(데모·탭·상황·사실 스트립)를 우�
 });
 
 test('lp 스위치는 랜딩을 강제하거나 건너뛰고 관리자 페이지에서 안내한다', async () => {
-  const [landingJs, appModule, admin] = await Promise.all([
+  const [landingJs, appModule, admin, boot] = await Promise.all([
     read('assets/js/landing.js'),
     read('assets/js/app-module.js'),
-    read('pages/admin.html')
+    read('pages/admin.html'),
+    read('assets/js/app-boot.js')
   ]);
   assert.match(landingJs, /function landingOverride\(\)/u);
   assert.match(landingJs, /if \(lp === '1'\) return 'force';/u);
@@ -340,6 +341,9 @@ test('lp 스위치는 랜딩을 강제하거나 건너뛰고 관리자 페이지
   assert.match(landingJs, /url\.searchParams\.delete\('lp'\)/u);
   assert.match(appModule, /function showAuthenticatedShell[\s\S]{0,260}?gpLandingCompleteLogin[\s\S]{0,120}?showScreen\('app'\)/u);
   assert.equal((appModule.match(/window\.gpLandingCompleteLogin\(\)/g) || []).length, 1);
+  assert.match(boot, /window\.GP_REQUESTED_APP_SCREEN = options\.screen === 'login' \? 'login' : 'app';[\s\S]{0,180}?await Promise\.all/u);
+  assert.match(boot, /options\.screen === 'login' && !window\.CU/u);
+  assert.match(appModule, /if \(window\.GP_REQUESTED_APP_SCREEN === 'login'\) \{\s*showScreen\('login'\);/u);
   // 관리자 페이지: 미리보기 버튼과 광고 링크 지정 안내
   assert.match(admin, /window\.open\('\/\?lp=1', '_blank', 'noopener'\)/u);
   assert.match(admin, /\?lp=0/u);
@@ -405,14 +409,15 @@ test('익명 홈은 서버 렌더 랜딩을 즉시 활성화하고 앱·인증 �
 });
 
 test('카카오 로그인은 콜백을 즉시 처리하고 메인 전환 중 진행 상태를 명확히 보여준다', async () => {
-  const [appModule, appMain, loader, login, css, landingJs, index] = await Promise.all([
+  const [appModule, appMain, loader, login, css, landingJs, index, boot] = await Promise.all([
     read('assets/js/app-module.js'),
     read('assets/js/app-main.js'),
     read('assets/js/page-loader.js'),
     read('partials/login-screen.html'),
     read('assets/css/app.css'),
     read('assets/js/landing.js'),
-    read('index.html')
+    read('index.html'),
+    read('assets/js/app-boot.js')
   ]);
 
   // 모바일 OAuth 리다이렉트는 전체 이미지·폰트 load 이벤트를 기다리지 않는다.
@@ -427,6 +432,12 @@ test('카카오 로그인은 콜백을 즉시 처리하고 메인 전환 중 진
   assert.match(appModule, /beginAuthTransition\('kakao', '카카오 로그인 확인 중', '메인 화면을 먼저 준비하고 있어요\.'/u);
   assert.match(login, /id="authTransition"[\s\S]{0,500}?role="status"/u);
   assert.match(login, /id="socialLoginStatus"[^>]+aria-live="polite"/u);
+  assert.match(login, /onclick="gpRequestSocialLogin\('google'\)"/u);
+  assert.match(login, /onclick="gpRequestSocialLogin\('kakao'\)"/u);
+  assert.doesNotMatch(login, /onclick="(?:googleLogin|kakaoLogin)\(\)"/u);
+  assert.match(boot, /window\.gpRequestSocialLogin = async function/u);
+  assert.match(boot, /if \(typeof window\[handlerName\] !== 'function'\) await loadAppAssets\(\);/u);
+  assert.match(boot, /if \(socialLoginRequestPromise\) return socialLoginRequestPromise;/u);
   assert.match(css, /\.gp-auth-transition\{[\s\S]{0,240}?backdrop-filter/u);
   assert.match(css, /\.btn-google:disabled,.btn-kakao:disabled/u);
 

@@ -1063,7 +1063,6 @@
     var hint = $('lavDocumentProfileHint');
     var profile = currentDocumentProfile();
     renderDetailSummary();
-    renderAnchorGuide(lastDiag);
     if (hint) {
       hint.textContent = profile
         ? '자동 판정이 애매할 때만 이 선택을 사용해요. 원문 장르가 뚜렷하면 안전을 위해 자동 판정을 우선해요.'
