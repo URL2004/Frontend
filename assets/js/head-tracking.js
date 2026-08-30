@@ -407,7 +407,7 @@
    var url = new URL(value || window.location.href, window.location.origin);
    [
     'paymentKey', 'orderId', 'amount', 'credits', 'plan', 'uid', 'fail', 'success', 'code', 'message',
-    'authKey', 'sub', 'ck', 'subfail'
+    'authKey', 'sub', 'ck', 'subfail', 'state', 'error', 'error_description'
    ].forEach(function (key) {
     url.searchParams.delete(key);
    });

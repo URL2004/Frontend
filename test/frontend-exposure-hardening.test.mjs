@@ -18,7 +18,7 @@ test('종료된 커뮤니티용 EmailJS SDK와 임의 수신자 호출 표면을
 test('분석 페이지 주소에서 결제·인증 쿼리를 제거한다', () => {
   const tracking = read('assets/js/head-tracking.js');
   assert.match(tracking, /function analyticsSafeLocation\(value\)/u);
-  for (const key of ['paymentKey', 'orderId', 'uid', 'authKey']) {
+  for (const key of ['paymentKey', 'orderId', 'uid', 'authKey', 'state']) {
     assert.match(tracking, new RegExp(`['"]${key}['"]`, 'u'));
   }
   assert.match(tracking, /var pageLocation = analyticsSafeLocation\(locationUrl \|\| window\.location\.href\)/u);
