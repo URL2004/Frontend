@@ -142,7 +142,7 @@
 
  function saveDraft() {
   try {
-   sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+   var draft = {
     genre: state.genre,
     subtypeByGenre: state.subtypeByGenre,
     answersByGenre: state.answersByGenre,
@@ -154,7 +154,8 @@
      humanizeMode: el('wlHumanize') ? el('wlHumanize').value : 'auto',
      emphasis: el('wlEmphasis') ? el('wlEmphasis').value : ''
     }
-   }));
+   };
+   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(window.gpSessionSecurity ? window.gpSessionSecurity.tag(draft) : draft));
    var note = el('wlAutosaveNote');
    if (note) note.textContent = '이 탭에 임시 저장됐어요.';
   } catch (error) { /* 저장 불가 환경에서는 입력 흐름을 계속 허용 */ }
@@ -179,7 +180,7 @@
 
  function saveActive(generation, jobId, phase) {
   try {
-   sessionStorage.setItem(ACTIVE_KEY, JSON.stringify({
+   var active = {
     version: 1,
     expiresAt: Date.now() + 2 * 60 * 60 * 1000,
     genre: state.genre,
@@ -189,7 +190,8 @@
     generation: compactGeneration(generation),
     humanizeJobId: jobId || '',
     phase: phase || 'starting'
-   }));
+   };
+   sessionStorage.setItem(ACTIVE_KEY, JSON.stringify(window.gpSessionSecurity ? window.gpSessionSecurity.tag(active) : active));
   } catch (error) { /* 복구 저장 실패는 현재 작업을 중단하지 않는다 */ }
  }
 
@@ -204,7 +206,7 @@
 
  function savePending(requestId, shortMode) {
   try {
-   sessionStorage.setItem(PENDING_KEY, JSON.stringify({
+   var pending = {
     version: 1,
     expiresAt: Date.now() + 30 * 60 * 1000,
     requestId: requestId,
@@ -213,7 +215,8 @@
     form: state.form,
     assessmentToken: state.assessmentToken,
     shortMode: !!shortMode
-   }));
+   };
+   sessionStorage.setItem(PENDING_KEY, JSON.stringify(window.gpSessionSecurity ? window.gpSessionSecurity.tag(pending) : pending));
   } catch (error) { /* 현재 요청은 계속 진행 */ }
  }
 
@@ -227,6 +230,10 @@
    if (!raw) return null;
    var value = JSON.parse(raw);
    if (!value || value.version !== 1 || Number(value.expiresAt || 0) < Date.now()) {
+    clearPending();
+    return null;
+   }
+   if (!window.gpSessionSecurity || !window.gpSessionSecurity.owns(value)) {
     clearPending();
     return null;
    }
@@ -246,6 +253,10 @@
     clearActive();
     return null;
    }
+   if (!window.gpSessionSecurity || !window.gpSessionSecurity.owns(value)) {
+    clearActive();
+    return null;
+   }
    return value;
   } catch (error) {
    clearActive();
@@ -258,6 +269,10 @@
    var raw = sessionStorage.getItem(STORAGE_KEY);
    if (!raw) return;
    var saved = JSON.parse(raw);
+   if (!window.gpSessionSecurity || !window.gpSessionSecurity.owns(saved)) {
+    sessionStorage.removeItem(STORAGE_KEY);
+    return;
+   }
    state.answersByGenre = saved.answersByGenre && typeof saved.answersByGenre === 'object' ? saved.answersByGenre : {};
    state.subtypeByGenre = saved.subtypeByGenre && typeof saved.subtypeByGenre === 'object' ? saved.subtypeByGenre : {};
    if (el('wlNotes')) el('wlNotes').value = String(saved.notes || '').slice(0, 5000);

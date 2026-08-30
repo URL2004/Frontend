@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, EmailAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signOut, onAuthStateChanged, deleteUser, reauthenticateWithPopup, reauthenticateWithCredential, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged, reauthenticateWithPopup, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, orderBy, query, where, limit, startAfter, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { compactPageNumbers, paginateItems } from './board-pagination.js';
 
@@ -114,7 +114,6 @@ let activeAuthProvider = '';
 let authTransitionStartedAt = 0;
 let authTransitionSlowTimer = 0;
 let authBackendWarmPromise = null;
-let pendingKakaoLink = null;
 
 function authTransitionElement(id) {
  return document.getElementById(id);
@@ -194,6 +193,12 @@ function finishAuthTransition(result) {
 
 function showAuthenticatedShell(user, reason) {
  if (!user) return;
+ const ownerChange = window.gpSessionSecurity
+  ? window.gpSessionSecurity.bindUser(user.uid)
+  : { changed: false, previous: '', current: user.uid };
+ if (ownerChange.changed && ownerChange.previous !== 'guest' && ownerChange.current !== 'guest') {
+  clearSensitiveAuthDom();
+ }
  CU = user;
  window.CU = user;
  window.GP_REQUESTED_APP_SCREEN = 'app';
@@ -203,6 +208,18 @@ function showAuthenticatedShell(user, reason) {
  if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });
  finishAuthTransition('success');
  if (reason) retryPendingPaymentCallback(reason);
+}
+
+function clearSensitiveAuthDom() {
+ ['lavInput', 'lavBlockedMemo', 'wlNotes', 'wlEmphasis', 'wlFinal', 'wlDraft', 'adminLabInput', 'adminLabMemo', 'adminLabBaselineOutput', 'adminLabOutput']
+  .forEach(id => {
+   const node = document.getElementById(id);
+   if (node && 'value' in node) node.value = '';
+  });
+ ['result', 'lavDoneBody', 'lavRepBefore', 'lavRepAfter'].forEach(id => {
+  const node = document.getElementById(id);
+  if (node) node.textContent = '';
+ });
 }
 
 function failAuthTransition() {
@@ -267,9 +284,9 @@ onAuthStateChanged(auth, async u =>{
   window.gpUserDataReady = false;
   showAuthenticatedShell(u, 'auth_state');
   await loadUser(u);
-  await flushPendingKakaoLink(u);
   }
   else {
+  if (window.gpSessionSecurity) window.gpSessionSecurity.bindUser('');
   CU = null; window.CU = null;
   window.gpUserDataReady = false;
   if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications([]);
@@ -847,51 +864,18 @@ function isKakaoOAuthCallback(params) {
   && !params.has('paymentKey');
 }
 
-function kakaoUserMissing(error) {
- return error?.code === 'auth/user-not-found' || error?.code === 'auth/invalid-credential';
-}
-
-async function signInOrCreateKakaoUser(data, password) {
- try {
-  const signedIn = await signInWithEmailAndPassword(auth, data.email, password);
-  return { user: signedIn.user, created: false };
- } catch (signInError) {
-  if (!kakaoUserMissing(signInError)) throw signInError;
-  try {
-   const created = await createUserWithEmailAndPassword(auth, data.email, password);
-   return { user: created.user, created: true };
-  } catch (createError) {
-   if (createError?.code !== 'auth/email-already-in-use') throw createError;
-   const raced = await signInWithEmailAndPassword(auth, data.email, password);
-   return { user: raced.user, created: false };
-  }
- }
-}
-
 function syncKakaoProfileInBackground(user, data) {
  const profileChanged = user.displayName !== data.nickname || user.photoURL !== data.photo;
- const tasks = [];
- if (profileChanged) tasks.push(updateProfile(user, { displayName: data.nickname, photoURL: data.photo }));
- pendingKakaoLink = { uid: user.uid, kakaoId: String(data.kakaoId) };
- tasks.push(updateDoc(doc(db, 'users', user.uid), { kakaoId: pendingKakaoLink.kakaoId })
-  .then(() => { pendingKakaoLink = null; })
-  .catch(() => null));
- Promise.allSettled(tasks).then(results => {
-  if (results.some(result => result.status === 'rejected')) {
-   console.warn('Kakao profile background sync was partially skipped.');
-  }
+ if (!profileChanged) return;
+ // The provider binding is server-owned. The client may update only the
+ // Firebase Auth display profile and never writes users.kakaoId.
+ updateProfile(user, { displayName: data.nickname, photoURL: data.photo }).catch(() => {
+  console.warn('Kakao display profile sync was skipped.');
  });
 }
 
-async function flushPendingKakaoLink(user) {
- if (!pendingKakaoLink || !user || pendingKakaoLink.uid !== user.uid) return;
- try {
-  await updateDoc(doc(db, 'users', user.uid), { kakaoId: pendingKakaoLink.kakaoId });
-  pendingKakaoLink = null;
- } catch (_) {}
-}
-
-async function exchangeKakaoIdentity(accessToken, passwordFor, timing) {
+async function exchangeKakaoIdentity(accessToken, timing, options) {
+ options = options || {};
  setAuthTransitionMessage('카카오 계정 확인 중', '안전하게 로그인 정보를 확인하고 있어요.');
  const backendStartedAt = performance.now();
  const controller = new AbortController();
@@ -908,22 +892,35 @@ async function exchangeKakaoIdentity(accessToken, passwordFor, timing) {
   clearTimeout(timeout);
  }
  const data = await response.json().catch(() => ({}));
- if (!response.ok || data.error) {
- const error = new Error(data.error || '카카오 계정 확인에 실패했어요.');
+ if (!response.ok || data.error || !data.customToken) {
+  const error = new Error(data.error || '카카오 계정 확인에 실패했어요.');
   error.code = data.code || 'KAKAO_BACKEND_ERROR';
   throw error;
  }
  timing.backendMs = Math.round(performance.now() - backendStartedAt);
 
+ if (options.expectedUid && data.uid !== options.expectedUid) {
+  const mismatch = new Error('처음 가입한 카카오 계정과 같은 계정으로 다시 인증해 주세요.');
+  mismatch.code = 'KAKAO_REAUTH_ACCOUNT_MISMATCH';
+  throw mismatch;
+ }
+
  setAuthTransitionMessage('로그인 마무리 중', '작업 화면에 계정을 연결하고 있어요.');
  const firebaseStartedAt = performance.now();
- const result = await signInOrCreateKakaoUser(data, passwordFor(data.kakaoId));
+ const result = await signInWithCustomToken(auth, data.customToken);
  timing.firebaseMs = Math.round(performance.now() - firebaseStartedAt);
- timing.created = result.created ? 1 : 0;
+ timing.created = data.created ? 1 : 0;
+
+ if (options.expectedUid && result.user.uid !== options.expectedUid) {
+  try { await signOut(auth); } catch (_) {}
+  const mismatch = new Error('처음 가입한 카카오 계정과 같은 계정으로 다시 인증해 주세요.');
+  mismatch.code = 'KAKAO_REAUTH_ACCOUNT_MISMATCH';
+  throw mismatch;
+ }
 
  showAuthenticatedShell(result.user, 'kakao_direct');
  syncKakaoProfileInBackground(result.user, data);
- if (window.gpTrack) {
+ if (window.gpTrack && !options.reauthentication) {
   window.gpTrack('login', { method: 'kakao' });
   window.gpTrack('login_complete_timing', {
    method: 'kakao',
@@ -936,6 +933,48 @@ async function exchangeKakaoIdentity(accessToken, passwordFor, timing) {
  }
  return result.user;
 }
+
+const KAKAO_OAUTH_STATE_KEY = 'gp_kakao_oauth_state_v1';
+const KAKAO_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+
+function randomKakaoOAuthState() {
+ if (!window.crypto || typeof window.crypto.getRandomValues !== 'function') {
+  throw new Error('안전한 로그인 요청을 만들 수 없는 브라우저예요. 브라우저를 업데이트해 주세요.');
+ }
+ const bytes = new Uint8Array(24);
+ window.crypto.getRandomValues(bytes);
+ return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function createKakaoOAuthState() {
+ const value = randomKakaoOAuthState();
+ sessionStorage.setItem(KAKAO_OAUTH_STATE_KEY, JSON.stringify({ value, createdAt: Date.now() }));
+ return value;
+}
+
+function consumeKakaoOAuthState(received) {
+ let saved = null;
+ try { saved = JSON.parse(sessionStorage.getItem(KAKAO_OAUTH_STATE_KEY) || 'null'); }
+ catch (_) { saved = null; }
+ // OAuth state is single-use even when malformed or expired.
+ try { sessionStorage.removeItem(KAKAO_OAUTH_STATE_KEY); } catch (_) {}
+ if (!saved || typeof saved.value !== 'string' || typeof received !== 'string') return false;
+ if (!/^[a-f0-9]{48}$/u.test(saved.value) || !/^[a-f0-9]{48}$/u.test(received)) return false;
+ const createdAt = Number(saved.createdAt);
+ const age = Date.now() - createdAt;
+ if (!Number.isFinite(createdAt) || age < 0 || age > KAKAO_OAUTH_STATE_TTL_MS) return false;
+ return saved.value === received;
+}
+
+window.kakaoRedirectLogin = function () {
+ const state = createKakaoOAuthState();
+ const authorizeUrl = new URL('https://kauth.kakao.com/oauth/authorize');
+ authorizeUrl.searchParams.set('client_id', window.APP_CONFIG.KAKAO_REST_KEY);
+ authorizeUrl.searchParams.set('redirect_uri', window.APP_CONFIG.SITE_URL);
+ authorizeUrl.searchParams.set('response_type', 'code');
+ authorizeUrl.searchParams.set('state', state);
+ window.location.assign(authorizeUrl.toString());
+};
 
 function waitForKakaoSdk() {
  if (window.Kakao?.Auth) return Promise.resolve(window.Kakao);
@@ -954,6 +993,15 @@ window.handleKakaoCallback = async () =>{
  const params = new URLSearchParams(location.search);
  const code = params.get('code');
  if (!code || !isKakaoOAuthCallback(params)) return false;
+ if (!consumeKakaoOAuthState(params.get('state'))) {
+  clearKakaoCallbackQuery();
+  failAuthTransition();
+  const message = '카카오 로그인 요청이 만료됐거나 일치하지 않아요. 로그인 버튼을 다시 눌러 주세요.';
+  if (window.gpTrack) window.gpTrack('login_error', { method: 'kakao', flow: 'redirect', code: 'oauth_state_invalid' });
+  if (window.gpToast) window.gpToast(message, { type: 'error', title: '로그인 확인 필요' });
+  else alert(message);
+  return false;
+ }
  const timing = { startedAt: performance.now(), flow: 'redirect' };
  beginAuthTransition('kakao', '카카오 로그인 확인 중', '작업 화면을 먼저 준비하고 있어요.');
  try {
@@ -972,7 +1020,7 @@ window.handleKakaoCallback = async () =>{
   timing.tokenMs = Math.round(performance.now() - tokenStartedAt);
   if (!tokenRes.ok || !tokenData.access_token) throw new Error('카카오 인증 정보를 확인하지 못했어요.');
   clearKakaoCallbackQuery();
-  await exchangeKakaoIdentity(tokenData.access_token, kakaoId => 'kakao_' + kakaoId + '_pw!', timing);
+  await exchangeKakaoIdentity(tokenData.access_token, timing);
   return true;
  } catch(e) {
   clearKakaoCallbackQuery();
@@ -1005,7 +1053,7 @@ window.kakaoLogin = async () =>{
   });
   timing.popupMs = Math.round(performance.now() - popupStartedAt);
   beginAuthTransition('kakao', '카카오 로그인 확인 중', '메인 화면을 먼저 준비하고 있어요.');
-  await exchangeKakaoIdentity(authResult.access_token, kakaoId => 'kakao_' + kakaoId + '_!@#', timing);
+  await exchangeKakaoIdentity(authResult.access_token, timing);
  } catch(e) {
   failAuthTransition();
   const canceled = e && e.error_code === 'CANCELED';
@@ -1048,6 +1096,11 @@ window.logout = async () =>{
   : confirm('로그아웃 하시겠어요?');
  if(ok) {
   if (window.gpTrack) window.gpTrack('logout');
+  if (window.gpSessionSecurity) {
+   window.gpSessionSecurity.clearSensitive();
+   window.gpSessionSecurity.bindUser('');
+  }
+  clearSensitiveAuthDom();
   await signOut(auth);
   if (typeof window.gpLandingReset === 'function') window.gpLandingReset();
   switchTab('main');
@@ -1073,6 +1126,44 @@ window.changeNickname = async () =>{
  }
 };
 
+async function requestFreshKakaoAccessToken() {
+ const sdk = await waitForKakaoSdk();
+ const result = await new Promise((resolve, reject) => {
+  sdk.Auth.login({
+   success: resolve,
+   fail: reject,
+   scope: 'profile_nickname,profile_image,account_email'
+  });
+ });
+ if (!result || !result.access_token) throw new Error('카카오 재인증 정보를 확인하지 못했어요.');
+ return result.access_token;
+}
+
+async function reauthenticateForAccountDeletion(user) {
+ const providers = new Set((user.providerData || []).map(item => item && item.providerId).filter(Boolean));
+ if (providers.has('google.com')) {
+  await reauthenticateWithPopup(user, provider);
+  return auth.currentUser || user;
+ }
+
+ let claims = {};
+ try { claims = (await user.getIdTokenResult()).claims || {}; } catch (_) {}
+ const signedInWithKakao = claims.signInProvider === 'kakao'
+  || String(user.email || '').toLowerCase().endsWith('@kakao.com');
+ if (signedInWithKakao) {
+  const timing = { startedAt: performance.now(), flow: 'delete_reauth' };
+  const accessToken = await requestFreshKakaoAccessToken();
+  return exchangeKakaoIdentity(accessToken, timing, {
+   reauthentication: true,
+   expectedUid: user.uid
+  });
+ }
+
+ const error = new Error('안전한 탈퇴를 위해 로그아웃한 뒤 가입한 소셜 계정으로 다시 로그인해 주세요.');
+ error.code = 'ACCOUNT_REAUTH_PROVIDER_UNAVAILABLE';
+ throw error;
+}
+
 window.deleteAccount = async () =>{
  if (!CU) return;
  // 활성 구독이 있으면 탈퇴 차단 (전자상거래법상 청약철회권 보호 + 토스 심사 요건)
@@ -1093,7 +1184,10 @@ window.deleteAccount = async () =>{
        return;
      }
    }
- } catch(e) { /* 조회 실패해도 탈퇴는 시도 가능 */ }
+  } catch(e) {
+   alert('구독 상태를 확인하지 못해 탈퇴를 중단했어요. 잠시 후 다시 시도해 주세요.');
+   return;
+  }
 
  const ok = window.gpConfirm
   ? await window.gpConfirm({
@@ -1104,23 +1198,42 @@ window.deleteAccount = async () =>{
   })
   : confirm('정말 탈퇴하시겠어요?\n탈퇴 시 모든 크레딧과 데이터가 삭제되며 복구할 수 없습니다.\n(결제·환불 기록은 전자상거래법에 따라 5년간 보관됩니다.)');
  if (!ok) return;
- // ★ 탈퇴는 백엔드(Admin SDK)에서 처리 — 카카오 비밀번호 추측 재인증 제거.
- //   추측 패턴 불일치로 탈퇴 불가하던 민원(#40·#61·#62·#91) 해결. 서버가 idToken만 검증하고 데이터·Auth 계정을 삭제.
  try {
-   const idToken = await CU.getIdToken();
+   const deletingUid = CU.uid;
+   const reauthenticatedUser = await reauthenticateForAccountDeletion(CU);
+   if (!reauthenticatedUser || reauthenticatedUser.uid !== deletingUid) {
+    throw new Error('처음 가입한 계정과 같은 계정으로 다시 인증해 주세요.');
+   }
+   const idToken = await reauthenticatedUser.getIdToken(true);
    const res = await fetch(window.apiUrl('/delete-account'), {
      method: 'POST',
-     headers: { 'Content-Type': 'application/json' },
-     body: JSON.stringify({ idToken })
+     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+     body: JSON.stringify({ confirm: true })
    });
    const body = await res.json().catch(() => null);
-   if (!res.ok || !body || !body.ok) throw new Error((body && body.error) || '탈퇴 처리 중 오류가 발생했어요.');
+   if (!res.ok || !body || !body.ok) {
+    const error = new Error((body && body.error) || '탈퇴 처리 중 오류가 발생했어요.');
+    error.code = body && body.code;
+    error.partial = Boolean(body && body.partial);
+    throw error;
+   }
+   if (window.gpSessionSecurity) {
+    window.gpSessionSecurity.clearSensitive();
+    window.gpSessionSecurity.bindUser('');
+   }
+   clearSensitiveAuthDom();
    try { await signOut(auth); } catch(_) {}   // 서버에서 계정이 이미 삭제됨 — 클라 세션 정리
    alert('탈퇴가 완료됐어요.');
    location.reload();
- } catch(e) {
-   alert('탈퇴 실패: ' + (e.message || e));
- }
+  } catch(e) {
+   if (e && e.partial) {
+    alert('로그인 계정 삭제는 처리됐지만 일부 데이터 정리가 지연되고 있어요. 다시 결제하거나 가입하지 말고 사이트 내 고객센터로 문의해 주세요.');
+   } else if (e && (e.code === 'ACCOUNT_RECENT_LOGIN_REQUIRED' || e.code === 'auth/requires-recent-login')) {
+    alert('보안을 위해 다시 로그인한 직후 탈퇴를 진행해 주세요.');
+   } else {
+    alert('탈퇴 실패: ' + (e.message || e));
+   }
+  }
 };
 
 window.showReferralPopup = async () => {

@@ -1436,6 +1436,10 @@
     var ref = null;
     try { ref = JSON.parse(localStorage.getItem('lavJobRef') || 'null'); } catch (e) { }
     if (!ref || !ref.jobId) return null;
+    if (!window.gpSessionSecurity || !window.gpSessionSecurity.owns(ref)) {
+      clearJobRef();
+      return null;
+    }
     if ((Date.now() - (ref.ts || 0)) > 6 * 3600 * 1000) {
       clearJobRef();
       return null;
@@ -1604,7 +1608,10 @@
   };
   // ── P5: jobId 재진입 — 새로고침·재방문 시 진행 중 작업 복원(서버 job은 어차피 계속 돌고 있음) ──
   function saveJobRef(jobId, status) {
-    try { localStorage.setItem('lavJobRef', JSON.stringify({ jobId: jobId, status: status || activeJobUi.status || 'checking', ts: Date.now() })); } catch (e) { }
+    try {
+      var value = { jobId: jobId, status: status || activeJobUi.status || 'checking', ts: Date.now() };
+      localStorage.setItem('lavJobRef', JSON.stringify(window.gpSessionSecurity ? window.gpSessionSecurity.tag(value) : value));
+    } catch (e) { }
   }
   function clearJobRef() { try { localStorage.removeItem('lavJobRef'); } catch (e) { } }
   function initJobResume() {

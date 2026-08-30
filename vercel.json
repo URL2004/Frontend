@@ -86,6 +86,10 @@
           "value": "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests"
         },
         {
+          "key": "Content-Security-Policy-Report-Only",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://developers.kakao.com https://js.tosspayments.com https://wcs.naver.net https://connect.facebook.net https://www.googletagmanager.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; img-src 'self' data: blob: https://www.gstatic.com https://developers.kakao.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://www.facebook.com; connect-src 'self' https://ai-backend-3xtk.onrender.com https://kauth.kakao.com https://kapi.kakao.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://www.google-analytics.com https://analytics.google.com https://www.facebook.com https://wcs.naver.net; frame-src 'self' https://accounts.google.com https://kauth.kakao.com https://js.tosspayments.com https://*.tosspayments.com; worker-src 'self' blob: https://cdnjs.cloudflare.com; manifest-src 'self'; form-action 'self' https://kauth.kakao.com https://accounts.google.com"
+        },
+        {
           "key": "X-Content-Type-Options",
           "value": "nosniff"
         },
@@ -96,6 +100,10 @@
         {
           "key": "X-Frame-Options",
           "value": "DENY"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
         },
         {
           "key": "Permissions-Policy",

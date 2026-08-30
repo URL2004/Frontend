@@ -122,6 +122,10 @@
         sessionStorage.removeItem(PENDING_KEY);
         return null;
       }
+      if (!window.gpSessionSecurity || !window.gpSessionSecurity.owns(pending)) {
+        sessionStorage.removeItem(PENDING_KEY);
+        return null;
+      }
       return pending;
     } catch (error) {
       try { sessionStorage.removeItem(PENDING_KEY); } catch (_) {}
@@ -131,7 +135,8 @@
 
   function writePending(value) {
     try {
-      sessionStorage.setItem(PENDING_KEY, JSON.stringify(value));
+      var owned = window.gpSessionSecurity ? window.gpSessionSecurity.tag(value) : value;
+      sessionStorage.setItem(PENDING_KEY, JSON.stringify(owned));
       return true;
     } catch (error) {
       if (window.gpToast) window.gpToast('작업 내용을 자동으로 저장하지 못했어요. 결제 후 입력 내용을 다시 확인해 주세요.', { type: 'warning' });
