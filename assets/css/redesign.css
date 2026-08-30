@@ -10415,6 +10415,9 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
 /* 모바일 상단은 크레딧 잔액과 알림만 남긴다. 공통 버튼 복구 규칙이
    충전 버튼을 다시 노출해 우측 여백을 없애지 못하도록 마지막에 고정한다. */
 @media(max-width:560px){
+ #mainContent[data-main-design="lavender"] .gp-lav-top-right{
+  margin-right:max(8px,env(safe-area-inset-right));
+ }
  #mainContent[data-main-design="lavender"] .gp-lav-top-right .ls-upgrade-btn.gp-gradient-action{
   display:none !important;
  }
