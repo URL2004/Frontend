@@ -107,14 +107,13 @@
 
       const res = await fetch(window.apiUrl('/confirm-payment'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
         body: JSON.stringify(Object.assign({
           paymentKey: pKey,
           orderId: orderId,
           amount: amount,
           customerEmail: userEmail,
           uid: uid,
-          idToken: idToken,
           meta: window.gpMetaContext ? window.gpMetaContext() : {}
         }, typeof window.gpPendingCheckoutContract === 'function' ? window.gpPendingCheckoutContract() : {}))
       });

@@ -1006,7 +1006,6 @@ async function callAnalyzeApi(payload, opts) {
      text: payload.text,
      humanizeMode: payload.humanizeMode,
      lang: payload.lang,
-     idToken: payload.idToken,
      prevContext: payload.prevContext || '',
      billingMode: payload.billingMode || 'credit',
      requestId: payload.requestId || undefined,

@@ -24,6 +24,12 @@
     return /^(USER_CANCEL|PAY_PROCESS_CANCELED|PAY_PROCESS_CANCELLED|CANCELED|CANCELLED)$/i.test(cleanText(code, 80));
   }
 
+  function jsonHeadersWithBearer(idToken) {
+    var headers = { 'Content-Type': 'application/json' };
+    if (idToken) headers.Authorization = 'Bearer ' + idToken;
+    return headers;
+  }
+
   function trafficSource() {
     try { return localStorage.getItem('traffic_source') || 'direct'; }
     catch (e) { return 'direct'; }
@@ -73,15 +79,16 @@
     if (isCancelCode(payload.code) || /login_required$/i.test(payload.stage)) return;
 
     Promise.resolve().then(async function () {
+      var idToken = '';
       try {
         if (window.CU && typeof window.CU.getIdToken === 'function') {
-          payload.idToken = await window.CU.getIdToken();
+          idToken = await window.CU.getIdToken();
         }
       } catch (e) {}
       try {
         await window.fetch(window.apiUrl('/events'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: jsonHeadersWithBearer(idToken),
           body: JSON.stringify(payload),
           keepalive: true
         });
@@ -117,13 +124,14 @@
         release: (window.GP_BUILD_VERSION || '')
       };
       Promise.resolve().then(async function () {
+        var idToken = '';
         try {
-          if (window.CU && typeof window.CU.getIdToken === 'function') payload.idToken = await window.CU.getIdToken();
+          if (window.CU && typeof window.CU.getIdToken === 'function') idToken = await window.CU.getIdToken();
         } catch (e) {}
         try {
           await window.fetch(window.apiUrl('/events'), {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: jsonHeadersWithBearer(idToken),
             body: JSON.stringify(payload),
             keepalive: true
           });

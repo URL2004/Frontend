@@ -318,8 +318,8 @@ async function gpNotifyEvent(type, data) {
    ? window.gpMetaContext()
    : {};
   fetch(window.apiUrl('/events'), {
-   method: 'POST', headers: { 'Content-Type': 'application/json' },
-   body: JSON.stringify({ idToken, type, ...metaContext, ...(data || {}) })
+   method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+   body: JSON.stringify({ type, ...metaContext, ...(data || {}) })
   }).catch(() => {});
  } catch (_) { /* 알림 실패는 무시 */ }
 }
@@ -378,8 +378,8 @@ async function loadUser(u) {
   try {
    const token = await u.getIdToken();
    const res = await fetch(window.apiUrl('/apply-referral'), {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ idToken:token, refCode:pendingRef })
+    method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+token},
+    body: JSON.stringify({ refCode:pendingRef })
    });
    const data = await res.json();
    if (data.ok) {
@@ -439,7 +439,7 @@ window.updateCreditUI = updateCreditUI;
 // ───────────────────────────────────────────
 const COUPON_API = window.apiBase();
 
-function adminBearerJsonHeaders(idToken) {
+function bearerJsonHeaders(idToken) {
  return {
   'Content-Type': 'application/json',
   Authorization: 'Bearer ' + idToken
@@ -470,8 +470,8 @@ window.redeemCoupon = async function() {
  try {
   const token = await window.CU.getIdToken();
   const res = await fetch(COUPON_API + '/redeem-coupon', {
-   method: 'POST', headers: { 'Content-Type': 'application/json' },
-   body: JSON.stringify({ idToken: token, code })
+   method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+   body: JSON.stringify({ code })
   });
   const data = await res.json();
   if (res.ok && data.ok) {
@@ -511,7 +511,7 @@ window.adminCreateCoupons = async function() {
   const body = { credits, count };
   if (expiresAt) body.expiresAt = expiresAt;
   const res = await fetch(COUPON_API + '/admin/create-coupons', {
-   method: 'POST', headers: adminBearerJsonHeaders(token),
+   method: 'POST', headers: bearerJsonHeaders(token),
    body: JSON.stringify(body)
   });
   const data = await res.json();
@@ -590,7 +590,7 @@ window.loadCouponBatches = async function() {
   const body = { limit: 10 };
   if (cursor) body.cursor = cursor;
   const res = await fetch(COUPON_API + '/admin/list-coupon-batches', {
-   method: 'POST', headers: adminBearerJsonHeaders(token),
+   method: 'POST', headers: bearerJsonHeaders(token),
    body: JSON.stringify(body)
   });
   const data = await res.json();
@@ -681,7 +681,7 @@ window.deleteBatch = async function(batchId) {
  try {
   const token = await window.CU.getIdToken();
   const res = await fetch(COUPON_API + '/admin/delete-coupon-batch', {
-   method: 'POST', headers: adminBearerJsonHeaders(token),
+   method: 'POST', headers: bearerJsonHeaders(token),
    body: JSON.stringify({ batchId })
   });
   const data = await res.json();
@@ -726,7 +726,7 @@ window.updateBatchExpiry = async function(batchId, currentMs) {
   const body = { batchId };
   if (expiresAt) body.expiresAt = expiresAt;
   const res = await fetch(COUPON_API + '/admin/update-batch-expiry', {
-   method: 'POST', headers: adminBearerJsonHeaders(token),
+   method: 'POST', headers: bearerJsonHeaders(token),
    body: JSON.stringify(body)
   });
   const data = await res.json();
@@ -751,7 +751,7 @@ window.showBatchDetail = async function(batchId) {
  try {
   const token = await window.CU.getIdToken();
   const res = await fetch(COUPON_API + '/admin/get-coupon-batch', {
-   method: 'POST', headers: adminBearerJsonHeaders(token),
+   method: 'POST', headers: bearerJsonHeaders(token),
    body: JSON.stringify({ batchId })
   });
   const data = await res.json();
@@ -798,7 +798,7 @@ window.voidBatch = async function(batchId, unusedCount) {
  try {
   const token = await window.CU.getIdToken();
   const res = await fetch(COUPON_API + '/admin/void-coupons', {
-   method: 'POST', headers: adminBearerJsonHeaders(token),
+   method: 'POST', headers: bearerJsonHeaders(token),
    body: JSON.stringify({ batchId })
   });
   const data = await res.json();
@@ -821,7 +821,7 @@ window.voidCoupon = async function(code) {
  try {
   const token = await window.CU.getIdToken();
   const res = await fetch(COUPON_API + '/admin/void-coupons', {
-   method: 'POST', headers: adminBearerJsonHeaders(token),
+   method: 'POST', headers: bearerJsonHeaders(token),
    body: JSON.stringify({ code })
   });
   const data = await res.json();
@@ -2863,8 +2863,8 @@ window.cancelSubscription = async function() {
   try {
     const idToken = await window.CU.getIdToken();
     const res = await fetch(window.apiUrl('/subscription/cancel'), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken })
+      method: 'POST', headers: bearerJsonHeaders(idToken),
+      body: JSON.stringify({})
     });
     const data = await res.json();
     if (data.ok) {
@@ -3983,8 +3983,8 @@ window.requestRefund = async (orderId, kind, estimatedRefundAmount, requiresElig
  try {
  const idToken = await CU.getIdToken();
  const res = await fetch(window.apiUrl('/request-refund'), {
- method:'POST', headers:{'Content-Type':'application/json'},
- body: JSON.stringify({ orderId, idToken, cancelReason, kind })
+ method:'POST', headers: bearerJsonHeaders(idToken),
+ body: JSON.stringify({ orderId, cancelReason, kind })
  });
  const data = await res.json();
  if (res.ok && data.ok) {
@@ -4096,7 +4096,7 @@ window.approveRefund = async (orderId, kind) =>{
  try {
  const idToken = await CU.getIdToken();
  const res = await fetch(window.apiUrl('/approve-refund'), {
- method:'POST', headers: adminBearerJsonHeaders(idToken),
+ method:'POST', headers: bearerJsonHeaders(idToken),
  body: JSON.stringify({ orderId, kind })
  });
  const data = await res.json();
@@ -4123,7 +4123,7 @@ window.rejectRefund = async (orderId, kind) =>{
  try {
  const idToken = await CU.getIdToken();
  const res = await fetch(window.apiUrl('/reject-refund'), {
- method:'POST', headers: adminBearerJsonHeaders(idToken),
+ method:'POST', headers: bearerJsonHeaders(idToken),
  body: JSON.stringify({ orderId, rejectReason: reason.trim(), kind })
  });
  const data = await res.json();
@@ -4259,7 +4259,7 @@ async function adminPost(path, body) {
  const idToken = await window.CU.getIdToken();
  const res = await fetch(window.apiUrl(path), {
   method: 'POST',
-  headers: adminBearerJsonHeaders(idToken),
+  headers: bearerJsonHeaders(idToken),
   body: JSON.stringify(body || {})
  });
  let data = {};
@@ -6487,7 +6487,7 @@ window.loadAllCreditHistory = async () =>{
  const idToken = await CU.getIdToken();
  const res = await fetch(window.apiUrl('/admin/credit-history'), {
   method:'POST',
-  headers: adminBearerJsonHeaders(idToken),
+  headers: bearerJsonHeaders(idToken),
   body: JSON.stringify({ limit: 1000 })
  });
  const data = await res.json();

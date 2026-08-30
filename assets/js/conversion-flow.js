@@ -164,8 +164,8 @@
         var idToken = await user.getIdToken();
         var response = await fetch(window.apiUrl('/checkout-context'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken: idToken })
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
+          body: JSON.stringify({})
         });
         var data = await response.json().catch(function () { return null; });
         if (!response.ok || !data || !data.ok) throw new Error((data && data.error) || 'checkout context failed');
