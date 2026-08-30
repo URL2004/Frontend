@@ -9277,6 +9277,14 @@ body.gp-dialog-open{overflow:hidden;}
  width:100%;min-width:0;height:44px;padding:0 16px;line-height:1.25;
 }
 .gp-dialog-root.variant-detect .gp-dialog-confirm{white-space:nowrap;}
+.gp-dialog-root.variant-purchase .gp-dialog-card{width:min(480px,100%);}
+.gp-dialog-root.variant-purchase .gp-dialog-actions{
+ display:grid;grid-template-columns:minmax(104px,.72fr) minmax(176px,1.28fr);gap:10px;
+}
+.gp-dialog-root.variant-purchase .gp-dialog-actions button{
+ display:flex;align-items:center;justify-content:center;box-sizing:border-box;
+ width:100%;min-width:0;height:46px;padding:0 18px;line-height:1.25;white-space:nowrap;
+}
 .gp-dialog-actions button:focus-visible,
 .gp-dialog-x:focus-visible{outline:2px solid #a78bfa;outline-offset:2px;}
 
@@ -9306,6 +9314,10 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
 @media(max-width:560px){
  .gp-dialog-root.variant-detect .gp-dialog-actions{display:flex;flex-direction:column-reverse;}
  .gp-dialog-root.variant-detect .gp-dialog-actions button{width:100%;}
+}
+@media(max-width:420px){
+ .gp-dialog-root.variant-purchase .gp-dialog-actions{display:flex;flex-direction:column-reverse;}
+ .gp-dialog-root.variant-purchase .gp-dialog-actions button{width:100%;}
 }
 @media(prefers-reduced-motion:reduce){
  .gp-dialog-card{animation:none;}

@@ -218,6 +218,7 @@
     root.classList.toggle('danger', !!opts.danger);
     root.classList.toggle('prompt', !!promptMode);
     root.classList.toggle('variant-detect', opts.variant === 'detect');
+    root.classList.toggle('variant-purchase', opts.variant === 'purchase');
     title.textContent = opts.title || (promptMode ? '내용을 입력해 주세요' : '내용을 확인해 주세요');
     message.textContent = opts.message || '';
     message.hidden = !message.textContent;

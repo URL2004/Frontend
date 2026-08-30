@@ -1786,7 +1786,7 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
   if (packageCredits > 0) purchaseSummary.push({ label: '상품 보너스', value: '+' + Number(packageCredits).toLocaleString('ko-KR') + '크레딧' });
   if (eventCredits > 0) purchaseSummary.push({ label: '9월 이벤트 추가', value: '+' + Number(eventCredits).toLocaleString('ko-KR') + '크레딧' });
   purchaseSummary.push({ label: '총 지급', value: Number(shownCredits).toLocaleString('ko-KR') + '크레딧', emphasis: true });
-  const refundNotice = '일반 청약철회는 서면 또는 전자문서로 계약 내용을 받은 날(크레딧 이용 가능 시점이 더 늦으면 그날)부터 7일 이내예요. 잔액은 주문에 귀속되지 않은 기존 잔액, 먼저 결제한 주문 순으로 사용하고, 각 주문 안에서는 기준 크레딧을 먼저 사용해요. 환불액은 신청 접수 시점에 남은 기준 크레딧으로 계산하며, 같은 주문의 남은 추가 크레딧은 함께 회수해요. 7일 이후에도 관계 법령상 환불·취소 사유는 별도로 처리해요.';
+  const refundNotice = '잔액은 기존 잔액, 오래된 주문, 각 주문의 기준·추가 크레딧 순으로 사용해요. 환불액은 신청 시 남은 기준 크레딧으로 계산하고, 같은 주문의 남은 추가 크레딧은 함께 회수해요. 일반 청약철회는 계약 내용을 받은 날(이용 가능 시점이 더 늦으면 그날)부터 7일 이내이며, 7일이 지나도 법정 예외는 별도로 처리해요.';
   const eventNotice = eventCredits > 0
    ? '9월 이벤트 크레딧은 2026년 9월 30일까지 결제 요청분에 추가돼요. '
    : '';
@@ -1801,6 +1801,7 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
       safeText: (eventNotice + '지급된 기준·추가 크레딧은 모두 유효기간 없이 사용할 수 있어요.').trim(),
       note: refundNotice,
       icon: '₩',
+      variant: 'purchase',
       confirmText: Number(amount).toLocaleString('ko-KR') + '원 결제하기'
      })
     : confirm(confirmMsg));

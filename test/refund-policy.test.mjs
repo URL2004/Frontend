@@ -160,6 +160,7 @@ test('이용약관과 환불규정은 기산일·부분 제공·법정 예외와
   assert.match(mainSource, /시행일: 2026년 8월 30일/u);
   assert.doesNotMatch(mainSource, /크레딧의?\s*이용기간은?\s*결제일로부터\s*1년/u);
   assert.match(mainSource, /서면 또는 전자문서로 계약 내용을 받은 날부터 7일/u);
+  assert.match(mainSource, /variant: 'purchase'/u);
   assert.match(mainSource, /서비스 제공이 시작된 부분은 단순 변심에 따른 청약철회가 제한/u);
   assert.match(mainSource, /아직 제공되지 않은 부분은 관계 법령과 본 정책에 따라 환불/u);
   assert.match(mainSource, /3개월 이내이면서 그 사실을 안 날\(알 수 있었던 날\)부터 30일 이내/u);
