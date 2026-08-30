@@ -978,7 +978,7 @@
   // 읽기용 페이지 본문 끝. 스크롤을 끝까지 내린 사람에게만 보이므로 방해가 없고,
   // 문구는 히어로와 같은 세그먼트 판정을 그대로 쓴다(페이지마다 복제하지 않는다).
   // FAQ는 정확도·환불·개인정보에 답하는 신뢰 화면이다. 전용 작업 선택기를 사용해 공통 판매 오퍼와 겹치지 않는다.
-  var OFFER_PAGES = ['notice', 'community', 'blog'];
+  var OFFER_PAGES = ['notice', 'blog'];
 
   function currentOfferPage() {
     for (var i = 0; i < OFFER_PAGES.length; i++) {

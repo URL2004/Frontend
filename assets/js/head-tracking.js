@@ -405,11 +405,14 @@
  function analyticsSafeLocation(value) {
   try {
    var url = new URL(value || window.location.href, window.location.origin);
-   [
+   var sensitiveKeys = new Set([
     'paymentKey', 'orderId', 'amount', 'credits', 'plan', 'uid', 'fail', 'success', 'code', 'message',
-    'authKey', 'sub', 'ck', 'subfail', 'state', 'error', 'error_description'
-   ].forEach(function (key) {
-    url.searchParams.delete(key);
+    'authKey', 'sub', 'ck', 'subfail', 'state', 'error', 'error_description',
+    'preview_key', 'ref', 'token', 'id_token', 'access_token', 'refresh_token', 'session_state',
+    'email', 'phone', 'name'
+   ].map(function (key) { return key.toLowerCase(); }));
+   Array.from(url.searchParams.keys()).forEach(function (key) {
+    if (sensitiveKeys.has(String(key).toLowerCase())) url.searchParams.delete(key);
    });
    return url.toString();
   } catch (_) {

@@ -1964,7 +1964,7 @@ function showPolicy(type) {
 
  if (type === 'company') {
  title.textContent = '회사 정보 · 사업자 정보';
- body.innerHTML = '상호명: 지피코리아(gpkorea)<br>대표자: 윤동민<br>개인정보보호책임자: 윤동민<br>사업자등록번호: 213-11-67637<br>통신판매업 신고번호: 2024-인천연수구-4281<br>사업장 주소: 인천광역시 연수구 랜드마크로360번길 40, 108동 3201호<br>이메일: aqua0661123@naver.com<br>고객센터: 이메일 문의 · 운영 시간 09:00–23:59<br><br>본 서비스는 국립국어원 공공저작물(공공언어 용어 목록 · 어문규범 규정 · 말뭉치 통계, 공공누리 제1유형)과 표준국어대사전 · 우리말샘 · 온용어 오픈 API를 활용해 결과 품질을 검증합니다.<br><br><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2131167637" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;">▸ 통신판매사업자 정보 확인 (공정거래위원회)</a>';
+ body.innerHTML = '상호명: 지피코리아(gpkorea)<br>대표자: 윤동민<br>개인정보보호책임자: 윤동민<br>사업자등록번호: 213-11-67637<br>통신판매업 신고번호: 2024-인천연수구-4281<br>사업장 주소: 인천광역시 연수구 랜드마크로360번길 40, 108동 3201호<br>이메일: aqua0661123@naver.com<br>고객센터: 이메일 문의 · 운영 시간 09:00–23:59<br><br>본 서비스는 국립국어원 공공저작물(공공언어 용어 목록 · 어문규범 규정 · 말뭉치 통계, 공공누리 제1유형)과 표준국어대사전 · 우리말샘 · 온용어 오픈 API를 활용해 결과 품질을 검증합니다.<br><br><a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2131167637" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:underline;">▸ 통신판매사업자 정보 확인 (공정거래위원회)</a>';
  return;
  }
 
@@ -2106,50 +2106,6 @@ function showPolicy(type) {
 window.showPolicy = showPolicy;
 
 window.addEventListener('load',()=>{
-// --- 사진 미리보기 이벤트 등록 ---
- const photoInput = document.getElementById('community-photos');
- const previewList = document.getElementById('photo-preview-list');
- let selectedFiles = []; // 선택된 파일 관리용 배열
-
- if (photoInput && previewList) {
- photoInput.addEventListener('change', function(e) {
- const files = Array.from(e.target.files);
- if (selectedFiles.length + files.length >5) { 
- alert("사진은 최대 5장까지만 첨부할 수 있습니다!"); 
- return; 
- }
- files.forEach(file =>{
- selectedFiles.push(file);
- const reader = new FileReader();
- reader.onload = function(event) {
- const div = document.createElement('div');
- div.className = 'preview-item';
- const img = document.createElement('img');
- img.src = event.target.result;
- const rbtn = document.createElement('span');
- rbtn.className = 'remove-btn';
- rbtn.textContent = '×';
- rbtn.addEventListener('click', () => {
-  div.remove();
-  window.removeSelectedFile(file.name);
- });
- div.replaceChildren(img, rbtn);
- previewList.appendChild(div);
- };
- reader.readAsDataURL(file);
- });
- // 같은 파일을 다시 올릴 수 있도록 초기화
- photoInput.value = ''; 
- });
-
- // X 버튼 누르면 배열에서도 삭제하는 함수
- window.removeSelectedFile = function(fileName) {
- selectedFiles = selectedFiles.filter(f =>f.name !== fileName);
- };
- // 업로드 시 참조할 수 있게 전역에 연결
- window.getSelectedFiles = () =>selectedFiles;
- window.clearSelectedFiles = () =>{ selectedFiles = []; previewList.innerHTML = ''; };
- }
  const p=new URLSearchParams(location.search);
  if (p.get('subfail') === '1' || p.has('authKey') || p.has('sub') || p.has('ck')) {
   history.replaceState({}, '', location.pathname);

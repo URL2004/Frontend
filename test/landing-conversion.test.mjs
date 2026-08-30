@@ -140,7 +140,7 @@ test('감지 보고서의 휴머나이저 이동 버튼 아래에는 비용 정�
 
 test('일반 콘텐츠는 세그먼트 오퍼를 쓰고 FAQ·가이드는 전용 작업 선택기를 사용한다', async () => {
   const flow = await read('assets/js/conversion-flow.js');
-  for (const page of ['notice', 'community', 'blog']) {
+  for (const page of ['notice', 'blog']) {
     const html = await read(`pages/${page}.html`);
     assert.match(html, /data-gp-offer-slot/u, `${page}에 인라인 오퍼 슬롯이 있어야 한다`);
   }
@@ -149,6 +149,7 @@ test('일반 콘텐츠는 세그먼트 오퍼를 쓰고 FAQ·가이드는 전용
   assert.match(faq, /AI 감지 시작/u);
   assert.match(faq, /휴머나이징 시작/u);
   assert.doesNotMatch(flow, /OFFER_PAGES = \['faq'/u);
+  assert.doesNotMatch(flow, /OFFER_PAGES = \[[^\]]*'community'/u);
   const guide = await read('pages/guide.html');
   assert.doesNotMatch(guide, /data-gp-offer-slot/u);
   assert.match(guide, /openProductMode\('detect'\)/u);

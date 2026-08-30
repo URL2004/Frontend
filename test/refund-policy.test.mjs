@@ -146,7 +146,7 @@ test('환불 버튼은 저장된 기산일을 우선하고 기간 경과 주문�
   assert.match(moduleSource, /청약철회 기준일을 확인할 수 없습니다/u);
   assert.match(moduleSource, /requiresEligibilityReview \? '확인 요청' : '환불 요청'/u);
   assert.match(moduleSource, /used: d\.coupon\.used \|\| 0/u);
-  assert.match(moduleSource, /window\.requestRefund\('\$\{item\.id\}','\$\{item\.kind\}',\$\{refundAmount\},\$\{requiresEligibilityReview\}\)/u);
+  assert.match(moduleSource, /window\.requestRefund\('\$\{jsAttr\(item\.id\)\}','\$\{jsAttr\(item\.kind\)\}',\$\{refundAmount\},\$\{requiresEligibilityReview\}\)/u);
   assert.match(mainSource, /window\.COUPON\.used = Math\.max\(0, Number\(window\.COUPON\.used\) \|\| 0\) \+ 1/u);
 });
 

@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, EmailAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signOut, onAuthStateChanged, deleteUser, reauthenticateWithPopup, reauthenticateWithCredential, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, orderBy, query, where, limit, startAfter, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { compactPageNumbers, paginateItems } from './board-pagination.js';
 
 // XSS 방어: 사용자 입력이 innerHTML에 들어갈 때 escape 필수
@@ -15,7 +14,8 @@ window.escapeHtml = escapeHtml;
 // HTML 속성에 담긴 JS 문자열(예: onclick="fn('${jsAttr(x)}')")용 이중 이스케이프
 function jsAttr(s) {
  return String(s == null ? '' : s)
-  .replace(/\\/g,'\\\\').replace(/'/g,"\\'")
+  // &를 먼저 막아 &#39; / &apos;가 HTML 파싱 뒤 따옴표로 복원되는 우회를 차단한다.
+  .replace(/&/g,'&amp;').replace(/\\/g,'\\\\').replace(/'/g,"\\'")
   .replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 window.jsAttr = jsAttr;
@@ -24,7 +24,7 @@ function safePhotoUrl(url) {
  try {
   const u = new URL(url);
   const ok = ['firebasestorage.googleapis.com','storage.googleapis.com'];
-  return ok.some(h => u.hostname.endsWith(h)) ? u.toString() : '';
+  return u.protocol === 'https:' && ok.some(h => u.hostname === h || u.hostname.endsWith('.' + h)) ? u.toString() : '';
  } catch { return ''; }
 }
 window.safePhotoUrl = safePhotoUrl;
@@ -43,7 +43,6 @@ const FB = window.APP_CONFIG.FIREBASE;
 const fbapp = initializeApp(FB);
 const auth = getAuth(fbapp); window._fbAuth = auth;
 const db = getFirestore(fbapp);
-const storage = getStorage(fbapp);
 const provider = new GoogleAuthProvider();
 const authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Firebase auth persistence setup failed:', e));
 window.authPersistenceReady = authPersistenceReady;
@@ -600,8 +599,8 @@ window.loadCouponBatches = async function() {
    + '</tr></thead><tbody>';
   data.batches.forEach(b => {
    const actionBtn = (b.unusedCount > 0)
-    ? '<button class="gp-admin-mini-btn danger" onclick="voidBatch(\'' + escapeHtml(b.batchId) + '\',' + b.unusedCount + ')">배치 무효화</button>'
-    : '<button class="gp-admin-mini-btn" onclick="deleteBatch(\'' + escapeHtml(b.batchId) + '\')">기록 지우기</button>';
+    ? '<button class="gp-admin-mini-btn danger" onclick="voidBatch(\'' + jsAttr(b.batchId) + '\',' + b.unusedCount + ')">배치 무효화</button>'
+    : '<button class="gp-admin-mini-btn" onclick="deleteBatch(\'' + jsAttr(b.batchId) + '\')">기록 지우기</button>';
    html += '<tr>'
     + '<td class="muted">' + escapeHtml(fmtDate(b.createdAt)) + '</td>'
     + '<td>' + escapeHtml(adminLabel(b.adminUid)) + '</td>'
@@ -610,9 +609,9 @@ window.loadCouponBatches = async function() {
     + '<td class="num">' + b.redeemedCount + '</td>'
     + '<td class="num muted">' + b.voidedCount + '</td>'
     + '<td class="num gp-admin-pos">' + b.unusedCount + '</td>'
-    + '<td class="muted edit" onclick="updateBatchExpiry(\'' + escapeHtml(b.batchId) + '\',' + (b.expiresAt !== null && b.expiresAt !== undefined ? b.expiresAt : 'null') + ')" title="클릭해서 만료일 변경">' + escapeHtml(fmtDateShort(b.expiresAt)) + ' ✎</td>'
+    + '<td class="muted edit" onclick="updateBatchExpiry(\'' + jsAttr(b.batchId) + '\',' + (b.expiresAt !== null && b.expiresAt !== undefined ? b.expiresAt : 'null') + ')" title="클릭해서 만료일 변경">' + escapeHtml(fmtDateShort(b.expiresAt)) + ' ✎</td>'
     + '<td style="white-space:nowrap;">'
-    + '<button class="gp-admin-mini-btn" style="margin-right:4px;" onclick="showBatchDetail(\'' + escapeHtml(b.batchId) + '\')">상세</button>'
+    + '<button class="gp-admin-mini-btn" style="margin-right:4px;" onclick="showBatchDetail(\'' + jsAttr(b.batchId) + '\')">상세</button>'
     + actionBtn
     + '</td></tr>'
     + '<tr id="batchDetail-' + escapeHtml(b.batchId) + '" style="display:none;"><td colspan="9" style="padding:0;"></td></tr>';
@@ -753,7 +752,7 @@ window.showBatchDetail = async function(batchId) {
     + '<td style="padding:6px;">' + userTxt + '</td>'
     + '<td style="padding:6px;color:var(--text3);">' + escapeHtml(fmtDate(c.redeemedAt)) + '</td>'
     + '<td style="padding:6px;">'
-    + (c.status === 'unused' ? '<button onclick="voidCoupon(\'' + escapeHtml(c.code) + '\')" style="padding:3px 8px;border-radius:4px;border:1px solid var(--red);background:transparent;color:var(--red);font-size:10px;cursor:pointer;">무효화</button>' : '')
+    + (c.status === 'unused' ? '<button onclick="voidCoupon(\'' + jsAttr(c.code) + '\')" style="padding:3px 8px;border-radius:4px;border:1px solid var(--red);background:transparent;color:var(--red);font-size:10px;cursor:pointer;">무효화</button>' : '')
     + '</td></tr>';
   });
   html += '</tbody></table></div>';
@@ -1124,7 +1123,9 @@ window.showReferralPopup = async () => {
  if (!CU) return;
  const snap = await getDoc(doc(db,'users',CU.uid));
  const refCode = snap.data().refCode || CU.uid.substring(0,8);
- const link = window.APP_CONFIG.SITE_URL + '?ref=' + refCode;
+ const linkUrl = new URL(window.APP_CONFIG.SITE_URL, window.location.origin);
+ linkUrl.searchParams.set('ref', String(refCode));
+ const link = linkUrl.toString();
  const overlay = document.createElement('div');
  overlay.id = 'refOverlay';
  overlay.setAttribute('role', 'dialog');
@@ -1149,12 +1150,24 @@ window.showReferralPopup = async () => {
    </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px;">
-   <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${link}</div>
-   <button onclick="navigator.clipboard.writeText('${link}');this.textContent='복사했어요';setTimeout(()=>this.textContent='링크 복사',1500)" style="padding:10px 18px;border-radius:10px;border:none;background:var(--green);color:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">링크 복사</button>
+   <div id="refShareLink" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+   <button id="refShareCopy" type="button" style="padding:10px 18px;border-radius:10px;border:none;background:var(--green);color:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">링크 복사</button>
   </div>
  </div>`;
  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
  document.body.appendChild(overlay);
+ const linkEl = overlay.querySelector('#refShareLink');
+ const copyBtn = overlay.querySelector('#refShareCopy');
+ if (linkEl) linkEl.textContent = link;
+ if (copyBtn) copyBtn.addEventListener('click', async () => {
+  try {
+   await navigator.clipboard.writeText(link);
+   copyBtn.textContent = '복사했어요';
+   setTimeout(() => { copyBtn.textContent = '링크 복사'; }, 1500);
+  } catch (_) {
+   if (window.gpToast) window.gpToast('링크를 복사하지 못했어요.', { type: 'error' });
+  }
+ });
 };
 
 // 보안: credits/plan 직접 수정은 전부 백엔드(Admin SDK)에서만 처리.
@@ -1163,6 +1176,18 @@ window.showReferralPopup = async () => {
 // 지급은 /confirm-payment·/apply-referral에서만 발생한다.
 
 // ===== COMMUNITY =====
+// 공개 커뮤니티는 운영 종료 상태다. 과거 번들·알림·콘솔 호출이 남아 있어도
+// posts/Storage에 접근하지 않도록 모든 공개 진입점에서 먼저 차단한다.
+const COMMUNITY_CLOSED = true;
+function blockClosedCommunity(options) {
+ if (!COMMUNITY_CLOSED) return false;
+ const quiet = options && options.quiet;
+ if (!quiet) {
+  if (typeof window.switchTab === 'function') window.switchTab('main');
+  if (window.gpToast) window.gpToast('커뮤니티 운영을 종료했어요.', { type: 'info' });
+ }
+ return true;
+}
 window.sortBy = 'latest';
 window.currentCategory = window.currentCategory || '';
 window.postSearch = window.postSearch || '';
@@ -1408,11 +1433,13 @@ function _showCommunityLoginGate(){
 }
 
 window.openCommunityLogin = function(){
+ if (blockClosedCommunity()) return;
  if (window.gpTrack) window.gpTrack('login_required', { source: 'community' });
  if (typeof window.showScreen === 'function') window.showScreen('login');
 };
 
 window.openCommunityComposer = function(){
+ if (blockClosedCommunity()) return;
  const form = document.getElementById('wform');
  if (!CU) {
   if (form) form.style.display = 'none';
@@ -1519,6 +1546,7 @@ window.gotoPostPage = function(n) {
 };
 
 window.loadPosts = async (sort) =>{
+ if (blockClosedCommunity()) return;
  const sortChanged = sort && sort !== window.sortBy;
  if (sort && ['latest', 'views', 'oldest'].includes(sort)) window.sortBy = sort;
  document.querySelectorAll('.sortbtn').forEach(b =>b.classList.toggle('active', b.dataset.sort===window.sortBy));
@@ -1591,6 +1619,7 @@ window.loadPosts = async (sort) =>{
 };
 
 window.submitPost = async () =>{
+ if (blockClosedCommunity()) return;
  if (!CU) { window.openCommunityLogin(); return; }
  const title = document.getElementById('ptitle').value.trim();
  const body = document.getElementById('pbody').value.trim();
@@ -1664,6 +1693,7 @@ window.submitPost = async () =>{
 };
 
 window.viewPost = async (postId) =>{
+ if (blockClosedCommunity()) return;
  if (!CU) { _showCommunityLoginGate(); window.openCommunityLogin(); return; }
  document.getElementById('listView').style.display='none';
  document.getElementById('detailView').style.display='block';
@@ -1757,6 +1787,7 @@ window.viewPost = async (postId) =>{
 };
 
 window.submitComment = async (postId) =>{
+ if (blockClosedCommunity()) return;
  if (!CU) { alert('로그인이 필요해요.'); return; }
  const body = document.getElementById('cinput').value.trim();
  if (!body) { alert('댓글 내용을 입력해 주세요.'); return; }
@@ -1786,6 +1817,7 @@ window.submitComment = async (postId) =>{
 };
 
 window.toggleBm = async (postId) =>{
+ if (blockClosedCommunity()) return;
  if (!CU) { alert('로그인이 필요해요.'); return; }
  const ref = doc(db,'users',CU.uid);
  const snap = await getDoc(ref);
@@ -1801,6 +1833,7 @@ window.copyLink = (url) =>{
 };
 
 window.delPost = async (postId) =>{
+ if (blockClosedCommunity()) return;
  const ok = window.gpConfirm
   ? await window.gpConfirm({ title: '글을 삭제할까요?', message: '삭제한 글은 복구할 수 없어요.', confirmText: '삭제하기', danger: true })
   : confirm('글을 삭제하시겠어요?');
@@ -1815,6 +1848,7 @@ window.delPost = async (postId) =>{
 };
 
 window.togglePostHidden = async (postId, makeHidden) =>{
+ if (blockClosedCommunity()) return;
  if (!(window.isAdmin && window.isAdmin())) { alert('권한이 없습니다.'); return; }
  const msg = makeHidden ? '이 글을 숨김 처리할까요? (다른 유저에게 노출되지 않음)' : '숨김을 해제할까요?';
  const ok = window.gpConfirm
@@ -1830,6 +1864,7 @@ window.togglePostHidden = async (postId, makeHidden) =>{
 };
 
 window.delComment = async (postId, commentId) =>{
+ if (blockClosedCommunity()) return;
  const ok = window.gpConfirm
   ? await window.gpConfirm({ title: '댓글을 삭제할까요?', message: '삭제한 댓글은 복구할 수 없어요.', confirmText: '삭제하기', danger: true })
   : confirm('댓글을 삭제하시겠어요?');
@@ -2060,7 +2095,7 @@ window.viewQuestion = async (qid) =>{
    + '</div>'
    + '<div class="pdtitle">'+escapeHtml(q.title||'')+'</div>'
    + '<div class="pmeta"><span>'+escapeHtml(q.authorName||'')+'</span><span>'+date+'</span></div>'
-   + (canDel ? '<div class="pdactions"><button class="abtn danger" onclick="delQuestion(\''+qid+'\')">질문 삭제</button></div>' : '')
+   + (canDel ? '<div class="pdactions"><button class="abtn danger" onclick="delQuestion(\''+jsAttr(qid)+'\')">질문 삭제</button></div>' : '')
    + '</div>'
    + '<div class="pdbody">'+escapeHtml(q.body||'')+'</div>';
 
@@ -2072,14 +2107,14 @@ window.viewQuestion = async (qid) =>{
     +  '<span class="qna-answer-meta">'+escapeHtml(q.answer.answeredBy||'운영팀')+(aDate?' · '+aDate:'')+'</span>'
     + '</div>'
     + '<div class="qna-answer-body">'+escapeHtml(q.answer.body)+'</div>'
-    + (isAdm ? '<div class="qna-answer-actions"><button class="abtn" onclick="editAnswer(\''+qid+'\')">답변 수정</button><button class="abtn danger" onclick="delAnswer(\''+qid+'\')">답변 삭제</button></div>' : '')
+    + (isAdm ? '<div class="qna-answer-actions"><button class="abtn" onclick="editAnswer(\''+jsAttr(qid)+'\')">답변 수정</button><button class="abtn danger" onclick="delAnswer(\''+jsAttr(qid)+'\')">답변 삭제</button></div>' : '')
     + '</div>';
   } else if (isAdm) {
    html += '<div class="qna-admin-form">'
     + '<div style="font-size:13px;font-weight:700;margin-bottom:10px;color:#2d8e4a;">운영팀 답변 작성</div>'
     + '<textarea id="answerBody" placeholder="답변을 입력하세요..."></textarea>'
     + '<div class="qna-admin-form-ft">'
-    +  '<button class="qna-answer-submit" onclick="submitAnswer(\''+qid+'\')">답변 등록</button>'
+    +  '<button class="qna-answer-submit" onclick="submitAnswer(\''+jsAttr(qid)+'\')">답변 등록</button>'
     + '</div>'
     + '</div>';
   } else {
@@ -2598,25 +2633,6 @@ window.loadMyPage = async () =>{
  const u = snap.data();
  const plan = u.plan || 'free';
  const planNames = { free:'무료', starter:'스타터', pro:'프로', master:'마스터', unlimited:'무제한' };
- const postSnap = await getDocs(query(collection(db,'posts'), where('authorId','==',CU.uid)));
- let myPosts = [];
- postSnap.forEach(d => myPosts.push({id:d.id,...d.data()}));
- myPosts.sort((a,b)=>(b.createdAt?.toDate()||0)-(a.createdAt?.toDate()||0));
- const bookmarks = u.bookmarks || [];
- const renderMyPost = p => {
- const date=p.createdAt?new Date(p.createdAt.toDate()).toLocaleDateString('ko-KR'):'';
- return '<div class="pitem" onclick="switchTab(\'community\');setTimeout(()=>viewPost(\''+p.id+'\'),100)">'
- +'<div class="pttl">'+escapeHtml(p.title)+'</div>'
- +'<div class="pmeta"><span>'+date+'</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'+(p.views||0)+'</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'+(p.commentCount||0)+'</span></div></div>';
- };
- const myPostsHiddenRows = myPosts.slice(5).map(renderMyPost).join('');
- const myPostsHtml = myPosts.length===0
- ? '<div style="text-align:center;padding:24px;color:var(--text3);">작성한 글이 없어요</div>'
- : myPosts.slice(0,5).map(renderMyPost).join('')
-  + (myPostsHiddenRows
-   ? '<div id="myPostsHidden" style="display:none;">'+myPostsHiddenRows+'</div>'
-    +'<button id="myPostsToggle" type="button" class="gp-more-btn" onclick="gpToggleMore(\'myPostsHidden\',this,\'더보기 ('+(myPosts.length-5)+'건)\')">더보기 ('+(myPosts.length-5)+'건)</button>'
-   : '');
  el.innerHTML =
  '<div class="shell">'
  +(window.isAdmin() ? '<div class="gp-mypage-admin-entry"><div><div class="gp-mypage-admin-title">관리자 페이지</div><div class="gp-mypage-admin-sub">환불, 크레딧, 쿠폰, 사용자 원장을 별도 화면에서 처리합니다.</div></div><button type="button" onclick="openAdminPage()">관리자 페이지 열기</button></div>' : '')
@@ -2627,16 +2643,10 @@ window.loadMyPage = async () =>{
  +'</div>'
  +'<div><div style="font-size:18px;font-weight:700;">'+escapeHtml(window.getAdminName()||CU.displayName)+'</div>'
  +'<div style="font-size:13px;color:var(--text2);">'+escapeHtml(CU.email)+'</div></div></div>'
- +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">'
+ +'<div style="display:grid;grid-template-columns:1fr;gap:12px;">'
  +'<div style="text-align:center;padding:16px;background:var(--surface2);border-radius:var(--rs);">'
  +'<div style="font-size:22px;font-weight:700;color:var(--blue);">'+(u.credits||0)+'</div>'
  +'<div style="font-size:12px;color:var(--text3);">보유 크레딧</div></div>'
- +'<div style="text-align:center;padding:16px;background:var(--surface2);border-radius:var(--rs);">'
- +'<div style="font-size:22px;font-weight:700;color:var(--green);">'+myPosts.length+'</div>'
- +'<div style="font-size:12px;color:var(--text3);">작성한 글</div></div>'
- +'<div style="text-align:center;padding:16px;background:var(--surface2);border-radius:var(--rs);">'
- +'<div style="font-size:22px;font-weight:700;color:var(--yellow);">'+bookmarks.length+'</div>'
- +'<div style="font-size:12px;color:var(--text3);">북마크</div></div>'
  +'</div>'
  +'<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">'
  +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
@@ -2654,8 +2664,6 @@ window.loadMyPage = async () =>{
  +'</div>'
  +'</div></div>'
  +'<div id="subManageCard" style="margin-bottom:20px;"></div>'
- +'<div style="font-size:15px;font-weight:700;margin-bottom:12px;">내가 쓴 글 ('+myPosts.length+')</div>'
- +myPostsHtml
  +'<div style="font-size:15px;font-weight:700;margin:20px 0 12px;">알림</div>'
  +'<div id="notifList"><div style="text-align:center;padding:24px;color:var(--text3);">불러오는 중...</div></div>'
  +'<div style="margin-top:28px;"><div style="font-size:15px;font-weight:700;margin-bottom:12px;">결제 내역 / 환불</div><div id="orderHistoryList"><div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div></div></div>'
@@ -2684,7 +2692,7 @@ window.renderSubManage = function(u) {
   const tierPrices = { '1000':11900, '5000':54900, '10000':99000, 'unlimited':290000 };
   const nextMs = sub.nextBillingAt?.toMillis ? sub.nextBillingAt.toMillis() : (sub.nextBillingAt?._seconds ? sub.nextBillingAt._seconds*1000 : 0);
   const nextDate = nextMs ? new Date(nextMs).toLocaleDateString('ko-KR') : '—';
-  const statusLabel = ({ active:'정상 이용 중', cancelled:'해지 예정', expired:'만료', past_due:'결제 실패(중단)' })[sub.status] || sub.status;
+  const statusLabel = ({ active:'정상 이용 중', cancelled:'해지 예정', expired:'만료', past_due:'결제 실패(중단)' })[sub.status] || '상태 확인 필요';
   const cardLine = sub.cardCompany || sub.cardNumber
     ? (sub.cardCompany || '카드') + (sub.cardNumber ? ' ' + sub.cardNumber : '')
     : '등록된 카드';
@@ -2713,12 +2721,12 @@ window.renderSubManage = function(u) {
     +actionBtn
     +'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-size:13px;">'
-    +'<div style="color:var(--text3);">상품</div><div style="color:var(--text);font-weight:600;">'+ (tierLabels[sub.tier] || sub.tier) +'</div>'
-    +'<div style="color:var(--text3);">상태</div><div style="color:'+(sub.status==='past_due'?'var(--red)':'var(--text)')+';">'+ statusLabel +'</div>'
-    +'<div style="color:var(--text3);">다음 결제일</div><div style="color:var(--text);">'+ nextDate +'</div>'
-    +'<div style="color:var(--text3);">결제 금액</div><div style="color:var(--text);">'+ tierPrices[sub.tier].toLocaleString() +'원/월</div>'
-    +'<div style="color:var(--text3);">결제 카드</div><div style="color:var(--text);">'+ cardLine +'</div>'
-    +'<div style="color:var(--text3);">이번 사이클 쿠폰</div><div style="color:var(--text);">'+ couponLine +'</div>'
+    +'<div style="color:var(--text3);">상품</div><div style="color:var(--text);font-weight:600;">'+escapeHtml(tierLabels[sub.tier] || '상품 확인 필요')+'</div>'
+    +'<div style="color:var(--text3);">상태</div><div style="color:'+(sub.status==='past_due'?'var(--red)':'var(--text)')+';">'+escapeHtml(statusLabel)+'</div>'
+    +'<div style="color:var(--text3);">다음 결제일</div><div style="color:var(--text);">'+escapeHtml(nextDate)+'</div>'
+    +'<div style="color:var(--text3);">결제 금액</div><div style="color:var(--text);">'+(tierPrices[sub.tier] ? tierPrices[sub.tier].toLocaleString()+'원/월' : '확인 필요')+'</div>'
+    +'<div style="color:var(--text3);">결제 카드</div><div style="color:var(--text);">'+escapeHtml(cardLine)+'</div>'
+    +'<div style="color:var(--text3);">이번 사이클 쿠폰</div><div style="color:var(--text);">'+escapeHtml(couponLine)+'</div>'
     +'</div></div>';
 };
 
@@ -2810,9 +2818,10 @@ window.loadNotifications = async () =>{
  const date=n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):'';
  const borderColor = n.read ? 'var(--border)' : 'var(--blue)';
  const fontWeight = n.read ? '400' : '600';
- const action = n.postId
-  ? "switchTab('community');setTimeout(()=>viewPost('"+jsAttr(n.postId)+"'),100)"
-  : (n.action && n.action.tab ? "switchTab('"+jsAttr(n.action.tab)+"')" : "");
+ const requestedTab = n.action && n.action.tab ? String(n.action.tab) : '';
+ const action = !n.postId && requestedTab && requestedTab !== 'community'
+  ? "switchTab('"+jsAttr(requestedTab)+"')"
+  : "";
  return '<div style="background:var(--surface);border:1px solid '+borderColor+';border-radius:var(--rs);padding:14px;margin-bottom:8px;cursor:pointer;" onclick="markRead(\''+jsAttr(n.id)+'\');'+action+'">'
  +'<div style="font-size:13px;font-weight:'+fontWeight+';">'+escapeHtml(n.message)+'</div>'
  +'<div style="font-size:12px;color:var(--text3);margin-top:4px;">'+date+'</div></div>';
@@ -2838,6 +2847,7 @@ window.markRead = async (notifId) =>{
 };
 
 window.sendNotification = async (postId, postAuthorId, commenterName, postTitle) =>{
+ if (blockClosedCommunity({ quiet: true })) return;
  if (!postAuthorId || postAuthorId === CU.uid) return;
  try {
  await addDoc(collection(db,'users',postAuthorId,'notifications'),{
@@ -2867,6 +2877,7 @@ window.updateNotifBadge = async (uid) =>{
 };
 
 window.toggleLike = async (postId) =>{
+ if (blockClosedCommunity()) return;
  if (!CU) { alert('로그인이 필요해요.'); return; }
  const ref = doc(db,'posts',postId);
  const snap = await getDoc(ref);
@@ -2882,11 +2893,13 @@ window.toggleLike = async (postId) =>{
 };
 
 window.toggleReplyForm = (commentId) =>{
+ if (blockClosedCommunity()) return;
  const f = document.getElementById('replyForm_' + commentId);
  if (f) f.style.display = f.style.display === 'none' ? 'block' : 'none';
 };
 
 window.submitReply = async (postId, commentId, parentAuthorName) =>{
+ if (blockClosedCommunity()) return;
  if (!CU) { alert('로그인이 필요해요.'); return; }
  const bodyEl = document.getElementById('reply_' + commentId);
  const body = bodyEl ? bodyEl.value.trim() : '';
@@ -3813,12 +3826,12 @@ window.loadRefundModalList = async () =>{
   return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
   <div style="flex:1;min-width:0;">
-  <div style="font-weight:600;font-size:14px;color:var(--text);">${(o.amount||0).toLocaleString()}원 · ${title}</div>
+  <div style="font-weight:600;font-size:14px;color:var(--text);">${(o.amount||0).toLocaleString()}원 · ${escapeHtml(title)}</div>
   <div style="color:var(--text3);font-size:12px;margin-top:4px;">${date}</div>
   ${refundPreview ? `<div style="color:var(--text);font-size:12px;font-weight:700;margin-top:7px;">${refundPreview}</div>` : ''}
   ${eligibilityNote ? `<div style="color:${canRequest?'var(--text3)':'var(--red)'};font-size:11px;margin-top:4px;">${eligibilityNote}</div>` : ''}
   </div>
- <button ${canRequest ? '' : 'disabled'} onclick="window.requestRefund('${item.id}','${item.kind}',${refundAmount},${requiresEligibilityReview})" style="padding:6px 14px;border-radius:6px;border:1px solid var(--red);background:none;color:${canRequest?'var(--red)':'var(--text3)'};font-size:12px;font-weight:600;cursor:${canRequest?'pointer':'not-allowed'};white-space:nowrap;opacity:${canRequest?'1':'.5'};">${canRequest ? (requiresEligibilityReview ? '확인 요청' : '환불 요청') : '문의 필요'}</button>
+ <button ${canRequest ? '' : 'disabled'} onclick="window.requestRefund('${jsAttr(item.id)}','${jsAttr(item.kind)}',${refundAmount},${requiresEligibilityReview})" style="padding:6px 14px;border-radius:6px;border:1px solid var(--red);background:none;color:${canRequest?'var(--red)':'var(--text3)'};font-size:12px;font-weight:600;cursor:${canRequest?'pointer':'not-allowed'};white-space:nowrap;opacity:${canRequest?'1':'.5'};">${canRequest ? (requiresEligibilityReview ? '확인 요청' : '환불 요청') : '문의 필요'}</button>
  </div>
 </div>`;
  }).join('');
@@ -3930,12 +3943,12 @@ window.loadAdminRefundList = async () =>{
  <div class="gp-admin-refund-top">
  <div class="gp-admin-refund-who">
  <strong>${escapeHtml(userEmail)}<span class="gp-admin-refund-tag">${isSub ? '구독' : '크레딧'}</span></strong>
- <span>${(o.amount||0).toLocaleString()}원 · ${itemLabel}</span>
+ <span>${(o.amount||0).toLocaleString()}원 · ${escapeHtml(itemLabel)}</span>
  <span>결제 ${escapeHtml(paidDate || '-')} · 환불요청 ${escapeHtml(requestedDate || '-')}</span>
  </div>
  <div class="gp-admin-refund-actions">
- <button class="gp-admin-btn-approve" onclick="window.approveRefund('${item.id}','${item.kind}')">승인</button>
- <button class="gp-admin-btn-reject" onclick="window.rejectRefund('${item.id}','${item.kind}')">거절</button>
+ <button class="gp-admin-btn-approve" onclick="window.approveRefund('${jsAttr(item.id)}','${jsAttr(item.kind)}')">승인</button>
+ <button class="gp-admin-btn-reject" onclick="window.rejectRefund('${jsAttr(item.id)}','${jsAttr(item.kind)}')">거절</button>
  </div>
  </div>
  ${refundDetail}
@@ -5439,10 +5452,10 @@ function gpOpsRenderList(data) {
     '<div class="gp-ops-item-foot">' +
      (item.acked
       ? '<span class="gp-ops-ackinfo">확인함 · ' + gpOpsEscape(item.ackedAt ? item.ackedAt.slice(0, 16).replace('T', ' ') : '') + '</span>' +
-        (item.memoryOnly ? '' : '<button type="button" class="gp-admin-mini-btn" onclick="adminOpsAck(\'' + gpOpsEscape(item.id) + '\', false)">확인 취소</button>')
+        (item.memoryOnly ? '' : '<button type="button" class="gp-admin-mini-btn" onclick="adminOpsAck(\'' + jsAttr(item.id) + '\', false)">확인 취소</button>')
       : (item.memoryOnly
          ? '<span class="gp-ops-ackinfo">메모리 보관분(저장 전)</span>'
-         : '<button type="button" class="gp-admin-mini-btn" onclick="adminOpsAck(\'' + gpOpsEscape(item.id) + '\', true)">확인 처리</button>')) +
+         : '<button type="button" class="gp-admin-mini-btn" onclick="adminOpsAck(\'' + jsAttr(item.id) + '\', true)">확인 처리</button>')) +
     '</div>' +
    '</article>';
  }).join('');
@@ -6500,6 +6513,7 @@ window.adminHistoryEmailInput = () => {
 };
 
 window.backToList = () =>{
+ if (blockClosedCommunity()) return;
  document.getElementById('listView').style.display='block';
  document.getElementById('detailView').style.display='none';
 };

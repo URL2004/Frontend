@@ -348,7 +348,7 @@
     var items = combinedItems();
     updateBadge();
     if (!items.length) {
-      list.innerHTML = '<div class="gp-notification-empty"><span class="material-symbols-outlined">notifications</span><b>새 알림이 없어요</b><p>작업 완료와 댓글, 문의 답변을 여기에서 확인할 수 있어요.</p></div>';
+      list.innerHTML = '<div class="gp-notification-empty"><span class="material-symbols-outlined">notifications</span><b>새 알림이 없어요</b><p>작업 완료와 문의 답변을 여기에서 확인할 수 있어요.</p></div>';
       return;
     }
     list.innerHTML = items.map(function (n) {
@@ -384,13 +384,13 @@
   function followNotification(n) {
     window.gpCloseNotificationCenter();
     var a = n.action || {};
+    if (a.tab === 'community' || n.postId) {
+      toast('커뮤니티 운영을 종료했어요.', { type: 'info' });
+      return;
+    }
     if (a.tab && typeof window.switchTab === 'function') {
       window.switchTab(a.tab);
       return;
-    }
-    if (n.postId && typeof window.switchTab === 'function') {
-      window.switchTab('community');
-      setTimeout(function () { if (window.viewPost) window.viewPost(n.postId); }, 120);
     }
   }
 

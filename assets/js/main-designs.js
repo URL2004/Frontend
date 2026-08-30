@@ -4,8 +4,8 @@
   }
 
   // 탭 파셜은 하나의 라벤더 셸 안으로만 이동합니다.
-  var TAB_IDS = ['main', 'pricing', 'community', 'blog', 'detectReport', 'guide', 'faq', 'qna', 'notice', 'mypage', 'admin', 'adminHumanizeLab', 'history', 'pro', 'writingLab'];
-  var MOVED_TABS = ['history', 'notice', 'community', 'blog', 'detectReport', 'guide', 'faq', 'qna', 'pricing', 'pro', 'mypage', 'admin', 'adminHumanizeLab', 'writingLab'];
+  var TAB_IDS = ['main', 'pricing', 'blog', 'detectReport', 'guide', 'faq', 'qna', 'notice', 'mypage', 'admin', 'adminHumanizeLab', 'history', 'pro', 'writingLab'];
+  var MOVED_TABS = ['history', 'notice', 'blog', 'detectReport', 'guide', 'faq', 'qna', 'pricing', 'pro', 'mypage', 'admin', 'adminHumanizeLab', 'writingLab'];
 
   function moveInto(el, target) {
     if (el && target && el.parentElement !== target) target.appendChild(el);
