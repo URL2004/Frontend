@@ -43,7 +43,7 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
   assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 9);
   for (const title of [
     '긴 글 구조 보존과 문단 보강을 개선했어요',
-    '상시 상품 보너스와 9월 이벤트를 안내해요',
+    '상시 상품 보너스와 9월 개강 이벤트를 안내해요',
     '문단 구조 보존을 강화했어요',
     'AI 감지 보고서를 열었어요',
     'AI 감지 크레딧 이용 방식 전환 안내 (100자당 1크레딧)',
@@ -79,7 +79,9 @@ test('상시 상품 보너스 공지는 정렬 방향과 원격 중복에 관계
     source.indexOf('// ===== MY PAGE =====')
   );
 
-  assert.match(baseItems, /title: '상시 상품 보너스와 9월 이벤트를 안내해요',[\s\S]*?pinned: true,[\s\S]*?highlightLabel: '고정 · 정책 안내'/u);
+  assert.match(baseItems, /title: '상시 상품 보너스와 9월 개강 이벤트를 안내해요',[\s\S]*?pinned: true,[\s\S]*?highlightLabel: '고정 · 정책 안내'/u);
+  // 개명 전 제목은 퇴역 목록으로 남겨 원격 사본이 새 제목과 함께 뜨지 않게 한다
+  assert.match(source, /NOTICE_RETIRED_TITLES[\s\S]*?'상시 상품 보너스와 9월 이벤트를 안내해요'/u);
   assert.match(noticeBlock, /const NOTICE_PINNED_TITLES = new Set/u);
   assert.ok(
     noticeBlock.indexOf('const pinnedDiff = Number(noticeIsPinned(b)) - Number(noticeIsPinned(a))')

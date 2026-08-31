@@ -100,6 +100,11 @@ test('가격표 카드는 가격→총 지급량→스타터 비교→기본 1,0
   assert.ok(!pricing.includes('plan-discount'), '할인율 배지가 되살아남');
   assert.ok(!pricing.includes('plan-vs-starter'), '구형 분할 구매 컴포넌트가 되살아남');
   assert.match(pricing, /class="gp-plan-svc-note"/u);
+  // 안내문은 데스크톱 한 줄에 들어가야 한다 — 길어지면 다시 두 줄로 접힌다
+  assert.ok(
+    (pricing.match(/class="gp-plan-svc-note">([^<]+)</u)?.[1] || '').length <= 56,
+    '충전 안내문이 한 줄을 넘길 길이로 늘어남'
+  );
   assert.match(pricing, /id="gpPricingSegmentPanel"/u);
   assert.doesNotMatch(pricing, /plan-unitcost|gp-plan-audience|1크레딧당/u, '단가·추천 상황 문구 재유입');
   assert.equal((pricing.match(/class="plan-btn"/gu) || []).length, 5, '결제 버튼 5개');
@@ -145,7 +150,7 @@ test('직접 충전 확인창은 금액·지급 구성·환불 기준을 구조�
   assert.match(main, /label:\s*'결제 금액'/u);
   assert.match(main, /label:\s*'기준 크레딧'/u);
   assert.match(main, /label:\s*'상품 보너스'/u);
-  assert.match(main, /label:\s*'9월 이벤트 추가'/u);
+  assert.match(main, /label:\s*'개강 이벤트 추가'/u);
   assert.match(main, /label:\s*'총 지급'[\s\S]{0,80}?emphasis:\s*true/u);
   assert.match(main, /safeText:/u);
   assert.match(main, /note:\s*refundNotice/u);

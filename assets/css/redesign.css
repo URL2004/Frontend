@@ -1204,12 +1204,14 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
  #mainContent[data-main-design="lavender"] .gp-pricing-event span{display:block;}
  #mainContent[data-main-design="lavender"] .gp-pricing-event span{margin-top:4px;}
 }
-#mainContent[data-main-design="lavender"] .plan-feats li.feat-bonus{
+/* 보너스 행 강조 — 상시 상품 보너스·개강 이벤트 두 줄이 기준 크레딧 행과 구분되게.
+   .feat-bonus만 잡고 있어 실제 마크업(.feat-package/.feat-event)에는 적용되지 않던 것을 연결한다. */
+#mainContent[data-main-design="lavender"] .plan-feats li:is(.feat-bonus,.feat-package,.feat-event){
  justify-content:space-between;
  font-weight:600;
 }
-#mainContent[data-main-design="lavender"] .plan-feats li.feat-bonus strong{color:#4b4cc6;}
-#mainContent[data-main-design="lavender"] .plan-feats li.feat-bonus em{
+#mainContent[data-main-design="lavender"] .plan-feats li:is(.feat-bonus,.feat-package,.feat-event) strong{color:#4b4cc6;}
+#mainContent[data-main-design="lavender"] .plan-feats li:is(.feat-bonus,.feat-package,.feat-event) em{
  font-style:normal;font-weight:800;font-size:11.5px;
  padding:2px 7px;margin-left:5px;border-radius:6px;
  background:#e7e7fb;color:#4b4cc6;
@@ -5919,6 +5921,20 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 #mainContent[data-main-design="lavender"] #pricingContent .plan-card:hover .plan-btn,
 #mainContent[data-main-design="lavender"] #pricingContent .plan-btn:hover{background:var(--brand-strong) !important;}
 #mainContent[data-main-design="lavender"] #pricingContent .plan-btn:active{transform:translateY(1px);}
+/* 상품 버튼 위계 — 스탠다드(.plan-popular)만 채운 보라로 남기고 나머지는 보조 버튼으로 낮춘다.
+   하나를 그라데이션으로 올리는 대신 나머지를 내리는 방식이라 전역 CTA 언어를 침범하지 않는다.
+   바로 위 .plan-card:hover .plan-btn 규칙과 특정도가 같으므로 반드시 그 뒤에 두고 호버까지 함께 지정한다. */
+#mainContent[data-main-design="lavender"] #pricingContent .plan-card:not(.plan-popular) .plan-btn{
+ border:1px solid #d8d9f5 !important;
+ background:var(--brand-soft) !important;
+ color:var(--brand-strong) !important;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .plan-card:not(.plan-popular):hover .plan-btn,
+#mainContent[data-main-design="lavender"] #pricingContent .plan-card:not(.plan-popular) .plan-btn:hover{
+ border-color:#c2c3ee !important;
+ background:#e7e7fb !important;
+ color:var(--brand-strong) !important;
+}
 #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-svc-note{
  max-width:82ch;
  margin:16px auto 0;

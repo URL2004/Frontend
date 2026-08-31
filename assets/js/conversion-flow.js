@@ -295,7 +295,7 @@
     var bonusNode = byId('gpCreditCheckoutBonus');
     if (bonusNode) {
       bonusNode.hidden = eventBonus <= 0;
-      bonusNode.textContent = eventBonus > 0 ? '9월 이벤트 보너스는 2026년 9월 30일까지 결제 요청분에 적용돼요.' : '';
+      bonusNode.textContent = eventBonus > 0 ? '개강 이벤트 보너스는 2026년 9월 30일까지 결제 요청분에 적용돼요.' : '';
     }
     var offer = document.querySelector('.gp-credit-offer');
     if (offer) offer.setAttribute('aria-busy', 'false');
@@ -573,7 +573,7 @@
   function starterBonusCopy(context) {
     var starter = planCatalog(context)[0];
     if (!starter.eventBonusCredits) return '총 ' + format(starter.credits) + '크레딧';
-    return '총 ' + format(starter.credits) + '크레딧 · 9월 이벤트 ' + format(starter.eventBonusCredits) + '크레딧 포함';
+    return '총 ' + format(starter.credits) + '크레딧 · 개강 이벤트 ' + format(starter.eventBonusCredits) + '크레딧 포함';
   }
 
   function applyPricingCards(context) {
@@ -608,7 +608,7 @@
         button.setAttribute('onclick', "payToss(" + plan.amount + ',' + plan.credits + ",'크레딧 충전','')");
         var parts = ['기준 ' + format(plan.paidCredits) + '크레딧'];
         if (plan.packageBonusCredits > 0) parts.push('상품 보너스 ' + format(plan.packageBonusCredits) + '크레딧');
-        if (plan.eventBonusCredits > 0) parts.push('9월 이벤트 ' + format(plan.eventBonusCredits) + '크레딧');
+        if (plan.eventBonusCredits > 0) parts.push('개강 이벤트 ' + format(plan.eventBonusCredits) + '크레딧');
         button.setAttribute('aria-label', parts.join(', ') + ', 총 ' + format(plan.credits) + '크레딧을 ' + format(plan.amount) + '원에 충전하기');
       }
     });

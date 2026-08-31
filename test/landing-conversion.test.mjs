@@ -269,15 +269,31 @@ test('충전 사다리는 기준·상품 보너스·기간 이벤트 지급량�
 });
 
 test('가격 카드는 상시 상품 보너스와 5% 기간 이벤트를 분리해 표시한다', async () => {
-  const [pricing, landing, flow, modals] = await Promise.all([
+  const [pricing, landing, flow, modals, css] = await Promise.all([
     read('pages/pricing.html'),
     read('pages/landing.html'),
     read('assets/js/conversion-flow.js'),
-    read('partials/modals.html')
+    read('partials/modals.html'),
+    read('assets/css/redesign.css')
   ]);
-  const rates = [...pricing.matchAll(/9월 이벤트 <em>\(\+(\d+)%\)<\/em>/gu)].map((m) => Number(m[1]));
+  const rates = [...pricing.matchAll(/개강 이벤트 <em>\(\+(\d+)%\)<\/em>/gu)].map((m) => Number(m[1]));
   assert.deepEqual(rates, [5, 5, 5, 5, 5]);
+  // 개강 이벤트 명칭은 결제 동선(충전·랜딩·결제창) 전체에서 같아야 한다
+  assert.match(pricing, /9월 개강 추가 크레딧 이벤트 · 2026년 9월 30일까지/u);
+  assert.match(landing, /9월 개강 추가 크레딧 이벤트 · 2026년 9월 30일까지/u);
+  assert.match(modals, /<dt>개강 이벤트 추가<\/dt>/u);
   assert.deepEqual([...pricing.matchAll(/class="feat-package"[^>]*>[\s\S]*?<strong>\+(\d+)<\/strong>/gu)].map((m) => Number(m[1])), [0, 30, 125, 350, 900]);
+  // 보너스 두 행 강조는 실제 마크업 클래스에 걸려 있어야 한다(.feat-bonus만 잡으면 죽은 규칙이 된다)
+  assert.match(css, /\.plan-feats li:is\(\.feat-bonus,\.feat-package,\.feat-event\) strong\{color:#4b4cc6;\}/u);
+  // 버튼 위계: 스탠다드만 채운 보라로 남기고 나머지는 보조 버튼으로 낮춘다.
+  // 호버 규칙까지 함께 두지 않으면 카드 호버 때 채운 보라로 되돌아간다.
+  assert.match(css, /#pricingContent \.plan-card:not\(\.plan-popular\) \.plan-btn\{/u);
+  assert.match(css, /#pricingContent \.plan-card:not\(\.plan-popular\):hover \.plan-btn/u);
+  assert.ok(
+    css.indexOf('.plan-card:not(.plan-popular) .plan-btn{')
+      > css.indexOf('#pricingContent .plan-card:hover .plan-btn'),
+    '보조 버튼 규칙이 공통 호버 규칙보다 앞서면 특정도 동점으로 덮인다'
+  );
   for (const amount of [2900, 8700, 14500, 29000, 58000]) {
     assert.match(pricing, new RegExp(`data-plan-total-for="${amount}"`, 'u'), `${amount} 총 크레딧 훅 부재`);
   }
