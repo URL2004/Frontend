@@ -282,6 +282,17 @@ test('가격 카드는 상시 상품 보너스와 5% 기간 이벤트를 분리�
   assert.match(pricing, /9월 개강 추가 크레딧 이벤트 · 2026년 9월 30일까지/u);
   assert.match(landing, /9월 개강 추가 크레딧 이벤트 · 2026년 9월 30일까지/u);
   assert.match(modals, /<dt>개강 이벤트 추가<\/dt>/u);
+  // 남은 기간 배지 — 마감이 실제로 있는 행사라 표기는 정직해야 하고,
+  // 한 달 앞에서 초를 째깍이면 가짜 타이머로 읽히므로 단위는 일 → 시·분까지만 내려간다.
+  assert.match(pricing, /id="gpCreditEventLeft"/u);
+  assert.match(flow, /function eventCountdownLabel\(nowMs, endsAtMs\)/u);
+  assert.match(flow, /daysLeft \+ '일 남음'/u);
+  assert.match(flow, /'마감까지 '/u);
+  assert.doesNotMatch(flow, /초 남음|'초'/u, '초 단위 카운트다운은 쓰지 않는다');
+  assert.match(flow, /setInterval\(function \(\) \{ renderCreditEventCountdown\(context\); \}, 60000\)/u);
+  // 남은 일수는 시간 나눗셈이 아니라 한국 시간 날짜 차이로 센다(9/30까지 = 8/31 기준 30일)
+  assert.match(flow, /kstDayIndex\(endsAtMs - 1\) - kstDayIndex\(nowMs\)/u);
+  assert.match(css, /\.gp-event-left\[hidden\]\{display:none!important;\}/u);
   assert.deepEqual([...pricing.matchAll(/class="feat-package"[^>]*>[\s\S]*?<strong>\+(\d+)<\/strong>/gu)].map((m) => Number(m[1])), [0, 30, 125, 350, 900]);
   // 보너스 두 행 강조는 실제 마크업 클래스에 걸려 있어야 한다(.feat-bonus만 잡으면 죽은 규칙이 된다)
   assert.match(css, /\.plan-feats li:is\(\.feat-bonus,\.feat-package,\.feat-event\) strong\{color:#4b4cc6;\}/u);

@@ -35,6 +35,53 @@
     return at >= CREDIT_EVENT_STARTS_AT_MS && at < CREDIT_EVENT_ENDS_AT_MS;
   }
 
+  // ── 개강 이벤트 남은 기간 배지 ────────────────────────────────────────────
+  // 마감이 실제로 있는 행사라 표기 자체는 정직하지만, 한 달 앞에서 초를 째깍이면
+  // 가짜 타이머로 읽혀 신뢰를 깎는다. 남은 기간에 따라 단위를 바꾸고(일 → 시·분),
+  // 마지막 7일부터만 반전 배지로 강조해 급함이 필요한 구간에서만 눈에 띄게 한다.
+  var EVENT_URGENT_DAYS = 7;
+  var KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+  var eventCountdownTimer = null;
+
+  function creditEventEndsAtMs(context) {
+    var fromServer = context && context.creditEvent && number(context.creditEvent.endsAtMs);
+    return fromServer > 0 ? fromServer : CREDIT_EVENT_ENDS_AT_MS;
+  }
+
+  // 남은 '일'은 시간 나눗셈이 아니라 한국 시간 날짜 차이로 센다.
+  // 마감이 10/01 00:00 KST이므로 8/31 어느 시각이든 9/30까지 30일로 읽혀야 한다.
+  function kstDayIndex(ms) { return Math.floor((ms + KST_OFFSET_MS) / 86400000); }
+
+  function eventCountdownLabel(nowMs, endsAtMs) {
+    var daysLeft = kstDayIndex(endsAtMs - 1) - kstDayIndex(nowMs);
+    if (daysLeft >= 1) return { text: daysLeft + '일 남음', urgent: daysLeft <= EVENT_URGENT_DAYS };
+    var minutes = Math.floor((endsAtMs - nowMs) / 60000);
+    if (minutes < 60) return { text: '마감까지 ' + Math.max(1, minutes) + '분', urgent: true };
+    return { text: '마감까지 ' + Math.floor(minutes / 60) + '시간 ' + (minutes % 60) + '분', urgent: true };
+  }
+
+  function stopEventCountdown() {
+    if (eventCountdownTimer) { clearInterval(eventCountdownTimer); eventCountdownTimer = null; }
+  }
+
+  function renderCreditEventCountdown(context) {
+    var badge = byId('gpCreditEventLeft');
+    // 배지가 화면에서 사라지면(다른 탭으로 이동) 타이머도 함께 접는다.
+    if (!badge || !context) { if (badge) badge.hidden = true; stopEventCountdown(); return; }
+    var endsAt = creditEventEndsAtMs(context);
+    var now = Date.now();
+    // 기기 시계가 앞서 있으면 서버가 아직 진행 중이라 해도 남은 시간만 접는다(패널 자체는 서버 판단을 따른다).
+    if (endsAt - now <= 0) { badge.hidden = true; stopEventCountdown(); return; }
+    var label = eventCountdownLabel(now, endsAt);
+    badge.textContent = label.text;
+    badge.classList.toggle('is-urgent', label.urgent);
+    badge.hidden = false;
+    if (!eventCountdownTimer) {
+      // 초 단위 표기가 없으므로 1분 간격이면 충분하다.
+      eventCountdownTimer = setInterval(function () { renderCreditEventCountdown(context); }, 60000);
+    }
+  }
+
   function localPlanCatalog(now) {
     var active = localEventActive(now);
     return PLANS.map(function (plan) {
@@ -581,6 +628,7 @@
     var anyEvent = catalog.some(function (plan) { return plan.eventBonusCredits > 0; });
     var eventPanel = document.querySelector('.gp-pricing-event');
     if (eventPanel) eventPanel.hidden = !anyEvent;
+    renderCreditEventCountdown(anyEvent ? context : null);
     catalog.forEach(function (plan) {
       var card = document.querySelector('[data-plan-amount="' + plan.amount + '"]');
       if (!card) return;
