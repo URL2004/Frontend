@@ -4,6 +4,7 @@
    <div class="gp-guide-hero-copy">
     <h1 id="guideTitle">처음이라면, 이 순서대로 시작하세요</h1>
     <p>글을 붙여넣고 필요한 작업을 고르면 예상 크레딧을 확인한 뒤 실행할 수 있어요. 결과는 작업 기록에서 다시 열 수 있어요.</p>
+    <p class="gp-guide-hero-note">아래 그림은 모두 실제 서비스 화면이에요. 예시로 넣은 글과 크레딧만 다르고, 버튼과 표시 위치는 지금 화면과 같아요. 화면이 좁으면 그림을 옆으로 밀어 원래 크기로 볼 수 있어요.</p>
     <div class="gp-guide-hero-actions">
      <button type="button" class="primary" onclick="openProductMode('humanize')">휴머나이징 시작</button>
      <button type="button" onclick="openProductMode('detect')">AI 감지 시작</button>
@@ -26,24 +27,52 @@
   <section class="gp-guide-section" id="guide-flow" aria-labelledby="guideFlowTitle">
    <div class="gp-guide-section-head">
     <h2 id="guideFlowTitle">이용 순서</h2>
-    <p>입력부터 결과 저장까지 네 단계로 이어져요.</p>
+    <p>입력부터 결과 저장까지 네 단계로 이어져요. 각 단계에서 실제로 보게 될 화면을 함께 실었어요.</p>
    </div>
    <ol class="gp-guide-flow">
     <li>
-     <span>1</span>
-     <div><h3>글을 입력해요</h3><p>입력창에 텍스트를 붙여넣거나 PDF 파일을 올리세요. 공백을 포함한 글자 수가 자동으로 계산돼요.</p></div>
+     <span class="gp-guide-flow-num">1</span>
+     <div class="gp-guide-flow-copy">
+      <h3>글을 입력해요</h3>
+      <p>입력창에 텍스트를 붙여넣거나 왼쪽 아래 <b>+</b> 버튼으로 PDF 파일을 올리세요. 공백을 포함한 글자 수가 자동으로 계산돼요.</p>
+     </div>
+     <figure class="gp-guide-shot">
+      <div class="gp-guide-shot-view"><img src="/assets/img/guide/step-input.webp" alt="입력창에 보고서 초안이 붙여넣어진 화면. 아래쪽 왼편에 PDF 업로드 버튼, 가운데에 344 / 30,000자 글자 수, 오른편에 휴머나이징과 AI 감지 버튼이 있다." width="1008" height="250" loading="lazy" decoding="async"></div>
+      <figcaption>붙여넣는 즉시 글자 수가 세어져요.</figcaption>
+     </figure>
     </li>
     <li>
-     <span>2</span>
-     <div><h3>AI 감지 또는 휴머나이징을 골라요</h3><p>먼저 문체 신호를 확인하려면 AI 감지, 바로 문장을 다듬으려면 휴머나이징을 선택하세요.</p></div>
+     <span class="gp-guide-flow-num">2</span>
+     <div class="gp-guide-flow-copy">
+      <h3>AI 감지 또는 휴머나이징을 골라요</h3>
+      <p>먼저 문체 신호를 확인하려면 AI 감지, 바로 문장을 다듬으려면 휴머나이징을 선택하세요. 입력창 오른쪽 아래에서 언제든 바꿀 수 있어요.</p>
+     </div>
+     <figure class="gp-guide-shot">
+      <div class="gp-guide-shot-view"><img src="/assets/img/guide/step-mode.webp" alt="휴머나이징 버튼이 선택된 상태의 실행 모드 전환 버튼 두 개. 옆의 AI 감지 버튼에는 100자당 1크레딧이라고 적혀 있다." width="308" height="58" loading="lazy" decoding="async"></div>
+      <figcaption>AI 감지 버튼에는 단가가 함께 적혀 있어요.</figcaption>
+     </figure>
     </li>
     <li>
-     <span>3</span>
-     <div><h3>비용과 처리 범위를 확인해요</h3><p>붙여넣는 즉시 예상 크레딧이 표시되고, 실행 직전 확인창에서 선택한 방식과 비용을 한 번 더 확인할 수 있어요.</p></div>
+     <span class="gp-guide-flow-num">3</span>
+     <div class="gp-guide-flow-copy">
+      <h3>비용과 처리 범위를 확인해요</h3>
+      <p>붙여넣는 즉시 예상 크레딧이 표시되고, 실행 직전 확인창에서 선택한 방식과 비용을 한 번 더 확인할 수 있어요.</p>
+     </div>
+     <figure class="gp-guide-shot">
+      <div class="gp-guide-shot-view"><img src="/assets/img/guide/step-confirm.webp" alt="실행 직전 확인창. 방식·글 종류·문체 보조가 줄마다 정리돼 있고 필요한 크레딧 10크레딧과 걸리는 시간 약 2분이 크게 표시된다. 아래에는 완료될 때만 차감된다는 안내와 취소·시작하기 버튼이 있다." width="440" height="411" loading="lazy" decoding="async"></div>
+      <figcaption>시작하기를 누르기 전까지는 차감되지 않아요.</figcaption>
+     </figure>
     </li>
     <li>
-     <span>4</span>
-     <div><h3>결과를 검토하고 저장해요</h3><p>원문의 뜻·수치·인용이 유지됐는지 확인하세요. 완료한 작업은 왼쪽 작업 기록에서 다시 열 수 있어요.</p></div>
+     <span class="gp-guide-flow-num">4</span>
+     <div class="gp-guide-flow-copy">
+      <h3>결과를 검토하고 저장해요</h3>
+      <p>원문의 뜻·수치·인용이 유지됐는지 확인하세요. 결과 아래 버튼으로 복사하거나 파일로 내려받을 수 있고, 완료한 작업은 왼쪽 작업 기록에서 다시 열 수 있어요.</p>
+     </div>
+     <figure class="gp-guide-shot">
+      <div class="gp-guide-shot-view"><img src="/assets/img/guide/step-save.webp" alt="결과 화면 아래쪽의 새 글 시작, 복사, 다운로드 (.md) 버튼 세 개." width="319" height="74" loading="lazy" decoding="async"></div>
+      <figcaption>결과 화면 맨 아래에 있는 버튼이에요.</figcaption>
+     </figure>
     </li>
    </ol>
   </section>
@@ -53,6 +82,10 @@
     <h2 id="guideModesTitle">기능 비교</h2>
     <p>원하는 결과에 맞춰 처리 범위를 선택하세요.</p>
    </div>
+   <figure class="gp-guide-shot is-wide">
+    <div class="gp-guide-shot-view"><img src="/assets/img/guide/step-choose.webp" alt="어떻게 다듬을까요? 화면. 원문 보존 다듬기, 기본 휴머나이징, 고급 휴머나이징 세 카드가 나란히 있고 카드마다 처리 범위 세 줄, 글 예시, 크레딧과 예상 시간이 적혀 있다." width="760" height="561" loading="lazy" decoding="async"></div>
+    <figcaption>휴머나이징을 실행하면 나오는 선택 화면이에요. 카드마다 이 글에 드는 크레딧과 예상 시간이 함께 계산돼요.</figcaption>
+   </figure>
    <div class="gp-guide-compare" role="table" aria-label="AI 감지 · 휴머나이징 기능 비교">
     <div class="gp-guide-compare-head" role="row">
      <span role="columnheader">기능</span><span role="columnheader">이럴 때</span><span role="columnheader">처리 범위</span><span role="columnheader">비용</span>
@@ -90,6 +123,10 @@
     <h2 id="guideCreditsTitle">크레딧은 이렇게 계산돼요</h2>
     <p>시작 화면에서 실제 글자 수 기준 예상 비용을 바로 확인할 수 있어요.</p>
    </div>
+   <figure class="gp-guide-shot is-wide">
+    <div class="gp-guide-shot-view"><img src="/assets/img/guide/credit-estimate.webp" alt="입력창 아래의 예상 비용 줄. 왼쪽에 기본 휴머나이징 10크레딧 약 280원, 오른쪽에 보유 105크레딧 · 작업 후 95크레딧이 표시돼 있다." width="984" height="98" loading="lazy" decoding="async"></div>
+    <figcaption>글을 붙여넣으면 입력창 아래에 이 줄이 나타나요. 이 작업에 드는 크레딧과 끝난 뒤 남을 잔액을 같이 보여줘요.</figcaption>
+   </figure>
    <div class="gp-guide-credit-layout">
     <div class="gp-guide-credit-table" role="table" aria-label="작업별 크레딧 기준">
      <div role="row"><span role="columnheader">작업과 범위</span><span role="columnheader">필요 크레딧</span></div>
@@ -121,9 +158,36 @@
     <p>결과를 그대로 제출하기보다 원문과 한 번 비교하면 더 안전해요.</p>
    </div>
    <div class="gp-guide-result-list">
-    <article><h3>AI 감지 결과</h3><p>전체 점수와 문단별 신호를 참고해 반복 표현과 구체성이 부족한 부분을 확인하세요.</p></article>
-    <article><h3>휴머나이징 결과</h3><p>뜻, 수치, 인용, 고유명사를 원문과 비교하세요. 결과를 복사하거나 파일로 저장할 수 있어요.</p></article>
-    <article><h3>작업 기록</h3><p>휴머나이징 결과가 먼저 보이고 원문은 아래에서 확인할 수 있어요. 이전 결과를 다시 열거나 이어서 작업할 수도 있어요.</p></article>
+    <article>
+     <div class="gp-guide-result-copy">
+      <h3>AI 감지 결과</h3>
+      <p>전체 점수와 문단별 신호를 참고해 반복 표현과 구체성이 부족한 부분을 확인하세요. 문단마다 <b>위험 · 주의 · 안전</b> 표시와 그렇게 본 이유가 한 줄로 붙어요.</p>
+     </div>
+     <figure class="gp-guide-shot is-wide">
+      <div class="gp-guide-shot-view"><img src="/assets/img/guide/result-detect.webp" alt="AI 감지 보고서 화면. 왼쪽에 AI 티 지수 74퍼센트 원형 그래프, 오른쪽에 판정 요약과 주의가 필요한 문단 수가 있고, 아래 문단별 진단 목록에 위험·주의·안전 표시와 이유가 문단마다 붙어 있다." width="760" height="767" loading="lazy" decoding="async"></div>
+      <figcaption>점수는 참고용이에요. 작성 여부를 확정하는 판정이 아니에요.</figcaption>
+     </figure>
+    </article>
+    <article>
+     <div class="gp-guide-result-copy">
+      <h3>휴머나이징 결과</h3>
+      <p>뜻, 수치, 인용, 고유명사를 원문과 비교하세요. 결과를 복사하거나 파일로 저장할 수 있어요.</p>
+     </div>
+     <figure class="gp-guide-shot is-wide">
+      <div class="gp-guide-shot-view"><img src="/assets/img/guide/result-done.webp" alt="휴머나이징 완료 화면. 결과 검수 완료와 한국어 표현 점검 완료 배지, 다듬어진 본문, 그리고 새 글 시작·복사·다운로드 버튼이 있다." width="760" height="407" loading="lazy" decoding="async"></div>
+      <figcaption>배지는 검수 단계를 마쳤다는 뜻이고, 외부 검사 점수를 보장하지는 않아요.</figcaption>
+     </figure>
+    </article>
+    <article>
+     <div class="gp-guide-result-copy">
+      <h3>작업 기록</h3>
+      <p>휴머나이징 결과가 먼저 보이고 원문은 아래에서 확인할 수 있어요. 이전 결과를 다시 열거나 이어서 작업할 수도 있어요.</p>
+     </div>
+     <figure class="gp-guide-shot is-wide">
+      <div class="gp-guide-shot-view"><img src="/assets/img/guide/result-history.webp" alt="작업 기록 화면. 왼쪽 목록에 날짜별 작업이 쌓여 있고 오른쪽 상세에 휴머나이징 결과가 먼저, 원문이 그 아래에 나뉘어 표시된다. 맨 아래에 결과 복사·다운로드·편집기로 열기 버튼이 있다." width="1024" height="692" loading="lazy" decoding="async"></div>
+      <figcaption>목록에서 하나를 고르면 오른쪽에 결과와 원문이 함께 열려요.</figcaption>
+     </figure>
+    </article>
    </div>
   </section>
 

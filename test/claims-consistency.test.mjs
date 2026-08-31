@@ -2,7 +2,7 @@
 // 감사보고서 P0-1(프리렌더 공개상태)·P0-4(FAQ 이중화)·P0-7(유효기간)·P0-8(noindex)·P0-2(크롤러블 링크)의 회귀 방지.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, mkdtemp, rm } from 'node:fs/promises';
+import { readFile, mkdtemp, rm, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -80,7 +80,33 @@ test('사용 가이드는 현재 작업 흐름·기능·단가와 직접 행동�
   assert.match(guide, /스타터는 기준 100크레딧에 이벤트 5크레딧을 더해 총 105크레딧/u);
   assert.match(guide, /외부 탐지기 결과는 보장하지 않아요/u);
   assert.match(guide, /작업 기록/u);
-  assert.doesNotMatch(guide, /gpg-shot|assets\/img\/guide\/step|보관함에서/u);
+  // 옛 자산(step1~4.png)과 깨진 자리표시자 스타일은 다시 들이지 않는다 — 2026-08-29 감사에서 걷어낸 것들.
+  assert.doesNotMatch(guide, /gpg-shot|assets\/img\/guide\/step\d|onerror=|보관함에서/u);
+});
+
+test('사용 가이드는 현행 화면 캡처를 자리·대체텍스트와 함께 싣는다', async () => {
+  const [guide, css] = await Promise.all([read('pages/guide.html'), read('assets/css/redesign.css')]);
+  const shots = [
+    'step-input', 'step-mode', 'step-confirm', 'step-save',
+    'step-choose', 'credit-estimate', 'result-detect', 'result-done', 'result-history'
+  ];
+  for (const shot of shots) {
+    assert.match(guide, new RegExp(`/assets/img/guide/${shot}\.webp`, 'u'), `가이드 화면 캡처 누락: ${shot}`);
+    const file = new URL(`../assets/img/guide/${shot}.webp`, import.meta.url);
+    await assert.doesNotReject(access(file), `가이드 화면 캡처 자산 없음: ${shot}.webp`);
+  }
+  // 레이아웃 밀림(CLS)을 막으려면 캡처마다 원본 크기가 있어야 하고, 스크린리더용 설명도 비면 안 된다.
+  const images = [...guide.matchAll(/<img src="\/assets\/img\/guide\/[^>]*>/gu)].map(match => match[0]);
+  assert.equal(images.length, shots.length);
+  for (const image of images) {
+    assert.match(image, /\swidth="\d+"/u, `width 누락: ${image}`);
+    assert.match(image, /\sheight="\d+"/u, `height 누락: ${image}`);
+    assert.match(image, /\sloading="lazy"/u, `lazy 로딩 누락: ${image}`);
+    assert.match(image, /\salt="[^"]{10,}"/u, `대체 텍스트 누락: ${image}`);
+  }
+  // 좁은 화면에서는 축소하면 화면 속 글씨를 못 읽는다 — 원본 크기로 가로 스크롤한다.
+  assert.equal((guide.match(/gp-guide-shot-view/gu) || []).length, shots.length);
+  assert.match(css, /\.gp-guide-shot-view\{overflow-x:auto/u);
 });
 
 test('신뢰·가격·준비 중 표면은 확정된 정책 문구와 런타임 훅을 사용한다', async () => {
