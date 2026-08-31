@@ -134,15 +134,49 @@
         loadScript('https://developers.kakao.com/sdk/js/kakao.min.js', { async: true })
           .then(function () { if (typeof window.onKakaoLoad === 'function') window.onKakaoLoad(); })
           .catch(function () { if (typeof window.onKakaoError === 'function') window.onKakaoError(); });
-        loadScript('https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js', { async: true })
-          .then(function () { return loadScript('/assets/js/email-init.js'); })
-          .catch(function () {});
       }, 2400);
       loadTrackingAfterFirstRender();
       return true;
     })();
     return appAssetsPromise;
   }
+
+  var socialLoginRequestPromise = null;
+  window.gpRequestSocialLogin = async function (providerName) {
+    var provider = providerName === 'kakao' ? 'kakao' : 'google';
+    var handlerName = provider === 'kakao' ? 'kakaoLogin' : 'googleLogin';
+    if (socialLoginRequestPromise) return socialLoginRequestPromise;
+    socialLoginRequestPromise = (async function () {
+      var buttons = [document.getElementById('googleLoginBtn'), document.getElementById('kakaoLoginBtn')];
+      var status = document.getElementById('socialLoginStatus');
+      var statusText = document.getElementById('socialLoginStatusText');
+      buttons.forEach(function (button) {
+        if (!button) return;
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+      });
+      if (statusText) statusText.textContent = '로그인 기능을 준비하고 있어요.';
+      if (status) status.hidden = false;
+      try {
+        if (typeof window[handlerName] !== 'function') await loadAppAssets();
+        if (typeof window[handlerName] !== 'function') throw new Error('로그인 기능을 불러오지 못했어요.');
+        return await window[handlerName]();
+      } catch (error) {
+        buttons.forEach(function (button) {
+          if (!button) return;
+          button.disabled = false;
+          button.removeAttribute('aria-busy');
+        });
+        if (status) status.hidden = true;
+        if (window.gpToast) window.gpToast(error.message || '로그인을 시작하지 못했어요.', { type: 'error', title: '로그인 확인 필요' });
+        else window.alert(error.message || '로그인을 시작하지 못했어요.');
+        return null;
+      } finally {
+        socialLoginRequestPromise = null;
+      }
+    })();
+    return socialLoginRequestPromise;
+  };
 
   window.gpEnsureWritingLab = async function () {
     await loadStyle('/assets/css/writing-lab.css', 'gpWritingLabCss');
@@ -151,8 +185,11 @@
 
   window.gpLoadApp = async function (options) {
     options = options || {};
+    // 앱 자산을 불러오는 동안 Firebase의 최초 비로그인 콜백이 도착해도
+    // 랜딩에서 요청한 로그인 화면을 메인 화면으로 덮지 않도록 의도를 먼저 고정한다.
+    window.GP_REQUESTED_APP_SCREEN = options.screen === 'login' ? 'login' : 'app';
     await Promise.all([window.GPPageLoader.loadApp(options), loadAppAssets()]);
-    if (options.screen === 'login' && typeof window.showScreen === 'function') window.showScreen('login');
+    if (options.screen === 'login' && !window.CU && typeof window.showScreen === 'function') window.showScreen('login');
     else if (typeof window.showScreen === 'function') window.showScreen('app');
     if (options.tab && typeof window.switchTab === 'function') window.switchTab(options.tab);
     document.documentElement.classList.add('design-ready');

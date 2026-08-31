@@ -7,7 +7,6 @@
     '/pages/main.html',
     '/pages/history.html',
     '/pages/notice.html',
-    '/pages/community.html',
     '/pages/blog.html',
     '/pages/detect-report.html',
     '/pages/guide.html',
@@ -49,6 +48,7 @@
   }
 
   function hasKakaoCallback(params) {
+    if (window.GP_PAYMENT_CALLBACK_QUERY) return false;
     params = params || new URLSearchParams(window.location.search || '');
     return params.has('code')
       && params.get('success') !== '1'
@@ -59,6 +59,7 @@
 
   function shouldStartOnLanding() {
     var params = new URLSearchParams(window.location.search || '');
+    if (window.GP_PAYMENT_CALLBACK_QUERY) return false;
     if (hasKakaoCallback(params)) return false;
     var lp = params.get('lp');
     if (lp === '1') return true;
@@ -180,6 +181,7 @@
     options = options || {};
     if (!appMarkupPromise) appMarkupPromise = appMarkup();
     root().innerHTML = await appMarkupPromise;
+    window.dispatchEvent(new CustomEvent('gp:app-markup-ready'));
     document.documentElement.dataset.gpInitialScreen = 'app';
     window.PAGE_PARTIALS = APP_PARTIALS.slice();
     showOnly(options.screen === 'login' ? 'login' : 'app');

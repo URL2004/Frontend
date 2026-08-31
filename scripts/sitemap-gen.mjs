@@ -10,11 +10,11 @@ import { contentUrls } from './content-pages.mjs';
 
 const CHANGEFREQ = {
   '/': 'weekly', '/pricing': 'weekly', '/detect-report': 'weekly', '/blog': 'weekly',
-  '/faq': 'monthly', '/guide': 'monthly', '/community': 'daily', '/qna': 'weekly', '/notice': 'weekly'
+  '/faq': 'monthly', '/guide': 'monthly', '/qna': 'weekly', '/notice': 'weekly'
 };
 const PRIORITY = {
   '/': '1.0', '/detect-report': '0.9', '/pricing': '0.8', '/blog': '0.8',
-  '/faq': '0.7', '/guide': '0.7', '/community': '0.7', '/qna': '0.6', '/notice': '0.6'
+  '/faq': '0.7', '/guide': '0.7', '/qna': '0.6', '/notice': '0.6'
 };
 
 function lastmodFor(root, partial) {

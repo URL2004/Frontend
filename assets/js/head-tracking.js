@@ -402,9 +402,24 @@
   return trackMetaEvent(eventName, payload);
  };
 
+ function analyticsSafeLocation(value) {
+  try {
+   var url = new URL(value || window.location.href, window.location.origin);
+   [
+    'paymentKey', 'orderId', 'amount', 'credits', 'plan', 'uid', 'fail', 'success', 'code', 'message',
+    'authKey', 'sub', 'ck', 'subfail'
+   ].forEach(function (key) {
+    url.searchParams.delete(key);
+   });
+   return url.toString();
+  } catch (_) {
+   return window.location.origin + window.location.pathname;
+  }
+ }
+
  window.gpTrackPageView = function (routeTab, title, locationUrl) {
   if (!measurementId && !metaPixelEnabled) return;
-  var pageLocation = locationUrl || window.location.href;
+  var pageLocation = analyticsSafeLocation(locationUrl || window.location.href);
   var key = String(routeTab || '') + '|' + pageLocation;
   if (key === lastPageViewKey) return;
   lastPageViewKey = key;

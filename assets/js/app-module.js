@@ -1,8 +1,14 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, EmailAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signOut, onAuthStateChanged, deleteUser, reauthenticateWithPopup, reauthenticateWithCredential, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, orderBy, query, where, limit, startAfter, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { compactPageNumbers, paginateItems } from './board-pagination.js';
+
+const PENDING_HISTORY_KEY = 'gp_pending_history';
+function clearPendingHistoryLocal() {
+ try { localStorage.removeItem(PENDING_HISTORY_KEY); } catch (_) {}
+}
+// 구버전이 남긴 원문·결과 로컬 백업을 인증 처리보다 먼저 폐기한다.
+clearPendingHistoryLocal();
 
 // XSS 방어: 사용자 입력이 innerHTML에 들어갈 때 escape 필수
 function escapeHtml(s) {
@@ -43,7 +49,6 @@ const FB = window.APP_CONFIG.FIREBASE;
 const fbapp = initializeApp(FB);
 const auth = getAuth(fbapp); window._fbAuth = auth;
 const db = getFirestore(fbapp);
-const storage = getStorage(fbapp);
 const provider = new GoogleAuthProvider();
 const authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch(e => console.warn('Firebase auth persistence setup failed:', e));
 window.authPersistenceReady = authPersistenceReady;
@@ -111,7 +116,6 @@ let activeAuthProvider = '';
 let authTransitionStartedAt = 0;
 let authTransitionSlowTimer = 0;
 let authBackendWarmPromise = null;
-let pendingKakaoLink = null;
 
 function authTransitionElement(id) {
  return document.getElementById(id);
@@ -193,6 +197,7 @@ function showAuthenticatedShell(user, reason) {
  if (!user) return;
  CU = user;
  window.CU = user;
+ window.GP_REQUESTED_APP_SCREEN = 'app';
  if (typeof window.gpLandingCompleteLogin === 'function') window.gpLandingCompleteLogin();
  if (typeof window.showScreen === 'function') window.showScreen('app');
  if (typeof window.updateAuthUI === 'function') window.updateAuthUI(true);
@@ -202,6 +207,7 @@ function showAuthenticatedShell(user, reason) {
 }
 
 function failAuthTransition() {
+ window.GP_REQUESTED_APP_SCREEN = 'login';
  finishAuthTransition('error');
  if (typeof window.showScreen === 'function') window.showScreen('login');
 }
@@ -258,19 +264,23 @@ function retryPendingPaymentCallback(reason) {
 onAuthStateChanged(auth, async u =>{
  try {
   window.gpAuthResolved = true;
+  clearPendingHistoryLocal();
   if (u) {
   window.gpUserDataReady = false;
   showAuthenticatedShell(u, 'auth_state');
   await loadUser(u);
-  await flushPendingKakaoLink(u);
   }
   else {
   CU = null; window.CU = null;
   window.gpUserDataReady = false;
   if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications([]);
-  showScreen('app');
-  if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });
-  else switchTab('main');
+  if (window.GP_REQUESTED_APP_SCREEN === 'login') {
+   showScreen('login');
+  } else {
+   showScreen('app');
+   if (typeof window.applyRouteFromUrl === 'function') window.applyRouteFromUrl({ replace: true });
+   else switchTab('main');
+  }
   window.updateAuthUI(false);
   }
  } catch (e) {
@@ -357,10 +367,11 @@ async function loadUser(u) {
    });
    const data = await res.json();
    if (data.ok) {
-    window.UC += 20; updateCreditUI();
-    if (window.gpTrack) window.gpTrack('referral_applied', { reward: 20, traffic_source: localStorage.getItem('traffic_source') || 'direct' });
-    if (window.gpToast) window.gpToast('추천 보상으로 20크레딧이 지급됐어요!', { type: 'success' });
-    else alert('추천 보상으로 20크레딧이 지급됐어요!');
+    const rewardCredits = Math.max(0, Number(data.rewardCredits) || 20);
+    if (window.gpTrack) window.gpTrack('referral_registered', { reward: rewardCredits, status: data.status || 'pending', traffic_source: localStorage.getItem('traffic_source') || 'direct' });
+    const referralMessage = `추천이 등록됐어요. 친구의 첫 결제 후 환불 가능 기간이 지나면 두 사람 모두 ${rewardCredits}크레딧을 받아요.`;
+    if (window.gpToast) window.gpToast(referralMessage, { type: 'success', title: '친구 추천 등록 완료' });
+    else alert(referralMessage);
     localStorage.removeItem('pendingRef');
    }
    else { console.log('추천 적용 실패:', data.error); localStorage.removeItem('pendingRef'); }
@@ -370,8 +381,8 @@ async function loadUser(u) {
   updateCreditUI();
  window.updateNotifBadge(u.uid);
  setTimeout(() => { if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory(); }, 300);
- // 저장 실패로 localStorage에 백업된 기록이 있으면 로그인·데이터 로드 후 자동 재시도.
- setTimeout(() => { if (typeof window.flushPendingHistory === 'function') window.flushPendingHistory(); }, 1200);
+ // 기록 저장은 서버가 단독으로 처리한다. 구버전 브라우저 백업은 원문 노출 방지를 위해 제거한다.
+ clearPendingHistoryLocal();
 }
 
 function updateCreditUI() {
@@ -838,51 +849,58 @@ function isKakaoOAuthCallback(params) {
   && !params.has('paymentKey');
 }
 
+function syncKakaoProfileInBackground(user, data) {
+ const profile = data && data.profile ? data.profile : {};
+ const nickname = profile.nickname || data.nickname || user.displayName || '사용자';
+ const photo = profile.photo || data.photo || user.photoURL || null;
+ if (user.displayName !== nickname || user.photoURL !== photo) {
+  updateProfile(user, { displayName: nickname, photoURL: photo }).catch(() => {
+   console.warn('Kakao profile background sync was skipped.');
+  });
+ }
+ if (data.authVersion !== 2 && data.kakaoId) {
+  updateDoc(doc(db, 'users', user.uid), { kakaoId: String(data.kakaoId) }).catch(() => null);
+ }
+}
+
 function kakaoUserMissing(error) {
  return error?.code === 'auth/user-not-found' || error?.code === 'auth/invalid-credential';
 }
 
-async function signInOrCreateKakaoUser(data, password) {
- try {
-  const signedIn = await signInWithEmailAndPassword(auth, data.email, password);
-  return { user: signedIn.user, created: false };
- } catch (signInError) {
-  if (!kakaoUserMissing(signInError)) throw signInError;
+async function signInOrCreateLegacyKakaoUser(data, passwordCandidates) {
+ const passwords = [...new Set((Array.isArray(passwordCandidates) ? passwordCandidates : [passwordCandidates]).filter(Boolean))];
+ let lastMissingError = null;
+ for (const password of passwords) {
   try {
-   const created = await createUserWithEmailAndPassword(auth, data.email, password);
-   return { user: created.user, created: true };
-  } catch (createError) {
-   if (createError?.code !== 'auth/email-already-in-use') throw createError;
-   const raced = await signInWithEmailAndPassword(auth, data.email, password);
-   return { user: raced.user, created: false };
+   const signedIn = await signInWithEmailAndPassword(auth, data.email, password);
+   return { user: signedIn.user, created: false };
+  } catch (signInError) {
+   if (!kakaoUserMissing(signInError)) throw signInError;
+   lastMissingError = signInError;
   }
+ }
+ const primaryPassword = passwords[0];
+ if (!primaryPassword) throw lastMissingError || new Error('카카오 로그인 호환 정보를 확인하지 못했어요.');
+ try {
+  const created = await createUserWithEmailAndPassword(auth, data.email, primaryPassword);
+  return { user: created.user, created: true };
+ } catch (createError) {
+  if (createError?.code !== 'auth/email-already-in-use') throw createError;
+  // 다른 기기·팝업 흐름이 같은 순간 계정을 만들었을 수 있어 두 과거 규칙을 다시 확인한다.
+  for (const password of passwords) {
+   try {
+    const raced = await signInWithEmailAndPassword(auth, data.email, password);
+    return { user: raced.user, created: false };
+   } catch (raceError) {
+    if (!kakaoUserMissing(raceError)) throw raceError;
+    lastMissingError = raceError;
+   }
+  }
+  throw lastMissingError || createError;
  }
 }
 
-function syncKakaoProfileInBackground(user, data) {
- const profileChanged = user.displayName !== data.nickname || user.photoURL !== data.photo;
- const tasks = [];
- if (profileChanged) tasks.push(updateProfile(user, { displayName: data.nickname, photoURL: data.photo }));
- pendingKakaoLink = { uid: user.uid, kakaoId: String(data.kakaoId) };
- tasks.push(updateDoc(doc(db, 'users', user.uid), { kakaoId: pendingKakaoLink.kakaoId })
-  .then(() => { pendingKakaoLink = null; })
-  .catch(() => null));
- Promise.allSettled(tasks).then(results => {
-  if (results.some(result => result.status === 'rejected')) {
-   console.warn('Kakao profile background sync was partially skipped.');
-  }
- });
-}
-
-async function flushPendingKakaoLink(user) {
- if (!pendingKakaoLink || !user || pendingKakaoLink.uid !== user.uid) return;
- try {
-  await updateDoc(doc(db, 'users', user.uid), { kakaoId: pendingKakaoLink.kakaoId });
-  pendingKakaoLink = null;
- } catch (_) {}
-}
-
-async function exchangeKakaoIdentity(accessToken, passwordFor, timing) {
+async function exchangeKakaoIdentity(accessToken, legacyPasswordFor, timing) {
  setAuthTransitionMessage('카카오 계정 확인 중', '안전하게 로그인 정보를 확인하고 있어요.');
  const backendStartedAt = performance.now();
  const controller = new AbortController();
@@ -905,10 +923,21 @@ async function exchangeKakaoIdentity(accessToken, passwordFor, timing) {
   throw error;
  }
  timing.backendMs = Math.round(performance.now() - backendStartedAt);
-
  setAuthTransitionMessage('로그인 마무리 중', '작업 화면에 계정을 연결하고 있어요.');
  const firebaseStartedAt = performance.now();
- const result = await signInOrCreateKakaoUser(data, passwordFor(data.kakaoId));
+ let result;
+ if (data.authVersion === 2 && typeof data.customToken === 'string' && data.customToken) {
+  const signedIn = await signInWithCustomToken(auth, data.customToken);
+  result = { user: signedIn.user, created: data.isNewUser === true };
+ } else if (data.authVersion === 1 && data.kakaoId && data.email && typeof legacyPasswordFor === 'function') {
+  // 운영 마이그레이션을 강제하지 않는 호환 경로. 실제 계정 스모크가 끝난 뒤
+  // 서버 플래그를 켜면 authVersion 2만 내려와 자동으로 사용되지 않는다.
+  result = await signInOrCreateLegacyKakaoUser(data, legacyPasswordFor(data.kakaoId));
+ } else {
+  const error = new Error('카카오 로그인 응답을 확인하지 못했어요.');
+  error.code = 'KAKAO_AUTH_RESPONSE_INVALID';
+  throw error;
+ }
  timing.firebaseMs = Math.round(performance.now() - firebaseStartedAt);
  timing.created = result.created ? 1 : 0;
 
@@ -927,6 +956,67 @@ async function exchangeKakaoIdentity(accessToken, passwordFor, timing) {
  }
  return result.user;
 }
+
+const KAKAO_OAUTH_STATE_KEY = 'gp_kakao_oauth_state_v1';
+const KAKAO_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+function base64UrlBytes(bytes) {
+ let binary = '';
+ bytes.forEach(value => { binary += String.fromCharCode(value); });
+ return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/u, '');
+}
+async function createKakaoOAuthContext() {
+ if (!window.crypto?.getRandomValues || !window.crypto?.subtle) {
+  const error = new Error('안전한 로그인 기능을 지원하는 최신 브라우저가 필요해요.');
+  error.code = 'KAKAO_PKCE_UNAVAILABLE';
+  throw error;
+ }
+ const stateBytes = new Uint8Array(24);
+ const verifierBytes = new Uint8Array(64);
+ window.crypto.getRandomValues(stateBytes);
+ window.crypto.getRandomValues(verifierBytes);
+ const state = base64UrlBytes(stateBytes);
+ const codeVerifier = base64UrlBytes(verifierBytes);
+ const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier));
+ const codeChallenge = base64UrlBytes(new Uint8Array(digest));
+ sessionStorage.setItem(KAKAO_OAUTH_STATE_KEY, JSON.stringify({ state, codeVerifier, createdAt: Date.now() }));
+ return { state, codeChallenge };
+}
+function fixedTimeStringEqual(left, right) {
+ const a = String(left || '');
+ const b = String(right || '');
+ const length = Math.max(a.length, b.length);
+ let diff = a.length ^ b.length;
+ for (let index = 0; index < length; index++) diff |= (a.charCodeAt(index) || 0) ^ (b.charCodeAt(index) || 0);
+ return diff === 0;
+}
+function consumeKakaoOAuthState(returnedState) {
+ let stored = null;
+ try { stored = JSON.parse(sessionStorage.getItem(KAKAO_OAUTH_STATE_KEY) || 'null'); } catch (_) {}
+ sessionStorage.removeItem(KAKAO_OAUTH_STATE_KEY);
+ if (!stored || !stored.state || !stored.codeVerifier || !Number.isFinite(Number(stored.createdAt))) return null;
+ if (Date.now() - Number(stored.createdAt) > KAKAO_OAUTH_STATE_TTL_MS) return null;
+ if (!fixedTimeStringEqual(stored.state, returnedState)) return null;
+ if (!/^[A-Za-z0-9_-]{43,128}$/u.test(stored.codeVerifier)) return null;
+ return { codeVerifier: stored.codeVerifier };
+}
+
+window.kakaoRedirectLogin = async function () {
+ try {
+  const context = await createKakaoOAuthContext();
+  const authorize = new URL('https://kauth.kakao.com/oauth/authorize');
+  authorize.searchParams.set('client_id', window.APP_CONFIG.KAKAO_REST_KEY);
+  authorize.searchParams.set('redirect_uri', window.APP_CONFIG.SITE_URL);
+  authorize.searchParams.set('response_type', 'code');
+  authorize.searchParams.set('state', context.state);
+  authorize.searchParams.set('code_challenge', context.codeChallenge);
+  authorize.searchParams.set('code_challenge_method', 'S256');
+  authorize.searchParams.set('scope', 'profile_nickname,profile_image,account_email');
+  window.location.assign(authorize.toString());
+ } catch (error) {
+  if (window.gpToast) window.gpToast(error.message || '카카오 로그인을 시작하지 못했어요.', { type: 'error', title: '로그인 확인 필요' });
+  else alert(error.message || '카카오 로그인을 시작하지 못했어요.');
+ }
+};
 
 function waitForKakaoSdk() {
  if (window.Kakao?.Auth) return Promise.resolve(window.Kakao);
@@ -948,6 +1038,15 @@ window.handleKakaoCallback = async () =>{
  const timing = { startedAt: performance.now(), flow: 'redirect' };
  beginAuthTransition('kakao', '카카오 로그인 확인 중', '작업 화면을 먼저 준비하고 있어요.');
  try {
+  const oauthContext = consumeKakaoOAuthState(params.get('state'));
+  if (!oauthContext) {
+   const stateError = new Error('카카오 로그인 요청이 만료됐거나 이미 사용됐어요. 다시 로그인해 주세요.');
+   stateError.code = 'KAKAO_OAUTH_STATE_INVALID';
+   throw stateError;
+  }
+  // 인가 코드와 state는 네트워크 교환이 끝날 때까지 주소창에 둘 이유가 없다.
+  // 메모리로 옮긴 뒤 즉시 제거해 분석 SDK·리퍼러·화면 공유로 노출되지 않게 한다.
+  clearKakaoCallbackQuery();
   const tokenStartedAt = performance.now();
   const tokenRes = await fetch('https://kauth.kakao.com/oauth/token', {
    method: 'POST',
@@ -956,14 +1055,17 @@ window.handleKakaoCallback = async () =>{
     grant_type: 'authorization_code',
     client_id: window.APP_CONFIG.KAKAO_REST_KEY,
     redirect_uri: window.APP_CONFIG.SITE_URL,
-    code
+    code,
+    code_verifier: oauthContext.codeVerifier
    })
   });
   const tokenData = await tokenRes.json().catch(() => ({}));
   timing.tokenMs = Math.round(performance.now() - tokenStartedAt);
   if (!tokenRes.ok || !tokenData.access_token) throw new Error('카카오 인증 정보를 확인하지 못했어요.');
-  clearKakaoCallbackQuery();
-  await exchangeKakaoIdentity(tokenData.access_token, kakaoId => 'kakao_' + kakaoId + '_pw!', timing);
+  await exchangeKakaoIdentity(tokenData.access_token, kakaoId => [
+   'kakao_' + kakaoId + '_pw!',
+   'kakao_' + kakaoId + '_!@#'
+  ], timing);
   return true;
  } catch(e) {
   clearKakaoCallbackQuery();
@@ -996,7 +1098,10 @@ window.kakaoLogin = async () =>{
   });
   timing.popupMs = Math.round(performance.now() - popupStartedAt);
   beginAuthTransition('kakao', '카카오 로그인 확인 중', '메인 화면을 먼저 준비하고 있어요.');
-  await exchangeKakaoIdentity(authResult.access_token, kakaoId => 'kakao_' + kakaoId + '_!@#', timing);
+  await exchangeKakaoIdentity(authResult.access_token, kakaoId => [
+   'kakao_' + kakaoId + '_!@#',
+   'kakao_' + kakaoId + '_pw!'
+  ], timing);
  } catch(e) {
   failAuthTransition();
   const canceled = e && e.error_code === 'CANCELED';
@@ -1039,6 +1144,7 @@ window.logout = async () =>{
   : confirm('로그아웃 하시겠어요?');
  if(ok) {
   if (window.gpTrack) window.gpTrack('logout');
+  clearPendingHistoryLocal();
   await signOut(auth);
   if (typeof window.gpLandingReset === 'function') window.gpLandingReset();
   switchTab('main');
@@ -1105,7 +1211,22 @@ window.deleteAccount = async () =>{
      body: JSON.stringify({ idToken })
    });
    const body = await res.json().catch(() => null);
-   if (!res.ok || !body || !body.ok) throw new Error((body && body.error) || '탈퇴 처리 중 오류가 발생했어요.');
+   if (!res.ok || !body || !body.ok) {
+     const code = String(body?.code || '');
+     const serverMessage = body?.message || body?.error || '탈퇴 처리 중 오류가 발생했어요.';
+     if (code === 'RECENT_LOGIN_REQUIRED') {
+       alert('보안을 위해 최근 로그인 확인이 필요해요. 로그아웃한 뒤 카카오 또는 구글로 다시 로그인하고 탈퇴를 다시 시도해 주세요.');
+       return;
+     }
+     if (code.startsWith('ACCOUNT_PENDING_')) {
+       alert(serverMessage);
+       return;
+     }
+     const accountError = new Error(serverMessage);
+     accountError.code = code;
+     throw accountError;
+   }
+   clearPendingHistoryLocal();
    try { await signOut(auth); } catch(_) {}   // 서버에서 계정이 이미 삭제됨 — 클라 세션 정리
    alert('탈퇴가 완료됐어요.');
    location.reload();
@@ -1133,13 +1254,13 @@ window.showReferralPopup = async () => {
    <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5" width="56" height="56" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
   </div>
   <div id="refOverlayTitle" style="font-size:18px;font-weight:700;margin-bottom:6px;">친구와 함께 20크레딧 받기</div>
-  <div id="refOverlayDesc" style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">초대 링크로 친구가 가입하면 두 사람 모두<br><strong style="color:var(--green);">20크레딧</strong>을 받아요.</div>
+  <div id="refOverlayDesc" style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;">친구가 첫 결제를 완료하고 환불 가능 기간이 지나면<br>두 사람 모두 <strong style="color:var(--green);">20크레딧</strong>을 받아요.</div>
   <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;text-align:left;">
    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;">크레딧 받는 방법</div>
    <div style="display:flex;flex-direction:column;gap:8px;">
     <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span> 아래 링크를 친구에게 공유하세요.</div>
-    <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span> 친구가 링크로 신규 가입하면 친구에게 20크레딧을 드려요.</div>
-    <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span> 가입이 확인되면 초대한 사람에게도 20크레딧을 드려요.</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span> 친구가 가입 후 첫 결제를 완료해요.</div>
+    <div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span style="background:var(--green);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span> 환불 가능 기간이 지나면 두 사람에게 각각 20크레딧을 드려요.</div>
    </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px;">
@@ -1157,6 +1278,15 @@ window.showReferralPopup = async () => {
 // 지급은 /confirm-payment·/apply-referral에서만 발생한다.
 
 // ===== COMMUNITY =====
+// 운영 종료 상태는 빌드·라우트뿐 아니라 남겨 둔 레거시 함수 진입점에서도 강제한다.
+// 과거 링크나 콘솔 호출로 Firestore posts 컬렉션을 읽거나 쓰지 않는다.
+const COMMUNITY_CLOSED = true;
+function blockClosedCommunity() {
+ if (!COMMUNITY_CLOSED) return false;
+ if (typeof window.switchTab === 'function') window.switchTab('main');
+ if (window.gpToast) window.gpToast('커뮤니티 운영을 종료했어요.', { type: 'info' });
+ return true;
+}
 window.sortBy = 'latest';
 window.currentCategory = window.currentCategory || '';
 window.postSearch = window.postSearch || '';
@@ -1402,11 +1532,13 @@ function _showCommunityLoginGate(){
 }
 
 window.openCommunityLogin = function(){
+ if (blockClosedCommunity()) return;
  if (window.gpTrack) window.gpTrack('login_required', { source: 'community' });
  if (typeof window.showScreen === 'function') window.showScreen('login');
 };
 
 window.openCommunityComposer = function(){
+ if (blockClosedCommunity()) return;
  const form = document.getElementById('wform');
  if (!CU) {
   if (form) form.style.display = 'none';
@@ -1513,6 +1645,7 @@ window.gotoPostPage = function(n) {
 };
 
 window.loadPosts = async (sort) =>{
+ if (blockClosedCommunity()) return false;
  const sortChanged = sort && sort !== window.sortBy;
  if (sort && ['latest', 'views', 'oldest'].includes(sort)) window.sortBy = sort;
  document.querySelectorAll('.sortbtn').forEach(b =>b.classList.toggle('active', b.dataset.sort===window.sortBy));
@@ -1585,6 +1718,7 @@ window.loadPosts = async (sort) =>{
 };
 
 window.submitPost = async () =>{
+ if (blockClosedCommunity()) return false;
  if (!CU) { window.openCommunityLogin(); return; }
  const title = document.getElementById('ptitle').value.trim();
  const body = document.getElementById('pbody').value.trim();
@@ -1601,19 +1735,8 @@ window.submitPost = async () =>{
  btn.textContent = '등록 중...';
 
  try {
- let photoUrls = [];
- // 1. 사진이 있으면 먼저 Storage에 업로드
- if (files.length >0) {
- btn.textContent = '사진 업로드 중... ⏳';
- for (let i = 0; i < files.length; i++) {
- const file = files[i];
- const fileName = `community_photos/${Date.now()}_${Math.random().toString(36).substring(7)}_${file.name}`;
- const storageRef = ref(storage, fileName);
- const snapshot = await uploadBytes(storageRef, file);
- const downloadUrl = await getDownloadURL(snapshot.ref);
- photoUrls.push(downloadUrl);
- }
- }
+ // 운영 종료된 커뮤니티 사진 업로드 경로는 Storage SDK와 함께 제거했다.
+ const photoUrls = [];
 
  // 2. 게시글 정보 DB에 저장
  btn.textContent = '게시글 저장 중...';
@@ -1658,6 +1781,7 @@ window.submitPost = async () =>{
 };
 
 window.viewPost = async (postId) =>{
+ if (blockClosedCommunity()) return false;
  if (!CU) { _showCommunityLoginGate(); window.openCommunityLogin(); return; }
  document.getElementById('listView').style.display='none';
  document.getElementById('detailView').style.display='block';
@@ -1751,6 +1875,7 @@ window.viewPost = async (postId) =>{
 };
 
 window.submitComment = async (postId) =>{
+ if (blockClosedCommunity()) return false;
  if (!CU) { alert('로그인이 필요해요.'); return; }
  const body = document.getElementById('cinput').value.trim();
  if (!body) { alert('댓글 내용을 입력해 주세요.'); return; }
@@ -1780,6 +1905,7 @@ window.submitComment = async (postId) =>{
 };
 
 window.toggleBm = async (postId) =>{
+ if (blockClosedCommunity()) return false;
  if (!CU) { alert('로그인이 필요해요.'); return; }
  const ref = doc(db,'users',CU.uid);
  const snap = await getDoc(ref);
@@ -1795,6 +1921,7 @@ window.copyLink = (url) =>{
 };
 
 window.delPost = async (postId) =>{
+ if (blockClosedCommunity()) return false;
  const ok = window.gpConfirm
   ? await window.gpConfirm({ title: '글을 삭제할까요?', message: '삭제한 글은 복구할 수 없어요.', confirmText: '삭제하기', danger: true })
   : confirm('글을 삭제하시겠어요?');
@@ -1809,6 +1936,7 @@ window.delPost = async (postId) =>{
 };
 
 window.togglePostHidden = async (postId, makeHidden) =>{
+ if (blockClosedCommunity()) return false;
  if (!(window.isAdmin && window.isAdmin())) { alert('권한이 없습니다.'); return; }
  const msg = makeHidden ? '이 글을 숨김 처리할까요? (다른 유저에게 노출되지 않음)' : '숨김을 해제할까요?';
  const ok = window.gpConfirm
@@ -1824,6 +1952,7 @@ window.togglePostHidden = async (postId, makeHidden) =>{
 };
 
 window.delComment = async (postId, commentId) =>{
+ if (blockClosedCommunity()) return false;
  const ok = window.gpConfirm
   ? await window.gpConfirm({ title: '댓글을 삭제할까요?', message: '삭제한 댓글은 복구할 수 없어요.', confirmText: '삭제하기', danger: true })
   : confirm('댓글을 삭제하시겠어요?');
@@ -2244,10 +2373,10 @@ const NOTICE_BASE_ITEMS = [
  {
   id: 'friend-invite-event',
   category: '이벤트',
-  title: '친구 초대 혜택 안내 — 초대자와 가입자 모두 20크레딧 지급',
+  title: '친구 초대 혜택 안내 — 첫 결제 확인 후 두 사람 모두 20크레딧',
   date: '2026.07.18',
   views: 2874,
-  body: '초대 링크를 통해 친구가 신규 가입하면 초대자와 가입자에게 각각 20크레딧을 드려요. 사이드바의 초대하기 버튼에서 링크를 복사해 바로 공유할 수 있어요.'
+  body: '초대 링크로 가입한 친구가 첫 결제를 완료하고 환불 가능 기간이 지나면 초대자와 가입자에게 각각 20크레딧을 드려요. 가입만으로 즉시 지급되지는 않으며, 사이드바의 초대하기 버튼에서 링크를 복사해 공유할 수 있어요.'
  },
  {
   id: 'application-genre-quality',
@@ -2592,25 +2721,6 @@ window.loadMyPage = async () =>{
  const u = snap.data();
  const plan = u.plan || 'free';
  const planNames = { free:'무료', starter:'스타터', pro:'프로', master:'마스터', unlimited:'무제한' };
- const postSnap = await getDocs(query(collection(db,'posts'), where('authorId','==',CU.uid)));
- let myPosts = [];
- postSnap.forEach(d => myPosts.push({id:d.id,...d.data()}));
- myPosts.sort((a,b)=>(b.createdAt?.toDate()||0)-(a.createdAt?.toDate()||0));
- const bookmarks = u.bookmarks || [];
- const renderMyPost = p => {
- const date=p.createdAt?new Date(p.createdAt.toDate()).toLocaleDateString('ko-KR'):'';
- return '<div class="pitem" onclick="switchTab(\'community\');setTimeout(()=>viewPost(\''+p.id+'\'),100)">'
- +'<div class="pttl">'+escapeHtml(p.title)+'</div>'
- +'<div class="pmeta"><span>'+date+'</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'+(p.views||0)+'</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'+(p.commentCount||0)+'</span></div></div>';
- };
- const myPostsHiddenRows = myPosts.slice(5).map(renderMyPost).join('');
- const myPostsHtml = myPosts.length===0
- ? '<div style="text-align:center;padding:24px;color:var(--text3);">작성한 글이 없어요</div>'
- : myPosts.slice(0,5).map(renderMyPost).join('')
-  + (myPostsHiddenRows
-   ? '<div id="myPostsHidden" style="display:none;">'+myPostsHiddenRows+'</div>'
-    +'<button id="myPostsToggle" type="button" class="gp-more-btn" onclick="gpToggleMore(\'myPostsHidden\',this,\'더보기 ('+(myPosts.length-5)+'건)\')">더보기 ('+(myPosts.length-5)+'건)</button>'
-   : '');
  el.innerHTML =
  '<div class="shell">'
  +(window.isAdmin() ? '<div class="gp-mypage-admin-entry"><div><div class="gp-mypage-admin-title">관리자 페이지</div><div class="gp-mypage-admin-sub">환불, 크레딧, 쿠폰, 사용자 원장을 별도 화면에서 처리합니다.</div></div><button type="button" onclick="openAdminPage()">관리자 페이지 열기</button></div>' : '')
@@ -2621,16 +2731,10 @@ window.loadMyPage = async () =>{
  +'</div>'
  +'<div><div style="font-size:18px;font-weight:700;">'+(window.getAdminName()||CU.displayName)+'</div>'
  +'<div style="font-size:13px;color:var(--text2);">'+CU.email+'</div></div></div>'
- +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">'
+ +'<div style="display:grid;grid-template-columns:1fr;gap:12px;">'
  +'<div style="text-align:center;padding:16px;background:var(--surface2);border-radius:var(--rs);">'
  +'<div style="font-size:22px;font-weight:700;color:var(--blue);">'+(u.credits||0)+'</div>'
  +'<div style="font-size:12px;color:var(--text3);">보유 크레딧</div></div>'
- +'<div style="text-align:center;padding:16px;background:var(--surface2);border-radius:var(--rs);">'
- +'<div style="font-size:22px;font-weight:700;color:var(--green);">'+myPosts.length+'</div>'
- +'<div style="font-size:12px;color:var(--text3);">작성한 글</div></div>'
- +'<div style="text-align:center;padding:16px;background:var(--surface2);border-radius:var(--rs);">'
- +'<div style="font-size:22px;font-weight:700;color:var(--yellow);">'+bookmarks.length+'</div>'
- +'<div style="font-size:12px;color:var(--text3);">북마크</div></div>'
  +'</div>'
  +'<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">'
  +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
@@ -2648,8 +2752,6 @@ window.loadMyPage = async () =>{
  +'</div>'
  +'</div></div>'
  +'<div id="subManageCard" style="margin-bottom:20px;"></div>'
- +'<div style="font-size:15px;font-weight:700;margin-bottom:12px;">내가 쓴 글 ('+myPosts.length+')</div>'
- +myPostsHtml
  +'<div style="font-size:15px;font-weight:700;margin:20px 0 12px;">알림</div>'
  +'<div id="notifList"><div style="text-align:center;padding:24px;color:var(--text3);">불러오는 중...</div></div>'
  +'<div style="margin-top:28px;"><div style="font-size:15px;font-weight:700;margin-bottom:12px;">결제 내역 / 환불</div><div id="orderHistoryList"><div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div></div></div>'
@@ -2804,9 +2906,8 @@ window.loadNotifications = async () =>{
  const date=n.createdAt?new Date(n.createdAt).toLocaleDateString('ko-KR'):'';
  const borderColor = n.read ? 'var(--border)' : 'var(--blue)';
  const fontWeight = n.read ? '400' : '600';
- const action = n.postId
-  ? "switchTab('community');setTimeout(()=>viewPost('"+jsAttr(n.postId)+"'),100)"
-  : (n.action && n.action.tab ? "switchTab('"+jsAttr(n.action.tab)+"')" : "");
+ // 폐쇄된 커뮤니티의 과거 알림은 읽음 처리만 하고 게시글·탭을 다시 열지 않는다.
+ const action = n.postId ? '' : (n.action && n.action.tab ? "switchTab('"+jsAttr(n.action.tab)+"')" : "");
  return '<div style="background:var(--surface);border:1px solid '+borderColor+';border-radius:var(--rs);padding:14px;margin-bottom:8px;cursor:pointer;" onclick="markRead(\''+jsAttr(n.id)+'\');'+action+'">'
  +'<div style="font-size:13px;font-weight:'+fontWeight+';">'+escapeHtml(n.message)+'</div>'
  +'<div style="font-size:12px;color:var(--text3);margin-top:4px;">'+date+'</div></div>';
@@ -2832,6 +2933,7 @@ window.markRead = async (notifId) =>{
 };
 
 window.sendNotification = async (postId, postAuthorId, commenterName, postTitle) =>{
+ if (blockClosedCommunity()) return false;
  if (!postAuthorId || postAuthorId === CU.uid) return;
  try {
  await addDoc(collection(db,'users',postAuthorId,'notifications'),{
@@ -2842,15 +2944,6 @@ window.sendNotification = async (postId, postAuthorId, commenterName, postTitle)
  postId, read: false, createdAt: serverTimestamp(), createdAtMs: Date.now()
  });
  updateNotifBadge(postAuthorId);
- const authorSnap = await getDoc(doc(db,'users',postAuthorId));
- if (authorSnap.exists()) {
- const ad = authorSnap.data();
- await window.sendEmailNotification(
- ad.email, ad.name, commenterName,
- postTitle || '게시글',
- commenterName + '님이 댓글을 달았어요. 확인해보세요!'
- );
- }
  } catch(e) { console.log('알림 오류:', e); }
 };
 
@@ -2869,19 +2962,8 @@ window.updateNotifBadge = async (uid) =>{
  } catch(e) {}
 };
 
-window.sendEmailNotification = async (toEmail, toName, fromName, postTitle, message) =>{
- try {
- await window.emailjs.send('gpkorea', 'gpkorea', {
- to_email: toEmail,
- to_name: toName,
- from_name: fromName,
- post_title: postTitle,
- message: message
- });
- } catch(e) { console.log('이메일 발송 실패:', e); }
-};
-
 window.toggleLike = async (postId) =>{
+ if (blockClosedCommunity()) return false;
  if (!CU) { alert('로그인이 필요해요.'); return; }
  const ref = doc(db,'posts',postId);
  const snap = await getDoc(ref);
@@ -2897,11 +2979,13 @@ window.toggleLike = async (postId) =>{
 };
 
 window.toggleReplyForm = (commentId) =>{
+ if (blockClosedCommunity()) return false;
  const f = document.getElementById('replyForm_' + commentId);
  if (f) f.style.display = f.style.display === 'none' ? 'block' : 'none';
 };
 
 window.submitReply = async (postId, commentId, parentAuthorName) =>{
+ if (blockClosedCommunity()) return false;
  if (!CU) { alert('로그인이 필요해요.'); return; }
  const bodyEl = document.getElementById('reply_' + commentId);
  const body = bodyEl ? bodyEl.value.trim() : '';
@@ -2935,75 +3019,21 @@ window.submitReply = async (postId, commentId, parentAuthorName) =>{
 };
 
 // ===== HISTORY =====
-// 이용 기록 저장(2026-06-14 강화) — 실패를 조용히 삼키지 않고:
-//   ① localStorage 백업(결과 유실 방지) ② 사용자에게 토스트 안내 ③ 다음 로드·온라인 복귀 시 자동 재시도.
-//   (서버측 /analyze 저장과 별개의 클라 폴백 — 청크·구형서버·비과금 경로 대비.)
-const PENDING_HISTORY_KEY = 'gp_pending_history';
-function backupHistoryLocal(uid, data) {
- try {
-  const q = JSON.parse(localStorage.getItem(PENDING_HISTORY_KEY) || '[]');
-  const { createdAt, ...rest } = data;   // serverTimestamp()는 직렬화 불가 → 제거(재시도 때 재생성)
-  q.push({ uid, data: rest, ts: Date.now() });
-  while (q.length > 50) q.shift();        // 적체 상한
-  localStorage.setItem(PENDING_HISTORY_KEY, JSON.stringify(q));
- } catch (e) { /* localStorage 불가·용량 초과 — 백업 생략(토스트는 이미 안내) */ }
-}
+// 원문·결과·AI 상세는 브라우저 저장소에 복제하지 않는다. 기록 쓰기는 인증된 서버만 담당한다.
 window.flushPendingHistory = async function flushPendingHistory() {
- if (!CU || !db) return;
- let q;
- try { q = JSON.parse(localStorage.getItem(PENDING_HISTORY_KEY) || '[]'); } catch (e) { return; }
- if (!q.length) return;
- const remaining = [];
- let restored = 0;
- for (const item of q) {
-  if (!item || item.uid !== CU.uid) { if (item) remaining.push(item); continue; }   // 다른 계정 항목은 보존
-  try {
-   await addDoc(collection(db,'users',CU.uid,'history'), { ...item.data, createdAt: serverTimestamp(), backupAtMs: item.ts });
-   restored++;
-  } catch (e) { remaining.push(item); }   // 여전히 실패 → 다음 기회에
- }
- try { localStorage.setItem(PENDING_HISTORY_KEY, JSON.stringify(remaining)); } catch (e) {}
- if (restored > 0) {
-  if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory();
-  if (window.gpToast) window.gpToast(`저장하지 못했던 기록 ${restored}건을 복구했어요.`, { type: 'success' });
- }
+ clearPendingHistoryLocal();
+ return 0;
 };
-window.addEventListener('online', () => { try { window.flushPendingHistory(); } catch (e) {} });
-
-window.saveHistory = async (type, inputText, detectResult, humanResult, credits) =>{
- if (!CU) return false;
- const data = {
-  type: type || 'unknown',
-  inputText: inputText || '',
-  credits: typeof credits === 'number' ? credits : 0,
-  createdAt: serverTimestamp()
- };
- if (detectResult) {
-  data.probability = typeof detectResult.probability === 'number' ? detectResult.probability : null;
-  if (typeof detectResult.rawProbability === 'number') data.rawProbability = detectResult.rawProbability;
-  if (detectResult.probabilityCalibration) data.probabilityCalibration = detectResult.probabilityCalibration;
-  data.summary = detectResult.summary || '';
-  data.detail = detectResult.detail || '';
+window.saveHistory = async function saveHistory() {
+ clearPendingHistoryLocal();
+ if (window.gpToast) {
+  window.gpToast('작업은 완료됐지만 기록 반영이 지연되고 있어요. 원문과 결과는 이 브라우저에 별도로 저장하지 않아요.', {
+   type: 'warning',
+   title: '기록 저장 확인 필요'
+  });
  }
-  if (humanResult) {
-   data.outputText = humanResult.outputText || '';
-   data.humanSummary = humanResult.summary || '';
-   data.humanDetail = humanResult.detail || '';
-   if (['charged', 'plan_unlimited', 'admin_no_charge'].includes(humanResult.billingDisposition)) {
-    data.billingDisposition = humanResult.billingDisposition;
-   }
-   if (humanResult.qualityStatus === 'needs_review' || humanResult.qualityStatus === 'clean') data.qualityStatus = humanResult.qualityStatus;
-   if (Array.isArray(humanResult.qualityWarnings)) data.qualityWarningCodes = humanResult.qualityWarnings.map(item => item?.code).filter(Boolean).slice(0, 20);
-  }
- try {
-  await addDoc(collection(db,'users',CU.uid,'history'), data);
-  return true;
- } catch(e) {
-  console.error('[saveHistory] 실패', { code: e?.code, message: e?.message, name: e?.name });
-  backupHistoryLocal(CU.uid, data);   // 결과 유실 방지 — 로컬 백업 후 자동 재시도
-  if (window.gpToast) window.gpToast('결과를 기록에 저장하지 못했어요. 결과는 안전하게 백업해뒀고, 잠시 후 자동으로 다시 저장할게요.', { type: 'warning', title: '기록 저장 지연' });
-  return false;
- }
+ setTimeout(() => { if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory(); }, 800);
+ return false;
 };
 
 function historyBillingInfo(disposition, credits) {

@@ -44,7 +44,6 @@ const pagePartials = [
   'pages/main.html',
   'pages/history.html',
   'pages/notice.html',
-  'pages/community.html',
   'pages/blog.html',
   'pages/detect-report.html',
   'pages/guide.html',
@@ -236,6 +235,9 @@ console.log(`[content-pages] generated ${contentPages.length} pages at repo root
 for (const entry of staticEntries) {
   await copyIfExists(entry);
 }
+
+// 운영이 종료된 커뮤니티 파셜은 소스 보관 여부와 무관하게 배포 산출물에서 제거한다.
+await fs.rm(path.join(dist, 'pages', 'community.html'), { force: true });
 
 await writePageBundle();
 await writeRuntimeConfig();

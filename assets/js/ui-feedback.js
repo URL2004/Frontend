@@ -388,10 +388,7 @@
       window.switchTab(a.tab);
       return;
     }
-    if (n.postId && typeof window.switchTab === 'function') {
-      window.switchTab('community');
-      setTimeout(function () { if (window.viewPost) window.viewPost(n.postId); }, 120);
-    }
+    // 운영 종료된 커뮤니티 알림은 읽음 처리만 하고 과거 게시글을 다시 조회하지 않는다.
   }
 
   window.gpToast = toast;

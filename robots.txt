@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /community
+Disallow: /pages/community.html
 
 Sitemap: https://gpkorea.ai.kr/sitemap.xml

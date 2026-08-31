@@ -1,8 +1,27 @@
 (function() {
   let creditPaymentProcessing = false;
+  let creditPaymentRetryCount = 0;
+  let creditPaymentRetryTimer = 0;
 
   function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  function schedulePaymentRetry(reason) {
+    if (!window.GP_PAYMENT_CALLBACK_QUERY || !window.GP_PAYMENT_CALLBACK_QUERY.paymentKey) return false;
+    if (creditPaymentRetryCount >= 2 || creditPaymentRetryTimer) return false;
+    creditPaymentRetryCount += 1;
+    creditPaymentRetryTimer = window.setTimeout(() => {
+      creditPaymentRetryTimer = 0;
+      window.processPendingPaymentCallback({ reason: reason || 'automatic_retry' });
+    }, creditPaymentRetryCount * 1500);
+    return true;
+  }
+
+  function finishPaymentRetry() {
+    creditPaymentRetryCount = 0;
+    if (creditPaymentRetryTimer) window.clearTimeout(creditPaymentRetryTimer);
+    creditPaymentRetryTimer = 0;
   }
 
   async function getCallbackUser(timeoutMs) {
@@ -40,7 +59,8 @@
   }
 
   window.processPendingPaymentCallback = async function(options) {
-    const url = new URLSearchParams(window.location.search);
+    const captured = window.GP_PAYMENT_CALLBACK_QUERY;
+    const url = captured ? new URLSearchParams(captured) : new URLSearchParams(window.location.search);
     const pKey = url.get('paymentKey');
     if (!pKey) return false;
 
@@ -53,7 +73,7 @@
     // 예전 배포는 confirm 성공 전 "1"을 저장했으므로 복구 재시도를 막지 않는다.
     const paidMarker = storageKey ? localStorage.getItem(storageKey) : '';
     if (paidMarker && paidMarker !== '1') {
-      history.replaceState({}, '', location.pathname);
+      if (typeof window.gpClearPaymentCallbackQuery === 'function') window.gpClearPaymentCallbackQuery();
       const knownUser = await getCallbackUser(5000);
       if (knownUser) await refreshCreditBalance(knownUser.uid);
       if (typeof window.gpHandleCreditPaymentSuccess === 'function') {
@@ -122,9 +142,10 @@
       let data = {};
       try { data = await res.json(); } catch (_) {}
       if (res.ok && data.ok) {
+        finishPaymentRetry();
         const conversionMeta = typeof window.gpPendingCheckoutMeta === 'function' ? window.gpPendingCheckoutMeta() : {};
         if (storageKey) localStorage.setItem(storageKey, String(Date.now()));
-        history.replaceState({}, '', location.pathname);
+        if (typeof window.gpClearPaymentCallbackQuery === 'function') window.gpClearPaymentCallbackQuery();
         const _amt = Number(amount) || 0;
         const _plan = url.get('plan') || '';
         const _cred = data.creditAmount || credits;
@@ -161,9 +182,10 @@
       }
 
       if (data.error === "이미 처리된 결제입니다.") {
+        finishPaymentRetry();
         if (storageKey) localStorage.setItem(storageKey, String(Date.now()));
         await refreshCreditBalance(uid);
-        history.replaceState({}, '', location.pathname);
+        if (typeof window.gpClearPaymentCallbackQuery === 'function') window.gpClearPaymentCallbackQuery();
         if (typeof window.gpHandleCreditPaymentSuccess === 'function') {
           await window.gpHandleCreditPaymentSuccess({ orderId, amount: Number(amount) || 0, chargedCredits: credits, data: { duplicate: true } });
         }
@@ -180,8 +202,10 @@
         message: data.error || data.message || 'confirm failed',
         endpoint: '/confirm-payment'
       });
-      if (window.gpToast) window.gpToast('충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 고객센터 이메일로 문의해 주세요.', { type: 'error' });
-      else alert('충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 고객센터 이메일로 문의해 주세요.');
+      const willRetry = res.status >= 500 && schedulePaymentRetry('confirm_api_retry');
+      if (window.gpToast) window.gpToast('충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 사이트 내 고객센터로 문의해 주세요.', { type: 'error' });
+      else alert('충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 사이트 내 고객센터로 문의해 주세요.');
+      if (willRetry && window.gpToast) window.gpToast('잠시 후 결제 확인을 자동으로 다시 시도할게요.', { type: 'info' });
       return false;
     } catch(err) {
       if (window.gpTrackPaymentError) window.gpTrackPaymentError('confirm_network_failed', {
@@ -191,8 +215,12 @@
         credits,
         endpoint: '/confirm-payment'
       }, err);
-      if (window.gpToast) window.gpToast('결제 확인 중 통신이 끊겼어요. 결제는 안전하니, 잠시 후 새로고침하면 자동으로 처리돼요.', { type: 'error' });
-      else alert('결제 확인 중 통신이 끊겼어요. 결제는 안전하니, 잠시 후 새로고침하면 자동으로 처리돼요.');
+      const willRetry = schedulePaymentRetry('confirm_network_retry');
+      const retryMessage = willRetry
+        ? '결제 확인 중 통신이 끊겼어요. 페이지를 닫지 않으면 잠시 후 자동으로 다시 확인할게요.'
+        : '결제 확인이 계속 지연되고 있어요. 결제 내역이 보이지 않으면 사이트 내 고객센터로 문의해 주세요.';
+      if (window.gpToast) window.gpToast(retryMessage, { type: 'error' });
+      else alert(retryMessage);
       return false;
     } finally {
       if (inflightKey) sessionStorage.removeItem(inflightKey);

@@ -25,10 +25,12 @@ test('기본·고급 설명은 체감 재구성 범위와 검증 범위를 구�
     read('partials/modals.html')
   ]);
   // 짧은 진단 → 3택: 기본·고급 설명은 처리 범위와 검증 범위를 구분한다
-  assert.match(main, /필요한 문장만 재작성/u);
-  assert.match(main, /장르·말투·사실 유지/u);
-  assert.match(main, /전체 흐름 재구성/u);
-  assert.match(main, /전 문서 의미 검증/u);
+  assert.match(main, /AI식 반복·상투어를 문장째 교체/u);
+  assert.match(main, /장르·말투·사실은 그대로/u);
+  assert.match(main, /기본보다 넓은 범위를 다시 씀/u);
+  // 검증은 고급의 '항상'이 차별점이다 — 기본도 1,500자 이상이면 같은 의미 검증이 돈다(백엔드 finalQualityV2)
+  assert.match(main, /길이와 상관없이 항상 전 문서 검증/u);
+  assert.match(main, /승인한 자료만 근거로 추가/u);
   assert.match(main, /기본 휴머나이징에서만 쓰여요\. 원문 말투는 그대로 두고 단어·연결의 결만 조정해요/u);
   assert.match(main, /id="lavDetailSummary">자동 판별 · 문체 자동 선택/u);
   assert.match(main, /외부 AI 감지 결과는 보장하지 않아요/u);
@@ -102,7 +104,7 @@ test('진단 선택 섹션은 상태 라벨과 중복 유도 없이 핵심 정�
   assert.match(main, /외부 AI 감지 결과는 보장하지 않아요/u);
   assert.doesNotMatch(main, /lavDiagGrade|lavAnchorGuide|lavEditForAnchor|추천 시작점|효과가 제한될 수 있는 글 유형/u);
   assert.doesNotMatch(main, /그대로 제출하면 AI 탐지 위험이 높아요/u);
-  assert.doesNotMatch(evasion, /window\.lavEditForAnchor = function|humanize_anchor_action/u);
+  assert.doesNotMatch(evasion, /window\.lavEditForAnchor = function|humanize_anchor_action|renderAnchorGuide/u);
   assert.match(evasion, /humanize_diagnosis_view/u);
   assert.match(evasion, /humanize_mode_select/u);
   assert.match(evasion, /needsUserAnchor: Number\(d\.abstractRiskRatio\) >= 0\.5/u);
@@ -194,7 +196,7 @@ test('구조만 있는 입력의 422는 일반 서버 장애가 아니라 입력
   assert.ok(handler.indexOf("NO_EDITABLE_CONTENT") < handler.indexOf('LIMITED_EFFECT_CONFIRMATION_REQUIRED'));
 });
 
-test('모드 추천은 닫고 한국어 장르 판정의 고급 사용 가능 여부만 유지한다', async () => {
+test('모드 추천을 열고 3택 카드 문구는 엔진이 실제로 하는 일만 말한다', async () => {
   const [main, evasion] = await Promise.all([
     read('pages/main.html'),
     read('assets/js/evasion-flow.js')
@@ -210,11 +212,21 @@ test('모드 추천은 닫고 한국어 장르 판정의 고급 사용 가능 �
   assert.match(main, /id="lavCostFormal"/u);
   assert.equal((main.match(/class="lav-sel-head"/gu) || []).length, 3);
   assert.equal((main.match(/class="lav-sel-list"/gu) || []).length, 3);
-  assert.match(main, /문장 재작성 없음[\s\S]*문단 순서와 구성 유지[\s\S]*전 문서 의미 검증/u);
+  assert.match(main, /문장 재작성 없음[\s\S]*문단 순서가 바뀌지 않아요[\s\S]*길이와 상관없이 항상 전 문서 검증/u);
+  // 문단 경계는 모든 강도에서 잠겨 있다(백엔드 humanizeContract: modelBoundary=source_locked).
+  // 고급 카드가 문단 재설계·전체 흐름 재구성을 약속하면 엔진이 못 지킨다.
+  assert.doesNotMatch(main, /문단 구조까지 다시 설계|전체 흐름 재구성/u);
+  // 과제는 기본·고급 양쪽 예시에 두되 분량으로 가른다(엔진도 report_assignment를 고급 추천 프로필로 본다)
+  assert.match(main, /주간 과제 · 짧은 리포트/u);
+  assert.match(main, /기말 리포트 · 졸업 논문 · 인용 많은 과제/u);
+  // 정액제 이점: 구간 상한에서 기본과 같은 값이라는 사실을 카드가 직접 보여준다
+  assert.match(main, /id="lavCostFormalGap"/u);
+  assert.match(evasion, /gapEl\.textContent = gap <= 0/u);
+  assert.match(evasion, /'기본과 같은 값'/u);
   assert.match(evasion, /window\.lavSelectTone = function/u);
   assert.doesNotMatch(main, /lavPersonalBlock|lavAutoCoach|lavCoachPicks|data-flow="reduce"/u);
   assert.match(evasion, /function advancedUnavailable\(d\)/u);
-  assert.match(evasion, /MODE_RECOMMENDATION_ENABLED = false/u);
+  assert.match(evasion, /MODE_RECOMMENDATION_ENABLED = true/u);
   assert.match(evasion, /basicRecommended\.hidden = !MODE_RECOMMENDATION_ENABLED \|\| recommendAdvanced/u);
   assert.match(evasion, /formalRecommended\.hidden = !MODE_RECOMMENDATION_ENABLED \|\| !recommendAdvanced \|\| unfit/u);
   assert.match(evasion, /recommendation_exposed: MODE_RECOMMENDATION_ENABLED/u);

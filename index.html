@@ -25,6 +25,7 @@
 <meta name="twitter:image" content="https://gpkorea.ai.kr/og-image.png">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://gpkorea.ai.kr">
+<script src="/assets/js/payment-callback-state.js"></script>
 <script src="/runtime-config.js" defer></script>
 <script src="/assets/js/config.js" defer></script>
 <link rel="stylesheet" href="/assets/css/landing.css">
@@ -52,6 +53,7 @@ setTimeout(function(){document.documentElement.classList.add('design-ready')},40
 (function () {
   var root = document.getElementById('page-root');
   if (!root || !root.querySelector('#landingScreen')) return;
+  if (window.GP_PAYMENT_CALLBACK_QUERY) return;
   var params = new URLSearchParams(window.location.search || '');
   var callback = params.has('code') && params.get('success') !== '1' && params.get('fail') !== '1'
     && params.get('subfail') !== '1' && !params.has('paymentKey');

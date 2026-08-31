@@ -280,10 +280,13 @@ test('가격 카드는 상시 상품 보너스와 5% 기간 이벤트를 분리�
   for (const amount of [2900, 8700, 14500, 29000, 58000]) {
     assert.match(pricing, new RegExp(`data-plan-total-for="${amount}"`, 'u'), `${amount} 총 크레딧 훅 부재`);
   }
-  for (const surface of [pricing, landing, flow, modals]) {
+  for (const surface of [pricing, landing, flow]) {
     assert.match(surface, /2026년 9월 30일까지/u);
     assert.doesNotMatch(surface, /첫 구매|첫 결제|firstPurchase|firstBonus/u);
   }
+  const checkoutModal = modals.slice(modals.indexOf('id="gpCreditCheckoutModal"'), modals.indexOf('<!-- 친구 초대 모달 -->'));
+  assert.match(checkoutModal, /2026년 9월 30일까지/u);
+  assert.doesNotMatch(checkoutModal, /첫 구매|첫 결제|firstPurchase|firstBonus/u);
   assert.ok(!pricing.includes('나눠 사면'), '분할 비교 문구 재유입');
 });
 
@@ -324,10 +327,11 @@ test('랜딩 v2는 코다 구조(데모·탭·상황·사실 스트립)를 우�
 });
 
 test('lp 스위치는 랜딩을 강제하거나 건너뛰고 관리자 페이지에서 안내한다', async () => {
-  const [landingJs, appModule, admin] = await Promise.all([
+  const [landingJs, appModule, admin, boot] = await Promise.all([
     read('assets/js/landing.js'),
     read('assets/js/app-module.js'),
-    read('pages/admin.html')
+    read('pages/admin.html'),
+    read('assets/js/app-boot.js')
   ]);
   assert.match(landingJs, /function landingOverride\(\)/u);
   assert.match(landingJs, /if \(lp === '1'\) return 'force';/u);
@@ -340,6 +344,12 @@ test('lp 스위치는 랜딩을 강제하거나 건너뛰고 관리자 페이지
   assert.match(landingJs, /url\.searchParams\.delete\('lp'\)/u);
   assert.match(appModule, /function showAuthenticatedShell[\s\S]{0,260}?gpLandingCompleteLogin[\s\S]{0,120}?showScreen\('app'\)/u);
   assert.equal((appModule.match(/window\.gpLandingCompleteLogin\(\)/g) || []).length, 1);
+  assert.match(boot, /window\.GP_REQUESTED_APP_SCREEN = options\.screen === 'login' \? 'login' : 'app';[\s\S]{0,180}?await Promise\.all/u,
+    '랜딩의 로그인 화면 의도는 Firebase 초기 콜백보다 먼저 기록해야 함');
+  assert.match(boot, /options\.screen === 'login' && !window\.CU/u,
+    '이미 인증된 사용자는 비동기 로드 완료 뒤 로그인 화면으로 되돌리면 안 됨');
+  assert.match(appModule, /if \(window\.GP_REQUESTED_APP_SCREEN === 'login'\) \{\s*showScreen\('login'\);/u,
+    '최초 비로그인 콜백은 랜딩 CTA가 연 로그인 화면을 덮으면 안 됨');
   // 관리자 페이지: 미리보기 버튼과 광고 링크 지정 안내
   assert.match(admin, /window\.open\('\/\?lp=1', '_blank', 'noopener'\)/u);
   assert.match(admin, /\?lp=0/u);
@@ -405,14 +415,15 @@ test('익명 홈은 서버 렌더 랜딩을 즉시 활성화하고 앱·인증 �
 });
 
 test('카카오 로그인은 콜백을 즉시 처리하고 메인 전환 중 진행 상태를 명확히 보여준다', async () => {
-  const [appModule, appMain, loader, login, css, landingJs, index] = await Promise.all([
+  const [appModule, appMain, loader, login, css, landingJs, index, boot] = await Promise.all([
     read('assets/js/app-module.js'),
     read('assets/js/app-main.js'),
     read('assets/js/page-loader.js'),
     read('partials/login-screen.html'),
     read('assets/css/app.css'),
     read('assets/js/landing.js'),
-    read('index.html')
+    read('index.html'),
+    read('assets/js/app-boot.js')
   ]);
 
   // 모바일 OAuth 리다이렉트는 전체 이미지·폰트 load 이벤트를 기다리지 않는다.
@@ -427,12 +438,24 @@ test('카카오 로그인은 콜백을 즉시 처리하고 메인 전환 중 진
   assert.match(appModule, /beginAuthTransition\('kakao', '카카오 로그인 확인 중', '메인 화면을 먼저 준비하고 있어요\.'/u);
   assert.match(login, /id="authTransition"[\s\S]{0,500}?role="status"/u);
   assert.match(login, /id="socialLoginStatus"[^>]+aria-live="polite"/u);
+  assert.match(login, /onclick="gpRequestSocialLogin\('google'\)"/u);
+  assert.match(login, /onclick="gpRequestSocialLogin\('kakao'\)"/u);
+  assert.doesNotMatch(login, /onclick="(?:googleLogin|kakaoLogin)\(\)"/u,
+    '인증 모듈이 로드되기 전 직접 전역 함수를 호출하면 가입 버튼이 간헐적으로 실패함');
+  assert.match(boot, /window\.gpRequestSocialLogin = async function/u);
+  assert.match(boot, /if \(typeof window\[handlerName\] !== 'function'\) await loadAppAssets\(\);/u);
+  assert.match(boot, /if \(socialLoginRequestPromise\) return socialLoginRequestPromise;/u,
+    '인증 모듈 로드 중 연속 클릭은 한 요청으로 합쳐야 함');
   assert.match(css, /\.gp-auth-transition\{[\s\S]{0,240}?backdrop-filter/u);
   assert.match(css, /\.btn-google:disabled,.btn-kakao:disabled/u);
 
-  // 재방문자는 매번 실패하는 계정 생성 요청을 먼저 보내지 않고 로그인부터 시도한다.
-  const authHelper = appModule.slice(appModule.indexOf('async function signInOrCreateKakaoUser'), appModule.indexOf('function syncKakaoProfileInBackground'));
-  assert.ok(authHelper.indexOf('signInWithEmailAndPassword') < authHelper.indexOf('createUserWithEmailAndPassword'));
+  // custom token을 우선하되 서버가 명시한 v1 응답만 기존 계정 호환 경로를 사용한다.
+  assert.match(appModule, /signInWithCustomToken\(auth, data\.customToken\)/u);
+  assert.match(appModule, /data\.authVersion === 1 && data\.kakaoId && data\.email && typeof legacyPasswordFor === 'function'/u);
+  assert.match(appModule, /signInOrCreateLegacyKakaoUser\(data, legacyPasswordFor\(data\.kakaoId\)\)/u);
+  assert.match(appModule, /function consumeKakaoOAuthState/u);
+  assert.match(appModule, /sessionStorage\.removeItem\(KAKAO_OAUTH_STATE_KEY\)/u);
+  assert.match(appModule, /const oauthContext = consumeKakaoOAuthState\(params\.get\('state'\)\);[\s\S]{0,80}?if \(!oauthContext\)/u);
   assert.match(appModule, /showAuthenticatedShell\(result\.user, 'kakao_direct'\);[\s\S]{0,100}?syncKakaoProfileInBackground/u);
 
   // 랜딩에서 로그인 화면으로 이동하기 전 서버는 깨우되 인증 호스트는 초기 HTML에서 연결하지 않는다.

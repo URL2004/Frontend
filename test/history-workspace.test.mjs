@@ -91,15 +91,16 @@ test('작업 상태와 이용 내역을 분리하고 복구 가능한 화면 상
   assert.match(source, /로그인이 필요해요/u);
 });
 
-test('다듬기·기본·고급 카드는 추천 배지 대신 글 예시를 비교 정보로 보여준다', async () => {
+test('다듬기·기본·고급 카드는 글 예시와 서버 추천 배지를 함께 보여준다', async () => {
   const [main, evasion] = await Promise.all([
     read('pages/main.html'),
     read('assets/js/evasion-flow.js')
   ]);
   assert.match(main, /lav-sel-examples[^>]*><small>글 예시<\/small><b>제출 전 과제 · 자기소개서 · 교정이 필요한 초안<\/b>/u);
-  assert.match(main, /일반 과제 · 블로그 · 후기·SNS/u);
-  assert.match(main, /보고서 · 논문 초안 · 공식 문서/u);
-  assert.match(evasion, /MODE_RECOMMENDATION_ENABLED = false/u);
+  // 과제는 한쪽에 몰지 않는다 — 분량으로 갈라 긴 리포트가 고급을 보게 한다
+  assert.match(main, /주간 과제 · 짧은 리포트 · 블로그 · 후기/u);
+  assert.match(main, /기말 리포트 · 졸업 논문 · 인용 많은 과제/u);
+  assert.match(evasion, /MODE_RECOMMENDATION_ENABLED = true/u);
 });
 
 test('모바일 사이드바는 닫힌 동안 포커스 트리에서 빠진다', async () => {

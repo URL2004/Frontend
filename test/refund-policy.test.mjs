@@ -151,6 +151,10 @@ test('환불 버튼은 저장된 기산일을 우선하고 기간 경과 주문�
 });
 
 test('이용약관과 환불규정은 기산일·부분 제공·법정 예외와 처리 기한을 정확히 고지한다', () => {
+  const refundPolicySource = mainSource.slice(
+    mainSource.indexOf("} else if (type === 'refund')"),
+    mainSource.indexOf('\n }\n}', mainSource.indexOf("} else if (type === 'refund')"))
+  );
   // 2026-08-28 약관 개정(D2): 크레딧 만료 로직이 없고 전 마케팅 표면이 무기한 표기 → 약관도 무기한으로 통일
   assert.match(mainSource, /유료로 충전한 기준 크레딧과 상품 보너스·결제 이벤트로 추가 지급된 크레딧은 유효기간 없이 사용할 수 있습니다/u);
   assert.match(mainSource, /2026년 9월 30일까지 결제 요청분/u);
@@ -168,6 +172,8 @@ test('이용약관과 환불규정은 기산일·부분 제공·법정 예외와
   assert.match(mainSource, /이용자가 동의한 경우에만 서비스 재제공이나 크레딧 복구/u);
   assert.match(mainSource, /환불 신청을 받은 날부터 3영업일 이내/u);
   assert.match(mainSource, /환불 사유 입력은 선택사항/u);
+  assert.match(refundPolicySource, /마이페이지의 환불하기 메뉴 또는 사이트 내 고객센터에서 신청/u);
+  assert.doesNotMatch(refundPolicySource, /이메일/u);
   assert.match(mainSource, /1372 소비자상담센터/u);
   assert.match(mainSource, /한국소비자원에 피해구제/u);
   assert.match(mainSource, /소비자분쟁조정위원회의 조정/u);

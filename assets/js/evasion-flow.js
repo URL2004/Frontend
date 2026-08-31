@@ -271,9 +271,10 @@
 
   var lastDiag = null;   // 결과 화면의 예상 밴드 표기에 재사용
   var toneSelectionTouched = false;
-  // 운영 결정(2026-08-29): 모드 추천은 닫아 둔다. 서버 판정값은 호환을 위해
-  // 보존하되 배지·강조·자동 선택·추천 분석값을 사용자 흐름에 노출하지 않는다.
-  var MODE_RECOMMENDATION_ENABLED = false;
+  // 운영 결정(2026-08-31): 모드 추천을 다시 연다. 서버가 고신뢰 과제·논문 판정과
+  // 복잡한 구조를 함께 확인한 글에만 recommendedMode='formal'을 내리므로(백엔드
+  // advancedRouting), 긴 리포트·논문에서만 고급 배지가 뜨고 짧은 글은 기본을 유지한다.
+  var MODE_RECOMMENDATION_ENABLED = true;
   var lavMemoOverride = '';   // 차단 화면 인라인 메모(재도전 시 1회 사용) — 사전 메모 아코디언 제거(2026-08-28) 후 유일한 사전 메모 경로
 
   function advancedUnavailable(d) {
@@ -480,6 +481,17 @@
     var b = $('lavCostBlog'); if (b) b.textContent = shortLabel;
     var f = $('lavCostFormal');
     if (f) f.textContent = formalCredit(len, evOn) + '크레딧 · ' + estimateTimeRangeLabel(formalEstimateRange(text, evOn));
+    // 고급은 길이 구간 정액이라 글이 길수록 기본과의 차액이 줄고 구간 상한(1만·2만·3만자)에서 같아진다.
+    // 긴 과제·리포트를 쓰는 사용자가 그 사실을 카드에서 바로 보게 한다(같은 값이면 강조).
+    var gapEl = $('lavCostFormalGap');
+    if (gapEl) {
+      var gap = formalCredit(len, evOn) - shortHumanizeCredit(len);
+      gapEl.hidden = !len;
+      gapEl.classList.toggle('is-even', gap <= 0);
+      gapEl.textContent = gap <= 0
+        ? '기본과 같은 값'
+        : '기본보다 +' + gap.toLocaleString('ko-KR') + '크레딧';
+    }
   }
 
   // 뒤로: 방법선택→(보고서 경유면) 보고서, 보고서→입력화면(원문 유지)
@@ -1063,7 +1075,6 @@
     var hint = $('lavDocumentProfileHint');
     var profile = currentDocumentProfile();
     renderDetailSummary();
-    renderAnchorGuide(lastDiag);
     if (hint) {
       hint.textContent = profile
         ? '자동 판정이 애매할 때만 이 선택을 사용해요. 원문 장르가 뚜렷하면 안전을 위해 자동 판정을 우선해요.'
@@ -1111,7 +1122,7 @@
     var sum = $('lavConfirmSummary');
     if (sum) {
       var rows = [];
-      rows.push(['방식', s.tone === 'formal' ? '고급 휴머나이징 — 전 문서 의미 검증' : '기본 휴머나이징 — 장르 자동 맞춤']);
+      rows.push(['방식', s.tone === 'formal' ? '고급 휴머나이징 — 항상 전 문서 정밀 검증' : '기본 휴머나이징 — 장르 자동 맞춤']);
       rows.push(['글 종류', s.documentProfile ? DOCUMENT_PROFILE_LABELS[s.documentProfile] + ' · 애매할 때만 반영' : '자동 판별']);
       if (s.tone === 'blog') rows.push(['문체 보조', s.basicStyle === 'report' ? '격식 있는 표현 보조 · 원문 장르 우선' : '친근한 표현 보조 · 원문 장르 우선']);
       if (s.tone === 'formal') rows.push(['분량', '원문에 가깝게 유지']);
