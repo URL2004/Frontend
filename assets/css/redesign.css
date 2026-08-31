@@ -9754,10 +9754,15 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
 }
 
 /* ===== lavender v114: 입력창이 첫 시선의 중심이 되는 메인 작업 화면 ===== */
-/* 큰 화면에서는 전체 블록이 아니라 입력창의 중심을 뷰포트 중심에 맞춘다. */
+/* 큰 화면에서는 전체 블록이 아니라 입력창의 중심을 뷰포트 중심에 맞춘다.
+   #mainContent가 overflow:clip이라 위로 당긴 만큼 화면 밖으로 나간 부분은 잘려서 되돌릴 수 없다.
+   창 높이가 900~1080px대(작은 노트북·창 모드)에서는 당길 여유가 -15vh보다 작아 로고 윗부분이
+   실제로 잘렸다 — 그래서 뷰포트 높이로 계산한 안전 하한을 함께 건다(둘 중 덜 당기는 쪽 채택).
+   400px은 상단 여백(main 패딩+상단바+히어로 패딩)과 히어로 높이로 잡은 보수적인 상수이며,
+   높이 1200px 이상에서는 하한이 걸리지 않아 기존 연출이 그대로 유지된다. */
 @media(min-width:960px) and (min-height:900px){
  #mainContent[data-main-design="lavender"] .gp-lav-hero:not(.flow-active){
-  transform:translateY(clamp(-190px,-15vh,-120px));
+  transform:translateY(max(clamp(-190px,-15vh,-120px),calc(400px - 50vh)));
  }
 }
 /* 높이가 짧은 노트북은 위로 이동할 여유가 적어 상단 정렬과 간격 압축으로 대응한다. */

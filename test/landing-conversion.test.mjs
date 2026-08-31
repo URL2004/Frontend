@@ -95,7 +95,9 @@ test('메인은 입력창을 화면 중심으로 올리고 모바일에서는 �
   ]);
   const block = css.slice(css.indexOf('lavender v114'));
   assert.ok(block.length > 500, '메인 작업 화면 배치 규칙이 있어야 한다');
-  assert.match(block, /\.gp-lav-hero:not\(\.flow-active\)[^{]*\{[\s\S]*?translateY\(clamp\(-190px,-15vh,-120px\)\)/u);
+  // 상향 이동은 그대로 두되 뷰포트 높이 하한과 max()로 묶는다 — 하한이 없으면 창 높이 900~1080px에서
+  // #mainContent의 overflow:clip에 로고 윗부분이 잘린다(하한 상수 검사는 main-hero-clipping.test.mjs).
+  assert.match(block, /\.gp-lav-hero:not\(\.flow-active\)[^{]*\{[\s\S]*?translateY\(max\(clamp\(-190px,-15vh,-120px\),calc\(\d+px - 50vh\)\)\)/u);
   assert.match(block, /@media\(max-width:760px\)[\s\S]*?\.gp-lav-hero:not\(\.flow-active\)[^{]*\{[\s\S]*?padding:clamp\(20px,3\.5dvh,30px\) 0/u);
   assert.match(block, /@media\(max-width:760px\)[\s\S]*?height:clamp\(180px,30dvh,240px\) !important/u);
   assert.match(block, /font-size:16px/u); // iOS 입력 포커스 확대 방지
