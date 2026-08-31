@@ -196,9 +196,10 @@ test('구조만 있는 입력의 422는 일반 서버 장애가 아니라 입력
 });
 
 test('모드 추천을 열고 3택 카드 문구는 엔진이 실제로 하는 일만 말한다', async () => {
-  const [main, evasion] = await Promise.all([
+  const [main, evasion, css] = await Promise.all([
     read('pages/main.html'),
-    read('assets/js/evasion-flow.js')
+    read('assets/js/evasion-flow.js'),
+    read('assets/css/redesign.css')
   ]);
   assert.match(main, /id="lavBasicRecommended"[^>]*hidden[^>]*>추천<\/span>/u);
   assert.match(main, /id="lavFormalRecommended"[^>]*hidden[^>]*>추천<\/span>/u);
@@ -216,8 +217,11 @@ test('모드 추천을 열고 3택 카드 문구는 엔진이 실제로 하는 �
   assert.match(main, /주간 과제 · 짧은 리포트/u);
   assert.match(main, /기말 리포트 · 졸업 논문 · 인용 많은 과제/u);
   assert.match(main, /id="lavCostFormalGap"/u);
+  assert.ok(main.indexOf('id="lavCostFormalGap"') < main.indexOf('id="lavCostFormal"'), '차액 안내는 가격 박스 바로 위에 둔다');
   assert.match(evasion, /gapEl\.textContent = gap <= 0/u);
   assert.match(evasion, /'기본과 같은 값'/u);
+  assert.match(css, /\.lav-sel-gap\{[^}]*margin-top:auto[^}]*margin-bottom:5px/u);
+  assert.match(css, /\.lav-sel-gap \+ \.lav-sel-cost\{margin-top:0;\}/u);
   assert.match(evasion, /window\.lavSelectTone = function/u);
   assert.doesNotMatch(main, /lavPersonalBlock|lavAutoCoach|lavCoachPicks|data-flow="reduce"/u);
   assert.match(evasion, /function advancedUnavailable\(d\)/u);
