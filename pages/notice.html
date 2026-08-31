@@ -24,13 +24,15 @@
     <option value="이벤트">이벤트</option>
     <option value="정책">정책</option>
    </select>
-   <input id="ntitle" type="text" placeholder="공지 제목">
-   <textarea id="nbody_input" placeholder="공지 내용을 입력하세요..."></textarea>
+   <label class="sr-only" for="ntitle">공지 제목</label>
+   <input id="ntitle" type="text" maxlength="120" placeholder="공지 제목" autocomplete="off">
+   <label class="sr-only" for="nbody_input">공지 내용</label>
+   <textarea id="nbody_input" maxlength="10000" placeholder="공지 내용을 입력하세요..."></textarea>
    <div class="wform-ft">
     <div></div>
     <div class="wform-btns">
-     <button class="cancelbtn" onclick="document.getElementById('noticeWriteForm').style.display='none'">취소</button>
-     <button class="postsubmit" id="noticeSubmit" onclick="submitNotice()">등록</button>
+     <button class="cancelbtn" type="button" onclick="document.getElementById('noticeWriteForm').style.display='none'">취소</button>
+     <button class="postsubmit" id="noticeSubmit" type="button" onclick="submitNotice()">등록</button>
     </div>
    </div>
   </div>

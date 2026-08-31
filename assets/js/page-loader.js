@@ -1,33 +1,53 @@
 (function () {
   'use strict';
 
+  var ROUTE_PARTIALS = {
+    main: '/pages/main.html',
+    history: '/pages/history.html',
+    notice: '/pages/notice.html',
+    blog: '/pages/blog.html',
+    detectReport: '/pages/detect-report.html',
+    guide: '/pages/guide.html',
+    faq: '/pages/faq.html',
+    qna: '/pages/qna.html',
+    pricing: '/pages/pricing.html',
+    pro: '/pages/pro.html',
+    mypage: '/pages/mypage.html',
+    admin: '/pages/admin.html',
+    adminHumanizeLab: '/pages/admin-humanize-lab.html',
+    writingLab: '/pages/writing-lab.html'
+  };
+  var STANDARD_ROUTES = [
+    'history', 'notice', 'blog', 'detectReport', 'guide', 'faq', 'qna', 'pricing', 'pro', 'mypage'
+  ];
+  var PRIVILEGED_ROUTES = ['admin', 'adminHumanizeLab', 'writingLab'];
   var APP_PARTIALS = [
     '/partials/login-screen.html',
-    '/partials/app-shell-start.html',
-    '/pages/main.html',
-    '/pages/history.html',
-    '/pages/notice.html',
-    '/pages/blog.html',
-    '/pages/detect-report.html',
-    '/pages/guide.html',
-    '/pages/faq.html',
-    '/pages/qna.html',
-    '/pages/pricing.html',
-    '/pages/pro.html',
-    '/pages/mypage.html',
-    '/pages/admin.html',
-    '/pages/admin-humanize-lab.html',
-    '/pages/writing-lab.html',
+    '/partials/app-shell-start.html'
+  ].concat(Object.keys(ROUTE_PARTIALS).map(function (route) { return ROUTE_PARTIALS[route]; }), [
     '/partials/app-shell-end.html',
     '/partials/modals.html'
-  ];
+  ]);
+  var loadedRoutes = new Set();
+  var routePromises = new Map();
+  var appMarkupReadyPromise = null;
 
   function fetchText(url) {
-    return fetch(url, { credentials: 'same-origin' }).then(function (response) {
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, 8000) : 0;
+    return fetch(url, {
+      credentials: 'same-origin',
+      signal: controller ? controller.signal : undefined
+    }).then(function (response) {
       if (!response.ok) throw new Error('Failed to load page partial: ' + url);
       return response.text();
     }).then(function (text) {
       return String(text || '').replace(/^\uFEFF/u, '');
+    }).catch(function (error) {
+      if (error && error.name === 'AbortError') throw new Error('Timed out loading page partial: ' + url);
+      throw error;
+    }).finally(function () {
+      if (timer) clearTimeout(timer);
     });
   }
 
@@ -77,6 +97,27 @@
     return 'app';
   }
 
+  function routeFromPath() {
+    var routes = {
+      '/': 'main',
+      '/main': 'main',
+      '/history': 'history',
+      '/notice': 'notice',
+      '/blog': 'blog',
+      '/detect-report': 'detectReport',
+      '/guide': 'guide',
+      '/faq': 'faq',
+      '/qna': 'qna',
+      '/pricing': 'pricing',
+      '/pro': 'pro',
+      '/mypage': 'mypage',
+      '/admin': 'admin',
+      '/admin-humanize-lab': 'adminHumanizeLab',
+      '/writing-lab': 'writingLab'
+    };
+    return routes[normalizedPath()] || 'main';
+  }
+
   function root() {
     var node = document.getElementById('page-root');
     if (!node) throw new Error('Missing #page-root');
@@ -88,19 +129,37 @@
     if (seo && seo.parentNode) seo.parentNode.removeChild(seo);
   }
 
+  function markPresentRoutes(scope) {
+    scope = scope || document;
+    Object.keys(ROUTE_PARTIALS).forEach(function (route) {
+      if (scope.querySelector && scope.querySelector('#' + route + 'Content')) loadedRoutes.add(route);
+    });
+  }
+
   async function appMarkup() {
-    var runtime = window.APP_RUNTIME_CONFIG || {};
-    if (Number(runtime.PAGE_BUNDLE_VERSION) === 1) {
-      try {
-        var bundled = await fetchText('/partials/app-bundle.html');
-        window.PAGE_PARTIAL_BUNDLE_USED = true;
-        return bundled;
-      } catch (error) {
-        console.warn('Page bundle unavailable; loading individual partials.', error);
-      }
+    var initialRoute = routeFromPath();
+    var routeList = initialRoute === 'main' ? ['main'] : ['main', initialRoute];
+    var partials = [
+      '/partials/login-screen.html',
+      '/partials/app-shell-start.html'
+    ].concat(routeList.map(function (route) { return ROUTE_PARTIALS[route]; }), [
+      '/partials/app-shell-end.html',
+      '/partials/modals.html'
+    ]);
+    try {
+      var contents = await Promise.all(partials.map(function (url) { return fetchText(url); }));
+      window.PAGE_PARTIAL_BUNDLE_USED = false;
+      routeList.forEach(function (route) { loadedRoutes.add(route); });
+      return contents.join('\n');
+    } catch (error) {
+      // 개별 파셜 중 하나가 일시적으로 누락되면 기존 단일 번들로 복구한다.
+      // fetchText('/partials/app-bundle.html') 호출은 구 배포와의 롤백 호환 경계다.
+      console.warn('Critical page partial unavailable; loading compatibility bundle.', error);
+      var bundled = await fetchText('/partials/app-bundle.html');
+      window.PAGE_PARTIAL_BUNDLE_USED = true;
+      Object.keys(ROUTE_PARTIALS).forEach(function (route) { loadedRoutes.add(route); });
+      return bundled;
     }
-    window.PAGE_PARTIAL_BUNDLE_USED = false;
-    return (await Promise.all(APP_PARTIALS.map(fetchText))).join('\n');
   }
 
   function showOnly(screenName) {
@@ -143,6 +202,51 @@
     return true;
   }
 
+  function routeMount() {
+    return document.getElementById('lavTabSlot') || document.querySelector('#appScreen .main-content');
+  }
+
+  function isRouteLoaded(route) {
+    if (!ROUTE_PARTIALS[route]) return true;
+    if (loadedRoutes.has(route)) return true;
+    var present = !!document.getElementById(route + 'Content');
+    if (present) loadedRoutes.add(route);
+    return present;
+  }
+
+  function ensureRoute(route) {
+    if (!ROUTE_PARTIALS[route] || isRouteLoaded(route)) return Promise.resolve(true);
+    if (routePromises.has(route)) return routePromises.get(route);
+    var promise = Promise.resolve(appMarkupReadyPromise).then(function () {
+      if (isRouteLoaded(route)) return true;
+      return fetchText(ROUTE_PARTIALS[route]).then(function (markup) {
+        var mount = routeMount();
+        if (!mount) throw new Error('Missing app route mount');
+        mount.insertAdjacentHTML('beforeend', markup);
+        loadedRoutes.add(route);
+        window.dispatchEvent(new CustomEvent('gp:route-markup-ready', { detail: { route: route } }));
+        return true;
+      });
+    }).finally(function () {
+      routePromises.delete(route);
+    });
+    routePromises.set(route, promise);
+    return promise;
+  }
+
+  var deferredAppPartialsPromise = null;
+  function loadDeferredAppPartials() {
+    if (deferredAppPartialsPromise) return deferredAppPartialsPromise;
+    deferredAppPartialsPromise = Promise.resolve(appMarkupReadyPromise).then(function () {
+      // 관리자·실험 화면은 권한 확인 뒤 ensureRoute로만 불러 일반 사용자 파싱 비용에서 제외한다.
+      return Promise.all(STANDARD_ROUTES.map(ensureRoute));
+    }).then(function () {
+      window.dispatchEvent(new CustomEvent('gp:app-deferred-markup-ready'));
+      return true;
+    });
+    return deferredAppPartialsPromise;
+  }
+
   async function loadPublicPricing() {
     var pricing = await fetchText('/pages/pricing.html');
     var pageRoot = root();
@@ -178,10 +282,21 @@
   async function loadApp(options) {
     options = options || {};
     if (!appMarkupPromise) appMarkupPromise = appMarkup();
-    root().innerHTML = await appMarkupPromise;
+    if (!appMarkupReadyPromise) {
+      appMarkupReadyPromise = appMarkupPromise.then(function (markup) {
+        root().innerHTML = markup;
+        markPresentRoutes(root());
+        return true;
+      });
+    }
+    await appMarkupReadyPromise;
     window.dispatchEvent(new CustomEvent('gp:app-markup-ready'));
     document.documentElement.dataset.gpInitialScreen = 'app';
-    window.PAGE_PARTIALS = APP_PARTIALS.slice();
+    window.PAGE_PARTIALS = APP_PARTIALS.filter(function (url) {
+      return !Object.keys(ROUTE_PARTIALS).some(function (route) {
+        return ROUTE_PARTIALS[route] === url && !isRouteLoaded(route);
+      });
+    });
     showOnly(options.screen === 'login' ? 'login' : 'app');
     prepareAuthCallback();
     return 'app';
@@ -192,6 +307,10 @@
   window.GPPageLoader = {
     initialMode: mode,
     loadApp: loadApp,
+    loadDeferredAppPartials: loadDeferredAppPartials,
+    ensureRoute: ensureRoute,
+    isRouteLoaded: isRouteLoaded,
+    privilegedRoutes: PRIVILEGED_ROUTES.slice(),
     hydrateLandingDeferred: hydrateLandingDeferred,
     hasCachedFirebaseUser: hasCachedFirebaseUser,
     hasKakaoCallback: hasKakaoCallback

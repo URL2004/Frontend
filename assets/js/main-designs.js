@@ -37,7 +37,10 @@
     var tabs = document.getElementById('lavTabSlot');
     if (tabs) tabs.hidden = lavTab === 'main';
     document.querySelectorAll('.gp-lav-menu [data-tab]').forEach(function (b) {
-      b.classList.toggle('active', b.dataset.tab === lavTab);
+      var active = b.dataset.tab === lavTab;
+      b.classList.toggle('active', active);
+      if (active) b.setAttribute('aria-current', 'page');
+      else b.removeAttribute('aria-current');
     });
     if (typeof window.lavCloseSidebar === 'function') window.lavCloseSidebar();
   }
@@ -287,8 +290,19 @@
     if (!count || !textarea) return;
     window.lavClearInputError();
     var len = (textarea.value || '').length;
+    var max = Number(window.LAV_MAX_CHARS || 30000);
+    var over = len > max;
+    var wasOver = count.dataset.overLimit === 'true';
     count.textContent = len ? len.toLocaleString() + ' / 30,000자' : '';
-    count.classList.toggle('over', len > window.LAV_MAX_CHARS);
+    count.classList.toggle('over', over);
+    count.dataset.overLimit = String(over);
+    textarea.setAttribute('aria-invalid', over ? 'true' : 'false');
+    if (over !== wasOver) {
+      var status = document.getElementById('lavCountStatus');
+      if (status) status.textContent = over
+        ? '입력 가능 길이 30,000자를 초과했어요. 글을 나눠 주세요.'
+        : '입력 길이가 30,000자 이내로 돌아왔어요.';
+    }
     var run = document.getElementById('lavRunButton');
     if (run) {
       var detect = window.lavMode === 'detect';

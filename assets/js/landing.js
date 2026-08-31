@@ -209,6 +209,7 @@
       var on = Number(btn.dataset.blend) === index;
       btn.classList.toggle('on', on);
       btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      btn.tabIndex = on ? 0 : -1;
     });
     var img = document.getElementById('lpBlendImg');
     if (img) { img.src = item.img; img.alt = item.alt; delete img.dataset.lpSrc; }
@@ -216,8 +217,37 @@
     if (soon) soon.hidden = !item.soon;
     var note = document.getElementById('lpBlendNote');
     if (note) note.textContent = item.note;
+    var panel = document.getElementById('lpBlendPanel');
+    if (panel) panel.setAttribute('aria-labelledby', 'lpBlendTab' + index);
     track('landing_blend_pick', { surface: 'landing', blend_index: index });
   };
+
+  function initLandingBlendTabs() {
+    document.querySelectorAll('.gp-lp-blend-list[role="tablist"]').forEach(function (list) {
+      if (list.dataset.keyboardReady === '1') return;
+      list.dataset.keyboardReady = '1';
+      var tabs = Array.from(list.querySelectorAll('[role="tab"][data-blend]'));
+      tabs.forEach(function (tab, index) {
+        tab.tabIndex = tab.getAttribute('aria-selected') === 'true' ? 0 : -1;
+        tab.addEventListener('keydown', function (event) {
+          var nextIndex = -1;
+          if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
+          else if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length;
+          else if (event.key === 'Home') nextIndex = 0;
+          else if (event.key === 'End') nextIndex = tabs.length - 1;
+          if (nextIndex < 0) return;
+          event.preventDefault();
+          var nextTab = tabs[nextIndex];
+          window.gpLandingBlendPick(Number(nextTab.dataset.blend));
+          nextTab.focus();
+        });
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initLandingBlendTabs, { once: true });
+  else initLandingBlendTabs();
+  window.addEventListener('gp:landing-deferred-ready', initLandingBlendTabs);
 
   function initDeferredLandingImages() {
     var images = document.querySelectorAll('#landingScreen img[data-lp-src]');
@@ -247,6 +277,7 @@
   var demoTimers = [];
   var demoRunning = false;
   var demoStartTimer = 0;
+  var demoInView = false;
 
   function demoEl(id) { return document.getElementById(id); }
   function demoLater(fn, ms) { demoTimers.push(setTimeout(fn, ms)); }
@@ -320,6 +351,7 @@
 
   function demoStart() {
     if (demoRunning || !demoEl('lpDemo')) return;
+    if (document.hidden || !demoInView) return;
     if (demoReduced()) { demoFinalFrame(); return; }
     demoRunning = true;
     demoCycle();
@@ -353,17 +385,20 @@
     if ('IntersectionObserver' in window) {
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (e) {
-          if (e.isIntersecting) demoQueueStart();
+          demoInView = e.isIntersecting;
+          box.classList.toggle('is-demo-paused', !demoInView);
+          if (demoInView) demoQueueStart();
           else demoStop();
         });
       }, { threshold: 0.25 });
       io.observe(box);
     } else {
+      demoInView = true;
       demoQueueStart();
     }
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) demoStop();
-      else if (demoEl('lpDemo') && !document.getElementById('landingScreen').hidden) demoQueueStart();
+      else if (demoInView && demoEl('lpDemo') && !document.getElementById('landingScreen').hidden) demoQueueStart();
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demoInit);

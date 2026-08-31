@@ -10,7 +10,7 @@
   --border:#e4e7f1;
   --text:#1a1f2e;
   --text2:#525a6e;
-  --text3:#747c90;
+  --text3:#626a7e;
   --red:#c43f35;
   --green:#247a45;
   --blue:#4b4cc6;
@@ -26,6 +26,9 @@
   --space-12:48px;
   --radius-control:10px;
   --radius-card:14px;
+  --control-min:44px;
+  --focus-ring:#5a5bd8;
+  --focus-shadow:0 0 0 3px rgba(90,91,216,.22);
   --r:var(--radius-card);
   --rs:var(--radius-control);
   --layer-checkout:10020;
@@ -87,7 +90,7 @@ body[data-main-design="lavender"] .gp-main > #mainContent,
  --border:#e4e7f1;
  --text:#1a1f2e;
  --text2:#525a6e;
- --text3:#8a91a3;
+ --text3:#626a7e;
  --gp-panel:linear-gradient(180deg,#ffffff,#ffffff);
  --gp-panel-soft:linear-gradient(180deg,#ffffff,#fafbff);
  --gp-shadow:0 18px 44px rgba(78,84,148,.1);
@@ -3174,7 +3177,7 @@ body[data-main-design="lavender"] :is(#inviteModal,#policyModal,#refundModal){
  --border:#e4e7f1;
  --text:#1a1f2e;
  --text2:#525a6e;
- --text3:#8a91a3;
+ --text3:#626a7e;
  --blue:#3a62c4;
  --green:#1e8e3e;
  --red:#d64545;
@@ -5935,9 +5938,12 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 #mainContent[data-main-design="lavender"] #pricingContent .gp-credit-rates .gp-guide-credit-table{margin-top:20px;}
 @media(max-width:760px){
  #mainContent[data-main-design="lavender"] #pricingContent .gp-coupon-panel{
-  grid-template-columns:1fr;
+  grid-template-columns:minmax(0,1fr);
   align-items:start;
   gap:16px;
+ }
+ #mainContent[data-main-design="lavender"] #pricingContent :is(.gp-coupon-copy,.gp-coupon-entry){
+  min-width:0;
  }
 }
 @media(max-width:560px){
@@ -7544,7 +7550,7 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
    메인은 글 목록만(혼동 방지). 에디터 추천은 우측 aside 카드로 — feat-card가 var() 다크값이라 변수 라이트화 + 단일 컬럼. */
 #mainContent[data-main-design="lavender"] .feat-aside{
  --surface:#fff;--surface2:#f5f6fb;--border:#e7e9f4;
- --text:#1a1f2e;--text2:#5d6477;--text3:#9aa0b4;--blue:#5a5bd8;
+ --text:#1a1f2e;--text2:#5d6477;--text3:#626a7e;--blue:#5a5bd8;
 }
 #mainContent[data-main-design="lavender"] .feat-aside .feat-title{margin-bottom:12px;font-size:14px;}
 #mainContent[data-main-design="lavender"] .feat-aside .feat-grid{display:flex;flex-direction:column;gap:8px;}
@@ -7556,7 +7562,7 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 #mainContent[data-main-design="lavender"] #detailView,
 #mainContent[data-main-design="lavender"] #qnaDetailView{
  --surface:#fff;--surface2:#f5f6fb;--border:#e7e9f4;
- --text:#1a1f2e;--text2:#5d6477;--text3:#9aa0b4;
+ --text:#1a1f2e;--text2:#5d6477;--text3:#626a7e;
  --blue:#5a5bd8;--green:#3f9e63;--yellow:#d99a2b;--red:#e05a4b;--accent:#7c6bff;
  max-width:780px;margin:0 auto;
 }
@@ -7665,13 +7671,13 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 }
 .gp-admin-page{
  --admin-bg:#f6f7fb;--admin-surface:#fff;--admin-soft:#f4f5fa;--admin-border:#e6e8f1;--admin-line:#eef0f6;
- --admin-text:#1a1f2e;--admin-text2:#5a6175;--admin-text3:#969cad;--admin-blue:#5a5bd8;--admin-red:#d94a3a;--admin-green:#2f9654;--admin-amber:#c4861a;
+ --admin-text:#1a1f2e;--admin-text2:#5a6175;--admin-text3:#626a7e;--admin-blue:#5a5bd8;--admin-red:#d94a3a;--admin-green:#2f9654;--admin-amber:#9b6816;
  color:var(--admin-text);font-family:var(--font);
 }
 #mainContent[data-main-design="lavender"] #adminContent,
 #mainContent[data-main-design="lavender"] #adminHumanizeLabContent{
  min-height:calc(100vh - 64px);background:transparent;
- --surface:#fff;--surface2:#f4f5fa;--border:#e6e8f1;--text:#1a1f2e;--text2:#5a6175;--text3:#969cad;
+ --surface:#fff;--surface2:#f4f5fa;--border:#e6e8f1;--text:#1a1f2e;--text2:#5a6175;--text3:#626a7e;
  --blue:#5a5bd8;--red:#d94a3a;--green:#2f9654;--yellow:#c4861a;
 }
 .gp-admin-shell{max-width:1140px;margin:0 auto;padding:22px 16px 56px;}
@@ -7679,7 +7685,7 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 /* ── 헤더 ── */
 .gp-admin-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;}
 .gp-admin-kicker{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--admin-blue);margin-bottom:2px;}
-.gp-admin-head h2{margin:0;font-size:22px;line-height:1.15;color:var(--admin-text);}
+.gp-admin-head :is(h1,h2){margin:0;font-size:22px;line-height:1.15;color:var(--admin-text);}
 .gp-admin-refresh{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--admin-border);background:var(--admin-surface);color:var(--admin-text2);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:border-color .15s,color .15s;}
 .gp-admin-refresh:hover{border-color:#cbcef0;color:var(--admin-blue);}
 .gp-admin-refresh svg,.gp-admin-primary svg,.gp-admin-danger svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
@@ -8094,7 +8100,7 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 }
 @media (max-width: 560px){
  .gp-admin-shell{padding:16px 11px 40px;}
- .gp-admin-head h2{font-size:20px;}
+ .gp-admin-head :is(h1,h2){font-size:20px;}
  .gp-admin-ov-item{flex:1 1 100%;border-top:1px solid var(--admin-line);padding:10px 14px;}
  .gp-admin-ov-item:first-child{border-top:none;}
  .gp-admin-ov-item strong{font-size:18px;}
@@ -10396,4 +10402,106 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
  #mainContent[data-main-design="lavender"] .gp-lav-active-job:not([hidden]) ~ .gp-lav-top-slot{
   display:none !important;
  }
+}
+
+/* ===== UI integrity hardening: keyboard, touch, contrast, route semantics ===== */
+.gp-skip-link{
+ position:fixed;
+ inset-block-start:max(10px,env(safe-area-inset-top));
+ inset-inline-start:max(10px,env(safe-area-inset-left));
+ z-index:var(--layer-toast);
+ transform:translateY(-180%);
+ min-height:var(--control-min);
+ display:inline-flex;
+ align-items:center;
+ padding:0 15px;
+ border-radius:var(--radius-control);
+ background:#1a1f2e;
+ color:#fff;
+ font-size:14px;
+ font-weight:800;
+ text-decoration:none;
+ transition:transform .16s ease;
+}
+.gp-skip-link:focus{transform:translateY(0);}
+
+#mainContent[data-main-design="lavender"] :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible,
+body[data-main-design="lavender"] :is(.gp-dialog-root,.gp-notification-panel) :is(a,button,input,select,textarea,summary,[tabindex]):focus-visible{
+ outline:3px solid var(--focus-ring,#5a5bd8);
+ outline-offset:3px;
+}
+#mainContent[data-main-design="lavender"] :is(h1,h2,h3,[role="heading"])[tabindex="-1"]:focus{
+ outline:none;
+}
+#mainContent[data-main-design="lavender"] .gp-search:focus-within{
+ border-color:#7779d9 !important;
+ box-shadow:var(--focus-shadow) !important;
+}
+#mainContent[data-main-design="lavender"] .gp-search input:focus-visible{
+ outline:none;
+ box-shadow:none;
+}
+#mainContent[data-main-design="lavender"] .gp-search button{
+ flex-basis:44px;
+ width:44px;
+ height:44px;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-add.gp-upload-uiverse:focus-visible{
+ outline:3px solid var(--focus-ring);
+ outline-offset:2px;
+}
+
+/* 보조 텍스트도 실제 흰색·연보라 표면에서 WCAG AA(4.5:1) 이상을 유지한다. */
+#mainContent[data-main-design="lavender"] :is(.gp-lav-nikl,.gp-lav-count,.gp-lav-rate-note),
+#mainContent[data-main-design="lavender"] .gp-lav-mode button:not(.on),
+#mainContent[data-main-design="lavender"] .gp-guide-credit-table > div:first-child,
+#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-svc-note,
+#mainContent[data-main-design="lavender"] #pricingContent .plan-feats li span,
+#mainContent[data-main-design="lavender"] #pricingContent .plan-credit-amount .plan-unit,
+#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-comparison > span,
+#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-efficiency > span{
+ color:#626a7e !important;
+}
+#mainContent[data-main-design="lavender"] :is(.gp-lav-composer textarea,.gp-search input,.lav-memo,.lav-refine-input)::placeholder{
+ color:#697085 !important;
+ opacity:1;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button:not(.on) em{
+ background:#e7e8f6;
+ color:#45467c;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-mode button{
+ min-height:44px;
+ height:44px;
+}
+#mainContent[data-main-design="lavender"] .gp-lav-mode{
+ min-height:52px;
+}
+
+/* 터치 입력에서는 조밀한 데스크톱 컨트롤도 손가락 기준으로 확장한다. */
+@media(pointer:coarse){
+ #mainContent[data-main-design="lavender"] button,
+ #mainContent[data-main-design="lavender"] summary,
+ #mainContent[data-main-design="lavender"] input:not([type="hidden"]),
+ #mainContent[data-main-design="lavender"] select,
+ #mainContent[data-main-design="lavender"] :is(.gp-support-faq-link,.gp-support-cta,.gp-board-pagination a){
+  min-height:44px;
+ }
+ #mainContent[data-main-design="lavender"] .gp-lav-collapse{
+  flex-basis:44px;
+  width:44px;
+  height:44px;
+ }
+ #mainContent[data-main-design="lavender"] .gp-lav-add{
+  flex-basis:44px;
+  width:44px;
+  height:44px;
+ }
+ #mainContent[data-main-design="lavender"] .gp-lav-top-right :is(.ls-credit-btn,.gp-lav-guide){
+  min-height:44px !important;
+ }
+}
+
+@media(prefers-reduced-motion:reduce){
+ .gp-skip-link{transition:none;}
 }

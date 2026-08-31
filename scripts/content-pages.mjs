@@ -22,17 +22,20 @@ function jsonLd(obj) {
 // 매거진 스타일(2026-08-28 재설계) — 허브는 1180px 피처 그리드, 기사는 820px 판형.
 // 앱 CSS에 의존하지 않는 완결 스타일. 라이트·다크 모두 토큰으로 명시.
 const STYLE = `
-:root{--paper:#faf9fc;--ink:#211f2e;--ink2:#46445c;--muted:#8482a0;--accent:#5a5bd8;--deep:#4443c0;--soft:#efeefb;--line:#e7e5f0;--card:#fff;--shadow:0 1px 2px rgba(33,31,46,.04),0 8px 28px rgba(90,91,216,.07)}
+:root{--paper:#faf9fc;--ink:#211f2e;--ink2:#46445c;--muted:#66647a;--accent:#5a5bd8;--deep:#4443c0;--soft:#efeefb;--line:#e7e5f0;--card:#fff;--shadow:0 1px 2px rgba(33,31,46,.04),0 8px 28px rgba(90,91,216,.07)}
 @media (prefers-color-scheme:dark){:root{--paper:#141320;--ink:#eceaf6;--ink2:#c3c1d8;--muted:#8d8ba8;--accent:#8a8cf0;--deep:#b4b6ff;--soft:#232238;--line:#2b2a3f;--card:#1c1b2b;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.35)}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:'Noto Sans KR','Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;line-height:1.8;font-size:16px;word-break:keep-all;-webkit-font-smoothing:antialiased}
 .wrap{max-width:820px;margin:0 auto;padding:0 24px}
 .wrap.wide{max-width:1180px}
 a{color:var(--deep)}
+a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.skip-link{position:fixed;top:10px;left:10px;z-index:100;transform:translateY(-160%);padding:10px 14px;border-radius:10px;background:var(--ink);color:var(--paper);font-size:14px;font-weight:700;text-decoration:none;transition:transform .16s ease}
+.skip-link:focus{transform:translateY(0)}
 /* ── 상단 바: 독립 세계 안만 가리킨다(홈·블로그·CTA) ── */
 header.site{position:sticky;top:0;z-index:10;border-bottom:1px solid var(--line);background:var(--card)}
 header.site .bar{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:22px;padding:13px 24px}
-header.site a{color:var(--ink2);text-decoration:none;font-size:14px;font-weight:500}
+header.site a{display:inline-flex;align-items:center;min-height:44px;color:var(--ink2);text-decoration:none;font-size:14px;font-weight:500}
 header.site a.brand{font-weight:800;color:var(--ink);font-size:16.5px;letter-spacing:-.01em}
 header.site a.brand em{font-style:normal;color:var(--accent)}
 header.site .sp{margin-left:auto}
@@ -193,7 +196,7 @@ function pageShell({ title, description, url, breadcrumbs, bodyHtml, ldBlocks, w
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <meta property="og:title" content="${esc(title)}">
@@ -208,6 +211,7 @@ ${ldBlocks.join('\n')}
 <style>${STYLE}</style>
 </head>
 <body>
+<a class="skip-link" href="#contentMain">본문 바로가기</a>
 <header class="site"><div class="bar">
 <a class="brand" href="/">교수님 <em>피하기</em></a>
 <a href="/blog">연구노트</a>
@@ -216,7 +220,7 @@ ${ldBlocks.join('\n')}
 </div></header>
 <div class="wrap${wide ? ' wide' : ''}">
 <nav class="crumb">${crumbHtml}</nav>
-${bodyHtml}
+<main id="contentMain" tabindex="-1">${bodyHtml}</main>
 </div>
 <footer class="site"><div class="bar">
 교수님 피하기 · 지피코리아(gpkorea) — AI 초안의 문체 신호를 확인하고 원문의 뜻·장르·사실을 지키며 다듬는 도구입니다.

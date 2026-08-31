@@ -119,6 +119,11 @@ test('strict CSP is observation-only and App Check is intentionally not enabled 
   const config = JSON.parse(vercel);
   const headers = new Map(config.headers[0].headers.map(item => [item.key, item.value]));
   assert.match(headers.get('Content-Security-Policy-Report-Only'), /default-src 'self'/u);
+  assert.match(
+    headers.get('Content-Security-Policy-Report-Only'),
+    /frame-src[^;]*https:\/\/url88-d1d27\.firebaseapp\.com/u,
+    'Firebase Google 로그인 iframe 도메인은 report-only CSP에도 명시돼야 한다.'
+  );
   assert.equal(headers.get('Cross-Origin-Opener-Policy'), 'same-origin-allow-popups');
   assert.doesNotMatch(boot + app, /initializeAppCheck|ReCaptchaEnterpriseProvider|X-Firebase-AppCheck/u);
 });

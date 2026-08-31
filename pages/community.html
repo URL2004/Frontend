@@ -19,6 +19,7 @@
     </div>
 
     <div class="wform" id="wform">
+     <label class="sr-only" for="postCategory">게시글 분류</label>
      <select id="postCategory">
       <option value="자유">자유</option>
       <option value="블로그 작성 팁">블로그 작성 팁</option>
@@ -26,7 +27,9 @@
       <option value="자소서 조언">자소서 조언</option>
       <option value="글쓰기 팁">글쓰기 팁</option>
      </select>
+     <label class="sr-only" for="ptitle">게시글 제목</label>
      <input id="ptitle" type="text" maxlength="120" placeholder="제목">
+     <label class="sr-only" for="pbody">게시글 내용</label>
      <textarea id="pbody" maxlength="10000" placeholder="내용을 입력하세요..."></textarea>
      <div class="photo-upload-container">
       <label class="photo-input-label">사진 첨부
@@ -72,7 +75,7 @@
       <span>오늘의 글쓰기 한 줄</span>
       <strong>완벽하게 쓰려다 멈추기보다,<br>내 경험이 드러나는 한 문장을 먼저 적어 보세요.</strong>
      </div>
-     <img loading="lazy" decoding="async" src="/assets/img/community-quill.png" alt="">
+     <img loading="lazy" decoding="async" src="/assets/img/community-quill.png" alt="" width="1024" height="1024">
     </article>
     <article id="featuredSection" class="gp-aside-card feat-section feat-aside" style="display:none;">
      <div class="feat-title">에디터 추천 <span class="feat-title-badge">PICK</span></div>

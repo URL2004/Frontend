@@ -3,7 +3,7 @@
     <header class="gp-admin-head">
       <div class="gp-admin-head-title">
         <div class="gp-admin-kicker">Admin Lab</div>
-        <h2>휴머나이징 엔진 테스트</h2>
+        <h1>휴머나이징 엔진 테스트</h1>
       </div>
       <div class="gp-admin-lab-head-actions">
         <button type="button" class="gp-admin-refresh" onclick="openAdminPage()">관리자 페이지</button>
@@ -74,7 +74,7 @@
       <div class="gp-admin-lab-actions">
         <button type="button" id="adminLabRunBtn" class="gp-admin-primary" onclick="adminHumanizeLabRun()">엔진 테스트 실행</button>
         <button type="button" class="gp-admin-refresh" onclick="adminHumanizeLabClear()">초기화</button>
-        <span id="adminLabStatus" class="gp-admin-msg"></span>
+        <span id="adminLabStatus" class="gp-admin-msg" role="status" aria-live="polite" aria-atomic="true"></span>
       </div>
     </section>
 

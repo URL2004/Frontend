@@ -299,7 +299,7 @@ test('랜딩 v2는 코다 구조(데모·탭·상황·사실 스트립)를 우�
     assert.match(landing, new RegExp(`data-demo="${demo}"`, 'u'), `데모 장면 ${demo}가 있어야 한다`);
   }
   assert.match(landing, /id="landingScreen"[^>]*role="main"/u, '랜딩 본문 landmark');
-  assert.equal((landing.match(/<li role="presentation"><button type="button" role="tab"/gu) || []).length, 4, '탭의 목록 래퍼는 presentation 역할');
+  assert.equal((landing.match(/<li role="presentation"><button[^>]*type="button"[^>]*role="tab"/gu) || []).length, 4, '탭의 목록 래퍼는 presentation 역할');
   assert.match(css, /--lp-muted:#626a86/u, '보조 텍스트 대비 토큰');
   assert.match(css, /--lp-ok:#08785a/u, '성공 상태 대비 토큰');
   assert.match(css, /--lp-warn:#b52f28/u, '주의 상태 대비 토큰');

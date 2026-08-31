@@ -115,7 +115,8 @@ async function removeDarkAppRules() {
 async function pruneDuplicateShells() {
   await write('partials/app-shell-start.html', `<div id="appScreen" class="screen active">
   <div class="app-layout">
-    <main class="main-content gp-main">
+    <a class="gp-skip-link" href="#gpRouteContent">본문 바로가기</a>
+    <main class="main-content gp-main" id="gpRouteContent" tabindex="-1">
       <div id="mypage" class="tab-content" hidden></div>
 `);
   await write('partials/app-shell-end.html', `    </main>

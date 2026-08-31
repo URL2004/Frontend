@@ -309,6 +309,14 @@
    else dot.removeAttribute('aria-current');
   }
   window.scrollTo(0, 0);
+  requestAnimationFrame(function () {
+   var section = document.querySelector('#writingLabContent .gp-wl-step[data-wl-step="' + next + '"]');
+   var headingId = section && section.getAttribute('aria-labelledby');
+   var heading = headingId ? el(headingId) : null;
+   if (!heading) return;
+   if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+   try { heading.focus({ preventScroll: true }); } catch (error) { heading.focus(); }
+  });
  };
 
  function updateBadges() {
@@ -388,7 +396,8 @@
    var classes = [];
    if (index === state.sectionIndex) classes.push('on');
    if (sectionHasAnswer(key)) classes.push('done');
-   return '<button type="button" class="' + classes.join(' ') + '" data-section-index="' + index + '">' + esc(meta.label) + '</button>';
+   var current = index === state.sectionIndex ? ' aria-current="step"' : '';
+   return '<button type="button" class="' + classes.join(' ') + '" data-section-index="' + index + '"' + current + ' aria-label="' + esc(meta.label) + (sectionHasAnswer(key) ? ', 입력됨' : '') + '">' + esc(meta.label) + '</button>';
   }).join('');
   nav.querySelectorAll('button').forEach(function (button) {
    button.addEventListener('click', function () {
@@ -432,7 +441,7 @@
    return '<label class="gp-wl-field' + wide + '"><span>' + esc(field.label) + '<small>' + importance + '</small></span>'
     + control
     + (field.help ? '<small class="gp-wl-help">' + esc(field.help) + '</small>' : '')
-    + '<small class="gp-wl-help gp-wl-field-count" data-count-for="' + esc(field.key) + '">' + Array.from(String(value)).length.toLocaleString('ko-KR') + '자</small></label>';
+    + '<small class="gp-wl-help gp-wl-field-count" aria-hidden="true" data-count-for="' + esc(field.key) + '">' + Array.from(String(value)).length.toLocaleString('ko-KR') + '자</small></label>';
   }).join('');
   wrap.querySelectorAll('[data-field-key]').forEach(function (control) {
    control.addEventListener('input', fieldInputChanged);
@@ -473,6 +482,11 @@
   renderQuestionNav();
   renderFields();
   window.scrollTo(0, 0);
+  requestAnimationFrame(function () {
+   var heading = el('wlQuestionSectionTitle');
+   if (!heading) return;
+   try { heading.focus({ preventScroll: true }); } catch (error) { heading.focus(); }
+  });
  };
 
  window.wlGoSettings = function () {

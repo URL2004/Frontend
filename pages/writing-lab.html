@@ -1,7 +1,7 @@
 <!-- 글쓰기 랩 v2 — 기존 관리도구의 라벤더 UI를 유지하는 Operate 표면.
      입력을 해석하게 만들지 않고 장르별 질문, 작성 가능 여부, 근거 검수를 한 흐름으로 연결한다. -->
 <div id="writingLabContent" class="gp-wl-root" style="display:none;">
-  <main class="gp-wl-page" aria-labelledby="wlPageTitle">
+  <div class="gp-wl-page" role="region" aria-labelledby="wlPageTitle">
     <header class="gp-wl-head">
       <div class="gp-wl-head-copy">
         <h1 id="wlPageTitle">글쓰기 랩</h1>
@@ -66,7 +66,7 @@
       <nav id="wlQuestionNav" class="gp-wl-question-nav" aria-label="내용 입력 묶음"></nav>
       <div class="gp-wl-question-stage">
         <div class="gp-wl-question-intro">
-          <strong id="wlQuestionSectionTitle"></strong>
+          <strong id="wlQuestionSectionTitle" role="heading" aria-level="4" tabindex="-1"></strong>
           <span id="wlQuestionSectionDescription"></span>
         </div>
         <div id="wlDynamicFields" class="gp-wl-fields"></div>
@@ -219,7 +219,8 @@
             <button type="button" class="gp-wl-secondary gp-wl-small" onclick="wlRunAgain()">다시 만들기</button>
           </div>
         </div>
-        <textarea id="wlFinal" rows="16" placeholder="완성된 글이 여기에 표시돼요." oninput="wlFinalEdited()"></textarea>
+        <label class="sr-only" for="wlFinal">완성된 글 편집</label>
+        <textarea id="wlFinal" rows="16" aria-describedby="wlEditHint" placeholder="완성된 글이 여기에 표시돼요." oninput="wlFinalEdited()"></textarea>
         <p id="wlEditHint" class="gp-wl-edit-hint">결과를 수정하면 검수 완료 상태가 해제돼요. 수정 후 다시 확인해 주세요.</p>
       </section>
 
@@ -229,8 +230,9 @@
 
       <details id="wlDraftWrap" class="gp-wl-draft" hidden>
         <summary>휴머나이징 전 검증된 초안 보기</summary>
+        <label class="sr-only" for="wlDraft">휴머나이징 전 검증된 초안</label>
         <textarea id="wlDraft" rows="10" readonly></textarea>
       </details>
     </section>
-  </main>
+  </div>
 </div>

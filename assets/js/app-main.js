@@ -477,6 +477,21 @@ function setAdminAuthHydrationPending(pending) {
  document.body.classList.remove('gp-auth-transitioning');
 }
 
+function updateRouteAccessibility(t) {
+ document.querySelectorAll('.ntab[data-tab],.snav-btn[data-tab],.gp-lav-menu [data-tab]').forEach(function (control) {
+  if (control.dataset.tab === t) control.setAttribute('aria-current', 'page');
+  else control.removeAttribute('aria-current');
+ });
+ const content = document.getElementById(t + 'Content');
+ const heading = content && content.querySelector('h1,[role="heading"][aria-level="1"],h2');
+ const target = heading || document.getElementById('gpRouteContent');
+ if (!target) return;
+ if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+ requestAnimationFrame(function () {
+  try { target.focus({ preventScroll: true }); } catch (error) { target.focus(); }
+ });
+}
+
 function requireResolvedAdminAuth() {
  if (window.CU) {
   setAdminAuthHydrationPending(false);
@@ -576,6 +591,7 @@ function switchTab(t, opts) {
  if (t === 'pro' && typeof window.refreshProTab === 'function') window.refreshProTab();
  if (t === 'pricing' && typeof window.gpRefreshPricingOffer === 'function') window.gpRefreshPricingOffer(false);
  updateRouteMeta(t);
+ if (opts.focus !== false) updateRouteAccessibility(t);
  if (!opts.skipRoute) setRouteUrl(t, opts.replaceRoute);
  if (!opts.skipTrack && typeof window.gpTrackPageView === 'function') window.gpTrackPageView(t, document.title, window.location.href);
  // 플로팅 오퍼는 탭 단위로 무장·해제한다(읽기용 페이지에서만, 지연 노출).

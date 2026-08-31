@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-30T19:48:17+09:00",
+  "title": "Design System: 교수님 피하기",
+  "extensions": {
+    "colorMeta": {
+      "lavender-action": {
+        "role": "primary",
+        "displayName": "작업실 라벤더",
+        "canonical": "#5a5bd8",
+        "tonalRamp": ["#171747", "#292a78", "#3d3ea8", "#5a5bd8", "#7b7ce3", "#a2a3ed", "#cecff7", "#f0f0fd"]
+      },
+      "lavender-action-strong": {
+        "role": "primary",
+        "displayName": "깊은 라벤더",
+        "canonical": "#4b4cc6",
+        "tonalRamp": ["#14143f", "#24256c", "#343599", "#4b4cc6", "#7172d5", "#9a9be4", "#c8c9f2", "#eeeefd"]
+      },
+      "lavender-wash": {
+        "role": "primary",
+        "displayName": "라벤더 워시",
+        "canonical": "#efeffd",
+        "tonalRamp": ["#1f204d", "#393a76", "#58599e", "#7b7cc0", "#a1a2dc", "#c4c5ee", "#dfdff8", "#efeffd"]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "종이 캔버스",
+        "canonical": "#f1f2f8",
+        "tonalRamp": ["#202126", "#3a3b43", "#585961", "#7b7c85", "#a2a3ab", "#c8c9cf", "#e3e4e9", "#f1f2f8"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "깨끗한 표면",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#262626", "#444444", "#666666", "#888888", "#aaaaaa", "#cccccc", "#eeeeee", "#ffffff"]
+      },
+      "surface-soft": {
+        "role": "neutral",
+        "displayName": "부드러운 표면",
+        "canonical": "#f7f8fc",
+        "tonalRamp": ["#222226", "#3d3e43", "#5d5e64", "#808187", "#a6a7ad", "#ccCDD2", "#e8e9ed", "#f7f8fc"]
+      },
+      "surface-muted": {
+        "role": "neutral",
+        "displayName": "구분 표면",
+        "canonical": "#eef0f8",
+        "tonalRamp": ["#202126", "#393a43", "#575861", "#797b85", "#a0a2ab", "#c6c8d0", "#e1e3e9", "#eef0f8"]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "조용한 경계",
+        "canonical": "#e4e7f1",
+        "tonalRamp": ["#1e1f24", "#36383f", "#53555d", "#74767f", "#9b9da6", "#c0c3cb", "#d9dce3", "#e4e7f1"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "단단한 먹색",
+        "canonical": "#1a1f2e",
+        "tonalRamp": ["#10131c", "#1a1f2e", "#313849", "#4e5668", "#72798a", "#9da3b0", "#cbd0d8", "#f3f4f7"]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "본문 회색",
+        "canonical": "#525a6e",
+        "tonalRamp": ["#171a21", "#2a2f3a", "#3d4555", "#525a6e", "#737b8e", "#9ca3b2", "#c9cdd5", "#f1f2f5"]
+      },
+      "ink-muted-aa": {
+        "role": "neutral",
+        "displayName": "AA 보조 회색",
+        "canonical": "#626a7e",
+        "tonalRamp": ["#191c22", "#2e323c", "#464c5a", "#626a7e", "#81899a", "#a7adba", "#d0d3da", "#f3f4f6"]
+      },
+      "danger": {
+        "role": "tertiary",
+        "displayName": "안전 오류 적색",
+        "canonical": "#c43f35",
+        "tonalRamp": ["#3d110e", "#6a1d18", "#982a23", "#c43f35", "#d7665e", "#e59690", "#f2c7c4", "#fbeeed"]
+      },
+      "success": {
+        "role": "secondary",
+        "displayName": "검증 성공 녹색",
+        "canonical": "#247a45",
+        "tonalRamp": ["#0b2816", "#124426", "#1b6036", "#247a45", "#4a9868", "#79b58e", "#b7d7c3", "#edf7f1"]
+      },
+      "warning": {
+        "role": "tertiary",
+        "displayName": "주의 황갈색",
+        "canonical": "#9b6816",
+        "tonalRamp": ["#312006", "#56380a", "#7a500f", "#9b6816", "#ba873f", "#d2a96f", "#ead2ab", "#faf2e3"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "공개 약속", "purpose": "랜딩의 핵심 약속 한 문장에만 사용한다." },
+      "headline": { "displayName": "페이지 제목", "purpose": "페이지와 주요 섹션의 진입점을 표시한다." },
+      "title": { "displayName": "영역 제목", "purpose": "카드·패널·대화상자의 의미 단위 제목에 사용한다." },
+      "body": { "displayName": "한국어 본문", "purpose": "설명과 문서 작업 맥락을 편안하게 읽게 한다." },
+      "label": { "displayName": "실행 라벨", "purpose": "버튼, 탭, 상태와 입력 이름에 사용한다." },
+      "caption": { "displayName": "보조 설명", "purpose": "검증 상태, 비용 기준과 짧은 메타 정보에 사용한다." }
+    },
+    "shadows": [
+      { "name": "ambient-panel", "value": "0 18px 44px rgba(78,84,148,.1)", "purpose": "큰 작업 표면과 떠 있는 모달을 조용히 분리한다." },
+      { "name": "product-frame-offset", "value": "8px 10px 0 rgba(23,26,43,.9)", "purpose": "공개 랜딩의 실제 제품 예시 프레임에만 사용한다." },
+      { "name": "focus-halo", "value": "0 0 0 3px rgba(90,91,216,.22)", "purpose": "키보드 포커스를 상태색과 함께 명확히 표시한다." }
+    ],
+    "motion": [
+      { "name": "state-fast", "value": "150ms ease", "purpose": "버튼과 탭의 hover·active 변화." },
+      { "name": "scene-standard", "value": "450ms ease", "purpose": "화면 안에 보이는 랜딩 데모 장면 전환." },
+      { "name": "reduced-motion", "value": "none", "purpose": "prefers-reduced-motion에서는 비필수 전환을 제거한다." }
+    ],
+    "breakpoints": [
+      { "name": "compact-mobile", "value": "560px" },
+      { "name": "single-column", "value": "760px" },
+      { "name": "app-collapse", "value": "960px" },
+      { "name": "wide-container", "value": "1180px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "작업 실행과 결제처럼 확정적인 다음 행동에 사용한다.",
+      "html": "<button class=\"ds-btn-primary\">휴머나이징 시작</button>",
+      "css": ".ds-btn-primary{min-height:44px;padding:0 16px;border:0;border-radius:10px;background:var(--brand,#5a5bd8);color:#fff;font:700 13px Pretendard,system-ui,sans-serif;cursor:pointer;transition:background .15s ease,transform .15s ease}.ds-btn-primary:hover{background:var(--brand-strong,#4b4cc6)}.ds-btn-primary:active{transform:translateY(1px)}.ds-btn-primary:focus-visible{outline:3px solid var(--brand,#5a5bd8);outline-offset:3px}"
+    },
+    {
+      "name": "Ink CTA",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "공개 랜딩의 최상위 행동에 쓰는 먹색 버튼이다.",
+      "html": "<button class=\"ds-btn-ink\">무료 10크레딧으로 시작하기</button>",
+      "css": ".ds-btn-ink{min-height:44px;padding:0 20px;border:0;border-radius:10px;background:#1a1f2e;color:#fff;font:700 14px Pretendard,system-ui,sans-serif;cursor:pointer;transition:background .15s ease,transform .15s ease}.ds-btn-ink:hover{background:#262b45;transform:translateY(-1px)}.ds-btn-ink:focus-visible{outline:3px solid #5a5bd8;outline-offset:3px}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "취소, 둘러보기, 로그인처럼 보조 행동에 사용한다.",
+      "html": "<button class=\"ds-btn-ghost\">먼저 둘러보기</button>",
+      "css": ".ds-btn-ghost{min-height:44px;padding:0 16px;border:1px solid #e4e7f1;border-radius:10px;background:#fff;color:#1a1f2e;font:700 13px Pretendard,system-ui,sans-serif;cursor:pointer;transition:border-color .15s ease,background .15s ease}.ds-btn-ghost:hover{border-color:#b9bde4;background:#fbfbff}.ds-btn-ghost:focus-visible{outline:3px solid #5a5bd8;outline-offset:3px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "검색, 쿠폰, 짧은 메모에 사용하는 기본 입력 필드다.",
+      "html": "<label class=\"ds-field\"><span>쿠폰 코드</span><input placeholder=\"쿠폰 코드를 입력하세요\"></label>",
+      "css": ".ds-field{display:grid;gap:7px;color:#525a6e;font:700 13px Pretendard,system-ui,sans-serif}.ds-field input{min-height:44px;padding:0 13px;border:1px solid #e4e7f1;border-radius:10px;background:#fff;color:#1a1f2e;font:500 14px Pretendard,system-ui,sans-serif;outline:0}.ds-field input::placeholder{color:#626a7e}.ds-field input:focus-visible{border-color:#5a5bd8;box-shadow:0 0 0 3px rgba(90,91,216,.22)}"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": null,
+      "description": "검증된 완료 상태처럼 짧고 명확한 상태에 사용한다.",
+      "html": "<span class=\"ds-chip-success\">휴머나이징 완료</span>",
+      "css": ".ds-chip-success{display:inline-flex;align-items:center;min-height:28px;padding:4px 10px;border-radius:999px;background:#e7f7ee;color:#247a45;font:800 12px Pretendard,system-ui,sans-serif}"
+    },
+    {
+      "name": "Work Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "입력, 결과, 설정처럼 한 작업 단위를 담는 흰 표면이다.",
+      "html": "<section class=\"ds-card\"><h3>원문을 붙여넣어 보세요</h3><p>뜻과 수치, 장르를 지키며 자연스럽게 다듬어요.</p></section>",
+      "css": ".ds-card{padding:24px;border:1px solid #e4e7f1;border-radius:14px;background:#fff;color:#1a1f2e;font-family:Pretendard,system-ui,sans-serif}.ds-card h3{margin:0 0 8px;font-size:18px;line-height:1.35}.ds-card p{margin:0;color:#525a6e;font-size:14px;line-height:1.65}"
+    },
+    {
+      "name": "Route Navigation",
+      "kind": "nav",
+      "refersTo": null,
+      "description": "현재 위치를 색과 의미 속성으로 함께 보여 주는 앱 내비게이션이다.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"주요 메뉴\"><a href=\"#\">AI 감지</a><a class=\"is-current\" aria-current=\"page\" href=\"#\">공지사항</a></nav>",
+      "css": ".ds-nav{display:grid;gap:6px;width:220px;font:700 14px Pretendard,system-ui,sans-serif}.ds-nav a{min-height:44px;display:flex;align-items:center;padding:0 14px;border-radius:10px;color:#525a6e;text-decoration:none}.ds-nav a:hover{background:#f7f8fc;color:#1a1f2e}.ds-nav a.is-current{background:#efeffd;color:#4b4cc6}.ds-nav a:focus-visible{outline:3px solid #5a5bd8;outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "라벤더 작업실",
+    "overview": "교수님 피하기는 차갑고 불투명한 AI 도구가 아니라, 사용자가 원문을 놓고 안심하며 작업하는 밝은 한국어 편집 작업실처럼 보여야 한다. 흰 종이 같은 표면, 옅은 라벤더 캔버스, 단단한 먹색 텍스트를 기본으로 두고 보라는 선택·진행·완료 상태에만 집중해서 사용한다. 화면은 정보가 많은 서비스 특성을 숨기지 않되 한 번에 필요한 행동을 우선한다. 공개 랜딩은 여백과 큰 제목으로 자신감을 만들고, 앱은 조밀한 작업 도구로 전환한다.",
+    "keyCharacteristics": [
+      "밝은 라벤더 캔버스와 흰 작업 표면",
+      "굵고 직접적인 한국어 제목, 차분한 본문",
+      "44px 이상의 실행 컨트롤과 명확한 포커스 링",
+      "카드 남발 대신 작업 단계와 실제 문서가 중심인 구성",
+      "모바일은 숨김이 아니라 우선순위 재배치"
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "한 화면의 경쟁하는 행동을 모두 보라색으로 만들지 않는다. 보라는 현재 선택 또는 가장 중요한 다음 행동 한 축에만 집중한다.", "section": "colors" },
+      { "name": "The Verified State Rule", "body": "성공·경고·오류 색은 실제 상태를 전달할 때만 사용하고, 장식이나 마케팅 강조색으로 재사용하지 않는다.", "section": "colors" },
+      { "name": "The Korean Line Rule", "body": "의미 단위가 짧은 제목과 버튼은 조사 앞에서 어색하게 끊기지 않게 하고, 긴 본문은 강제 한 줄 고정 대신 자연스럽게 줄바꿈한다.", "section": "typography" },
+      { "name": "The Container Rule", "body": "고정 너비 자식이 부모를 밀어내지 않도록 Grid와 Flex 자식에는 필요할 때 min-width: 0을 명시한다.", "section": "layout" },
+      { "name": "The Flat-by-Default Rule", "body": "정보 카드마다 그림자를 넣지 않는다. 경계선과 표면색으로 충분하지 않을 때만 깊이를 추가한다.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do 44px 최소 터치 크기와 보이는 :focus-visible 상태를 유지한다.",
+      "Do 보조문자도 흰색과 라벤더 표면에서 WCAG AA 대비를 확인한다.",
+      "Do 320·375·768·1440px에서 문서 가로 넘침과 깨진 이미지를 회귀 테스트한다.",
+      "Do 자산 로딩 실패·느린 네트워크·외부 폰트 차단에도 핵심 입력과 재시도 경로를 남긴다.",
+      "Do 레이아웃 크기를 바꾸는 애니메이션보다 transform과 opacity를 사용하고, 화면 밖이나 비활성 탭에서는 멈춘다."
+    ],
+    "donts": [
+      "Don't 카드마다 다른 반경·그림자·버튼 규격을 만들지 않는다.",
+      "Don't placeholder만으로 입력의 이름을 대신하지 않는다.",
+      "Don't 모바일에서 중요한 기능을 삭제하거나 같은 충전 버튼을 여러 곳에 중복 노출하지 않는다.",
+      "Don't 검증되지 않은 숫자나 상태를 신뢰 지표처럼 노출하지 않는다.",
+      "Don't 실험·관리자·글쓰기 랩 자산을 일반 사용자의 첫 화면에 미리 로드하지 않는다."
+    ]
+  }
+}
