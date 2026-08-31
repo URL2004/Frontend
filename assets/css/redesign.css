@@ -9358,6 +9358,9 @@ a.snav-btn{display:flex;}
 .lav-sel-card .lav-sel-list li{padding-left:20px;font-size:12.8px;line-height:1.45;color:#555d70;}
 .lav-sel-card .lav-sel-list li::before{top:2px;width:14px;height:14px;}
 .lav-sel-cost{margin-top:auto;padding:6px 9px;font-size:12.5px;border-radius:8px;}
+.lav-sel-gap{display:block;margin-top:7px;font-size:11.8px;font-weight:800;line-height:1.4;color:#7c8394;letter-spacing:-.01em;font-variant-numeric:tabular-nums;}
+.lav-sel-gap.is-even{color:#4749c9;}
+.lav-sel-gap[hidden]{display:none!important;}
 .lav-tone-variance,
 #mainContent[data-main-design="lavender"] .lav-tone-variance{
  margin:0 0 9px;padding:10px 12px;border:0;border-radius:9px;background:#f6f6fa;
