@@ -10,6 +10,7 @@ const configSource = await readFile(new URL('../assets/js/config.js', import.met
 const maintenanceSource = await readFile(new URL('../assets/js/maintenance.js', import.meta.url), 'utf8');
 const buildSource = await readFile(new URL('../scripts/build-vite-static.mjs', import.meta.url), 'utf8');
 const envExampleSource = await readFile(new URL('../.env.example', import.meta.url), 'utf8');
+const vercelIgnoreSource = await readFile(new URL('../.vercelignore', import.meta.url), 'utf8');
 const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 
 test('Vercel OIDC 마스킹 값은 공개 런타임 설정에서 무시한다', () => {
@@ -66,6 +67,7 @@ test('점검 미리보기 키는 공개 런타임 설정으로 직렬화하지 �
   assert.doesNotMatch(buildSource, /MAINTENANCE_PREVIEW_KEY:\s*\$\{/u);
   assert.doesNotMatch(configSource, /MAINTENANCE_PREVIEW_KEY:/u);
   assert.doesNotMatch(envExampleSource, /^VITE_MAINTENANCE_PREVIEW_KEY=/mu);
+  assert.doesNotMatch(vercelIgnoreSource, /^\.env\.example$/mu, 'Vercel 빌드 테스트에 공개 환경변수 예시가 필요하다');
 
   const result = spawnSync(process.execPath, ['scripts/build-vite-static.mjs'], {
     cwd: projectRoot,
