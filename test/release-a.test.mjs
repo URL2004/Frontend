@@ -220,6 +220,9 @@ test('모드 추천을 열고 3택 카드 문구는 엔진이 실제로 하는 �
   assert.ok(main.indexOf('id="lavCostFormalGap"') < main.indexOf('id="lavCostFormal"'), '차액 안내는 가격 박스 바로 위에 둔다');
   assert.match(evasion, /gapEl\.textContent = gap <= 0/u);
   assert.match(evasion, /'기본과 같은 값'/u);
+  // 짧은 글에서는 차액이 5~10배라 노출 자체가 역효과다 — 좁혀졌을 때만 보여준다
+  assert.match(evasion, /ADVANCED_GAP_HINT_MAX_CREDITS = 80/u);
+  assert.match(evasion, /gapEl\.hidden = !len \|\| gap > ADVANCED_GAP_HINT_MAX_CREDITS/u);
   assert.match(css, /\.lav-sel-gap\{[^}]*margin-top:auto[^}]*margin-bottom:5px/u);
   assert.match(css, /\.lav-sel-gap \+ \.lav-sel-cost\{margin-top:0;\}/u);
   assert.match(evasion, /window\.lavSelectTone = function/u);

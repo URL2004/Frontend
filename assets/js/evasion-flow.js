@@ -278,6 +278,10 @@
   // 그 구간은 기본 대비 4~5배 가격이라 배지와 금액이 서로 싸운다. 고급 정액과 기본 종량의 차액이
   // 80크레딧 이하로 좁혀지는 6,000자부터만 배지를 띄워, 뜰 때마다 근거가 서게 한다.
   var ADVANCED_RECOMMEND_MIN_CHARS = 6000;
+  // 고급 카드의 '기본 대비 차액' 노출 상한. 짧은 글에서는 고급이 기본의 5~10배라
+  // 차액을 적어 두면 구매를 막는 문구가 된다(600자면 +188). 두 카드에 각자 금액이
+  // 이미 찍히므로, 차액은 실제로 좁혀졌을 때(6,000자·1만 6천자처럼 구간 상한 부근)만 보여준다.
+  var ADVANCED_GAP_HINT_MAX_CREDITS = 80;
 
   function advancedRecommendationLengthMet() {
     var src = $('lavInput');
@@ -496,7 +500,7 @@
     var gapEl = $('lavCostFormalGap');
     if (gapEl) {
       var gap = formalCredit(len, evOn) - shortHumanizeCredit(len);
-      gapEl.hidden = !len;
+      gapEl.hidden = !len || gap > ADVANCED_GAP_HINT_MAX_CREDITS;
       gapEl.classList.toggle('is-even', gap <= 0);
       gapEl.textContent = gap <= 0
         ? '기본과 같은 값'
