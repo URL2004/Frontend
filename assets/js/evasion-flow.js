@@ -274,6 +274,16 @@
   // 고신뢰 과제·논문 판정과 복잡한 구조를 함께 확인한 글에만 고급을 추천한다.
   // 추천 배지는 선택을 대신하지 않으며 사용자가 카드를 눌러야 실제 모드가 정해진다.
   var MODE_RECOMMENDATION_ENABLED = true;
+  // 고급 추천 길이 하한. 서버 판정(advancedRouting)은 공백 제외 1,500자부터 고급을 추천하지만,
+  // 그 구간은 기본 대비 4~5배 가격이라 배지와 금액이 서로 싸운다. 고급 정액과 기본 종량의 차액이
+  // 80크레딧 이하로 좁혀지는 6,000자부터만 배지를 띄워, 뜰 때마다 근거가 서게 한다.
+  var ADVANCED_RECOMMEND_MIN_CHARS = 6000;
+
+  function advancedRecommendationLengthMet() {
+    var src = $('lavInput');
+    var text = src && src.value ? src.value : '';
+    return text.replace(/\s/gu, '').length >= ADVANCED_RECOMMEND_MIN_CHARS;
+  }
   var lavMemoOverride = '';   // 차단 화면 인라인 메모(재도전 시 1회 사용) — 사전 메모 아코디언 제거(2026-08-28) 후 유일한 사전 메모 경로
 
   function advancedUnavailable(d) {
@@ -334,7 +344,9 @@
 
   function isRecommendedMode(mode) {
     if (!MODE_RECOMMENDATION_ENABLED || mode === 'polish') return false;
-    var formal = !advancedUnavailable(lastDiag) && !!(lastDiag && lastDiag.recommendedMode === 'formal');
+    var formal = !advancedUnavailable(lastDiag)
+      && advancedRecommendationLengthMet()
+      && !!(lastDiag && lastDiag.recommendedMode === 'formal');
     return mode === (formal ? 'formal' : 'blog');
   }
 
@@ -431,6 +443,7 @@
     var unfit = advancedUnavailable(lastDiag);
     var recommendAdvanced = MODE_RECOMMENDATION_ENABLED
       && !unfit
+      && advancedRecommendationLengthMet()
       && !!(lastDiag && lastDiag.recommendedMode === 'formal');
     var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
     var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');

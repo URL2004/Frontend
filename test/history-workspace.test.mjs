@@ -96,9 +96,9 @@ test('다듬기·기본·고급 카드는 글 예시와 서버 추천 배지를 
     read('pages/main.html'),
     read('assets/js/evasion-flow.js')
   ]);
-  assert.match(main, /lav-sel-examples[^>]*><small>글 예시<\/small><b>제출 전 과제 · 자기소개서 · 교정이 필요한 초안<\/b>/u);
-  assert.match(main, /주간 과제 · 짧은 리포트 · 블로그 · 후기/u);
-  assert.match(main, /기말 리포트 · 졸업 논문 · 인용 많은 과제/u);
+  assert.match(main, /lav-sel-examples[^>]*><small>글 예시<\/small><b>내가 직접 쓴 글 · 맞춤법만 고칠 원고<\/b>/u);
+  assert.match(main, /짧은 과제 · 블로그 · 후기 · SNS/u);
+  assert.match(main, /긴 과제 · 기말 리포트 · 수치·인용 들어간 글/u);
   assert.match(evasion, /MODE_RECOMMENDATION_ENABLED = true/u);
 });
 

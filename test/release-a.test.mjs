@@ -214,8 +214,8 @@ test('모드 추천을 열고 3택 카드 문구는 엔진이 실제로 하는 �
   assert.equal((main.match(/class="lav-sel-list"/gu) || []).length, 3);
   assert.match(main, /문장 재작성 없음[\s\S]*문단 순서가 바뀌지 않아요[\s\S]*길이와 상관없이 항상 전 문서 검증/u);
   assert.doesNotMatch(main, /문단 구조까지 다시 설계|전체 흐름 재구성/u);
-  assert.match(main, /주간 과제 · 짧은 리포트/u);
-  assert.match(main, /기말 리포트 · 졸업 논문 · 인용 많은 과제/u);
+  assert.match(main, /짧은 과제 · 블로그/u);
+  assert.match(main, /긴 과제 · 기말 리포트 · 수치·인용 들어간 글/u);
   assert.match(main, /id="lavCostFormalGap"/u);
   assert.ok(main.indexOf('id="lavCostFormalGap"') < main.indexOf('id="lavCostFormal"'), '차액 안내는 가격 박스 바로 위에 둔다');
   assert.match(evasion, /gapEl\.textContent = gap <= 0/u);
@@ -226,6 +226,12 @@ test('모드 추천을 열고 3택 카드 문구는 엔진이 실제로 하는 �
   assert.doesNotMatch(main, /lavPersonalBlock|lavAutoCoach|lavCoachPicks|data-flow="reduce"/u);
   assert.match(evasion, /function advancedUnavailable\(d\)/u);
   assert.match(evasion, /MODE_RECOMMENDATION_ENABLED = true/u);
+  // 서버는 공백 제외 1,500자부터 고급을 추천하지만 그 구간은 기본 대비 4~5배다.
+  // 차액이 80크레딧 이하로 좁혀지는 6,000자부터만 배지를 노출한다.
+  assert.match(evasion, /ADVANCED_RECOMMEND_MIN_CHARS = 6000/u);
+  assert.match(evasion, /text\.replace\(\/\\s\/gu, ''\)\.length >= ADVANCED_RECOMMEND_MIN_CHARS/u);
+  assert.match(evasion, /&& advancedRecommendationLengthMet\(\)/u);
+  assert.match(evasion, /function isRecommendedMode[\s\S]*advancedRecommendationLengthMet\(\)/u);
   assert.match(evasion, /basicRecommended\.hidden = !MODE_RECOMMENDATION_ENABLED \|\| recommendAdvanced/u);
   assert.match(evasion, /formalRecommended\.hidden = !MODE_RECOMMENDATION_ENABLED \|\| !recommendAdvanced \|\| unfit/u);
   assert.match(evasion, /recommendation_exposed: MODE_RECOMMENDATION_ENABLED/u);
