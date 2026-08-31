@@ -9210,7 +9210,8 @@ a.snav-btn{display:flex;}
 .lav-sel-card .lav-sel-list li::before{top:2px;width:14px;height:14px;}
 .lav-sel-cost{margin-top:auto;padding:6px 9px;font-size:12.5px;border-radius:8px;}
 /* 고급 카드 전용 — 기본 대비 차액. 정액제라 1만·2만·3만자 상한에서 기본과 같아진다 */
-.lav-sel-gap{display:block;margin-top:7px;font-size:11.8px;font-weight:800;line-height:1.4;color:#7c8394;letter-spacing:-.01em;font-variant-numeric:tabular-nums;}
+.lav-sel-gap{display:block;margin-top:auto;margin-bottom:5px;font-size:11.8px;font-weight:800;line-height:1.4;color:#7c8394;letter-spacing:-.01em;font-variant-numeric:tabular-nums;}
+.lav-sel-gap + .lav-sel-cost{margin-top:0;}   /* 바닥 정렬은 차액 줄이 맡는다 — auto 마진이 둘로 갈라지지 않게 */
 .lav-sel-gap.is-even{color:#4749c9;}
 .lav-sel-gap[hidden]{display:none!important;}   /* display:block이 [hidden]을 덮는 반복 사고 가드 */
 .lav-tone-variance,
