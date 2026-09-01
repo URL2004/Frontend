@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('신규 계정 무료 지급량은 25크레딧으로 일관되고 체험 세그먼트도 같은 기준을 쓴다', async () => {
+test('신규 계정 무료 지급량은 20크레딧으로 일관되고 체험 세그먼트도 같은 기준을 쓴다', async () => {
   const [main, landing, login, guide, faq, flow, evasion, module_, terms] = await Promise.all([
     read('pages/main.html'),
     read('pages/landing.html'),
@@ -17,13 +17,17 @@ test('신규 계정 무료 지급량은 25크레딧으로 일관되고 체험 �
     read('assets/js/app-main.js')
   ]);
   const publicClaims = [main, landing, login, guide, faq, module_, terms].join('\n');
-  assert.match(publicClaims, /가입 시 25크레딧|회원가입하면 25크레딧/u);
+  assert.match(publicClaims, /가입 시 20크레딧|회원가입하면 20크레딧/u);
   assert.doesNotMatch(publicClaims, /(?:가입|회원가입|신규 가입)[^\n]{0,30}10크레딧|무료 10크레딧/u);
-  assert.match(flow, /var SIGNUP_GRANT_CREDITS = 25/u);
+  assert.match(flow, /var SIGNUP_GRANT_CREDITS = 20/u);
   assert.match(flow, /balance === SIGNUP_GRANT_CREDITS/u);
   assert.match(flow, /balance < SIGNUP_GRANT_CREDITS/u);
-  assert.match(evasion, /var SIGNUP_GRANT_CREDITS = 25/u);
-  assert.match(module_, /loggedIn \? balance : 25/u);
+  assert.match(evasion, /var SIGNUP_GRANT_CREDITS = 20/u);
+  assert.match(module_, /loggedIn \? balance : 20/u);
+  assert.match(publicClaims, /600자/u);
+  assert.match(publicClaims, /2,000자 AI 감지/u);
+  assert.match(publicClaims, /1,000자 기본 휴머나이징/u);
+  assert.doesNotMatch(publicClaims, /800자 글의 AI 감지와 기본 휴머나이징|2,500자 AI 감지|1,200자 기본 휴머나이징/u);
 });
 
 test('고급 휴머나이징 화면 계산은 3,000자 구간과 근거 보강 차등 가격을 고정한다', async () => {

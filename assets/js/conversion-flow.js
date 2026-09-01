@@ -7,7 +7,7 @@
   var CREDIT_EVENT_STARTS_AT_MS = Date.parse('2026-08-29T00:00:00+09:00');
   var CREDIT_EVENT_ENDS_AT_MS = Date.parse('2026-10-01T00:00:00+09:00');
   var CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v2-202609';
-  var SIGNUP_GRANT_CREDITS = 25;
+  var SIGNUP_GRANT_CREDITS = 20;
   // 지급량 소스 오브 트루스는 Backend/lib/conversionOffers.js의 CREDIT_PRODUCTS다.
   // 여기·pricing.html·landing.html 표기가 어긋나면 claims-consistency 테스트가 깨진다.
   // 상품 보너스는 상시 지급하고, 2026-09-30 결제 요청분에는 기준 크레딧의 5%를 추가 지급한다.
@@ -707,7 +707,7 @@
       panel.hidden = false;
       panel.dataset.action = 'activate';
       if (title) title.textContent = '무료 체험 1회가 아직 남아 있어요';
-      if (desc) desc.textContent = '25크레딧으로 800자 AI 감지 후 기본 휴머나이징까지 한 흐름으로 체험해 보세요.';
+      if (desc) desc.textContent = '20크레딧으로 600자 AI 감지 후 기본 휴머나이징까지 한 흐름으로 체험해 보세요.';
       if (button) button.textContent = '무료로 먼저 사용하기';
       viewEvent = 'activation_prompt_view';
     } else if (context.segment === 'trial_engaged') {
@@ -847,8 +847,8 @@
     if (context.segment === 'trial_unused') {
       return {
         badge: '무료 체험',
-        title: '무료 25크레딧이 그대로 있어요',
-        desc: '800자 글을 감지하고 기본 휴머나이징까지 이어도 1크레딧이 남아요.',
+        title: '무료 20크레딧이 그대로 있어요',
+        desc: '600자 글을 감지하고 기본 휴머나이징까지 이어도 2크레딧이 남아요.',
         cta: '지금 글 붙여넣기',
         action: 'focus',
         event: 'activation_prompt'
@@ -899,8 +899,8 @@
   function loggedOutHeroCopy() {
     return {
       badge: '무료 체험',
-      title: '가입하면 25크레딧을 무료로 드려요',
-      desc: '800자 글의 AI 감지부터 기본 휴머나이징까지 한 번에 해볼 수 있어요.',
+      title: '가입하면 20크레딧을 무료로 드려요',
+      desc: '600자 글의 AI 감지부터 기본 휴머나이징까지 한 번에 해볼 수 있어요.',
       cta: '무료로 시작하기',
       action: 'signup',
       event: 'signup_prompt'

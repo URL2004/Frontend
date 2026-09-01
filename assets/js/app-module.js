@@ -413,7 +413,7 @@ function updateCreditUI() {
  const loggedIn = !!window.CU;
  const balance = Math.max(0, Number(window.UC) || 0);
  const balanceText = !loggedIn
-  ? '가입 시 25크레딧'
+  ? '가입 시 20크레딧'
   : p === 'unlimited'
    ? '크레딧 무제한'
    : '크레딧 ' + balance + (plans[p] ? ' · ' + plans[p] : '');
@@ -426,7 +426,7 @@ function updateCreditUI() {
   const planCredits = Math.max(0, Number(node.dataset.planCredits) || 0);
   const kind = node.dataset.creditWorkCount;
   const available = kind === 'current'
-   ? (loggedIn ? balance : 25)
+   ? (loggedIn ? balance : 20)
    : planCredits;
   node.textContent = Math.floor(available / cost).toLocaleString('ko-KR') + '회' + (kind === 'additional' ? ' 추가' : '');
  });
@@ -6122,7 +6122,7 @@ function adminSignupBalanceRows(cohort) {
  const total = Math.max(0, adminNumber(cohort.accounts));
  const rows = [
   ['0', buckets.zero], ['1', buckets.one], ['2–5', buckets.two_to_five],
-  ['6–10', buckets.six_to_ten], ['11–24', buckets.eleven_to_twenty_four], ['25', buckets.full]
+  ['6–10', buckets.six_to_ten], ['11–19', buckets.eleven_to_nineteen], ['20', buckets.full]
  ];
  return rows.map(([label, raw]) => {
   const count = Math.max(0, adminNumber(raw));
@@ -6159,7 +6159,7 @@ window.adminRenderSignupCreditSummary = function() {
  const firstUse = cohort.firstUse || {};
  const low = cohort.remainingAtOrBelowOne || {};
  const exhausted = cohort.exhausted || {};
- const journey = cohort.detectHumanize24 || {};
+ const journey = cohort.detectHumanize18 || {};
  const spend = cohort.spend || {};
  const quota = cohort.principalQuota || {};
  const soft = quota.soft || {};
@@ -6184,7 +6184,7 @@ window.adminRenderSignupCreditSummary = function() {
   <dl class="gp-admin-signup-kpis">
     <div><dt>신규 계정</dt><dd>${accounts.toLocaleString('ko-KR')}명</dd><dd class="gp-admin-signup-meta">가입 지급 이벤트 기준</dd></div>
     <div><dt>첫 사용</dt><dd>${adminSignupRate(anyUse.accounts, accounts)}</dd><dd class="gp-admin-signup-meta">${adminNumber(anyUse.accounts).toLocaleString('ko-KR')}명 · 중앙 ${adminSignupMinutes(firstUse.medianMinutes)}</dd></div>
-    <div><dt>감지→기본 완주</dt><dd>${adminSignupRate(journey.accounts, accounts)}</dd><dd class="gp-admin-signup-meta">24크레딧 여정 ${adminNumber(journey.accounts).toLocaleString('ko-KR')}명</dd></div>
+    <div><dt>감지→기본 완주</dt><dd>${adminSignupRate(journey.accounts, accounts)}</dd><dd class="gp-admin-signup-meta">18크레딧 여정 ${adminNumber(journey.accounts).toLocaleString('ko-KR')}명</dd></div>
     <div><dt>1크레딧 이하</dt><dd>${adminSignupRate(low.accounts, accounts)}</dd><dd class="gp-admin-signup-meta">완전 소진 ${adminNumber(exhausted.accounts).toLocaleString('ko-KR')}명</dd></div>
     <div><dt>첫 사용 p90</dt><dd>${adminSignupMinutes(firstUse.p90Minutes)}</dd><dd class="gp-admin-signup-meta">관측 ${adminNumber(firstUse.observedAccounts).toLocaleString('ko-KR')}명</dd></div>
   </dl>

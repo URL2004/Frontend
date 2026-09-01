@@ -133,7 +133,7 @@ test('개요는 신규 계정 무료 크레딧 소진과 접속 지문 임계값
   assert.match(html, /id="adminSignupCreditStatus"[^>]+role="status"[^>]+aria-live="polite"/u);
   assert.match(html, /id="adminSignupCreditSummary"[^>]+role="region"[^>]+aria-labelledby="adminSignupCreditTitle"[^>]+aria-busy="true"/u);
   assert.match(html, /id="adminSignupCreditWindow"[\s\S]*value="24"[\s\S]*value="168" selected/u);
-  assert.match(html, /가입 지급분 25크레딧/u);
+  assert.match(html, /가입 지급분 20크레딧/u);
   assert.match(html, /접속 지문별 계정 생성/u);
   assert.doesNotMatch(html, /기기 지문/u);
   assert.match(source, /overview: \[[^\]]*window\.loadAdminSignupCreditSummary/u);
@@ -144,7 +144,7 @@ test('개요는 신규 계정 무료 크레딧 소진과 접속 지문 임계값
   assert.match(source, /data\.status === 'empty'/u);
   assert.match(source, /accounts === 0 && data\.status !== 'truncated'/u);
   assert.match(source, /root\.dataset\.loadState = 'error'/u);
-  assert.match(source, /detectHumanize24/u);
+  assert.match(source, /detectHumanize18/u);
   assert.match(source, /remainingAtOrBelowOne/u);
   assert.match(source, /maxAccountsPerPrincipal/u);
   assert.match(source, /adminSignupCreditAnnounce/u);

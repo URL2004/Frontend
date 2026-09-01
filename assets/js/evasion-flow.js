@@ -1,7 +1,7 @@
 ﻿/* 회피 모드 워크스페이스 — P0 정적 목업 (더미 데이터, 백엔드 미연결) */
 (function () {
   function $(id) { return document.getElementById(id); }
-  var SIGNUP_GRANT_CREDITS = 25;
+  var SIGNUP_GRANT_CREDITS = 20;
   var SHORT_HUMANIZE_MIN_CREDITS = 10;
   function shortHumanizeCredit(len) {
     return Math.max(SHORT_HUMANIZE_MIN_CREDITS, Math.ceil((Number(len) || 0) / 100) * 2);
