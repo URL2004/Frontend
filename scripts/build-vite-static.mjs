@@ -41,6 +41,7 @@ const staticEntries = [
   'blog',        // 정적 콘텐츠(허브+기사) — 빌드 시작 시 리포 루트에 생성돼 dev(vite)도 같은 파일을 서빙
   'templates',   // 입력 템플릿 파일럿 — 위와 동일(.gitignore 대상, 산출물)
   'google9fc9828aad4d4ecc.html',
+  'naver28bee0639622a46f4cf5237f73b489ac.html',
   'CNAME',
   'vercel.json'
 ];
