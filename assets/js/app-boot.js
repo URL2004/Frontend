@@ -117,6 +117,9 @@
       if (/^\/writing-lab(?:\/|$)/.test(window.location.pathname)) {
         await loadStyle('/assets/css/writing-lab.css', 'gpWritingLabCss');
       }
+      // 가입·결제 콜백보다 전환 추적을 먼저 준비한다. 외부 SDK는 각 추적기가
+      // 비동기로 불러오므로 앱 부팅을 막지 않는다.
+      await loadScript('/assets/js/head-tracking.js');
       await loadScript('/assets/js/vendor-init.js');
       await loadScript('/assets/js/api.js');
       await loadScript('/assets/js/session-security.js');

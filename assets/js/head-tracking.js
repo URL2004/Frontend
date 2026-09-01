@@ -5,6 +5,8 @@
  var naverCommonKey = String(config.NAVER_COMMON_KEY || '').trim();
  var naverCookieDomain = String(config.NAVER_COOKIE_DOMAIN || '').trim();
  var naverTrackingInitialized = false;
+ var naverPendingConversions = [];
+ var NAVER_PENDING_LIMIT = 50;
  var lastPageViewKey = '';
 
  function scheduleNonCritical(task, delay) {
@@ -70,7 +72,37 @@
   if (typeof window.wcs.inflow === 'function') window.wcs.inflow(naverCookieDomain);
   window.wcs_do();
   naverTrackingInitialized = true;
+  flushNaverConversions();
   return true;
+ }
+
+ function naverConversionKey(conversion) {
+  if (!conversion || !conversion.type) return '';
+  return conversion.id ? conversion.type + '|' + conversion.id : '';
+ }
+
+ function queueNaverConversion(conversion) {
+  var key = naverConversionKey(conversion);
+  if (key && naverPendingConversions.some(function (pending) { return naverConversionKey(pending) === key; })) return;
+  naverPendingConversions.push(conversion);
+  if (naverPendingConversions.length > NAVER_PENDING_LIMIT) naverPendingConversions.shift();
+ }
+
+ function flushNaverConversions() {
+  if (!naverTrackingInitialized && !initNaverTracking()) return 0;
+  if (!window.wcs || typeof window.wcs.trans !== 'function') return 0;
+  var sent = 0;
+  while (naverPendingConversions.length) {
+   var conversion = naverPendingConversions[0];
+   try {
+    window.wcs.trans(conversion);
+    naverPendingConversions.shift();
+    sent += 1;
+   } catch (_) {
+    break;
+   }
+  }
+  return sent;
  }
 
  function naverEventType(eventName) {
@@ -86,19 +118,45 @@
  function trackNaverEvent(eventName, payload) {
   payload = payload || {};
   var type = naverEventType(eventName);
-  if (!type || !initNaverTracking() || typeof window.wcs.trans !== 'function') return false;
+  if (!type) return false;
   var conversion = { type: type };
   if (payload.transaction_id) conversion.id = clean(payload.transaction_id, 150);
   if (type === 'purchase') {
    conversion.value = String(Math.max(0, Number(payload.value) || 0));
    conversion.currency = clean(payload.currency || 'KRW', 10).toUpperCase();
+   if (Array.isArray(payload.items)) {
+    conversion.items = payload.items.slice(0, 20).map(function (item) {
+     var quantity = Math.max(1, Number(item && item.quantity) || 1);
+     var itemPrice = Math.max(0, Number(item && (item.price || item.item_price)) || 0);
+     return {
+      id: clean(item && (item.item_id || item.id), 100),
+      name: clean(item && (item.item_name || item.name), 150).replace(/["']/g, ''),
+      quantity: quantity,
+      payAmount: itemPrice * quantity
+     };
+    }).filter(function (item) { return !!item.id; });
+    if (!conversion.items.length) delete conversion.items;
+   }
   }
-  window.wcs.trans(conversion);
+  if (!initNaverTracking() || !window.wcs || typeof window.wcs.trans !== 'function') {
+   queueNaverConversion(conversion);
+   if (typeof window.gpEnsureNaverTracking === 'function') window.gpEnsureNaverTracking();
+   return true;
+  }
+  try {
+   window.wcs.trans(conversion);
+  } catch (_) {
+   queueNaverConversion(conversion);
+   if (typeof window.gpEnsureNaverTracking === 'function') window.gpEnsureNaverTracking();
+  }
   return true;
  }
 
  window.gpNaverInitialize = initNaverTracking;
  window.gpNaverTrack = trackNaverEvent;
+ window.gpNaverTrackingStatus = function () {
+  return { initialized: naverTrackingInitialized, pending: naverPendingConversions.length };
+ };
 
  function metaEventId(eventName, preferred) {
   var supplied = clean(preferred, 180);

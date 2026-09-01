@@ -36,19 +36,31 @@ window.gpLoadTossPayments = function () {
  return tossPaymentsPromise;
 };
 
+var naverTrackingPromise = null;
 function loadNaverTracking() {
  if (window.wcs && typeof window.wcs_do === 'function') {
   if (window.gpNaverInitialize) window.gpNaverInitialize();
-  return;
+  return Promise.resolve(true);
  }
- var script = document.createElement('script');
- script.src = 'https://wcs.naver.net/wcslog.js';
- script.async = true;
- script.onload = function () {
-  if (window.gpNaverInitialize) window.gpNaverInitialize();
- };
- document.head.appendChild(script);
+ if (naverTrackingPromise) return naverTrackingPromise;
+ naverTrackingPromise = new Promise(function (resolve) {
+  var script = document.createElement('script');
+  script.src = 'https://wcs.naver.net/wcslog.js';
+  script.async = true;
+  script.onload = function () {
+   if (window.gpNaverInitialize) window.gpNaverInitialize();
+   resolve(true);
+  };
+  script.onerror = function () {
+   naverTrackingPromise = null;
+   resolve(false);
+  };
+  document.head.appendChild(script);
+ });
+ return naverTrackingPromise;
 }
+
+window.gpEnsureNaverTracking = loadNaverTracking;
 
 function scheduleNaverTracking() {
  setTimeout(function () {
