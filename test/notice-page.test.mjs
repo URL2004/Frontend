@@ -40,8 +40,9 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
     source.indexOf('const NOTICE_RETIRED_TITLES')
   );
 
-  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 9);
+  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 10);
   for (const title of [
+    '신규 가입 무료 크레딧을 20크레딧으로 조정했어요',
     '긴 글 구조 보존과 문단 보강을 개선했어요',
     '상시 상품 보너스와 9월 개강 이벤트를 안내해요',
     '문단 구조 보존을 강화했어요',
@@ -58,6 +59,16 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
   assert.match(baseItems, /결과가 바뀌지 않거나 안전 검증을 통과하지 못한 보강 요청은 크레딧과 무료 횟수를 사용하지 않아요/u);
   assert.match(baseItems, /제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요/u);
   assert.match(baseItems, /현재 적용 중인 크레딧 지급 기준/u);
+  assert.match(baseItems, /title: '신규 가입 무료 크레딧을 20크레딧으로 조정했어요'/u);
+  assert.match(baseItems, /highlightLabel: '신규 · 가입 혜택'/u);
+  assert.match(baseItems, /2026년 9월 2일 기준/u);
+  assert.match(baseItems, /신규 계정에는 무료 20크레딧을 드려요/u);
+  assert.match(baseItems, /기존 계정에는 이번 변경에 따른 추가 크레딧을 소급 지급하지 않아요/u);
+  assert.match(baseItems, /기존 잔액과 결제·초대 등으로 받은 크레딧은 그대로 유지돼요/u);
+  assert.match(baseItems, /600자 AI 감지는 6크레딧, 같은 분량의 기본 휴머나이징은 12크레딧/u);
+  assert.match(baseItems, /총 18크레딧을 사용하고 2크레딧이 남아요/u);
+  assert.match(baseItems, /가입 무료 크레딧은 유효기간 없이 사용할 수 있어요/u);
+  assert.doesNotMatch(baseItems, /신규 계정에는 무료 25크레딧|기존 계정에도 (?:추가 )?20크레딧|기존 계정.{0,30}소급 지급(?:해요|합니다|돼요)/u);
   assert.doesNotMatch(baseItems, /크레딧 지급·환불 기준|환불 기준|사용량은 기준 크레딧부터 먼저 차감/u);
   assert.match(baseItems, /2026년 9월 30일 23시 59분\(한국 시간\)까지 결제 확인 요청이 서버에 접수된 주문/u);
   assert.match(baseItems, /스타터: 100 \+ 0 \+ 5 = 총 105크레딧/u);
