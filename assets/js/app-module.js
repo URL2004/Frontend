@@ -413,7 +413,7 @@ function updateCreditUI() {
  const loggedIn = !!window.CU;
  const balance = Math.max(0, Number(window.UC) || 0);
  const balanceText = !loggedIn
-  ? '가입 시 10크레딧'
+  ? '가입 시 25크레딧'
   : p === 'unlimited'
    ? '크레딧 무제한'
    : '크레딧 ' + balance + (plans[p] ? ' · ' + plans[p] : '');
@@ -426,7 +426,7 @@ function updateCreditUI() {
   const planCredits = Math.max(0, Number(node.dataset.planCredits) || 0);
   const kind = node.dataset.creditWorkCount;
   const available = kind === 'current'
-   ? (loggedIn ? balance : 10)
+   ? (loggedIn ? balance : 25)
    : planCredits;
   node.textContent = Math.floor(available / cost).toLocaleString('ko-KR') + '회' + (kind === 'additional' ? ' 추가' : '');
  });
@@ -5490,7 +5490,7 @@ window.loadAdminHumanizeLab = async function() {
 // 관리자 진입 때마다 모두 요청하던 구조를 탭별 지연 로딩으로 바꾼다.
 const ADMIN_TABS = ['overview', 'incidents', 'billing', 'users', 'quality', 'ledger', 'coupons', 'settings', 'labs', 'patches'];
 const ADMIN_TAB_CACHE_MS = 45000;
-const ADMIN_FILTER_IDS = ['adminOpsHours','adminOpsSeverity','adminOpsDomain','adminOpsQuery','adminOpsOnlyOpen','adminJobsFilter','adminJobsHours','adminQualityHours','adminQualityMode','adminQualityStatus','adminDateFrom','adminDateTo','adminEmailFilter','adminHistoryType','adminHistoryPageSize'];
+const ADMIN_FILTER_IDS = ['adminSignupCreditWindow','adminOpsHours','adminOpsSeverity','adminOpsDomain','adminOpsQuery','adminOpsOnlyOpen','adminJobsFilter','adminJobsHours','adminQualityHours','adminQualityMode','adminQualityStatus','adminDateFrom','adminDateTo','adminEmailFilter','adminHistoryType','adminHistoryPageSize'];
 window._adminTabLoadState = window._adminTabLoadState || {};
 
 function adminRememberFilters() {
@@ -5522,7 +5522,7 @@ function adminRestoreFilters() {
 
 function adminTabLoaders(tab) {
  return ({
-  overview: [window.loadAdminOverview, window.loadAdminOverviewHealth, window.loadAdminRefundSummary, window.loadAdminCreditUsageSummary],
+  overview: [window.loadAdminOverview, window.loadAdminOverviewHealth, window.loadAdminSignupCreditSummary, window.loadAdminRefundSummary, window.loadAdminCreditUsageSummary],
   incidents: [window.loadAdminOpsLogs, window.loadAdminJobs],
   billing: [window.loadAdminOverview, window.loadAdminRefundList],
   users: [],
@@ -6087,6 +6087,152 @@ window.loadAdminOverviewHealth = async function() {
   grid.dataset.loadState = 'error';
  } finally {
   grid.removeAttribute('aria-busy');
+ }
+};
+
+let adminSignupCreditGeneration = 0;
+let adminSignupCreditController = null;
+window._adminSignupCreditSummary = window._adminSignupCreditSummary || null;
+
+function adminSignupCreditAnnounce(message) {
+ const live = document.getElementById('adminSignupCreditStatus');
+ if (live) live.textContent = String(message || '');
+}
+
+function adminSignupRate(count, total) {
+ const denominator = Math.max(0, adminNumber(total));
+ return denominator ? `${Math.round((adminNumber(count) / denominator) * 100)}%` : '—';
+}
+
+function adminSignupMinutes(value) {
+ if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
+ const minutes = Math.max(0, Number(value));
+ if (minutes < 60) return `${Math.round(minutes)}분`;
+ if (minutes < 1440) return `${(minutes / 60).toFixed(minutes < 600 ? 1 : 0)}시간`;
+ return `${(minutes / 1440).toFixed(1)}일`;
+}
+
+function adminSignupDate(value) {
+ const milliseconds = Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : Date.parse(String(value || ''));
+ return Number.isFinite(milliseconds) ? new Date(milliseconds).toLocaleString('ko-KR') : '—';
+}
+
+function adminSignupBalanceRows(cohort) {
+ const buckets = cohort.balanceBuckets || {};
+ const total = Math.max(0, adminNumber(cohort.accounts));
+ const rows = [
+  ['0', buckets.zero], ['1', buckets.one], ['2–5', buckets.two_to_five],
+  ['6–10', buckets.six_to_ten], ['11–24', buckets.eleven_to_twenty_four], ['25', buckets.full]
+ ];
+ return rows.map(([label, raw]) => {
+  const count = Math.max(0, adminNumber(raw));
+  const width = total ? Math.min(100, Math.round((count / total) * 100)) : 0;
+  return `<div class="gp-admin-signup-bar"><span>${label}크레딧</span><i><b style="width:${width}%"></b></i><strong>${count.toLocaleString('ko-KR')}명</strong></div>`;
+ }).join('');
+}
+
+function adminSignupUsageRows(items, labels) {
+ const rows = Array.isArray(items) ? items : [];
+ if (!rows.length) return '<div class="gp-admin-signup-none">아직 사용 이벤트가 없습니다.</div>';
+  return rows.slice(0, 8).map(item => {
+  const key = String(item && item.key || 'unknown');
+  const label = labels[key] || key;
+   return `<div class="gp-admin-signup-usage-row"><span>${escapeHtml(label)}</span><strong>${adminNumber(item.events).toLocaleString('ko-KR')}건</strong><em>${adminNumber(item.credits).toLocaleString('ko-KR')}크레딧</em></div>`;
+ }).join('');
+}
+
+function adminSignupQuotaCell(label, soft, hard, maximum) {
+ const softCount = adminNumber(soft && soft.principalsAtOrAbove);
+ const hardCount = adminNumber(hard && hard.principalsAtOrAbove);
+ const state = hardCount > 0 ? 'danger' : softCount > 0 ? 'warn' : 'ok';
+ return `<div class="gp-admin-signup-quota" data-state="${state}"><span>${label} 최대</span><strong>${adminNumber(maximum).toLocaleString('ko-KR')}계정</strong><em>소프트 이상 ${softCount.toLocaleString('ko-KR')}개 · 하드 이상 ${hardCount.toLocaleString('ko-KR')}개 지문</em></div>`;
+}
+
+window.adminRenderSignupCreditSummary = function() {
+ const root = document.getElementById('adminSignupCreditSummary');
+ const data = window._adminSignupCreditSummary;
+ if (!root || !data) return;
+ const selected = document.getElementById('adminSignupCreditWindow')?.value === '24' ? 'hours24' : 'days7';
+ const cohort = data.cohorts && data.cohorts[selected] || {};
+ const accounts = Math.max(0, adminNumber(cohort.accounts));
+ const anyUse = cohort.anyUse || {};
+ const firstUse = cohort.firstUse || {};
+ const low = cohort.remainingAtOrBelowOne || {};
+ const exhausted = cohort.exhausted || {};
+ const journey = cohort.detectHumanize24 || {};
+ const spend = cohort.spend || {};
+ const quota = cohort.principalQuota || {};
+ const soft = quota.soft || {};
+ const hard = quota.hard || {};
+ const maximum = quota.maxAccountsPerPrincipal || {};
+ const state = data.status === 'truncated' ? 'warn' : data.status === 'empty' ? 'empty' : 'ok';
+ const stateLabel = state === 'warn' ? '부분 집계' : state === 'empty' ? '측정 대기' : '측정 정상';
+ const periodLabel = selected === 'hours24' ? '최근 24시간' : '최근 7일';
+ const operationLabels = { detect: 'AI 감지', humanize: '기본 휴머나이징', restructure: '고급 휴머나이징', polish: '원문 보존 다듬기' };
+ const modeLabels = { detect: 'AI 감지', blog: '기본', formal: '고급', polish: '원문 보존' };
+
+ if (data.status === 'empty' || (accounts === 0 && data.status !== 'truncated')) {
+  root.innerHTML = `<div class="gp-admin-signup-state"><span data-state="empty">측정 대기</span><b>${periodLabel}</b></div><div class="gp-admin-signup-empty"><strong>아직 이 구간에 신규 계정 이벤트가 없습니다.</strong><p>배포 후 계정 초기화와 무료 크레딧 사용 이벤트가 들어오면 첫 사용·잔액·접속 지문 지표가 여기에 나타납니다.</p></div><p class="gp-admin-signup-foot">서버 권위 이벤트만 집계 · 원문, UID, IP 미포함 · 마지막 조회 ${adminSignupDate(data.generatedAt)}</p>`;
+   root.dataset.loadState = 'ok';
+   root.removeAttribute('aria-busy');
+   adminSignupCreditAnnounce(`${periodLabel} 신규 계정 이벤트가 아직 없습니다.`);
+   return;
+ }
+
+ root.innerHTML = `
+  <div class="gp-admin-signup-state"><span data-state="${state}">${stateLabel}</span><b>${periodLabel} · ${adminSignupDate(cohort.since)}부터</b></div>
+  <dl class="gp-admin-signup-kpis">
+    <div><dt>신규 계정</dt><dd>${accounts.toLocaleString('ko-KR')}명</dd><dd class="gp-admin-signup-meta">가입 지급 이벤트 기준</dd></div>
+    <div><dt>첫 사용</dt><dd>${adminSignupRate(anyUse.accounts, accounts)}</dd><dd class="gp-admin-signup-meta">${adminNumber(anyUse.accounts).toLocaleString('ko-KR')}명 · 중앙 ${adminSignupMinutes(firstUse.medianMinutes)}</dd></div>
+    <div><dt>감지→기본 완주</dt><dd>${adminSignupRate(journey.accounts, accounts)}</dd><dd class="gp-admin-signup-meta">24크레딧 여정 ${adminNumber(journey.accounts).toLocaleString('ko-KR')}명</dd></div>
+    <div><dt>1크레딧 이하</dt><dd>${adminSignupRate(low.accounts, accounts)}</dd><dd class="gp-admin-signup-meta">완전 소진 ${adminNumber(exhausted.accounts).toLocaleString('ko-KR')}명</dd></div>
+    <div><dt>첫 사용 p90</dt><dd>${adminSignupMinutes(firstUse.p90Minutes)}</dd><dd class="gp-admin-signup-meta">관측 ${adminNumber(firstUse.observedAccounts).toLocaleString('ko-KR')}명</dd></div>
+  </dl>
+  <div class="gp-admin-signup-grid">
+   <section aria-labelledby="adminSignupBalanceTitle"><h4 id="adminSignupBalanceTitle">현재 무료 지급분 잔액</h4><div class="gp-admin-signup-bars">${adminSignupBalanceRows(cohort)}</div></section>
+   <section aria-labelledby="adminSignupSpendTitle"><h4 id="adminSignupSpendTitle">소진 패턴</h4><div class="gp-admin-signup-spend"><div><b>기능별</b>${adminSignupUsageRows(spend.byOperation, operationLabels)}</div><div><b>모드별</b>${adminSignupUsageRows(spend.byMode, modeLabels)}</div></div><p>${adminNumber(spend.events).toLocaleString('ko-KR')}건 · ${adminNumber(spend.credits).toLocaleString('ko-KR')}크레딧 사용 · ${adminNumber(spend.restoredCredits).toLocaleString('ko-KR')}크레딧 복구</p></section>
+  </div>
+  <section class="gp-admin-signup-principal" aria-labelledby="adminSignupPrincipalTitle">
+    <div><h4 id="adminSignupPrincipalTitle">접속 지문별 신규 계정</h4><p>공유 와이파이 오탐을 피하려고 하드 한도는 시간당 ${adminNumber(data.thresholds?.hard?.hourly)}개·UTC 일일 ${adminNumber(data.thresholds?.hard?.daily)}개로 유지하고, ${adminNumber(data.thresholds?.soft?.hourly)}개·${adminNumber(data.thresholds?.soft?.daily)}개부터 관측합니다.</p></div>
+    <div class="gp-admin-signup-quota-grid">${adminSignupQuotaCell('1시간', soft.hourly, hard.hourly, maximum.hourly)}${adminSignupQuotaCell('일일(UTC)', soft.daily, hard.daily, maximum.daily)}</div>
+  </section>
+  <p class="gp-admin-signup-foot">서버 권위 이벤트만 집계 · 원문, UID, IP 미포함 · 유효 ${adminNumber(data.validEvents).toLocaleString('ko-KR')} / 스캔 ${adminNumber(data.scannedEvents).toLocaleString('ko-KR')}건${adminNumber(data.invalidEvents) ? ` · 무효 ${adminNumber(data.invalidEvents).toLocaleString('ko-KR')}건` : ''} · 마지막 조회 ${adminSignupDate(data.generatedAt)}${data.truncated ? ' · 조회 한도 이후 이벤트는 제외됨' : ''}</p>`;
+  root.dataset.loadState = 'ok';
+  root.removeAttribute('aria-busy');
+  adminSignupCreditAnnounce(`${periodLabel} 신규 계정 ${accounts.toLocaleString('ko-KR')}명, 첫 사용 ${adminSignupRate(anyUse.accounts, accounts)}로 측정했습니다.`);
+};
+
+window.adminSignupCreditWindowChange = function() {
+ adminRememberFilters();
+ window.adminRenderSignupCreditSummary();
+};
+
+window.loadAdminSignupCreditSummary = async function(force) {
+ const root = document.getElementById('adminSignupCreditSummary');
+ if (!root || !window.isAdmin()) return;
+ if (!force && window._adminSignupCreditSummary) {
+  window.adminRenderSignupCreditSummary();
+  return;
+ }
+ const generation = ++adminSignupCreditGeneration;
+ if (adminSignupCreditController) adminSignupCreditController.abort();
+ adminSignupCreditController = new AbortController();
+ root.setAttribute('aria-busy', 'true');
+ adminSignupCreditAnnounce('무료 크레딧 지표를 불러오는 중입니다.');
+ delete root.dataset.loadState;
+ root.innerHTML = '<div class="gp-admin-empty">측정 이벤트를 불러오는 중입니다.</div>';
+ try {
+  const data = await adminPost('/admin/signup-credit-summary', {}, { signal: adminSignupCreditController.signal });
+  if (generation !== adminSignupCreditGeneration) return;
+  window._adminSignupCreditSummary = data;
+  window.adminRenderSignupCreditSummary();
+ } catch (error) {
+  if (error && error.name === 'AbortError') return;
+  if (generation !== adminSignupCreditGeneration) return;
+  root.dataset.loadState = 'error';
+  root.removeAttribute('aria-busy');
+  root.innerHTML = `<div class="gp-admin-signup-error"><strong>무료 크레딧 지표를 불러오지 못했습니다.</strong><p>${escapeHtml(error.message || '잠시 후 다시 시도해 주세요.')}</p><button type="button" class="gp-admin-mini-btn" onclick="loadAdminSignupCreditSummary(true)">다시 시도</button></div>`;
+  adminSignupCreditAnnounce('무료 크레딧 지표를 불러오지 못했습니다.');
  }
 };
 

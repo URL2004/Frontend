@@ -60,7 +60,7 @@ test('잔액이 모자라면 작업 보존형 결제창으로 넘기고 결제 �
 
 test('비로그인 사용자에게는 예상 비용 대신 무료 크레딧 가입을 안내한다', async () => {
   const evasion = await read('assets/js/evasion-flow.js');
-  assert.match(evasion, /로그인하고 무료 10크레딧 받기/u);
+  assert.match(evasion, /로그인하고 무료 ' \+ SIGNUP_GRANT_CREDITS \+ '크레딧 받기/u);
   assert.match(evasion, /source: 'composer_estimate'/u);
 });
 
@@ -235,7 +235,7 @@ test('랜딩은 현재 서비스 네 가지와 단가를 사실대로 안내하�
   }
   assert.match(landing, /100자당 1크레딧/u);
   assert.match(landing, /100자당 2크레딧/u);
-  assert.match(landing, /1만자 이하 200크레딧/u);
+  assert.match(landing, /3,000자 이하 100크레딧/u);
   assert.match(landing, /가격 확정 전 · 준비 중/u);
   assert.doesNotMatch(landing, /800자 이하 40크레딧/u);
   // 과장 금지: 외부 검사 통과나 점수를 보장하지 않는다고 명시한다.

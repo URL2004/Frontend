@@ -128,6 +128,33 @@ test('필터 초기화와 오류 상태는 화면 값·세션·재시도 계약�
   assert.match(source, /el\.classList\.toggle\('error', type === 'error'/u);
 });
 
+test('개요는 신규 계정 무료 크레딧 소진과 접속 지문 임계값을 식별자 없이 보여준다', () => {
+  assert.match(html, /id="adminSignupCreditPanel"[^>]+data-admin-tab="overview"[^>]+aria-labelledby="adminSignupCreditTitle"/u);
+  assert.match(html, /id="adminSignupCreditStatus"[^>]+role="status"[^>]+aria-live="polite"/u);
+  assert.match(html, /id="adminSignupCreditSummary"[^>]+role="region"[^>]+aria-labelledby="adminSignupCreditTitle"[^>]+aria-busy="true"/u);
+  assert.match(html, /id="adminSignupCreditWindow"[\s\S]*value="24"[\s\S]*value="168" selected/u);
+  assert.match(html, /가입 지급분 25크레딧/u);
+  assert.match(html, /접속 지문별 계정 생성/u);
+  assert.doesNotMatch(html, /기기 지문/u);
+  assert.match(source, /overview: \[[^\]]*window\.loadAdminSignupCreditSummary/u);
+  assert.match(source, /adminPost\('\/admin\/signup-credit-summary', \{\}, \{ signal: adminSignupCreditController\.signal \}\)/u);
+  assert.match(source, /adminSignupCreditController\.abort\(\)/u);
+  assert.match(source, /generation !== adminSignupCreditGeneration/u);
+  assert.match(source, /data\.status === 'truncated'/u);
+  assert.match(source, /data\.status === 'empty'/u);
+  assert.match(source, /accounts === 0 && data\.status !== 'truncated'/u);
+  assert.match(source, /root\.dataset\.loadState = 'error'/u);
+  assert.match(source, /detectHumanize24/u);
+  assert.match(source, /remainingAtOrBelowOne/u);
+  assert.match(source, /maxAccountsPerPrincipal/u);
+  assert.match(source, /adminSignupCreditAnnounce/u);
+  assert.match(source, /일일\(UTC\)/u);
+  assert.match(source, /class="gp-admin-signup-meta"/u);
+  assert.match(source, /원문, UID, IP 미포함/u);
+  assert.match(styles, /\.gp-admin-signup-kpis\{display:grid;grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/u);
+  assert.match(styles, /@media\(max-width:560px\)[\s\S]*?\.gp-admin-signup-kpis\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\);\}/u);
+});
+
 test('크레딧 원장은 연결 가능한 작업만 안전한 상세 화면으로 연다', () => {
   assert.match(html, /id="adminLedgerDetail"[^>]+role="dialog"[^>]+aria-modal="true"/u);
   assert.match(html, /id="adminLedgerDetailStatus" role="status" aria-live="polite"/u);

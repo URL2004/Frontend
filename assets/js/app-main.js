@@ -1332,7 +1332,7 @@ async function runAnalysis() {
  const authUser = await getCurrentAuthUser(8000);
  if (!authUser) {
  if (window.gpTrack) window.gpTrack('login_required', { source: 'analysis' });
- alert('로그인한 뒤 이용해 주세요. 신규 가입 계정에는 10크레딧을 드려요.');
+ alert('로그인한 뒤 이용해 주세요. 신규 가입 계정에는 25크레딧을 드려요.');
  showScreen('login');
  return;
 }
@@ -2097,7 +2097,7 @@ function showPolicy(type) {
 제2조 (서비스 이용)
 1. 서비스는 AI 작성 여부 진단(AI 감지) 및 텍스트 휴머나이징(문장 다듬기·재작성) 기능을 제공합니다.
 2. 이용자는 Google 또는 카카오 계정을 통해 가입할 수 있습니다.
-3. 서비스 이용을 위해 크레딧이 필요하며, 신규 가입 시 10크레딧이 무료로 지급됩니다.
+3. 서비스 이용을 위해 크레딧이 필요하며, 신규 가입 시 25크레딧이 무료로 지급됩니다.
 4. 크레딧 소비 기준은 기능별로 다르며, AI 감지는 100자당 1크레딧, 기본 휴머나이징은 최소 10크레딧 및 100자당 2크레딧 기준으로 차감됩니다. 모든 문서에 의미 검증을 수행하는 고급 휴머나이징은 별도 고지된 길이별 정액 기준을 따릅니다. 기준 변경 시 사전 공지합니다.
 
 제3조 (크레딧 및 결제)

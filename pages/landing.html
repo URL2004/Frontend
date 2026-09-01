@@ -19,7 +19,7 @@
     <div class="gp-lp-nav-actions">
       <button type="button" class="gp-lp-ghost gp-lp-price-shortcut" onclick="gpLandingScrollTo('lpPricing')">요금</button>
       <button type="button" class="gp-lp-ghost" onclick="gpLandingStart('nav_login')">로그인</button>
-      <button type="button" class="gp-lp-primary sm" onclick="gpLandingStart('nav_cta')">무료로 시작하기</button>
+      <button type="button" class="gp-lp-primary sm" onclick="gpLandingStart('nav_cta')">무료로 해보기</button>
     </div>
   </header>
 
@@ -29,9 +29,10 @@
       <h1>AI 초안 티,<br>제출 전에 지운다.</h1>
       <p class="gp-lp-hero-sub">AI식 문체 신호를 문단별로 확인하고, 원문의 뜻과 장르와 사실을 지키면서 자연스럽게 다듬어요.</p>
       <div class="gp-lp-hero-cta">
-        <button type="button" class="gp-lp-primary" onclick="gpLandingStart('hero')">무료 10크레딧으로 시작하기</button>
+        <button type="button" class="gp-lp-primary" onclick="gpLandingStart('hero')">무료로 내 글 휴머나이징 해보기</button>
         <button type="button" class="gp-lp-ghost lg" onclick="gpLandingEnterApp('main','hero_browse')">먼저 둘러보기</button>
       </div>
+      <p class="gp-lp-hero-credit-note">가입 즉시 800자 글 한 편을 AI 감지 → 기본 휴머나이징까지 끝낼 수 있어요.</p>
     </div>
 
     <!-- 라이브 데모: 실제 최소 입력 조건을 넘는 예문으로 이용 흐름을 보여 줍니다. -->
@@ -59,7 +60,7 @@
             <div class="lpd-estimate" data-demo="estimate">
               <span class="lpd-est-mode">AI 감지</span>
               <b><span id="lpDemoCost">0</span>크레딧</b>
-              <span class="lpd-est-note">무료 10크레딧으로 바로 가능</span>
+              <span class="lpd-est-note">가입 즉시 무료로 가능</span>
             </div>
 
             <!-- 장면 3: 분석 중 -->
@@ -129,11 +130,11 @@
         <ul class="gp-lp-blend-list" role="tablist" aria-label="서비스 선택">
           <li role="presentation"><button type="button" role="tab" aria-selected="true" class="on" data-blend="0" onclick="gpLandingBlendPick(0)">AI 감지<small>100자당 1크레딧 · 문단별 진단</small></button></li>
           <li role="presentation"><button type="button" role="tab" aria-selected="false" data-blend="1" onclick="gpLandingBlendPick(1)">기본 휴머나이징<small>100자당 2크레딧 · 최소 10크레딧</small></button></li>
-          <li role="presentation"><button type="button" role="tab" aria-selected="false" data-blend="2" onclick="gpLandingBlendPick(2)">고급 휴머나이징<small>1만자 이하 200크레딧 · 정밀 검증</small></button></li>
+          <li role="presentation"><button type="button" role="tab" aria-selected="false" data-blend="2" onclick="gpLandingBlendPick(2)">고급 휴머나이징<small>3,000자 이하 100크레딧 · 정밀 검증</small></button></li>
           <li role="presentation"><button type="button" role="tab" aria-selected="false" data-blend="3" onclick="gpLandingBlendPick(3)">글쓰기 랩<small>가격 확정 전 · 준비 중</small></button></li>
         </ul>
         <p class="gp-lp-blend-note" id="lpBlendNote">글 전체의 AI 티 지수와 함께 주의가 필요한 문단을 보여줘요.</p>
-        <button type="button" class="gp-lp-primary" onclick="gpLandingStart('blend')">무료로 시작하기</button>
+        <button type="button" class="gp-lp-primary" onclick="gpLandingStart('blend')">이 방식으로 무료 체험하기</button>
       </div>
       <div class="gp-lp-blend-shot">
         <div class="gp-lp-shotframe">
@@ -246,7 +247,7 @@
         <h2>구독이 아니라,<br>쓴 만큼.</h2>
         <p>기준 크레딧과 상품·이벤트로 받은 추가 크레딧은 모두 유효기간 없이 사용할 수 있어요. 매달 나가는 돈 없이, 필요한 만큼만 충전해요.</p>
         <div class="gp-lp-pricing-actions">
-          <button type="button" class="gp-lp-primary" onclick="gpLandingStart('pricing_cta')">가입하고 10크레딧 받기</button>
+          <button type="button" class="gp-lp-primary" onclick="gpLandingStart('pricing_cta')">가입하고 25크레딧 받기</button>
           <button type="button" class="gp-lp-ghost lg" onclick="gpLandingEnterApp('pricing','pricing_detail')">요금 자세히 보기</button>
         </div>
         <p class="gp-lp-note" id="lpCreditEvent"><strong>9월 개강 추가 크레딧 이벤트 · 2026년 9월 30일까지</strong><br>상품별 상시 보너스에 기준 크레딧의 5%를 더 드려요. 이벤트가 끝나도 상품 보너스는 그대로 유지됩니다.</p>
@@ -293,9 +294,9 @@
 
   <!-- 최종 CTA -->
   <section class="gp-lp-final">
-    <h2>지금 10크레딧으로<br>먼저 확인해 보세요</h2>
+    <h2>내 글, 지금 무료로<br>검사해 보세요</h2>
     <p>가입만 하면 바로 쓸 수 있고, 결제는 필요할 때 하면 돼요.</p>
-    <button type="button" class="gp-lp-primary" onclick="gpLandingStart('final')">무료로 시작하기</button>
+    <button type="button" class="gp-lp-primary" onclick="gpLandingStart('final')">무료로 AI 감지 해보기</button>
   </section>
 
   <footer class="gp-lp-footer">

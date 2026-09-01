@@ -229,9 +229,8 @@ test('모드 추천을 열고 3택 카드 문구는 엔진이 실제로 하는 �
   assert.doesNotMatch(main, /lavPersonalBlock|lavAutoCoach|lavCoachPicks|data-flow="reduce"/u);
   assert.match(evasion, /function advancedUnavailable\(d\)/u);
   assert.match(evasion, /MODE_RECOMMENDATION_ENABLED = true/u);
-  // 서버는 공백 제외 1,500자부터 고급을 추천하지만 그 구간은 기본 대비 4~5배다.
-  // 차액이 80크레딧 이하로 좁혀지는 6,000자부터만 배지를 노출한다.
-  assert.match(evasion, /ADVANCED_RECOMMEND_MIN_CHARS = 6000/u);
+  // 3,000자 이하 고급 구간이 100크레딧으로 낮아져, 경계부터 추천을 노출한다.
+  assert.match(evasion, /ADVANCED_RECOMMEND_MIN_CHARS = 3000/u);
   assert.match(evasion, /text\.replace\(\/\\s\/gu, ''\)\.length >= ADVANCED_RECOMMEND_MIN_CHARS/u);
   assert.match(evasion, /&& advancedRecommendationLengthMet\(\)/u);
   assert.match(evasion, /function isRecommendedMode[\s\S]*advancedRecommendationLengthMet\(\)/u);

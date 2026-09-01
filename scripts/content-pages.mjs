@@ -273,8 +273,8 @@ function articlePage(article, allArticles) {
 ${article.body}
 <div class="cta-box">
 <strong data-member-text="이어서 다듬어 볼까요?">${esc(article.ctaTitle || '내 글로 직접 확인해 보세요')}</strong>
-<p data-member-text="작업실에 글을 붙여넣으면 문단별 AI 문체 신호를 바로 확인할 수 있어요. 실패한 작업은 차감되지 않습니다.">${esc(article.ctaDesc || '가입하면 10크레딧으로 1,000자 AI 감지 또는 500자 기본 휴머나이징을 먼저 써볼 수 있어요. 실패한 작업은 차감되지 않습니다.')}</p>
-<a href="${article.ctaHref || '/'}" data-member-label="${article.ctaHref ? esc(article.ctaLabel || '열어 보기') : '작업실 열기'}">${esc(article.ctaLabel || '무료 10크레딧으로 시작하기')}</a>
+<p data-member-text="작업실에 글을 붙여넣으면 문단별 AI 문체 신호를 바로 확인할 수 있어요. 실패한 작업은 차감되지 않습니다.">${esc(article.ctaDesc || '가입하면 25크레딧으로 800자 글의 AI 감지와 기본 휴머나이징을 이어서 써볼 수 있어요. 실패한 작업은 차감되지 않습니다.')}</p>
+<a href="${article.ctaHref || '/'}" data-member-label="${article.ctaHref ? esc(article.ctaLabel || '열어 보기') : '작업실 열기'}">${esc(article.ctaLabel || '무료 25크레딧으로 시작하기')}</a>
 </div>
 ${relatedBlock(article.related, allArticles)}
 </article>`;
@@ -323,7 +323,7 @@ ${tpl.body}
 <div class="cta-box">
 <strong>지금은 이렇게 쓰세요</strong>
 <p>이 체크리스트로 초안을 직접 작성한 뒤, 교수님 피하기에서 AI식 문체 신호를 점검하고 다듬을 수 있어요. 사실을 대신 만들어 주는 도구가 아니라, 내가 아는 사실을 지키며 문장을 다듬는 도구입니다. 장르별 질문에 답하면 초안까지 만들어 주는 글쓰기 랩은 현재 준비 중이에요.</p>
-<a href="/" data-member-label="작업실 열기">무료 10크레딧으로 시작하기</a>
+<a href="/" data-member-label="작업실 열기">무료 25크레딧으로 시작하기</a>
 </div>
 ${relatedBlock(tpl.related, allArticles)}
 </article>`;
@@ -415,9 +415,9 @@ ${tplLinks}
 <div class="hub-cta">
 <div>
 <strong data-member-text="이어서 다듬어 볼까요?">읽는 것보다 빠른 확인</strong>
-<p data-member-text="작업실에 글을 붙여넣으면 문단별 AI 문체 신호를 바로 확인할 수 있어요. 실패한 작업은 차감되지 않아요.">글을 붙여넣으면 문단별 AI 문체 신호를 바로 보여드립니다. 가입 시 10크레딧 제공, 실패한 작업은 차감되지 않아요.</p>
+<p data-member-text="작업실에 글을 붙여넣으면 문단별 AI 문체 신호를 바로 확인할 수 있어요. 실패한 작업은 차감되지 않아요.">글을 붙여넣으면 문단별 AI 문체 신호를 바로 보여드립니다. 가입 시 25크레딧 제공, 실패한 작업은 차감되지 않아요.</p>
 </div>
-<a href="/" data-member-label="작업실 열기">무료 10크레딧으로 시작하기</a>
+<a href="/" data-member-label="작업실 열기">무료 25크레딧으로 시작하기</a>
 </div>
 </article>`;
   return pageShell({

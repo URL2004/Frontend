@@ -76,7 +76,7 @@ test('사용 가이드는 현재 작업 흐름·기능·단가와 직접 행동�
   }
   assert.match(guide, /100자당 1크레딧/u);
   assert.match(guide, /최소 10 · 100자당 2/u);
-  assert.match(guide, /길이별 200~600크레딧/u);
+  assert.match(guide, /길이별 100~600크레딧/u);
   assert.match(guide, /스타터는 기준 100크레딧에 이벤트 5크레딧을 더해 총 105크레딧/u);
   assert.match(guide, /외부 탐지기 결과는 보장하지 않아요/u);
   assert.match(guide, /작업 기록/u);
@@ -124,7 +124,7 @@ test('신뢰·가격·준비 중 표면은 확정된 정책 문구와 런타임 
   assert.doesNotMatch(pricing, /data-credit-work-count="current"/u);
   assert.equal((pricing.match(/data-plan-efficiency/gu) || []).length, 5, '상품마다 기본 1,000자 기준 금액 한 줄');
   assert.doesNotMatch(pricing, /보유 크레딧 10|업그레이드|구독 시작/u);
-  for (const claim of ['최소 10크레딧 · 100자당 2크레딧', '고급 · 1만자 이하', '고급 · 2만자 이하', '고급 · 3만자 이하', '고급 · 근거 보강 선택']) {
+  for (const claim of ['최소 10크레딧 · 100자당 2크레딧', '고급 · 3,000자 이하', '고급 · 3,001~10,000자', '고급 · 10,001~20,000자', '고급 · 20,001~30,000자', '고급 · 근거 보강 · 3,000자 이하']) {
     assert.ok(pricing.includes(claim) || guide.includes(claim), `단가 문구 누락: ${claim}`);
   }
 

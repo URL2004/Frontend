@@ -80,6 +80,28 @@
       <div id="adminOverviewHealth" class="gp-admin-health-line">운영 상태를 불러오는 중입니다.</div>
     </section>
 
+    <section id="adminSignupCreditPanel" class="gp-admin-panel gp-admin-signup-credit" data-admin-tab="overview" aria-labelledby="adminSignupCreditTitle">
+      <div class="gp-admin-section-head gp-admin-signup-head">
+        <div>
+          <h3 id="adminSignupCreditTitle">신규 계정 무료 크레딧</h3>
+          <p>가입 지급분 25크레딧의 첫 사용·소진·감지→휴머나이징 흐름과 접속 지문별 계정 생성을 봅니다.</p>
+        </div>
+        <div class="gp-admin-signup-controls">
+          <label class="gp-admin-filter-field" for="adminSignupCreditWindow"><span>조회 구간</span>
+            <select id="adminSignupCreditWindow" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="adminSignupCreditWindowChange()">
+              <option value="24">최근 24시간</option>
+              <option value="168" selected>최근 7일</option>
+            </select>
+          </label>
+          <button type="button" class="gp-admin-mini-btn" onclick="loadAdminSignupCreditSummary(true)">다시 측정</button>
+        </div>
+      </div>
+      <div id="adminSignupCreditStatus" class="gp-admin-sr-only" role="status" aria-live="polite">무료 크레딧 지표를 불러오는 중입니다.</div>
+      <div id="adminSignupCreditSummary" class="gp-admin-signup-body" role="region" aria-labelledby="adminSignupCreditTitle" aria-busy="true">
+        <div class="gp-admin-empty">측정 이벤트를 불러오는 중입니다.</div>
+      </div>
+    </section>
+
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>

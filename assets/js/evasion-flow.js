@@ -1,6 +1,7 @@
 ﻿/* 회피 모드 워크스페이스 — P0 정적 목업 (더미 데이터, 백엔드 미연결) */
 (function () {
   function $(id) { return document.getElementById(id); }
+  var SIGNUP_GRANT_CREDITS = 25;
   var SHORT_HUMANIZE_MIN_CREDITS = 10;
   function shortHumanizeCredit(len) {
     return Math.max(SHORT_HUMANIZE_MIN_CREDITS, Math.ceil((Number(len) || 0) / 100) * 2);
@@ -55,9 +56,20 @@
     }
     return fallback;
   }
+  // Backend/lib/humanizePricing.js의 RESTRUCTURE_TIERS와 같은 공개 가격 계약이다.
+  var RESTRUCTURE_TIERS = [
+    { maxLength: 3000, baseCredits: 100, evidenceCredits: 50 },
+    { maxLength: 10000, baseCredits: 200, evidenceCredits: 100 },
+    { maxLength: 20000, baseCredits: 400, evidenceCredits: 100 },
+    { maxLength: Infinity, baseCredits: 600, evidenceCredits: 100 }
+  ];
   function formalCredit(len, evidence) {
-    var tier = Number(len) <= 10000 ? 0 : (Number(len) <= 20000 ? 1 : 2);
-    return [200, 400, 600][tier] + (evidence ? 100 : 0);
+    var length = Math.max(0, Number(len) || 0);
+    var tier = RESTRUCTURE_TIERS[RESTRUCTURE_TIERS.length - 1];
+    for (var i = 0; i < RESTRUCTURE_TIERS.length; i += 1) {
+      if (length <= RESTRUCTURE_TIERS[i].maxLength) { tier = RESTRUCTURE_TIERS[i]; break; }
+    }
+    return tier.baseCredits + (evidence ? tier.evidenceCredits : 0);
   }
 
   // ── 예상 비용(C) ─────────────────────────────────────────────────────────────
@@ -115,8 +127,8 @@
 
     if (!window.CU && !window.GP_HERO_PREVIEW) {
       setEstimateText('lavEstimateBalance', '');
-      if (cta) { cta.hidden = false; cta.textContent = '로그인하고 무료 10크레딧 받기'; cta.dataset.action = 'login'; }
-      messages.unshift('가입하면 10크레딧을 무료로 드려요.');
+      if (cta) { cta.hidden = false; cta.textContent = '로그인하고 무료 ' + SIGNUP_GRANT_CREDITS + '크레딧 받기'; cta.dataset.action = 'login'; }
+      messages.unshift('가입하면 ' + SIGNUP_GRANT_CREDITS + '크레딧을 무료로 드려요.');
     } else if (window.UP === 'unlimited') {
       setEstimateText('lavEstimateBalance', '구독 이용 중');
       if (cta) { cta.hidden = true; cta.dataset.action = ''; }
@@ -216,7 +228,7 @@
 
   var STEP_LABEL = {
     analyzing: '분석', report: 'AI 감지 보고서', select: '방법 선택',
-    job: '휴머나이징 중', blocked: '다시 시도', done: '완료'
+    detectError: 'AI 감지 다시 시도', job: '휴머나이징 중', blocked: '다시 시도', done: '완료'
   };
 
   // 입력 화면 → 워크스페이스 화면 전환(페이지 전환)
@@ -249,11 +261,11 @@
     var label = $('lavFlowStep'); if (label) label.textContent = STEP_LABEL[name] || '';
     var ctx = $('lavFlowCtx'), src = $('lavInput');
     if (ctx && src) ctx.textContent = '원문 ' + (src.value || '').length.toLocaleString() + '자';   // 글자수 통일: 공백 포함(과금·메인 컴포저와 동일)
-    // 뒤로 버튼: 방법선택(select)·감지 보고서(report)에서 표시. 분석중·작업중·완료에선 숨김.
+    // 뒤로 버튼: 선택·보고서·감지 실패에서만 표시한다.
     var back = document.querySelector('.lav-flow-back');
-    if (back) back.style.visibility = (name === 'select' || name === 'report') ? 'visible' : 'hidden';
+    if (back) back.style.visibility = (name === 'select' || name === 'report' || name === 'detectError') ? 'visible' : 'hidden';
     var edit = document.querySelector('.lav-flow-edit');
-    if (edit) edit.hidden = name === 'analyzing' || name === 'job' || name === 'blocked' || name === 'done';
+    if (edit) edit.hidden = name === 'analyzing' || name === 'job' || name === 'blocked' || name === 'done' || name === 'detectError';
   }
 
   // /diagnose 실패 시 글 길이로 등급을 추측하지 않는다. 기본 처리값으로
@@ -276,11 +288,12 @@
   var MODE_RECOMMENDATION_ENABLED = true;
   // 고급 추천 길이 하한. 서버 판정(advancedRouting)은 공백 제외 1,500자부터 고급을 추천하지만,
   // 그 구간은 기본 대비 4~5배 가격이라 배지와 금액이 서로 싸운다. 고급 정액과 기본 종량의 차액이
-  // 80크레딧 이하로 좁혀지는 6,000자부터만 배지를 띄워, 뜰 때마다 근거가 서게 한다.
-  var ADVANCED_RECOMMEND_MIN_CHARS = 6000;
+  // 새 3,000자 정액 구간에서 차액이 80크레딧 이하로 좁혀지는 3,000자부터만 배지를 띄워,
+  // 뜰 때마다 가격 근거가 서게 한다.
+  var ADVANCED_RECOMMEND_MIN_CHARS = 3000;
   // 고급 카드의 '기본 대비 차액' 노출 상한. 짧은 글에서는 고급이 기본의 5~10배라
   // 차액을 적어 두면 구매를 막는 문구가 된다(600자면 +188). 두 카드에 각자 금액이
-  // 이미 찍히므로, 차액은 실제로 좁혀졌을 때(6,000자·1만 6천자처럼 구간 상한 부근)만 보여준다.
+  // 이미 찍히므로, 차액은 실제로 좁혀졌을 때(3,000자·1만 자처럼 구간 상한 부근)만 보여준다.
   var ADVANCED_GAP_HINT_MAX_CREDITS = 80;
 
   function advancedRecommendationLengthMet() {
@@ -513,11 +526,70 @@
     var step = $('lavFlow') && $('lavFlow').dataset.step;
     if (step === 'select') { if (cameFromReport) show('report'); else window.lavFlowReset(); }
     else if (step === 'report') window.lavFlowReset();
+    else if (step === 'detectError') window.lavFlowReset();
     else show('select');
   };
 
   // ── AI 감지 분리: 유료 감지(100자당 1크레딧) → 보고서(휴머나이징 전환 퍼널) ──────────
   var cameFromReport = false;   // 설정 화면 뒤로가기가 보고서로 돌아가게(진단 경유와 동선 구분)
+  var detectPending = false;
+  // 응답 유실 뒤 같은 글을 다시 실행해도 서버 멱등키를 유지한다. 성공하거나
+  // 서버가 명시적으로 무차감 응답을 준 경우에만 다음 작업 ID를 발급한다.
+  var pendingDetectRequest = null;
+  var DETECT_REQUEST_ID_RE = /^[A-Za-z0-9][A-Za-z0-9:_-]{7,79}$/;
+  function newDetectRequestId() {
+    return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('det_' + Date.now());
+  }
+  function normalizeDetectRequestId(value) {
+    var candidate = typeof value === 'string' ? value.trim() : '';
+    return DETECT_REQUEST_ID_RE.test(candidate) ? candidate : '';
+  }
+  function detectRequestIdFor(text, requestIdOverride) {
+    var override = normalizeDetectRequestId(requestIdOverride);
+    if (override) {
+      // 결제 successUrl 복귀에서는 메모리가 초기화된다. localStorage의 작업 payload와
+      // 함께 돌아온 서버 결합 ID를 같은 원문에 다시 채워 staged 결과를 회수한다.
+      pendingDetectRequest = { text: text, requestId: override };
+      return override;
+    }
+    if (pendingDetectRequest && pendingDetectRequest.text === text) return pendingDetectRequest.requestId;
+    pendingDetectRequest = { text: text, requestId: newDetectRequestId() };
+    return pendingDetectRequest.requestId;
+  }
+  function clearPendingDetectRequest(requestId) {
+    if (pendingDetectRequest && pendingDetectRequest.requestId === requestId) pendingDetectRequest = null;
+  }
+
+  function detectLengthBucket(length) {
+    var value = Math.max(0, Number(length) || 0);
+    if (value <= 1000) return '100_1000';
+    if (value <= 3000) return '1001_3000';
+    if (value <= 10000) return '3001_10000';
+    return '10001_plus';
+  }
+
+  function detectLatencyBucket(milliseconds) {
+    var value = Math.max(0, Number(milliseconds) || 0);
+    if (value < 3000) return 'under_3s';
+    if (value < 10000) return '3_10s';
+    if (value < 30000) return '10_30s';
+    return '30s_plus';
+  }
+
+  function renderDetectUnavailable() {
+    var retry = $('lavDetectRetry');
+    if (retry) retry.disabled = false;
+    show('detectError');
+    if (typeof window.gpAnnounce === 'function') {
+      window.gpAnnounce('정밀 점수를 측정하지 못했습니다. 크레딧은 사용되지 않았습니다.');
+    }
+  }
+
+  window.lavRetryDetect = function () {
+    if (detectPending) return;
+    if (window.gpTrack) window.gpTrack('detect_measurement_retry', { source: 'inline_error' });
+    window.lavDetect({ retryAfterFailure: true });
+  };
 
   // 실행 모드 토글(컴포저 세그먼트): 전송 버튼은 하나 — 선택된 모드가 lavRun의 동작을 결정.
   window.lavMode = 'humanize';
@@ -542,6 +614,7 @@
 
   window.lavDetect = async function (options) {
     options = options || {};
+    if (detectPending) return;
     var src = $('lavInput');
     var text = src ? src.value : '';
     if (text.length < 100) {   // 글자수 통일: 공백 포함 기준(표시 카운트와 동일)
@@ -554,6 +627,8 @@
       return;
     }
     if (typeof window.lavEnsureReadableInput === 'function' && !window.lavEnsureReadableInput(text)) return;
+    detectPending = true;
+    try {
     var cost = Math.ceil(text.length / 100);
     var preToken = null;
     try { preToken = await evGetIdToken(true); } catch (e) { /* 비로그인 */ }
@@ -587,7 +662,7 @@
     if (!unlimited && hasKnownBalance) {
       detectSummary.push({ label: '감지 후 잔액', value: Math.max(0, balance - cost).toLocaleString() + '크레딧' });
     }
-    var agree = options.resumeAfterPayment === true
+    var agree = options.resumeAfterPayment === true || options.retryAfterFailure === true
       ? true
       : (window.gpConfirm
         ? await window.gpConfirm({
@@ -607,10 +682,17 @@
           : 'AI 감지에 ' + cost + '크레딧을 사용해요. 전달 가능한 결과를 만들지 못하면 차감하지 않아요. 진행할까요?'));
     if (!agree) return;
     cameFromReport = false;
-    // 멱등키 — 재시도 중복 차감 방지
-    var reqId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('det_' + Date.now());
+    var startedAt = Date.now();
+    if (window.gpTrack) window.gpTrack('detect_measurement_start', {
+      source: options.retryAfterFailure ? 'inline_retry' : 'composer',
+      length_bucket: detectLengthBucket(text.length)
+    });
+    // 멱등키 — 응답이 유실된 재실행까지 같은 글·같은 작업 ID로 묶는다.
+    var reqId = detectRequestIdFor(text, options.requestId);
 
     async function runDetect() {
+      var retry = $('lavDetectRetry');
+      if (retry) retry.disabled = true;
       show('analyzing');
       var idToken = null;
       try { idToken = await evGetIdToken(true); } catch (e) { /* 만료 시 서버가 401 안내 */ }
@@ -618,7 +700,7 @@
       try {
         var resP = fetch(window.apiUrl('/detect-report'), {
           method: 'POST',
-          headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
+          headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json', 'X-Request-Id': reqId }),   // 토큰은 Authorization, 요청 식별자는 헤더·body에서 동일하게 유지
           body: JSON.stringify({ text: text, requestId: reqId })
         });
         var out = await Promise.all([resP, minWait]);
@@ -627,6 +709,8 @@
 
         // 잔액 부족
         if (res.status === 402 && d && d.code === 'INSUFFICIENT_CREDITS') {
+          // 서버가 과금 직전에 잔액 경합을 감지했을 수 있다. 결제 후에도 같은
+          // requestId를 유지하면 이미 고정된 정밀 결과를 모델 재호출 없이 받는다.
           window.lavFlowReset();
           if (typeof window.gpOpenCreditCheckout === 'function') {
             await window.gpOpenCreditCheckout({
@@ -634,7 +718,7 @@
               source: 'evasion_detect_402',
               neededCredits: Number(d.cost) || cost,
               currentCredits: window.UC || 0,
-              payload: { text: text }
+              payload: { text: text, requestId: reqId }
             });
           } else if (confirm('크레딧이 부족해요. 충전할까요?') && typeof switchTab === 'function') {
             switchTab('pricing');
@@ -642,31 +726,63 @@
           return;
         }
         if (res.status === 401 && d && d.code === 'LOGIN_REQUIRED') {
+          clearPendingDetectRequest(reqId);
           window.lavFlowReset();
           alert('AI 감지는 로그인이 필요해요.');
           return;
         }
         if (res.status === 422 && d && d.code === 'UNREADABLE_INPUT') {
+          clearPendingDetectRequest(reqId);
           window.lavFlowReset();
           if (typeof window.lavShowInputError === 'function') window.lavShowInputError(d.error, d.reason || 'unreadable_input', true);
           return;
         }
+        if (res.status === 503 && d && d.code === 'DETECT_MODEL_UNAVAILABLE') {
+          clearPendingDetectRequest(reqId);
+          if (window.gpTrack) window.gpTrack('detect_measurement_unavailable', {
+            error_code: d.code,
+            retryable: d.retryable !== false,
+            charged_credits: 0,
+            length_bucket: detectLengthBucket(text.length),
+            latency_bucket: detectLatencyBucket(Date.now() - startedAt)
+          });
+          renderDetectUnavailable();
+          return;
+        }
         if (!res.ok || !d || !d.ok) {
+          if (res.status >= 400 && res.status < 500) clearPendingDetectRequest(reqId);
           window.lavFlowReset();
           alert((d && d.error) || 'AI 감지에 실패했어요. 잠시 후 다시 시도해 주세요.');
           return;
         }
-        // 성공 — 크레딧 차감 반영(unlimited 플랜은 charged 0)
-        if (d.charged) {
+        // 성공 — 서버 권위 잔액을 우선한다. 첫 응답이 유실된 멱등 재시도는 이번
+        // 요청의 charged가 0이어도 실제 계정 잔액은 이미 줄어 있을 수 있다.
+        var authoritativeRemaining = Number(d.remainingCredits);
+        if (!unlimited && Number.isFinite(authoritativeRemaining) && authoritativeRemaining >= 0) {
+          window.UC = Math.floor(authoritativeRemaining);
+          if (typeof window.updateCreditUI === 'function') window.updateCreditUI();
+        } else if (d.charged) {
           window.UC = Math.max(0, (window.UC || 0) - d.charged);
           if (typeof window.updateCreditUI === 'function') window.updateCreditUI();
-          if (window.gpToast) window.gpToast(d.charged + '크레딧을 사용했어요. (남은 크레딧 ' + (window.UC || 0) + ')', { type: 'info' });
         }
+        if (d.charged && window.gpToast) {
+          window.gpToast(d.charged + '크레딧을 사용했어요. (남은 크레딧 ' + (window.UC || 0) + ')', { type: 'info' });
+        }
+        if (window.gpTrack) window.gpTrack('detect_measurement_completed', {
+          score_source: d.probSource || 'llm',
+          score_band: d.riskLevel || 'unknown',
+          charged_credits: Number(d.charged) || 0,
+          length_bucket: detectLengthBucket(text.length),
+          latency_bucket: detectLatencyBucket(Date.now() - startedAt)
+        });
         renderReport(d);
         cameFromReport = true;
         show('report');
         playReportIntro();
         lavInitCollapse('lavRepParaList', 'lavRepParaToggle');
+        // 응답 수신 뒤 렌더링까지 끝나야 이 작업이 클라이언트에도 전달된 것이다.
+        // 그 전 단계에서 예외가 나면 같은 ID를 유지해 서버의 최초 결과를 다시 받는다.
+        clearPendingDetectRequest(reqId);
       } catch (e) {
         console.warn('[evasion] /detect-report 실패:', e && e.message);
         window.lavFlowReset();
@@ -674,18 +790,29 @@
       }
     }
 
-    runDetect();
+    await runDetect();
+    } finally {
+      detectPending = false;
+      var retryButton = $('lavDetectRetry');
+      if (retryButton) retryButton.disabled = false;
+    }
   };
 
   window.gpResumeEvasionDetect = function (payload) {
     payload = payload || {};
-    if (!payload.text) return false;
+    var resumeText = typeof payload.text === 'string' ? payload.text : '';
+    if (resumeText.length < 100 || resumeText.length > (window.LAV_MAX_CHARS || 30000)) return false;
+    var hasRequestId = payload.requestId != null && payload.requestId !== '';
+    var resumeRequestId = normalizeDetectRequestId(payload.requestId);
+    if (hasRequestId && !resumeRequestId) return false;
     if (typeof window.switchTab === 'function') window.switchTab('main');
     var input = $('lavInput');
     if (!input) return false;
-    input.value = payload.text;
+    input.value = resumeText;
     if (typeof window.lavSetMode === 'function') window.lavSetMode('detect');
-    setTimeout(function () { window.lavDetect({ resumeAfterPayment: true }); }, 120);
+    setTimeout(function () {
+      window.lavDetect({ resumeAfterPayment: true, requestId: resumeRequestId || undefined });
+    }, 120);
     return true;
   };
 
@@ -745,7 +872,7 @@
       arc.style.transition = 'none';
       arc.style.strokeDashoffset = LEN;
     }
-    // 서버가 LLM 실패 시에도 엔진 추정 숫자를 보내므로 별도 판정 보류 문구는 표시하지 않는다.
+    // 공개 보고서는 정밀 측정이 성공한 경우에만 들어온다. 실패는 별도 무차감 상태에서 처리한다.
     var badge = $('lavRepBadge');
     if (badge) {
       badge.hidden = (p == null);

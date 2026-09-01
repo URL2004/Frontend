@@ -90,7 +90,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
           </button>
           <span class="gp-lav-top-slot" id="lavTopSlot">
-            <button class="ls-credit-btn" id="creditChip" data-credit-balance type="button" onclick="switchTab('pricing')">가입 시 10크레딧</button>
+            <button class="ls-credit-btn" id="creditChip" data-credit-balance type="button" onclick="switchTab('pricing')">가입 시 25크레딧</button>
             <button class="ls-upgrade-btn gp-gradient-action" id="lsUpgradeBtn" type="button" onclick="switchTab('pricing')">충전하기</button>
           </span>
          <button type="button" class="gp-lav-guide" onclick="switchTab('guide')"><b>?</b><span>사용 가이드</span></button>
@@ -174,11 +174,23 @@
          </header>
 
          <!-- 분석 중 -->
-         <section class="lav-flow-card lav-analyzing" data-flow="analyzing" hidden>
-           <span class="lav-spinner big" aria-hidden="true"></span>
-           <strong>글을 분석하고 있어요</strong>
-           <p>문장 구조와 구체성을 살펴 이 글에 알맞은 처리 방식을 찾고 있어요.</p>
-         </section>
+        <section class="lav-flow-card lav-analyzing" data-flow="analyzing" hidden>
+          <span class="lav-spinner big" aria-hidden="true"></span>
+          <strong>글을 분석하고 있어요</strong>
+          <p>문장 구조와 구체성을 살펴 이 글에 알맞은 처리 방식을 찾고 있어요.</p>
+        </section>
+
+        <section class="lav-flow-card lav-detect-error" data-flow="detectError" role="status" aria-live="polite" hidden>
+          <div class="lav-detect-error-mark" aria-hidden="true">!</div>
+          <div class="lav-detect-error-copy">
+            <strong>정밀 점수를 측정하지 못했어요</strong>
+            <p>다른 산식의 추정치로 대신 보여주지 않았고, 크레딧도 사용하지 않았습니다. 원문은 그대로예요.</p>
+          </div>
+          <div class="lav-detect-error-actions">
+            <button type="button" class="lav-flow-cta" id="lavDetectRetry" onclick="lavRetryDetect()">다시 측정하기</button>
+            <button type="button" class="lav-detect-error-edit" onclick="lavFlowReset()">원문 수정</button>
+          </div>
+        </section>
 
          <!-- AI 감지 보고서 (유료 100자당 1크레딧 — 휴머나이징 전환 퍼널) -->
          <section class="lav-flow-card lav-report" data-flow="report" hidden>
@@ -294,7 +306,7 @@
                <span class="lav-sel-examples"><small>글 예시</small><b>긴 과제 · 기말 리포트 · 수치·인용 들어간 글</b></span>
                <span class="lav-purpose-caveat" id="lavFormalLockNote" hidden>원문 보존이 중요한 글이에요. 기본 휴머나이징을 선택해 주세요.</span>
                <span class="lav-sel-gap" id="lavCostFormalGap" hidden></span>
-               <em class="lav-sel-cost" id="lavCostFormal">1만자 이하 200크레딧 · 근거 보강 +100</em>
+              <em class="lav-sel-cost" id="lavCostFormal">3,000자 이하 100크레딧 · 근거 보강 +50</em>
              </button>
            </div>
            <p class="lav-tone-variance"><b>외부 AI 감지 결과는 보장하지 않아요.</b> 원문의 사실과 의미를 우선해 다듬어요.</p>
