@@ -118,3 +118,15 @@ test('추적 모듈은 가입·결제 콜백보다 먼저 로드된다', () => {
   assert.ok(trackingIndex < appModuleIndex);
   assert.ok(trackingIndex < paymentIndex);
 });
+
+test('랜딩 방문은 상호작용이 없어도 네이버 추적기를 초기화한다', () => {
+  const boot = fs.readFileSync(path.join(root, 'assets', 'js', 'app-boot.js'), 'utf8');
+  const start = boot.indexOf('function loadTrackingAfterFirstRender()');
+  const end = boot.indexOf('function scheduleLandingHydration()', start);
+  const trackingBlock = boot.slice(start, end);
+
+  assert.match(trackingBlock, /fallbackTimer\s*=\s*setTimeout\(start,\s*900\)/u);
+  assert.match(trackingBlock, /loadScript\('\/assets\/js\/head-tracking\.js'\)[\s\S]*?loadScript\('\/assets\/js\/vendor-init\.js'\)/u);
+  assert.match(trackingBlock, /gpEnsureNaverTracking/u);
+  assert.match(trackingBlock, /clearTimeout\(fallbackTimer\)/u);
+});

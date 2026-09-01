@@ -414,7 +414,8 @@ test('익명 홈은 서버 렌더 랜딩을 즉시 활성화하고 앱·인증 �
   assert.match(boot, /requestIdleCallback\(task, \{ timeout: timeout \|\| 1800 \}\)/u);
   assert.match(boot, /addEventListener\('scroll', start, \{ once: true, passive: true \}\)/u);
   assert.match(boot, /addEventListener\('pointerdown', start, \{ once: true, passive: true \}\)/u);
-  assert.doesNotMatch(boot, /setTimeout\(start,/u, '광고 SDK를 수동 방문에서 자동으로 불러오면 안 됨');
+  assert.match(boot, /fallbackTimer = setTimeout\(start, 900\)/u, '클릭 없는 광고 유입과 네이버 검수도 추적해야 함');
+  assert.match(boot, /head-tracking\.js'[\s\S]{0,180}?vendor-init\.js'[\s\S]{0,220}?gpEnsureNaverTracking/u);
   assert.match(boot, /setTimeout\(hydrate, 12000\)/u);
   assert.match(landingJs, /demoStartTimer = setTimeout[\s\S]{0,180}3200/u);
   assert.match(boot, /if \(mode === 'landing'\)[\s\S]*?loadScript\('\/assets\/js\/landing\.js'\)/u);
