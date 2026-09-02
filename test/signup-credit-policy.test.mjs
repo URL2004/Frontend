@@ -30,23 +30,16 @@ test('신규 계정 무료 지급량은 20크레딧으로 일관되고 체험 �
   assert.doesNotMatch(publicClaims, /800자 글의 AI 감지와 기본 휴머나이징|2,500자 AI 감지|1,200자 기본 휴머나이징/u);
 });
 
-test('고급 휴머나이징 화면 계산은 3,000자 구간과 근거 보강 차등 가격을 고정한다', async () => {
-  const [evasion, pricing, guide] = await Promise.all([
-    read('assets/js/evasion-flow.js'),
+test('고급 휴머나이징 요금표는 3,000자 기준점과 단계형 가격을 안내한다', async () => {
+  const [pricing, guide] = await Promise.all([
     read('pages/pricing.html'),
     read('pages/guide.html')
   ]);
-  for (const tier of [
-    /maxLength: 3000, baseCredits: 100, evidenceCredits: 50/u,
-    /maxLength: 10000, baseCredits: 200, evidenceCredits: 100/u,
-    /maxLength: 20000, baseCredits: 400, evidenceCredits: 100/u,
-    /maxLength: Infinity, baseCredits: 600, evidenceCredits: 100/u
-  ]) assert.match(evasion, tier);
-  assert.match(evasion, /ADVANCED_RECOMMEND_MIN_CHARS = 3000/u);
   for (const page of [pricing, guide]) {
     assert.match(page, /고급 · 3,000자 이하[\s\S]*?<strong role="cell">100<\/strong>/u);
     assert.match(page, /근거 보강 · 3,000자 이하[\s\S]*?<strong role="cell">\+50<\/strong>/u);
-    assert.match(page, /근거 보강 · 3,001자 이상[\s\S]*?<strong role="cell">\+100<\/strong>/u);
+    assert.match(page, /고급 · 3,001~10,000자[\s\S]*?105~200/u);
+    assert.match(page, /고급 · 10,001~30,000자[\s\S]*?205~600/u);
   }
 });
 

@@ -114,6 +114,7 @@
       await loadScript('/assets/js/session-security.js');
       await loadScript('/assets/js/ui-feedback.js');
       await loadScript('/assets/js/modal-manager.js');
+      await loadScript('/assets/js/humanize-pricing.js');
       await loadScript('/assets/js/conversion-flow.js');
       await loadScript('/assets/js/detect-presentation.js');
       await loadScript('/assets/js/app-main.js');

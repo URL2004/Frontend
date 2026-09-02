@@ -56,20 +56,8 @@
     }
     return fallback;
   }
-  // Backend/lib/humanizePricing.js의 RESTRUCTURE_TIERS와 같은 공개 가격 계약이다.
-  var RESTRUCTURE_TIERS = [
-    { maxLength: 3000, baseCredits: 100, evidenceCredits: 50 },
-    { maxLength: 10000, baseCredits: 200, evidenceCredits: 100 },
-    { maxLength: 20000, baseCredits: 400, evidenceCredits: 100 },
-    { maxLength: Infinity, baseCredits: 600, evidenceCredits: 100 }
-  ];
-  function formalCredit(len, evidence) {
-    var length = Math.max(0, Number(len) || 0);
-    var tier = RESTRUCTURE_TIERS[RESTRUCTURE_TIERS.length - 1];
-    for (var i = 0; i < RESTRUCTURE_TIERS.length; i += 1) {
-      if (length <= RESTRUCTURE_TIERS[i].maxLength) { tier = RESTRUCTURE_TIERS[i]; break; }
-    }
-    return tier.baseCredits + (evidence ? tier.evidenceCredits : 0);
+  function advancedCredit(len, evidence) {
+    return window.gpHumanizePricing.advancedCredits(len, evidence);
   }
 
   // ── 예상 비용(C) ─────────────────────────────────────────────────────────────
@@ -123,7 +111,7 @@
     var messages = [];
     if (tooLong) messages.push('한 번에 최대 ' + (window.LAV_MAX_CHARS || 30000).toLocaleString('ko-KR') + '자까지 처리할 수 있어요.');
     else if (tooShort) messages.push('AI 감지는 ' + DETECT_MIN_CHARS + '자 이상부터 이용할 수 있어요.');
-    else if (!st.detect && st.len >= 3000) messages.push('고급 휴머나이징으로 처리하면 정액 ' + formalCredit(st.len, false).toLocaleString('ko-KR') + '크레딧이에요.');
+    else if (!st.detect && st.len >= 3000) messages.push('고급 휴머나이징은 입력 길이에 따라 ' + advancedCredit(st.len, false).toLocaleString('ko-KR') + '크레딧이에요.');
 
     if (!window.CU && !window.GP_HERO_PREVIEW) {
       setEstimateText('lavEstimateBalance', '');
@@ -303,8 +291,8 @@
   // 추천 배지는 선택을 대신하지 않으며 사용자가 카드를 눌러야 실제 모드가 정해진다.
   var MODE_RECOMMENDATION_ENABLED = true;
   // 고급 추천 길이 하한. 서버 판정(advancedRouting)은 공백 제외 1,500자부터 고급을 추천하지만,
-  // 그 구간은 기본 대비 4~5배 가격이라 배지와 금액이 서로 싸운다. 고급 정액과 기본 종량의 차액이
-  // 새 3,000자 정액 구간에서 차액이 80크레딧 이하로 좁혀지는 3,000자부터만 배지를 띄워,
+  // 짧은 글에서는 고급과 기본의 가격 차이가 커 배지와 금액이 서로 싸운다. 고급 단계형 요금과
+  // 기본 종량 요금의 차액이 80크레딧 이하로 좁혀지는 3,000자부터만 배지를 띄워,
   // 뜰 때마다 가격 근거가 서게 한다.
   var ADVANCED_RECOMMEND_MIN_CHARS = 3000;
   // 고급 카드의 '기본 대비 차액' 노출 상한. 짧은 글에서는 고급이 기본의 5~10배라
@@ -544,10 +532,10 @@
     var p = $('lavCostPolish'); if (p) p.textContent = shortLabel;
     var b = $('lavCostBlog'); if (b) b.textContent = shortLabel;
     var f = $('lavCostFormal');
-    if (f) f.textContent = formalCredit(len, evOn) + '크레딧 · ' + estimateTimeRangeLabel(formalEstimateRange(text, evOn));
+    if (f) f.textContent = advancedCredit(len, evOn) + '크레딧 · ' + estimateTimeRangeLabel(formalEstimateRange(text, evOn));
     var gapEl = $('lavCostFormalGap');
     if (gapEl) {
-      var gap = formalCredit(len, evOn) - shortHumanizeCredit(len);
+      var gap = advancedCredit(len, evOn) - shortHumanizeCredit(len);
       gapEl.hidden = !len || gap > ADVANCED_GAP_HINT_MAX_CREDITS;
       gapEl.classList.toggle('is-even', gap <= 0);
       gapEl.textContent = gap <= 0
@@ -2455,7 +2443,7 @@
     var text = src ? src.value : '';
     var evidence = !!($('lavEvidence') && $('lavEvidence').checked && !$('lavEvidence').disabled);
     if (formal) {
-      ctaMeta.textContent = estimateTimeRangeLabel(formalEstimateRange(text, evidence)) + ' · ' + formalCredit(text.length, evidence) + '크레딧';
+      ctaMeta.textContent = estimateTimeRangeLabel(formalEstimateRange(text, evidence)) + ' · ' + advancedCredit(text.length, evidence) + '크레딧';
     } else {
       ctaMeta.textContent = estimateTimeLabel(shortEstimateSec(text)) + ' · ' + shortHumanizeCredit(text.length) + '크레딧';
     }
@@ -2486,9 +2474,11 @@
     var src = $('lavInput');
     var text = src ? src.value : '';
     var len = text.length;
+    var evidenceCredit = $('lavEvidenceCredit');
+    if (evidenceCredit) evidenceCredit.textContent = '+' + window.gpHumanizePricing.advancedEvidenceCredits(len) + '크레딧';
     var credit, time;
     if (s.tone === 'formal') {
-      credit = formalCredit(len, s.evidence) + ' 크레딧';
+      credit = advancedCredit(len, s.evidence) + ' 크레딧';
       time = estimateTimeRangeLabel(formalEstimateRange(text, s.evidence)) + ' · 대기 제외';
     } else {
       credit = shortHumanizeCredit(len) + ' 크레딧';
@@ -2638,7 +2628,8 @@
     var modal = $('lavConfirmModal');
     if (modal) modal.hidden = false;
     if (window.gpTrack) window.gpTrack('humanize_confirm_view', { selected_mode: s.tone, is_recommended: isRecommendedMode(s.tone) });
-    // 과금(서버와 동일): 기본 휴머나이징=최소 10크레딧 + 100자당 2크레딧, 고급=건당 정액.
+    // 과금(서버와 동일): 기본 휴머나이징=최소 10크레딧 + 100자당 2크레딧,
+    // 고급=입력 길이에 따른 5크레딧 단위 단계형 요금.
     renderConfirmCost();   // 모달을 연 뒤 호출 — 같은 공식을 근거 토글과 공유한다
   };
 
@@ -3335,7 +3326,7 @@
       var resumeSettings = resumePayload.settings || {};
       var resumeMode = resumePayload.flowMode || 'blog';
       var resumeNeeded = Number(err.needed) || (resumeMode === 'formal'
-        ? formalCredit(resumeText.length, !!resumeSettings.evidence)
+        ? advancedCredit(resumeText.length, !!resumeSettings.evidence)
         : shortHumanizeCredit(resumeText.length));
       await window.gpOpenCreditCheckout({
         action: 'evasion_transform',

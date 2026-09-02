@@ -16,6 +16,8 @@ test('신규·엔진 업데이트는 별도 상단 카드 없이 공지 목록 �
   );
 
   assert.doesNotMatch(page, /gp-notice-featured|gp-notice-card|notice-(?:maintenance|analytics)\.png/u);
+  assert.match(baseItems, /title: '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요'/u);
+  assert.match(baseItems, /highlightLabel: '신규 · 가격 안내'/u);
   assert.match(baseItems, /title: '긴 글 구조 보존과 문단 보강을 개선했어요'/u);
   assert.match(baseItems, /highlightLabel: '신규 · 엔진 업데이트'/u);
   assert.match(baseItems, /사용자가 직접 입력한 실제 경험이나 사실/u);
@@ -40,8 +42,9 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
     source.indexOf('const NOTICE_RETIRED_TITLES')
   );
 
-  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 10);
+  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 11);
   for (const title of [
+    '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요',
     '신규 가입 무료 크레딧을 20크레딧으로 조정했어요',
     '긴 글 구조 보존과 문단 보강을 개선했어요',
     '상시 상품 보너스와 9월 개강 이벤트를 안내해요',
@@ -55,7 +58,11 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
   ]) {
     assert.match(baseItems, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'u'));
   }
-  assert.doesNotMatch(baseItems, /(?:고급 휴머나이징|최대 3만 자|결과 보관함|환불 정책|서비스 리브랜딩|원문 문단 역할과 사례·결론 연결 보존 강화|AI 감지 점수·설명 일관성 개선|논문·자소서·전문 기록 장르별 맞춤 처리 확대|서비스 안정화 점검 완료)/u);
+  assert.doesNotMatch(baseItems, /(?:최대 3만 자|결과 보관함|환불 정책|서비스 리브랜딩|원문 문단 역할과 사례·결론 연결 보존 강화|AI 감지 점수·설명 일관성 개선|논문·자소서·전문 기록 장르별 맞춤 처리 확대|서비스 안정화 점검 완료)/u);
+  assert.match(baseItems, /3,001~10,000자: 105~200크레딧/u);
+  assert.match(baseItems, /3,000자 초과분 700자가 채워질 때마다 \+5크레딧/u);
+  assert.match(baseItems, /변경 후 새로 접수되는 작업부터 적용해요/u);
+  assert.match(baseItems, /이미 완료됐거나 진행 중인 작업의 차감액은 소급해 다시 계산하지 않아요/u);
   assert.match(baseItems, /결과가 바뀌지 않거나 안전 검증을 통과하지 못한 보강 요청은 크레딧과 무료 횟수를 사용하지 않아요/u);
   assert.match(baseItems, /제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요/u);
   assert.match(baseItems, /현재 적용 중인 크레딧 지급 기준/u);
