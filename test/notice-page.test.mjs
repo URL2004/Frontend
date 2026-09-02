@@ -17,7 +17,7 @@ test('신규·엔진 업데이트는 별도 상단 카드 없이 공지 목록 �
 
   assert.doesNotMatch(page, /gp-notice-featured|gp-notice-card|notice-(?:maintenance|analytics)\.png/u);
   assert.match(baseItems, /title: '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요'/u);
-  assert.match(baseItems, /highlightLabel: '신규 · 가격 안내'/u);
+  assert.match(baseItems, /highlightLabel: '업데이트 · 가격 안내'/u);
   assert.match(baseItems, /title: '긴 글 구조 보존과 문단 보강을 개선했어요'/u);
   assert.match(baseItems, /highlightLabel: '신규 · 엔진 업데이트'/u);
   assert.match(baseItems, /사용자가 직접 입력한 실제 경험이나 사실/u);
@@ -42,19 +42,28 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
     source.indexOf('const NOTICE_RETIRED_TITLES')
   );
 
-  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 11);
+  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 20);
   for (const title of [
     '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요',
-    '신규 가입 무료 크레딧을 20크레딧으로 조정했어요',
-    '긴 글 구조 보존과 문단 보강을 개선했어요',
     '상시 상품 보너스와 9월 개강 이벤트를 안내해요',
+    '환불과 취소 기준을 정리했어요',
+    '신규 가입 무료 크레딧을 20크레딧으로 조정했어요',
+    'AI 감지는 100자당 1크레딧으로 이용할 수 있어요',
+    '긴 글 구조 보존과 문단 보강을 개선했어요',
+    '화면 구성과 글쓰기 자료를 새로 정리했어요',
+    '결제 반영과 취소 처리를 안정화했어요',
+    '작업이 중단돼도 이어서 처리해요',
+    '일본어와 중국어 원문도 입력할 수 있어요',
+    '사용 내역과 충전 내역을 나눠서 볼 수 있어요',
     '문단 구조 보존을 강화했어요',
     'AI 감지 보고서를 열었어요',
-    'AI 감지 크레딧 이용 방식 전환 안내 (100자당 1크레딧)',
-    'AI 감지 보고서 문단별 미리보기·전체보기 개선',
-    '자소서·지원서 장르 재구성 품질 개선',
-    '긴 문서 처리 속도·안정성 개선',
-    '친구 초대 혜택 안내 — 초대자와 가입자 모두 20크레딧 지급'
+    '감지 보고서를 문단별로 펼쳐 볼 수 있어요',
+    '친구를 초대하면 둘 다 20크레딧을 받아요',
+    '자소서와 지원서 처리 품질을 개선했어요',
+    '긴 문서를 더 안정적으로 처리해요',
+    '2026년 3~5월 점검 이력을 안내해요',
+    '휴머나이징 품질을 강화했어요',
+    '결제 시스템을 열었어요'
   ]) {
     assert.match(baseItems, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'u'));
   }
@@ -67,7 +76,7 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
   assert.match(baseItems, /제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요/u);
   assert.match(baseItems, /현재 적용 중인 크레딧 지급 기준/u);
   assert.match(baseItems, /title: '신규 가입 무료 크레딧을 20크레딧으로 조정했어요'/u);
-  assert.match(baseItems, /highlightLabel: '신규 · 가입 혜택'/u);
+  assert.match(baseItems, /highlightLabel: '필수 · 가입 혜택'/u);
   assert.match(baseItems, /2026년 9월 2일 기준/u);
   assert.match(baseItems, /신규 계정에는 무료 20크레딧을 드려요/u);
   assert.match(baseItems, /기존 계정에는 이번 변경에 따른 추가 크레딧을 소급 지급하지 않아요/u);
@@ -84,6 +93,80 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
   assert.match(source, /NOTICE_RETIRED_TITLES[\s\S]*?'개인정보처리방침 변경 내용을 안내해요'/u);
   assert.match(source, /\.filter\(item => !NOTICE_RETIRED_TITLES\.has\(item\.title\.trim\(\)\)\)/u);
   assert.match(baseItems, /(?:해요|했어요|돼요|됐어요|드려요|있어요|없어요|않아요)/u);
+
+  // 환불 기준은 공지로 안내하되, 소급 적용 오해와 접수 창구 혼선을 막는 두 문장을 반드시 포함한다
+  assert.match(baseItems, /2026년 8월 30일 이전에 결제한 주문은 구매 당시 기준을 그대로 적용해요/u);
+  assert.match(baseItems, /사이트 안의 고객센터에서 문의를 남겨 주시면/u);
+});
+
+test('공지 문구는 2026-09-02 양식 표준을 지킨다', async () => {
+  const source = await read('assets/js/app-module.js');
+  const baseItems = source.slice(
+    source.indexOf('const NOTICE_BASE_ITEMS'),
+    source.indexOf('const NOTICE_RETIRED_TITLES')
+  );
+  const titles = [...baseItems.matchAll(/title: '([^']+)'/gu)].map(match => match[1]);
+
+  assert.equal(titles.length, 20);
+  // 대괄호 접두어·이모지 없이 해요체 서술형 제목만 쓴다
+  assert.doesNotMatch(baseItems, /title: '\[/u);
+  assert.doesNotMatch(baseItems, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
+  for (const title of titles) {
+    assert.ok(title.length <= 30, `공지 제목은 30자 이내여야 함: ${title}`);
+    assert.doesNotMatch(title, /[.]$/u, `공지 제목에는 마침표를 쓰지 않음: ${title}`);
+  }
+  // 휴머나이징 리브랜딩(2026-07-10) 이전 표현이 재작성 공지에 되살아나지 않게 막는다
+  assert.doesNotMatch(baseItems, /우회|원천 차단|눈치채지|완벽/u);
+  // 문의 창구는 고객센터로 일원화했으므로 담당자 메일 주소를 본문에 두지 않는다
+  assert.doesNotMatch(baseItems, /[\w.+-]+@[\w-]+\.[\w.]+/u);
+  // 분류 탭이 빈 채로 남지 않도록 다섯 분류를 모두 채운다
+  for (const category of ['공지', '업데이트', '점검', '이벤트', '정책']) {
+    assert.match(baseItems, new RegExp(`category: '${category}'`, 'u'));
+  }
+});
+
+test('돈·약관이 걸린 필수 공지는 고정하고, 재작성한 구공지 원본은 원격에서 숨긴다', async () => {
+  const source = await read('assets/js/app-module.js');
+  const baseItems = source.slice(
+    source.indexOf('const NOTICE_BASE_ITEMS'),
+    source.indexOf('const NOTICE_RETIRED_TITLES')
+  );
+  const noticeBlock = source.slice(
+    source.indexOf('// ===== NOTICE ====='),
+    source.indexOf('// ===== MY PAGE =====')
+  );
+
+  // 결제·크레딧·환불처럼 돈이 걸린 공지 네 건만 고정한다
+  assert.equal(baseItems.match(/pinned: true/gu)?.length, 4);
+  // '필수 ·' 배지는 고정 공지 전용 어휘다
+  assert.equal(baseItems.match(/highlightLabel: '필수 · /gu)?.length, 4);
+  for (const title of [
+    '상시 상품 보너스와 9월 개강 이벤트를 안내해요',
+    '환불과 취소 기준을 정리했어요',
+    '신규 가입 무료 크레딧을 20크레딧으로 조정했어요',
+    'AI 감지는 100자당 1크레딧으로 이용할 수 있어요'
+  ]) {
+    const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(baseItems, new RegExp(`title: '${escaped}',\\r?\\n\\s+pinned: true,\\r?\\n\\s+highlightLabel: '필수 · `, 'u'));
+  }
+
+  // 2026-09-02 양식 통일 때 로컬로 옮겨 다시 쓴 구공지들의 원격 원본
+  for (const title of [
+    '[2026-05-23] 시스템 업데이트로 인한 서비스 일시 장애',
+    '[2026-05-14] 시스템 업데이트로 인한 서비스 일시 장애',
+    '[모델 업데이트 중 기능 문제]',
+    '[결제 시스템 오픈]',
+    '[휴머나이징 기능 업데이트]',
+    '[사이트 UI디자인 변경]'
+  ]) {
+    assert.ok(
+      noticeBlock.includes(`'${title}'`),
+      `재작성한 구공지의 원격 원본은 퇴역 목록에 있어야 함: ${title}`
+    );
+  }
+  // 원격에 사본이 여러 벌 남아 목록에 중복으로 뜨던 두 제목 — 막으면 로컬 정본만 남는다
+  assert.match(source, /NOTICE_RETIRED_TITLES[\s\S]*?'자소서·지원서 장르 재구성 품질 개선'/u);
+  assert.match(source, /NOTICE_RETIRED_TITLES[\s\S]*?'긴 문서 처리 속도·안정성 개선'/u);
 });
 
 test('상시 상품 보너스 공지는 정렬 방향과 원격 중복에 관계없이 상단에 고정된다', async () => {
@@ -97,7 +180,7 @@ test('상시 상품 보너스 공지는 정렬 방향과 원격 중복에 관계
     source.indexOf('// ===== MY PAGE =====')
   );
 
-  assert.match(baseItems, /title: '상시 상품 보너스와 9월 개강 이벤트를 안내해요',[\s\S]*?pinned: true,[\s\S]*?highlightLabel: '고정 · 정책 안내'/u);
+  assert.match(baseItems, /title: '상시 상품 보너스와 9월 개강 이벤트를 안내해요',[\s\S]*?pinned: true,[\s\S]*?highlightLabel: '필수 · 크레딧 지급 기준'/u);
   // 개명 전 제목은 퇴역 목록으로 남겨 원격 사본이 새 제목과 함께 뜨지 않게 한다
   assert.match(source, /NOTICE_RETIRED_TITLES[\s\S]*?'상시 상품 보너스와 9월 이벤트를 안내해요'/u);
   assert.match(noticeBlock, /const NOTICE_PINNED_TITLES = new Set/u);
