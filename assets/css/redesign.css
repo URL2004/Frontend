@@ -11386,6 +11386,55 @@ body.gp-admin-ledger-detail-open{overflow:hidden;}
  #mainContent[data-main-design="lavender"] #pricingContent .plan-card.plan-popular:hover::after{transform:none;}
 }
 
+/* ───────── lavender v122: 작업별 크레딧 기준 표 (2026-09-03) ─────────
+   왜: 값 칸이 90px 고정이라 "105~200 · 초과분 350자당 +5 (올림)"이 네 줄로 쪼개졌다.
+   값 칸은 내용 폭(auto)으로 두고 한 줄로 유지, 글자는 카드와 같은 단계(14.5/16)로. 모바일에서만 두 줄 허용. */
+#mainContent[data-main-design="lavender"] .gp-guide-credit-table{border:1px solid #e1e4ed;border-radius:16px;background:#fff;}
+#mainContent[data-main-design="lavender"] .gp-guide-credit-table>div{
+ grid-template-columns:minmax(0,1fr) auto;
+ gap:24px;
+ padding:15px 20px;
+ align-items:center;
+}
+#mainContent[data-main-design="lavender"] .gp-guide-credit-table>div:first-child{
+ padding:12px 20px;
+ color:#5e6477;
+ font-size:12.5px;
+ font-weight:750;
+}
+#mainContent[data-main-design="lavender"] .gp-guide-credit-table>div:not(:first-child){
+ color:#33384a;
+ font-size:14.5px;
+ font-weight:650;
+ line-height:1.45;
+}
+#mainContent[data-main-design="lavender"] .gp-guide-credit-table strong{
+ color:#3436aa;
+ font-size:16px;
+ font-weight:800;
+ line-height:1.35;
+ white-space:nowrap;
+ text-align:right;
+}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-credit-rates > p{font-size:14.5px;}
+#mainContent[data-main-design="lavender"] .gp-guide-credit-table>div:first-child span:last-child{text-align:right;}
+@media(max-width:560px){
+ #mainContent[data-main-design="lavender"] .gp-guide-credit-table>div,
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-guide-credit-table>div{
+  grid-template-columns:minmax(0,1fr) minmax(0,54%);
+  gap:12px;
+  padding:13px 14px;
+ }
+ #mainContent[data-main-design="lavender"] .gp-guide-credit-table>div:not(:first-child),
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-guide-credit-table>div:not(:first-child){font-size:13.5px;}
+ #mainContent[data-main-design="lavender"] .gp-guide-credit-table strong{
+  font-size:14.5px;
+  white-space:normal;
+  text-wrap:balance;
+  word-break:keep-all;
+ }
+}
+
 /* ===== lavender v116: AI 감지 보고서 · 실험실 리포트 (seed 26e340ec) =====
    구성: ① 히어로 카드(Before · 원형 게이지 · After) ② 네이비 계측 띠
         ③ 2단(문장별 분석 / 원인 레이더 + 개선 포인트) ④ 보라 그라디언트 전환 밴드
