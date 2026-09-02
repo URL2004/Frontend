@@ -401,6 +401,16 @@ test('익명 홈은 서버 렌더 랜딩을 즉시 활성화하고 앱·인증 �
   assert.match(loader, /querySelector\('#landingScreen'\)/u);
   assert.match(loader, /hydrateLandingDeferred/u);
   assert.match(loader, /template\.content\.cloneNode\(true\)/u);
+  assert.match(
+    boot,
+    /if \(mode === 'landing'\)[\s\S]*?hydrateLandingDeferred\(\)[\s\S]*?loadScript\('\/assets\/js\/landing\.js'\)[\s\S]*?classList\.add\('design-ready'\)/u,
+    '랜딩은 첫 화면 공개 전에 지연 본문을 복원해 첫 입력부터 스크롤할 수 있어야 한다'
+  );
+  assert.doesNotMatch(
+    boot,
+    /addEventListener\('(?:scroll|pointerdown|keydown)', hydrate/u,
+    '본문 복원을 사용자 첫 입력에 의존하면 안 된다'
+  );
   assert.match(loader, /fetchText\('\/partials\/app-bundle\.html'\)/u);
   assert.match(loader, /function initialMode\(\)/u);
   assert.match(loader, /firebase:authUser:/u);
@@ -416,7 +426,6 @@ test('익명 홈은 서버 렌더 랜딩을 즉시 활성화하고 앱·인증 �
   assert.match(boot, /addEventListener\('pointerdown', start, \{ once: true, passive: true \}\)/u);
   assert.match(boot, /fallbackTimer = setTimeout\(start, 900\)/u, '클릭 없는 광고 유입과 네이버 검수도 추적해야 함');
   assert.match(boot, /head-tracking\.js'[\s\S]{0,180}?vendor-init\.js'[\s\S]{0,220}?gpEnsureNaverTracking/u);
-  assert.match(boot, /setTimeout\(hydrate, 12000\)/u);
   assert.match(landingJs, /demoStartTimer = setTimeout[\s\S]{0,180}3200/u);
   assert.match(boot, /if \(mode === 'landing'\)[\s\S]*?loadScript\('\/assets\/js\/landing\.js'\)/u);
   assert.doesNotMatch(boot, /script\('https:\/\/cdn\.jsdelivr\.net\/npm\/(?:gsap|vanilla-tilt|countup)/u);

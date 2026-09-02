@@ -93,26 +93,6 @@
     fallbackTimer = setTimeout(start, 900);
   }
 
-  function scheduleLandingHydration() {
-    if (!document.getElementById('landingDeferredTemplate')) return;
-    var hydrated = false;
-    var timer = 0;
-    function hydrate() {
-      if (hydrated) return;
-      hydrated = true;
-      clearTimeout(timer);
-      window.removeEventListener('scroll', hydrate);
-      window.removeEventListener('pointerdown', hydrate);
-      window.removeEventListener('keydown', hydrate);
-      if (window.GPPageLoader) window.GPPageLoader.hydrateLandingDeferred();
-    }
-    window.addEventListener('scroll', hydrate, { once: true, passive: true });
-    window.addEventListener('pointerdown', hydrate, { once: true, passive: true });
-    window.addEventListener('keydown', hydrate, { once: true });
-    // 스크롤·클릭·키보드에서는 즉시 채우고, 가만히 있는 첫 화면은 가볍게 유지한다.
-    timer = setTimeout(hydrate, 12000);
-  }
-
   var appAssetsPromise = null;
   function loadAppAssets() {
     if (appAssetsPromise) return appAssetsPromise;
@@ -212,9 +192,13 @@
     await loadScript('/assets/js/page-loader.js');
     var mode = await window.GP_PAGE_READY;
     if (mode === 'landing') {
+      // 첫 화면 아래 본문을 사용자 입력 뒤에 붙이면, 초기 DOM 높이가 뷰포트보다
+      // 짧은 환경에서는 scroll 이벤트 자체가 발생하지 않는다. 그 결과 첫 클릭 전에는
+      // 휠·트랙패드·터치 스크롤이 먹지 않는 것처럼 보인다. 템플릿은 이미 파싱돼 있고
+      // 하단 이미지는 data-lp-src로 지연 로드되므로, 화면을 공개하기 전에 DOM만 복원한다.
+      if (window.GPPageLoader) window.GPPageLoader.hydrateLandingDeferred();
       await loadScript('/assets/js/landing.js');
       document.documentElement.classList.add('design-ready');
-      scheduleLandingHydration();
       loadTrackingAfterFirstRender();
       return;
     }
