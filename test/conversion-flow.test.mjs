@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import vm from 'node:vm';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -115,11 +116,34 @@ test('가격표 카드는 가격→총 지급량→스타터 비교→기본 1,0
   assert.match(pricing, /<a class="plan-btn plan-btn-inquiry" data-tab="qna" data-tab-call="gpPrefillQuestion" data-tab-arg="팀·기관 요금제 문의" href="\/qna"/u, '문의 버튼은 고객센터(1:1 문의) 실링크 + 제목 사전입력');
   const appMain = await read('assets/js/app-main.js');
   assert.match(appMain, /window\.gpPrefillQuestion = gpPrefillQuestion;/u, '문의 사전입력 함수 노출');
-  assert.match(appMain, /팀·기관 요금제\(116,000원 · 6,200크레딧\) 문의드려요/u);
+  assert.match(appMain, /window\.gpInquiryPlanCreditsAt/u, '문의 사전입력은 가격 정책의 행사 경계를 재사용');
+  assert.doesNotMatch(appMain, /팀·기관 요금제\(116,000원 · 6,200크레딧\) 문의드려요/u, '행사 종료 후에도 6,200크레딧을 고정 약속하지 않음');
   assert.equal((pricing.match(/aria-label="[^"]*기준 [^"]+총 [^"]+크레딧을 [^"]+원에 충전하기"/gu) || []).length, 4, '결제 버튼마다 기준·추가·총 지급량 맥락');
   assert.ok(pricing.indexOf('class="gp-coupon-panel"') > pricing.indexOf('id="gpPlanList"'), '쿠폰 입력은 가격 카드 다음 맨 아래');
   assert.doesNotMatch(pricing, /class="gp-top-actions"|class="pc-fx"|class="pc-tr/u, '중복 상단 버튼 또는 장식 트래커 재유입');
   assert.doesNotMatch(pricing, /class="plan-card[^"]*"[^>]+onclick=/u, '카드 전체 클릭 재유입');
+});
+
+test('팀·기관 문의 사전입력 지급량은 개강 이벤트 마감 즉시 6,200에서 6,000으로 바뀐다', async () => {
+  const flow = await read('assets/js/conversion-flow.js');
+  const window = {};
+  vm.runInNewContext(flow, {
+    window: Object.assign(window, {
+      matchMedia() { return { matches: false, addEventListener() {} }; },
+      addEventListener() {},
+      removeEventListener() {}
+    }),
+    document: { readyState: 'loading', addEventListener() {} },
+    Date,
+    console,
+    URLSearchParams,
+    setTimeout() {},
+    clearTimeout() {}
+  });
+
+  assert.equal(window.gpInquiryPlanCreditsAt(Date.parse('2026-09-30T23:59:59.999+09:00')), 6200);
+  assert.equal(window.gpInquiryPlanCreditsAt(Date.parse('2026-10-01T00:00:00+09:00')), 6000);
+  assert.equal(window.gpInquiryPlanCreditsAt(Date.parse('2026-10-01T00:00:00.001+09:00')), 6000);
 });
 
 test('기간 이벤트 종료·서버 비활성화 시 상시 상품 보너스는 유지하고 이벤트만 제거한다', async () => {

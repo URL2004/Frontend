@@ -40,6 +40,18 @@
     return at >= CREDIT_EVENT_STARTS_AT_MS && at < CREDIT_EVENT_ENDS_AT_MS;
   }
 
+  function inquiryPlanCreditTotal(eventActive) {
+    return INQUIRY_PLAN.paidCredits
+      + INQUIRY_PLAN.packageBonusCredits
+      + (eventActive ? INQUIRY_PLAN.eventBonusCredits : 0);
+  }
+
+  // 문의 폼도 가격 카드와 같은 행사 경계를 사용한다. 결제 카탈로그 밖 상품이라
+  // app-main.js가 고정 지급량을 복제하지 않도록 동기 계산기만 노출한다.
+  window.gpInquiryPlanCreditsAt = function (now) {
+    return inquiryPlanCreditTotal(localEventActive(now));
+  };
+
   // ── 개강 이벤트 남은 기간 배지 ────────────────────────────────────────────
   // 마감이 실제로 있는 행사라 표기 자체는 정직하지만, 한 달 앞에서 초를 째깍이면
   // 가짜 타이머로 읽혀 신뢰를 깎는다. 남은 기간에 따라 단위를 바꾸고(일 → 시·분),

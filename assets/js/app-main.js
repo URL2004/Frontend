@@ -573,7 +573,10 @@ function gpPrefillQuestion(subject) {
  const text = String(subject || '').trim().slice(0, 120);
  if (title && !title.value.trim() && text) title.value = text;
  if (body && !body.value.trim()) {
-  body.value = '팀·기관 요금제(116,000원 · 6,200크레딧) 문의드려요.\n- 사용 인원:\n- 소속:\n- 희망 결제 방법:\n- 크레딧 받을 계정 이메일:';
+  const inquiryCredits = typeof window.gpInquiryPlanCreditsAt === 'function'
+   ? window.gpInquiryPlanCreditsAt()
+   : 6000;
+  body.value = '팀·기관 요금제(116,000원 · ' + Number(inquiryCredits).toLocaleString('ko-KR') + '크레딧) 문의드려요.\n- 사용 인원:\n- 소속:\n- 희망 결제 방법:\n- 크레딧 받을 계정 이메일:';
  }
  if (title) title.focus({ preventScroll: true });
  return true;
