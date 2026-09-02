@@ -30,7 +30,7 @@ test('보고서는 히어로(전후·게이지) → 계측 띠 → 근거 → CT
 test('전후 시연은 한 문장까지만이라고 화면에서 밝힌다', async () => {
   const report = await reportSection();
   // 여러 문장을 고쳐 보여주면 유료 휴머나이징을 무료로 주는 셈이 된다.
-  assert.match(report, /예시는 한 문장까지만 보여드려요/u);
+  assert.match(report, /예시는 한 문장의 일부까지만 보여드려요/u);
   assert.match(report, /글 전체를 다듬는 건 휴머나이징에서 해요/u);
   assert.equal((report.match(/id="gpRepBefore"/gu) || []).length, 1, '전후 비교는 하나뿐');
   assert.match(report, /다듬은 예시 · 사실은 그대로/u);
@@ -249,7 +249,7 @@ test('게이지는 브랜드 세 구역 색을 두른 반원 "교수님 게이�
   assert.match(flow, /var blipAt = mk\('g', \{ class: 'blip-at', transform: 'translate\(/u);
   assert.match(css, /\.gp-rep-dial \.gp-rep-scope svg\{[^}]*transform:none/u);
   assert.match(flow, /b\.style\.strokeDashoffset = L \* \(1 - frac\)/u, '띠는 구역마다 제 몫만큼 채워진다');
-  assert.match(main, /0~20 안전 · 멀리 달아났어요/u, '범례에 점수 구간과 뜻이 적혀 있다');
+  assert.match(main, /title="멀리 달아났어요">0~20 안전/u, '범례는 한 줄(구간만), 뜻은 title');
   assert.match(flow, /점수가 낮을수록 왼쪽 출발선의 교수님에게서 멀리 달아난 거예요/u, '스크린리더용 설명');
   assert.ok(!/RMIN/u.test(flow), '과녁 기하 잔재가 없다');
 });
@@ -276,10 +276,14 @@ test('레이더 축과 계측 숫자는 그 신호를 만든 문장으로 연결
   }
   assert.match(main, /data-axis="generic" tabindex="0" role="button"/u, '계측 타일도 키보드로 연동');
   assert.match(flow, /li\.addEventListener\('keydown'/u, '신호 항목은 Enter·Space로 고정');
-  assert.match(flow, /repMapState\.pinned = \(current === key && repMapState\.pinned\) \? null : key/u, '탭은 고정 토글');
+  assert.match(flow, /repMapState\.pinned = \(repMapState\.pinned === key\) \? null : key/u, '탭은 고정 토글');
+  // 호버는 표시만 — 문장 패널은 고정(클릭)에서만 바뀐다(스크롤 중 레이아웃 점프 제거)
+  assert.match(flow, /if \(!pin\) return;[\s\S]{0,12}repSwapSentences\(\);/u);
+  assert.match(flow, /function repSwapSentences/u);
+  assert.match(flow, /wrap\.style\.minHeight = before \+ 'px'/u, '교체 중 높이 잠금');
   assert.match(flow, /cell\.classList\.toggle\('is-hit'/u, '문단 지도에 해당 칸이 표시된다');
   assert.match(main, /id="gpRepLinkHead"/u);
-  assert.match(main, /항목에 손을 올리면 그 신호를 만든 문장이 왼쪽에 켜져요/u);
+  assert.match(main, /항목을 누르면 그 신호를 만든 문장이 왼쪽 핵심 문장 자리에 켜져요/u);
   assert.match(main, /항목을 누르면 위 핵심 문장이 그 신호의 문장으로 바뀌어요/u, '모바일 문구');
   assert.match(flow, /head\.scrollIntoView\(/u, '모바일 고정 시 핵심 문장으로 이동');
 });
@@ -296,13 +300,14 @@ test('예상 변화는 결정론 두 축만 말하고 문체 점수를 지어내
   assert.match(flow, /다듬을 대상 \(원인 축 기준\)/u);
 });
 
-test('결과 이미지는 스코프·점수·유지할 근거를 담고 공유 시트를 우선 쓴다', async () => {
+test('결과 이미지는 게이지·점수·유지할 근거를 담고 크롬 다운로드로 고화질 저장된다', async () => {
   const [main, flow] = await Promise.all([read('pages/main.html'), read('assets/js/evasion-flow.js')]);
   assert.match(main, /id="gpRepShare"[^>]*onclick="gpRepShareCard\(\)"/u);
   assert.match(flow, /window\.gpRepShareCard = async function/u);
-  assert.match(flow, /cv\.width = W; cv\.height = H;/u);
-  assert.match(flow, /navigator\.canShare && navigator\.canShare\(\{ files: \[file\] \}\)/u, '모바일은 공유 시트');
-  assert.match(flow, /a\.download = file\.name/u, '데스크톱은 내려받기');
+  // 항상 내려받기(크롬 다운로드) · 2배 해상도 — 공유 시트 경로는 제거(사장님 9/2)
+  assert.ok(!/navigator\.canShare/u.test(flow), '공유 시트로 넘기지 않는다');
+  assert.match(flow, /cv\.width = W \* SCALE; cv\.height = H \* SCALE;/u);
+  assert.match(flow, /a\.download = fileName/u, '내려받기');
   assert.match(flow, /gpkorea\.ai\.kr/u, '카드에 도메인이 남는다');
 });
 
@@ -354,8 +359,8 @@ test('v118 — 모바일 최적화와 인터랙션 보강이 한 세트로 들�
   // 인터랙션: 레이더 펼침·숫자 카운트업·바뀐 부분·툴팁·문장 점프·모달 필터·처방→축
   assert.match(flow, /radar\.classList\.add\('is-drawn'\)/u);
   assert.match(flow, /function repCountUpStats/u);
-  assert.match(flow, /function repWordDiff/u);
-  assert.match(main, /id="gpRepBaDiff"[^>]*onclick="gpRepToggleDiff\(\)"/u);
+  // '바뀐 부분 보기'는 After 전체를 드러내므로 게이트와 함께 제거됐다(v120)
+  assert.ok(!/function repWordDiff|gpRepToggleDiff/u.test(flow) && !/gpRepBaDiff/u.test(main), '다이프 잔재가 없다');
   assert.match(flow, /function repShowParaTip/u);
   assert.match(css, /@media \(hover:none\)\{ #mainContent\[data-main-design="lavender"\] \.gp-rep-paratip\{display:none;\} \}/u, '터치 기기엔 툴팁을 띄우지 않는다');
   assert.match(flow, /window\.gpRepJumpToSentence = function/u);
@@ -363,6 +368,55 @@ test('v118 — 모바일 최적화와 인터랙션 보강이 한 세트로 들�
   assert.match(main, /data-filter="ending"/u);
   assert.match(flow, /function repModalMatches/u);
   assert.match(flow, /b\.className = 'gp-rep-tipbtn'/u, '개선 포인트가 축을 켠다');
-  // 정직성: 바뀐 부분은 낱말 단위 대조일 뿐 사실 판정을 하지 않는다
-  assert.ok(!/사실이 바뀌지 않았어요|사실 유지 확인됨/u.test(flow), '다이프가 사실 보존을 단정하지 않는다');
+
+});
+
+
+test('After 문장은 가장 많이 바뀐 자리만 보이고 나머지는 가려져 휴머나이징으로 이어진다', async () => {
+  const [main, flow, css] = await Promise.all([read('pages/main.html'), read('assets/js/evasion-flow.js'), read('assets/css/redesign.css')]);
+  // 감지만 돌려 짧은 글을 다듬어 가는 구멍을 막는다(사장님 9/2)
+  assert.match(flow, /function repPaintAfter/u);
+  assert.match(flow, /mask\.className = 'gp-rep-ba-mask'/u, '가려진 조각은 별도 스팬');
+  assert.match(flow, /mask\.textContent = p\.text/u, '화면은 서버가 준 가짜 글자만 그린다(원문 나머지는 응답에 없다)');
+  assert.match(flow, /vis\.className = 'gp-rep-ba-peek'/u, '공개 조각은 표시된다');
+  assert.match(main, /id="gpRepBaUnlock"[^>]*hidden/u);
+  assert.match(main, /나머지는 휴머나이징에서 →/u);
+  assert.match(flow, /'다듬은 예시 · 가장 많이 바뀐 자리'/u);
+  assert.match(css, /\.gp-rep-ba-mask\{[^}]*filter:blur\(5px\)[^}]*user-select:none/u, '블러 + 선택 불가');
+  // 개선 포인트도 전환으로 이어진다 — 권하지 않는 상태에서는 숨긴다
+  assert.match(main, /id="gpRepTipsCta"[^>]*hidden/u);
+  assert.match(flow, /tipsCta\.hidden = model\.conversionEligible === false \|\| actionable === 0/u);
+});
+
+
+test('게이지 라벨은 성기게, 내 글 이름표는 호 안쪽, 새 사실 칩은 감지 화면에서 뺀다', async () => {
+  const [flow, css] = await Promise.all([read('assets/js/evasion-flow.js'), read('assets/css/redesign.css')]);
+  assert.match(flow, /\[\[100, '100'\], \[0, '0'\]\]\.forEach/u, '숫자 눈금은 양 끝만');
+  assert.match(flow, /x: \(-Math\.cos\(a\) \* 40\)\.toFixed\(1\)/u, "'내 글'은 호 안쪽(중심 방향)");
+  assert.match(css, /\.gp-rep-scope \.who\.me\{[^}]*paint-order:stroke/u, '이름표에 흰 테두리');
+  assert.match(flow, /item\.key === 'grounding'\) return;/u, "'원문 밖 새 사실' 칩 제거");
+  assert.match(css, /\.gp-rep-tiplist li\{font-size:var\(--rep-fs-4\);line-height:1\.75/u, '개선 포인트 15px');
+});
+
+
+test('Before에 바뀌는 자리를 표시하고 저장 버튼은 히어로 우상단에 있다', async () => {
+  const [main, flow, css] = await Promise.all([read('pages/main.html'), read('assets/js/evasion-flow.js'), read('assets/css/redesign.css')]);
+  assert.match(flow, /function repPaintBefore/u);
+  assert.match(flow, /mark\.className = 'gp-rep-ba-focus'/u);
+  assert.match(main, /<section class="gp-rep-hero"[^>]*>\s*<button type="button" class="gp-rep-share" id="gpRepShare"/u, '저장 버튼이 히어로 첫 자식');
+  assert.match(css, /\.gp-rep-hero \.gp-rep-share\{position:absolute;top:18px;right:18px/u);
+  assert.match(css, /\.gp-rep-zonekey\{flex-wrap:nowrap/u, '범례 한 줄');
+});
+
+
+test('계측 띠는 누를 수 있다는 표시가 있고, 누르면 무엇이 선택됐는지 분명하다', async () => {
+  const [main, flow, css] = await Promise.all([read('pages/main.html'), read('assets/js/evasion-flow.js'), read('assets/css/redesign.css')]);
+  assert.equal((main.match(/class="gp-rep-stat-go"/g) || []).length, 4, '타일 넷 모두 알약');
+  assert.match(main, /class="is-link is-all" tabindex="0" role="button" aria-label="전체 문장 보기"/u, '첫 타일은 전체 문장 모달');
+  assert.match(flow, /if \(!key\) \{[\s\S]{0,200}window\.gpRepOpenModal\(\)/u);
+  assert.match(flow, /go\.textContent = pinnedHere \? '선택됨 ✓' : '문장 보기'/u);
+  assert.match(flow, /clear\.className = 'gp-rep-link-clear'/u, '핵심 문장 머리에 해제 버튼');
+  assert.match(css, /\.gp-rep-stats>div\.is-link\.is-pinned::after\{[^}]*border-top-color:#f5b425/u, '선택 타일 아래 화살표');
+  assert.match(css, /\.gp-rep-stats\.is-nudge \.gp-rep-stat-go\{animation:gpRepNudge/u, '첫 열림 뒤 유도 깜빡임');
+  assert.match(css, /\.gp-rep-link-chip\{[^}]*background:#f5b425/u, '같은 노란 칩으로 잇는다');
 });

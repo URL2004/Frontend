@@ -214,6 +214,10 @@
 
            <!-- ① 히어로 카드: Before · 게이지 · After -->
            <section class="gp-rep-hero" aria-labelledby="gpRepHeroTitle">
+             <button type="button" class="gp-rep-share" id="gpRepShare" onclick="gpRepShareCard()" title="결과 이미지로 저장(PNG)">
+               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4h14v-4"/></svg>
+               <span>결과 이미지 저장</span>
+             </button>
              <h3 class="gp-rep-hero-title" id="gpRepHeroTitle">분석 결과를 정리하고 있어요</h3>
              <ul class="gp-rep-keeps" id="gpRepKeeps" aria-label="그대로 유지될 내용"></ul>
 
@@ -237,47 +241,52 @@
                  <p class="gp-rep-bandchip" id="gpRepBandChip">판정 준비 중</p>
                  <p class="gp-rep-source" id="gpRepSource"></p>
                  <ul class="gp-rep-zonekey" aria-label="게이지 구역 읽는 법">
-                   <li class="z-hard">50~100 위험 · 교수님이 바로 알아채요</li>
-                   <li class="z-revise">21~49 주의 · 조금만 다듬으면 돼요</li>
-                   <li class="z-low">0~20 안전 · 멀리 달아났어요</li>
+                   <li class="z-hard" title="교수님이 바로 알아채요">50~100 위험</li>
+                   <li class="z-revise" title="조금만 다듬으면 돼요">21~49 주의</li>
+                   <li class="z-low" title="멀리 달아났어요">0~20 안전</li>
                  </ul>
                </div>
 
                <article class="gp-rep-ba-col after">
                  <p class="gp-rep-ba-cap">After</p>
                  <p class="gp-rep-ba-text" id="gpRepAfter"></p>
-                 <p class="gp-rep-ba-tag good">다듬은 예시 · 사실은 그대로</p>
-                 <button type="button" class="gp-rep-ba-diff" id="gpRepBaDiff" aria-pressed="false" onclick="gpRepToggleDiff()">바뀐 부분 보기</button>
+                 <p class="gp-rep-ba-tag good" id="gpRepAfterTag">다듬은 예시 · 사실은 그대로</p>
+                 <!-- 가장 많이 바뀐 자리만 공개, 나머지는 휴머나이징에서 — 감지만 돌려 짧은 글을 다듬어 가는 길을 막는다 -->
+                 <div class="gp-rep-ba-unlock" id="gpRepBaUnlock" hidden>
+                   <button type="button" onclick="lavReportToHumanize()">나머지는 휴머나이징에서 →</button>
+                   <span>이 문장 전체와 글 전체를 다듬어요</span>
+                 </div>
                </article>
              </div>
 
              <p class="gp-rep-ba-empty" id="gpRepBaEmpty" hidden></p>
              <div class="gp-rep-hero-foot">
-               <p class="gp-rep-hero-note">예시는 한 문장까지만 보여드려요. 글 전체를 다듬는 건 휴머나이징에서 해요.</p>
-               <button type="button" class="gp-rep-share" id="gpRepShare" onclick="gpRepShareCard()">
-                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4h14v-4"/></svg>
-                 <span>결과 이미지로 저장</span>
-               </button>
+               <p class="gp-rep-hero-note">예시는 한 문장의 일부까지만 보여드려요. 문장 전체와 글 전체를 다듬는 건 휴머나이징에서 해요.</p>
              </div>
            </section>
 
            <!-- ② 계측 띠 -->
            <dl class="gp-rep-stats" id="gpRepStats">
-             <div>
+             <!-- 타일은 전부 누를 수 있다: 첫 타일은 전체 문장 모달, 나머지는 그 신호의 문장을 핵심 문장 자리에 고정 -->
+             <div class="is-link is-all" tabindex="0" role="button" aria-label="전체 문장 보기">
                <span class="gp-rep-stat-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span>
                <div><dt>전체 문장 수</dt><dd id="gpRepStatTotal">—</dd></div>
+               <span class="gp-rep-stat-go" aria-hidden="true">전체 보기</span>
              </div>
              <div class="is-link" data-axis="generic" tabindex="0" role="button" aria-pressed="false" aria-label="다듬을 후보 문장 보기">
                <span class="gp-rep-stat-ico warn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg></span>
                <div><dt>다듬을 후보 문장</dt><dd id="gpRepStatGeneric">—</dd></div>
+               <span class="gp-rep-stat-go" aria-hidden="true">문장 보기</span>
              </div>
              <div class="is-link" data-axis="uniform" tabindex="0" role="button" aria-pressed="false" aria-label="길이가 비슷한 문장 보기">
                <span class="gp-rep-stat-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-8"/><path d="M15 7h5v5"/></svg></span>
                <div><dt>문장 길이 편차</dt><dd id="gpRepStatRhythm">—</dd></div>
+               <span class="gp-rep-stat-go" aria-hidden="true">문장 보기</span>
              </div>
              <div class="is-link" data-axis="ending" tabindex="0" role="button" aria-pressed="false" aria-label="같은 종결이 이어진 문장 보기">
                <span class="gp-rep-stat-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h4"/></svg></span>
                <div><dt>같은 종결 반복</dt><dd id="gpRepStatEnding">—</dd></div>
+               <span class="gp-rep-stat-go" aria-hidden="true">문장 보기</span>
              </div>
            </dl>
            <p class="gp-rep-sample" id="gpRepSample" hidden></p>
@@ -326,13 +335,18 @@
                </div>
                <div class="gp-rep-radar" id="gpRepRadar"></div>
                <p class="sr-only" id="gpRepRadarAccessible"></p>
-               <p class="gp-rep-radar-hint" id="gpRepRadarHint"><span class="desk">항목에 손을 올리면 그 신호를 만든 문장이 왼쪽에 켜져요.</span><span class="mob">항목을 누르면 위 핵심 문장이 그 신호의 문장으로 바뀌어요.</span></p>
+               <p class="gp-rep-radar-hint" id="gpRepRadarHint"><span class="desk">항목을 누르면 그 신호를 만든 문장이 왼쪽 핵심 문장 자리에 켜져요. 다시 누르면 돌아와요.</span><span class="mob">항목을 누르면 위 핵심 문장이 그 신호의 문장으로 바뀌어요.</span></p>
              </section>
            </div>
 
            <section class="gp-rep-panel gp-rep-tips" aria-labelledby="gpRepTipsTitle">
              <div class="gp-rep-panel-head"><h3 id="gpRepTipsTitle">개선 포인트</h3><p class="gp-rep-legend"><span id="gpRepTipsCount"></span></p></div>
              <ul class="gp-rep-tiplist" id="gpRepTips"></ul>
+             <!-- 처방을 읽고 "직접 고치기엔 벅찬" 순간이 전환점이다 -->
+             <div class="gp-rep-tips-cta" id="gpRepTipsCta" hidden>
+               <span id="gpRepTipsCtaText">이 처방을 한 번에 손보려면</span>
+               <button type="button" onclick="lavReportToHumanize()">휴머나이징으로 다듬기 →</button>
+             </div>
            </section>
 
            <!-- ④ 전환 밴드 -->

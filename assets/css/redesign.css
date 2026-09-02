@@ -11545,3 +11545,159 @@ html.gp-rep-modal-open{overflow:hidden;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.lv-low .sig-level{background:#e2f5f8;color:var(--rep-teal);}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .sig-level.na{background:#eef0f7;color:var(--rep-muted);}
 @media (prefers-reduced-motion:reduce){ #mainContent[data-main-design="lavender"] .gp-rep-signals .sig-fill{transition:none;} }
+
+
+/* ===== v120: After 문장 게이트 — 가장 많이 바뀐 자리만, 나머지는 블러 + 휴머나이징 유도 ===== */
+#mainContent[data-main-design="lavender"] .gp-rep-ba-mask{
+ filter:blur(5px);-webkit-filter:blur(5px);user-select:none;-webkit-user-select:none;pointer-events:none;
+ color:var(--rep-copy);opacity:.65;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-peek{background:#ece5ff;color:var(--rep-ink);border-radius:4px;padding:1px 3px;font-weight:700;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-col.after:not(.is-gated) .gp-rep-ba-peek{background:transparent;padding:0;font-weight:inherit;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-unlock{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:12px 0 0;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-unlock button{
+ padding:9px 16px;border:0;border-radius:999px;cursor:pointer;
+ background:var(--rep-brand-strong);color:#fff;font-size:var(--rep-fs-2);font-weight:850;
+ box-shadow:0 8px 20px -10px rgba(75,52,204,.7);transition:transform .14s ease;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-unlock button:hover{transform:translateY(-1px);}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-unlock span{font-size:var(--rep-fs-1);color:var(--rep-muted);word-break:keep-all;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-diff,#mainContent[data-main-design="lavender"] .gp-rep-diff-del,#mainContent[data-main-design="lavender"] .gp-rep-diff-add{display:none;}
+
+/* 개선 포인트 → 휴머나이징 */
+#mainContent[data-main-design="lavender"] .gp-rep-tips-cta{
+ display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;
+ margin:18px 0 0;padding:14px 18px;border-radius:14px;background:var(--rep-cream);
+}
+#mainContent[data-main-design="lavender"] .gp-rep-tips-cta span{font-size:var(--rep-fs-3);font-weight:700;color:var(--rep-ink);word-break:keep-all;}
+#mainContent[data-main-design="lavender"] .gp-rep-tips-cta button{
+ padding:11px 20px;border:0;border-radius:999px;cursor:pointer;
+ background:var(--rep-brand-strong);color:#fff;font-size:var(--rep-fs-3);font-weight:850;
+ box-shadow:0 8px 20px -10px rgba(75,52,204,.7);transition:transform .14s ease;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-tips-cta button:hover{transform:translateY(-1px);}
+@media (max-width:640px){
+ #mainContent[data-main-design="lavender"] .gp-rep-tips-cta{flex-direction:column;align-items:stretch;text-align:center;}
+ #mainContent[data-main-design="lavender"] .gp-rep-ba-unlock button{width:100%;}
+}
+
+
+/* ===== v121: 라벨 정리 · 개선 포인트 가독성 · 저장 이미지 =====
+   게이지 숫자 눈금은 양 끝만, '내 글'은 호 안쪽(구역 말은 바깥) — 겹침 원천 차단.
+   개선 포인트는 3열 13px에서 2열 15px로. */
+#mainContent[data-main-design="lavender"] .gp-rep-scope .tick{display:none;}
+#mainContent[data-main-design="lavender"] .gp-rep-scope .zone-label{font-size:var(--rep-fs-2);}
+#mainContent[data-main-design="lavender"] .gp-rep-scope .who.me{font-size:var(--rep-fs-2);paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round;}
+#mainContent[data-main-design="lavender"] .gp-rep-scope .who{paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round;}
+#mainContent[data-main-design="lavender"] .gp-rep-tiplist{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 32px;}
+#mainContent[data-main-design="lavender"] .gp-rep-tiplist li{font-size:var(--rep-fs-4);line-height:1.75;color:var(--rep-ink);grid-template-columns:32px minmax(0,1fr);gap:14px;}
+#mainContent[data-main-design="lavender"] .gp-rep-tiplist li::before{width:32px;height:32px;border-radius:10px;}
+#mainContent[data-main-design="lavender"] .gp-rep-tipbtn{text-decoration-color:rgba(109,74,255,.45);text-underline-offset:4px;}
+@media (max-width:860px){ #mainContent[data-main-design="lavender"] .gp-rep-tiplist{grid-template-columns:1fr;} }
+
+
+/* ===== v122: 호버 점프 제거 · Before 표시 · 범례 한 줄 · 저장 버튼 우상단 · 정렬/간격 ===== */
+/* 문장 패널 교체는 페이드 — 높이는 JS가 잠근다 */
+#mainContent[data-main-design="lavender"] .gp-rep-sentences{transition:opacity .16s ease;}
+#mainContent[data-main-design="lavender"] .gp-rep-sentences.is-swapping{opacity:0;}
+@media (prefers-reduced-motion:reduce){ #mainContent[data-main-design="lavender"] .gp-rep-sentences{transition:none;} }
+
+/* 핵심 문장 등장 — 스윕 한 줄이 위에서 아래로 훑고, 행은 왼쪽에서 켜지며 번호 배지가 찍힌다 */
+#mainContent[data-main-design="lavender"] .gp-rep-sentences{position:relative;}
+#mainContent[data-main-design="lavender"] .gp-rep-sentences.is-entering::before{
+ content:'';position:absolute;left:-6px;right:-6px;top:0;height:3px;border-radius:999px;z-index:2;pointer-events:none;
+ background:linear-gradient(90deg,rgba(109,74,255,0),var(--rep-brand) 30%,var(--rep-brand) 70%,rgba(109,74,255,0));
+ box-shadow:0 0 14px 3px rgba(109,74,255,.35);
+ animation:gpRepScan .7s cubic-bezier(.3,.1,.3,1) 1 both;
+}
+@keyframes gpRepScan{from{top:0;opacity:1}to{top:100%;opacity:0}}
+#mainContent[data-main-design="lavender"] .gp-rep-sentences.is-entering .gp-rep-s{
+ animation:gpRepRowIn .42s cubic-bezier(.2,.9,.3,1) both;animation-delay:calc(90ms + var(--i,0) * 90ms);
+}
+@keyframes gpRepRowIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+#mainContent[data-main-design="lavender"] .gp-rep-sentences.is-entering .gp-rep-s .gp-rep-s-no{
+ animation:gpRepStamp .5s cubic-bezier(.2,1.5,.4,1) both;animation-delay:calc(220ms + var(--i,0) * 90ms);
+}
+@keyframes gpRepStamp{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
+#mainContent[data-main-design="lavender"] .gp-rep-sentences.is-entering .gp-rep-s.is-candidate .gp-rep-ending-hl{
+ animation:gpRepInk .5s ease both;animation-delay:calc(360ms + var(--i,0) * 90ms);
+}
+@keyframes gpRepInk{from{background-size:0% 100%}to{background-size:100% 100%}}
+@media (prefers-reduced-motion:reduce){
+ #mainContent[data-main-design="lavender"] .gp-rep-sentences.is-entering::before,#mainContent[data-main-design="lavender"] .gp-rep-sentences.is-entering .gp-rep-s,#mainContent[data-main-design="lavender"] .gp-rep-sentences.is-entering .gp-rep-s .gp-rep-s-no{animation:none;}
+}
+
+/* Before: 바뀌는 자리 */
+#mainContent[data-main-design="lavender"] .gp-rep-ba-focus{background:#fdeeec;color:var(--rep-ink);border-radius:4px;padding:1px 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone;text-decoration:underline wavy rgba(196,63,53,.55);text-underline-offset:3px;}
+
+/* 히어로: 저장 버튼은 우상단 빈자리, 제목은 그 폭을 피해 가운데 */
+#mainContent[data-main-design="lavender"] .gp-rep-hero{position:relative;padding:28px 34px 24px;}
+#mainContent[data-main-design="lavender"] .gp-rep-hero .gp-rep-share{position:absolute;top:18px;right:18px;margin:0;padding:8px 13px;}
+#mainContent[data-main-design="lavender"] .gp-rep .gp-rep-hero-title{max-width:620px;padding:0 120px;box-sizing:content-box;}
+#mainContent[data-main-design="lavender"] .gp-rep-hero-foot{margin-top:16px;}
+#mainContent[data-main-design="lavender"] .gp-rep-hero-note{margin:0;}
+
+/* 범례 한 줄 */
+#mainContent[data-main-design="lavender"] .gp-rep-zonekey{flex-wrap:nowrap;gap:0 18px;margin-top:12px;}
+#mainContent[data-main-design="lavender"] .gp-rep-zonekey li{font-size:var(--rep-fs-2);}
+
+/* Before/After 카드: 같은 높이, 배지는 바닥에 정렬, 게이지와 세로 중심 맞춤 */
+#mainContent[data-main-design="lavender"] .gp-rep-ba{align-items:center;gap:24px;margin-top:24px;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-col{display:flex;flex-direction:column;align-self:stretch;padding:20px 22px;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-text{flex:1;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-tag{margin-top:14px;align-self:flex-start;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-unlock{margin-top:12px;}
+#mainContent[data-main-design="lavender"] .gp-rep-dial-read{margin-top:-70px;}
+
+/* 계측 띠·본문 2단·개선 포인트·전환 밴드 사이 간격을 한 값으로 */
+#mainContent[data-main-design="lavender"] .gp-rep{gap:18px;}
+#mainContent[data-main-design="lavender"] .gp-rep-grid{gap:18px;}
+#mainContent[data-main-design="lavender"] .gp-rep-panel-head{margin-bottom:14px;}
+#mainContent[data-main-design="lavender"] .gp-rep-tips-cta{margin-top:16px;}
+
+@media (max-width:1080px){
+  #mainContent[data-main-design="lavender"] .gp-rep .gp-rep-hero-title{padding:0 0 0 0;margin-top:44px;}
+}
+@media (max-width:640px){
+  #mainContent[data-main-design="lavender"] .gp-rep-hero{padding:22px 18px 20px;}
+  #mainContent[data-main-design="lavender"] .gp-rep-hero .gp-rep-share{position:static;width:100%;justify-content:center;margin-bottom:14px;}
+  #mainContent[data-main-design="lavender"] .gp-rep .gp-rep-hero-title{margin-top:0;}
+  #mainContent[data-main-design="lavender"] .gp-rep-zonekey{flex-wrap:wrap;gap:4px 14px;}
+  #mainContent[data-main-design="lavender"] .gp-rep-ba-col{align-self:auto;}
+}
+
+
+/* ===== v123: 계측 띠 — 누를 수 있다는 표시 · 선택 상태 명확화 ===== */
+#mainContent[data-main-design="lavender"] .gp-rep-stats>div.is-link{position:relative;padding-right:14px;transition:background .15s ease,box-shadow .15s ease;}
+#mainContent[data-main-design="lavender"] .gp-rep-stats>div.is-link dt::after{content:none;}
+#mainContent[data-main-design="lavender"] .gp-rep-stat-go{
+ margin-left:auto;flex:0 0 auto;padding:6px 10px;border-radius:999px;
+ background:rgba(255,255,255,.10);color:var(--rep-on-navy-muted);font-size:var(--rep-fs-1);font-weight:800;white-space:nowrap;
+ transition:background .15s ease,color .15s ease,transform .15s ease;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-stats>div.is-link:hover .gp-rep-stat-go,
+#mainContent[data-main-design="lavender"] .gp-rep-stats>div.is-link:focus-visible .gp-rep-stat-go{background:rgba(255,255,255,.2);color:#fff;transform:translateX(2px);}
+#mainContent[data-main-design="lavender"] .gp-rep-stats>div.is-link.is-pinned{background:rgba(245,180,37,.14);box-shadow:inset 0 0 0 2px #f5b425;}
+#mainContent[data-main-design="lavender"] .gp-rep-stats>div.is-link.is-pinned .gp-rep-stat-go{background:#f5b425;color:#1a1747;}
+/* 선택된 타일 아래로 향하는 화살표 — 아래 핵심 문장 패널과 잇는다 */
+#mainContent[data-main-design="lavender"] .gp-rep-stats>div.is-link.is-pinned::after{
+ content:'';position:absolute;left:50%;bottom:-22px;transform:translateX(-50%);
+ border:10px solid transparent;border-top-color:#f5b425;border-bottom:0;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-stats.has-pin>div.is-link:not(.is-pinned){opacity:.72;}
+/* 유도: 첫 열림 뒤 알약이 두 번 깜빡인다 */
+#mainContent[data-main-design="lavender"] .gp-rep-stats.is-nudge .gp-rep-stat-go{animation:gpRepNudge 1.3s ease 2;}
+@keyframes gpRepNudge{0%,100%{background:rgba(255,255,255,.10);color:var(--rep-on-navy-muted)}50%{background:#f5b425;color:#1a1747;transform:translateX(2px)}}
+@media (prefers-reduced-motion:reduce){ #mainContent[data-main-design="lavender"] .gp-rep-stats.is-nudge .gp-rep-stat-go{animation:none;} }
+/* 핵심 문장 머리: 어느 항목이 선택됐는지 같은 노란 칩으로 말하고, 해제 버튼을 둔다 */
+#mainContent[data-main-design="lavender"] .gp-rep-link-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff4d6;color:#6b4a06;border:1px solid #f5d98a;}
+#mainContent[data-main-design="lavender"] .gp-rep-link-chip{padding:3px 9px;border-radius:999px;background:#f5b425;color:#1a1747;font-size:var(--rep-fs-1);font-weight:850;}
+#mainContent[data-main-design="lavender"] .gp-rep-link-head>span{flex:1;min-width:0;font-weight:600;}
+#mainContent[data-main-design="lavender"] .gp-rep-link-clear{
+ margin-left:auto;padding:4px 10px;border-radius:999px;cursor:pointer;border:1px solid #e3c36a;background:#fff;color:#6b4a06;font-size:var(--rep-fs-1);font-weight:800;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-link-clear:hover{background:#fbe9bd;}
+@media (max-width:480px){
+ #mainContent[data-main-design="lavender"] .gp-rep-stat-go{padding:5px 8px;}
+ #mainContent[data-main-design="lavender"] .gp-rep-stats>div.is-link.is-pinned::after{bottom:-18px;}
+}

@@ -900,6 +900,13 @@
       if (radar) { radar.classList.remove('is-drawn'); setTimeout(function () { radar.classList.add('is-drawn'); }, 300); }
       repCountUpStats();
       repSyncParaMore();   // 렌더 시점엔 화면이 아직 hidden이라 높이가 0 — 보이는 지금 다시 잰다
+      // 계측 띠의 '문장 보기' 알약을 한 번 깜빡여 누를 수 있다는 걸 알린다(처음 한 번만)
+      var statsNudge = $('gpRepStats');
+      if (statsNudge && !repMapState.pinned) {
+        statsNudge.classList.remove('is-nudge');
+        setTimeout(function () { statsNudge.classList.add('is-nudge'); }, 1900);
+        setTimeout(function () { statsNudge.classList.remove('is-nudge'); }, 4600);
+      }
     }); });
   }
   function repCountUpStats() {
@@ -921,45 +928,63 @@
     });
   }
 
-  // ── Before/After 바뀐 부분 — 낱말 단위 최장 공통 부분열로 지운 것·더한 것을 칠한다 ──
-  //   예시 문장이 "무엇이 달라졌는지"를 눈으로 세게 하는 장치. 사실을 바꾸지 않았음을 스스로 확인할 수 있다.
-  function repWordDiff(a, b) {
-    var A = String(a || '').split(/(\s+)/).filter(Boolean), B = String(b || '').split(/(\s+)/).filter(Boolean);
-    var n = A.length, m = B.length, dp = [];
-    for (var i = 0; i <= n; i++) { dp[i] = new Array(m + 1).fill(0); }
-    for (i = n - 1; i >= 0; i--) for (var j = m - 1; j >= 0; j--) dp[i][j] = A[i] === B[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
-    var outA = [], outB = []; i = 0; j = 0;
-    while (i < n && j < m) {
-      if (A[i] === B[j]) { outA.push([A[i], 0]); outB.push([B[j], 0]); i++; j++; }
-      else if (dp[i + 1][j] >= dp[i][j + 1]) { outA.push([A[i], 1]); i++; }
-      else { outB.push([B[j], 1]); j++; }
-    }
-    while (i < n) outA.push([A[i++], 1]);
-    while (j < m) outB.push([B[j++], 1]);
-    return { a: outA, b: outB };
-  }
-  function repPaintDiff(el, parts, cls) {
-    el.textContent = '';
-    parts.forEach(function (p) {
-      if (p[1] && p[0].trim()) { var mark = document.createElement('mark'); mark.className = cls; mark.textContent = p[0]; el.appendChild(mark); }
-      else el.appendChild(document.createTextNode(p[0]));
-    });
-  }
-  var repDiffOn = false;
-  window.gpRepToggleDiff = function () {
-    var d = lastReport, btn = $('gpRepBaDiff');
-    var before = $('gpRepBefore'), after = $('gpRepAfter');
-    if (!d || !d.example || !before || !after) return;
-    repDiffOn = !repDiffOn;
-    if (repDiffOn) {
-      var diff = repWordDiff(d.example.before, d.example.after);
-      repPaintDiff(before, diff.a, 'gp-rep-diff-del');
-      repPaintDiff(after, diff.b, 'gp-rep-diff-add');
+  // ── Before 문장 — 다듬을 때 바뀌는 자리를 원문에 표시한다(사용자 글이라 가릴 것 없다) ──
+  function repPaintBefore(example) {
+    var before = $('gpRepBefore');
+    if (!before) return;
+    before.textContent = '';
+    if (!example) return;
+    var text = String(example.before || '');
+    var f = example.beforeFocus;
+    if (f && Number.isFinite(Number(f.start)) && Number.isFinite(Number(f.end)) && f.end > f.start && f.end <= text.length) {
+      before.appendChild(document.createTextNode(text.slice(0, f.start)));
+      var mark = document.createElement('mark');
+      mark.className = 'gp-rep-ba-focus';
+      mark.title = '다듬을 때 가장 크게 바뀌는 자리';
+      mark.textContent = text.slice(f.start, f.end);
+      before.appendChild(mark);
+      before.appendChild(document.createTextNode(text.slice(f.end)));
     } else {
-      before.textContent = d.example.before; after.textContent = d.example.after;
+      before.textContent = text;
     }
-    if (btn) { btn.setAttribute('aria-pressed', repDiffOn ? 'true' : 'false'); btn.textContent = repDiffOn ? '바뀐 부분 감추기' : '바뀐 부분 보기'; }
-  };
+  }
+
+  // ── After 문장 게이트 — 가장 많이 바뀐 자리만 보이고 나머지는 블러(서버가 이미 가짜 글자로 바꿔 보낸다) ──
+  //   전체는 휴머나이징에서. 감지 보고서가 짧은 글의 무료 다듬기 창구가 되지 않게 한다.
+  function repPaintAfter(example) {
+    var after = $('gpRepAfter'), tag = $('gpRepAfterTag'), unlock = $('gpRepBaUnlock');
+    var col = document.querySelector('.gp-rep-ba-col.after');
+    if (!after) return;
+    after.textContent = '';
+    var parts = example && Array.isArray(example.afterParts) && example.afterParts.length
+      ? example.afterParts
+      : (example ? [{ text: example.after || '', visible: true }] : []);
+    var gated = parts.some(function (p) { return p && p.visible === false; });
+    parts.forEach(function (p) {
+      if (!p || !p.text) return;
+      if (p.visible === false) {
+        var mask = document.createElement('span');
+        mask.className = 'gp-rep-ba-mask';
+        mask.setAttribute('aria-hidden', 'true');
+        mask.textContent = p.text;
+        after.appendChild(mask);
+      } else {
+        var vis = document.createElement('mark');
+        vis.className = 'gp-rep-ba-peek';
+        vis.textContent = p.text;
+        after.appendChild(vis);
+      }
+    });
+    if (gated) {
+      var sr = document.createElement('span');
+      sr.className = 'sr-only';
+      sr.textContent = ' (다듬은 문장 중 가장 많이 바뀐 자리만 보여드려요. 나머지 ' + (Number(example.afterHidden) || 0) + '자는 휴머나이징에서 볼 수 있어요)';
+      after.appendChild(sr);
+    }
+    if (col) col.classList.toggle('is-gated', gated);
+    if (tag) tag.textContent = gated ? '다듬은 예시 · 가장 많이 바뀐 자리' : '다듬은 예시 · 사실은 그대로';
+    if (unlock) unlock.hidden = !gated;
+  }
 
   // ── 문단 칸 툴팁 — 번호만 보이는 칸에 "몇 번째 문단, 문장 몇, 후보 몇, 첫 줄"을 붙인다 ──
   function repShowParaTip(cell) {
@@ -1106,18 +1131,13 @@
         if (lo <= z[0]) svg.appendChild(mk('path', { class: 'band-on ' + z[2], d: repGaugeArc(z[0], Math.min(z[0] - 0.5, lo), G.R), 'data-from': z[0], 'data-to': Math.min(z[0] - 0.5, lo) }));
       });
     }
-    // 눈금 — 왼쪽 100부터 오른쪽 0까지
-    [[100, '100'], [50, '50'], [20, '20'], [0, '0']].forEach(function (t) {
-      var p1 = repGaugePoint(t[0], G.R - G.band / 2 - 4), p2 = repGaugePoint(t[0], G.R - G.band / 2 - 11);
-      svg.appendChild(mk('line', { class: 'tick', x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1] }));
-      var lp = repGaugePoint(t[0], G.R - G.band / 2 - 22);
+    // 눈금은 양 끝 두 개만(100·0). 중간 숫자는 범례가 말하니 판에서는 뺀다 — 라벨 밀집 해소(사장님 9/2).
+    [[100, '100'], [0, '0']].forEach(function (t) {
+      var lp = repGaugePoint(t[0], G.R - G.band / 2 - 16);
       var tx = mk('text', { class: 'tick-label', x: lp[0], y: lp[1] + 4, 'text-anchor': 'middle' });
       tx.textContent = t[1];
       svg.appendChild(tx);
     });
-    // 구역 이름 — 띠 바깥
-    // 러닝 레인 — 트랙 한가운데 점선. "달려서 멀어진다"는 브랜드 동사를 게이지에 얹는다.
-    svg.appendChild(mk('path', { class: 'lane', d: repGaugeArc(0, 100, G.R) }));
     // 구역 이름 — 짧고 직관적인 세 낱말.
     [[82, '위험', 'z-hard'], [35, '주의', 'z-revise'], [10, '안전', 'z-low']].forEach(function (z) {
       var lp = repGaugePoint(z[0], G.R + G.band / 2 + 14);
@@ -1143,7 +1163,9 @@
       blip.appendChild(mk('circle', { class: 'blip-halo', r: 34 }));
       blip.appendChild(mk('circle', { class: 'blip-ring', r: 25 }));
       blip.appendChild(mk('image', { href: '/assets/img/report/runner-bust.png', x: -23, y: -23, width: 46, height: 46, 'clip-path': 'url(#gpRepClipBlip)', preserveAspectRatio: 'xMidYMid slice' }));
-      var bl = mk('text', { class: 'who me', x: 0, y: -33, 'text-anchor': 'middle' }); bl.textContent = '내 글';
+      // '내 글' 이름표는 호 안쪽(중심 방향)에 둔다 — 구역 말(위험·주의·안전)은 호 바깥이라 절대 겹치지 않는다.
+      var a = repGaugeAngle(score);
+      var bl = mk('text', { class: 'who me', x: (-Math.cos(a) * 40).toFixed(1), y: (Math.sin(a) * 40 + 4).toFixed(1), 'text-anchor': 'middle' }); bl.textContent = '내 글';
       blip.appendChild(bl);
       blipAt.appendChild(blip);
       svg.appendChild(blipAt);
@@ -1462,10 +1484,25 @@
       if (linkHead) {
         var copy = REP_AXIS_COPY[repMapState.link] || { head: '', empty: '' };
         linkHead.hidden = false;
-        linkHead.textContent = scoped.length
+        linkHead.textContent = '';
+        var chip = document.createElement('b');
+        chip.className = 'gp-rep-link-chip';
+        chip.textContent = REP_AXIS_NAME[repMapState.link] || '';
+        linkHead.appendChild(chip);
+        var desc = document.createElement('span');
+        desc.textContent = scoped.length
           ? copy.head + ' · ' + scoped.length.toLocaleString('ko-KR') + '문장' + (scoped.length > shown.length ? ' 중 ' + shown.length : '')
           : copy.empty;
+        linkHead.appendChild(desc);
+        var clear = document.createElement('button');
+        clear.type = 'button'; clear.className = 'gp-rep-link-clear';
+        clear.textContent = '해제';
+        clear.setAttribute('aria-label', '선택 해제하고 핵심 문장으로 돌아가기');
+        var currentKey = repMapState.link;
+        clear.addEventListener('click', function () { repLinkAxis(currentKey, true); });
+        linkHead.appendChild(clear);
       }
+      repEnterRows(list);
       var countLinked = $('gpRepMapCount');
       if (countLinked) countLinked.textContent = '';
       var emptyLinked = $('gpRepMapEmpty');
@@ -1485,6 +1522,7 @@
         : '전체 ' + repMapState.total.toLocaleString('ko-KR') + '문장 중 핵심 ' + key.length + '문장';
     }
 
+    repEnterRows(list);
     var empty = $('gpRepMapEmpty');
     if (empty) {
       empty.hidden = pool.length > 0;
@@ -1823,41 +1861,81 @@
     return [];
   }
   function repLinkAxis(key, pin) {
-    var current = repMapState.link || null;
+    // 호버(pin=false)는 표시만 한다: 항목·문단 칸에 불이 들어오고 문장 패널은 그대로.
+    //   문장 패널을 바꾸는 건 클릭·Enter(고정)뿐이다 — 마우스가 지나갈 때마다 높이가 바뀌어
+    //   스크롤 중 화면이 늘었다 줄었다 하던 문제(사장님 9/2).
     if (pin) {
-      // 탭/클릭은 고정 토글 — 같은 축을 다시 누르면 푼다.
-      repMapState.pinned = (current === key && repMapState.pinned) ? null : key;
-      key = repMapState.pinned;
-    } else if (repMapState.pinned) {
-      key = repMapState.pinned;   // 고정 중에는 호버가 바꾸지 못한다
+      repMapState.pinned = (repMapState.pinned === key) ? null : key;
+      repMapState.link = repMapState.pinned;
     }
-    if (key === current && !pin) return;
-    repMapState.link = key;
+    var active = repMapState.pinned || (pin ? null : key);
     document.querySelectorAll('[data-axis]').forEach(function (el) {
-      var on = !!key && el.getAttribute('data-axis') === key;
+      var on = !!active && el.getAttribute('data-axis') === active;
+      var pinnedHere = on && repMapState.pinned === active;
       el.classList.toggle('is-on', on);
-      el.classList.toggle('is-pinned', on && repMapState.pinned === key);
-      el.setAttribute('aria-pressed', on && repMapState.pinned === key ? 'true' : 'false');
+      el.classList.toggle('is-pinned', pinnedHere);
+      el.setAttribute('aria-pressed', pinnedHere ? 'true' : 'false');
+      var go = el.querySelector('.gp-rep-stat-go');
+      if (go) go.textContent = pinnedHere ? '선택됨 ✓' : '문장 보기';
     });
-    var hits = key ? repMatchesForAxis(key) : [];
+    var stats = $('gpRepStats');
+    if (stats) stats.classList.toggle('has-pin', !!repMapState.pinned);
+    var hits = active ? repMatchesForAxis(active) : [];
     var hitPara = {};
     hits.forEach(function (h) { hitPara[h.paragraph] = true; });
     document.querySelectorAll('#gpRepParaCells .gp-rep-paracell').forEach(function (cell) {
-      cell.classList.toggle('is-hit', !!key && !!hitPara[cell.getAttribute('data-para')]);
-      cell.classList.toggle('is-dim', !!key && !hitPara[cell.getAttribute('data-para')]);
+      cell.classList.toggle('is-hit', !!active && !!hitPara[cell.getAttribute('data-para')]);
+      cell.classList.toggle('is-dim', !!active && !hitPara[cell.getAttribute('data-para')]);
     });
-    repPaintSentences();
-    // 모바일은 핵심 문장 패널이 레이더 위(화면 밖)에 있어 고정해도 보이는 변화가 없다 — 그 자리로 데려간다.
-    if (pin && key && repMapState.pinned === key && window.matchMedia && window.matchMedia('(max-width:640px)').matches) {
+    if (!pin) return;
+    repSwapSentences();
+    // 모바일은 핵심 문장 패널이 위(화면 밖)에 있어 고정해도 보이는 변화가 없다 — 그 자리로 데려간다.
+    if (repMapState.pinned && window.matchMedia && window.matchMedia('(max-width:640px)').matches) {
       var head = $('gpRepLinkHead');
       if (head && typeof head.scrollIntoView === 'function') head.scrollIntoView({ behavior: repReducedMotion() ? 'auto' : 'smooth', block: 'center' });
     }
   }
+  // 핵심 문장 등장 — 교수님 레이더의 스윕이 목록을 훑고 지나가며 문장이 차례로 켜지고 번호가 찍힌다.
+  function repEnterRows(list) {
+    if (!list) return;
+    var rows = list.querySelectorAll('.gp-rep-s');
+    for (var i = 0; i < rows.length; i++) rows[i].style.setProperty('--i', String(i));
+    list.classList.remove('is-entering');
+    if (repReducedMotion() || !rows.length) return;
+    void list.offsetWidth;
+    list.classList.add('is-entering');
+    clearTimeout(list._enterTimer);
+    list._enterTimer = setTimeout(function () { list.classList.remove('is-entering'); }, 700 + rows.length * 90);
+  }
+  // 문장 패널 교체 — 바뀌는 동안 높이를 잠그고 페이드로 넘긴다(레이아웃 점프 없음)
+  function repSwapSentences() {
+    var panel = $('gpRepSentences');
+    if (!panel) { repPaintSentences(); return; }
+    var wrap = panel.parentElement;
+    var before = wrap ? wrap.getBoundingClientRect().height : 0;
+    if (wrap && before) wrap.style.minHeight = before + 'px';
+    if (repReducedMotion()) { repPaintSentences(); if (wrap) wrap.style.minHeight = ''; return; }
+    panel.classList.add('is-swapping');
+    setTimeout(function () {
+      repPaintSentences();
+      requestAnimationFrame(function () {
+        panel.classList.remove('is-swapping');
+        setTimeout(function () { if (wrap) wrap.style.minHeight = ''; }, 260);
+      });
+    }, 140);
+  }
+  var REP_AXIS_NAME = { generic: '다듬을 후보 문장', ending: '같은 종결 반복', uniform: '문장 길이 편차', anchor: '구체 앵커', stance: '화자 입장' };
   function repBindStatLinks() {
     document.querySelectorAll('#gpRepStats .is-link').forEach(function (tile) {
       if (tile.dataset.bound) return;
       tile.dataset.bound = '1';
       var key = tile.getAttribute('data-axis');
+      if (!key) {
+        // 전체 문장 수 타일 — 전체 문장 모달
+        tile.addEventListener('click', function () { window.gpRepOpenModal(); });
+        tile.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); window.gpRepOpenModal(); } });
+        return;
+      }
       tile.addEventListener('mouseenter', function () { repLinkAxis(key, false); });
       tile.addEventListener('mouseleave', function () { repLinkAxis(null, false); });
       tile.addEventListener('focus', function () { repLinkAxis(key, false); });
@@ -1903,10 +1981,12 @@
     if (!model) return;
     if (btn) { btn.disabled = true; btn.classList.add('is-busy'); }
     try {
-      var W = 1200, H = 630;
+      // 항상 내려받기(크롬 다운로드) · 2배 해상도 — 공유 시트로 넘기면 일부 환경에서 축소·손상돼 보였다(사장님 9/2).
+      var W = 1200, H = 630, SCALE = 2;
       var cv = document.createElement('canvas');
-      cv.width = W; cv.height = H;
+      cv.width = W * SCALE; cv.height = H * SCALE;
       var ctx = cv.getContext('2d');
+      ctx.scale(SCALE, SCALE);
       var font = function (w, px) { return w + ' ' + px + 'px Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'; };
       var grad = ctx.createLinearGradient(0, 0, W, H);
       grad.addColorStop(0, '#241c5c'); grad.addColorStop(1, '#4b34cc');
@@ -1926,7 +2006,7 @@
       ctx.beginPath(); ctx.roundRect(72, 262, chipW, 56, 28); ctx.fill();
       ctx.fillStyle = '#1a1747'; ctx.fillText(chip, 94, 274);
       ctx.fillStyle = '#e2dcff'; ctx.font = font('600', 24);
-      var keeps = (model.preservation || []).slice(0, 3).map(function (item) {
+      var keeps = (model.preservation || []).filter(function (item) { return !(typeof item === 'object' && item.key === 'grounding'); }).slice(0, 3).map(function (item) {
         if (typeof item !== 'object') return String(item);
         return item.label + ' ' + (item.value != null ? item.value : (Number(item.count) || 0) + '문장');
       });
@@ -1946,7 +2026,7 @@
       zonesC.forEach(function (z) { arc(z[0], z[1], GR, z[2], BW); });
       if (model.score != null) zonesC.forEach(function (z) { var lo = Math.max(model.score, z[1]); if (lo <= z[0]) arc(z[0], Math.min(z[0] - 0.5, lo), GR, z[3], BW); });
       ctx.fillStyle = '#e2dcff'; ctx.font = font('700', 20); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      [[100, '100'], [50, '50'], [20, '20'], [0, '0']].forEach(function (t) { var lp = gPoint(t[0], GR - BW / 2 - 26); ctx.fillText(t[1], lp[0], lp[1]); });
+      [[100, '100'], [0, '0']].forEach(function (t) { var lp = gPoint(t[0], GR - BW / 2 - 26); ctx.fillText(t[1], lp[0], lp[1]); });
       var zl = function (score, text, color) { var lp = gPoint(score, GR + BW / 2 + 22); ctx.fillStyle = color; ctx.font = font('800', 22); ctx.fillText(text, lp[0], lp[1]); };
       zl(82, '위험', '#ffb9ac'); zl(35, '주의', '#c9b8ff'); zl(10, '안전', '#9fd6e2');
       ctx.setLineDash([4, 9]); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2;
@@ -1976,17 +2056,15 @@
         ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(bp[0], bp[1], 48, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = '#6d4aff'; ctx.lineWidth = 5; ctx.stroke();
         drawClipped(imgs[1], bp[0], bp[1], 44);
-        label(bp[0], bp[1] - 70, '내 글');
+        var ang = gAngle(model.score);
+        label(bp[0] - Math.cos(ang) * 78, bp[1] + Math.sin(ang) * 78, '내 글');
       }
       var blob = await new Promise(function (resolve) { cv.toBlob(resolve, 'image/png'); });
       if (!blob) throw new Error('canvas_blob_failed');
-      var file = new File([blob], '교수님피하기-감지보고서.png', { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: '교수님 피하기 · AI 감지 보고서' }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
-      }
+      var fileName = '교수님피하기-감지보고서-' + (model.score == null ? '점수미정' : model.score + '점') + '.png';
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
-      a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+      a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
       if (window.gpToast) window.gpToast('결과 이미지를 저장했어요.');
     } catch (e) {
@@ -2107,6 +2185,8 @@
       keeps.textContent = '';
       (model.preservation || []).forEach(function (item) {
         if (!item) return;
+        // '원문 밖 새 사실 생성하지 않음'은 휴머나이저의 약속이라 감지 화면에서는 뜻이 닿지 않는다(사장님 9/2) — 여기서는 뺀다.
+        if (typeof item === 'object' && item.key === 'grounding') return;
         var li = document.createElement('li');
         var label = document.createElement('span');
         label.textContent = typeof item === 'object' ? item.label : String(item);
@@ -2126,10 +2206,8 @@
     var usable = !!(example.before && example.after);
     // 예시가 없으면 좌우 칸이 빠지므로 3열 격자를 접어 게이지를 가운데로 둔다.
     if ($('gpRepBa')) { $('gpRepBa').hidden = false; $('gpRepBa').classList.toggle('is-solo', !usable); }
-    if ($('gpRepBefore')) $('gpRepBefore').textContent = usable ? example.before : '';
-    if ($('gpRepAfter')) $('gpRepAfter').textContent = usable ? example.after : '';
-    repDiffOn = false;
-    if ($('gpRepBaDiff')) { $('gpRepBaDiff').hidden = !usable; $('gpRepBaDiff').setAttribute('aria-pressed', 'false'); $('gpRepBaDiff').textContent = '바뀐 부분 보기'; }
+    repPaintBefore(usable ? example : null);
+    repPaintAfter(usable ? example : null);
     var beforeCol = document.querySelector('.gp-rep-ba-col.before');
     var afterCol = document.querySelector('.gp-rep-ba-col.after');
     if (beforeCol) beforeCol.hidden = !usable;
@@ -2213,6 +2291,13 @@
         tips.appendChild(li);
       });
       if ($('gpRepTipsCount')) $('gpRepTipsCount').textContent = tipLines.length + '가지';
+      // 처방 아래 전환 — 유료 수정을 권하지 않는 상태(간이 추정·근거 부족·유리한 글)에서는 붙이지 않는다.
+      var tipsCta = $('gpRepTipsCta');
+      if (tipsCta) {
+        var actionable = tipLines.filter(function (line) { return !/두드러진 문체 신호가 없어요/.test(line); }).length;
+        tipsCta.hidden = model.conversionEligible === false || actionable === 0;
+        if ($('gpRepTipsCtaText')) $('gpRepTipsCtaText').textContent = '이 ' + actionable + '가지를 한 번에 손보려면';
+      }
     }
 
     // ④ 전환·한계
