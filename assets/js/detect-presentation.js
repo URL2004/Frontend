@@ -1,25 +1,25 @@
 (function (global) {
   'use strict';
 
-  var DISCLAIMER = 'AI 감지 결과는 문체 패턴을 바탕으로 한 추정치이며, 실제 작성 주체를 확정하지 않아요.';
+  var DISCLAIMER = '문체 패턴을 바탕으로 한 참고 결과이며 작성 주체나 외부 검사 결과를 확정하지 않아요.';
   var BANDS = {
     low: {
       level: 'low',
-      label: 'AI 티 지수 낮음',
-      summary: 'AI 생성 가능성 신호가 낮게 감지됐어요.',
-      detail: function (p) { return '최종 점수 ' + p + '%는 낮은 구간입니다. 일부 정형적 특징은 참고 신호이며, 전체 판정은 낮은 위험입니다.'; }
+      label: 'AI식 문체 신호 · 낮음',
+      summary: 'AI식 문체 신호가 낮게 감지됐어요.',
+      detail: function (p) { return '문체 신호 ' + p + '/100은 낮은 구간입니다. 일부 정형적 특징은 참고 신호이며, 내용 근거는 별도로 확인해 주세요.'; }
     },
     moderate: {
       level: 'moderate',
-      label: 'AI 티 지수 중간',
-      summary: 'AI 생성 가능성 신호가 일부 감지됐어요.',
-      detail: function (p) { return '최종 점수 ' + p + '%는 중간 구간이에요. 일부 정형적인 문체 특징이 관찰됐지만 작성 주체를 단정하기는 어려워요.'; }
+      label: 'AI식 문체 신호 · 중간',
+      summary: 'AI식 문체 신호가 일부 감지됐어요.',
+      detail: function (p) { return '문체 신호 ' + p + '/100은 중간 구간이에요. 일부 정형적인 문체 특징이 관찰됐지만 작성 주체를 단정하지 않아요.'; }
     },
     high: {
       level: 'high',
-      label: 'AI 티 지수 높음',
-      summary: 'AI 생성 가능성 신호가 높게 감지됐어요.',
-      detail: function (p) { return '최종 점수 ' + p + '%는 높은 구간이에요. 표시된 문체 특징이 점수를 높인 신호로 관찰됐어요.'; }
+      label: 'AI식 문체 신호 · 높음',
+      summary: 'AI식 문체 신호가 높게 감지됐어요.',
+      detail: function (p) { return '문체 신호 ' + p + '/100은 높은 구간이에요. 표시된 문체 특징이 점수를 높인 근거로 관찰됐어요.'; }
     }
   };
 
@@ -36,6 +36,14 @@
     if (p <= 20) return BANDS.low;
     if (p <= 49) return BANDS.moderate;
     return BANDS.high;
+  }
+
+  function professorRadarFor(value) {
+    var p = probability(value);
+    if (p === null) return { score: null, band: 'limited', label: '점수 확인 필요' };
+    if (p <= 20) return { score: p, band: 'low', label: '피하기에 유리한 편' };
+    if (p <= 49) return { score: p, band: 'revise', label: '보완 후 제출 권장' };
+    return { score: p, band: 'hard', label: '지금은 피하기 어려운 편' };
   }
 
   function compact(value) {
@@ -87,4 +95,5 @@
 
   global.gpNormalizeDetectPresentation = normalize;
   global.gpDetectRiskBand = bandFor;
+  global.gpProfessorRadarBand = professorRadarFor;
 })(window);

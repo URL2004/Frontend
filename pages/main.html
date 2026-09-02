@@ -192,65 +192,203 @@
           </div>
         </section>
 
-         <!-- AI 감지 보고서 (유료 100자당 1크레딧 — 휴머나이징 전환 퍼널) -->
-         <section class="lav-flow-card lav-report" data-flow="report" hidden>
-           <!-- ① 핵심 판정: 반원 게이지(주인공) + 판정 텍스트 -->
-           <div class="lav-rep-hero" id="lavRepScore">
-             <!-- 풀 서클 링 게이지(MagicUI animated-circular-progress-bar 스타일) — r45 둘레 = 2π×45 = π×90,
-                  기존 반원(r90) 호 길이와 동일해 JS dashoffset 계산은 그대로 호환 -->
-             <div class="lav-rep-gauge">
-               <svg viewBox="0 0 100 100" aria-hidden="true">
-                 <circle class="g-track" cx="50" cy="50" r="45"/>
-                 <circle class="g-val" id="lavRepArc" cx="50" cy="50" r="45"/>
-               </svg>
-               <div class="g-center">
-                 <span class="g-num"><b id="lavRepProb">--</b><i>%</i></span>
-                 <span class="g-cap">AI 티 지수</span>
+         <!-- AI 감지 보고서: 문체 신호와 내용 근거를 분리해 근거부터 설명합니다. -->
+         <!-- ═══ AI 감지 보고서 · 방향 계약 (seed 26e340ec / v116) ═══════════════
+              THESIS: 결과를 읽는 화면이 아니라 "내 글이 어떻게 달라지는지"를 보여주는 실험실
+                리포트. 전후 대비와 원형 게이지를 한 카드에 세우고, 근거는 계측 띠와
+                원인 레이더로 나눠 담는다. 지표를 세로로 쌓는 배열을 거부한다.
+              OWN-WORLD: 브랜드 보라(#5a5bd8·#7c3aed)를 전면에 쓰는 실험실 톤 —
+                흰 카드 + 라벤더 바탕, 계측은 네이비 띠 하나, CTA는 보라 그라디언트 밴드에
+                로고의 달리는 학생. 강조색은 보라 하나이고 경고 코랄은 수치 옆에서만.
+              STORY: 전후를 나란히 보고 → 점수와 판정을 읽고 → 계측 4개로 규모를 잡고 →
+                내 문장과 원인 레이더에서 확인하고 → 개선 포인트를 본 뒤 다음으로 간다.
+              FIRST VIEWPORT: 흰 히어로 카드 안에 Before | 원형 게이지 72/100 | After가
+                한 줄로 서고, 그 아래 네이비 계측 띠가 폭을 가로지른다.
+              FORM: 실험실 리포트(사장님 지정 레퍼런스) · seed 26e340ec
+              FINISH: unreviewed and undocumented is unfinished; this build ends with the
+                finish review, the verdict, and DESIGN.md
+         ═══════════════════════════════════════════════════════════════════════ -->
+         <section class="lav-flow-card gp-rep" data-flow="report" aria-labelledby="gpRepHeading" tabindex="-1" hidden>
+           <p class="sr-only" id="gpRepLive" aria-live="polite" aria-atomic="true"></p>
+           <h2 class="sr-only" id="gpRepHeading" tabindex="-1">AI 감지 보고서</h2>
+
+           <!-- ① 히어로 카드: Before · 게이지 · After -->
+           <section class="gp-rep-hero" aria-labelledby="gpRepHeroTitle">
+             <h3 class="gp-rep-hero-title" id="gpRepHeroTitle">분석 결과를 정리하고 있어요</h3>
+             <ul class="gp-rep-keeps" id="gpRepKeeps" aria-label="그대로 유지될 내용"></ul>
+
+             <div class="gp-rep-ba" id="gpRepBa">
+               <article class="gp-rep-ba-col before">
+                 <p class="gp-rep-ba-cap">Before</p>
+                 <p class="gp-rep-ba-text" id="gpRepBefore"></p>
+                 <p class="gp-rep-ba-tag bad">다듬을 후보 문장</p>
+               </article>
+
+               <!-- 교수님 레이더 — 브랜드의 말을 그림으로: 중심에 교수님, 점수만큼 가까이 잡힌 학생.
+                    바깥 고리일수록 안전(피하기에 유리), 중심에 가까울수록 잡힌다(피하기 어려움).
+                    스코프 그림은 JS(repPaintScope)가 그린다. -->
+               <div class="gp-rep-dial" id="gpRepDial">
+                 <div class="gp-rep-scope" id="gpRepScope" role="img" aria-labelledby="gpRepScopeAlt"></div>
+                 <p class="sr-only" id="gpRepScopeAlt"></p>
+                 <div class="gp-rep-dial-read">
+                   <span class="cap">AI식 문체 신호</span>
+                   <span class="num"><b id="gpRepScore">--</b><span class="den">/100</span></span>
+                 </div>
+                 <p class="gp-rep-bandchip" id="gpRepBandChip">판정 준비 중</p>
+                 <p class="gp-rep-source" id="gpRepSource"></p>
+                 <ul class="gp-rep-zonekey" aria-label="게이지 구역 읽는 법">
+                   <li class="z-hard">50~100 위험 · 교수님이 바로 알아채요</li>
+                   <li class="z-revise">21~49 주의 · 조금만 다듬으면 돼요</li>
+                   <li class="z-low">0~20 안전 · 멀리 달아났어요</li>
+                 </ul>
                </div>
+
+               <article class="gp-rep-ba-col after">
+                 <p class="gp-rep-ba-cap">After</p>
+                 <p class="gp-rep-ba-text" id="gpRepAfter"></p>
+                 <p class="gp-rep-ba-tag good">다듬은 예시 · 사실은 그대로</p>
+                 <button type="button" class="gp-rep-ba-diff" id="gpRepBaDiff" aria-pressed="false" onclick="gpRepToggleDiff()">바뀐 부분 보기</button>
+               </article>
              </div>
-             <div class="lav-rep-verdict">
-               <span class="lav-rep-badge" id="lavRepBadge">판정</span>
-               <strong id="lavRepTitle">참고 결과</strong>
-               <p id="lavRepSummary"></p>
-               <div class="lav-rep-stats">
-                 <span class="st bad"><b id="lavRepStatRisk">0</b>주의가 필요한 문단</span>
-                 <span class="st mid"><b id="lavRepStatThin">0</b>주의</span>
-                 <span class="st good"><b id="lavRepStatSafe">0</b>안전</span>
+
+             <p class="gp-rep-ba-empty" id="gpRepBaEmpty" hidden></p>
+             <div class="gp-rep-hero-foot">
+               <p class="gp-rep-hero-note">예시는 한 문장까지만 보여드려요. 글 전체를 다듬는 건 휴머나이징에서 해요.</p>
+               <button type="button" class="gp-rep-share" id="gpRepShare" onclick="gpRepShareCard()">
+                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4h14v-4"/></svg>
+                 <span>결과 이미지로 저장</span>
+               </button>
+             </div>
+           </section>
+
+           <!-- ② 계측 띠 -->
+           <dl class="gp-rep-stats" id="gpRepStats">
+             <div>
+               <span class="gp-rep-stat-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span>
+               <div><dt>전체 문장 수</dt><dd id="gpRepStatTotal">—</dd></div>
+             </div>
+             <div class="is-link" data-axis="generic" tabindex="0" role="button" aria-pressed="false" aria-label="다듬을 후보 문장 보기">
+               <span class="gp-rep-stat-ico warn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg></span>
+               <div><dt>다듬을 후보 문장</dt><dd id="gpRepStatGeneric">—</dd></div>
+             </div>
+             <div class="is-link" data-axis="uniform" tabindex="0" role="button" aria-pressed="false" aria-label="길이가 비슷한 문장 보기">
+               <span class="gp-rep-stat-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17l5-6 4 4 7-8"/><path d="M15 7h5v5"/></svg></span>
+               <div><dt>문장 길이 편차</dt><dd id="gpRepStatRhythm">—</dd></div>
+             </div>
+             <div class="is-link" data-axis="ending" tabindex="0" role="button" aria-pressed="false" aria-label="같은 종결이 이어진 문장 보기">
+               <span class="gp-rep-stat-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h4"/></svg></span>
+               <div><dt>같은 종결 반복</dt><dd id="gpRepStatEnding">—</dd></div>
+             </div>
+           </dl>
+           <p class="gp-rep-sample" id="gpRepSample" hidden></p>
+
+           <!-- ③ 본문 2단 -->
+           <div class="gp-rep-grid">
+             <section class="gp-rep-panel gp-rep-sent" aria-labelledby="gpRepSentTitle">
+               <div class="gp-rep-panel-head">
+                 <h3 id="gpRepSentTitle">핵심 문장</h3>
+                 <p class="gp-rep-legend">
+                   <span><i class="d bad"></i>다듬을 후보</span>
+                   <span><i class="d good"></i>유지할 근거</span>
+                   <span id="gpRepMapCount"></span>
+                 </p>
                </div>
+
+               <!-- 문단이 여럿인 긴 글은 문장 목록 대신 문단 지도가 먼저 온다 -->
+               <div class="gp-rep-paramap" id="gpRepParaMap" hidden>
+                 <div class="gp-rep-paracells-wrap" id="gpRepParaWrap">
+                   <ol class="gp-rep-paracells" id="gpRepParaCells" aria-label="문단별 문체 신호"></ol>
+                   <div class="gp-rep-paratip" id="gpRepParaTip" role="tooltip" hidden></div>
+                 </div>
+                 <button type="button" class="gp-rep-paramore" id="gpRepParaMore" hidden aria-expanded="false" onclick="gpRepToggleParaMap()"><span>문단 지도 더 보기</span></button>
+                 <p class="gp-rep-paralegend">
+                   <span class="lv lv0"></span>신호 적음
+                   <span class="lv lv1"></span>섞임
+                   <span class="lv lv2"></span>신호 많음
+                 </p>
+               </div>
+
+               <p class="gp-rep-map-lead" id="gpRepMapLead"></p>
+               <p class="gp-rep-link-head" id="gpRepLinkHead" hidden></p>
+               <ol class="gp-rep-sentences" id="gpRepSentences"></ol>
+               <p class="gp-rep-map-more" id="gpRepMapMore" hidden></p>
+               <p class="gp-rep-map-empty" id="gpRepMapEmpty" hidden>이 문단에서 표시할 문장이 없어요.</p>
+               <button type="button" class="gp-rep-map-toggle" id="gpRepMapToggle" hidden aria-haspopup="dialog" aria-controls="gpRepModal" onclick="gpRepOpenModal()">
+                 <span>전체 문장 보기</span>
+                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>
+               </button>
+             </section>
+
+             <section class="gp-rep-panel gp-rep-cause" aria-labelledby="gpRepCauseTitle">
+               <div class="gp-rep-panel-head">
+                 <h3 id="gpRepCauseTitle">AI 감지 원인 분석</h3>
+                 <p class="gp-rep-legend"><span>막대가 길수록 AI식 신호가 강해요</span></p>
+               </div>
+               <div class="gp-rep-radar" id="gpRepRadar"></div>
+               <p class="sr-only" id="gpRepRadarAccessible"></p>
+               <p class="gp-rep-radar-hint" id="gpRepRadarHint"><span class="desk">항목에 손을 올리면 그 신호를 만든 문장이 왼쪽에 켜져요.</span><span class="mob">항목을 누르면 위 핵심 문장이 그 신호의 문장으로 바뀌어요.</span></p>
+             </section>
+           </div>
+
+           <section class="gp-rep-panel gp-rep-tips" aria-labelledby="gpRepTipsTitle">
+             <div class="gp-rep-panel-head"><h3 id="gpRepTipsTitle">개선 포인트</h3><p class="gp-rep-legend"><span id="gpRepTipsCount"></span></p></div>
+             <ul class="gp-rep-tiplist" id="gpRepTips"></ul>
+           </section>
+
+           <!-- ④ 전환 밴드 -->
+           <div class="gp-rep-cta" id="gpRepNext">
+             <div class="gp-rep-cta-copy">
+               <strong id="gpRepCtaTitle">이 글, 지금 다듬어 볼까요?</strong>
+               <p id="gpRepCtaDesc">원문의 뜻과 사실은 그대로 두고 문체만 다시 씁니다.</p>
+               <ul class="gp-rep-cta-expect" id="gpRepExpect" hidden aria-label="다듬었을 때 예상 변화"></ul>
+               <div class="gp-rep-cta-row">
+                 <button type="button" class="gp-rep-cta-btn" id="gpRepCtaBtn" onclick="lavReportToHumanize()">추천 방법·비용 확인하기 →</button>
+                 <p class="gp-rep-cta-cost" id="gpRepGoCost" hidden></p>
+               </div>
+               <p class="gp-rep-cta-help" id="gpRepCtaHelp">다음 화면에서 확인 후 시작해요 · <b>지금은 차감되지 않아요</b></p>
              </div>
            </div>
 
-           <!-- 진단 결과의 원문을 유지한 채 휴머나이징 방법 선택으로 이동합니다. -->
-           <button type="button" class="lav-flow-cta lav-rep-go" onclick="lavReportToHumanize()">이 글 그대로 휴머나이징으로 이동 →</button>
-           <p class="lav-rep-go-cost" id="lavRepGoCost" hidden></p>
-
-           <!-- ③ 문단별 진단 -->
-           <div class="lav-rep-sec lav-rep-paras">
-             <div class="lav-rep-sec-h"><h4>문단별 진단</h4><span id="lavRepParaCount"></span></div>
-             <div id="lavRepParaList" class="lav-collapse"></div>
-             <button type="button" class="lav-collapse-toggle" id="lavRepParaToggle" onclick="lavToggleCollapse('lavRepParaList',this)" aria-expanded="false" hidden><span>펼쳐보기</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-           </div>
-
-           <!-- ④ 실시간 1문장 미리보기(전환 장치) -->
-           <div class="lav-rep-sec lav-rep-example" id="lavRepExample" hidden>
-             <div class="lav-rep-sec-h"><h4>이 문장, 이렇게 바뀌어요</h4><span>AI식 특징이 가장 두드러진 문장 한 개를 미리 다듬었어요</span></div>
-             <div class="lav-rep-ba">
-               <div class="ba-col before"><span class="ba-tag bad">지금</span><p id="lavRepBefore"></p></div>
-               <span class="ba-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h13M12 6l6 6-6 6"/></svg></span>
-               <div class="ba-col after"><span class="ba-tag good">변환 후</span><p id="lavRepAfter"></p></div>
+           <!-- 전체 문장 모달 — 본문은 핵심만 보여주고, 전량은 여기서 문단 단위로 훑는다 -->
+           <div class="gp-rep-modal" id="gpRepModal" hidden>
+             <div class="gp-rep-modal-backdrop" onclick="gpRepCloseModal()"></div>
+             <div class="gp-rep-modal-panel" role="dialog" aria-modal="true" aria-labelledby="gpRepModalTitle">
+               <div class="gp-rep-modal-head">
+                 <div>
+                   <h3 id="gpRepModalTitle">전체 문장</h3>
+                   <p class="gp-rep-modal-meta" id="gpRepModalMeta"></p>
+                 </div>
+                 <button type="button" class="gp-rep-modal-close" onclick="gpRepCloseModal()" aria-label="전체 문장 닫기">
+                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                 </button>
+               </div>
+               <div class="gp-rep-modal-filters" role="group" aria-label="문장 걸러 보기">
+                 <button type="button" class="gp-rep-chip is-on" data-filter="all" aria-pressed="true" onclick="gpRepModalFilter('all')">전체</button>
+                 <button type="button" class="gp-rep-chip" data-filter="generic" aria-pressed="false" onclick="gpRepModalFilter('generic')"><i class="d bad"></i>다듬을 후보</button>
+                 <button type="button" class="gp-rep-chip" data-filter="keep" aria-pressed="false" onclick="gpRepModalFilter('keep')"><i class="d good"></i>유지할 근거</button>
+                 <button type="button" class="gp-rep-chip" data-filter="ending" aria-pressed="false" onclick="gpRepModalFilter('ending')">같은 종결 연속</button>
+               </div>
+               <div class="gp-rep-modal-body"><ol class="gp-rep-sentences" id="gpRepModalList"></ol></div>
              </div>
            </div>
 
-           <p class="lav-rep-note" id="lavRepRemain"></p>
+           <!-- 모바일 고정 바 — 히어로를 지나면 나타나고, 전환 밴드가 보이면 사라진다 -->
+           <div class="gp-rep-stickybar" id="gpRepSticky" hidden>
+             <div class="gp-rep-stickybar-copy"><b id="gpRepStickyScore">--</b><span id="gpRepStickyLabel">AI식 문체 신호</span></div>
+             <button type="button" class="gp-rep-stickybar-btn" id="gpRepStickyBtn" onclick="lavReportToHumanize()">다듬기 방법 보기 →</button>
+           </div>
+           <p class="gp-rep-limit" id="gpRepLimit">문체 패턴을 바탕으로 한 참고 결과이며 작성 주체나 외부 검사 결과를 확정하지 않아요.</p>
+           <p class="gp-rep-note" id="gpRepRemain"></p>
          </section>
 
          <!-- 진단을 이해한 뒤 원하는 결과를 고르는 한 화면 -->
          <section class="lav-flow-card lav-choose" data-flow="select" aria-labelledby="lavChoiceHeading" hidden>
            <div class="lav-choice-summary" id="lavChoiceSummary" data-state="needs-info">
-             <div class="lav-diag2" role="status" aria-live="polite">
+             <div class="lav-diag2">
                <div class="lav-diag2-text">
                  <strong id="lavDiagTitle">구체적인 근거가 부족해요</strong>
                  <p id="lavDiagDesc">일반적인 표현이 많아 문장만 바꿔도 비슷하게 느껴질 수 있어요.</p>
+                 <p class="lav-diag2-meta" id="lavDiagMeta" hidden></p>
                </div>
              </div>
            </div>

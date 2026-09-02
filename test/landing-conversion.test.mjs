@@ -135,7 +135,7 @@ test('감지 보고서의 휴머나이저 이동 버튼 아래에는 비용 정�
     read('pages/main.html'),
     read('assets/js/evasion-flow.js')
   ]);
-  assert.match(main, /lavReportToHumanize\(\)[\s\S]{0,200}?id="lavRepGoCost"/u);
+  assert.match(main, /lavReportToHumanize\(\)[\s\S]{0,260}?id="gpRepGoCost"/u);
   assert.match(evasion, /renderReportGoCost\(\)/u);
   assert.match(evasion, /이동 후 기본 휴머나이징 /u);
 });

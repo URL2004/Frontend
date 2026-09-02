@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-02T00:00:00+09:00",
+  "title": "Design System: 교수님 피하기 · AI 감지 보고서",
+  "extensions": {
+    "colorMeta": {
+      "rep-brand": { "role": "primary", "displayName": "Brand Purple", "canonical": "#6d4aff", "tonalRamp": ["#1c1250", "#2a1a6e", "#3b25a3", "#4b34cc", "#6d4aff", "#9d86ff", "#c9b8ff", "#ece7ff"] },
+      "rep-brand-strong": { "role": "primary", "displayName": "Brand Strong", "canonical": "#4b34cc", "tonalRamp": ["#160f40", "#241c5c", "#33258a", "#4b34cc", "#6d4aff", "#8f76ff", "#c4b8f7", "#ece5ff"] },
+      "rep-navy": { "role": "neutral", "displayName": "Lab Navy", "canonical": "#241c5c", "tonalRamp": ["#0f0b2a", "#1a1747", "#241c5c", "#3a2f8c", "#5b4fb8", "#8d84d0", "#c9c4ea", "#eef0f7"] },
+      "rep-ink": { "role": "neutral", "displayName": "Ink", "canonical": "#1a1747", "tonalRamp": ["#0d0b24", "#1a1747", "#2c2866", "#4c5068", "#5b6273", "#8a8fa6", "#c4c7d6", "#f1f2f8"] },
+      "rep-cream": { "role": "neutral", "displayName": "Lavender Cream", "canonical": "#f3f0ff", "tonalRamp": ["#3b2f8a", "#5a4bb8", "#8676d6", "#b3a8ea", "#d9d2fa", "#e6e0ff", "#ece5ff", "#f3f0ff"] },
+      "rep-coral": { "role": "signal", "displayName": "Warning Coral", "canonical": "#c43f35", "tonalRamp": ["#4a120e", "#96281c", "#c43f35", "#e0655a", "#f4a89c", "#fbdcd7", "#fde3de", "#fdeeec"] },
+      "rep-teal": { "role": "signal", "displayName": "Safe Teal", "canonical": "#056176", "tonalRamp": ["#022a33", "#056176", "#0a8aa6", "#3fb2c9", "#9fd6e2", "#c9e9f0", "#dcf1f5", "#e2f5f8"] },
+      "logo-yellow": { "role": "signal", "displayName": "Logo Yellow", "canonical": "#f5b425", "tonalRamp": ["#4a3305", "#6b4a06", "#a8740c", "#d99a17", "#f5b425", "#f9cb63", "#ffd9a1", "#fff7e3"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Score Number (fs-8)", "purpose": "점수 숫자 하나. 44px 850 tabular-nums." },
+      "headline": { "displayName": "Hero / CTA Title (fs-7)", "purpose": "히어로 제목, CTA 제목. 모바일·보류 상태에서는 fs-6." },
+      "title": { "displayName": "Panel Title (fs-5)", "purpose": "패널 제목, 계측 값." },
+      "body": { "displayName": "Sentence Body (fs-3)", "purpose": "핵심 문장 본문, CTA 설명. Before/After 문장은 fs-4." },
+      "label": { "displayName": "Caption (fs-1)", "purpose": "캡션·배지·범례·축 이름·주석. 11.5px 하한." }
+    },
+    "shadows": [
+      { "name": "hero", "value": "0 1px 2px rgba(36,28,92,.05), 0 18px 40px -30px rgba(36,28,92,.45)", "purpose": "히어로 카드." },
+      { "name": "panel", "value": "0 1px 2px rgba(36,28,92,.04), 0 14px 32px -28px rgba(36,28,92,.4)", "purpose": "본문 패널." },
+      { "name": "row-hover", "value": "0 3px 10px -8px rgba(36,28,92,.35)", "purpose": "문장 행 호버." },
+      { "name": "modal", "value": "0 30px 80px -30px rgba(26,23,71,.55)", "purpose": "전체 문장 모달." },
+      { "name": "cta-button", "value": "0 8px 22px -8px rgba(0,0,0,.55)", "purpose": "노랑 CTA 버튼 (유일한 검정 그림자)." }
+    ],
+    "motion": [
+      { "name": "gpRepSweep", "value": "rotate 0→360deg 1.4s cubic-bezier(.3,.1,.3,1) 1", "purpose": "스코프 스윕 한 바퀴. 0.9s에 블립 점등, 1.7s에 완료." },
+      { "name": "blip-appear", "value": "opacity .35s ease, transform .5s cubic-bezier(.2,1.4,.4,1) (scale .4→1)", "purpose": "학생 블립 등장." },
+      { "name": "gpRepPulse", "value": "scale 1→1.25, opacity .9→.45, 2.4s ease-in-out infinite", "purpose": "완료 후 블립 헤일로." },
+      { "name": "count-up", "value": "1s, ease-out cubic (1-(1-k)^3), 450ms delay", "purpose": "점수 카운트업." },
+      { "name": "state-fast", "value": ".12s–.15s ease", "purpose": "행/칸/타일 호버 전환." },
+      { "name": "reduced-motion", "value": "sweep off, blip static, pulse off, all transitions none", "purpose": "prefers-reduced-motion." }
+    ],
+    "breakpoints": [
+      { "name": "grid-collapse", "value": "1080px" },
+      { "name": "stats-2col", "value": "860px" },
+      { "name": "mobile", "value": "640px" },
+      { "name": "stats-1col", "value": "480px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary CTA Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "보라 밴드 위 로고 노랑 버튼. 화면에 하나.",
+      "html": "<button class=\"ds-btn-primary\">추천 방법·비용 확인하기 →</button>",
+      "css": ".ds-btn-primary{padding:15px 30px;border:0;border-radius:999px;cursor:pointer;background:#f5b425;color:#1a1747;font-size:15px;font-weight:850;letter-spacing:-.02em;box-shadow:0 8px 22px -8px rgba(0,0,0,.55);transition:transform .14s ease,box-shadow .14s ease;font-family:Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif}.ds-btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 26px -8px rgba(0,0,0,.6)}.ds-btn-primary:focus-visible{outline:2px solid #4b34cc;outline-offset:3px}"
+    },
+    {
+      "name": "Quiet CTA Button",
+      "kind": "button",
+      "refersTo": "button-primary-quiet",
+      "description": "추천 보류 상태의 부차 버튼.",
+      "html": "<button class=\"ds-btn-quiet\">그래도 방법·비용 보기 →</button>",
+      "css": ".ds-btn-quiet{padding:13px 24px;border:0;border-radius:999px;cursor:pointer;background:#f3f0ff;color:#4b34cc;font-size:15px;font-weight:850;font-family:Pretendard,sans-serif}.ds-btn-quiet:hover{background:#e9e3ff}.ds-btn-quiet:focus-visible{outline:2px solid #4b34cc;outline-offset:3px}"
+    },
+    {
+      "name": "Share Button",
+      "kind": "button",
+      "refersTo": "button-share",
+      "description": "결과 이미지 저장. 흰 알약 + 보라 글자.",
+      "html": "<button class=\"ds-btn-share\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 3v12\"/><path d=\"m7 8 5-5 5 5\"/><path d=\"M5 15v4h14v-4\"/></svg><span>결과 이미지로 저장</span></button>",
+      "css": ".ds-btn-share{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;cursor:pointer;border:1px solid #d9d2fa;background:#fff;color:#4b34cc;font-size:12.5px;font-weight:800;transition:background .15s ease,border-color .15s ease;font-family:Pretendard,sans-serif}.ds-btn-share svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.ds-btn-share:hover{background:#f3f0ff;border-color:#c4b8f7}.ds-btn-share:focus-visible{outline:2px solid #4b34cc;outline-offset:3px}"
+    },
+    {
+      "name": "Band Chip",
+      "kind": "chip",
+      "refersTo": "",
+      "description": "판정 밴드 칩. hard 코랄 / revise 보라 / low 틸 / unknown 흐림.",
+      "html": "<span class=\"ds-chip ds-chip--hard\">지금은 피하기 어려운 편</span> <span class=\"ds-chip ds-chip--revise\">보완 후 제출 권장</span> <span class=\"ds-chip ds-chip--low\">피하기에 유리한 편</span>",
+      "css": ".ds-chip{display:inline-block;padding:6px 14px;border-radius:999px;font-size:12.5px;font-weight:800;font-family:Pretendard,sans-serif}.ds-chip--hard{background:#fdeeec;color:#c43f35}.ds-chip--revise{background:#ece5ff;color:#4b34cc}.ds-chip--low{background:#e2f5f8;color:#056176}"
+    },
+    {
+      "name": "Sentence Row",
+      "kind": "card",
+      "refersTo": "sentence-row",
+      "description": "핵심 문장 행: 번호 알약 + 본문 + 배지. is-candidate는 옅은 코랄.",
+      "html": "<div class=\"ds-row ds-row--candidate\"><span class=\"ds-row-no\">12</span><div class=\"ds-row-body\"><p class=\"ds-row-text\">이러한 과정을 통해 다양한 역량을 기를 수 <mark class=\"ds-hl\">있었다</mark>.</p></div><div class=\"ds-row-side\"><span class=\"ds-badge ds-badge--bad\">다듬을 후보</span><span class=\"ds-len\">31자</span></div></div>",
+      "css": ".ds-row{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:12px;align-items:start;padding:13px 15px;border:1px solid #e7e5f7;border-radius:12px;background:#fdfcff;transition:border-color .12s ease,box-shadow .12s ease;font-family:Pretendard,sans-serif}.ds-row:hover{border-color:#cfc6f5;box-shadow:0 3px 10px -8px rgba(36,28,92,.35)}.ds-row--candidate{background:#fffaf9;border-color:#f6ddd8}.ds-row-no{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:linear-gradient(135deg,#8b5cf6,#4b34cc);color:#fff;font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums}.ds-row-text{margin:0;font-size:13.5px;line-height:1.75;color:#1a1747;word-break:keep-all}.ds-hl{background:linear-gradient(transparent 62%,#ffd9d2 62%);color:inherit;font-weight:700;padding:0 1px;border-radius:2px}.ds-row-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px}.ds-badge{padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:800;white-space:nowrap;background:#eceef6;color:#5b6273}.ds-badge--bad{background:#fdeeec;color:#c43f35}.ds-len{font-size:11.5px;color:#5b6273;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Stat Tile (navy strip)",
+      "kind": "custom",
+      "refersTo": "stat-strip",
+      "description": "네이비 계측 띠의 연동 타일. hover/is-on 흰 8%, is-pinned 노랑 인셋.",
+      "html": "<div class=\"ds-strip\"><div class=\"ds-tile ds-tile--link\" role=\"button\" tabindex=\"0\"><span class=\"ds-tile-ico ds-tile-ico--warn\"></span><div><div class=\"ds-tile-dt\">다듬을 후보 문장 · 보기</div><div class=\"ds-tile-dd\">7문장 <em>38%</em></div></div></div></div>",
+      "css": ".ds-strip{background:#241c5c;border-radius:18px;padding:20px 8px;font-family:Pretendard,sans-serif}.ds-tile{display:flex;align-items:center;gap:13px;padding:2px 20px;border-radius:12px;transition:background .15s ease;outline-offset:-3px}.ds-tile--link{cursor:pointer}.ds-tile--link:hover{background:rgba(255,255,255,.08)}.ds-tile--link:focus-visible{outline:2px solid #f5b425}.ds-tile-ico{width:40px;height:40px;border-radius:12px;background:rgba(139,92,246,.22);flex:0 0 auto}.ds-tile-ico--warn{background:rgba(244,114,94,.20)}.ds-tile-dt{font-size:11.5px;font-weight:600;color:#c9c4ea;white-space:nowrap}.ds-tile-dd{margin-top:3px;font-size:17px;font-weight:800;letter-spacing:-.03em;color:#fff;font-variant-numeric:tabular-nums}.ds-tile-dd em{font-style:normal;margin-left:6px;font-size:11.5px;font-weight:700;color:#ffb9ac}"
+    },
+    {
+      "name": "Paragraph Cell",
+      "kind": "chip",
+      "refersTo": "",
+      "description": "문단 지도 칸. lv0 틸 / lv1 라벤더 / lv2 코랄, is-on/is-hit/is-dim 상태.",
+      "html": "<ol class=\"ds-cells\"><li class=\"ds-cell ds-cell--lv0\">1</li><li class=\"ds-cell ds-cell--lv1 ds-cell--on\">2</li><li class=\"ds-cell ds-cell--lv2 ds-cell--hit\">3</li><li class=\"ds-cell ds-cell--lv1 ds-cell--dim\">4</li></ol>",
+      "css": ".ds-cells{display:flex;flex-wrap:wrap;gap:5px;margin:0;padding:0;list-style:none;font-family:Pretendard,sans-serif}.ds-cell{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9px;border:1px solid transparent;cursor:pointer;font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums;transition:transform .12s ease,border-color .12s ease}.ds-cell--lv0{background:#e2f5f8;color:#056176}.ds-cell--lv1{background:#e6e0ff;color:#4b34cc}.ds-cell--lv2{background:#fbdcd7;color:#96281c}.ds-cell:hover{transform:translateY(-1px);border-color:#6d4aff}.ds-cell--on{border-color:#1a1747;box-shadow:0 0 0 2px rgba(26,23,71,.14)}.ds-cell--hit{box-shadow:0 0 0 2px #6d4aff}.ds-cell--dim{opacity:.35}"
+    }
+  ],
+  "narrative": {
+    "northStar": "교수님 레이더 실험실",
+    "overview": "결과를 읽는 화면이 아니라 \"내 글이 어떻게 달라지는지\"를 보여주는 실험실 리포트다. 흰 카드가 라벤더 바탕 위에 떠 있고, 계측은 네이비 띠 하나로 모이며, 브랜드 장치는 원형 스코프다. 중심에 교수님, 점수만큼 중심 가까이 잡힌 학생 블립. 스윕이 한 바퀴 돌고 학생을 찾아내는 순간이 판정이다.\n\n강조색은 보라 하나. 코랄은 수치·배지 옆에서만, 로고 노랑은 화면에 딱 하나 있는 주요 행동(CTA 버튼)과 고정(pin) 상태에만 쓴다.",
+    "keyCharacteristics": [
+      "흰 카드 + 라벤더 바탕, 그림자는 색이 있는 안개(네이비 알파)로만",
+      "판정은 색이 아니라 위치(스코프 반지름)로 먼저 읽힌다",
+      "글자 크기는 --rep-fs-1..8 여덟 토큰만, 최소 11.5px",
+      "모든 연동(축·타일·칸)은 호버=미리보기, 클릭=고정"
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "강조는 보라 하나. 코랄과 틸은 판정·배지·수치 옆에서만 나타나고 영역을 칠하지 않는다.", "section": "colors" },
+      { "name": "The Yellow Once Rule", "body": "로고 노랑은 화면의 주요 행동 하나와 pin 상태에만. 보류 상태(is-quiet)에서는 크림/보라로 내려간다.", "section": "colors" },
+      { "name": "The Zone Tint Rule", "body": "구역 배경은 저채도 틴트, 범례 점은 중간 톤. 활성 구역만 saturate(1.35).", "section": "colors" },
+      { "name": "The Eight Steps Rule", "body": "보고서 안의 모든 font-size는 --rep-fs-* 토큰만 쓴다. 리터럴 px 금지.", "section": "typography" },
+      { "name": "The Keep-All Rule", "body": "한글 문장은 word-break:keep-all + overflow-wrap:break-word, 제목은 text-wrap:balance.", "section": "typography" },
+      { "name": "The Tinted Fog Rule", "body": "그림자는 항상 네이비 알파, 음수 스프레드로 발치만 어둡게. 오프셋 하드 섀도 없음.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do 호버/포커스 = 미리보기, 클릭/Enter/Space = 고정 토글. 고정 중 호버는 바꾸지 못한다. 모바일 고정은 연동 헤더로 scrollIntoView.",
+      "Do 포커스 링은 2px solid --rep-brand-strong, offset 3px (네이비 위에서는 노랑).",
+      "Do 숫자 옆에만 코랄. 문장 수가 5 미만이면 표본 주석을 띄운다.",
+      "Do 판정 없는 축은 na로 흐리게, 등급색 금지."
+    ],
+    "donts": [
+      "Don't \"사람이 쓴 글\"이라고 단정하지 않는다(\"실제 경험이나 구체 정보가 확인돼 유지할 수 있어요\"로 치환).",
+      "Don't 점수 예측(\"66 → 4x\", \"38% → 0%\")을 쓰지 않는다. 예상 변화는 범위만.",
+      "Don't \"판정 보류\"를 화면 라벨로 쓰지 않는다. 점수 없음은 \"확인 필요\"/\"판정 준비 중\".",
+      "Don't 스코프 중심(교수님)에 숫자를 겹치지 않는다. 숫자는 스코프 아래 읽기 블록.",
+      "Don't 지표를 세로로 쌓지 않는다. 계측은 띠, 대비는 나란히."
+    ]
+  }
+}

@@ -227,7 +227,7 @@
   }
 
   var STEP_LABEL = {
-    analyzing: '분석', report: 'AI 감지 보고서', select: '방법 선택',
+    analyzing: '분석', report: 'AI 감지 · 교수님 레이더', select: '방법 선택',
     detectError: 'AI 감지 다시 시도', job: '휴머나이징 중', blocked: '다시 시도', done: '완료'
   };
 
@@ -266,6 +266,22 @@
     if (back) back.style.visibility = (name === 'select' || name === 'report' || name === 'detectError') ? 'visible' : 'hidden';
     var edit = document.querySelector('.lav-flow-edit');
     if (edit) edit.hidden = name === 'analyzing' || name === 'job' || name === 'blocked' || name === 'done' || name === 'detectError';
+    if (name === 'report') {
+      requestAnimationFrame(function () {
+        var report = flow.querySelector('[data-flow="report"]');
+        var heading = $('gpRepHeading');
+        if (heading && typeof heading.focus === 'function') {
+          try { heading.focus({ preventScroll: true }); } catch (e) { heading.focus(); }
+        }
+        var live = $('gpRepLive');
+        if (report && live) {
+          live.textContent = '';
+          requestAnimationFrame(function () {
+            live.textContent = report.dataset.announcement || 'AI 감지 분석이 완료됐어요.';
+          });
+        }
+      });
+    }
   }
 
   // /diagnose 실패 시 글 길이로 등급을 추측하지 않는다. 기본 처리값으로
@@ -319,6 +335,20 @@
   }
 
   function diagnosisPresentation(d) {
+    if (d && d.reportContext) {
+      var reportView = d.reportView || {};
+      var synthesis = d.reportSynthesis || reportView.synthesis || {};
+      var contentEvidence = d.contentEvidence || reportView.contentEvidence || {};
+      var state = contentEvidence.status === 'strong' ? 'ready'
+        : contentEvidence.status === 'weak' ? 'needs-info'
+        : 'partial';
+      return {
+        state: state,
+        title: synthesis.headline || d.title || '감지 결과를 이어서 확인해요',
+        desc: synthesis.description || d.desc || '확인한 문체 신호와 내용 근거를 바탕으로 방법을 골라 주세요.',
+        meta: d.reportMeta || ''
+      };
+    }
     if (d && d.diagnosisUnavailable) {
       return {
         state: 'neutral',
@@ -385,6 +415,11 @@
     if (summary) summary.dataset.state = view.state;
     if ($('lavDiagTitle')) $('lavDiagTitle').textContent = view.title;
     if ($('lavDiagDesc')) $('lavDiagDesc').textContent = view.desc;
+    var meta = $('lavDiagMeta');
+    if (meta) {
+      meta.textContent = view.meta || '';
+      meta.hidden = !view.meta;
+    }
     var b = d.bands || {};
     if ($('lavBandPolish') && b.polish) $('lavBandPolish').textContent = b.polish;
     if ($('lavBandBlog') && b.blog) $('lavBandBlog').textContent = b.blog;
@@ -816,161 +851,1394 @@
     return true;
   };
 
-  // ── 게이지 인트로: 화면 공개 후 호 채움(CSS 트랜지션) + 숫자 카운트업(rAF, easeOutCubic 동조) ──
+  // ── 교수님 레이더 인트로: 스코프 한 바퀴 스윕 → 학생 블립 점등 → 숫자 카운트업 ──
+  //   중심에 교수님, 점수만큼 중심 가까이 잡힌 학생. 스윕이 지나가며 찾아내는 순간이 "판정"이다.
   var repProbTarget = null;
+  function repReducedMotion() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
   function playReportIntro() {
     var p = repProbTarget;
-    var arc = $('lavRepArc'), num = $('lavRepProb');
-    var LEN = Math.PI * 90;
-    var target = p == null ? LEN : LEN * (1 - Math.max(0, Math.min(100, p)) / 100);
-    // 모션 최소화 환경(접근성·헤드리스 검증): 애니 없이 최종 상태 즉시 — rAF 카운트업이 얼어 어긋나는 것 방지
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      if (arc) { arc.style.transition = 'none'; arc.style.strokeDashoffset = target; }
-      if (num && p != null) num.textContent = p;
-      return;
-    }
-    // 2프레임 양보: hidden 해제가 페인트된 뒤에 목표치를 줘야 트랜지션이 실제로 보인다.
+    var scope = $('gpRepScope'), num = $('gpRepScore');
+    if (!scope) return;
+    scope.classList.remove('is-sweeping', 'is-found', 'is-done');
+    var bands = scope.querySelectorAll('.band-on');
+    var blipAt = scope.querySelector('.blip-at');
+    var finish = function () {
+      scope.classList.add('is-found', 'is-done');
+      bands.forEach(function (b) { b.style.strokeDasharray = ''; b.style.strokeDashoffset = ''; });
+      if (blipAt) blipAt.setAttribute('transform', 'translate(' + blipAt.getAttribute('data-x') + ' ' + blipAt.getAttribute('data-y') + ')');
+      if (num && p != null) num.textContent = String(p);
+      var radarStatic = $('gpRepRadar'); if (radarStatic) radarStatic.classList.add('is-drawn');
+      repSyncParaMore();
+    };
+    if (p == null || repReducedMotion()) { finish(); return; }
+    // 시작 상태: 띠는 비어 있고 마커는 교수님 옆(100)에
+    bands.forEach(function (b) { var L = b.getTotalLength(); b.style.strokeDasharray = L + ' ' + L; b.style.strokeDashoffset = L; });
+    var p0 = repGaugePoint(100, REP_GAUGE.R);
+    if (blipAt) blipAt.setAttribute('transform', 'translate(' + p0[0].toFixed(1) + ' ' + p0[1].toFixed(1) + ')');
     requestAnimationFrame(function () { requestAnimationFrame(function () {
-      if (arc) {
-        arc.style.transition = '';
-        arc.style.strokeDashoffset = target;
-      }
-      if (num && p != null) {
-        var t0 = null, dur = 1100;
-        var step = function (ts) {
-          if (t0 == null) t0 = ts;
-          var k = Math.min(1, (ts - t0) / dur);
-          var e = 1 - Math.pow(1 - k, 3);
-          num.textContent = Math.round(p * e);
-          if (k < 1) requestAnimationFrame(step);
-        };
-        requestAnimationFrame(step);
-      }
+      scope.classList.add('is-sweeping', 'is-found');
+      var t0 = null, DUR = 1300;
+      var step = function (ts) {
+        if (t0 == null) t0 = ts;
+        var k = Math.min(1, (ts - t0) / DUR), e = 1 - Math.pow(1 - k, 3);
+        var s = 100 - (100 - p) * e;   // 100(교수님 옆)에서 점수 자리로 달려간다
+        // 띠: 각 구역이 달려간 만큼 채워진다(from=구역 위쪽 점수 → to=멈춘 점수)
+        bands.forEach(function (b) {
+          var L = b.getTotalLength();
+          var from = Number(b.getAttribute('data-from')), to = Number(b.getAttribute('data-to'));
+          var frac = from > to ? Math.max(0, Math.min(1, (from - s) / (from - to))) : 0;
+          b.style.strokeDashoffset = L * (1 - frac);
+        });
+        if (blipAt) { var bp = repGaugePoint(s, REP_GAUGE.R); blipAt.setAttribute('transform', 'translate(' + bp[0].toFixed(1) + ' ' + bp[1].toFixed(1) + ')'); }
+        if (num) num.textContent = String(Math.round(s));
+        if (k < 1) requestAnimationFrame(step); else { scope.classList.remove('is-sweeping'); scope.classList.add('is-done'); }
+      };
+      requestAnimationFrame(step);
+      var radar = $('gpRepRadar');
+      if (radar) { radar.classList.remove('is-drawn'); setTimeout(function () { radar.classList.add('is-drawn'); }, 300); }
+      repCountUpStats();
+      repSyncParaMore();   // 렌더 시점엔 화면이 아직 hidden이라 높이가 0 — 보이는 지금 다시 잰다
     }); });
+  }
+  function repCountUpStats() {
+    document.querySelectorAll('#gpRepStats dd').forEach(function (dd) {
+      var txt = dd.firstChild && dd.firstChild.nodeType === 3 ? dd.firstChild.nodeValue : '';
+      var m = /^([\d,]+(?:\.\d+)?)(.*)$/.exec(txt || '');
+      if (!m) return;
+      var target = Number(m[1].replace(/,/g, '')), unit = m[2], decimals = (m[1].split('.')[1] || '').length;
+      if (!Number.isFinite(target)) return;
+      var t0 = null, dur = 900, node = dd.firstChild;
+      var step = function (ts) {
+        if (t0 == null) t0 = ts;
+        var k = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        var v = target * e;
+        node.nodeValue = (decimals ? v.toFixed(decimals) : Math.round(v).toLocaleString('ko-KR')) + unit;
+        if (k < 1) requestAnimationFrame(step); else node.nodeValue = txt;
+      };
+      requestAnimationFrame(step);
+    });
+  }
+
+  // ── Before/After 바뀐 부분 — 낱말 단위 최장 공통 부분열로 지운 것·더한 것을 칠한다 ──
+  //   예시 문장이 "무엇이 달라졌는지"를 눈으로 세게 하는 장치. 사실을 바꾸지 않았음을 스스로 확인할 수 있다.
+  function repWordDiff(a, b) {
+    var A = String(a || '').split(/(\s+)/).filter(Boolean), B = String(b || '').split(/(\s+)/).filter(Boolean);
+    var n = A.length, m = B.length, dp = [];
+    for (var i = 0; i <= n; i++) { dp[i] = new Array(m + 1).fill(0); }
+    for (i = n - 1; i >= 0; i--) for (var j = m - 1; j >= 0; j--) dp[i][j] = A[i] === B[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    var outA = [], outB = []; i = 0; j = 0;
+    while (i < n && j < m) {
+      if (A[i] === B[j]) { outA.push([A[i], 0]); outB.push([B[j], 0]); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { outA.push([A[i], 1]); i++; }
+      else { outB.push([B[j], 1]); j++; }
+    }
+    while (i < n) outA.push([A[i++], 1]);
+    while (j < m) outB.push([B[j++], 1]);
+    return { a: outA, b: outB };
+  }
+  function repPaintDiff(el, parts, cls) {
+    el.textContent = '';
+    parts.forEach(function (p) {
+      if (p[1] && p[0].trim()) { var mark = document.createElement('mark'); mark.className = cls; mark.textContent = p[0]; el.appendChild(mark); }
+      else el.appendChild(document.createTextNode(p[0]));
+    });
+  }
+  var repDiffOn = false;
+  window.gpRepToggleDiff = function () {
+    var d = lastReport, btn = $('gpRepBaDiff');
+    var before = $('gpRepBefore'), after = $('gpRepAfter');
+    if (!d || !d.example || !before || !after) return;
+    repDiffOn = !repDiffOn;
+    if (repDiffOn) {
+      var diff = repWordDiff(d.example.before, d.example.after);
+      repPaintDiff(before, diff.a, 'gp-rep-diff-del');
+      repPaintDiff(after, diff.b, 'gp-rep-diff-add');
+    } else {
+      before.textContent = d.example.before; after.textContent = d.example.after;
+    }
+    if (btn) { btn.setAttribute('aria-pressed', repDiffOn ? 'true' : 'false'); btn.textContent = repDiffOn ? '바뀐 부분 감추기' : '바뀐 부분 보기'; }
+  };
+
+  // ── 문단 칸 툴팁 — 번호만 보이는 칸에 "몇 번째 문단, 문장 몇, 후보 몇, 첫 줄"을 붙인다 ──
+  function repShowParaTip(cell) {
+    var tip = $('gpRepParaTip'), wrap = $('gpRepParaWrap');
+    if (!tip || !wrap || !cell) return;
+    var index = Number(cell.getAttribute('data-para'));
+    var row = repMapState.paragraphs[index] || {};
+    tip.textContent = '';
+    var b = document.createElement('b');
+    b.textContent = (index + 1) + '번째 문단 · 문장 ' + (Number(row.sentences) || 0) + ' · 다듬을 후보 ' + (Number(row.generic) || 0);
+    tip.appendChild(b);
+    if (row.head) { var p = document.createElement('span'); p.textContent = row.head + '…'; tip.appendChild(p); }
+    tip.hidden = false;
+    var cr = cell.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+    var left = Math.max(8, Math.min(wr.width - tip.offsetWidth - 8, cr.left - wr.left + cr.width / 2 - tip.offsetWidth / 2));
+    tip.style.left = left + 'px';
+    tip.style.top = (cr.top - wr.top - tip.offsetHeight - 8) + 'px';
+    if (cr.top - wr.top < tip.offsetHeight + 12) { tip.style.top = (cr.bottom - wr.top + 8) + 'px'; tip.classList.add('is-below'); } else tip.classList.remove('is-below');
+  }
+  function repHideParaTip() { var tip = $('gpRepParaTip'); if (tip) tip.hidden = true; }
+
+  // ── 모바일 문단 지도 접기 — 장문은 칸이 100개를 넘어 한 화면을 먹는다 ──
+  window.gpRepToggleParaMap = function () {
+    var wrap = $('gpRepParaWrap'), btn = $('gpRepParaMore');
+    if (!wrap || !btn) return;
+    var open = wrap.classList.toggle('is-open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    var label = btn.querySelector('span');
+    if (label) label.textContent = open ? '문단 지도 접기' : '문단 지도 더 보기';
+  };
+  window.addEventListener('resize', function () { repSyncParaMore(); }, { passive: true });
+  function repSyncParaMore() {
+    var wrap = $('gpRepParaWrap'), btn = $('gpRepParaMore');
+    if (!wrap || !btn) return;
+    // 5줄(약 200px)을 넘을 때만 접는다 — 짧은 지도는 그대로.
+    var cells = $('gpRepParaCells');
+    var tall = cells && cells.scrollHeight > 210;
+    wrap.classList.toggle('is-collapsible', !!tall);
+    btn.hidden = !tall;
+  }
+
+  // ── 핵심 문장 → 전체 모달의 그 자리로 ──
+  window.gpRepJumpToSentence = function (index) {
+    window.gpRepOpenModal();
+    var target = document.querySelector('#gpRepModalList [data-index="' + index + '"]');
+    if (!target) return;
+    target.scrollIntoView({ behavior: repReducedMotion() ? 'auto' : 'smooth', block: 'center' });
+    target.classList.add('is-flash');
+    setTimeout(function () { target.classList.remove('is-flash'); }, 1800);
+  };
+
+  // ── 모달 걸러 보기 ──
+  var repModalFilterKey = 'all';
+  window.gpRepModalFilter = function (key) {
+    repModalFilterKey = key || 'all';
+    document.querySelectorAll('.gp-rep-modal-filters .gp-rep-chip').forEach(function (chip) {
+      var on = chip.getAttribute('data-filter') === repModalFilterKey;
+      chip.classList.toggle('is-on', on);
+      chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    repPaintModal();
+  };
+  function repModalMatches(sentence) {
+    if (repModalFilterKey === 'generic') return sentence.kind === 'generic';
+    if (repModalFilterKey === 'keep') return sentence.kind === 'lived' || sentence.kind === 'specific';
+    if (repModalFilterKey === 'ending') return sentence.endingRun >= 4;
+    return true;
+  }
+
+  // ── 모바일 고정 바 — 히어로를 지나면 나타나고 전환 밴드가 보이면 물러난다 ──
+  var repStickyIo = null;
+  function repSetupSticky(model) {
+    var bar = $('gpRepSticky'), hero = document.querySelector('.gp-rep-hero'), cta = $('gpRepNext');
+    if (!bar || !hero || !cta) return;
+    var eligible = model.conversionEligible !== false;
+    if ($('gpRepStickyScore')) $('gpRepStickyScore').textContent = model.score == null ? '--' : model.score + '점';
+    if ($('gpRepStickyLabel')) $('gpRepStickyLabel').textContent = model.radar.label || 'AI식 문체 신호';
+    if ($('gpRepStickyBtn')) $('gpRepStickyBtn').textContent = eligible ? '다듬기 방법 보기 →' : '전체 문장 보기';
+    if ($('gpRepStickyBtn')) $('gpRepStickyBtn').onclick = eligible ? function () { window.lavReportToHumanize(); } : function () { window.gpRepOpenModal(); };
+    if (repStickyIo) { repStickyIo.disconnect(); repStickyIo = null; }
+    if (!('IntersectionObserver' in window)) return;
+    var heroOut = false, ctaIn = false;
+    var apply = function () {
+      var mobile = window.matchMedia && window.matchMedia('(max-width:640px)').matches;
+      var show = mobile && heroOut && !ctaIn;
+      bar.hidden = !show;
+      bar.classList.toggle('is-on', show);
+    };
+    repStickyIo = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.target === hero) heroOut = !e.isIntersecting && e.boundingClientRect.bottom < 0;
+        if (e.target === cta) ctaIn = e.isIntersecting;
+      });
+      apply();
+    }, { threshold: [0, 0.2] });
+    repStickyIo.observe(hero); repStickyIo.observe(cta);
+    window.addEventListener('resize', apply, { passive: true });
+  }
+
+  // ── 교수님 게이지 — 반원 트랙. 교수님은 왼쪽 출발선(100)에 서 있고, 학생은 오른쪽(0, 안전)으로 달아난다. ──
+  //   ★ 방향이 곧 뜻이다(사장님 9/2): 교수님 쪽으로 달리면 잡히는 그림이 된다. 우리는 반대로 달린다.
+  //   띠 색은 교수님 레이더 밴드와 같다: 50~100 코랄(위험) · 21~49 라벤더(주의) · 0~20 틸(안전).
+  //   학생이 달려간 만큼 띠가 뒤에 남는다 — 점수가 낮을수록 멀리 달아난 것.
+  var REP_GAUGE = { W: 340, H: 214, cx: 170, cy: 166, R: 124, band: 24 };
+  function repGaugeAngle(score) {
+    return Math.max(0, Math.min(100, score)) / 100 * Math.PI;   // 100 → 180°(왼쪽, 교수님), 0 → 0°(오른쪽, 안전)
+  }
+  function repGaugePoint(score, r) {
+    var a = repGaugeAngle(score);
+    return [REP_GAUGE.cx + Math.cos(a) * r, REP_GAUGE.cy - Math.sin(a) * r];
+  }
+  // 호는 항상 높은 점수(왼쪽)에서 낮은 점수(오른쪽)로 — 시계 방향.
+  function repGaugeArc(hi, lo, r) {
+    var p0 = repGaugePoint(hi, r), p1 = repGaugePoint(lo, r);
+    var large = (hi - lo) > 50 ? 1 : 0;
+    return 'M' + p0[0].toFixed(2) + ' ' + p0[1].toFixed(2) + ' A' + r + ' ' + r + ' 0 ' + large + ' 1 ' + p1[0].toFixed(2) + ' ' + p1[1].toFixed(2);
+  }
+  function repPaintScope(model) {
+    var host = $('gpRepScope');
+    if (!host) return;
+    var ns = 'http://www.w3.org/2000/svg';
+    var mk = function (tag, attrs) {
+      var el = document.createElementNS(ns, tag);
+      Object.keys(attrs || {}).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+      return el;
+    };
+    var G = REP_GAUGE, score = model.score, band = model.radar.band || 'unknown';
+    var svg = mk('svg', { viewBox: '0 0 ' + G.W + ' ' + G.H, 'aria-hidden': 'true' });
+    var defs = mk('defs');
+    // 학생('내 글')이 이 그림의 주인공이다 — 교수님보다 크게, 띠보다 넓게(사장님 9/2 '너무 작다').
+    var clipProf = mk('clipPath', { id: 'gpRepClipProf' }); clipProf.appendChild(mk('circle', { cx: 0, cy: 0, r: 19 }));
+    var clipBlip = mk('clipPath', { id: 'gpRepClipBlip' }); clipBlip.appendChild(mk('circle', { cx: 0, cy: 0, r: 23 }));
+    defs.appendChild(clipProf); defs.appendChild(clipBlip); svg.appendChild(defs);
+
+    // 옅은 띠 세 개(전체 트랙) — 왼쪽 위험부터 오른쪽 안전까지, 사이에 1점 틈
+    var zones = [[100, 50, 'z-hard'], [49, 21, 'z-revise'], [20, 0, 'z-low']];
+    zones.forEach(function (z) {
+      svg.appendChild(mk('path', { class: 'band ' + z[2] + (band === z[2].slice(2) ? ' is-active' : ''), d: repGaugeArc(z[0], z[1], G.R) }));
+    });
+    // 달려간 만큼 진한 띠 — 교수님(100)에서 점수 자리까지, 구역마다 제 색으로
+    if (score != null) {
+      zones.forEach(function (z) {
+        var lo = Math.max(score, z[1]);
+        if (lo <= z[0]) svg.appendChild(mk('path', { class: 'band-on ' + z[2], d: repGaugeArc(z[0], Math.min(z[0] - 0.5, lo), G.R), 'data-from': z[0], 'data-to': Math.min(z[0] - 0.5, lo) }));
+      });
+    }
+    // 눈금 — 왼쪽 100부터 오른쪽 0까지
+    [[100, '100'], [50, '50'], [20, '20'], [0, '0']].forEach(function (t) {
+      var p1 = repGaugePoint(t[0], G.R - G.band / 2 - 4), p2 = repGaugePoint(t[0], G.R - G.band / 2 - 11);
+      svg.appendChild(mk('line', { class: 'tick', x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1] }));
+      var lp = repGaugePoint(t[0], G.R - G.band / 2 - 22);
+      var tx = mk('text', { class: 'tick-label', x: lp[0], y: lp[1] + 4, 'text-anchor': 'middle' });
+      tx.textContent = t[1];
+      svg.appendChild(tx);
+    });
+    // 구역 이름 — 띠 바깥
+    // 러닝 레인 — 트랙 한가운데 점선. "달려서 멀어진다"는 브랜드 동사를 게이지에 얹는다.
+    svg.appendChild(mk('path', { class: 'lane', d: repGaugeArc(0, 100, G.R) }));
+    // 구역 이름 — 짧고 직관적인 세 낱말.
+    [[82, '위험', 'z-hard'], [35, '주의', 'z-revise'], [10, '안전', 'z-low']].forEach(function (z) {
+      var lp = repGaugePoint(z[0], G.R + G.band / 2 + 14);
+      var anchorAt = lp[0] < G.cx - 20 ? 'end' : lp[0] > G.cx + 20 ? 'start' : 'middle';
+      if (z[0] === 35) { anchorAt = 'middle'; lp[1] -= 2; }
+      var tx = mk('text', { class: 'zone-label ' + z[2], x: lp[0], y: lp[1] + 4, 'text-anchor': anchorAt });
+      tx.textContent = z[1];
+      svg.appendChild(tx);
+    });
+    // 교수님 — 출발선(100, 왼쪽 끝)에 서 있다
+    var pp = repGaugePoint(100, G.R);
+    var prof = mk('g', { class: 'prof', transform: 'translate(' + (pp[0] - 26).toFixed(1) + ' ' + (pp[1] - 4).toFixed(1) + ')' });
+    prof.appendChild(mk('circle', { class: 'prof-ring', r: 21 }));
+    prof.appendChild(mk('image', { href: '/assets/img/report/professor.png', x: -19, y: -19, width: 38, height: 38, 'clip-path': 'url(#gpRepClipProf)', preserveAspectRatio: 'xMidYMid slice' }));
+    var pl = mk('text', { class: 'who', x: 0, y: 35, 'text-anchor': 'middle' }); pl.textContent = '교수님';
+    prof.appendChild(pl);
+    svg.appendChild(prof);
+    // 학생 마커 — 점수 자리. 위치는 속성 그룹, 등장 애니는 안쪽 CSS 그룹.
+    if (score != null) {
+      var bp = repGaugePoint(score, G.R);
+      var blipAt = mk('g', { class: 'blip-at', transform: 'translate(' + bp[0].toFixed(1) + ' ' + bp[1].toFixed(1) + ')', 'data-x': bp[0].toFixed(1), 'data-y': bp[1].toFixed(1) });
+      var blip = mk('g', { class: 'blip' });
+      blip.appendChild(mk('circle', { class: 'blip-halo', r: 34 }));
+      blip.appendChild(mk('circle', { class: 'blip-ring', r: 25 }));
+      blip.appendChild(mk('image', { href: '/assets/img/report/runner-bust.png', x: -23, y: -23, width: 46, height: 46, 'clip-path': 'url(#gpRepClipBlip)', preserveAspectRatio: 'xMidYMid slice' }));
+      var bl = mk('text', { class: 'who me', x: 0, y: -33, 'text-anchor': 'middle' }); bl.textContent = '내 글';
+      blip.appendChild(bl);
+      blipAt.appendChild(blip);
+      svg.appendChild(blipAt);
+    }
+    host.textContent = '';
+    host.className = 'gp-rep-scope is-' + band;
+    host.appendChild(svg);
+    var alt = $('gpRepScopeAlt');
+    if (alt) {
+      alt.textContent = score == null
+        ? '교수님 게이지. 점수를 확인하지 못해 내 글 위치를 표시하지 않았어요.'
+        : '교수님 게이지. AI식 문체 신호 ' + score + '점, 100점 만점. ' + (model.radar.label || '') + '. 50~100 위험, 21~49 주의, 0~20 안전. 점수가 낮을수록 왼쪽 출발선의 교수님에게서 멀리 달아난 거예요.';
+    }
   }
 
   var lastReport = null;   // 보고서 → 휴머나이저 핸드오프용(진단 배너 채움)
+  var lastReportModel = null;
 
+  function reportNumber(value) {
+    if (value === null || value === undefined || value === '') return null;
+    var n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function reportCount(value) {
+    var n = reportNumber(value);
+    return n == null ? null : Math.max(0, Math.round(n));
+  }
+
+  function styleBandFor(score) {
+    if (score == null) return 'limited';
+    if (score >= 50) return 'high';
+    if (score >= 21) return 'moderate';
+    return 'low';
+  }
+
+  function styleLabelFor(band) {
+    return band === 'high' ? 'AI식 문체 신호 · 높음'
+      : band === 'moderate' ? 'AI식 문체 신호 · 중간'
+      : band === 'low' ? 'AI식 문체 신호 · 낮음'
+      : 'AI식 문체 신호 · 확인 필요';
+  }
+
+  // 교수님 레이더 밴드 — 서버가 준 값을 우선하고, 없으면 화면 공용 기준(detect-presentation)으로 같은 경계를 쓴다.
+  //   '판정 보류'는 금지 표현(사장님 지시) — 점수가 없을 때도 다른 말로 닫는다.
+  function professorRadarFor(score, supplied) {
+    var radar = supplied || {};
+    if (score == null) {
+      return {
+        score: null,
+        band: radar.band || 'limited',
+        label: radar.label || '간이 추정 기준',
+        headline: radar.headline || '교수님 레이더: 점수 확인 필요',
+        description: radar.description || '',
+        disclaimer: radar.disclaimer || ''
+      };
+    }
+    var shared = typeof window.gpProfessorRadarBand === 'function' ? window.gpProfessorRadarBand(score) : null;
+    return {
+      score: score,
+      band: radar.band || (shared && shared.band) || 'unknown',
+      label: radar.label || (shared && shared.label) || '',
+      headline: radar.headline || '',
+      description: radar.description || '',
+      disclaimer: radar.disclaimer || ''
+    };
+  }
+
+  function contentEvidenceLabel(status) {
+    return status === 'strong' ? '구체 근거 충분'
+      : status === 'mixed' ? '구체 근거 일부'
+      : status === 'weak' ? '근거 보강 필요'
+      : '분석 근거 부족';
+  }
+
+  function buildReportModel(d) {
+    var reportView = d.reportView || {};
+    var styleSignal = reportView.styleSignal || {};
+    var measured = reportView.measuredEvidence || d.measuredEvidence || {};
+    var source = styleSignal.source || (d.probSource === 'engine' ? 'engine' : d.probSource === 'llm' ? 'llm' : 'unknown');
+    var sourceLabel = styleSignal.sourceLabel || (source === 'llm' ? 'AI 모델 분석' : source === 'engine' ? '문체 엔진 간이 추정' : '분석 출처 미확인');
+    var score = reportNumber(styleSignal.score);
+    if (score == null) score = reportNumber(d.probability);
+    if (score != null) score = Math.max(0, Math.min(100, Math.round(score)));
+    var styleBand = styleSignal.band || d.riskLevel || styleBandFor(score);
+    var content = reportView.contentEvidence || {};
+    var paragraphs = Array.isArray(d.paragraphs) ? d.paragraphs : [];
+    var total = reportCount(content.total);
+    if (total == null) total = reportCount(measured.genericTotal);
+    if (total == null && paragraphs.length) total = paragraphs.length;
+    var generic = reportCount(content.generic);
+    if (generic == null) generic = reportCount(measured.genericCount);
+    var lived = reportCount(content.lived);
+    if (lived == null) lived = reportCount(measured.livedCount);
+    var specific = reportCount(content.specific);
+    if (specific == null) specific = reportCount(measured.specificCount);
+    var contentStatus = content.status || 'limited';
+    var contentLabel = content.label || contentEvidenceLabel(contentStatus);
+    if (contentStatus === 'mixed' && !/보강/u.test(contentLabel)) contentLabel += ' · 보강 권장';
+    var synthesis = reportView.synthesis || {};
+    var headline = synthesis.headline;
+    if (!headline) {
+      headline = contentStatus === 'weak' || contentStatus === 'mixed'
+        ? '문장 패턴은 정형적이고, 구체적인 근거는 일부만 확인됐어요.'
+        : styleBand === 'high'
+          ? 'AI식 문체 신호는 높지만, 확인된 내용 근거는 유지할 수 있어요.'
+          : '문체 신호와 내용 근거를 나눠 확인했어요.';
+    }
+    var description = synthesis.description || (contentStatus === 'weak' || contentStatus === 'mixed'
+      ? '프로젝트 경험은 유지하고, 반복되는 종결과 일반적인 결론 문장을 먼저 다듬어 보세요.'
+      : '확인된 사실과 경험은 유지하고, 두드러진 문체 신호만 골라 다듬어 보세요.');
+    var limitation = synthesis.limitation || '문체 패턴을 바탕으로 한 참고 결과이며 작성 주체나 외부 검사 결과를 확정하지 않아요.';
+    var preservation = reportView.preservation && Array.isArray(reportView.preservation.items)
+      ? reportView.preservation.items
+      : ['사실·수치·고유명사', '직접 경험과 프로젝트 맥락'];
+    var status = reportView.status || (score == null || source === 'engine' ? 'limited' : 'ready');
+    var radar = professorRadarFor(status === 'limited' ? null : score, reportView.professorRadar);
+    var conversionEligible = reportView.conversion && reportView.conversion.eligible === false ? false : status === 'ready';
+    return {
+      status: status,
+      score: score,
+      style: {
+        band: styleBand,
+        label: styleSignal.label || styleLabelFor(styleBand),
+        source: source,
+        sourceLabel: sourceLabel,
+        // 보정 여부는 화면에 쓰지 않되(사장님 결정), 다음 화면 핸드오프·디버깅에서 참조할 수 있게 모델에는 남긴다.
+        calibrated: styleSignal.calibrated === true || d.calibrated === true,
+        rawScore: reportNumber(d.rawProbability)
+      },
+      radar: radar,
+      content: {
+        status: contentStatus,
+        label: contentLabel,
+        generic: generic,
+        lived: lived,
+        specific: specific,
+        total: total
+      },
+      synthesis: { headline: headline, description: description, limitation: limitation },
+      measured: measured,
+      preservation: preservation,
+      paragraphs: paragraphs,
+      sentenceMap: normalizeSentenceMap(d.sentenceMap),
+      conversionEligible: conversionEligible
+    };
+  }
+
+  // 문장 지도는 구버전 백엔드에서 오지 않을 수 있다. 없으면 그 구획만 조용히 접는다.
+  function normalizeSentenceMap(raw) {
+    if (!raw || !Array.isArray(raw.sentences)) return { total: 0, shown: 0, capped: false, sentences: [], paragraphs: [] };
+    var sentences = raw.sentences.map(function (item, order) {
+      return {
+        index: reportCount(item && item.index) != null ? item.index : order,
+        paragraph: reportCount(item && item.paragraph) || 0,
+        length: reportCount(item && item.length) || 0,
+        kind: ['lived', 'specific', 'generic', 'plain'].indexOf(item && item.kind) >= 0 ? item.kind : 'plain',
+        ending: String((item && item.ending) || ''),
+        endingRun: reportCount(item && item.endingRun) || 0,
+        runStart: !!(item && item.runStart),
+        text: String((item && item.text) || '')
+      };
+    }).filter(function (item) { return item.text; });
+    return {
+      total: reportCount(raw.total) || sentences.length,
+      shown: sentences.length,
+      capped: raw.capped === true,
+      sentences: sentences,
+      // 문단 집계는 장문 목록의 뼈대다. 여기서 버리면 문단 구분이 화면에 영영 안 나온다.
+      paragraphs: Array.isArray(raw.paragraphs) ? raw.paragraphs : []
+    };
+  }
+
+  function evidenceRatio(value, total) {
+    return value == null || total == null || total <= 0 ? '—' : value + '/' + total + '문장';
+  }
+
+  function safeParagraphReason(value, kind) {
+    var text = String(value || '').replace(/\s+/g, ' ').trim();
+    text = text
+      .replace(/실제 경험이나 구체 수치가 있어 사람이 쓴 글로 읽혀요\.?/g, '실제 경험이나 구체 정보가 확인돼 유지할 수 있어요.')
+      .replace(/사람이\s*(?:직접\s*)?쓴\s*글(?:로)?\s*읽혀요\.?/g, '구체적인 맥락이 확인돼요.')
+      .replace(/안전한 문단/g, '유지할 문단');
+    if (text) return text;
+    return kind === 'concrete' ? '구체적인 맥락이 확인돼요. 이 분류는 문체 판정과 별개예요.'
+      : kind === 'abstract_risk' ? '정형적인 문장 패턴이 두드러져 먼저 다듬는 편이 좋아요.'
+      : '경험·수치·대상을 한 가지 더 붙이면 내용이 선명해져요.';
+  }
+
+  // ── 문단 지도 ───────────────────────────────────────────────────────────────
+  // 3만자 문서를 문장 200행으로 뿌리면 21화면이 된다. 어디에 신호가 몰렸는지를
+  // 한 화면에서 문단으로 보이고, 고를 때만 그 문단의 문장을 연다.
+  var repMapState = { paragraphs: [], sentences: [], cells: [], selected: null, capped: false, total: 0 };
+
+  function repParaLevel(row) {
+    var total = Math.max(1, Number(row && row.sentences) || 1);
+    var ratio = (Number(row && row.generic) || 0) / total;
+    return ratio >= 0.5 ? 2 : (ratio > 0 ? 1 : 0);
+  }
+  var REP_LEVEL_LABEL = ['신호 적음', '섞임', '신호 많음'];
+
+  // 핵심 문장 고르기 — 인라인에는 전달력이 있는 것만 남긴다.
+  // 다듬을 후보(일반 표현)를 원문 순서로 먼저, 자리가 남으면 유지할 근거 1개.
+  // 신호가 하나도 없는 글은 앞 문장 몇 개를 그대로 보여준다(빈 패널 방지).
+  var REP_INLINE_KEY = 4;
+  function repKeySentences(pool) {
+    // 장문에는 같은 상투 문구가 여러 문단에 반복된다. 그대로 담으면 핵심 4줄이 전부 같은 문장이 된다.
+    var seen = Object.create(null);   // 문장 원문이 키가 되므로 프로토타입 이름과 충돌하지 않게
+    var unique = pool.filter(function (s) {
+      var key = (s.text || '').replace(/\s+/g, '');
+      if (!key || seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+    var candidates = unique.filter(function (s) { return s.kind === 'generic'; });
+    var keeps = unique.filter(function (s) { return s.kind === 'lived' || s.kind === 'specific'; });
+    var picked = candidates.slice(0, REP_INLINE_KEY);
+    if (picked.length < REP_INLINE_KEY && keeps.length) picked = picked.concat(keeps.slice(0, 1));
+    if (!picked.length) picked = unique.slice(0, 3);
+    return picked.sort(function (a, b) { return a.index - b.index; });
+  }
+
+  function repSentenceRow(sentence, variant) {
+    var modal = variant === 'modal';
+    var candidate = sentence.kind === 'generic';
+    var keep = sentence.kind === 'lived' || sentence.kind === 'specific';
+    var row = document.createElement('li');
+    row.className = (modal ? 'gp-rep-s gp-rep-s--modal' : 'gp-rep-s') + (candidate ? ' is-candidate' : '');
+    row.setAttribute('data-index', String(sentence.index));
+    if (!modal) {
+      // 인라인 행은 누르면 전체 목록의 그 자리로 간다 — 앞뒤 문맥을 바로 본다.
+      row.tabIndex = 0;
+      row.setAttribute('role', 'button');
+      row.title = '전체 문장에서 앞뒤 문맥 보기';
+      row.addEventListener('click', function () { window.gpRepJumpToSentence(sentence.index); });
+      row.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); window.gpRepJumpToSentence(sentence.index); } });
+    }
+
+    var no = document.createElement('span');
+    no.className = 'gp-rep-s-no';
+    no.textContent = String(sentence.index + 1);
+
+    var body = document.createElement('div');
+    body.className = 'gp-rep-s-body';
+    var text = document.createElement('p');
+    text.className = 'gp-rep-s-text';
+    // 같은 종결 묶음이면 그 어미를 본문에서 직접 칠한다. 라벨이 아니라 원문 자체가 근거가 되고,
+    // 목록을 위에서 아래로 훑으면 반복이 세로로 눈에 들어온다 — 세어서 확인되는 우리 방식이다.
+    var raw = sentence.text || '';
+    // 백엔드가 가장 긴 활용 묶음(4문장 이상)만 표시 대상으로 보내므로, 여기서는 그 값만 존중한다.
+    var endingAt = sentence.endingRun >= 4 && sentence.ending ? raw.lastIndexOf(sentence.ending) : -1;
+    if (endingAt > 0 && raw.length - endingAt <= sentence.ending.length + 4) {
+      text.appendChild(document.createTextNode(raw.slice(0, endingAt)));
+      var hl = document.createElement('mark');
+      hl.className = 'gp-rep-ending-hl';
+      hl.textContent = raw.slice(endingAt, endingAt + sentence.ending.length);
+      text.appendChild(hl);
+      text.appendChild(document.createTextNode(raw.slice(endingAt + sentence.ending.length)));
+    } else {
+      text.textContent = raw;
+    }
+    body.appendChild(text);
+    // 연속 칩은 인라인에서만 — 모달에서는 칠해진 어미 자체가 그 역할을 한다.
+    if (!modal && sentence.runStart && sentence.endingRun >= 4 && sentence.ending) {
+      var marks = document.createElement('p');
+      marks.className = 'gp-rep-s-marks';
+      var chip = document.createElement('span');
+      chip.className = 'gp-rep-mark is-ending';
+      chip.textContent = '‘' + sentence.ending + '’ ' + sentence.endingRun + '문장 연속';
+      marks.appendChild(chip);
+      body.appendChild(marks);
+    }
+
+    var side = document.createElement('div');
+    side.className = 'gp-rep-s-side';
+    if (modal) {
+      // 모달은 200행까지 흐른다 — 알약 대신 한 줄 텍스트로 조용히.
+      var quiet = document.createElement('span');
+      quiet.className = 'gp-rep-s-tag' + (candidate ? ' bad' : keep ? ' good' : '');
+      quiet.textContent = (candidate ? '다듬을 후보 · ' : keep ? '유지할 근거 · ' : '') + sentence.length + '자';
+      side.appendChild(quiet);
+    } else {
+      if (candidate || keep) {
+        var badge = document.createElement('span');
+        badge.className = 'gp-rep-s-badge ' + (candidate ? 'bad' : 'good');
+        badge.textContent = candidate ? '다듬을 후보' : '유지할 근거';
+        side.appendChild(badge);
+      }
+      var len = document.createElement('span');
+      len.className = 'gp-rep-s-len';
+      len.textContent = sentence.length + '자';
+      side.appendChild(len);
+    }
+
+    row.appendChild(no);
+    row.appendChild(body);
+    row.appendChild(side);
+    return row;
+  }
+
+  function repPaintSentences() {
+    var list = $('gpRepSentences');
+    if (!list) return;
+    list.textContent = '';
+    var picked = repMapState.selected;
+    var usingMap = (repMapState.cells || []).length > 1;
+    var pool = usingMap && picked != null
+      ? repMapState.sentences.filter(function (s) { return s.paragraph === picked; })
+      : repMapState.sentences;
+    var linkHead = $('gpRepLinkHead');
+    var linked = repMapState.link ? repMatchesForAxis(repMapState.link) : null;
+    if (linked) {
+      var scoped = usingMap && picked != null ? linked.filter(function (s) { return s.paragraph === picked; }) : linked;
+      var shown = scoped.slice(0, REP_INLINE_KEY);
+      shown.forEach(function (sentence) { list.appendChild(repSentenceRow(sentence)); });
+      if (linkHead) {
+        var copy = REP_AXIS_COPY[repMapState.link] || { head: '', empty: '' };
+        linkHead.hidden = false;
+        linkHead.textContent = scoped.length
+          ? copy.head + ' · ' + scoped.length.toLocaleString('ko-KR') + '문장' + (scoped.length > shown.length ? ' 중 ' + shown.length : '')
+          : copy.empty;
+      }
+      var countLinked = $('gpRepMapCount');
+      if (countLinked) countLinked.textContent = '';
+      var emptyLinked = $('gpRepMapEmpty');
+      if (emptyLinked) emptyLinked.hidden = true;
+      var toggleLinked = $('gpRepMapToggle');
+      if (toggleLinked) toggleLinked.hidden = true;
+      return;
+    }
+    if (linkHead) linkHead.hidden = true;
+    var key = repKeySentences(pool);
+    key.forEach(function (sentence) { list.appendChild(repSentenceRow(sentence)); });
+    var count = $('gpRepMapCount');
+    if (count) {
+      // 문단을 고른 뒤에도 "전체 786문장 중"이라고 말하면 지금 보는 범위와 어긋난다.
+      count.textContent = usingMap && picked != null
+        ? (picked + 1) + '번째 문단 · 핵심 ' + key.length + '문장'
+        : '전체 ' + repMapState.total.toLocaleString('ko-KR') + '문장 중 핵심 ' + key.length + '문장';
+    }
+
+    var empty = $('gpRepMapEmpty');
+    if (empty) {
+      empty.hidden = pool.length > 0;
+      // 문단을 고른 경우와 글 전체에 표시할 문장이 없는 경우는 다른 상황이다.
+      empty.textContent = usingMap && picked != null
+        ? '이 문단은 발췌에 포함되지 않았어요. 다른 문단을 골라 보세요.'
+        : '표시할 문장을 찾지 못했어요. 아래 계측 수치와 개선 포인트로 확인해 주세요.';
+    }
+    // 전체는 모달로 — 인라인은 핵심만 남겨 전달력을 지킨다.
+    var toggle = $('gpRepMapToggle');
+    if (toggle) {
+      var total = repMapState.sentences.length;
+      var label = toggle.querySelector('span');
+      if (label) label.textContent = '전체 문장 ' + total.toLocaleString('ko-KR') + '개 보기';
+      toggle.hidden = total === 0 || (total <= key.length && !usingMap);
+    }
+  }
+
+  // ── 전체 문장 모달 — 문단 표지와 함께 전량을 훑는다 ──
+  var repModalOpener = null;
+  function repPaintModal() {
+    var list = $('gpRepModalList');
+    if (!list) return;
+    list.textContent = '';
+    var lastParagraph = null;
+    var visible = repMapState.sentences.filter(repModalMatches);
+    if (!visible.length) {
+      var none = document.createElement('li');
+      none.className = 'gp-rep-s-none';
+      none.textContent = '이 조건에 맞는 문장이 없어요.';
+      list.appendChild(none);
+    }
+    visible.forEach(function (sentence) {
+      if ((repMapState.cells || []).length > 1 && sentence.paragraph !== lastParagraph) {
+        lastParagraph = sentence.paragraph;
+        var row = repMapState.paragraphs[sentence.paragraph] || {};
+        var divider = document.createElement('li');
+        divider.className = 'gp-rep-s-para';
+        var name = document.createElement('b');
+        name.textContent = (sentence.paragraph + 1) + '번째 문단';
+        divider.appendChild(name);
+        var stat = document.createElement('span');
+        stat.textContent = '문장 ' + (Number(row.sentences) || 0) + ' · 다듬을 후보 ' + (Number(row.generic) || 0);
+        divider.appendChild(stat);
+        list.appendChild(divider);
+      }
+      list.appendChild(repSentenceRow(sentence, 'modal'));
+    });
+    var meta = $('gpRepModalMeta');
+    if (meta) {
+      var shown = repMapState.sentences.length;
+      var candidates = repMapState.sentences.filter(function (x) { return x.kind === 'generic'; }).length;
+      var keeps = repMapState.sentences.filter(function (x) { return x.kind === 'lived' || x.kind === 'specific'; }).length;
+      meta.textContent = (repMapState.capped
+        ? '문장 ' + repMapState.total.toLocaleString('ko-KR') + '개 중 신호 위주 ' + shown.toLocaleString('ko-KR') + '개 · '
+        : '문장 ' + shown.toLocaleString('ko-KR') + '개 · ')
+        + '다듬을 후보 ' + candidates.toLocaleString('ko-KR') + ' · 유지할 근거 ' + keeps.toLocaleString('ko-KR');
+    }
+  }
+
+  window.gpRepOpenModal = function () {
+    var modal = $('gpRepModal');
+    if (!modal) return;
+    repPaintModal();
+    repModalOpener = document.activeElement;
+    modal.hidden = false;
+    document.documentElement.classList.add('gp-rep-modal-open');
+    var close = modal.querySelector('.gp-rep-modal-close');
+    if (close) close.focus();
+    document.addEventListener('keydown', repModalKeydown);
+  };
+
+  window.gpRepCloseModal = function () {
+    var modal = $('gpRepModal');
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    repHideParaTip();
+    document.documentElement.classList.remove('gp-rep-modal-open');
+    document.removeEventListener('keydown', repModalKeydown);
+    if (repModalOpener && typeof repModalOpener.focus === 'function') repModalOpener.focus();
+    repModalOpener = null;
+  };
+
+  function repModalKeydown(event) {
+    if (event.key === 'Escape') { window.gpRepCloseModal(); return; }
+    if (event.key !== 'Tab') return;
+    // aria-modal만으로는 키보드 초점이 뒤 화면으로 새 나간다 — 모달 안에서 순환시킨다.
+    var modal = $('gpRepModal');
+    if (!modal || modal.hidden) return;
+    var focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (!focusable.length) return;
+    var first = focusable[0], last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+
+  function repPaintLead() {
+    var lead = $('gpRepMapLead');
+    if (!lead) return;
+    var picked = repMapState.selected;
+    if (picked == null) {
+      lead.textContent = !repMapState.sentences.length
+        ? ''
+        : (repMapState.cells || []).length > 1
+          ? '문단을 고르면 그 안의 문장을 볼 수 있어요. 진한 칸일수록 다듬을 후보가 많아요.'
+          : '';
+      return;
+    }
+    var row = repMapState.paragraphs[picked] || {};
+    lead.textContent = (picked + 1) + '번째 문단 · 문장 ' + (Number(row.sentences) || 0) + '개 중 다듬을 후보 '
+      + (Number(row.generic) || 0) + '개'
+      + (row.head ? ' · ' + row.head + (/[.!?…]$/.test(row.head) ? '' : '…') : '');
+  }
+
+  window.gpRepPickParagraph = function (index) {
+    var next = Number(index);
+    repMapState.selected = repMapState.selected === next ? null : next;
+    var cells = document.querySelectorAll('#gpRepParaCells .gp-rep-paracell');
+    for (var i = 0; i < cells.length; i++) {
+      var on = Number(cells[i].getAttribute('data-para')) === repMapState.selected;
+      cells[i].classList.toggle('is-on', on);
+      cells[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    repPaintLead();
+    repPaintSentences();
+  };
+
+  function repSetupMap(model) {
+    var map = model.sentenceMap || {};
+    var sentences = Array.isArray(map.sentences) ? map.sentences : [];
+    var paragraphs = Array.isArray(map.paragraphs) ? map.paragraphs : [];
+    // ★ 칸은 실제로 열리는 문단만 그린다.
+    //   장문은 문장 예산(200)이 문단 수보다 적어 일부 문단은 발췌가 없다. 예전엔 그런 문단도
+    //   칸으로 그려서 3만자 글에서 269칸 중 153칸이 눌러도 빈 목록이었다 — 지도가 한 약속을 어겼다.
+    //   백엔드가 문단마다 전달한 문장 수(excerpt)를 보내므로, 그 값이 있는 문단만 칸으로 만든다.
+    var hasExcerptField = paragraphs.some(function (row) { return row && row.excerpt != null; });
+    var shownIn = {};
+    sentences.forEach(function (s) { shownIn[s.paragraph] = (shownIn[s.paragraph] || 0) + 1; });
+    var openable = [];
+    paragraphs.forEach(function (row, index) {
+      var n = hasExcerptField ? (Number(row.excerpt) || 0) : (shownIn[index] || 0);
+      if (n > 0) openable.push(index);
+    });
+
+    // 처음에는 문단을 고르지 않고 글 전체의 핵심 문장을 연다.
+    //   예전에는 신호가 가장 센 문단을 자동 선택했는데, 장문에서 그 문단의 발췌가 1~2문장뿐이라
+    //   3만자 글의 핵심 문장 패널이 두 줄로 열렸다. 패널 이름이 '핵심 문장'인 만큼 기본값은
+    //   글 전체 기준이어야 하고, 문단 지도는 좁혀 보는 도구로 둔다.
+    repMapState = {
+      paragraphs: paragraphs, sentences: sentences, cells: openable,
+      selected: null, link: null, pinned: null,
+      capped: map.capped === true, total: Number(map.total) || sentences.length
+    };
+    var more = $('gpRepMapMore');
+    if (more) {
+      var hiddenParas = paragraphs.length - openable.length;
+      more.hidden = !repMapState.capped;
+      if (repMapState.capped) {
+        more.textContent = '긴 글이라 신호가 뚜렷한 문장과 유지할 문장만 골라 담았어요. 계측 수치는 문장 '
+          + repMapState.total.toLocaleString('ko-KR') + '개 전체 기준이고, 문단 지도에는 발췌가 있는 '
+          + openable.length.toLocaleString('ko-KR') + '개 문단을 띄웠어요'
+          + (hiddenParas > 0 ? ' (신호가 옅은 ' + hiddenParas.toLocaleString('ko-KR') + '개 문단은 생략).' : '.');
+      }
+    }
+
+    var paraMap = $('gpRepParaMap');
+    var cells = $('gpRepParaCells');
+    var useMap = openable.length > 1;
+    if (paraMap) paraMap.hidden = !useMap;
+    if (cells) {
+      cells.textContent = '';
+      if (useMap) {
+        openable.forEach(function (index) {
+          var row = paragraphs[index] || {};
+          var level = repParaLevel(row);
+          var li = document.createElement('li');
+          var button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'gp-rep-paracell lv' + level;
+          button.setAttribute('data-para', String(index));
+          button.setAttribute('aria-pressed', 'false');
+          button.setAttribute('aria-label',
+            (index + 1) + '번째 문단, ' + REP_LEVEL_LABEL[level] + ', 문장 ' + (row.sentences || 0) + '개');
+          button.textContent = String(index + 1);
+          if (index === repMapState.selected) {
+            button.classList.add('is-on');
+            button.setAttribute('aria-pressed', 'true');
+          }
+          button.onclick = function () { window.gpRepPickParagraph(index); };
+          button.addEventListener('mouseenter', function () { repShowParaTip(button); });
+          button.addEventListener('mouseleave', repHideParaTip);
+          button.addEventListener('focus', function () { repShowParaTip(button); });
+          button.addEventListener('blur', repHideParaTip);
+          li.appendChild(button);
+          cells.appendChild(li);
+        });
+      }
+    }
+    var wrapReset = $('gpRepParaWrap');
+    if (wrapReset) wrapReset.classList.remove('is-open');
+    repSyncParaMore();
+    repPaintLead();
+    repPaintSentences();
+  }
+
+  // ── 원인 분석 축 ────────────────────────────────────────────────────────────
+  // 다섯 축 모두 결정론 계측이라 추가 비용이 없다. 값이 클수록 AI식 신호가 강하다.
+  // 모집단 평균선은 우리에게 없다 — 없는 비교선을 그려 넣지 않고 내 글 하나만 그린다.
+  function repClamp01(value) {
+    var n = Number(value);
+    return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0;
+  }
+
+  // 계측이 없는 값(null·undefined·NaN)과 "0으로 측정된 값"은 다르다.
+  //   Number(null) === 0 이라 예전에는 값이 안 온 축이 조용히 최악(0 → 부족 100%)으로 그려졌다.
+  //   보고서는 측정된 것만 말한다 — 없는 축은 '측정 없음'으로 비워 둔다.
+  function repMeasured(value) {
+    if (value === null || value === undefined || value === '') return null;
+    var n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function repRadarAxes(model) {
+    var m = model.measured || {};
+    var totalRaw = repMeasured(m.genericTotal);
+    if (totalRaw == null) totalRaw = repMeasured(model.content.total);
+    var generic = repMeasured(m.genericCount);
+    // 계측 블록이 없어도 내용 근거(contentEvidence)에 같은 수가 있다 —
+    // 화면 다른 곳이 "3/8개"라고 말하는데 레이더만 '측정 없음'이면 같은 것을 두 가지로 말하게 된다.
+    if (generic == null) generic = repMeasured(model.content.generic);
+    var cv = repMeasured(m.lengthCV);
+    var run = repMeasured(m.maxEndingRun);
+    var anchor = repMeasured(m.realAnchorRatio);
+    var stance = repMeasured(m.stanceRatio);
+    var axis = function (name, raw, compute) {
+      return raw == null
+        ? { name: name, value: 0, unknown: true }
+        : { name: name, value: repClamp01(compute(raw)), unknown: false };
+    };
+    var genericRatio = (totalRaw != null && totalRaw > 0 && generic != null) ? generic / totalRaw : null;
+    return [
+      axis('문장 길이 균일', cv, function (v) { return 1 - v / 0.4; }),
+      axis('같은 종결 반복', run, function (v) { return v / 6; }),
+      axis('일반 표현 비율', genericRatio, function (v) { return v; }),
+      axis('구체 앵커 부족', anchor, function (v) { return 1 - v / 0.3; }),
+      axis('화자 입장 부족', stance, function (v) { return 1 - v / 0.3; })
+    ];
+  }
+
+  function repRadarLevel(axis) {
+    if (axis && axis.unknown) return '측정 없음';
+    var value = typeof axis === 'object' ? axis.value : axis;
+    return value >= 0.67 ? '높음' : (value >= 0.34 ? '보통' : '낮음');
+  }
+
+  var REP_AXIS_KEYS = ['uniform', 'ending', 'generic', 'anchor', 'stance'];
+  // ── 원인 분석 = 신호 강도 바 다섯 줄 ──
+  //   오각형 레이더는 값을 읽기 어렵다. 항목 · 실측 한 줄 · 막대 · 등급을 한 줄에 놓으면
+  //   "무엇이, 얼마나, 왜"가 한 번에 읽힌다. 막대 색은 과녁·게이지의 세 구역 색과 같다.
+  function repAxisFact(key, model) {
+    var m = model.measured || {}, c = model.content || {};
+    var total = Number(c.total) || Number(m.genericTotal) || 0;
+    if (key === 'uniform') return Number.isFinite(Number(m.lengthCV)) ? '길이 편차 ' + (Number(m.lengthCV) * 100).toFixed(1) + '%' : '';
+    if (key === 'ending') return m.maxEndingRun ? '같은 종결 ' + m.maxEndingRun + '문장 연속' : '';
+    if (key === 'generic') return (c.generic != null && total) ? '일반 표현 ' + c.generic + '/' + total + '문장' : '';
+    if (key === 'anchor') return m.realAnchorCount != null ? '숫자·연도·고유명사 문장 ' + m.realAnchorCount + '개' : '';
+    if (key === 'stance') return (Number.isFinite(Number(m.stanceRatio)) && total) ? '화자 입장 문장 ' + Math.round(Number(m.stanceRatio) * total) + '개' : '';
+    return '';
+  }
+  function repPaintRadar(model) {
+    var host = $('gpRepRadar');
+    if (!host) return;
+    var axes = repRadarAxes(model);
+    host.textContent = '';
+    var list = document.createElement('ol');
+    list.className = 'gp-rep-signals';
+    axes.forEach(function (a, i) {
+      var key = REP_AXIS_KEYS[i];
+      var hot = !a.unknown && a.value >= 0.67;
+      var level = a.unknown ? 'na' : (hot ? 'hot' : (a.value >= 0.34 ? 'mid' : 'low'));
+      var li = document.createElement('li');
+      li.className = 'axis lv-' + level + (hot ? ' hot' : '') + (a.unknown ? ' na' : '');
+      li.setAttribute('data-axis', key);
+      li.tabIndex = 0; li.setAttribute('role', 'button'); li.setAttribute('aria-pressed', 'false');
+      li.style.setProperty('--i', String(i));
+      li.style.setProperty('--v', a.unknown ? '0' : String(Math.round(a.value * 100)));
+      var head = document.createElement('div'); head.className = 'sig-head';
+      var name = document.createElement('b'); name.className = 'axis-name'; name.textContent = a.name;
+      var fact = document.createElement('span'); fact.className = 'sig-fact'; fact.textContent = a.unknown ? '이번엔 재지 못했어요' : repAxisFact(key, model);
+      head.appendChild(name); head.appendChild(fact);
+      var bar = document.createElement('div'); bar.className = 'sig-bar';
+      var fill = document.createElement('i'); fill.className = 'sig-fill'; bar.appendChild(fill);
+      var lvl = document.createElement('span'); lvl.className = 'axis-val sig-level' + (a.unknown ? ' na' : (hot ? ' hot' : '')); lvl.textContent = repRadarLevel(a);
+      li.appendChild(head); li.appendChild(bar); li.appendChild(lvl);
+      li.addEventListener('mouseenter', function () { repLinkAxis(key, false); });
+      li.addEventListener('mouseleave', function () { repLinkAxis(null, false); });
+      li.addEventListener('focus', function () { repLinkAxis(key, false); });
+      li.addEventListener('blur', function () { repLinkAxis(null, false); });
+      li.addEventListener('click', function () { repLinkAxis(key, true); });
+      li.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); repLinkAxis(key, true); } });
+      list.appendChild(li);
+    });
+    host.appendChild(list);
+    var alt = $('gpRepRadarAccessible');
+    if (alt) {
+      alt.textContent = 'AI 감지 원인 분석. ' + axes.map(function (a) {
+        return a.name + ' ' + repRadarLevel(a);
+      }).join(', ') + '.';
+    }
+  }
+
+  // ── 축 ↔ 문장 연동 ──────────────────────────────────────────────────────────
+  //   레이더 축·계측 띠 숫자에 손을 올리면 그 신호를 만든 문장이 핵심 문장 자리에 켜지고,
+  //   문단 지도에서는 그 문장이 든 칸이 표시된다. 데이터는 전부 문장 지도에 이미 있다.
+  var REP_STANCE_RE = /(저는|제가|개인적으로|내\s*생각|제\s*생각|라고\s*본다|라고\s*봅니다|라고\s*느꼈|아쉽|문제라고\s*생각|걱정(된다|스럽)|동의하기\s*(어렵|힘들)|가볍게\s*볼\s*수\s*없|확신한다|분명하다|틀림없|싶었다|싶습니다)/;
+  var REP_AXIS_COPY = {
+    generic: { head: '일반적인 표현으로 읽힌 문장', empty: '일반적인 표현으로 읽힌 문장이 없어요.' },
+    ending: { head: '같은 종결이 4문장 이상 이어진 자리', empty: '같은 종결이 4문장 이상 이어진 자리가 없어요.' },
+    uniform: { head: '길이가 평균에 붙어 있는 문장', empty: '길이가 고르게 붙은 문장이 없어요.' },
+    anchor: { head: '숫자·연도·고유명사가 있는 문장 — 여기가 유지할 근거예요', empty: '숫자·연도·고유명사가 든 문장이 아직 없어요.' },
+    stance: { head: '화자의 입장이 드러난 문장', empty: '화자의 입장이 드러난 문장이 없어요.' }
+  };
+  function repMatchesForAxis(key) {
+    var all = repMapState.sentences || [];
+    if (!all.length) return [];
+    if (key === 'generic') return all.filter(function (s) { return s.kind === 'generic'; });
+    if (key === 'ending') return all.filter(function (s) { return s.endingRun >= 4; });
+    if (key === 'anchor') return all.filter(function (s) { return s.kind === 'lived' || s.kind === 'specific'; });
+    if (key === 'stance') return all.filter(function (s) { return REP_STANCE_RE.test(s.text || ''); });
+    if (key === 'uniform') {
+      var lens = all.map(function (s) { return Number(s.length) || 0; }).filter(Boolean);
+      if (!lens.length) return [];
+      var avg = lens.reduce(function (a, b) { return a + b; }, 0) / lens.length;
+      return all.filter(function (s) { return avg > 0 && Math.abs((Number(s.length) || 0) - avg) / avg <= 0.15; });
+    }
+    return [];
+  }
+  function repLinkAxis(key, pin) {
+    var current = repMapState.link || null;
+    if (pin) {
+      // 탭/클릭은 고정 토글 — 같은 축을 다시 누르면 푼다.
+      repMapState.pinned = (current === key && repMapState.pinned) ? null : key;
+      key = repMapState.pinned;
+    } else if (repMapState.pinned) {
+      key = repMapState.pinned;   // 고정 중에는 호버가 바꾸지 못한다
+    }
+    if (key === current && !pin) return;
+    repMapState.link = key;
+    document.querySelectorAll('[data-axis]').forEach(function (el) {
+      var on = !!key && el.getAttribute('data-axis') === key;
+      el.classList.toggle('is-on', on);
+      el.classList.toggle('is-pinned', on && repMapState.pinned === key);
+      el.setAttribute('aria-pressed', on && repMapState.pinned === key ? 'true' : 'false');
+    });
+    var hits = key ? repMatchesForAxis(key) : [];
+    var hitPara = {};
+    hits.forEach(function (h) { hitPara[h.paragraph] = true; });
+    document.querySelectorAll('#gpRepParaCells .gp-rep-paracell').forEach(function (cell) {
+      cell.classList.toggle('is-hit', !!key && !!hitPara[cell.getAttribute('data-para')]);
+      cell.classList.toggle('is-dim', !!key && !hitPara[cell.getAttribute('data-para')]);
+    });
+    repPaintSentences();
+    // 모바일은 핵심 문장 패널이 레이더 위(화면 밖)에 있어 고정해도 보이는 변화가 없다 — 그 자리로 데려간다.
+    if (pin && key && repMapState.pinned === key && window.matchMedia && window.matchMedia('(max-width:640px)').matches) {
+      var head = $('gpRepLinkHead');
+      if (head && typeof head.scrollIntoView === 'function') head.scrollIntoView({ behavior: repReducedMotion() ? 'auto' : 'smooth', block: 'center' });
+    }
+  }
+  function repBindStatLinks() {
+    document.querySelectorAll('#gpRepStats .is-link').forEach(function (tile) {
+      if (tile.dataset.bound) return;
+      tile.dataset.bound = '1';
+      var key = tile.getAttribute('data-axis');
+      tile.addEventListener('mouseenter', function () { repLinkAxis(key, false); });
+      tile.addEventListener('mouseleave', function () { repLinkAxis(null, false); });
+      tile.addEventListener('focus', function () { repLinkAxis(key, false); });
+      tile.addEventListener('blur', function () { repLinkAxis(null, false); });
+      tile.addEventListener('click', function () { repLinkAxis(key, true); });
+      tile.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); repLinkAxis(key, true); } });
+    });
+  }
+
+  // ── 다듬었을 때 예상 변화 — 결정론 두 축만, 점수는 예측하지 않는다 ─────────
+  //   "66 → 4x"처럼 문체 점수(LLM)를 지어내지 않는다. 일반 표현 비율과 같은 종결 반복은
+  //   후보 문장을 빼고 다시 세면 그대로 나오는 값이라 정직하게 말할 수 있다.
+  function repExpectedEffect(model) {
+    // "38% → 0%"처럼 결과를 약속하지 않는다 — 휴머나이징이 모든 후보를 바꾼다고 보장하지 않으므로
+    //   무엇이 다듬을 대상인지(범위)만 센다.
+    var all = repMapState.sentences || [];
+    var total = Number(model.content.total) || all.length;
+    var generic = Number(model.content.generic) || 0;
+    if (!total || !generic) return [];
+    var rows = [];
+    rows.push({ label: '일반 표현', value: generic + '문장 (' + Math.round(generic / total * 100) + '%)' });
+    var runNow = Number(model.measured && model.measured.maxEndingRun) || 0;
+    if (runNow >= 4) {
+      var inRun = all.filter(function (s) { return s.endingRun >= 4 && s.kind === 'generic'; }).length;
+      rows.push({ label: '같은 종결 ' + runNow + '문장 연속 구간', value: inRun ? '그중 후보 ' + inRun + '문장' : '리듬 끊기' });
+    }
+    return rows;
+  }
+
+  // ── 결과 이미지(공유 카드) — 교수님 레이더 + 점수 + 유지할 근거 ───────────
+  //   학생 커뮤니티에서 "내 자소서 교수님 레이더 41"이 돌아다니면 감지기 자체가 유입 채널이 된다.
+  function repLoadImage(src) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { resolve(null); };
+      img.src = src;
+    });
+  }
+  window.gpRepShareCard = async function () {
+    var model = lastReportModel;
+    var btn = $('gpRepShare');
+    if (!model) return;
+    if (btn) { btn.disabled = true; btn.classList.add('is-busy'); }
+    try {
+      var W = 1200, H = 630;
+      var cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      var ctx = cv.getContext('2d');
+      var font = function (w, px) { return w + ' ' + px + 'px Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'; };
+      var grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, '#241c5c'); grad.addColorStop(1, '#4b34cc');
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+      // 왼쪽: 말
+      ctx.fillStyle = '#c9b8ff'; ctx.font = font('800', 22); ctx.textBaseline = 'top';
+      ctx.fillText('교수님 피하기 · AI 감지 보고서', 72, 64);
+      ctx.fillStyle = '#ffffff'; ctx.font = font('850', 118);
+      ctx.fillText(model.score == null ? '--' : String(model.score), 72, 110);
+      var numW = ctx.measureText(model.score == null ? '--' : String(model.score)).width;
+      ctx.fillStyle = '#b3aee0'; ctx.font = font('700', 30);
+      ctx.fillText('/100 · AI식 문체 신호', 72 + numW + 16, 190);
+      var chip = model.radar.label || '';
+      ctx.font = font('800', 30);
+      var chipW = ctx.measureText(chip).width + 44;
+      ctx.fillStyle = '#f5b425';
+      ctx.beginPath(); ctx.roundRect(72, 262, chipW, 56, 28); ctx.fill();
+      ctx.fillStyle = '#1a1747'; ctx.fillText(chip, 94, 274);
+      ctx.fillStyle = '#e2dcff'; ctx.font = font('600', 24);
+      var keeps = (model.preservation || []).slice(0, 3).map(function (item) {
+        if (typeof item !== 'object') return String(item);
+        return item.label + ' ' + (item.value != null ? item.value : (Number(item.count) || 0) + '문장');
+      });
+      keeps.forEach(function (line, i) { ctx.fillText('· ' + line, 72, 356 + i * 40); });
+      ctx.fillStyle = '#b3aee0'; ctx.font = font('700', 22);
+      ctx.fillText('gpkorea.ai.kr', 72, H - 84);
+      // 오른쪽: 게이지 — 화면과 같은 반원 트랙. 0 왼쪽 → 100 오른쪽, 100 끝에 교수님.
+      var gx = 900, gy = 400, GR = 200, BW = 40;
+      var gAngle = function (score) { return Math.max(0, Math.min(100, score)) / 100 * Math.PI; };   // 100 왼쪽(교수님) → 0 오른쪽(안전)
+      var gPoint = function (score, r) { var a = gAngle(score); return [gx + Math.cos(a) * r, gy - Math.sin(a) * r]; };
+      var arc = function (from, to, r, color, width) {
+        ctx.beginPath(); ctx.arc(gx, gy, r, -gAngle(from), -gAngle(to), false);
+        ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'butt'; ctx.stroke();
+      };
+      // 호는 왼쪽(100)에서 오른쪽(0)으로 시계 방향
+      var zonesC = [[100, 50, '#fde1dc', '#e3665a'], [49, 21, '#e3daff', '#6d4aff'], [20, 0, '#d5edf2', '#3fb2c9']];
+      zonesC.forEach(function (z) { arc(z[0], z[1], GR, z[2], BW); });
+      if (model.score != null) zonesC.forEach(function (z) { var lo = Math.max(model.score, z[1]); if (lo <= z[0]) arc(z[0], Math.min(z[0] - 0.5, lo), GR, z[3], BW); });
+      ctx.fillStyle = '#e2dcff'; ctx.font = font('700', 20); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      [[100, '100'], [50, '50'], [20, '20'], [0, '0']].forEach(function (t) { var lp = gPoint(t[0], GR - BW / 2 - 26); ctx.fillText(t[1], lp[0], lp[1]); });
+      var zl = function (score, text, color) { var lp = gPoint(score, GR + BW / 2 + 22); ctx.fillStyle = color; ctx.font = font('800', 22); ctx.fillText(text, lp[0], lp[1]); };
+      zl(82, '위험', '#ffb9ac'); zl(35, '주의', '#c9b8ff'); zl(10, '안전', '#9fd6e2');
+      ctx.setLineDash([4, 9]); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(gx, gy, GR, -gAngle(100), -gAngle(0), false); ctx.stroke(); ctx.setLineDash([]);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      var imgs = await Promise.all([repLoadImage('/assets/img/report/professor.png'), repLoadImage('/assets/img/report/runner-bust.png')]);
+      var drawClipped = function (img, x, y, r) {
+        if (!img) return;
+        ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
+        var s = Math.max((r * 2) / img.width, (r * 2) / img.height);
+        ctx.drawImage(img, x - img.width * s / 2, y - img.height * s / 2, img.width * s, img.height * s);
+        ctx.restore();
+      };
+      var label = function (x, y, text) {
+        ctx.font = font('800', 20); var w = ctx.measureText(text).width + 24;
+        ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.beginPath(); ctx.roundRect(x - w / 2, y - 15, w, 30, 15); ctx.fill();
+        ctx.fillStyle = '#241c5c'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.fillText(text, x, y); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      };
+      var pp = gPoint(100, GR);
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(pp[0] - 44, pp[1] - 6, 36, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#241c5c'; ctx.lineWidth = 4; ctx.stroke();
+      drawClipped(imgs[0], pp[0] - 44, pp[1] - 6, 32);
+      label(pp[0] - 44, pp[1] + 52, '교수님');
+      if (model.score != null) {
+        var bp = gPoint(model.score, GR);
+        ctx.fillStyle = 'rgba(109,74,255,.25)'; ctx.beginPath(); ctx.arc(bp[0], bp[1], 62, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(bp[0], bp[1], 48, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#6d4aff'; ctx.lineWidth = 5; ctx.stroke();
+        drawClipped(imgs[1], bp[0], bp[1], 44);
+        label(bp[0], bp[1] - 70, '내 글');
+      }
+      var blob = await new Promise(function (resolve) { cv.toBlob(resolve, 'image/png'); });
+      if (!blob) throw new Error('canvas_blob_failed');
+      var file = new File([blob], '교수님피하기-감지보고서.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: '교수님 피하기 · AI 감지 보고서' }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+      }
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      if (window.gpToast) window.gpToast('결과 이미지를 저장했어요.');
+    } catch (e) {
+      if (window.gpToast) window.gpToast('이미지를 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.');
+    } finally {
+      if (btn) { btn.disabled = false; btn.classList.remove('is-busy'); }
+    }
+  };
+
+  // ── 개선 포인트 ─────────────────────────────────────────────────────────────
+  // 측정된 것만 말한다. 값이 기준을 넘은 축에서만 문장을 만들고, 없으면 유지 안내로 닫는다.
+  function repBuildTips(model) {
+    var m = model.measured || {};
+    var tips = [];
+    if (Number(m.maxEndingRun) >= 4) {
+      tips.push('같은 활용(예: ~했습니다)이 ' + m.maxEndingRun + '문장 이어져요. 몇 문장만 다른 어미로 끊어 보세요.');
+    }
+    var smallSample = m.sampleSize === 'small' || (model.content.total != null && model.content.total < 5);
+    if (!smallSample && Number.isFinite(Number(m.lengthCV)) && Number(m.lengthCV) < 0.25) {
+      tips.push('문장 길이가 고르게 붙어 있어요. 짧은 문장과 긴 문장을 섞어 보세요.');
+    }
+    if (model.content.generic && model.content.total) {
+      tips.push('일반적인 표현 문장이 ' + model.content.generic + '/' + model.content.total + '개예요. 실제로 겪은 장면으로 바꿔 보세요.');
+    }
+    if (Number(m.realAnchorCount) === 0) {
+      tips.push('숫자·연도·고유명사 같은 구체 근거가 아직 없어요. 정확히 아는 값만 더해 보세요.');
+    }
+    if (!tips.length) tips.push('두드러진 문체 신호가 없어요. 지금 표현을 유지해도 좋아요.');
+    return tips.slice(0, 3);
+  }
+
+  // ── 전환 밴드 ───────────────────────────────────────────────────────────────
+  // 유료 전환을 권할 수 있는 상태와 그렇지 않은 상태를 같은 자리에서 다른 말로 닫는다.
+  // 권하지 않는 상태에서는 버튼을 지우거나(추정 보류) 부차 버튼으로 낮춘다(이미 유리한 글).
+  function repPaintCta(model) {
+    var band = $('gpRepNext');
+    if (!band) return;
+    var title = $('gpRepCtaTitle'), desc = $('gpRepCtaDesc');
+    var btn = $('gpRepCtaBtn'), help = $('gpRepCtaHelp'), cost = $('gpRepGoCost');
+    var eligible = model.conversionEligible !== false;
+    band.hidden = false;
+    band.classList.toggle('is-quiet', !eligible);
+
+    if (eligible) {
+      if (title) {
+        title.textContent = model.content.generic > 0
+          ? '다듬을 후보 ' + model.content.generic + '문장, 지금 다듬어 볼까요?'
+          : '이 글, 지금 다듬어 볼까요?';
+      }
+      if (desc) desc.textContent = '원문의 뜻과 사실은 그대로 두고 문체만 다시 씁니다.';
+      if (btn) { btn.hidden = false; btn.textContent = '추천 방법·비용 확인하기 →'; }
+      if (help) help.hidden = false;
+      repPaintExpect(model);
+      return;
+    }
+    repPaintExpect(null);
+
+    if (cost) cost.hidden = true;
+    if (model.style.source === 'engine') {
+      // 점수가 간이 추정이면 유료 수정을 권하지 않는다 — 다만 왜 멈췄는지는 말한다.
+      if (title) title.textContent = '지금은 추천을 보류했어요';
+      if (desc) desc.textContent = 'AI 모델 분석이 완료되지 않아 점수가 간이 추정이에요. 위 계측 수치와 개선 포인트는 그대로 쓸 수 있고, 잠시 뒤 다시 감지하면 정식 판정을 볼 수 있어요.';
+      if (btn) btn.hidden = true;
+      if (help) help.hidden = true;
+      return;
+    }
+    if (model.radar.band === 'low') {
+      if (title) title.textContent = '지금 이 글은 피하기에 유리한 편이에요';
+      if (desc) desc.textContent = '두드러진 AI식 문체 신호가 없어 굳이 다듬지 않아도 괜찮아요. 그래도 문체를 손보고 싶다면 비용부터 확인해 보세요.';
+      if (btn) { btn.hidden = false; btn.textContent = '그래도 방법·비용 보기 →'; }
+      if (help) help.hidden = false;
+      return;
+    }
+    if (title) title.textContent = '판단할 근거가 아직 부족해요';
+    if (desc) desc.textContent = '문장 수가 적어 내용 근거를 충분히 확인하지 못했어요. 글을 더 붙여 넣고 다시 감지하면 더 정확하게 볼 수 있어요.';
+    if (btn) btn.hidden = true;
+    if (help) help.hidden = true;
+  }
+
+  function repPaintExpect(model) {
+    var list = $('gpRepExpect');
+    if (!list) return;
+    list.textContent = '';
+    var rows = model ? repExpectedEffect(model) : [];
+    list.hidden = !rows.length;
+    rows.forEach(function (row) {
+      var li = document.createElement('li');
+      var label = document.createElement('span'); label.textContent = row.label;
+      var value = document.createElement('b'); value.textContent = row.value;
+      li.appendChild(label); li.appendChild(value);
+      list.appendChild(li);
+    });
+    if (rows.length) {
+      var lead = document.createElement('li');
+      lead.className = 'lead';
+      lead.textContent = '다듬을 대상 (원인 축 기준)';
+      list.insertBefore(lead, list.firstChild);
+    }
+  }
+
+  // ── 보고서 렌더 ─────────────────────────────────────────────────────────────
   function renderReport(d) {
     if (typeof window.gpNormalizeDetectPresentation === 'function') {
       d = window.gpNormalizeDetectPresentation(d);
     }
+    var srcInput = $('lavInput');
+    try { Object.defineProperty(d, '__inputText', { value: srcInput ? String(srcInput.value || '') : '', enumerable: false, writable: true }); } catch (e) { /* 동결 객체면 생략 */ }
     lastReport = d;
-    var p = d.probability;
-    var level = d.riskLevel || (p >= 50 ? 'high' : p >= 21 ? 'moderate' : 'low');
-    var sev = p == null ? '' : level === 'high' ? 'bad' : level === 'moderate' ? 'mid' : 'good';
-    if ($('lavRepProb')) $('lavRepProb').textContent = (p == null ? '—' : p);
-    var score = $('lavRepScore');
-    if (score) score.className = 'lav-rep-hero' + (sev ? ' ' + sev : '');
-    // 게이지는 여기서 0%로 리셋만 — 채움·카운트업은 화면 공개 후 playReportIntro가
-    // (카드가 hidden(display:none)인 동안 채우면 트랜지션이 안 보임 — 2026-06-13 실사고).
-    repProbTarget = p;
-    var arc = $('lavRepArc');
-    if (arc) {
-      var LEN = Math.PI * 90;
-      arc.style.strokeDasharray = LEN;
-      arc.style.transition = 'none';
-      arc.style.strokeDashoffset = LEN;
-    }
-    // 공개 보고서는 정밀 측정이 성공한 경우에만 들어온다. 실패는 별도 무차감 상태에서 처리한다.
-    var badge = $('lavRepBadge');
-    if (badge) {
-      badge.hidden = (p == null);
-      badge.textContent = d.riskLabel || (sev === 'bad' ? 'AI 티 지수 높음' : sev === 'mid' ? 'AI 티 지수 중간' : 'AI 티 지수 낮음');
-      badge.className = 'lav-rep-badge' + (sev ? ' ' + sev : '');
-    }
-    if ($('lavRepTitle')) $('lavRepTitle').textContent = d.title || '참고 결과';
-    if ($('lavRepSummary')) $('lavRepSummary').textContent = d.summary || '';
-    var cc = d.counts || {};
-    if ($('lavRepStatRisk')) $('lavRepStatRisk').textContent = cc.risk || 0;
-    if ($('lavRepStatThin')) $('lavRepStatThin').textContent = cc.thin || 0;
-    if ($('lavRepStatSafe')) $('lavRepStatSafe').textContent = cc.safe || 0;
+    var model = buildReportModel(d);
+    lastReportModel = model;
+    var score = model.score;
+    repProbTarget = score;
 
-    // 문단 지도 — DOM 생성(XSS-safe)
-    var list = $('lavRepParaList');
-    if (list) {
-      list.innerHTML = '';
-      (d.paragraphs || []).forEach(function (p) {
-        var row = document.createElement('div');
-        row.className = 'lav-rep-para ' + (p.kind || 'thin');
-        var chip = document.createElement('span');
-        chip.className = 'rp-chip';
-        chip.textContent = p.kind === 'concrete' ? '안전' : (p.kind === 'abstract_risk' ? '위험' : '주의');
-        var body = document.createElement('div');
-        body.className = 'rp-body';
-        var snip = document.createElement('p');
-        var full = typeof p.text === 'string' ? p.text : '';   // 서버가 140자 초과 문단에만 전문을 보냄
-        var truncated = full && full.length > (p.snippet || '').length;
-        snip.textContent = p.snippet + (truncated ? '…' : '');
-        var why = document.createElement('em');
-        why.textContent = p.reason || '';
-        body.appendChild(snip);
-        if (truncated) {
-          // 문단 전체보기/접기 — 미리보기만으론 어느 대목인지 확인이 안 된다는 사용자 피드백(2026-07-20)
-          var more = document.createElement('button');
-          more.type = 'button';
-          more.className = 'rp-more';
-          more.textContent = '전체보기';
-          more.setAttribute('aria-expanded', 'false');
-          more.onclick = function () {
-            var open = more.classList.toggle('on');
-            snip.textContent = open ? full : p.snippet + '…';
-            snip.classList.toggle('full', open);   // 2줄 클램프 해제(전문은 줄 수 제한 없이)
-            more.textContent = open ? '접기' : '전체보기';
-            more.setAttribute('aria-expanded', open ? 'true' : 'false');
-            // 행이 길어지며 목록이 바깥 접힘(340px)을 넘으면 아래 문단이 소리 없이 잘림 —
-            // 전문을 보려는 의도이므로 바깥 접힘은 자동으로 펼치고, 접을 땐 잘림 상태만 재평가
-            var listEl = document.getElementById('lavRepParaList');
-            if (open && listEl && !listEl.classList.contains('expanded') && listEl.scrollHeight > listEl.clientHeight + 6) {
-              window.lavToggleCollapse('lavRepParaList', document.getElementById('lavRepParaToggle'));
-            } else {
-              lavSyncCollapse('lavRepParaList', 'lavRepParaToggle');
-            }
-          };
-          body.appendChild(more);
+    // ① 히어로 — 종합 한 문장과 유지될 내용
+    if ($('gpRepHeroTitle')) $('gpRepHeroTitle').textContent = model.synthesis.headline || '';
+    var keeps = $('gpRepKeeps');
+    if (keeps) {
+      keeps.textContent = '';
+      (model.preservation || []).forEach(function (item) {
+        if (!item) return;
+        var li = document.createElement('li');
+        var label = document.createElement('span');
+        label.textContent = typeof item === 'object' ? item.label : String(item);
+        li.appendChild(label);
+        if (typeof item === 'object') {
+          var value = document.createElement('b');
+          value.textContent = item.value != null ? String(item.value) : (Number(item.count) || 0) + '문장';
+          li.appendChild(value);
         }
-        body.appendChild(why);
-        // ★ 문단별 코칭(2026-06-17): 학습된 프록시 예측태그 → 채울 경험 메모 칸 안내
-        if (p.coach && p.coach.length) {
-          var fset = [];
-          p.coach.forEach(function (c) { (c.fields || []).forEach(function (f) { if (fset.indexOf(f) < 0) fset.push(f); }); });
-          var pc = document.createElement('div');
-          pc.className = 'rp-coach';
-          pc.textContent = '경험 메모에서 ' + fset.join(' · ') + ' 항목을 채우면 글을 더 구체적으로 다듬을 수 있어요';
-          body.appendChild(pc);
-        }
-        row.appendChild(chip); row.appendChild(body);
-        list.appendChild(row);
+        keeps.appendChild(li);
       });
-      // ★ 글 전체 코칭 요약 배너 — 상위 예측태그 → 채울 메모 칸 + 이유
-      if (d.coach && d.coach.length) {
-        var bf = [];
-        d.coach.forEach(function (c) { (c.fields || []).forEach(function (f) { if (bf.indexOf(f) < 0) bf.push(f); }); });
-        var banner = document.createElement('div');
-        banner.className = 'lav-rep-coach';
-        var bt = document.createElement('b');
-        bt.textContent = '글을 더 구체적으로 만들려면 경험 메모의 ' + bf.join(' · ') + ' 항목에 실제 내용을 적어 주세요';
-        var bw = document.createElement('span');
-        bw.textContent = '. ' + d.coach.map(function (c) { return c.why; }).join(' / ');
-        banner.appendChild(bt); banner.appendChild(bw);
-        list.insertBefore(banner, list.firstChild);
-      }
-    }
-    if ($('lavRepParaCount')) $('lavRepParaCount').textContent = '총 ' + ((d.paragraphs || []).length) + '문단';
-
-    // 실시간 1문장 미리보기 — 없으면 블록 숨김
-    var ex = $('lavRepExample');
-    if (ex) {
-      ex.hidden = !d.example;
-      if (d.example) {
-        if ($('lavRepBefore')) $('lavRepBefore').textContent = d.example.before;
-        if ($('lavRepAfter')) $('lavRepAfter').textContent = d.example.after;
-      }
+      keeps.hidden = keeps.children.length === 0;
     }
 
-    if ($('lavRepRemain')) {
-      $('lavRepRemain').textContent = d.charged ? '이번 감지에 ' + d.charged + '크레딧을 사용했어요. (100자당 1크레딧)' : '';
+    // Before / After — 한 문장까지만. 전체는 휴머나이징의 몫이다.
+    var example = d.example || {};
+    var usable = !!(example.before && example.after);
+    // 예시가 없으면 좌우 칸이 빠지므로 3열 격자를 접어 게이지를 가운데로 둔다.
+    if ($('gpRepBa')) { $('gpRepBa').hidden = false; $('gpRepBa').classList.toggle('is-solo', !usable); }
+    if ($('gpRepBefore')) $('gpRepBefore').textContent = usable ? example.before : '';
+    if ($('gpRepAfter')) $('gpRepAfter').textContent = usable ? example.after : '';
+    repDiffOn = false;
+    if ($('gpRepBaDiff')) { $('gpRepBaDiff').hidden = !usable; $('gpRepBaDiff').setAttribute('aria-pressed', 'false'); $('gpRepBaDiff').textContent = '바뀐 부분 보기'; }
+    var beforeCol = document.querySelector('.gp-rep-ba-col.before');
+    var afterCol = document.querySelector('.gp-rep-ba-col.after');
+    if (beforeCol) beforeCol.hidden = !usable;
+    if (afterCol) afterCol.hidden = !usable;
+    var baEmpty = $('gpRepBaEmpty');
+    if (baEmpty) {
+      baEmpty.hidden = usable;
+      if (!usable) {
+        // 우리 쪽 실패와 원문에 후보가 없는 경우를 구분해 말한다.
+        baEmpty.textContent = d.exampleStatus === 'unavailable'
+          ? '예시 문장을 다듬는 중 오류가 생겨 이번에는 미리보기를 만들지 못했어요. 아래 분석은 그대로 확인할 수 있어요.'
+          : '사실을 바꾸지 않고 보여줄 예시 문장을 원문에서 찾지 못했어요. 아래 분석에서 근거를 확인해 주세요.';
+      }
+    }
+
+    // 교수님 레이더
+    var dial = $('gpRepDial');
+    if (dial) dial.className = 'gp-rep-dial is-' + (model.radar.band || 'unknown');
+    repPaintScope(model);
+    if ($('gpRepScore')) $('gpRepScore').textContent = score == null ? '--' : String(score);
+    if ($('gpRepBandChip')) $('gpRepBandChip').textContent = model.radar.label || '판정 준비 중';
+    if ($('gpRepSource')) {
+      // 엔진 간이 추정은 모델 판정과 신뢰도가 달라 점수 옆에서 밝힌다.
+      // 이력 보정 사실은 화면에 표기하지 않는다(사장님 결정 2026-09-02). 값은 응답·관리자 원장에 남는다.
+      $('gpRepSource').textContent = model.style.source === 'engine' ? model.style.sourceLabel : '';
+    }
+
+    // ② 계측 띠
+    var measured = model.measured || {};
+    var setStat = function (id, value) { var el = $(id); if (el) el.textContent = value; };
+    setStat('gpRepStatTotal', model.content.total ? model.content.total.toLocaleString('ko-KR') + '문장' : '—');
+    var genericEl = $('gpRepStatGeneric');
+    if (genericEl) {
+      genericEl.textContent = '';
+      if (model.content.generic != null && model.content.total) {
+        genericEl.appendChild(document.createTextNode(model.content.generic + '문장'));
+        var pct = document.createElement('em');
+        pct.textContent = (model.content.generic / model.content.total * 100).toFixed(1) + '%';
+        genericEl.appendChild(pct);
+      } else {
+        genericEl.textContent = '—';
+      }
+    }
+    setStat('gpRepStatRhythm', Number.isFinite(Number(measured.lengthCV))
+      ? (Number(measured.lengthCV) * 100).toFixed(1) + '%' : '—');
+    setStat('gpRepStatEnding', measured.maxEndingRun ? measured.maxEndingRun + '문장 연속' : '—');
+    // 2문장 통계를 786문장과 같은 확신으로 보이지 않게 — 5문장 미만이면 한 줄 붙인다.
+    var sample = $('gpRepSample');
+    if (sample) {
+      var small = measured.sampleSize === 'small' || (model.content.total != null && model.content.total < 5);
+      sample.hidden = !small;
+      sample.textContent = small
+        ? '문장 ' + (model.content.total || 0) + '개는 표본이 적어요. 길이 편차·종결 반복은 참고만 하고, 글을 더 붙여 넣으면 더 정확해져요.'
+        : '';
+    }
+
+    // ③ 문장·원인·개선
+    repSetupMap(model);
+    repPaintRadar(model);
+    repBindStatLinks();
+    var tips = $('gpRepTips');
+    if (tips) {
+      tips.textContent = '';
+      var tipLines = repBuildTips(model);
+      // 처방마다 그 근거 축이 있다 — 누르면 그 축이 켜져 문장이 보인다.
+      var tipAxis = function (line) {
+        return /같은 활용/.test(line) ? 'ending' : /문장 길이/.test(line) ? 'uniform' : /일반적인 표현/.test(line) ? 'generic' : /구체 근거/.test(line) ? 'anchor' : null;
+      };
+      tipLines.forEach(function (line) {
+        var li = document.createElement('li');
+        var axis = tipAxis(line);
+        if (axis) {
+          var b = document.createElement('button');
+          b.type = 'button'; b.className = 'gp-rep-tipbtn'; b.textContent = line;
+          b.setAttribute('data-axis', axis);
+          b.addEventListener('click', function () { repLinkAxis(axis, true); var head = $('gpRepLinkHead'); if (head && window.matchMedia('(max-width:1080px)').matches) head.scrollIntoView({ behavior: repReducedMotion() ? 'auto' : 'smooth', block: 'center' }); });
+          b.addEventListener('mouseenter', function () { repLinkAxis(axis, false); });
+          b.addEventListener('mouseleave', function () { repLinkAxis(null, false); });
+          li.appendChild(b);
+        } else li.textContent = line;
+        tips.appendChild(li);
+      });
+      if ($('gpRepTipsCount')) $('gpRepTipsCount').textContent = tipLines.length + '가지';
+    }
+
+    // ④ 전환·한계
+    //   추천을 보류하는 상황(간이 추정·근거 부족·이미 유리한 글)에서 밴드를 통째로 감추면
+    //   보고서가 '개선 포인트' 뒤 허공에서 끝났다. 밀지 않되 닫는 말은 남긴다.
+    repPaintCta(model);
+    repSetupSticky(model);
+    if ($('gpRepLimit')) {
+      var limit = model.synthesis.limitation || '';
+      if (model.style.source === 'engine') {
+        limit = 'AI 모델 분석이 완료되지 않아 문체 엔진의 간이 추정으로 계산한 점수예요. ' + limit;
+      }
+      $('gpRepLimit').textContent = limit;
+    }
+    if ($('gpRepRemain')) {
+      $('gpRepRemain').textContent = d.charged
+        ? '이번 감지에 ' + d.charged + '크레딧을 사용했어요. (100자당 1크레딧)'
+        : '';
       renderReportGoCost();
+    }
+
+    var report = document.querySelector('[data-flow="report"]');
+    if (report) {
+      report.dataset.announcement = score == null
+        ? 'AI 감지 분석을 마쳤어요. 점수를 확인하지 못했어요.'
+        : 'AI 감지 분석을 마쳤어요. AI식 문체 신호 ' + score + '점, 100점 만점. ' + (model.radar.label || '');
     }
   }
 
@@ -982,11 +2250,18 @@
     resetToneChoice();
     var d = lastReport;
     if (d) {
+      var reportModel = lastReportModel || buildReportModel(d);
       var sol = d.solutions || {};
       applyDiag({
         grade: d.grade,
-        title: d.title,
-        desc: d.summary || '',
+        title: reportModel.synthesis.headline,
+        desc: reportModel.synthesis.description,
+        reportContext: true,
+        reportView: d.reportView || {},
+        reportSynthesis: reportModel.synthesis,
+        contentEvidence: reportModel.content,
+        reportMeta: 'AI식 문체 신호 ' + (reportModel.score == null ? '확인 필요' : reportModel.score + '/100')
+          + ' · 교수님 레이더 ' + reportModel.radar.label + ' · 내용 근거 ' + reportModel.content.label,
         abstractRiskRatio: Number(d.abstractRiskRatio) || 0,
         needsUserAnchor: Number(d.abstractRiskRatio) >= 0.5 || d.grade === 'C',
         diagnosisSource: 'paid_report',
@@ -1467,6 +2742,41 @@
     if ($('lavStepSlot')) $('lavStepSlot').textContent = '대기 ' + pos + '번째' + (size > 1 ? ' / ' + size + '명' : '') + ' · 예상 ' + wait;
   }
 
+  // 보고서에서 넘어온 글이면 원글의 감지 점수·근거 수를 작업에 같이 보낸다.
+  //   서버는 이력에 남겨 재검사 보정의 원점수 상한으로 쓰고, 결과 화면은 "유지할 근거 보존"을 같은 자로 다시 센다.
+  //   입력칸의 글이 보고서 때와 다르면(사용자가 고침) 보내지 않는다 — 다른 글의 점수를 상한으로 쓰면 안 된다.
+  function reportHandoffFields(text) {
+    var d = lastDiag;
+    if (!d || !d.reportContext || !lastReportModel) return {};
+    var reportText = (lastReport && typeof lastReport.__inputText === 'string') ? lastReport.__inputText : null;
+    if (reportText != null && reportText.replace(/\s+/g, '') !== String(text || '').replace(/\s+/g, '')) return {};
+    var out = {};
+    if (lastReportModel.score != null) out.sourceProbability = lastReportModel.score;
+    var c = lastReportModel.content || {};
+    if (c.total) out.sourceEvidence = { lived: Number(c.lived) || 0, specific: Number(c.specific) || 0, total: Number(c.total) || 0 };
+    return out;
+  }
+
+  function renderPreservationBadge(st) {
+    var wrap = $('lavTrust');
+    if (!wrap || !st) return;
+    var check = st.result && st.result.preservationCheck;
+    var source = st.sourceEvidence;
+    if (!check || !source || !source.total) return;
+    var lived = Math.min(Number(check.lived) || 0, Number(source.lived) || 0);
+    var specific = Math.min(Number(check.specific) || 0, Number(source.specific) || 0);
+    var parts = [];
+    if (Number(source.lived) > 0) parts.push('실제 경험 ' + lived + '/' + source.lived);
+    if (Number(source.specific) > 0) parts.push('구체 사실 ' + specific + '/' + source.specific);
+    if (!parts.length) return;
+    var full = lived >= Number(source.lived) && specific >= Number(source.specific);
+    var s = document.createElement('span');
+    s.className = 'lav-trust-badge' + (full ? ' ok' : '');
+    s.textContent = '유지할 근거 ' + (full ? '보존' : '확인 필요') + ' · ' + parts.join(' · ');
+    s.title = '감지 보고서가 센 실제 경험·구체 사실 문장을 결과에서 같은 기준으로 다시 센 값이에요.';
+    wrap.appendChild(s);
+  }
+
   function renderBadges(fr, result) {
     var wrap = $('lavTrust');
     if (!wrap) return;
@@ -1512,7 +2822,7 @@
           throw authErr;
         }
         if (gen !== pollGen) return;
-        var body = { text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text) };
+        var body = Object.assign({ text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text) }, reportHandoffFields(text));
         if (s && s.documentProfile) body.documentProfile = s.documentProfile;
         if (mode === 'blog') body.basicStyle = (s && s.basicStyle === 'report') ? 'report' : 'blog';
         if (mode !== 'polish') body.effectNoticeAccepted = !!(s && s.effectNoticeAccepted);
@@ -2089,6 +3399,7 @@
       label = '고급 휴머나이징';
       renderBadges({ metrics: st.result && st.result.metrics }, st.result);
     }
+    renderPreservationBadge(st);   // 보고서에서 넘어온 글이면 "유지할 근거 N/N 보존"을 같은 자로 다시 센다
     // 보존형 폴백 안내 배너(정직 표기) — 일반 결과에선 항상 숨김으로 리셋
     var lavFbBanner = $('lavFallbackBanner');
     if (lavFbBanner) {
@@ -2207,9 +3518,12 @@
   // ── 감지 보고서 → 휴머나이저 이동 비용(2순위) ────────────────────────────────
   // 오퍼가 아니라 정보다. 이동 버튼과 경쟁하지 않도록 버튼 아래 한 줄로만 둔다.
   function renderReportGoCost() {
-    var line = $('lavRepGoCost');
+    var line = $('gpRepGoCost');
     if (!line) return;
     line.hidden = true;
+    // 추천을 보류해 버튼을 감춘 상태에서는 비용 줄만 남아 "어디로 이동한다는 건지" 모순이 된다.
+    var goBtn = $('gpRepCtaBtn');
+    if (goBtn && goBtn.hidden) return;
     if (!window.CU || window.UP === 'unlimited') return;
     var src = $('lavInput');
     var len = src && src.value ? src.value.length : 0;
@@ -2445,7 +3759,7 @@
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
-          body: JSON.stringify({ text: text, mode: 'formal', evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: 'keep', documentProfile: s.documentProfile || undefined, effectNoticeAccepted: !!s.effectNoticeAccepted })
+          body: JSON.stringify(Object.assign({ text: text, mode: 'formal', evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: 'keep', documentProfile: s.documentProfile || undefined, effectNoticeAccepted: !!s.effectNoticeAccepted }, reportHandoffFields(text)))
         }).then(parseTransformStart);
         if (gen !== pollGen) {
           if (r && r.jobId) makeJobCanceller(r.jobId)();

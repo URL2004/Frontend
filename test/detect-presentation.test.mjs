@@ -10,6 +10,7 @@ const source = fs.readFileSync(path.join(here, '..', 'assets', 'js', 'detect-pre
 const context = { window: {} };
 vm.runInNewContext(source, context);
 const normalize = context.window.gpNormalizeDetectPresentation;
+const professorRadar = context.window.gpProfessorRadarBand;
 
 test('1% 옆의 높은 가능성 문구를 낮은 구간 설명으로 교정한다', () => {
   const out = normalize({
@@ -19,7 +20,7 @@ test('1% 옆의 높은 가능성 문구를 낮은 구간 설명으로 교정한�
   });
 
   assert.equal(out.riskLevel, 'low');
-  assert.equal(out.riskLabel, 'AI 티 지수 낮음');
+  assert.equal(out.riskLabel, 'AI식 문체 신호 · 낮음');
   assert.match(out.summary, /낮게 감지/);
   assert.doesNotMatch(out.summary + out.detail, /가능성이 (?:매우 )?높/);
 });
@@ -41,4 +42,12 @@ test('50%부터 높은 구간으로 모든 화면이 같은 경계를 쓴다', (
   assert.equal(normalize({ probability: 21 }).riskLevel, 'moderate');
   assert.equal(normalize({ probability: 49 }).riskLevel, 'moderate');
   assert.equal(normalize({ probability: 50 }).riskLevel, 'high');
+});
+
+test('교수님 레이더는 공식 점수 밴드와 같은 경계를 쓴다', () => {
+  assert.deepEqual({ ...professorRadar(20) }, { score: 20, band: 'low', label: '피하기에 유리한 편' });
+  assert.deepEqual({ ...professorRadar(21) }, { score: 21, band: 'revise', label: '보완 후 제출 권장' });
+  assert.deepEqual({ ...professorRadar(49) }, { score: 49, band: 'revise', label: '보완 후 제출 권장' });
+  assert.deepEqual({ ...professorRadar(50) }, { score: 50, band: 'hard', label: '지금은 피하기 어려운 편' });
+  assert.deepEqual({ ...professorRadar(72) }, { score: 72, band: 'hard', label: '지금은 피하기 어려운 편' });
 });

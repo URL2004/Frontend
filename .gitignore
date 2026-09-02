@@ -7,6 +7,8 @@ node_modules/
 *.log
 _probe-*.html
 _probe-*.cjs
+_probe-*.json
+_probe-*.txt
 runtime-config.local.js
 runtime-config.js
 .ga4-token.json
