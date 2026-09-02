@@ -563,6 +563,25 @@ function openQnaComposer() {
  return true;
 }
 window.openQnaComposer = openQnaComposer;
+// 요금 탭을 열면 가로 슬라이드(작은 화면)의 시작 위치를 가성비 추천(스탠다드) 카드에 맞춘다(2026-09-02).
+// 카드 순서는 그대로 두고 첫 화면의 포커스만 옮긴다 — 넘침이 없는 PC 격자에서는 아무것도 하지 않는다.
+// scrollIntoView는 세로 스크롤까지 움직여 페이지가 튀므로 가로 위치만 직접 계산한다.
+function focusRecommendedPlan() {
+ const grid = document.getElementById('gpPlanList');
+ const card = grid ? grid.querySelector('.plan-popular') : null;
+ if (!grid || !card) return;
+ requestAnimationFrame(() => requestAnimationFrame(() => {
+  if (grid.scrollWidth <= grid.clientWidth + 4) return;
+  const gridRect = grid.getBoundingClientRect();
+  const cardRect = card.getBoundingClientRect();
+  const cardStart = cardRect.left - gridRect.left + grid.scrollLeft;
+  const centered = getComputedStyle(card).scrollSnapAlign.includes('center');
+  const padStart = parseFloat(getComputedStyle(grid).scrollPaddingLeft) || 0;
+  const target = centered ? cardStart - (grid.clientWidth - cardRect.width) / 2 : cardStart - padStart;
+  grid.scrollLeft = Math.max(0, Math.round(target));
+ }));
+}
+
 function switchTab(t, opts) {
  opts = opts || {};
  t = normalizeRouteTab(t);
@@ -575,6 +594,7 @@ function switchTab(t, opts) {
  });
  if (t === 'pro' && typeof window.refreshProTab === 'function') window.refreshProTab();
  if (t === 'pricing' && typeof window.gpRefreshPricingOffer === 'function') window.gpRefreshPricingOffer(false);
+ if (t === 'pricing') focusRecommendedPlan();
  updateRouteMeta(t);
  if (!opts.skipRoute) setRouteUrl(t, opts.replaceRoute);
  if (!opts.skipTrack && typeof window.gpTrackPageView === 'function') window.gpTrackPageView(t, document.title, window.location.href);

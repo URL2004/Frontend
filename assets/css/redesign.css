@@ -10756,6 +10756,64 @@ body.gp-admin-ledger-detail-open{overflow:hidden;}
 }
 @media(prefers-reduced-motion:reduce){.gp-admin-ledger-detail-loading span{animation:none;}}
 
+/* ───────── lavender v118: 공지·요금 모바일 정리(2026-09-02) ─────────
+   공지: 배지와 제목이 한 줄에 섞여 제목 시작점이 배지 폭마다 달라지고 두 줄로 꺾이던 문제 —
+   작은 화면에서는 배지를 제목 위 한 줄로 올려 제목이 카드 폭을 다 쓰게 한다.
+   정렬 버튼은 혼자 한 줄을 차지하지 않고 결과 개수 줄의 오른쪽에 붙인다.
+   요금: 가로 슬라이드는 카드를 가운데 스냅해 양옆 카드가 살짝 보이게 하고(첫 포커스는
+   app-main.js focusRecommendedPlan이 스탠다드로 맞춘다), 작업별 기준표의 값 칸을 넓힌다. */
+@media(max-width:760px){
+ #mainContent[data-main-design="lavender"] #noticeList .gbr-ttl{
+  flex-direction:column;
+  align-items:flex-start;
+  gap:7px;
+ }
+ #mainContent[data-main-design="lavender"] #noticeList .gbr-ttl-text{width:100%;}
+ #mainContent[data-main-design="lavender"] #noticeList .gp-notice-row-badge{
+  padding:3px 8px;
+  font-size:10.5px;
+ }
+ #mainContent[data-main-design="lavender"] #noticeList .gbr-main{gap:8px;}
+ #mainContent[data-main-design="lavender"] #noticeContent .gp-table-toolbar{padding-bottom:0 !important;}
+ #mainContent[data-main-design="lavender"] #noticeContent .gp-sort-select{
+  align-self:flex-end;
+  min-height:34px;
+  margin:6px 0 -48px !important;
+  padding:0 12px;
+  font-size:12.5px;
+  position:relative;
+  z-index:1;
+ }
+ #noticeContent .gp-board-result-status{
+  min-height:46px;
+  display:flex;
+  align-items:center;
+  padding-right:96px;
+ }
+}
+/* 이벤트 박스: strong의 nowrap 때문에 "N일 남음" 배지가 박스 밖으로 튀어나가던 문제 —
+   작은 화면에서는 제목을 자연스럽게 꺾고 배지를 제목 아래 한 줄로 내린다. */
+@media(max-width:700px){
+ #mainContent[data-main-design="lavender"] .gp-pricing-event strong{white-space:normal;}
+ #mainContent[data-main-design="lavender"] .gp-pricing-event .gp-event-left{
+  display:block;
+  width:max-content;
+  max-width:100%;
+  margin:6px 0 0;
+ }
+}
+@media(max-width:560px){
+ #mainContent[data-main-design="lavender"] .gp-plan-grid{scroll-padding-inline:0;}
+ #mainContent[data-main-design="lavender"] .gp-plan-grid .plan-card{scroll-snap-align:center;}
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-guide-credit-table>div{
+  grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+  gap:10px;
+  padding:11px 14px;
+ }
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-guide-credit-table>div:not(:first-child){font-size:12.5px;}
+}
+
+
 /* ===== lavender v116: AI 감지 보고서 · 실험실 리포트 (seed 26e340ec) =====
    구성: ① 히어로 카드(Before · 원형 게이지 · After) ② 네이비 계측 띠
         ③ 2단(문장별 분석 / 원인 레이더 + 개선 포인트) ④ 보라 그라디언트 전환 밴드

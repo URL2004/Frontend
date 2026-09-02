@@ -15,12 +15,12 @@ test('모바일 랜딩 헤더는 요금 바로가기를 유지하고 작은 폭�
   assert.match(css, /@media \(max-width:560px\)\{[\s\S]*?\.gp-lp-nav\{gap:8px;padding:10px\}[\s\S]*?\.gp-lp-brand img\{height:26px\}/u);
 });
 
-test('랜딩의 스탠다드는 선택 상태가 아닌 균형 추천 상품으로 강조한다', async () => {
+test('랜딩의 스탠다드는 선택 상태가 아닌 가성비 추천 상품으로 강조한다', async () => {
   const [landing, css] = await Promise.all([
     read('pages/landing.html'),
     read('assets/css/landing.css')
   ]);
-  assert.match(landing, /class="gp-lp-plan is-popular"[\s\S]{0,140}?<i>균형 추천<\/i>/u);
+  assert.match(landing, /class="gp-lp-plan is-popular"[\s\S]{0,140}?<i>가성비 추천<\/i>/u);
   assert.match(css, /\.gp-lp-plan\.is-popular\{border:2px solid var\(--lp-accent\);box-shadow:none\}/u);
   assert.match(css, /\.gp-lp-plan i\{[^}]*background:var\(--lp-accent\);color:#fff/u);
   assert.doesNotMatch(landing, />가장 인기<|>인기 상품</u);
