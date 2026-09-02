@@ -137,7 +137,7 @@ test('감지 보고서의 휴머나이저 이동 버튼 아래에는 비용 정�
   ]);
   assert.match(main, /lavReportToHumanize\(\)[\s\S]{0,260}?id="gpRepGoCost"/u);
   assert.match(evasion, /renderReportGoCost\(\)/u);
-  assert.match(evasion, /이동 후 기본 휴머나이징 /u);
+  assert.match(evasion, /'기본 휴머나이징 ' \+ cost/u);
 });
 
 test('일반 콘텐츠는 세그먼트 오퍼를 쓰고 FAQ·가이드는 전용 작업 선택기를 사용한다', async () => {

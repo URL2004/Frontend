@@ -2759,6 +2759,33 @@ function renderNoticeList() {
  });
 }
 
+// 공지 본문은 `소제목\n내용` 블록 규약(2026-09-02 양식 표준)이다. 빈 줄 뒤에 오는 짧은 한 줄(문장 종결 아님)을
+// 소제목으로 올려 상세에서 구조가 보이게 한다. 규약을 안 따르는 옛 본문은 줄바꿈만 살린 평문으로 그대로 낸다.
+function noticeBodyHtml(item) {
+ const plain = escapeHtml(item.body || '').replace(/\n/g, '<br>');
+ const lines = String(item.body || '').split('\n');
+ const isHeading = i => {
+  const t = lines[i].trim();
+  if (!t || t.length > 24 || t.startsWith('•')) return false;
+  if (/(?:[.!?]|어요|해요|돼요|됐어요|드려요|있어요|없어요|않아요|습니다|니다)$/.test(t)) return false;
+  return i > 0 && !lines[i - 1].trim() && !!(lines[i + 1] || '').trim();
+ };
+ if (!lines.some((_, i) => isHeading(i))) return plain;
+ const blocks = [];
+ let cur = [];
+ lines.forEach(line => { if (line.trim()) cur.push(line); else if (cur.length) { blocks.push(cur); cur = []; } });
+ if (cur.length) blocks.push(cur);
+ let idx = 0;
+ return blocks.map(block => {
+  const start = idx; idx += block.length + 1;
+  const lineHtml = l => l.trim().startsWith('•') ? '<span class="gp-notice-li">' + escapeHtml(l.trim()) + '</span>' : escapeHtml(l);
+  if (isHeading(start)) {
+   return '<section><h3>' + escapeHtml(block[0].trim()) + '</h3><p>' + block.slice(1).map(lineHtml).join('<br>') + '</p></section>';
+  }
+  return '<p>' + block.map(lineHtml).join('<br>') + '</p>';
+ }).join('');
+}
+
 function renderNoticeDetail(item) {
  const el = document.getElementById('noticeList');
  const status = document.getElementById('noticeResultStatus');
@@ -2768,14 +2795,19 @@ function renderNoticeDetail(item) {
  if (status) status.textContent = '공지 상세';
  if (pager) { pager.hidden = true; pager.innerHTML = ''; }
  const canDelete = item.source === 'remote' && window.isAdmin();
+ const highlightLabel = noticeHighlightLabel(item);
  el.innerHTML =
   '<button type="button" class="backbtn" id="noticeBackBtn">← 목록으로</button>'
+  + '<article class="gp-notice-detail">'
   + '<div class="pdhd">'
+  + '<div class="gp-notice-detail-tags"><span class="gbr-cat">' + escapeHtml(item.category || '공지') + '</span>'
+  + (highlightLabel ? '<span class="gp-notice-row-badge">' + escapeHtml(highlightLabel) + '</span>' : '') + '</div>'
   + '<div class="pdtitle">' + escapeHtml(item.title) + '</div>'
   + '<div class="pmeta"><span>' + escapeHtml(item.authorName || '운영자') + '</span><span>' + escapeHtml(item.date || '') + '</span></div>'
   + (canDelete ? '<div class="pdactions"><button type="button" class="abtn danger" id="noticeDeleteBtn">삭제</button></div>' : '')
   + '</div>'
-  + '<div class="pdbody" id="nbody">' + escapeHtml(item.body || '').replace(/\n/g, '<br>') + '</div>';
+  + '<div class="pdbody" id="nbody">' + noticeBodyHtml(item) + '</div>'
+  + '</article>';
  const backBtn = document.getElementById('noticeBackBtn');
  if (backBtn) backBtn.addEventListener('click', renderNoticeList);
  const deleteBtn = document.getElementById('noticeDeleteBtn');
@@ -2931,55 +2963,252 @@ window.loadMyPage = async () =>{
  if (!CU) return;
  const el = document.getElementById('mypageContent');
  if (!el) return;
- el.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text3);">불러오는 중...</div>';
+ el.innerHTML = '<div class="gp-mp-loading" role="status">내 정보를 불러오는 중이에요…</div>';
  el.style.display = 'block';
  window.scrollTo(0,0);
  try {
  const snap = await getDoc(doc(db,'users',CU.uid));
- const u = snap.data();
+ const u = snap.data() || {};
  const plan = u.plan || 'free';
  const planNames = { free:'무료', starter:'스타터', pro:'프로', master:'마스터', unlimited:'무제한' };
- el.innerHTML =
- '<div class="shell">'
- +(window.isAdmin() ? '<div class="gp-mypage-admin-entry"><div><div class="gp-mypage-admin-title">관리자 페이지</div><div class="gp-mypage-admin-sub">환불, 크레딧, 쿠폰, 사용자 원장을 별도 화면에서 처리합니다.</div></div><button type="button" onclick="openAdminPage()">관리자 페이지 열기</button></div>' : '')
- +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:20px;">'
- +'<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">'
- +'<div style="width:56px;height:56px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;">'
- +'<svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" width="32" height="32" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
- +'</div>'
- +'<div><div style="font-size:18px;font-weight:700;">'+escapeHtml(window.getAdminName()||CU.displayName)+'</div>'
- +'<div style="font-size:13px;color:var(--text2);">'+escapeHtml(CU.email)+'</div></div></div>'
- +'<div style="display:grid;grid-template-columns:1fr;gap:12px;">'
- +'<div style="text-align:center;padding:16px;background:var(--surface2);border-radius:var(--rs);">'
- +'<div style="font-size:22px;font-weight:700;color:var(--blue);">'+(u.credits||0)+'</div>'
- +'<div style="font-size:12px;color:var(--text3);">보유 크레딧</div></div>'
- +'</div>'
- +'<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">'
- +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
- +'<span style="font-size:14px;color:var(--text2);">현재 플랜: <strong>'+(planNames[plan]||'무료')+'</strong></span>'
- +'<div style="display:flex;gap:6px;"><button onclick="showRefundModal()" style="padding:5px 12px;border-radius:50px;border:1px solid var(--border);background:transparent;color:var(--text3);font-family:var(--font);font-size:11px;cursor:pointer;">환불하기</button>'
-+'<button onclick="deleteAccount()" style="padding:5px 12px;border-radius:50px;border:1px solid var(--border);background:transparent;color:var(--text3);font-family:var(--font);font-size:11px;cursor:pointer;">회원 탈퇴</button></div>'
- +'</div>'
- +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
- +'<button class="buybtn" onclick="switchTab(\'pricing\')">충전하기</button>'
- +'<button onclick="showReferralPopup()" style="padding:9px 0;border-radius:50px;border:none;background:var(--green);color:#fff;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;">친구 초대</button>'
- +'</div>'
- +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">'
- +'<button onclick="changeNickname()" style="padding:9px 0;border-radius:50px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:var(--font);font-size:13px;cursor:pointer;">닉네임 변경</button>'
- +'<button onclick="logout()" style="padding:9px 0;border-radius:50px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:var(--font);font-size:13px;cursor:pointer;">로그아웃</button>'
- +'</div>'
- +'</div></div>'
- +'<div id="subManageCard" style="margin-bottom:20px;"></div>'
- +'<div style="font-size:15px;font-weight:700;margin:20px 0 12px;">알림</div>'
- +'<div id="notifList"><div style="text-align:center;padding:24px;color:var(--text3);">불러오는 중...</div></div>'
- +'<div style="margin-top:28px;"><div style="font-size:15px;font-weight:700;margin-bottom:12px;">결제 내역 / 환불</div><div id="orderHistoryList"><div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div></div></div>'
- +'<div style="margin-top:28px;"><div style="font-size:15px;font-weight:700;margin-bottom:12px;">크레딧 사용 내역</div><div id="creditHistoryList"><div style="text-align:center;padding:20px;color:var(--text3);">불러오는 중...</div></div></div>'
- +'</div>';
+ const view = {
+  name: escapeHtml(window.getAdminName()||CU.displayName),
+  email: escapeHtml(CU.email),
+  credits: Math.max(0, Number(u.credits) || 0),
+  planLabel: escapeHtml(planNames[plan] || '무료'),
+  isAdmin: window.isAdmin()
+ };
+ el.innerHTML = window.gpRenderMyPageShell(view);
+ window.gpMyPageActivate(el, view);
  await loadNotifications();
  await window.loadOrderHistory();
  await window.loadCreditHistory();
  window.renderSubManage(u);
- } catch(e) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">작업 기록을 불러오지 못했어요. '+escapeHtml(e.message || '')+'</div>'; }
+ } catch(e) { el.innerHTML = '<div class="gp-mp-error" role="alert">내 정보를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요. '+escapeHtml(e.message || '')+'</div>'; }
+};
+
+// 내 정보 화면 골격(2026-09-02 재설계). 데이터는 loadMyPage가 이스케이프해서 넘기고, 여기서는 조립만 한다.
+// 브랜드 장치는 레이더 스코프 하나 — 보고서에서는 교수님이 학생을 찾지만, 여기서는 사용자 본인이 블립이다.
+// 목록 컨테이너 id(notifList·orderHistoryList·creditHistoryList)는 기존 로더가 그대로 채우므로 바꾸지 않는다.
+window.gpRenderMyPageShell = function(view) {
+ const bubbleDefault = (view.name || '회원') + '님, 제출 전 마지막 점검은 여기서 해요';
+ const stagePose = pose => '<img class="gp-mp-pose is-' + pose + '" data-pose="' + pose + '" data-src-f="/assets/img/mypage/avatar-f-' + pose + '.webp" data-src-m="/assets/img/mypage/avatar-m-' + pose + '.webp" src="/assets/img/mypage/avatar-f-' + pose + '.webp" alt="" width="480" height="480" decoding="async">';
+ const coverageRow = (label, key) =>
+  '<div class="gp-mp-cover-row"><span>' + label + '</span><strong><b data-mp-' + key + '>0</b>회</strong></div>';
+ const tab = (id, panel, label, selected) =>
+  '<button type="button" role="tab" id="' + id + '" aria-controls="' + panel + '" aria-selected="' + (selected ? 'true' : 'false') + '" tabindex="' + (selected ? '0' : '-1') + '">' + label + '</button>';
+ const panel = (id, tabId, listId, hidden) =>
+  '<section role="tabpanel" id="' + id + '" aria-labelledby="' + tabId + '"' + (hidden ? ' hidden' : '') + '><div id="' + listId + '"><div class="gp-mp-empty">불러오는 중…</div></div></section>';
+ return '<section class="gp-mp">'
+  +'<div class="gp-page-head"><div><h1>내 정보</h1><p>크레딧 잔액과 이용 기록, 계정 설정을 한곳에서 확인해요.</p></div>'
+  +'<button type="button" class="gp-mp-logout" onclick="logout()">로그아웃</button></div>'
+  +(view.isAdmin ? '<div class="gp-mypage-admin-entry"><div><div class="gp-mypage-admin-title">관리자 페이지</div><div class="gp-mypage-admin-sub">환불, 크레딧, 쿠폰, 사용자 원장을 별도 화면에서 처리합니다.</div></div><button type="button" onclick="openAdminPage()">관리자 페이지 열기</button></div>' : '')
+  +'<div class="gp-mp-hero">'
+  + '<div class="gp-mp-id">'
+  +  '<div class="gp-mp-stage" data-mp-stage data-avatar="f" data-pose="idle" role="button" tabindex="0" aria-label="내 캐릭터. 누르면 교수님을 피해요">'
+  +   '<svg class="gp-mp-stage-rings" viewBox="0 0 96 96" aria-hidden="true" focusable="false"><circle cx="48" cy="48" r="44"/><circle cx="48" cy="48" r="30"/><circle cx="48" cy="48" r="16"/><path d="M48 4v88M4 48h88"/></svg>'
+  +   '<div class="gp-mp-prof" aria-hidden="true"><img src="/assets/img/report/professor.png" alt="" width="320" height="314" loading="lazy" decoding="async"></div>'
+  +   '<div class="gp-mp-char" aria-hidden="true">'
+  +    stagePose('idle') + stagePose('dodge') + stagePose('cheer') + stagePose('run')
+  +   '</div>'
+  +   '<div class="gp-mp-bubble" data-mp-bubble role="status" aria-live="polite">' + bubbleDefault + '</div>'
+  +   '<span class="gp-mp-stage-hint" aria-hidden="true">눌러서 피하기</span>'
+  +  '</div>'
+  +  '<div class="gp-mp-who"><strong>' + view.name + '</strong><span>' + view.email + '</span><em>' + view.planLabel + ' 플랜</em></div>'
+  +  '<div class="gp-mp-avatar-pick" role="group" aria-label="내 캐릭터 고르기">'
+  +   '<button type="button" data-mp-avatar="f" aria-pressed="true">여학생</button>'
+  +   '<button type="button" data-mp-avatar="m" aria-pressed="false">남학생</button>'
+  +  '</div>'
+  + '</div>'
+  + '<div class="gp-mp-fuel">'
+  +  '<div class="gp-mp-credits"><span>보유 크레딧</span><b data-mp-count="' + view.credits + '">0</b></div>'
+  +  '<div class="gp-mp-cover">'
+  +   '<p>지금 잔액으로 <span data-mp-len>600</span>자 글을</p>'
+  +   coverageRow('AI 감지', 'detect')
+  +   coverageRow('기본 휴머나이징', 'basic')
+  +   '<em class="gp-mp-low" data-mp-low hidden>기본 휴머나이징을 한 번 실행하기에는 잔액이 부족해요. 충전하면 바로 이어서 쓸 수 있어요.</em>'
+  +   '<div class="gp-mp-seg" role="group" aria-label="환산 기준 글 길이">'
+  +    '<button type="button" data-mp-seg="600" aria-pressed="true">600자</button>'
+  +    '<button type="button" data-mp-seg="1500" aria-pressed="false">1,500자</button>'
+  +    '<button type="button" data-mp-seg="3000" aria-pressed="false">3,000자</button>'
+  +   '</div>'
+  +   '<small>실제 차감은 글자 수와 기능에 따라 달라지며, 실행 전에 다시 안내해요.</small>'
+  +  '</div>'
+  +  '<div class="gp-mp-actions"><button type="button" class="gp-mp-btn-primary" onclick="switchTab(\'pricing\')">충전하기</button>'
+  +  '<button type="button" class="gp-mp-btn-outline" onclick="showReferralPopup()">친구 초대</button></div>'
+  + '</div>'
+  +'</div>'
+  +'<div id="subManageCard" hidden></div>'
+  +'<div class="gp-mp-tabs" role="tablist" aria-label="이용 기록">'
+  + tab('mpTabNotif', 'mpPanelNotif', '알림', true)
+  + tab('mpTabOrders', 'mpPanelOrders', '결제 내역', false)
+  + tab('mpTabCredits', 'mpPanelCredits', '사용 내역', false)
+  +'</div>'
+  +'<div class="gp-mp-panels">'
+  + panel('mpPanelNotif', 'mpTabNotif', 'notifList', false)
+  + panel('mpPanelOrders', 'mpTabOrders', 'orderHistoryList', true)
+  + panel('mpPanelCredits', 'mpTabCredits', 'creditHistoryList', true)
+  +'</div>'
+  +'<div class="gp-mp-account"><span>계정 관리</span>'
+  + '<button type="button" onclick="changeNickname()">닉네임 변경</button>'
+  + '<button type="button" onclick="showRefundModal()">환불하기</button>'
+  + '<button type="button" class="is-danger" onclick="deleteAccount()">회원 탈퇴</button>'
+  +'</div>'
+  +'</section>';
+};
+
+// 잔액이 어디까지 가는지 — 요금 안내와 같은 기준(AI 감지 100자당 1, 기본 휴머나이징 100자당 2·최소 10)으로 환산한다.
+window.gpMyPageCoverage = function(credits, len) {
+ const units = Math.ceil(len / 100);
+ const detectCost = Math.max(1, units);
+ const basicCost = Math.max(10, units * 2);
+ return { detect: Math.floor(credits / detectCost), basic: Math.floor(credits / basicCost) };
+};
+
+// 골격을 붙인 뒤 상호작용을 건다: 잔액 카운트업(한 번), 환산 기준 토글, 기록 탭(화살표 키 포함).
+// 스코프 스윕은 CSS 애니메이션이라 여기서는 건드리지 않는다. 움직임 줄이기 설정이면 카운트업 없이 바로 최종값.
+window.gpMyPageActivate = function(root, view) {
+ if (!root) return;
+ const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const countEl = root.querySelector('[data-mp-count]');
+ const lenEl = root.querySelector('[data-mp-len]');
+ const detectEl = root.querySelector('[data-mp-detect]');
+ const basicEl = root.querySelector('[data-mp-basic]');
+ const lowEl = root.querySelector('[data-mp-low]');
+ const fmt = n => Number(n || 0).toLocaleString('ko-KR');
+ const credits = Math.max(0, Number(view && view.credits) || 0);
+
+ const applyCoverage = len => {
+  const c = window.gpMyPageCoverage(credits, len);
+  if (lenEl) lenEl.textContent = fmt(len);
+  if (detectEl) detectEl.textContent = fmt(c.detect);
+  if (basicEl) basicEl.textContent = fmt(c.basic);
+  if (lowEl) lowEl.hidden = c.basic > 0;
+ };
+ root.querySelectorAll('[data-mp-seg]').forEach(btn => {
+  btn.addEventListener('click', () => {
+   root.querySelectorAll('[data-mp-seg]').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+   applyCoverage(Number(btn.dataset.mpSeg) || 600);
+  });
+ });
+ applyCoverage(600);
+
+ if (countEl) {
+  if (reduceMotion || credits === 0) {
+   countEl.textContent = fmt(credits);
+  } else {
+   const start = performance.now();
+   const dur = 640;
+   const tick = now => {
+    const t = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - t, 3);
+    countEl.textContent = fmt(Math.round(credits * eased));
+    if (t < 1) requestAnimationFrame(tick);
+   };
+   requestAnimationFrame(tick);
+  }
+ }
+
+ // ── 캐릭터 무대 ─────────────────────────────────────────────────────────────
+ // 여/남 선택은 기기별 취향이라 localStorage에만 둔다(서버 필드 없음). 포인터를 따라 살짝 기울고,
+ // 누르면 교수님이 오른쪽에서 들어왔다 나가는 동안 피하기 → 환호 → 대기로 돌아온다. 연출 중 재입력은 무시.
+ const stage = root.querySelector('[data-mp-stage]');
+ if (stage) {
+  const bubble = stage.querySelector('[data-mp-bubble]');
+  const bubbleDefault = bubble ? bubble.textContent : '';
+  const poses = Array.from(stage.querySelectorAll('.gp-mp-pose'));
+  const AVATAR_KEY = 'gp.mypage.avatar';
+  const setAvatar = key => {
+   const k = key === 'm' ? 'm' : 'f';
+   stage.dataset.avatar = k;
+   poses.forEach(img => { const src = img.getAttribute('data-src-' + k); if (src && img.getAttribute('src') !== src) img.setAttribute('src', src); });
+   root.querySelectorAll('[data-mp-avatar]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mpAvatar === k)));
+   try { localStorage.setItem(AVATAR_KEY, k); } catch (e) {}
+  };
+  let saved = 'f';
+  try { saved = localStorage.getItem(AVATAR_KEY) || 'f'; } catch (e) {}
+  setAvatar(saved);
+  root.querySelectorAll('[data-mp-avatar]').forEach(b => b.addEventListener('click', () => {
+   setAvatar(b.dataset.mpAvatar);
+   stage.classList.remove('is-swapped'); void stage.offsetWidth; stage.classList.add('is-swapped');
+  }));
+
+  const lowBubble = '잔액이 얼마 안 남았어요. 충전하면 바로 이어서 쓸 수 있어요';
+  const setBubble = text => { if (bubble) bubble.textContent = text; };
+  const idleBubble = () => setBubble(window.gpMyPageCoverage(credits, 600).basic > 0 ? bubbleDefault : lowBubble);
+  idleBubble();
+
+  if (!reduceMotion) {
+   let raf = 0;
+   stage.addEventListener('pointermove', e => {
+    if (stage.dataset.pose !== 'idle') return;
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+     raf = 0;
+     const r = stage.getBoundingClientRect();
+     const dx = (e.clientX - (r.left + r.width / 2)) / r.width;
+     const dy = (e.clientY - (r.top + r.height / 2)) / r.height;
+     stage.style.setProperty('--mp-tilt-x', (dx * 8).toFixed(2) + 'px');
+     stage.style.setProperty('--mp-tilt-y', (dy * 5).toFixed(2) + 'px');
+     stage.style.setProperty('--mp-tilt-r', (dx * 4).toFixed(2) + 'deg');
+    });
+   });
+   stage.addEventListener('pointerleave', () => {
+    stage.style.setProperty('--mp-tilt-x', '0px');
+    stage.style.setProperty('--mp-tilt-y', '0px');
+    stage.style.setProperty('--mp-tilt-r', '0deg');
+   });
+  }
+
+  let dodges = 0;
+  const wait = ms => new Promise(res => setTimeout(res, ms));
+  const dodge = async () => {
+   if (stage.dataset.pose !== 'idle') return;
+   dodges += 1;
+   if (reduceMotion) {
+    stage.dataset.pose = 'cheer';
+    setBubble('교수님이 지나가셨어요. ' + dodges + '번째!');
+    await wait(1200);
+    stage.dataset.pose = 'idle';
+    idleBubble();
+    return;
+   }
+   stage.dataset.pose = 'alert';
+   setBubble('앗, 교수님!');
+   await wait(420);
+   stage.dataset.pose = 'dodge';
+   await wait(900);
+   stage.dataset.pose = 'cheer';
+   setBubble('휴, 지나가셨다. ' + dodges + '번째 성공!');
+   await wait(1300);
+   stage.dataset.pose = 'idle';
+   idleBubble();
+  };
+  stage.addEventListener('click', dodge);
+  stage.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dodge(); } });
+ }
+
+ const tabs = Array.from(root.querySelectorAll('[role="tab"]'));
+ const select = tab => {
+  tabs.forEach(t => {
+   const on = t === tab;
+   t.setAttribute('aria-selected', String(on));
+   t.tabIndex = on ? 0 : -1;
+   const p = root.querySelector('#' + t.getAttribute('aria-controls'));
+   if (p) p.hidden = !on;
+  });
+ };
+ tabs.forEach((t, i) => {
+  t.addEventListener('click', () => select(t));
+  t.addEventListener('keydown', e => {
+   const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+   if (!dir) return;
+   e.preventDefault();
+   const next = tabs[(i + dir + tabs.length) % tabs.length];
+   next.focus();
+   select(next);
+  });
+ });
 };
 
 // 마이페이지 정기결제 관리 카드 렌더

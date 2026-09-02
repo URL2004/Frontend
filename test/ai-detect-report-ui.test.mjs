@@ -33,7 +33,7 @@ test('전후 시연은 한 문장까지만이라고 화면에서 밝힌다', asy
   assert.match(report, /예시는 한 문장의 일부까지만 보여드려요/u);
   assert.match(report, /글 전체를 다듬는 건 휴머나이징에서 해요/u);
   assert.equal((report.match(/id="gpRepBefore"/gu) || []).length, 1, '전후 비교는 하나뿐');
-  assert.match(report, /다듬은 예시 · 사실은 그대로/u);
+  assert.match(report, /휴머나이징 결과 · 사실은 그대로/u);
 });
 
 test('보고서는 접근성 기준을 갖춘다', async () => {
@@ -222,8 +222,8 @@ test('상한이 걸린 목록은 모달 머리에서 표시 개수를 밝힌다'
 
 test('CTA는 실제 후보 수로 말을 걸고 노랑 버튼으로 강조된다', async () => {
   const [flow, css] = await Promise.all([read('assets/js/evasion-flow.js'), read('assets/css/redesign.css')]);
-  assert.match(flow, /다듬을 후보 ' \+ model\.content\.generic \+ '문장, 지금 다듬어 볼까요\?/u);
-  assert.match(flow, /'이 글, 지금 다듬어 볼까요\?'/u, '후보가 없으면 일반 문구로 폴백');
+  assert.match(flow, /후보 ' \+ model\.content\.generic \+ '문장, 지금 휴머나이징해 볼까요\?/u, '밴드 제목은 우리 기능 이름(휴머나이징)을 쓴다');
+  assert.match(flow, /'이 글, 지금 휴머나이징해 볼까요\?'/u, '후보가 없으면 일반 문구로 폴백');
   assert.match(css, /\.gp-rep-cta-btn\{[\s\S]*?background:#f5b425;color:#1a1747/u, '버튼은 로고의 노랑, 잉크 글자(대비 9.1:1)');
 });
 
@@ -240,7 +240,7 @@ test('게이지는 브랜드 세 구역 색을 두른 반원 "교수님 게이�
   assert.match(flow, /return Math\.max\(0, Math\.min\(100, score\)\) \/ 100 \* Math\.PI/u, '100 → 왼쪽, 0 → 오른쪽');
   assert.match(flow, /\[\[100, 50, 'z-hard'\], \[49, 21, 'z-revise'\], \[20, 0, 'z-low'\]\]/u, '띠는 왼쪽 위험부터 오른쪽 안전까지');
   assert.match(flow, /\/assets\/img\/report\/professor\.png/u, 'ima2 교수님 리소스 — 출발선에 선다');
-  assert.match(flow, /\/assets\/img\/report\/runner-bust\.png/u, 'ima2 학생 리소스 — 점수 자리 마커');
+  assert.match(flow, /report\/runner\.png'[\s\S]{0,160}preserveAspectRatio: 'xMidYMid meet'/u, 'ima2 학생 리소스 — 전신이 원 안에 통째로(바지가 잘리지 않게)');
   assert.match(flow, /transform: 'translate\(' \+ \(pp\[0\] - 26\)/u, '교수님은 100 끝 바깥쪽(왼쪽)');
   assert.match(flow, /var s = 100 - \(100 - p\) \* e;/u, '인트로에서 학생은 교수님 옆에서 출발해 달아난다');
   assert.match(flow, /\[\[82, '위험', 'z-hard'\], \[35, '주의', 'z-revise'\], \[10, '안전', 'z-low'\]\]/u, '구역 말은 위험·주의·안전');
@@ -297,7 +297,8 @@ test('예상 변화는 결정론 두 축만 말하고 문체 점수를 지어내
   // 화면 문구에 문체 점수 예측이 없다(주석의 반례 인용은 제외하고 렌더 문자열만 본다)
   assert.ok(!/label: '(문체 점수|AI식 문체 신호)'/u.test(flow), '점수 예측 행이 없다');
   assert.ok(!/textContent = '[^']*예상 점수/u.test(flow), '점수 예측 문구가 없다');
-  assert.match(flow, /다듬을 대상 \(원인 축 기준\)/u);
+  assert.doesNotMatch(flow, /다듬을 대상 \(원인 축 기준\)/u, '예상 변화 칩 리드는 뺐다 — 밴드는 제목·한 줄·버튼·비용만');
+  assert.match(flow, /repPaintExpect\(null\);\s*return;/u, '권하는 상태에서도 칩을 그리지 않는다');
 });
 
 test('결과 이미지는 게이지·점수·유지할 근거를 담고 크롬 다운로드로 고화질 저장된다', async () => {
@@ -381,7 +382,7 @@ test('After 문장은 가장 많이 바뀐 자리만 보이고 나머지는 가�
   assert.match(flow, /vis\.className = 'gp-rep-ba-peek'/u, '공개 조각은 표시된다');
   assert.match(main, /id="gpRepBaUnlock"[^>]*hidden/u);
   assert.match(main, /나머지는 휴머나이징에서 →/u);
-  assert.match(flow, /'다듬은 예시 · 가장 많이 바뀐 자리'/u);
+  assert.match(flow, /'휴머나이징 미리보기 · 가장 많이 바뀐 자리'/u, 'After 태그는 예시가 아니라 우리 기능을 명시');
   assert.match(css, /\.gp-rep-ba-mask\{[^}]*filter:blur\(5px\)[^}]*user-select:none/u, '블러 + 선택 불가');
   // 개선 포인트도 전환으로 이어진다 — 권하지 않는 상태에서는 숨긴다
   assert.match(main, /id="gpRepTipsCta"[^>]*hidden/u);

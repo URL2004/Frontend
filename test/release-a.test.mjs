@@ -141,9 +141,10 @@ test('관리자 진입점과 사용자 작업 기록의 접기·본문 스크롤
     read('assets/js/app-module.js'),
     read('assets/css/redesign.css')
   ]);
-  const shellStart = source.indexOf("'<div class=\"shell\">'");
+  // 내 정보 골격(2026-09-02 재설계): 관리자 진입은 페이지 헤더 아래·히어로 위에 한 번만 온다
+  const shellStart = source.indexOf('window.gpRenderMyPageShell = function');
   const adminEntry = source.indexOf('class="gp-mypage-admin-entry"');
-  const profileCard = source.indexOf("background:var(--surface);border:1px solid var(--border)", shellStart);
+  const profileCard = source.indexOf('class="gp-mp-hero"', shellStart);
   assert.ok(shellStart >= 0 && adminEntry > shellStart && adminEntry < profileCard);
   assert.equal(source.match(/class="gp-mypage-admin-entry"/gu)?.length, 1);
   assert.doesNotMatch(styles, /#adminUserLog\s+\.gp-admin-log-list\s*\{[^}]*overflow-y/u);

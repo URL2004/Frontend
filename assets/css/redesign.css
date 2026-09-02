@@ -10814,6 +10814,206 @@ body.gp-admin-ledger-detail-open{overflow:hidden;}
 }
 
 
+/* ───────── lavender v119: 내 정보 재설계(2026-09-02) ─────────
+   운영 화면이라 브랜드는 디테일에 싣는다: 레이더 스코프 아바타(보고서에선 교수님이 학생을 찾지만 여기선 사용자 본인이 블립),
+   잔액 연료계(글 길이 기준으로 감지·휴머나이징 몇 회인지 환산), 세 목록은 탭으로.
+   연출은 진입 시 스윕 한 바퀴 + 잔액 카운트업 하나뿐이고, 움직임 줄이기 설정에서는 정지 상태로 렌더한다.
+   로고 노랑은 이 화면에서 블립 하나에만 쓴다. */
+#mypageContent .gp-mp{max-width:860px;margin:0 auto;}
+#mypageContent .gp-mp .gp-page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+#mypageContent .gp-mp-logout{flex:0 0 auto;min-height:38px;padding:0 14px;border:1px solid #d9dcea;border-radius:10px;background:#fff;color:#525a6e;font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:border-color .15s,color .15s;}
+#mypageContent .gp-mp-logout:hover{border-color:#c4bdf0;color:#4b4cc6;}
+#mypageContent .gp-mp-loading,#mypageContent .gp-mp-error,#mypageContent .gp-mp-empty{padding:28px 16px;text-align:center;color:#6b7186;font-size:13.5px;}
+#mypageContent .gp-mp-error{color:#c43f35;}
+
+/* 히어로: 신원 + 연료계 */
+#mypageContent .gp-mp-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);margin:0 0 16px;background:#fff;border:1px solid #e4e7f1;border-radius:18px;box-shadow:0 8px 22px rgba(84,90,160,.06);overflow:hidden;}
+#mypageContent .gp-mp-id{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:16px;padding:26px 26px 24px;background:linear-gradient(160deg,#f7f6ff 0%,#fff 70%);border-right:1px solid #ecedf6;}
+#mypageContent .gp-mp-scope{width:96px;height:96px;border-radius:50%;background:#f1efff;}
+#mypageContent .gp-mp-scope svg{display:block;overflow:visible;}
+.gp-mp-ring{fill:none;stroke:#8f8fe2;stroke-width:1.2;stroke-dasharray:300;stroke-dashoffset:0;}
+.gp-mp-cross{stroke:#c9c6f0;stroke-width:1;}
+.gp-mp-sweep{transform-box:view-box;transform-origin:48px 48px;opacity:0;}
+.gp-mp-sweep path{fill:rgba(90,91,216,.28);}
+.gp-mp-blip{transform-box:fill-box;transform-origin:center;}
+.gp-mp-blip-halo{fill:rgba(245,180,37,.28);transform-box:fill-box;transform-origin:center;}
+.gp-mp-blip-dot{fill:#f5b425;}
+.gp-mp-blip text{fill:#1a1747;font-size:13px;font-weight:900;font-family:inherit;}
+#mypageContent .gp-mp-who{display:flex;flex-direction:column;gap:3px;min-width:0;}
+#mypageContent .gp-mp-who strong{font-size:20px;font-weight:850;letter-spacing:-.03em;color:#1a1f2e;overflow-wrap:anywhere;}
+#mypageContent .gp-mp-who span{font-size:13px;color:#5d6477;overflow-wrap:anywhere;}
+#mypageContent .gp-mp-who em{margin-top:8px;align-self:flex-start;padding:4px 10px;border-radius:999px;background:#ecebfb;color:#4b4cc6;font-style:normal;font-size:11.5px;font-weight:800;}
+
+#mypageContent .gp-mp-fuel{padding:24px 26px;display:flex;flex-direction:column;gap:14px;}
+#mypageContent .gp-mp-credits{display:flex;flex-direction:column;gap:2px;}
+#mypageContent .gp-mp-credits span{font-size:12.5px;font-weight:700;color:#5d6477;}
+#mypageContent .gp-mp-credits b{font-size:40px;font-weight:900;letter-spacing:-.045em;line-height:1.05;color:#1a1f2e;font-variant-numeric:tabular-nums;}
+#mypageContent .gp-mp-credits b::after{content:" 크레딧";font-size:15px;font-weight:700;letter-spacing:-.01em;color:#5d6477;}
+#mypageContent .gp-mp-cover{padding:14px 16px 12px;border:1px solid #e7e5f7;border-radius:14px;background:#fbfbff;}
+#mypageContent .gp-mp-cover p{margin:0 0 8px;font-size:13px;font-weight:700;color:#3f4560;}
+#mypageContent .gp-mp-cover p span{color:#4b4cc6;font-variant-numeric:tabular-nums;}
+#mypageContent .gp-mp-cover-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-top:1px dashed #e4e2f4;font-size:13.5px;color:#3f4560;}
+#mypageContent .gp-mp-cover-row strong{font-size:14px;font-weight:800;color:#1a1f2e;font-variant-numeric:tabular-nums;}
+#mypageContent .gp-mp-cover-row strong b{font-size:18px;font-weight:900;color:#4b4cc6;margin-right:2px;}
+#mypageContent .gp-mp-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-top:10px;padding:3px;border-radius:10px;background:#eeedf9;}
+#mypageContent .gp-mp-seg button{min-height:30px;border:0;border-radius:8px;background:transparent;color:#5d6477;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s,color .15s,box-shadow .15s;}
+#mypageContent .gp-mp-seg button[aria-pressed="true"]{background:#fff;color:#4b4cc6;box-shadow:0 1px 3px rgba(84,90,160,.18);}
+#mypageContent .gp-mp-seg button:focus-visible{outline:2px solid rgba(90,91,216,.4);outline-offset:1px;}
+#mypageContent .gp-mp-cover small{display:block;margin-top:8px;font-size:11.5px;line-height:1.5;color:#6b7186;}
+#mypageContent .gp-mp-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;}
+#mypageContent .gp-mp-btn-primary,#mypageContent .gp-mp-btn-outline{min-height:44px;border-radius:12px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;transition:transform .12s,background .15s,border-color .15s;}
+#mypageContent .gp-mp-btn-primary{border:0;background:#171a2b;color:#fff;}
+#mypageContent .gp-mp-btn-primary:hover{background:#2a2e45;}
+#mypageContent .gp-mp-btn-outline{border:1px solid #d2cdf0;background:#fff;color:#4b4cc6;}
+#mypageContent .gp-mp-btn-outline:hover{border-color:#b9b2ea;background:#f7f6ff;}
+#mypageContent .gp-mp-btn-primary:active,#mypageContent .gp-mp-btn-outline:active{transform:translateY(1px);}
+#mypageContent .gp-mp-btn-primary:focus-visible,#mypageContent .gp-mp-btn-outline:focus-visible,#mypageContent .gp-mp-logout:focus-visible{outline:3px solid rgba(90,91,216,.3);outline-offset:2px;}
+
+/* 정기구독 카드(기존 렌더러) — 골격 간격만 맞춘다. hidden 가드는 display 규칙이 [hidden]을 덮는 반복 사고 방지. */
+#mypageContent #subManageCard{margin:0 0 16px;}
+#mypageContent #subManageCard[hidden]{display:none !important;}
+
+/* 기록 탭 */
+#mypageContent .gp-mp-tabs{display:flex;gap:4px;padding:4px;border-radius:12px;background:#eeedf9;margin:0 0 10px;}
+#mypageContent .gp-mp-tabs [role="tab"]{flex:1 1 0;min-height:38px;border:0;border-radius:9px;background:transparent;color:#525a6e;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;transition:background .15s,color .15s,box-shadow .15s;}
+#mypageContent .gp-mp-tabs [role="tab"][aria-selected="true"]{background:#fff;color:#1a1f2e;box-shadow:0 1px 3px rgba(84,90,160,.18);}
+#mypageContent .gp-mp-tabs [role="tab"]:focus-visible{outline:3px solid rgba(90,91,216,.3);outline-offset:1px;}
+#mypageContent .gp-mp-panels{background:#fff;border:1px solid #e4e7f1;border-radius:16px;padding:6px 18px;box-shadow:0 8px 22px rgba(84,90,160,.05);}
+#mypageContent .gp-mp-panels [role="tabpanel"]{animation:gpMpPanelIn .22s cubic-bezier(.16,1,.3,1);}
+#mypageContent .gp-mp-panels [role="tabpanel"][hidden]{display:none !important;}
+#mypageContent .gp-mp-panels [role="tabpanel"] > div > div:last-child{border-bottom:0 !important;}
+/* 알림 행(기존 인라인 스타일) — 카드가 아니라 행+구분선으로, 안 읽음은 왼쪽 점 */
+#mypageContent #notifList > div[onclick]{background:transparent !important;border:0 !important;border-bottom:1px solid #e4e7f1 !important;border-radius:0 !important;margin:0 !important;padding:12px 0 !important;position:relative;}
+#mypageContent #notifList > div[onclick]:hover{background:#fafaff !important;}
+#mypageContent #notifList > div[style*="var(--blue)"]::before{content:"";position:absolute;left:-10px;top:19px;width:6px;height:6px;border-radius:50%;background:#5a5bd8;}
+#mypageContent .gp-mp-panels .gp-more-btn{margin:10px 0 6px;}
+@keyframes gpMpPanelIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+/* 계정 관리 줄 — 되돌리기 어려운 동작은 조용한 텍스트 버튼으로 내려둔다 */
+#mypageContent .gp-mp-account{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:18px 0 0;padding:0 4px;font-size:12.5px;color:#6b7186;}
+#mypageContent .gp-mp-account span{margin-right:6px;font-weight:700;}
+#mypageContent .gp-mp-account button{min-height:32px;padding:0 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:#525a6e;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:background .15s,color .15s;}
+#mypageContent .gp-mp-account button:hover{background:#fff;border-color:#e4e7f1;color:#1a1f2e;}
+#mypageContent .gp-mp-account button.is-danger{color:#b8443a;}
+#mypageContent .gp-mp-account button.is-danger:hover{background:#fdf1ef;border-color:#f0c4c0;}
+
+/* 스코프 연출: 링이 그려지고, 스윕이 한 바퀴 돌아 블립을 찾는다. 반복 없음. */
+@media (prefers-reduced-motion:no-preference){
+ .gp-mp-ring{stroke-dashoffset:300;animation:gpMpRing .6s cubic-bezier(.16,1,.3,1) forwards;}
+ .gp-mp-ring:nth-child(2){animation-delay:.08s;}
+ .gp-mp-ring:nth-child(3){animation-delay:.16s;}
+ .gp-mp-sweep{animation:gpMpSweep 1s cubic-bezier(.4,0,.6,1) .25s forwards;}
+ .gp-mp-blip{opacity:0;animation:gpMpBlip .45s cubic-bezier(.16,1,.3,1) .95s forwards;}
+ .gp-mp-blip-halo{animation:gpMpHalo 1.1s ease-out 1.05s 1;}
+}
+@keyframes gpMpRing{to{stroke-dashoffset:0;}}
+@keyframes gpMpSweep{0%{transform:rotate(0deg);opacity:0;}12%{opacity:1;}85%{opacity:1;}100%{transform:rotate(360deg);opacity:0;}}
+@keyframes gpMpBlip{from{opacity:0;transform:scale(.6);}to{opacity:1;transform:scale(1);}}
+@keyframes gpMpHalo{0%{transform:scale(.7);opacity:.9;}100%{transform:scale(1.9);opacity:0;}}
+
+@media(max-width:760px){
+ #mypageContent .gp-mp-hero{grid-template-columns:1fr;}
+ #mypageContent .gp-mp-id{flex-direction:row;align-items:center;justify-content:flex-start;gap:14px;padding:20px 18px;border-right:0;border-bottom:1px solid #ecedf6;}
+ #mypageContent .gp-mp-scope{width:72px;height:72px;flex:0 0 72px;}
+ #mypageContent .gp-mp-scope svg{width:72px;height:72px;}
+ #mypageContent .gp-mp-who strong{font-size:18px;}
+ #mypageContent .gp-mp-who em{margin-top:6px;}
+ #mypageContent .gp-mp-fuel{padding:18px 18px 20px;}
+ #mypageContent .gp-mp-credits b{font-size:34px;}
+ #mypageContent .gp-mp-panels{padding:4px 14px;}
+ #mypageContent #notifList > div[style*="var(--blue)"]::before{left:-8px;}
+}
+
+/* v119b: 공지 상세 — 라벤더 바닥에 평문이 그대로 놓이던 것을 게시글·문의 상세와 같은 흰 카드로.
+   본문 소제목은 noticeBodyHtml이 h3로 올린다. 뒤로 버튼은 전폭이 아니라 내용 폭. */
+#mainContent[data-main-design="lavender"] #noticeList .backbtn{width:auto !important;justify-self:start;align-self:flex-start;margin-bottom:14px;}
+#mainContent[data-main-design="lavender"] .gp-notice-detail{background:#fff;border:1px solid #e4e7f1;border-radius:16px;padding:26px 28px 30px;box-shadow:0 8px 22px rgba(84,90,160,.06);}
+#mainContent[data-main-design="lavender"] .gp-notice-detail .pdhd{padding:0 0 16px;margin-bottom:18px;border-bottom:1px solid #eceef6;}
+#mainContent[data-main-design="lavender"] .gp-notice-detail-tags{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+#mainContent[data-main-design="lavender"] .gp-notice-detail-tags .gbr-cat{font-size:12.5px;color:#7b6ef0;font-weight:700;}
+#mainContent[data-main-design="lavender"] .gp-notice-detail .pdtitle{font-size:24px;font-weight:850;letter-spacing:-.035em;line-height:1.35;color:#1a1f2e;margin-bottom:8px;text-wrap:balance;}
+#mainContent[data-main-design="lavender"] .gp-notice-detail .pmeta{font-size:12.5px;color:#6b7186;}
+#mainContent[data-main-design="lavender"] .gp-notice-detail .pdbody{font-size:15px;line-height:1.8;color:#2c3145;white-space:normal;margin:0;max-width:70ch;}
+#mainContent[data-main-design="lavender"] .gp-notice-detail .pdbody p{margin:0 0 14px;}
+#mainContent[data-main-design="lavender"] .gp-notice-detail .pdbody p:last-child{margin-bottom:0;}
+#mainContent[data-main-design="lavender"] .gp-notice-detail .pdbody section{margin:18px 0 0;padding-top:14px;border-top:1px dashed #e4e2f4;}
+#mainContent[data-main-design="lavender"] .gp-notice-detail .pdbody h3{margin:0 0 6px;font-size:14px;font-weight:800;letter-spacing:-.01em;color:#4b4cc6;}
+#mainContent[data-main-design="lavender"] .gp-notice-detail .pdbody .gp-notice-li{display:block;padding-left:14px;text-indent:-14px;}
+#mainContent[data-main-design="lavender"] .gp-notice-detail .pdactions{margin-top:10px;}
+@media(max-width:760px){
+ #mainContent[data-main-design="lavender"] .gp-notice-detail{padding:20px 18px 24px;}
+ #mainContent[data-main-design="lavender"] .gp-notice-detail .pdtitle{font-size:20px;}
+}
+/* v119b: 내 정보 마감 — 관리자 카드·정기구독 카드(기존 렌더러)를 새 골격의 모서리·버튼 체계에 맞추고,
+   목록 빈 상태 글자 대비를 올리고, 기본 휴머나이징 1회에도 못 미치는 잔액을 알린다. */
+#mypageContent .gp-mypage-admin-entry{border-radius:16px;border-color:#e4e7f1;box-shadow:0 8px 22px rgba(84,90,160,.06);}
+#mypageContent .gp-mypage-admin-entry button{border-radius:10px;}
+#mypageContent .gp-mp-panels{--text3:#6b7186;}
+#mypageContent #subManageCard > div{border-radius:16px !important;border-color:#e4e7f1 !important;box-shadow:0 8px 22px rgba(84,90,160,.06);}
+#mypageContent #subManageCard button{border-radius:10px !important;font-weight:800 !important;min-height:38px;font-family:inherit;}
+#mypageContent #subManageCard button[onclick*="pricing"]{background:#171a2b !important;color:#fff !important;border:0 !important;}
+#mypageContent #subManageCard button[onclick*="cancelSubscription"]{background:#fff !important;border:1px solid #d2cdf0 !important;color:#4b4cc6 !important;}
+#mypageContent .gp-mp-low{display:block;margin-top:10px;padding:8px 10px;border-radius:8px;background:#fff6e5;color:#7a4f00;font-size:12px;line-height:1.5;font-weight:700;font-style:normal;}
+#mypageContent .gp-mp-low[hidden]{display:none !important;}
+
+/* v119c: 내 정보 캐릭터 무대(2026-09-02) — 비어 있던 신원 칸을 브랜드 캐릭터(보라 후드 학생, 여/남)의 무대로.
+   레이더 링은 바닥으로 깔리고 캐릭터가 그 위에 선다(사용자가 곧 블립). 포인터를 따라 살짝 기울고,
+   누르면 교수님이 오른쪽에서 들어왔다 나가는 동안 피하기 → 환호. 포즈는 이미지 교차 페이드 하나로만 표현하고
+   움직임 줄이기에서는 기울기·슬라이드 없이 포즈만 바뀐다. */
+#mypageContent .gp-mp-id{gap:12px;padding:22px 22px 20px;}
+#mypageContent .gp-mp-stage{
+ --mp-tilt-x:0px;--mp-tilt-y:0px;--mp-tilt-r:0deg;
+ position:relative;width:100%;aspect-ratio:1/1;max-height:260px;border-radius:16px;overflow:hidden;cursor:pointer;
+ background:radial-gradient(120% 90% at 50% 100%,#ece9ff 0%,#f7f6ff 55%,#fff 100%);
+ -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
+}
+#mypageContent .gp-mp-stage:focus-visible{outline:3px solid rgba(90,91,216,.3);outline-offset:2px;}
+#mypageContent .gp-mp-stage-rings{position:absolute;left:50%;bottom:-38%;width:150%;height:150%;transform:translateX(-50%);fill:none;stroke:#cfcbf3;stroke-width:.6;opacity:.9;pointer-events:none;}
+#mypageContent .gp-mp-char{position:absolute;left:37%;bottom:9%;height:80%;width:auto;max-width:64%;aspect-ratio:1/1;   /* v125: 높이 기준으로 맞춰 무대가 납작해도(max-height 클램프) 머리·발이 안 잘린다. 바닥 여백 9%는 dodge 회전분(사장님 9/2 '바지가 안 나옴') */transform:translate(calc(-50% + var(--mp-tilt-x)),var(--mp-tilt-y)) rotate(var(--mp-tilt-r));transform-origin:50% 100%;transition:transform .35s cubic-bezier(.16,1,.3,1);pointer-events:none;}
+#mypageContent .gp-mp-pose{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;opacity:0;transition:opacity .18s ease;filter:drop-shadow(0 10px 14px rgba(84,90,160,.18));}
+#mypageContent .gp-mp-stage[data-pose="idle"] .is-idle,
+#mypageContent .gp-mp-stage[data-pose="alert"] .is-idle,
+#mypageContent .gp-mp-stage[data-pose="dodge"] .is-dodge,
+#mypageContent .gp-mp-stage[data-pose="cheer"] .is-cheer,
+#mypageContent .gp-mp-stage[data-pose="run"] .is-run{opacity:1;}
+#mypageContent .gp-mp-stage[data-pose="alert"] .gp-mp-char{transform:translate(calc(-50% - 6px),-4px) rotate(-3deg);}
+#mypageContent .gp-mp-stage[data-pose="dodge"] .gp-mp-char{transform:translate(calc(-50% - 8px),0) rotate(-7deg);}
+#mypageContent .gp-mp-stage[data-pose="cheer"] .gp-mp-char{transform:translate(-50%,-14px) rotate(0deg);}
+/* 교수님: 오른쪽 가장자리 밖에 숨어 있다가 alert·dodge 동안 얼굴만 들이민다 */
+#mypageContent .gp-mp-prof{position:absolute;right:-52%;bottom:14%;width:46%;aspect-ratio:1/1;border-radius:50%;overflow:hidden;background:#fff;border:3px solid #fff;box-shadow:0 10px 24px rgba(84,90,160,.22);transform:translateX(0) rotate(8deg);transition:transform .32s cubic-bezier(.16,1,.3,1);pointer-events:none;}
+#mypageContent .gp-mp-prof img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;}
+#mypageContent .gp-mp-stage[data-pose="alert"] .gp-mp-prof,
+#mypageContent .gp-mp-stage[data-pose="dodge"] .gp-mp-prof{transform:translateX(-92%) rotate(-6deg);}
+/* 말풍선·힌트 */
+#mypageContent .gp-mp-bubble{position:absolute;right:10px;top:10px;max-width:52%;padding:8px 11px;border-radius:12px 12px 4px 12px;background:#fff;border:1px solid #e4e2f4;box-shadow:0 6px 16px rgba(84,90,160,.12);color:#1a1f2e;font-size:12.5px;font-weight:700;line-height:1.45;pointer-events:none;}
+#mypageContent .gp-mp-stage-hint{position:absolute;right:10px;bottom:10px;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.85);color:#4b4cc6;font-size:11px;font-weight:800;letter-spacing:-.01em;pointer-events:none;transition:opacity .2s;}
+#mypageContent .gp-mp-stage:not([data-pose="idle"]) .gp-mp-stage-hint{opacity:0;}
+/* 캐릭터 고르기 */
+#mypageContent .gp-mp-avatar-pick{display:grid;grid-template-columns:1fr 1fr;gap:4px;width:100%;padding:3px;border-radius:10px;background:#eeedf9;}
+#mypageContent .gp-mp-avatar-pick button{min-height:32px;border:0;border-radius:8px;background:transparent;color:#5d6477;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s,color .15s,box-shadow .15s;}
+#mypageContent .gp-mp-avatar-pick button[aria-pressed="true"]{background:#fff;color:#4b4cc6;box-shadow:0 1px 3px rgba(84,90,160,.18);}
+#mypageContent .gp-mp-avatar-pick button:focus-visible{outline:2px solid rgba(90,91,216,.4);outline-offset:1px;}
+#mypageContent .gp-mp-who{width:100%;}
+/* 연출 */
+@media (prefers-reduced-motion:no-preference){
+ #mypageContent .gp-mp-stage[data-pose="idle"] .gp-mp-pose.is-idle{animation:gpMpBreathe 3.2s ease-in-out infinite;}
+ #mypageContent .gp-mp-stage.is-swapped .gp-mp-char{animation:gpMpSwap .42s cubic-bezier(.16,1,.3,1);}
+ #mypageContent .gp-mp-stage[data-pose="cheer"] .gp-mp-pose.is-cheer{animation:gpMpCheer .5s cubic-bezier(.16,1,.3,1);}
+ #mypageContent .gp-mp-bubble{animation:gpMpBubble .28s cubic-bezier(.16,1,.3,1);}
+}
+@keyframes gpMpBreathe{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+@keyframes gpMpSwap{from{transform:translate(-50%,10px) scale(.92);opacity:.4;}to{transform:translate(-50%,0) scale(1);opacity:1;}}
+@keyframes gpMpCheer{from{transform:translateY(12px) scale(.96);}to{transform:translateY(0) scale(1);}}
+@keyframes gpMpBubble{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
+@media(max-width:760px){
+ #mypageContent .gp-mp-id{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;padding:16px 16px 14px;}
+ #mypageContent .gp-mp-stage{max-height:220px;aspect-ratio:16/10;}
+ #mypageContent .gp-mp-char{width:46%;left:36%;}
+ #mypageContent .gp-mp-bubble{max-width:50%;}
+ #mypageContent .gp-mp-prof{width:32%;right:-36%;}
+ #mypageContent .gp-mp-stage-rings{width:110%;height:150%;bottom:-48%;}
+}
+
 /* ===== lavender v116: AI 감지 보고서 · 실험실 리포트 (seed 26e340ec) =====
    구성: ① 히어로 카드(Before · 원형 게이지 · After) ② 네이비 계측 띠
         ③ 2단(문장별 분석 / 원인 레이더 + 개선 포인트) ④ 보라 그라디언트 전환 밴드
@@ -11171,13 +11371,13 @@ html.gp-rep-modal-open{overflow:hidden;}
  min-height:196px;display:flex;align-items:center;
 }
 #mainContent[data-main-design="lavender"] .gp-rep-cta::after{
- content:'';position:absolute;inset:0 0 0 auto;width:min(58%,560px);
- background:url('/assets/img/report/cta-runner.png') right center/cover no-repeat;
- mask-image:linear-gradient(90deg,transparent,#000 22%);
- -webkit-mask-image:linear-gradient(90deg,transparent,#000 22%);
+ content:'';position:absolute;top:0;right:0;height:100%;aspect-ratio:3/2;width:auto;   /* 그림(1536×1024) 비율 그대로 — 박스=그림이라 마스크가 그림 왼쪽 가장자리 위에서 녹는다 */
+ background:url('/assets/img/report/cta-runner.png') right center/cover no-repeat;   /* cover는 다리가 잘렸다 → 박스 비율을 맞춰 잘리지 않게 */
+ mask-image:linear-gradient(90deg,transparent 0,rgba(0,0,0,.55) 30%,#000 58%);
+ -webkit-mask-image:linear-gradient(90deg,transparent 0,rgba(0,0,0,.55) 30%,#000 58%);   /* 경계선 없이 밴드 그라데이션에 어우러지게(사장님 9/2) */
  pointer-events:none;
 }
-#mainContent[data-main-design="lavender"] .gp-rep-cta-copy{position:relative;z-index:1;padding:34px 36px;max-width:60%;}
+#mainContent[data-main-design="lavender"] .gp-rep-cta-copy{position:relative;z-index:1;padding:32px 36px;max-width:62%;}
 #mainContent[data-main-design="lavender"] .gp-rep-cta-copy strong{
  display:block;font-size:var(--rep-fs-7);font-weight:850;line-height:1.35;letter-spacing:-.04em;color:#fff;
  text-wrap:balance;word-break:keep-all;
@@ -11240,7 +11440,7 @@ html.gp-rep-modal-open{overflow:hidden;}
  #mainContent[data-main-design="lavender"] .gp-rep-s{grid-template-columns:22px minmax(0,1fr);}
  #mainContent[data-main-design="lavender"] .gp-rep-s-side{grid-column:2;flex-direction:row;align-items:center;gap:8px;}
  #mainContent[data-main-design="lavender"] .gp-rep-cta{min-height:0;}
- #mainContent[data-main-design="lavender"] .gp-rep-cta::after{width:100%;opacity:.28;}
+ #mainContent[data-main-design="lavender"] .gp-rep-cta::after{width:100%;aspect-ratio:auto;opacity:.28;}
  #mainContent[data-main-design="lavender"] .gp-rep-cta-copy{max-width:100%;padding:26px 20px;}
  #mainContent[data-main-design="lavender"] .gp-rep-cta-copy strong{font-size:var(--rep-fs-6);}
  #mainContent[data-main-design="lavender"] .gp-rep-cta-btn{width:100%;}
@@ -11759,3 +11959,7 @@ html.gp-rep-modal-open{overflow:hidden;}
  #mainContent[data-main-design="lavender"] .gp-rep-stat-go{padding:5px 8px;}
  #mainContent[data-main-design="lavender"] .gp-rep-stats>div.is-link.is-pinned::after{bottom:-18px;}
 }
+
+/* v124: 인물 사진은 원 안에 전체가 들어온다 — 마커 원을 흰 바탕으로 두어 여백이 자연스럽다 */
+#mainContent[data-main-design="lavender"] .gp-rep-scope .blip-ring{fill:#fff;}
+#mainContent[data-main-design="lavender"] .gp-rep-cta{min-height:256px;}   /* 러너 그림은 밴드 높이에 비례(3:2) — 문구를 줄인 만큼 높이로 그림을 살린다 */

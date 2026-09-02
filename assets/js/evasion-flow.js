@@ -970,7 +970,7 @@
       after.appendChild(sr);
     }
     if (col) col.classList.toggle('is-gated', gated);
-    if (tag) tag.textContent = gated ? '다듬은 예시 · 가장 많이 바뀐 자리' : '다듬은 예시 · 사실은 그대로';
+    if (tag) tag.textContent = gated ? '휴머나이징 미리보기 · 가장 많이 바뀐 자리' : '휴머나이징 결과 · 사실은 그대로';
     if (unlock) unlock.hidden = !gated;
   }
 
@@ -1139,7 +1139,7 @@
     var pp = repGaugePoint(100, G.R);
     var prof = mk('g', { class: 'prof', transform: 'translate(' + (pp[0] - 26).toFixed(1) + ' ' + (pp[1] - 4).toFixed(1) + ')' });
     prof.appendChild(mk('circle', { class: 'prof-ring', r: 21 }));
-    prof.appendChild(mk('image', { href: '/assets/img/report/professor.png', x: -19, y: -19, width: 38, height: 38, 'clip-path': 'url(#gpRepClipProf)', preserveAspectRatio: 'xMidYMid slice' }));
+    prof.appendChild(mk('image', { href: '/assets/img/report/professor.png', x: -18, y: -17, width: 36, height: 36, 'clip-path': 'url(#gpRepClipProf)', preserveAspectRatio: 'xMidYMid meet' }));
     var pl = mk('text', { class: 'who', x: 0, y: 35, 'text-anchor': 'middle' }); pl.textContent = '교수님';
     prof.appendChild(pl);
     svg.appendChild(prof);
@@ -1150,7 +1150,8 @@
       var blip = mk('g', { class: 'blip' });
       blip.appendChild(mk('circle', { class: 'blip-halo', r: 34 }));
       blip.appendChild(mk('circle', { class: 'blip-ring', r: 25 }));
-      blip.appendChild(mk('image', { href: '/assets/img/report/runner-bust.png', x: -23, y: -23, width: 46, height: 46, 'clip-path': 'url(#gpRepClipBlip)', preserveAspectRatio: 'xMidYMid slice' }));
+      // 전신 그림을 원 안에 통째로(meet) — 상반신 크롭은 바지·다리가 잘려 보였다(사장님 9/2)
+      blip.appendChild(mk('image', { href: '/assets/img/report/runner.png', x: -22, y: -22, width: 44, height: 44, 'clip-path': 'url(#gpRepClipBlip)', preserveAspectRatio: 'xMidYMid meet' }));
       // '내 글' 이름표는 호 안쪽(중심 방향)에 둔다 — 구역 말(위험·주의·안전)은 호 바깥이라 절대 겹치지 않는다.
       var a = repGaugeAngle(score);
       var bl = mk('text', { class: 'who me', x: (-Math.cos(a) * 40).toFixed(1), y: (Math.sin(a) * 40 + 4).toFixed(1), 'text-anchor': 'middle' }); bl.textContent = '내 글';
@@ -2020,11 +2021,11 @@
       ctx.setLineDash([4, 9]); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(gx, gy, GR, -gAngle(100), -gAngle(0), false); ctx.stroke(); ctx.setLineDash([]);
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      var imgs = await Promise.all([repLoadImage('/assets/img/report/professor.png'), repLoadImage('/assets/img/report/runner-bust.png')]);
+      var imgs = await Promise.all([repLoadImage('/assets/img/report/professor.png'), repLoadImage('/assets/img/report/runner.png')]);
       var drawClipped = function (img, x, y, r) {
         if (!img) return;
         ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
-        var s = Math.max((r * 2) / img.width, (r * 2) / img.height);
+        var s = Math.min((r * 2 - 6) / img.width, (r * 2 - 6) / img.height);   // 원 안에 인물 전체(contain)
         ctx.drawImage(img, x - img.width * s / 2, y - img.height * s / 2, img.width * s, img.height * s);
         ctx.restore();
       };
@@ -2099,13 +2100,14 @@
     if (eligible) {
       if (title) {
         title.textContent = model.content.generic > 0
-          ? '다듬을 후보 ' + model.content.generic + '문장, 지금 다듬어 볼까요?'
-          : '이 글, 지금 다듬어 볼까요?';
+          ? '후보 ' + model.content.generic + '문장, 지금 휴머나이징해 볼까요?'
+          : '이 글, 지금 휴머나이징해 볼까요?';
       }
-      if (desc) desc.textContent = '원문의 뜻과 사실은 그대로 두고 문체만 다시 씁니다.';
+      if (desc) desc.textContent = '뜻과 사실은 그대로, 문체만 다시 씁니다.';
       if (btn) { btn.hidden = false; btn.textContent = '추천 방법·비용 확인하기 →'; }
       if (help) help.hidden = false;
-      repPaintExpect(model);
+      // v125: 예상 변화 칩(원인 축 리드·문장 수 칩)은 밴드를 어수선하게 해 뺐다(사장님 9/2) — 제목·한 줄·버튼·비용만.
+      repPaintExpect(null);
       return;
     }
     repPaintExpect(null);
@@ -2145,12 +2147,6 @@
       li.appendChild(label); li.appendChild(value);
       list.appendChild(li);
     });
-    if (rows.length) {
-      var lead = document.createElement('li');
-      lead.className = 'lead';
-      lead.textContent = '다듬을 대상 (원인 축 기준)';
-      list.insertBefore(lead, list.firstChild);
-    }
   }
 
   // ── 보고서 렌더 ─────────────────────────────────────────────────────────────
@@ -3606,7 +3602,7 @@
     if (!len) return;
     var cost = shortHumanizeCredit(len);
     var balance = Math.max(0, Number(window.UC) || 0);
-    line.textContent = '이동 후 기본 휴머나이징 ' + cost.toLocaleString('ko-KR') + '크레딧 · 보유 '
+    line.textContent = '기본 휴머나이징 ' + cost.toLocaleString('ko-KR') + '크레딧 · 보유 '
       + balance.toLocaleString('ko-KR') + '크레딧';
     line.classList.toggle('is-short', balance < cost);
     line.hidden = false;
