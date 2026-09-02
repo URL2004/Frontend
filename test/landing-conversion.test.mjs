@@ -262,16 +262,19 @@ test('충전 사다리는 기준·상품 보너스·기간 이벤트 지급량�
     read('assets/js/conversion-flow.js'),
     read('pages/landing.html')
   ]);
-  assert.match(pricing, /payToss\(5900,210,/u);
-  assert.match(pricing, /총 210 크레딧/u);
-  assert.match(flow, /\{ amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 10, credits: 210, label: '스타터' \}/u);
-  assert.match(landing, /5,900원<\/b><span>총 210크레딧/u);
+  assert.match(pricing, /payToss\(5900,200,/u);
+  assert.match(pricing, /총 200 크레딧/u);
+  assert.match(pricing, /개강 이벤트 <em>\(0%\)<\/em><\/span><strong>\+0<\/strong>/u);
+  assert.match(pricing, /aria-label="기준 200크레딧, 9월 개강 이벤트 0크레딧, 총 200크레딧을 5,900원에 충전하기"/u);
+  assert.match(flow, /\{ amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 0, credits: 200, label: '스타터' \}/u);
+  assert.match(flow, /CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v4-202609'/u);
+  assert.match(landing, /data-event-credits="0"><b>5,900원<\/b><span>총 200크레딧/u);
   assert.doesNotMatch(`${pricing}\n${landing}\n${flow}`, /payToss\((?:2900|8700),|2,900원<\/b>|8,700원<\/b>|label: '라이트'/u, '종료 상품(2,900·8,700) 결제 진입 재유입');
   assert.ok(!pricing.includes('plan-discount'), '할인율 배지 재유입');
-  assert.match(pricing, /기본 1,000자 1회<\/span><strong>약 562원/u);
+  assert.match(pricing, /기본 1,000자 1회<\/span><strong>약 590원/u);
 });
 
-test('가격 카드는 상시 상품 보너스와 5% 기간 이벤트를 분리해 표시한다', async () => {
+test('가격 카드는 스타터 0%와 다른 상품 5% 기간 이벤트를 분리해 표시한다', async () => {
   const [pricing, landing, flow, modals, css] = await Promise.all([
     read('pages/pricing.html'),
     read('pages/landing.html'),
@@ -279,8 +282,9 @@ test('가격 카드는 상시 상품 보너스와 5% 기간 이벤트를 분리�
     read('partials/modals.html'),
     read('assets/css/redesign.css')
   ]);
-  const rates = [...pricing.matchAll(/개강 이벤트 <em>\(\+(\d+)%\)<\/em>/gu)].map((m) => Number(m[1]));
-  assert.deepEqual(rates, [5, 5, 5, 5, 5]);
+  const rates = [...pricing.matchAll(/개강 이벤트 <em>\(\+?(\d+)%\)<\/em>/gu)].map((m) => Number(m[1]));
+  assert.deepEqual(rates, [0, 5, 5, 5, 5]);
+  assert.match(pricing, /스타터는 이벤트 추가 0%, 스탠다드·프로·맥스·팀·기관은 기준 크레딧의 5%/u);
   // 개강 이벤트 명칭은 결제 동선(충전·랜딩·결제창) 전체에서 같아야 한다
   assert.match(pricing, /9월 개강 추가 크레딧 이벤트 · 2026년 9월 30일까지/u);
   assert.match(landing, /9월 개강 추가 크레딧 이벤트 · 2026년 9월 30일까지/u);

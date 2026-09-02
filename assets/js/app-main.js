@@ -1861,7 +1861,7 @@ function maintenancePreviewQuery() {
 }
 
 const CREDIT_GRANT_POLICY_VERSION = 'credit-grant-base-v1';
-const CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v3-202609';
+const CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v4-202609';
 const CREDIT_EVENT_LOCAL_START_MS = Date.parse('2026-08-29T00:00:00+09:00');
 const CREDIT_EVENT_LOCAL_END_MS = Date.parse('2026-10-01T00:00:00+09:00');
 function localCreditEventProduct(paidCredits, packageBonusCredits, configuredEventBonusCredits) {
@@ -1878,7 +1878,7 @@ function localCreditEventProduct(paidCredits, packageBonusCredits, configuredEve
  };
 }
 const CREDIT_EVENT_PRODUCTS = {
- 5900: localCreditEventProduct(200, 0, 10),
+ 5900: localCreditEventProduct(200, 0, 0),
  14500: localCreditEventProduct(500, 125, 25),
  29000: localCreditEventProduct(1000, 350, 50),
  58000: localCreditEventProduct(2000, 900, 100)
@@ -1912,14 +1912,18 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
     if (currentOffer && Number(currentOffer.paidCredits) > 0) {
      const paidCredits = Number(currentOffer.paidCredits);
      const packageBonusCredits = Math.max(0, Number(currentOffer.packageBonusCredits) || 0);
-     const eventBonusCredits = Math.max(0, Number(currentOffer.eventBonusCredits) || 0);
-     const offeredTotal = Number(currentOffer.credits) || Number(currentOffer.totalGrantedCredits) || 0;
+     // v4에서 스타터는 개강 이벤트 0%다. 전환 중 구형 응답이 남아도 결제 확인값은 200으로 고정한다.
+     const eventBonusCredits = Number(amount) === 5900 ? 0 : Math.max(0, Number(currentOffer.eventBonusCredits) || 0);
+     const computedTotal = paidCredits + packageBonusCredits + eventBonusCredits;
+     const offeredTotal = Number(amount) === 5900
+      ? computedTotal
+      : (Number(currentOffer.credits) || Number(currentOffer.totalGrantedCredits) || 0);
      grant = {
       paidCredits,
       packageBonusCredits,
       eventBonusCredits,
       bonusCredits: packageBonusCredits + eventBonusCredits,
-      totalGrantedCredits: Math.max(paidCredits + packageBonusCredits + eventBonusCredits, offeredTotal),
+      totalGrantedCredits: Math.max(computedTotal, offeredTotal),
       offerPolicyVersion: String(currentOffer.offerPolicyVersion || CREDIT_OFFER_POLICY_VERSION)
      };
     }

@@ -87,7 +87,8 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
   assert.doesNotMatch(baseItems, /신규 계정에는 무료 25크레딧|기존 계정에도 (?:추가 )?20크레딧|기존 계정.{0,30}소급 지급(?:해요|합니다|돼요)/u);
   assert.doesNotMatch(baseItems, /크레딧 지급·환불 기준|환불 기준|사용량은 기준 크레딧부터 먼저 차감/u);
   assert.match(baseItems, /2026년 9월 30일 23시 59분\(한국 시간\)까지 결제 확인 요청이 서버에 접수된 주문/u);
-  assert.match(baseItems, /스타터: 200 \+ 0 \+ 10 = 총 210크레딧/u);
+  assert.match(baseItems, /스타터: 200 \+ 0 \+ 0 = 총 200크레딧/u);
+  assert.match(baseItems, /스타터의 이벤트 추가는 0%예요/u);
   assert.doesNotMatch(baseItems, /라이트: 300 \+ 30 \+ 15/u, '종료 상품이 지급 기준 공지에 남음');
   assert.match(baseItems, /팀·기관\(문의 전용\): 4,000 \+ 2,000 \+ 200 = 총 6,200크레딧/u);
   // 2026-09-03 요금제 개편 공지 — 시작 상품 5,900원/200크레딧, 종료 상품, 대용량 2종

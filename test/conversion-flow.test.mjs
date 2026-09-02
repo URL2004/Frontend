@@ -85,7 +85,7 @@ test('가격표 카드는 가격→총 지급량→스타터 비교→기본 1,0
     read('assets/js/conversion-flow.js')
   ]);
   assert.equal((pricing.match(/data-plan-efficiency/gu) || []).length, 5, '카드마다 기준 금액 한 줄');
-  for (const value of [562, 446, 414, 387, 374]) assert.match(pricing, new RegExp(`기본 1,000자 1회<\\/span><strong>약 ${value}원`, 'u'));
+  for (const value of [590, 446, 414, 387, 374]) assert.match(pricing, new RegExp(`기본 1,000자 1회<\\/span><strong>약 ${value}원`, 'u'));
   // 5,900원 시작 상품은 상위 상품의 정수배가 아니므로 '같은 금액을 스타터 단가로 샀을 때' 대비 상시 지급량 차이로 비교한다.
   assert.match(pricing, /스타터 단가 대비<\/span><strong>기준 상품<\/strong>/u);
   assert.match(pricing, /스타터 단가 대비<\/span><strong>\+133 크레딧<\/strong>/u);
@@ -133,6 +133,10 @@ test('기간 이벤트 종료·서버 비활성화 시 상시 상품 보너스�
   assert.match(flow, /CREDIT_EVENT_ENDS_AT_MS = Date\.parse\('2026-10-01T00:00:00\+09:00'\)/u);
   assert.match(flow, /eventDeclaredInactive[\s\S]*?context\.creditEvent\.active === false/u);
   assert.match(flow, /eventPanel\.hidden = !anyEvent/u);
+  assert.match(flow, /eventRow\.hidden = !anyEvent/u, '행사 중에는 스타터 0% 행도 보이고 종료 후에는 모든 이벤트 행을 숨긴다');
+  assert.match(flow, /plan\.amount === 5900 \|\| eventDeclaredInactive \? 0/u, '구형 서버 응답도 스타터 이벤트를 되살리지 않는다');
+  assert.match(flow, /if \(plan\.amount === 5900 \|\| eventDeclaredInactive\) total = paid \+ packageBonus/u);
+  assert.match(flow, /if \(anyEvent\) parts\.push\('개강 이벤트 ' \+ format\(plan\.eventBonusCredits\) \+ '크레딧'\)/u, '행사 중 스타터 aria-label에도 0크레딧을 명시한다');
   assert.match(flow, /window\.gpCreditOfferForAmount = async function/u);
   assert.equal((pricing.match(/data-plan-amount="\d+"/gu) || []).length, 4, '서버 오퍼를 덮어쓸 상품 키 4개(문의 전용 제외)');
   assert.match(flow, /function syncInquiryCard\(eventActive\)/u, '문의 전용 카드도 이벤트 종료를 따라간다');
@@ -142,6 +146,7 @@ test('기간 이벤트 종료·서버 비활성화 시 상시 상품 보너스�
   assert.match(main, /eventCredits > 0/u);
 
   assert.match(landing, /id="lpCreditEvent"/u);
+  assert.match(landing, /data-paid-credits="200" data-package-credits="0" data-event-credits="0"/u);
   assert.equal((landing.match(/data-paid-credits="\d+" data-package-credits="\d+" data-event-credits="\d+"/gu) || []).length, 5, '랜딩 상품 5개');
   assert.match(landingJs, /function syncLandingCreditEvent/u);
   assert.match(landingJs, /eventNotice\.hidden = true/u);
@@ -181,7 +186,7 @@ test('요금 카드는 넓은 화면에서 한 묶음(일반 3종)을 한 줄에
   ]);
   assert.match(pricing, /id="gpPlanList"[^>]+role="tabpanel"[^>]+aria-label="일반 요금제 상품 3개"[^>]+tabindex="0"/u);
   assert.match(pricing, /id="gpPlanListBulk"[^>]+role="tabpanel"[^>]+aria-label="대용량 요금제 상품 2개"[^>]+tabindex="0" hidden>/u, '대용량 묶음은 탭으로 숨겨 시작');
-  assert.match(pricing, /role="tablist" aria-label="요금제 구분"[\s\S]{0,400}?id="gpPlanTabRegular"[^>]+aria-selected="true"[\s\S]{0,400}?id="gpPlanTabBulk"[^>]+aria-selected="false"/u);
+  assert.match(pricing, /role="tablist" aria-label="요금제 구분"[\s\S]{0,400}?id="gpPlanTabRegular"[^>]+aria-selected="true"[^>]+tabindex="0"[\s\S]{0,400}?id="gpPlanTabBulk"[^>]+aria-selected="false"[^>]+tabindex="-1"/u, '초기 활성 탭만 키보드 탭 순서에 둔다');
   assert.match(pricing, /id="gpPlanBulkStrip"[^>]+onclick="gpPlanGroup\('bulk'\)"[^>]+data-regular-title="대용량 요금제 · 58,000원부터"/u, '띠 배너가 반대쪽 묶음의 시작 가격을 노출');
   assert.match(css, /\.gp-plan-grid\[hidden\]\{display:none !important;\}/u, 'display:grid !important가 [hidden]을 덮는 사고 방지 가드');
   assert.match(pricing, /class="plan-card plan-popular"[\s\S]*?class="plan-card plan-premium"/u, '스탠다드가 일반 묶음, 맥스가 대용량 묶음');

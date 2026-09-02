@@ -6,13 +6,14 @@
   var MAX_PENDING_AGE = 2 * 60 * 60 * 1000;
   var CREDIT_EVENT_STARTS_AT_MS = Date.parse('2026-08-29T00:00:00+09:00');
   var CREDIT_EVENT_ENDS_AT_MS = Date.parse('2026-10-01T00:00:00+09:00');
-  var CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v3-202609';
+  var CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v4-202609';
   var SIGNUP_GRANT_CREDITS = 20;
   // 지급량 소스 오브 트루스는 Backend/lib/conversionOffers.js의 CREDIT_PRODUCTS다.
   // 여기·pricing.html·landing.html 표기가 어긋나면 claims-consistency 테스트가 깨진다.
-  // 상품 보너스는 상시 지급하고, 2026-09-30 결제 요청분에는 기준 크레딧의 5%를 추가 지급한다.
+  // 상품 보너스는 상시 지급한다. 2026-09-30 결제 요청분의 개강 이벤트는
+  // 스타터 0%, 스탠다드·프로·맥스·팀·기관 5%로 적용한다.
   var PLANS = [
-    { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 10, credits: 210, label: '스타터' },
+    { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 0, credits: 200, label: '스타터' },
     { amount: 14500, paidCredits: 500, packageBonusCredits: 125, eventBonusCredits: 25, credits: 650, label: '스탠다드' },
     { amount: 29000, paidCredits: 1000, packageBonusCredits: 350, eventBonusCredits: 50, credits: 1400, label: '프로' },
     { amount: 58000, paidCredits: 2000, packageBonusCredits: 900, eventBonusCredits: 100, credits: 3000, label: '맥스' }
@@ -115,10 +116,12 @@
       var packageBonus = offer.packageBonusCredits == null
         ? plan.packageBonusCredits
         : number(offer.packageBonusCredits);
-      var eventBonus = eventDeclaredInactive ? 0 : number(offer.eventBonusCredits);
+      // v4에서 스타터는 이벤트 대상이 아니다. 전환 중 구형 v3 응답이 캐시에 남아도
+      // 5,900원 오퍼에 구형 이벤트 보너스가 다시 보이지 않도록 클라이언트 미러에서도 고정한다.
+      var eventBonus = plan.amount === 5900 || eventDeclaredInactive ? 0 : number(offer.eventBonusCredits);
       var computedTotal = paid + packageBonus + eventBonus;
       var total = number(offer.totalCredits || offer.totalGrantedCredits || offer.credits) || computedTotal;
-      if (eventDeclaredInactive) total = paid + packageBonus;
+      if (plan.amount === 5900 || eventDeclaredInactive) total = paid + packageBonus;
       return {
         amount: plan.amount,
         paidCredits: paid,
@@ -743,7 +746,11 @@
       }
       var eventRow = card.querySelector('.feat-event');
       if (eventRow) {
-        eventRow.hidden = plan.eventBonusCredits <= 0;
+        // 행사 기간에는 스타터의 0%도 명시한다. 행사가 끝나면 모든 이벤트 행을 함께 숨긴다.
+        eventRow.hidden = !anyEvent;
+        var eventRate = eventRow.querySelector('em');
+        var eventPercent = plan.paidCredits > 0 ? Math.round(plan.eventBonusCredits * 100 / plan.paidCredits) : 0;
+        if (eventRate) eventRate.textContent = '(' + (eventPercent > 0 ? '+' : '') + eventPercent + '%)';
         var eventStrong = eventRow.querySelector('strong');
         if (eventStrong) eventStrong.textContent = '+' + format(plan.eventBonusCredits);
       }
@@ -755,7 +762,7 @@
         button.setAttribute('onclick', "payToss(" + plan.amount + ',' + plan.credits + ",'크레딧 충전','')");
         var parts = ['기준 ' + format(plan.paidCredits) + '크레딧'];
         if (plan.packageBonusCredits > 0) parts.push('상품 보너스 ' + format(plan.packageBonusCredits) + '크레딧');
-        if (plan.eventBonusCredits > 0) parts.push('개강 이벤트 ' + format(plan.eventBonusCredits) + '크레딧');
+        if (anyEvent) parts.push('개강 이벤트 ' + format(plan.eventBonusCredits) + '크레딧');
         button.setAttribute('aria-label', parts.join(', ') + ', 총 ' + format(plan.credits) + '크레딧을 ' + format(plan.amount) + '원에 충전하기');
       }
     });
@@ -1059,7 +1066,7 @@
       balance: balances[segment] == null ? 0 : balances[segment],
       paidOrderCount: segment.indexOf('returning') === 0 ? 3 : 0,
       experiment: { key: 'credit_event_20260930', variant: 'all_users' },
-      starterOffer: { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 10, totalCredits: 210 },
+      starterOffer: { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 0, totalCredits: 200 },
       lastPackage: segment === 'returning_low_balance' ? { amount: 14500, credits: 650 } : null
     };
   }
@@ -1274,7 +1281,7 @@
       balance: 4,
       paidOrderCount: 0,
       experiment: { key: 'credit_event_20260930', variant: 'all_users' },
-      starterOffer: { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 10, totalCredits: 210 },
+      starterOffer: { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 0, totalCredits: 200 },
       lastPackage: null
     };
     var previewPending = { action: 'main_analysis', source: 'local_preview' };
@@ -1283,7 +1290,7 @@
       pending: previewPending,
       context: previewContext,
       plan: PLANS[0],
-      totalCredits: 210
+      totalCredits: 200
     };
     renderModal(previewContext);
     var modal = byId('gpCreditCheckoutModal');

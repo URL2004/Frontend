@@ -30,7 +30,9 @@ const CUSTOM_DIMENSIONS = [
   ['Analysis Mode', 'analysis_mode'],
   ['Humanize Mode', 'humanize_mode'],
   ['Checkout Type', 'checkout_type'],
-  ['Pricing Tab', 'pricing_tab']
+  ['Pricing Tab', 'pricing_tab'],
+  ['Is First Purchase', 'is_first_purchase'],
+  ['Pricing Policy Version', 'pricing_policy_version']
 ];
 
 function arg(name, fallback = '') {
