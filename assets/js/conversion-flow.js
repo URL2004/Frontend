@@ -6,18 +6,21 @@
   var MAX_PENDING_AGE = 2 * 60 * 60 * 1000;
   var CREDIT_EVENT_STARTS_AT_MS = Date.parse('2026-08-29T00:00:00+09:00');
   var CREDIT_EVENT_ENDS_AT_MS = Date.parse('2026-10-01T00:00:00+09:00');
-  var CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v2-202609';
+  var CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v3-202609';
   var SIGNUP_GRANT_CREDITS = 20;
   // 지급량 소스 오브 트루스는 Backend/lib/conversionOffers.js의 CREDIT_PRODUCTS다.
   // 여기·pricing.html·landing.html 표기가 어긋나면 claims-consistency 테스트가 깨진다.
   // 상품 보너스는 상시 지급하고, 2026-09-30 결제 요청분에는 기준 크레딧의 5%를 추가 지급한다.
   var PLANS = [
-    { amount: 2900, paidCredits: 100, packageBonusCredits: 0, eventBonusCredits: 5, credits: 105, label: '스타터' },
-    { amount: 8700, paidCredits: 300, packageBonusCredits: 30, eventBonusCredits: 15, credits: 345, label: '라이트' },
+    { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 10, credits: 210, label: '스타터' },
     { amount: 14500, paidCredits: 500, packageBonusCredits: 125, eventBonusCredits: 25, credits: 650, label: '스탠다드' },
     { amount: 29000, paidCredits: 1000, packageBonusCredits: 350, eventBonusCredits: 50, credits: 1400, label: '프로' },
     { amount: 58000, paidCredits: 2000, packageBonusCredits: 900, eventBonusCredits: 100, credits: 3000, label: '맥스' }
   ];
+  // 2026-09-03 요금제 개편: 2,900·8,700원은 새 결제를 받지 않는다(서버 카탈로그에는 환불·콜백 스냅샷용으로 남는다).
+  // 팀·기관(116,000원)은 문의 전용이라 결제 카탈로그(PLANS)에 넣지 않는다 — 결제창 상품 선택·서버 오퍼 병합·
+  // 재구매 안내에서 제외되고, 가격표 카드의 지급량 표기만 이벤트 기간에 맞춰 동기화한다(syncInquiryCard).
+  var INQUIRY_PLAN = { amount: 116000, paidCredits: 4000, packageBonusCredits: 2000, eventBonusCredits: 200, label: '팀·기관' };
   var contextCache = null;
   var contextUid = '';
   var modalState = null;
@@ -478,7 +481,7 @@
     var context = modalState.context || fallbackContext();
     var plan = modalState.plan;
     var totalCredits = modalState.totalCredits || plan.credits;
-    track(plan.amount === 2900 ? 'starter_offer_click' : 'credit_offer_click', {
+    track(plan.amount === PLANS[0].amount ? 'starter_offer_click' : 'credit_offer_click', {
       pending_action: pending.action,
       source: pending.source,
       segment: context.segment,
@@ -624,6 +627,101 @@
     return '총 ' + format(starter.credits) + '크레딧 · 개강 이벤트 ' + format(starter.eventBonusCredits) + '크레딧 포함';
   }
 
+  function catalogPlan(catalog, amount) {
+    return catalog.find(function (plan) { return plan.amount === number(amount); }) || null;
+  }
+
+  // 팀·기관 카드는 결제 카탈로그 밖이라 서버 오퍼가 오지 않는다. 이벤트 종료 판단만 공유해 지급량·환산값을 맞춘다.
+  function syncInquiryCard(eventActive) {
+    var card = byId('gpPlanInquiry');
+    if (!card) return;
+    var paid = number(card.dataset.planPaid) || INQUIRY_PLAN.paidCredits;
+    var packageBonus = number(card.dataset.planPackage) || INQUIRY_PLAN.packageBonusCredits;
+    var eventBonus = eventActive ? (number(card.dataset.planEvent) || INQUIRY_PLAN.eventBonusCredits) : 0;
+    var total = paid + packageBonus + eventBonus;
+    card.dataset.planCredits = String(total);
+    var totalValue = card.querySelector('[data-plan-total-value]');
+    if (totalValue) totalValue.textContent = '총 ' + format(total) + ' 크레딧';
+    var eventRow = card.querySelector('.feat-event');
+    if (eventRow) eventRow.hidden = eventBonus <= 0;
+    var efficiencyValue = card.querySelector('[data-plan-efficiency] strong');
+    if (efficiencyValue) efficiencyValue.textContent = '약 ' + format(Math.round(INQUIRY_PLAN.amount * 20 / total)) + '원';
+  }
+
+  function planCreditsFor(catalog, amount) {
+    var plan = catalogPlan(catalog, amount);
+    return plan ? plan.credits : 0;
+  }
+
+  function currentPlanGroup() {
+    var bulk = byId('gpPlanListBulk');
+    return bulk && !bulk.hidden ? 'bulk' : 'regular';
+  }
+
+  // 카드 아래 띠 배너: 지금 보이지 않는 묶음의 시작 가격과 지급량을 항상 노출한다(앵커 유지).
+  function renderPlanGroupStrip(strip, group) {
+    var other = group === 'bulk' ? 'regular' : 'bulk';
+    setText('gpPlanBulkStripTitle', group === 'bulk' ? strip.dataset.bulkTitle : strip.dataset.regularTitle);
+    setText('gpPlanBulkStripDesc', group === 'bulk' ? strip.dataset.bulkDesc : strip.dataset.regularDesc);
+    setText('gpPlanBulkStripCta', group === 'bulk' ? '← 보기' : '보기 →');
+    strip.setAttribute('onclick', "gpPlanGroup('" + other + "')");
+    strip.dataset.target = other;
+  }
+
+  function syncPlanGroupStrip(catalog) {
+    var strip = byId('gpPlanBulkStrip');
+    if (!strip) return;
+    var inquiryCard = byId('gpPlanInquiry');
+    var inquiryTotal = inquiryCard ? number(inquiryCard.dataset.planCredits) : 0;
+    strip.dataset.regularDesc = '맥스 ' + format(planCreditsFor(catalog, 58000)) + '크레딧 · 팀·기관 ' + format(inquiryTotal) + '크레딧(문의 전용)';
+    strip.dataset.bulkDesc = '스타터 ' + format(planCreditsFor(catalog, 5900)) + ' · 스탠다드 ' + format(planCreditsFor(catalog, 14500)) + ' · 프로 ' + format(planCreditsFor(catalog, 29000)) + '크레딧';
+    renderPlanGroupStrip(strip, currentPlanGroup());
+  }
+
+  function planGridInView(grid) {
+    var rect = grid.getBoundingClientRect();
+    var viewport = window.innerHeight || document.documentElement.clientHeight || 0;
+    return rect.top >= 0 && rect.top < viewport * 0.6;
+  }
+
+  // ── 요금제 그룹 탭(일반 3종 / 대용량 2종) ──────────────────────────────────
+  // 같은 자리에서 묶음을 바꾼다. 두 그리드 모두 display:grid !important라 hidden 속성만으로는 안 숨겨지므로
+  // redesign.css v120의 .gp-plan-grid[hidden] 가드가 함께 있어야 한다.
+  window.gpPlanGroup = function (group, options) {
+    options = options || {};
+    group = group === 'bulk' ? 'bulk' : 'regular';
+    var regular = byId('gpPlanList');
+    var bulk = byId('gpPlanListBulk');
+    if (!regular || !bulk) return;
+    regular.hidden = group !== 'regular';
+    bulk.hidden = group !== 'bulk';
+    Array.prototype.forEach.call(document.querySelectorAll('.gp-plan-tab[data-plan-group]'), function (tab) {
+      var active = tab.dataset.planGroup === group;
+      tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      tab.tabIndex = active ? 0 : -1;
+    });
+    var strip = byId('gpPlanBulkStrip');
+    if (strip) renderPlanGroupStrip(strip, group);
+    if (options.silent) return;
+    track('pricing_plan_group_view', { group: group });
+    var grid = group === 'bulk' ? bulk : regular;
+    // 띠 배너에서 바꿨을 때 카드 묶음이 화면 위로 지나가 있으면 묶음 시작으로 되돌린다.
+    if (options.scroll !== false && typeof grid.scrollIntoView === 'function' && !planGridInView(grid)) {
+      grid.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+  };
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    var tab = event.target && event.target.closest ? event.target.closest('.gp-plan-tab[data-plan-group]') : null;
+    if (!tab) return;
+    event.preventDefault();
+    var next = tab.dataset.planGroup === 'bulk' ? 'regular' : 'bulk';
+    window.gpPlanGroup(next, { scroll: false });
+    var nextTab = document.querySelector('.gp-plan-tab[data-plan-group="' + next + '"]');
+    if (nextTab) nextTab.focus();
+  });
+
   function applyPricingCards(context) {
     var catalog = planCatalog(context);
     var anyEvent = catalog.some(function (plan) { return plan.eventBonusCredits > 0; });
@@ -661,6 +759,8 @@
         button.setAttribute('aria-label', parts.join(', ') + ', 총 ' + format(plan.credits) + '크레딧을 ' + format(plan.amount) + '원에 충전하기');
       }
     });
+    syncInquiryCard(anyEvent);
+    syncPlanGroupStrip(catalog);
     return catalog;
   }
 
@@ -717,8 +817,9 @@
       if (desc) desc.textContent = starterBonusCopy(context) + ' · 짧은 글부터 부담 없이 이어갈 수 있어요.';
       if (button) button.textContent = '스타터 충전 보기';
       viewEvent = 'starter_offer_view';
-    } else if (context.segment === 'returning_low_balance' && context.lastPackage) {
-      var previous = catalog.find(function (plan) { return plan.amount === number(context.lastPackage.amount); });
+    } else if (context.segment === 'returning_low_balance' && context.lastPackage && catalogPlan(catalog, context.lastPackage.amount)) {
+      // 종료된 상품(2,900·8,700원)이 마지막 결제면 재구매 안내를 띄우지 않는다 — 현재 카탈로그에 있는 상품만.
+      var previous = catalogPlan(catalog, context.lastPackage.amount);
       panel.hidden = false;
       panel.dataset.action = 'repurchase';
       if (title) title.textContent = '지난번 상품으로 빠르게 다시 충전하세요';
@@ -783,8 +884,8 @@
       if (input) input.focus();
       return;
     }
-    if (panel.dataset.action === 'repurchase' && context.lastPackage) {
-      var previous = planCatalog(context).find(function (plan) { return plan.amount === number(context.lastPackage.amount); });
+    if (panel.dataset.action === 'repurchase' && context.lastPackage && catalogPlan(planCatalog(context), context.lastPackage.amount)) {
+      var previous = catalogPlan(planCatalog(context), context.lastPackage.amount);
       var currentCredits = previous ? previous.credits : context.lastPackage.credits;
       track('repurchase_offer_click', { segment: context.segment, value: context.lastPackage.amount, currency: 'KRW' });
       if (typeof window.payToss === 'function') {
@@ -865,14 +966,27 @@
         event: 'starter_offer'
       };
     }
-    if (context.segment === 'returning_low_balance' && context.lastPackage) {
-      var previous = planCatalog(context).find(function (plan) { return plan.amount === number(context.lastPackage.amount); });
+    var previous = context.segment === 'returning_low_balance' && context.lastPackage
+      ? catalogPlan(planCatalog(context), context.lastPackage.amount)
+      : null;
+    if (previous) {
       return {
         badge: '빠른 재충전',
         title: '잔액이 ' + format(balance) + '크레딧 남았어요',
         desc: '지난번 쓰신 ' + format(context.lastPackage.amount) + '원 · ' + format(previous ? previous.credits : context.lastPackage.credits) + '크레딧 상품으로 바로 충전할 수 있어요.',
         cta: '이전 상품 다시 충전',
         action: 'repurchase',
+        event: 'repurchase_offer'
+      };
+    }
+    if (context.segment === 'returning_low_balance') {
+      var starterPlan = planCatalog(context)[0];
+      return {
+        badge: '빠른 재충전',
+        title: '잔액이 ' + format(balance) + '크레딧 남았어요',
+        desc: '이전에 쓰던 상품은 새 요금제로 바뀌었어요. ' + format(starterPlan.amount) + '원 ' + starterPlan.label + '부터 다시 고를 수 있어요.',
+        cta: '충전 상품 보기',
+        action: 'checkout',
         event: 'repurchase_offer'
       };
     }
@@ -945,7 +1059,7 @@
       balance: balances[segment] == null ? 0 : balances[segment],
       paidOrderCount: segment.indexOf('returning') === 0 ? 3 : 0,
       experiment: { key: 'credit_event_20260930', variant: 'all_users' },
-      starterOffer: { amount: 2900, paidCredits: 100, packageBonusCredits: 0, eventBonusCredits: 5, totalCredits: 105 },
+      starterOffer: { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 10, totalCredits: 210 },
       lastPackage: segment === 'returning_low_balance' ? { amount: 14500, credits: 650 } : null
     };
   }
@@ -1003,9 +1117,11 @@
       return;
     }
     var context = await fetchContext(false);
-    if (state.action === 'repurchase' && context.lastPackage && typeof window.payToss === 'function') {
-      var previous = planCatalog(context).find(function (plan) { return plan.amount === number(context.lastPackage.amount); });
-      return window.payToss(context.lastPackage.amount, previous ? previous.credits : context.lastPackage.credits, '크레딧 충전', '', {
+    var previous = state.action === 'repurchase' && context.lastPackage
+      ? catalogPlan(planCatalog(context), context.lastPackage.amount)
+      : null;
+    if (previous && typeof window.payToss === 'function') {
+      return window.payToss(previous.amount, previous.credits, '크레딧 충전', '', {
         segment: context.segment,
         offerVariant: 'repurchase_previous',
         pendingAction: 'pricing_purchase',
@@ -1158,7 +1274,7 @@
       balance: 4,
       paidOrderCount: 0,
       experiment: { key: 'credit_event_20260930', variant: 'all_users' },
-      starterOffer: { amount: 2900, paidCredits: 100, packageBonusCredits: 0, eventBonusCredits: 5, totalCredits: 105 },
+      starterOffer: { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 10, totalCredits: 210 },
       lastPackage: null
     };
     var previewPending = { action: 'main_analysis', source: 'local_preview' };
@@ -1167,7 +1283,7 @@
       pending: previewPending,
       context: previewContext,
       plan: PLANS[0],
-      totalCredits: 105
+      totalCredits: 210
     };
     renderModal(previewContext);
     var modal = byId('gpCreditCheckoutModal');

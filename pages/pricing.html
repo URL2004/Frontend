@@ -16,7 +16,11 @@
    <header class="gp-pricing-section-head">
     <div class="gp-pricing-section-copy">
      <h2 id="pricingPlansTitle">충전 금액 선택</h2>
-     <p id="gpPlanListHint">결제 금액과 총 지급 크레딧을 한눈에 비교하세요. 작은 화면에서는 옆으로 밀어 확인해요.</p>
+     <p id="gpPlanListHint">일반 요금제 3종은 바로 충전, 대용량 요금제 2종은 학기 단위로 넉넉히 준비해요. 작은 화면에서는 옆으로 밀어 확인해요.</p>
+    </div>
+    <div class="gp-plan-tabs" role="tablist" aria-label="요금제 구분">
+     <button type="button" role="tab" id="gpPlanTabRegular" class="gp-plan-tab" aria-selected="true" aria-controls="gpPlanList" data-plan-group="regular" onclick="gpPlanGroup('regular')">일반 요금제 <small>5,900원부터</small></button>
+     <button type="button" role="tab" id="gpPlanTabBulk" class="gp-plan-tab" aria-selected="false" aria-controls="gpPlanListBulk" data-plan-group="bulk" onclick="gpPlanGroup('bulk')">대용량 요금제 <small>58,000원부터</small></button>
     </div>
    </header>
    <aside class="gp-pricing-event" aria-label="추가 크레딧 이벤트 안내">
@@ -30,39 +34,22 @@
    </div>
    <button id="gpPricingSegmentButton" type="button" onclick="gpPricingSegmentAction()">확인하기</button>
   </section>
-   <div class="plan-grid gp-plan-grid" id="gpPlanList" role="region" aria-label="크레딧 충전 상품 5개" aria-describedby="gpPlanListHint" tabindex="0">
-   <article class="plan-card" data-plan-amount="2900" data-plan-credits="105">
+   <div class="plan-grid gp-plan-grid" id="gpPlanList" role="tabpanel" aria-label="일반 요금제 상품 3개" aria-describedby="gpPlanListHint" data-plan-group="regular" tabindex="0">
+   <article class="plan-card" data-plan-amount="5900" data-plan-credits="210">
    <div class="plan-hd-row"><span class="plan-tag">스타터</span></div>
-   <div class="plan-price-main">2,900<span class="plan-won">원</span></div>
-    <div class="gp-plan-total" id="gpStarterTotal" data-plan-total-for="2900"><span>이번 결제 지급량</span><strong data-plan-total-value>총 105 크레딧</strong></div>
-    <p class="gp-plan-comparison"><span>분할 구매 비교</span><strong>기준 상품</strong></p>
-    <p class="gp-plan-efficiency" data-plan-efficiency><span>기본 1,000자 1회</span><strong>약 552원</strong></p>
+   <div class="plan-price-main">5,900<span class="plan-won">원</span></div>
+    <div class="gp-plan-total" id="gpStarterTotal" data-plan-total-for="5900"><span>이번 결제 지급량</span><strong data-plan-total-value>총 210 크레딧</strong></div>
+    <p class="gp-plan-comparison"><span>스타터 단가 대비</span><strong>기준 상품</strong></p>
+    <p class="gp-plan-efficiency" data-plan-efficiency><span>기본 1,000자 1회</span><strong>약 562원</strong></p>
     <details class="gp-plan-breakdown" open>
      <summary>지급 구성</summary>
      <ul class="plan-feats">
-      <li><span>기준 크레딧</span><strong>100</strong></li>
+      <li><span>기준 크레딧</span><strong>200</strong></li>
       <li class="feat-package"><span>상시 상품 보너스</span><strong>+0</strong></li>
-      <li class="feat-event"><span>개강 이벤트 <em>(+5%)</em></span><strong>+5</strong></li>
+      <li class="feat-event"><span>개강 이벤트 <em>(+5%)</em></span><strong>+10</strong></li>
      </ul>
     </details>
-    <button type="button" class="plan-btn" onclick="payToss(2900,105,'크레딧 충전','')" aria-label="기준 100크레딧, 9월 개강 이벤트 5크레딧, 총 105크레딧을 2,900원에 충전하기">충전하기</button>
-   </article>
-
-   <article class="plan-card" data-plan-amount="8700" data-plan-credits="345">
-   <div class="plan-hd-row"><span class="plan-tag">라이트</span></div>
-   <div class="plan-price-main">8,700<span class="plan-won">원</span></div>
-    <div class="gp-plan-total" data-plan-total-for="8700"><span>이번 결제 지급량</span><strong data-plan-total-value>총 345 크레딧</strong></div>
-    <p class="gp-plan-comparison"><span>스타터 3회 대비</span><strong>+30 크레딧</strong></p>
-    <p class="gp-plan-efficiency" data-plan-efficiency><span>기본 1,000자 1회</span><strong>약 504원</strong></p>
-    <details class="gp-plan-breakdown" open>
-     <summary>지급 구성</summary>
-     <ul class="plan-feats">
-      <li><span>기준 크레딧</span><strong>300</strong></li>
-      <li class="feat-package"><span>상시 상품 보너스</span><strong>+30</strong></li>
-      <li class="feat-event"><span>개강 이벤트 <em>(+5%)</em></span><strong>+15</strong></li>
-     </ul>
-    </details>
-    <button type="button" class="plan-btn" onclick="payToss(8700,345,'크레딧 충전','')" aria-label="기준 300크레딧, 상품 보너스 30크레딧, 9월 개강 이벤트 15크레딧, 총 345크레딧을 8,700원에 충전하기">충전하기</button>
+    <button type="button" class="plan-btn" onclick="payToss(5900,210,'크레딧 충전','')" aria-label="기준 200크레딧, 9월 개강 이벤트 10크레딧, 총 210크레딧을 5,900원에 충전하기">충전하기</button>
    </article>
 
    <article class="plan-card plan-popular" data-plan-amount="14500" data-plan-credits="650">
@@ -70,7 +57,7 @@
    <div class="plan-hd-row"><span class="plan-tag">스탠다드</span></div>
    <div class="plan-price-main">14,500<span class="plan-won">원</span></div>
     <div class="gp-plan-total" data-plan-total-for="14500"><span>이번 결제 지급량</span><strong data-plan-total-value>총 650 크레딧</strong></div>
-    <p class="gp-plan-comparison"><span>스타터 5회 대비</span><strong>+125 크레딧</strong></p>
+    <p class="gp-plan-comparison"><span>스타터 단가 대비</span><strong>+133 크레딧</strong></p>
     <p class="gp-plan-efficiency" data-plan-efficiency><span>기본 1,000자 1회</span><strong>약 446원</strong></p>
     <details class="gp-plan-breakdown" open>
      <summary>지급 구성</summary>
@@ -87,7 +74,7 @@
    <div class="plan-hd-row"><span class="plan-tag">프로</span></div>
    <div class="plan-price-main">29,000<span class="plan-won">원</span></div>
     <div class="gp-plan-total" data-plan-total-for="29000"><span>이번 결제 지급량</span><strong data-plan-total-value>총 1,400 크레딧</strong></div>
-    <p class="gp-plan-comparison"><span>스타터 10회 대비</span><strong>+350 크레딧</strong></p>
+    <p class="gp-plan-comparison"><span>스타터 단가 대비</span><strong>+367 크레딧</strong></p>
     <p class="gp-plan-efficiency" data-plan-efficiency><span>기본 1,000자 1회</span><strong>약 414원</strong></p>
     <details class="gp-plan-breakdown" open>
      <summary>지급 구성</summary>
@@ -99,13 +86,15 @@
     </details>
     <button type="button" class="plan-btn" onclick="payToss(29000,1400,'크레딧 충전','')" aria-label="기준 1,000크레딧, 상품 보너스 350크레딧, 9월 개강 이벤트 50크레딧, 총 1,400크레딧을 29,000원에 충전하기">충전하기</button>
    </article>
+  </div>
 
+   <div class="plan-grid gp-plan-grid gp-plan-grid-bulk" id="gpPlanListBulk" role="tabpanel" aria-label="대용량 요금제 상품 2개" aria-describedby="gpPlanListHint" data-plan-group="bulk" tabindex="0" hidden>
    <article class="plan-card plan-premium" data-plan-amount="58000" data-plan-credits="3000">
     <div class="plan-badge">최대 혜택</div>
    <div class="plan-hd-row"><span class="plan-tag">맥스</span></div>
    <div class="plan-price-main">58,000<span class="plan-won">원</span></div>
     <div class="gp-plan-total" data-plan-total-for="58000"><span>이번 결제 지급량</span><strong data-plan-total-value>총 3,000 크레딧</strong></div>
-    <p class="gp-plan-comparison"><span>스타터 20회 대비</span><strong>+900 크레딧</strong></p>
+    <p class="gp-plan-comparison"><span>스타터 단가 대비</span><strong>+934 크레딧</strong></p>
     <p class="gp-plan-efficiency" data-plan-efficiency><span>기본 1,000자 1회</span><strong>약 387원</strong></p>
     <details class="gp-plan-breakdown" open>
      <summary>지급 구성</summary>
@@ -117,8 +106,47 @@
     </details>
     <button type="button" class="plan-btn" onclick="payToss(58000,3000,'크레딧 충전','')" aria-label="기준 2,000크레딧, 상품 보너스 900크레딧, 9월 개강 이벤트 100크레딧, 총 3,000크레딧을 58,000원에 충전하기">충전하기</button>
    </article>
+
+   <article class="plan-card plan-inquiry" id="gpPlanInquiry" data-plan-inquiry-amount="116000" data-plan-paid="4000" data-plan-package="2000" data-plan-event="200">
+    <div class="plan-badge">문의 전용</div>
+   <div class="plan-hd-row"><span class="plan-tag">팀·기관</span></div>
+   <div class="plan-price-main">116,000<span class="plan-won">원</span></div>
+    <div class="gp-plan-total" data-plan-total-for="116000"><span>문의 후 결제 시 지급량</span><strong data-plan-total-value>총 6,200 크레딧</strong></div>
+    <p class="gp-plan-comparison"><span>스타터 단가 대비</span><strong>+2,068 크레딧</strong></p>
+    <p class="gp-plan-efficiency" data-plan-efficiency><span>기본 1,000자 1회</span><strong>약 374원</strong></p>
+    <details class="gp-plan-breakdown" open>
+     <summary>지급 구성</summary>
+     <ul class="plan-feats">
+      <li><span>기준 크레딧</span><strong>4,000</strong></li>
+      <li class="feat-package"><span>상시 상품 보너스</span><strong>+2,000</strong></li>
+      <li class="feat-event"><span>개강 이벤트 <em>(+5%)</em></span><strong>+200</strong></li>
+     </ul>
+    </details>
+    <p class="gp-plan-inquiry-note">학과·스터디·학원처럼 여러 명이 함께 쓰는 경우예요. 결제 방법은 문의 후 안내해 드려요.</p>
+    <a class="plan-btn plan-btn-inquiry" data-tab="qna" data-tab-call="gpPrefillQuestion" data-tab-arg="팀·기관 요금제 문의" href="/qna" aria-label="팀·기관 상품 문의하기">문의하기</a>
+   </article>
+
+   <aside class="gp-plan-bulk-info" aria-label="대용량 요금제 안내">
+    <strong>대용량 요금제는 이런 분께 맞아요</strong>
+    <ul>
+     <li>졸업 논문이나 기말 리포트를 여러 편 다듬어야 하는 학기</li>
+     <li>한 번 충전해 두고 학기 내내 잔액 걱정 없이 쓰고 싶은 분</li>
+     <li>학과·스터디·학원처럼 여러 사람이 함께 쓰는 팀</li>
+    </ul>
+    <dl class="gp-plan-bulk-calc" aria-label="대용량 상품 환산 분량">
+     <div><dt>맥스 3,000크레딧</dt><dd>기본 휴머나이징 15만 자 · 1만 자 리포트 15편</dd></div>
+     <div><dt>팀·기관 6,200크레딧</dt><dd>기본 휴머나이징 31만 자 · 1만 자 리포트 31편</dd></div>
+     <div><dt>AI 감지만 쓰면</dt><dd>100자당 1크레딧이라 위 분량의 2배</dd></div>
+    </dl>
+    <p>환산은 기본 휴머나이징 100자당 2크레딧 기준이에요. 대용량 상품도 지급된 크레딧은 유효기간이 없고, 남은 크레딧 환불은 일반 상품과 같은 기준을 따라요.</p>
+   </aside>
   </div>
   <p class="gp-plan-svc-note">‘기본 1,000자 1회’는 20크레딧 기준 환산값이며, 실제 차감은 글자 수·기능에 따라 달라져요.</p>
+  <p class="gp-plan-compare-note">‘스타터 단가 대비’는 같은 금액을 스타터 단가(기준 크레딧 1개당 29.5원)로 샀을 때보다 상시 지급량이 얼마나 많은지 보여줘요.</p>
+  <button type="button" class="gp-plan-bulk-strip" id="gpPlanBulkStrip" onclick="gpPlanGroup('bulk')" data-regular-title="대용량 요금제 · 58,000원부터" data-regular-desc="맥스 3,000크레딧 · 팀·기관 6,200크레딧(문의 전용)" data-bulk-title="일반 요금제 · 5,900원부터" data-bulk-desc="스타터 210 · 스탠다드 650 · 프로 1,400크레딧">
+   <span class="gp-plan-bulk-strip-copy"><strong id="gpPlanBulkStripTitle">대용량 요금제 · 58,000원부터</strong><span id="gpPlanBulkStripDesc">맥스 3,000크레딧 · 팀·기관 6,200크레딧(문의 전용)</span></span>
+   <span class="gp-plan-bulk-strip-cta" id="gpPlanBulkStripCta">보기 →</span>
+  </button>
   </section>
 
   <section class="gp-credit-rates" aria-labelledby="pricingCreditRatesTitle">

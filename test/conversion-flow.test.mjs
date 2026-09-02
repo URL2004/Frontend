@@ -85,9 +85,12 @@ test('가격표 카드는 가격→총 지급량→스타터 비교→기본 1,0
     read('assets/js/conversion-flow.js')
   ]);
   assert.equal((pricing.match(/data-plan-efficiency/gu) || []).length, 5, '카드마다 기준 금액 한 줄');
-  for (const value of [552, 504, 446, 414, 387]) assert.match(pricing, new RegExp(`기본 1,000자 1회<\\/span><strong>약 ${value}원`, 'u'));
-  assert.match(pricing, /스타터 5회 대비<\/span><strong>\+125 크레딧<\/strong>/u);
-  assert.match(pricing, /스타터 20회 대비<\/span><strong>\+900 크레딧<\/strong>/u);
+  for (const value of [562, 446, 414, 387, 374]) assert.match(pricing, new RegExp(`기본 1,000자 1회<\\/span><strong>약 ${value}원`, 'u'));
+  // 5,900원 시작 상품은 상위 상품의 정수배가 아니므로 '같은 금액을 스타터 단가로 샀을 때' 대비 상시 지급량 차이로 비교한다.
+  assert.match(pricing, /스타터 단가 대비<\/span><strong>기준 상품<\/strong>/u);
+  assert.match(pricing, /스타터 단가 대비<\/span><strong>\+133 크레딧<\/strong>/u);
+  assert.match(pricing, /스타터 단가 대비<\/span><strong>\+934 크레딧<\/strong>/u);
+  assert.match(pricing, /class="gp-plan-compare-note">[^<]*기준 크레딧 1개당 29\.5원/u);
   assert.equal((pricing.match(/data-plan-total-value/gu) || []).length, 5, '최종 지급량은 별도 값으로 강조');
   assert.doesNotMatch(pricing, /총 [\d,]+ 크레딧 · \d+% 추가/u, '총 지급량 옆에 추가 지급처럼 읽히는 비율을 붙이지 않는다');
   assert.equal((pricing.match(/class="feat-package"/gu) || []).length, 5, '상품 보너스 0도 같은 행으로 보여 카드 구조를 통일');
@@ -107,8 +110,13 @@ test('가격표 카드는 가격→총 지급량→스타터 비교→기본 1,0
   );
   assert.match(pricing, /id="gpPricingSegmentPanel"/u);
   assert.doesNotMatch(pricing, /plan-unitcost|gp-plan-audience|1크레딧당/u, '단가·추천 상황 문구 재유입');
-  assert.equal((pricing.match(/class="plan-btn"/gu) || []).length, 5, '결제 버튼 5개');
-  assert.equal((pricing.match(/aria-label="[^"]*기준 [^"]+총 [^"]+크레딧을 [^"]+원에 충전하기"/gu) || []).length, 5, '결제 버튼마다 기준·추가·총 지급량 맥락');
+  assert.equal((pricing.match(/class="plan-btn"/gu) || []).length, 4, '결제 버튼 4개(일반 3 + 맥스)');
+  assert.equal((pricing.match(/class="plan-btn plan-btn-inquiry"/gu) || []).length, 1, '팀·기관은 문의 버튼 1개');
+  assert.match(pricing, /<a class="plan-btn plan-btn-inquiry" data-tab="qna" data-tab-call="gpPrefillQuestion" data-tab-arg="팀·기관 요금제 문의" href="\/qna"/u, '문의 버튼은 고객센터(1:1 문의) 실링크 + 제목 사전입력');
+  const appMain = await read('assets/js/app-main.js');
+  assert.match(appMain, /window\.gpPrefillQuestion = gpPrefillQuestion;/u, '문의 사전입력 함수 노출');
+  assert.match(appMain, /팀·기관 요금제\(116,000원 · 6,200크레딧\) 문의드려요/u);
+  assert.equal((pricing.match(/aria-label="[^"]*기준 [^"]+총 [^"]+크레딧을 [^"]+원에 충전하기"/gu) || []).length, 4, '결제 버튼마다 기준·추가·총 지급량 맥락');
   assert.ok(pricing.indexOf('class="gp-coupon-panel"') > pricing.indexOf('id="gpPlanList"'), '쿠폰 입력은 가격 카드 다음 맨 아래');
   assert.doesNotMatch(pricing, /class="gp-top-actions"|class="pc-fx"|class="pc-tr/u, '중복 상단 버튼 또는 장식 트래커 재유입');
   assert.doesNotMatch(pricing, /class="plan-card[^"]*"[^>]+onclick=/u, '카드 전체 클릭 재유입');
@@ -126,7 +134,8 @@ test('기간 이벤트 종료·서버 비활성화 시 상시 상품 보너스�
   assert.match(flow, /eventDeclaredInactive[\s\S]*?context\.creditEvent\.active === false/u);
   assert.match(flow, /eventPanel\.hidden = !anyEvent/u);
   assert.match(flow, /window\.gpCreditOfferForAmount = async function/u);
-  assert.equal((pricing.match(/data-plan-amount="\d+"/gu) || []).length, 5, '서버 오퍼를 덮어쓸 상품 키 5개');
+  assert.equal((pricing.match(/data-plan-amount="\d+"/gu) || []).length, 4, '서버 오퍼를 덮어쓸 상품 키 4개(문의 전용 제외)');
+  assert.match(flow, /function syncInquiryCard\(eventActive\)/u, '문의 전용 카드도 이벤트 종료를 따라간다');
 
   assert.match(main, /await window\.gpCreditOfferForAmount\(amount, true\)/u);
   assert.match(main, /creditGrantPolicyVersion: grant \? CREDIT_GRANT_POLICY_VERSION/u);
@@ -162,7 +171,7 @@ test('직접 충전 확인창은 금액·지급 구성·환불 기준을 구조�
   assert.doesNotMatch(main, /title:\s*'구매를 진행할까요\?'/u);
 });
 
-test('요금 카드는 넓은 화면에서 다섯 상품을 한 줄에 펼치고 작은 화면에서도 같은 가로 순서를 유지한다', async () => {
+test('요금 카드는 넓은 화면에서 한 묶음(일반 3종)을 한 줄에 펼치고 작은 화면에서도 같은 가로 순서를 유지한다', async () => {
   const [pricing, css, boot, loader, appMain] = await Promise.all([
     read('pages/pricing.html'),
     read('assets/css/redesign.css'),
@@ -170,9 +179,14 @@ test('요금 카드는 넓은 화면에서 다섯 상품을 한 줄에 펼치고
     read('assets/js/page-loader.js'),
     read('assets/js/app-main.js')
   ]);
-  assert.match(pricing, /id="gpPlanList"[^>]+role="region"[^>]+aria-label="크레딧 충전 상품 5개"[^>]+tabindex="0"/u);
+  assert.match(pricing, /id="gpPlanList"[^>]+role="tabpanel"[^>]+aria-label="일반 요금제 상품 3개"[^>]+tabindex="0"/u);
+  assert.match(pricing, /id="gpPlanListBulk"[^>]+role="tabpanel"[^>]+aria-label="대용량 요금제 상품 2개"[^>]+tabindex="0" hidden>/u, '대용량 묶음은 탭으로 숨겨 시작');
+  assert.match(pricing, /role="tablist" aria-label="요금제 구분"[\s\S]{0,400}?id="gpPlanTabRegular"[^>]+aria-selected="true"[\s\S]{0,400}?id="gpPlanTabBulk"[^>]+aria-selected="false"/u);
+  assert.match(pricing, /id="gpPlanBulkStrip"[^>]+onclick="gpPlanGroup\('bulk'\)"[^>]+data-regular-title="대용량 요금제 · 58,000원부터"/u, '띠 배너가 반대쪽 묶음의 시작 가격을 노출');
+  assert.match(css, /\.gp-plan-grid\[hidden\]\{display:none !important;\}/u, 'display:grid !important가 [hidden]을 덮는 사고 방지 가드');
+  assert.match(pricing, /class="plan-card plan-popular"[\s\S]*?class="plan-card plan-premium"/u, '스탠다드가 일반 묶음, 맥스가 대용량 묶음');
   assert.doesNotMatch(pricing, /data-pricing-carousel-control|gpPlanPosition|aria-roledescription="캐러셀"/u, '별도 캐러셀 조작 UI 없음');
-  assert.match(css, /\.gp-plan-grid\{[\s\S]{0,180}?display:grid !important;[\s\S]{0,100}?grid-template-columns:repeat\(5,minmax\(0,1fr\)\) !important/u, '데스크톱 5열');
+  assert.match(css, /\.gp-plan-grid\{[\s\S]{0,180}?display:grid !important;[\s\S]{0,100}?grid-template-columns:repeat\(3,minmax\(0,1fr\)\) !important/u, '데스크톱 3열');
   assert.match(css, /@media\(max-width:1180px\)[\s\S]{0,520}?\.gp-plan-grid\{[\s\S]{0,180}?display:flex !important/u, '작은 화면은 같은 가로 순서로 스크롤');
   assert.match(css, /container-name:pricing-plans;[\s\S]{0,120}?container-type:inline-size;[\s\S]{0,1400}?@container pricing-plans \(max-width:999px\)[\s\S]{0,260}?\.gp-plan-grid\{[\s\S]{0,180}?display:flex !important/u, '사이드바로 본문이 좁은 PC도 카드 가독성 보호');
   assert.match(css, /flex:0 0 280px/u, '스크롤 카드의 읽기 가능한 최소 폭');

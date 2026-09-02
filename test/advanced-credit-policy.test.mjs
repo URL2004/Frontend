@@ -108,8 +108,10 @@ test('요금표·가이드·약관·연구노트·공지의 단계형 정책과 
     assert.ok(notice.includes(`• ${length}자: ${pair}크레딧`), `공지 대표값 누락: ${length}자 ${pair}`);
   }
 
-  const noticeStart = notice.indexOf('const NOTICE_BASE_ITEMS = [');
-  const firstNotice = notice.slice(noticeStart, notice.indexOf('\n },', noticeStart) + 4);
+  // 2026-09-03 요금제 개편 공지가 맨 앞에 오므로 고급 단계형 공지는 id로 찾는다.
+  const stepsStart = notice.indexOf("id: 'advanced-credit-steps-20260902'");
+  assert.ok(stepsStart > 0, '고급 단계형 정책 공지 부재');
+  const firstNotice = notice.slice(stepsStart, notice.indexOf('\n },', stepsStart) + 4);
   assert.match(firstNotice, /id: 'advanced-credit-steps-20260902'/u);
   assert.match(firstNotice, /title: '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요'/u);
   assert.doesNotMatch(firstNotice, /pinned: true/u);

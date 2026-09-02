@@ -88,8 +88,8 @@ def open_app(browser):
 
 
 def fill_draft(page, text=DRAFT):
-    # 잔액이 모자란 화면이 잡히면 가이드가 "충전하세요"를 가르치게 된다 — 스타터 충전 후 상태로 고정한다.
-    page.evaluate("() => { window.GP_HERO_PREVIEW = true; window.UC = 105; }")
+    # 잔액이 모자란 화면이 잡히면 가이드가 "충전하세요"를 가르치게 된다 — 스타터(5,900원·210크레딧) 충전 후 상태로 고정한다.
+    page.evaluate("() => { window.GP_HERO_PREVIEW = true; window.UC = 210; }")
     page.fill("#lavInput", text)
     page.dispatch_event("#lavInput", "input")
     page.wait_for_timeout(400)
@@ -175,7 +175,7 @@ with sync_playwright() as p:
       const t = document.getElementById('lavRepParaToggle'); if (t) t.hidden = true;
       set('lavRepParaCount', '문단 4개');
       const cost = document.getElementById('lavRepGoCost');
-      if (cost) { cost.hidden = false; cost.textContent = '이동 후 기본 휴머나이징 10크레딧 · 보유 105크레딧'; }
+      if (cost) { cost.hidden = false; cost.textContent = '이동 후 기본 휴머나이징 10크레딧 · 보유 210크레딧'; }
     }""",
         PARAGRAPHS,
     )

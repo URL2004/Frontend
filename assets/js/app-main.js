@@ -563,6 +563,22 @@ function openQnaComposer() {
  return true;
 }
 window.openQnaComposer = openQnaComposer;
+// 가격표 팀·기관 카드 → 1:1 문의 제목·본문 사전입력(2026-09 요금제 개편).
+// 위임 링크 핸들러가 data-tab-arg를 첫 인자로 넘긴다. 미로그인이면 openQnaComposer가 로그인 화면으로 보낸다.
+function gpPrefillQuestion(subject) {
+ if (typeof window.loadQuestions === 'function') window.loadQuestions();
+ if (!openQnaComposer()) return false;
+ const title = document.getElementById('qtitle');
+ const body = document.getElementById('qbody');
+ const text = String(subject || '').trim().slice(0, 120);
+ if (title && !title.value.trim() && text) title.value = text;
+ if (body && !body.value.trim()) {
+  body.value = '팀·기관 요금제(116,000원 · 6,200크레딧) 문의드려요.\n- 사용 인원:\n- 소속:\n- 희망 결제 방법:\n- 크레딧 받을 계정 이메일:';
+ }
+ if (title) title.focus({ preventScroll: true });
+ return true;
+}
+window.gpPrefillQuestion = gpPrefillQuestion;
 // 요금 탭을 열면 가로 슬라이드(작은 화면)의 시작 위치를 가성비 추천(스탠다드) 카드에 맞춘다(2026-09-02).
 // 카드 순서는 그대로 두고 첫 화면의 포커스만 옮긴다 — 넘침이 없는 PC 격자에서는 아무것도 하지 않는다.
 // scrollIntoView는 세로 스크롤까지 움직여 페이지가 튀므로 가로 위치만 직접 계산한다.
@@ -1845,7 +1861,7 @@ function maintenancePreviewQuery() {
 }
 
 const CREDIT_GRANT_POLICY_VERSION = 'credit-grant-base-v1';
-const CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v2-202609';
+const CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v3-202609';
 const CREDIT_EVENT_LOCAL_START_MS = Date.parse('2026-08-29T00:00:00+09:00');
 const CREDIT_EVENT_LOCAL_END_MS = Date.parse('2026-10-01T00:00:00+09:00');
 function localCreditEventProduct(paidCredits, packageBonusCredits, configuredEventBonusCredits) {
@@ -1862,8 +1878,7 @@ function localCreditEventProduct(paidCredits, packageBonusCredits, configuredEve
  };
 }
 const CREDIT_EVENT_PRODUCTS = {
- 2900: localCreditEventProduct(100, 0, 5),
- 8700: localCreditEventProduct(300, 30, 15),
+ 5900: localCreditEventProduct(200, 0, 10),
  14500: localCreditEventProduct(500, 125, 25),
  29000: localCreditEventProduct(1000, 350, 50),
  58000: localCreditEventProduct(2000, 900, 100)

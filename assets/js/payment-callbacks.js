@@ -133,6 +133,7 @@
           bonus_credits: Number(data.bonusCredits) || 0,
           package_bonus_credits: Number(data.packageBonusCredits) || 0,
           event_bonus_credits: Number(data.eventBonusCredits) || 0,
+          is_first_purchase: data.isFirstPurchase === true ? 1 : 0,
           pricing_policy_version: data.offerPolicyVersion || conversionMeta.pricing_policy_version || '',
           offer_variant: data.experimentVariant || conversionMeta.offer_variant || ''
         }));

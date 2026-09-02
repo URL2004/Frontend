@@ -42,7 +42,7 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
     source.indexOf('const NOTICE_RETIRED_TITLES')
   );
 
-  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 20);
+  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 21);
   for (const title of [
     '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요',
     '상시 상품 보너스와 9월 개강 이벤트를 안내해요',
@@ -87,7 +87,15 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
   assert.doesNotMatch(baseItems, /신규 계정에는 무료 25크레딧|기존 계정에도 (?:추가 )?20크레딧|기존 계정.{0,30}소급 지급(?:해요|합니다|돼요)/u);
   assert.doesNotMatch(baseItems, /크레딧 지급·환불 기준|환불 기준|사용량은 기준 크레딧부터 먼저 차감/u);
   assert.match(baseItems, /2026년 9월 30일 23시 59분\(한국 시간\)까지 결제 확인 요청이 서버에 접수된 주문/u);
-  assert.match(baseItems, /스타터: 100 \+ 0 \+ 5 = 총 105크레딧/u);
+  assert.match(baseItems, /스타터: 200 \+ 0 \+ 10 = 총 210크레딧/u);
+  assert.doesNotMatch(baseItems, /라이트: 300 \+ 30 \+ 15/u, '종료 상품이 지급 기준 공지에 남음');
+  assert.match(baseItems, /팀·기관\(문의 전용\): 4,000 \+ 2,000 \+ 200 = 총 6,200크레딧/u);
+  // 2026-09-03 요금제 개편 공지 — 시작 상품 5,900원/200크레딧, 종료 상품, 대용량 2종
+  assert.match(baseItems, /title: '요금제를 일반 3종과 대용량 2종으로 정리했어요'/u);
+  assert.match(baseItems, /시작 상품을 5,900원 200크레딧으로 바꿨어요/u);
+  assert.match(baseItems, /2,900원 스타터와 8,700원 라이트는 새 결제를 받지 않아요/u);
+  assert.match(baseItems, /이미 결제한 크레딧은 그대로 남아 있고 유효기간 없이 사용할 수 있어요/u);
+  assert.match(baseItems, /팀·기관: 116,000원 · 기준 4,000크레딧 \+ 상시 보너스 2,000크레딧 · 문의 후 결제 방법을 안내해요/u);
   assert.match(baseItems, /맥스: 2,000 \+ 900 \+ 100 = 총 3,000크레딧/u);
   assert.doesNotMatch(baseItems, /개인정보처리방침 변경 내용을 안내해요/u);
   assert.match(source, /NOTICE_RETIRED_TITLES[\s\S]*?'개인정보처리방침 변경 내용을 안내해요'/u);
@@ -107,7 +115,7 @@ test('공지 문구는 2026-09-02 양식 표준을 지킨다', async () => {
   );
   const titles = [...baseItems.matchAll(/title: '([^']+)'/gu)].map(match => match[1]);
 
-  assert.equal(titles.length, 20);
+  assert.equal(titles.length, 21);
   // 대괄호 접두어·이모지 없이 해요체 서술형 제목만 쓴다
   assert.doesNotMatch(baseItems, /title: '\[/u);
   assert.doesNotMatch(baseItems, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);

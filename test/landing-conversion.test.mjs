@@ -262,12 +262,13 @@ test('충전 사다리는 기준·상품 보너스·기간 이벤트 지급량�
     read('assets/js/conversion-flow.js'),
     read('pages/landing.html')
   ]);
-  assert.match(pricing, /payToss\(8700,345,/u);
-  assert.match(pricing, /총 345 크레딧/u);
-  assert.match(flow, /\{ amount: 8700, paidCredits: 300, packageBonusCredits: 30, eventBonusCredits: 15, credits: 345, label: '라이트' \}/u);
-  assert.match(landing, /8,700원<\/b><span>총 345크레딧/u);
+  assert.match(pricing, /payToss\(5900,210,/u);
+  assert.match(pricing, /총 210 크레딧/u);
+  assert.match(flow, /\{ amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 10, credits: 210, label: '스타터' \}/u);
+  assert.match(landing, /5,900원<\/b><span>총 210크레딧/u);
+  assert.doesNotMatch(`${pricing}\n${landing}\n${flow}`, /payToss\((?:2900|8700),|2,900원<\/b>|8,700원<\/b>|label: '라이트'/u, '종료 상품(2,900·8,700) 결제 진입 재유입');
   assert.ok(!pricing.includes('plan-discount'), '할인율 배지 재유입');
-  assert.match(pricing, /기본 1,000자 1회<\/span><strong>약 504원/u);
+  assert.match(pricing, /기본 1,000자 1회<\/span><strong>약 562원/u);
 });
 
 test('가격 카드는 상시 상품 보너스와 5% 기간 이벤트를 분리해 표시한다', async () => {
@@ -295,7 +296,7 @@ test('가격 카드는 상시 상품 보너스와 5% 기간 이벤트를 분리�
   // 남은 일수는 시간 나눗셈이 아니라 한국 시간 날짜 차이로 센다(9/30까지 = 8/31 기준 30일)
   assert.match(flow, /kstDayIndex\(endsAtMs - 1\) - kstDayIndex\(nowMs\)/u);
   assert.match(css, /\.gp-event-left\[hidden\]\{display:none!important;\}/u);
-  assert.deepEqual([...pricing.matchAll(/class="feat-package"[^>]*>[\s\S]*?<strong>\+(\d+)<\/strong>/gu)].map((m) => Number(m[1])), [0, 30, 125, 350, 900]);
+  assert.deepEqual([...pricing.matchAll(/class="feat-package"[^>]*>[\s\S]*?<strong>\+([\d,]+)<\/strong>/gu)].map((m) => Number(m[1].replace(/,/g, ''))), [0, 125, 350, 900, 2000]);
   // 보너스 두 행 강조는 실제 마크업 클래스에 걸려 있어야 한다(.feat-bonus만 잡으면 죽은 규칙이 된다)
   assert.match(css, /\.plan-feats li:is\(\.feat-bonus,\.feat-package,\.feat-event\) strong\{color:#4b4cc6;\}/u);
   // 버튼 위계: 스탠다드만 채운 보라로 남기고 나머지는 보조 버튼으로 낮춘다.
@@ -307,7 +308,7 @@ test('가격 카드는 상시 상품 보너스와 5% 기간 이벤트를 분리�
       > css.indexOf('#pricingContent .plan-card:hover .plan-btn'),
     '보조 버튼 규칙이 공통 호버 규칙보다 앞서면 특정도 동점으로 덮인다'
   );
-  for (const amount of [2900, 8700, 14500, 29000, 58000]) {
+  for (const amount of [5900, 14500, 29000, 58000, 116000]) {
     assert.match(pricing, new RegExp(`data-plan-total-for="${amount}"`, 'u'), `${amount} 총 크레딧 훅 부재`);
   }
   for (const surface of [pricing, landing, flow, modals]) {

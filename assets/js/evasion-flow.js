@@ -65,7 +65,7 @@
   // 도달해야 금액을 처음 봤고, 그 지점에서 잔액이 모자라면 4단계를 투자한 뒤 막혔다.
   // 단가는 위 shortHumanizeCredit(기본 휴머나이징)·감지 100자당 1크레딧과 같은 소스를 쓴다.
   var DETECT_MIN_CHARS = 100;
-  var CREDIT_WON = 2900 / 105;   // 현재 스타터 총 지급량 기준 예상 결제금액
+  var CREDIT_WON = 5900 / 210;   // 현재 스타터(5,900원) 총 지급량 기준 예상 결제금액
   function detectCredit(len) {
     return Math.ceil((Number(len) || 0) / 100);
   }

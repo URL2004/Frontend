@@ -77,7 +77,8 @@ test('사용 가이드는 현재 작업 흐름·기능·단가와 직접 행동�
   assert.match(guide, /100자당 1크레딧/u);
   assert.match(guide, /최소 10 · 100자당 2/u);
   assert.match(guide, /5크레딧 단위 · 100~600크레딧/u);
-  assert.match(guide, /스타터는 기준 100크레딧에 이벤트 5크레딧을 더해 총 105크레딧/u);
+  assert.match(guide, /스타터는 5,900원에 기준 200크레딧과 이벤트 10크레딧을 더해 총 210크레딧/u);
+  assert.match(guide, /일반 요금제 3종\(스타터·스탠다드·프로\)과 대용량 요금제 2종\(맥스·팀·기관\)/u);
   assert.match(guide, /외부 탐지기 결과는 보장하지 않아요/u);
   assert.match(guide, /작업 기록/u);
   // 옛 자산(step1~4.png)과 깨진 자리표시자 스타일은 다시 들이지 않는다 — 2026-08-29 감사에서 걷어낸 것들.
@@ -156,14 +157,20 @@ test('가격·크레딧 수치는 단일 원천(conversion-flow PLANS)과 pricin
   const plansBlock = flow.slice(flow.indexOf('var PLANS = ['), flow.indexOf('];', flow.indexOf('var PLANS = [')));
   const plans = [...plansBlock.matchAll(/amount:\s*(\d+),\s*paidCredits:\s*(\d+),\s*packageBonusCredits:\s*(\d+),\s*eventBonusCredits:\s*(\d+),\s*credits:\s*(\d+)/gu)]
     .map((m) => ({ amount: Number(m[1]), paidCredits: Number(m[2]), packageBonusCredits: Number(m[3]), eventBonusCredits: Number(m[4]), credits: Number(m[5]) }));
-  assert.equal(plans.length, 5, 'PLANS 5종이어야 함');
+  // 2026-09-03 개편: 결제 카탈로그는 일반 3종 + 맥스. 팀·기관(116,000)은 문의 전용이라 PLANS 밖(INQUIRY_PLAN)에 둔다.
+  assert.equal(plans.length, 4, 'PLANS 4종이어야 함');
   assert.deepEqual(plans, [
-    { amount: 2900, paidCredits: 100, packageBonusCredits: 0, eventBonusCredits: 5, credits: 105 },
-    { amount: 8700, paidCredits: 300, packageBonusCredits: 30, eventBonusCredits: 15, credits: 345 },
+    { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 10, credits: 210 },
     { amount: 14500, paidCredits: 500, packageBonusCredits: 125, eventBonusCredits: 25, credits: 650 },
     { amount: 29000, paidCredits: 1000, packageBonusCredits: 350, eventBonusCredits: 50, credits: 1400 },
     { amount: 58000, paidCredits: 2000, packageBonusCredits: 900, eventBonusCredits: 100, credits: 3000 }
   ]);
+  assert.match(flow, /var INQUIRY_PLAN = \{ amount: 116000, paidCredits: 4000, packageBonusCredits: 2000, eventBonusCredits: 200, label: '팀·기관' \}/u);
+  assert.doesNotMatch(flow, /amount: (?:2900|8700),/u, '종료 상품(2,900·8,700)이 결제 카탈로그에 재유입');
+  assert.doesNotMatch(pricing, /payToss\((?:2900|8700|116000),/u, '종료 상품 또는 문의 전용 상품에 결제 버튼');
+  assert.match(pricing, /id="gpPlanInquiry"[^>]+data-plan-inquiry-amount="116000"[^>]+data-plan-paid="4000"[^>]+data-plan-package="2000"[^>]+data-plan-event="200"/u);
+  assert.match(pricing, /총 6,200 크레딧/u);
+  assert.match(landing, /116,000원<\/b><span>총 6,200크레딧/u);
   for (const { amount, paidCredits, packageBonusCredits, eventBonusCredits, credits } of plans) {
     assert.equal(paidCredits + packageBonusCredits + eventBonusCredits, credits, `${amount} 지급량 합계 불일치`);
     assert.ok(pricing.includes(`payToss(${amount},${credits}`), `pricing.html payToss(${amount},${credits}) 부재`);
