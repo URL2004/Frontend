@@ -1,0 +1,304 @@
+{
+ "ok": true,
+ "free": false,
+ "charged": 6,
+ "historySaved": true,
+ "probability": 72,
+ "probSource": "llm",
+ "riskLevel": "high",
+ "reportView": {
+  "version": "evidence-v2",
+  "status": "ready",
+  "alignment": {
+   "status": "aligned",
+   "label": "점수·교수님 레이더·설명을 같은 기준으로 정렬했어요.",
+   "scoreBand": "high",
+   "evidenceStatus": "mixed"
+  },
+  "styleSignal": {
+   "status": "ready",
+   "score": 72,
+   "band": "high",
+   "bandLabel": "높음",
+   "label": "AI식 문체 신호 · 높음",
+   "source": "llm",
+   "sourceLabel": "AI 모델 분석",
+   "calibrated": false
+  },
+  "professorRadar": {
+   "status": "ready",
+   "score": 72,
+   "band": "hard",
+   "range": "50~100",
+   "label": "지금은 피하기 어려운 편",
+   "headline": "교수님 레이더 · 지금은 피하기 어려운 편",
+   "disclaimer": "현재 점수에 맞춘 서비스 내 해석이며, 실제 교수님의 판단·과제 평가나 외부 AI 감지 도구의 통과를 보장하지 않아요."
+  },
+  "contentEvidence": {
+   "status": "mixed",
+   "label": "구체 근거 일부",
+   "lived": 1,
+   "specific": 0,
+   "generic": 3,
+   "total": 8,
+   "groundedRatio": 0.125
+  },
+  "synthesis": {
+   "headline": "문장 패턴은 정형적이고, 구체적인 근거는 일부만 확인됐어요.",
+   "description": "프로젝트 경험은 유지하고, 반복되는 종결과 일반적인 결론 문장을 먼저 다듬어 보세요.",
+   "limitation": "문체 패턴을 바탕으로 한 참고 결과이며 작성 주체나 외부 검사 결과를 확정하지 않아요."
+  },
+  "measuredEvidence": {
+   "maxEndingRun": 5,
+   "avgLength": 57,
+   "lengthCV": 0.188,
+   "paragraphCountCV": 0,
+   "genericCount": 3,
+   "genericTotal": 8,
+   "livedCount": 1,
+   "livedTotal": 8,
+   "specificCount": 0,
+   "specificTotal": 8,
+   "realAnchorCount": 0,
+   "realAnchorTotal": 8,
+   "genericRatio": 0.375,
+   "realAnchorRatio": 0,
+   "stanceRatio": 0.125,
+   "sentenceTotal": 8,
+   "sampleSize": "ok",
+   "axisPolicy": {
+    "version": "axis-policy-v1",
+    "profile": "report_assignment",
+    "profileLabel": "보고서·과제",
+    "confidence": 0.95,
+    "lowConfidence": false,
+    "sentenceTotal": 8,
+    "mode": "axes",
+    "note": null,
+    "axes": {
+     "uniform": {
+      "status": "on",
+      "reason": null
+     },
+     "ending": {
+      "status": "on",
+      "reason": null
+     },
+     "generic": {
+      "status": "on",
+      "reason": null
+     },
+     "anchor": {
+      "status": "on",
+      "metric": "anchor",
+      "target": 0.1,
+      "reason": null
+     },
+     "stance": {
+      "status": "off",
+      "metric": "stance",
+      "target": null,
+      "reason": "보고서·과제에는 화자 입장이 꼭 필요하지 않아 이 축은 보지 않아요"
+     }
+    }
+   }
+  },
+  "preservation": {
+   "label": "유지할 근거",
+   "items": [
+    {
+     "key": "lived",
+     "label": "실제 경험 문장",
+     "count": 1,
+     "status": "preserve"
+    },
+    {
+     "key": "specific",
+     "label": "구체 사실 문장",
+     "count": 0,
+     "status": "preserve"
+    },
+    {
+     "key": "grounding",
+     "label": "원문 밖 새 사실",
+     "value": "생성하지 않음",
+     "status": "guarded"
+    }
+   ]
+  },
+  "conversion": {
+   "eligible": true,
+   "action": "review_recommendation"
+  }
+ },
+ "sentenceMap": {
+  "total": 8,
+  "shown": 8,
+  "capped": false,
+  "maxEndingRun": 5,
+  "sentences": [
+   {
+    "index": 0,
+    "paragraph": 0,
+    "length": 68,
+    "kind": "plain",
+    "ending": "했습니다",
+    "endingRun": 5,
+    "runStart": true,
+    "text": "기업 연계형 프로젝트에서 보고서 양식이 갑작스럽게 변경된 상황에서 AI를 활용해 제한된 시간 안에 보고서를 재구성했습니다."
+   },
+   {
+    "index": 1,
+    "paragraph": 0,
+    "length": 69,
+    "kind": "plain",
+    "ending": "했습니다",
+    "endingRun": 5,
+    "runStart": false,
+    "text": "기존 보고서의 내용과 실험자료를 버리고 새로 작성하기보다, 유지해야 할 내용과 새 양식에서 추가된 항목을 먼저 구분했습니다."
+   },
+   {
+    "index": 2,
+    "paragraph": 0,
+    "length": 81,
+    "kind": "generic",
+    "ending": "했습니다",
+    "endingRun": 5,
+    "runStart": false,
+    "text": "이후 프로젝트를 진행하며 축적한 실험 결과와 소재별 특성, 제품의 장점 등을 AI에게 제공하고 기존 내용과 새 요구사항을 연결하도록 요청했습니다."
+   },
+   {
+    "index": 3,
+    "paragraph": 0,
+    "length": 97,
+    "kind": "lived",
+    "ending": "했습니다",
+    "endingRun": 5,
+    "runStart": false,
+    "text": "저는 AI가 만든 결과를 그대로 사용하지 않고 실제 수행 내용과 일치하는지, 기술적으로 부정확한 부분은 없는지, 제품의 장점이 과장되지 않았는지를 직접 검토하고 수정했습니다."
+   },
+   {
+    "index": 4,
+    "paragraph": 0,
+    "length": 66,
+    "kind": "generic",
+    "ending": "했습니다",
+    "endingRun": 5,
+    "runStart": false,
+    "text": "또한 처음 접하는 용어나 소재 특성이 등장하면 AI를 활용해 관련 내용을 확인한 뒤 필요한 정보만 선별해 반영했습니다."
+   },
+   {
+    "index": 5,
+    "paragraph": 0,
+    "length": 55,
+    "kind": "plain",
+    "ending": "었습니다",
+    "endingRun": 0,
+    "runStart": false,
+    "text": "그 결과 기존 프로젝트의 핵심 내용을 유지하면서 변경된 양식에 맞는 보고서를 완성할 수 있었습니다."
+   },
+   {
+    "index": 6,
+    "paragraph": 0,
+    "length": 92,
+    "kind": "generic",
+    "ending": "웠습니다",
+    "endingRun": 0,
+    "runStart": false,
+    "text": "이 경험을 통해 AI의 활용 가치는 답을 대신 생성하는 데 있는 것이 아니라, 목적과 기준을 먼저 정하고 결과를 검증, 조정하는 과정에서 높아진다는 것을 배웠습니다."
+   },
+   {
+    "index": 7,
+    "paragraph": 0,
+    "length": 63,
+    "kind": "plain",
+    "ending": "겠습니다",
+    "endingRun": 0,
+    "runStart": false,
+    "text": "입사 후에도 AI와 데이터 기반 도구를 업무 목적에 맞게 활용하되, 결과에 대한 판단과 책임은 스스로 지겠습니다."
+   }
+  ],
+  "paragraphs": [
+   {
+    "index": 0,
+    "kind": "concrete",
+    "head": "기업 연계형 프로젝트에서 보고서 양식이 갑작스럽게 변경된 상황에서 AI를",
+    "sentences": 8,
+    "lived": 1,
+    "specific": 0,
+    "generic": 3,
+    "avgLength": 73.9,
+    "maxEndingRun": 5,
+    "excerpt": 8
+   }
+  ]
+ },
+ "grade": "A",
+ "abstractRiskRatio": 0,
+ "advancedEligible": true,
+ "recommendedMode": "blog",
+ "documentProfile": "report_assignment",
+ "profileConfidence": 0.95,
+ "paragraphs": [
+  {
+   "idx": 0,
+   "kind": "concrete",
+   "snippet": "기업 연계형 프로젝트에서 보고서 양식이 갑작스럽게 변경된 상황에서 AI를 활용해 제한된 시간 안에 보고서를 재구성했습니다. 기존 보고서의 내용과 실험자료를 버리고 새로 작성하기보다, 유지해야 할 내용과 새 양식에서 추가된 항목을 먼저 구분했습니다. 이",
+   "text": "기업 연계형 프로젝트에서 보고서 양식이 갑작스럽게 변경된 상황에서 AI를 활용해 제한된 시간 안에 보고서를 재구성했습니다. 기존 보고서의 내용과 실험자료를 버리고 새로 작성하기보다, 유지해야 할 내용과 새 양식에서 추가된 항목을 먼저 구분했습니다. 이후 프로젝트를 진행하며 축적한 실험 결과와 소재별 특성, 제품의 장점 등을 AI에게 제공하고 기존 내용과 새 요구사항을 연결하도록 요청했습니다. 저는 AI가 만든 결과를 그대로 사용하지 않고 실제 수행 내용과 일치하는지, 기술적으로 부정확한 부분은 없는지, 제품의 장점이 과장되지 않았는지를 직접 검토하고 수정했습니다. 또한 처음 접하는 용어나 소재 특성이 등장하면 AI를 활용해 관련 내용을 확인한 뒤 필요한 정보만 선별해 반영했습니다. 그 결과 기존 프로젝트의 핵심 내용을 유지하면서 변경된 양식에 맞는 보고서를 완성할 수 있었습니다. 이 경험을 통해 AI의 활용 가치는 답을 대신 생성하는 데 있는 것이 아니라, 목적과 기준을 먼저 정하고 결과를 검증, 조정하는 과정에서 높아진다는 것을 배웠습니다. 입사 후에도 AI와 데이터 기반 도구를 업무 목적에 맞게 활용하되, 결과에 대한 판단과 책임은 스스로 지겠습니다."
+  }
+ ],
+ "counts": {
+  "total": 1,
+  "risk": 0,
+  "thin": 0,
+  "safe": 1
+ },
+ "example": {
+  "before": "이 경험을 통해 AI의 활용 가치는 답을 대신 생성하는 데 있는 것이 아니라, 목적과 기준을 먼저 정하고 결과를 검증, 조정하는 과정에서 높아진다는 것을 배웠습니다.",
+  "after": "검증하고 조정할 때 비로소 쓸모가",
+  "afterParts": [
+   {
+    "text": "쓅 톖푺킦특 얣쎍 따뺑, xx럑 롊꽌 썑맚 콺졍챷 뉑젒 흳댴뙅 헞큿끼 궆봸꾋 놝뾏쁢 뮲퇃 듣릝 랱퇨 퐩퀘 반쐉앣 ",
+    "visible": false
+   },
+   {
+    "text": "검증하고 조정할 때 비로소 쓸모가",
+    "visible": true
+   },
+   {
+    "text": " 핁네떟떇 뤸픟덨략쐛.",
+    "visible": false
+   }
+  ],
+  "afterHidden": 75,
+  "afterLength": 93,
+  "afterAnchor": "changed",
+  "beforeFocus": {
+   "start": 63,
+   "end": 92
+  },
+  "gated": true,
+  "afterFocus": {
+   "start": 63,
+   "end": 81
+  },
+  "changeKind": "replacement",
+  "meaningfulChange": true
+ },
+ "exampleStatus": "ready",
+ "solutions": {
+  "polish": {
+   "band": "",
+   "credits": 10
+  },
+  "blog": {
+   "band": "",
+   "credits": 20
+  },
+  "restructure": {
+   "band": "",
+   "credits": 200,
+   "creditsEvidence": 300
+  }
+ }
+}
