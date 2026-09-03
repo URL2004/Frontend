@@ -11391,8 +11391,10 @@ body.gp-admin-ledger-detail-open{overflow:hidden;}
    값 칸은 내용 폭(auto)으로 두고 한 줄로 유지, 글자는 카드와 같은 단계(14.5/16)로. 모바일에서만 두 줄 허용. */
 #mainContent[data-main-design="lavender"] .gp-guide-credit-table{border:1px solid #e1e4ed;border-radius:16px;background:#fff;}
 #mainContent[data-main-design="lavender"] .gp-guide-credit-table>div{
- grid-template-columns:minmax(0,1fr) auto;
- gap:24px;
+ /* 작업명 칸에 40% 바닥을 준다 — 값이 길어도(가이드는 표가 2단 레이아웃의 ~300px 칸에 들어간다)
+    작업명이 한 글자씩 세로로 쪼개지지 않는다. 넓은 화면에서는 1fr이 남는 폭을 다 가져간다. */
+ grid-template-columns:minmax(40%,1fr) auto;
+ gap:20px;
  padding:15px 20px;
  align-items:center;
 }
@@ -11413,7 +11415,8 @@ body.gp-admin-ledger-detail-open{overflow:hidden;}
  font-size:16px;
  font-weight:800;
  line-height:1.35;
- white-space:nowrap;
+ /* nowrap 금지 — 좁은 칸에서는 값이 두 줄로 접히는 편이 작업명을 짓누르는 것보다 낫다. */
+ word-break:keep-all;
  text-align:right;
 }
 #mainContent[data-main-design="lavender"] #pricingContent .gp-credit-rates > p{font-size:14.5px;}
@@ -11421,7 +11424,6 @@ body.gp-admin-ledger-detail-open{overflow:hidden;}
 @media(max-width:560px){
  #mainContent[data-main-design="lavender"] .gp-guide-credit-table>div,
  #mainContent[data-main-design="lavender"] #pricingContent .gp-guide-credit-table>div{
-  grid-template-columns:minmax(0,1fr) minmax(0,54%);
   gap:12px;
   padding:13px 14px;
  }
@@ -11429,9 +11431,7 @@ body.gp-admin-ledger-detail-open{overflow:hidden;}
  #mainContent[data-main-design="lavender"] #pricingContent .gp-guide-credit-table>div:not(:first-child){font-size:13.5px;}
  #mainContent[data-main-design="lavender"] .gp-guide-credit-table strong{
   font-size:14.5px;
-  white-space:normal;
   text-wrap:balance;
-  word-break:keep-all;
  }
 }
 
@@ -11493,6 +11493,16 @@ body.gp-admin-ledger-detail-open{overflow:hidden;}
  .gp-lav-new{min-height:44px;}
  .gp-lav-menu :is(button,a){min-height:42px;}
  .gp-lav-side-bottom .gp-sidebar-login{min-height:40px;}
+}
+
+/* ───────── lavender v124: 가이드 크레딧 표 폭 (2026-09-03) ─────────
+   가이드에서 이 표는 설명 글과 2단으로 서는데 그 칸이 270~375px밖에 안 돼 값이 3~4줄로 접힌다.
+   1080px 아래에서는 한 단으로 세워 표가 본문 폭을 쓰게 하고, 그 위에서는 표 칸을 설명 글과 같은 비율로 넓힌다. */
+@media(max-width:1080px){
+ #mainContent[data-main-design="lavender"] .gp-guide-credit-layout{grid-template-columns:1fr;gap:22px;}
+}
+@media(min-width:1081px){
+ #mainContent[data-main-design="lavender"] .gp-guide-credit-layout{grid-template-columns:minmax(340px,1fr) minmax(0,1fr);}
 }
 
 /* ===== lavender v116: AI 감지 보고서 · 실험실 리포트 (seed 26e340ec) =====
