@@ -1753,8 +1753,16 @@
     return Number.isFinite(n) ? n : null;
   }
 
+  // 서버 축 정책(measuredEvidence.axisPolicy, 2026-09-03): 글 종류·문장 수에 따라
+  //   on = 종류별 기준으로 판정 · soft = 참고만('높음' 없음) · off = 이 글 종류엔 해당 없음 · sparse = 문장이 적어 안 잼.
+  //   정책이 없는 옛 보고서(캐시된 결과)는 예전 고정 기준(30%)으로 그린다.
+  function repAxisPolicy(model) {
+    var m = model.measured || {};
+    return (m.axisPolicy && m.axisPolicy.axes) || {};
+  }
   function repRadarAxes(model) {
     var m = model.measured || {};
+    var policy = repAxisPolicy(model);
     var totalRaw = repMeasured(m.genericTotal);
     if (totalRaw == null) totalRaw = repMeasured(model.content.total);
     var generic = repMeasured(m.genericCount);
@@ -1765,25 +1773,39 @@
     var run = repMeasured(m.maxEndingRun);
     var anchor = repMeasured(m.realAnchorRatio);
     var stance = repMeasured(m.stanceRatio);
-    var axis = function (name, raw, compute) {
-      return raw == null
-        ? { name: name, value: 0, unknown: true }
-        : { name: name, value: repClamp01(compute(raw)), unknown: false };
+    var anchorPolicy = policy.anchor || {};
+    var stancePolicy = policy.stance || {};
+    // 자소서·에세이는 숫자·고유명사 대신 '실제 경험 문장' 비율이 구체성이다.
+    var anchorLived = anchorPolicy.metric === 'lived';
+    var livedRatio = (model.content.lived != null && totalRaw != null && totalRaw > 0) ? model.content.lived / totalRaw : null;
+    var anchorRaw = anchorLived ? livedRatio : anchor;
+    var anchorTarget = Number(anchorPolicy.target) > 0 ? Number(anchorPolicy.target) : 0.3;
+    var stanceTarget = Number(stancePolicy.target) > 0 ? Number(stancePolicy.target) : 0.3;
+    var axis = function (name, raw, compute, pol) {
+      pol = pol || {};
+      if (pol.status === 'off' || pol.status === 'sparse') {
+        return { name: name, value: 0, unknown: true, status: pol.status, reason: pol.reason || '' };
+      }
+      if (raw == null) return { name: name, value: 0, unknown: true };
+      var value = repClamp01(compute(raw));
+      if (pol.status === 'soft') return { name: name, value: Math.min(value, 0.66), unknown: false, soft: true, reason: pol.reason || '' };
+      return { name: name, value: value, unknown: false };
     };
     var genericRatio = (totalRaw != null && totalRaw > 0 && generic != null) ? generic / totalRaw : null;
     return [
-      axis('문장 길이 균일', cv, function (v) { return 1 - v / 0.4; }),
-      axis('같은 종결 반복', run, function (v) { return v / 6; }),
-      axis('일반 표현 비율', genericRatio, function (v) { return v; }),
-      axis('구체 앵커 부족', anchor, function (v) { return 1 - v / 0.3; }),
-      axis('화자 입장 부족', stance, function (v) { return 1 - v / 0.3; })
+      axis('문장 길이 균일', cv, function (v) { return 1 - v / 0.4; }, policy.uniform),
+      axis('같은 종결 반복', run, function (v) { return v / 6; }, policy.ending),
+      axis('일반 표현 비율', genericRatio, function (v) { return v; }, policy.generic),
+      axis(anchorLived ? '경험 문장 부족' : '구체 앵커 부족', anchorRaw, function (v) { return 1 - v / anchorTarget; }, anchorPolicy),
+      axis('화자 입장 부족', stance, function (v) { return 1 - v / stanceTarget; }, stancePolicy)
     ];
   }
 
   function repRadarLevel(axis) {
-    if (axis && axis.unknown) return '측정 없음';
+    if (axis && axis.unknown) return axis.status === 'off' ? '해당 없음' : '측정 안 함';
     var value = typeof axis === 'object' ? axis.value : axis;
-    return value >= 0.67 ? '높음' : (value >= 0.34 ? '보통' : '낮음');
+    var label = value >= 0.67 ? '높음' : (value >= 0.34 ? '보통' : '낮음');
+    return axis && axis.soft ? label + ' · 참고' : label;
   }
 
   var REP_AXIS_KEYS = ['uniform', 'ending', 'generic', 'anchor', 'stance'];
@@ -1796,15 +1818,41 @@
     if (key === 'uniform') return Number.isFinite(Number(m.lengthCV)) ? '길이 편차 ' + (Number(m.lengthCV) * 100).toFixed(1) + '%' : '';
     if (key === 'ending') return m.maxEndingRun ? '같은 종결 ' + m.maxEndingRun + '문장 연속' : '';
     if (key === 'generic') return (c.generic != null && total) ? '일반 표현 ' + c.generic + '/' + total + '문장' : '';
-    if (key === 'anchor') return m.realAnchorCount != null ? '숫자·연도·고유명사 문장 ' + m.realAnchorCount + '개' : '';
+    if (key === 'anchor') {
+      var anchorPol = repAxisPolicy(model).anchor || {};
+      if (anchorPol.metric === 'lived') return c.lived != null ? '실제 경험 문장 ' + c.lived + '개' : '';
+      return m.realAnchorCount != null ? '숫자·연도·고유명사 문장 ' + m.realAnchorCount + '개' : '';
+    }
     if (key === 'stance') return (Number.isFinite(Number(m.stanceRatio)) && total) ? '화자 입장 문장 ' + Math.round(Number(m.stanceRatio) * total) + '개' : '';
     return '';
   }
   function repPaintRadar(model) {
     var host = $('gpRepRadar');
     if (!host) return;
-    var axes = repRadarAxes(model);
+    var policyRoot = (model.measured || {}).axisPolicy || null;
+    var hint = $('gpRepRadarHint');
     host.textContent = '';
+    var alt = $('gpRepRadarAccessible');
+    // 두세 문장짜리 글: 통계 축을 잰 척하지 않고 한 줄로 닫는다(점수·문장별 태그는 그대로).
+    if (policyRoot && policyRoot.mode === 'sparse_all') {
+      var empty = document.createElement('p');
+      empty.className = 'gp-rep-radar-empty';
+      empty.textContent = policyRoot.note || '짧은 글은 문체 통계 신호를 잴 수 없어요. 600자쯤(약 8문장)부터 원인 분석이 열려요.';
+      host.appendChild(empty);
+      if (hint) hint.hidden = true;
+      if (alt) alt.textContent = 'AI 감지 원인 분석. ' + empty.textContent;
+      return;
+    }
+    if (hint) hint.hidden = false;
+    var axes = repRadarAxes(model);
+    if (policyRoot && policyRoot.profileLabel) {
+      var who = document.createElement('p');
+      who.className = 'gp-rep-radar-profile';
+      who.textContent = policyRoot.lowConfidence
+        ? '글 종류를 확실히 가리지 못해 구체 앵커·화자 입장은 참고로만 봤어요.'
+        : policyRoot.profileLabel + ' 기준으로 봤어요.';
+      host.appendChild(who);
+    }
     var list = document.createElement('ol');
     list.className = 'gp-rep-signals';
     axes.forEach(function (a, i) {
@@ -1812,29 +1860,34 @@
       var hot = !a.unknown && a.value >= 0.67;
       var level = a.unknown ? 'na' : (hot ? 'hot' : (a.value >= 0.34 ? 'mid' : 'low'));
       var li = document.createElement('li');
-      li.className = 'axis lv-' + level + (hot ? ' hot' : '') + (a.unknown ? ' na' : '');
+      li.className = 'axis lv-' + level + (hot ? ' hot' : '') + (a.unknown ? ' na' : '') + (a.soft ? ' soft' : '');
       li.setAttribute('data-axis', key);
-      li.tabIndex = 0; li.setAttribute('role', 'button'); li.setAttribute('aria-pressed', 'false');
       li.style.setProperty('--i', String(i));
       li.style.setProperty('--v', a.unknown ? '0' : String(Math.round(a.value * 100)));
       var head = document.createElement('div'); head.className = 'sig-head';
       var name = document.createElement('b'); name.className = 'axis-name'; name.textContent = a.name;
-      var fact = document.createElement('span'); fact.className = 'sig-fact'; fact.textContent = a.unknown ? '이번엔 재지 못했어요' : repAxisFact(key, model);
+      var fact = document.createElement('span'); fact.className = 'sig-fact';
+      fact.textContent = a.unknown ? (a.reason || '이번엔 재지 못했어요') : (repAxisFact(key, model) + (a.soft && a.reason ? ' · ' + a.reason : ''));
       head.appendChild(name); head.appendChild(fact);
       var bar = document.createElement('div'); bar.className = 'sig-bar';
       var fill = document.createElement('i'); fill.className = 'sig-fill'; bar.appendChild(fill);
       var lvl = document.createElement('span'); lvl.className = 'axis-val sig-level' + (a.unknown ? ' na' : (hot ? ' hot' : '')); lvl.textContent = repRadarLevel(a);
       li.appendChild(head); li.appendChild(bar); li.appendChild(lvl);
-      li.addEventListener('mouseenter', function () { repLinkAxis(key, false); });
-      li.addEventListener('mouseleave', function () { repLinkAxis(null, false); });
-      li.addEventListener('focus', function () { repLinkAxis(key, false); });
-      li.addEventListener('blur', function () { repLinkAxis(null, false); });
-      li.addEventListener('click', function () { repLinkAxis(key, true); });
-      li.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); repLinkAxis(key, true); } });
+      if (a.unknown) {
+        // 해당 없음·측정 안 함은 눌러도 보여줄 문장이 없다 — 연동 대상에서 뺀다.
+        li.setAttribute('aria-disabled', 'true');
+      } else {
+        li.tabIndex = 0; li.setAttribute('role', 'button'); li.setAttribute('aria-pressed', 'false');
+        li.addEventListener('mouseenter', function () { repLinkAxis(key, false); });
+        li.addEventListener('mouseleave', function () { repLinkAxis(null, false); });
+        li.addEventListener('focus', function () { repLinkAxis(key, false); });
+        li.addEventListener('blur', function () { repLinkAxis(null, false); });
+        li.addEventListener('click', function () { repLinkAxis(key, true); });
+        li.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); repLinkAxis(key, true); } });
+      }
       list.appendChild(li);
     });
     host.appendChild(list);
-    var alt = $('gpRepRadarAccessible');
     if (alt) {
       alt.textContent = 'AI 감지 원인 분석. ' + axes.map(function (a) {
         return a.name + ' ' + repRadarLevel(a);
@@ -2097,8 +2150,19 @@
     if (model.content.generic && model.content.total) {
       tips.push('일반적인 표현 문장이 ' + model.content.generic + '/' + model.content.total + '개예요. 실제로 겪은 장면으로 바꿔 보세요.');
     }
-    if (Number(m.realAnchorCount) === 0) {
+    // 앵커·화자 입장 처방은 정책이 '적용(on)'인 글 종류에서만 — 보고서에 "저는 ~라고 봤다"를 권하지 않는다.
+    var pol = repAxisPolicy(model);
+    var anchorPol = pol.anchor || { status: 'on', metric: 'anchor' };
+    var stancePol = pol.stance || { status: 'off' };
+    if (anchorPol.status === 'on' && anchorPol.metric === 'lived') {
+      if (model.content.total && Number(model.content.lived) === 0) {
+        tips.push('실제로 겪은 장면이 담긴 문장이 없어요. 언제·어디서·무엇을 했는지 한 문장만 더해 보세요.');
+      }
+    } else if (anchorPol.status === 'on' && Number(m.realAnchorCount) === 0) {
       tips.push('숫자·연도·고유명사 같은 구체 근거가 아직 없어요. 정확히 아는 값만 더해 보세요.');
+    }
+    if (stancePol.status === 'on' && model.content.total && Number.isFinite(Number(m.stanceRatio)) && Math.round(Number(m.stanceRatio) * model.content.total) === 0) {
+      tips.push('글쓴이의 판단이 드러나는 문장이 없어요. "저는 ~라고 봤다"처럼 입장을 한두 문장 넣어 보세요.');
     }
     if (!tips.length) tips.push('두드러진 문체 신호가 없어요. 지금 표현을 유지해도 좋아요.');
     return tips.slice(0, 3);

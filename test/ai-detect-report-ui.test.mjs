@@ -172,7 +172,17 @@ test('원인 레이더는 실측 다섯 축만 그리고 모집단 비교선을 
   assert.match(flow, /function repMeasured/u);
   assert.match(flow, /raw == null[\s\S]{0,40}\{ name: name, value: 0, unknown: true \}/u,
     '계측이 없으면 0으로 두고 표시를 바꾼다');
-  assert.match(flow, /if \(axis && axis\.unknown\) return '측정 없음'/u);
+  // 2026-09-03 축 정책: 없는 축은 '해당 없음(글 종류)'과 '측정 안 함(문장 부족)'을 구분해 적는다.
+  assert.match(flow, /if \(axis && axis\.unknown\) return axis\.status === 'off' \? '해당 없음' : '측정 안 함'/u);
+  assert.match(flow, /function repAxisPolicy/u);
+  assert.match(flow, /pol\.status === 'off' \|\| pol\.status === 'sparse'/u, 'off·sparse 축은 등급 대신 이유');
+  assert.match(flow, /Math\.min\(value, 0\.66\), unknown: false, soft: true/u, 'soft 축은 높음 판정을 내지 않는다');
+  assert.match(flow, /anchorLived \? '경험 문장 부족' : '구체 앵커 부족'/u, '자소서·에세이는 경험 문장 축');
+  assert.match(flow, /policyRoot\.mode === 'sparse_all'/u);
+  assert.match(flow, /gp-rep-radar-empty/u);
+  assert.match(flow, /profileLabel \+ ' 기준으로 봤어요\.'/u);
+  assert.match(flow, /anchorPol\.status === 'on' && anchorPol\.metric === 'lived'/u, '처방은 정책이 켠 축에서만');
+  assert.match(flow, /stancePol\.status === 'on'/u);
   assert.ok(!/Number\.isFinite\(anchor\) \? repClamp01\(1 - anchor \/ 0\.3\) : 1/u.test(flow),
     '없는 값을 최고치로 채우던 폴백이 남아 있지 않다');
   // 계측 블록이 통째로 없어도 내용 근거에 같은 수가 있다 — 한 화면이 두 가지로 말하지 않게 한다.

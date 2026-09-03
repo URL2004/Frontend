@@ -12384,3 +12384,12 @@ html.gp-rep-modal-open{overflow:hidden;}
 /* v124: 인물 사진은 원 안에 전체가 들어온다 — 마커 원을 흰 바탕으로 두어 여백이 자연스럽다 */
 #mainContent[data-main-design="lavender"] .gp-rep-scope .blip-ring{fill:#fff;}
 #mainContent[data-main-design="lavender"] .gp-rep-cta{min-height:256px;}   /* 러너 그림은 밴드 높이에 비례(3:2) — 문구를 줄인 만큼 높이로 그림을 살린다 */
+
+/* v127: 원인 레이더 축 정책 — 해당 없음·측정 안 함·참고 표시, 단문 안내 한 줄 (2026-09-03) */
+#mainContent[data-main-design="lavender"] .gp-rep-radar-profile{margin:0 0 8px;font-size:var(--rep-fs-1);font-weight:700;color:var(--rep-muted);word-break:keep-all;}
+#mainContent[data-main-design="lavender"] .gp-rep-radar-empty{margin:6px 0 0;padding:14px 16px;border:1px dashed var(--rep-line);border-radius:12px;background:#fdfcff;font-size:var(--rep-fs-2);line-height:1.6;color:var(--rep-copy);word-break:keep-all;}
+#mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na{opacity:.74;cursor:default;}
+#mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na .sig-fill{display:none;}
+#mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na .sig-fact{color:var(--rep-copy);}
+#mainContent[data-main-design="lavender"] .gp-rep-signals .axis.soft .sig-level{background:#eef0f7;color:var(--rep-copy);}
+#mainContent[data-main-design="lavender"] .gp-rep-radar:has(.gp-rep-radar-empty){min-height:0;}
