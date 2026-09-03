@@ -176,7 +176,7 @@ test('원인 레이더는 실측 다섯 축만 그리고 모집단 비교선을 
   assert.match(flow, /if \(axis && axis\.unknown\) return axis\.status === 'off' \? '해당 없음' : '측정 안 함'/u);
   assert.match(flow, /function repAxisPolicy/u);
   assert.match(flow, /pol\.status === 'off' \|\| pol\.status === 'sparse'/u, 'off·sparse 축은 등급 대신 이유');
-  assert.match(flow, /Math\.min\(value, 0\.66\), unknown: false, soft: true/u, 'soft 축은 높음 판정을 내지 않는다');
+  assert.doesNotMatch(flow, /soft: true|' · 참고'/u, '참고 단계 없음 — 막대·등급이 있으면 수치처럼 읽히므로 못 가린 축은 비활성(na)');
   assert.match(flow, /anchorLived \? '경험 문장 부족' : '구체 앵커 부족'/u, '자소서·에세이는 경험 문장 축');
   assert.match(flow, /policyRoot\.mode === 'sparse_all'/u);
   assert.match(flow, /gp-rep-radar-empty/u);

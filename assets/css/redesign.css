@@ -12391,5 +12391,4 @@ html.gp-rep-modal-open{overflow:hidden;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na{opacity:.74;cursor:default;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na .sig-fill{display:none;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na .sig-fact{color:var(--rep-copy);}
-#mainContent[data-main-design="lavender"] .gp-rep-signals .axis.soft .sig-level{background:#eef0f7;color:var(--rep-copy);}
 #mainContent[data-main-design="lavender"] .gp-rep-radar:has(.gp-rep-radar-empty){min-height:0;}

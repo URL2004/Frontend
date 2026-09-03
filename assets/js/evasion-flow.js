@@ -1754,7 +1754,7 @@
   }
 
   // 서버 축 정책(measuredEvidence.axisPolicy, 2026-09-03): 글 종류·문장 수에 따라
-  //   on = 종류별 기준으로 판정 · soft = 참고만('높음' 없음) · off = 이 글 종류엔 해당 없음 · sparse = 문장이 적어 안 잼.
+  //   on = 종류별 기준으로 판정 · off = 이 글 종류엔 해당 없음(종류를 못 가린 경우 포함, 막대·등급 없음) · sparse = 문장이 적어 안 잼.
   //   정책이 없는 옛 보고서(캐시된 결과)는 예전 고정 기준(30%)으로 그린다.
   function repAxisPolicy(model) {
     var m = model.measured || {};
@@ -1787,9 +1787,7 @@
         return { name: name, value: 0, unknown: true, status: pol.status, reason: pol.reason || '' };
       }
       if (raw == null) return { name: name, value: 0, unknown: true };
-      var value = repClamp01(compute(raw));
-      if (pol.status === 'soft') return { name: name, value: Math.min(value, 0.66), unknown: false, soft: true, reason: pol.reason || '' };
-      return { name: name, value: value, unknown: false };
+      return { name: name, value: repClamp01(compute(raw)), unknown: false };
     };
     var genericRatio = (totalRaw != null && totalRaw > 0 && generic != null) ? generic / totalRaw : null;
     return [
@@ -1804,8 +1802,7 @@
   function repRadarLevel(axis) {
     if (axis && axis.unknown) return axis.status === 'off' ? '해당 없음' : '측정 안 함';
     var value = typeof axis === 'object' ? axis.value : axis;
-    var label = value >= 0.67 ? '높음' : (value >= 0.34 ? '보통' : '낮음');
-    return axis && axis.soft ? label + ' · 참고' : label;
+    return value >= 0.67 ? '높음' : (value >= 0.34 ? '보통' : '낮음');
   }
 
   var REP_AXIS_KEYS = ['uniform', 'ending', 'generic', 'anchor', 'stance'];
@@ -1849,7 +1846,7 @@
       var who = document.createElement('p');
       who.className = 'gp-rep-radar-profile';
       who.textContent = policyRoot.lowConfidence
-        ? '글 종류를 확실히 가리지 못해 구체 앵커·화자 입장은 참고로만 봤어요.'
+        ? '글 종류를 확실히 가리지 못해 문체 신호 세 가지만 봤어요.'
         : policyRoot.profileLabel + ' 기준으로 봤어요.';
       host.appendChild(who);
     }
@@ -1860,14 +1857,14 @@
       var hot = !a.unknown && a.value >= 0.67;
       var level = a.unknown ? 'na' : (hot ? 'hot' : (a.value >= 0.34 ? 'mid' : 'low'));
       var li = document.createElement('li');
-      li.className = 'axis lv-' + level + (hot ? ' hot' : '') + (a.unknown ? ' na' : '') + (a.soft ? ' soft' : '');
+      li.className = 'axis lv-' + level + (hot ? ' hot' : '') + (a.unknown ? ' na' : '');
       li.setAttribute('data-axis', key);
       li.style.setProperty('--i', String(i));
       li.style.setProperty('--v', a.unknown ? '0' : String(Math.round(a.value * 100)));
       var head = document.createElement('div'); head.className = 'sig-head';
       var name = document.createElement('b'); name.className = 'axis-name'; name.textContent = a.name;
       var fact = document.createElement('span'); fact.className = 'sig-fact';
-      fact.textContent = a.unknown ? (a.reason || '이번엔 재지 못했어요') : (repAxisFact(key, model) + (a.soft && a.reason ? ' · ' + a.reason : ''));
+      fact.textContent = a.unknown ? (a.reason || '이번엔 재지 못했어요') : repAxisFact(key, model);
       head.appendChild(name); head.appendChild(fact);
       var bar = document.createElement('div'); bar.className = 'sig-bar';
       var fill = document.createElement('i'); fill.className = 'sig-fill'; bar.appendChild(fill);
