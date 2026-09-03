@@ -31,6 +31,11 @@ const CUSTOM_DIMENSIONS = [
   ['Humanize Mode', 'humanize_mode'],
   ['Checkout Type', 'checkout_type'],
   ['Pricing Tab', 'pricing_tab'],
+  ['Product Mode Source Route', 'source_route'],
+  ['Product Mode Source Surface', 'source_surface'],
+  ['Product Mode Source Mode', 'source_mode'],
+  ['Product Mode Target Mode', 'target_mode'],
+  ['Humanize Diagnosis Source', 'diagnosis_source'],
   ['Is First Purchase', 'is_first_purchase'],
   ['Pricing Policy Version', 'pricing_policy_version']
 ];

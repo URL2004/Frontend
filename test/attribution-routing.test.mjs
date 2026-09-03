@@ -88,9 +88,9 @@ test('광고 랜딩 모드는 레거시와 라벤더 컴포저를 함께 전환�
   assert.match(appMain, /window\.lavSetMode\(normalized, \{ skipUrl: true \}\)/u);
   assert.match(appMain, /if \(routeTab === 'main'\) applyLandingProductMode\(\)/u);
   assert.match(evasion, /window\.gpSyncProductModeUrl\(m\)/u);
-  assert.match(main, /onclick="gpApplyProductMode\('detect'\)"/u);
-  assert.match(main, /onclick="gpApplyProductMode\('humanize'\)"/u);
-  assert.equal(detectReport.match(/openProductMode\('detect'\)/gu)?.length, 2);
+  assert.match(main, /onclick="gpSelectProductMode\('detect', 'composer_toggle'\)"/u);
+  assert.match(main, /onclick="gpSelectProductMode\('humanize', 'composer_toggle'\)"/u);
+  assert.equal(detectReport.match(/openProductMode\('detect',/gu)?.length, 2);
 });
 
 test('회원가입 뒤에도 유입정보를 삭제하지 않고 가입 원본을 저장한다', () => {

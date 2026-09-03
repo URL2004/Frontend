@@ -154,8 +154,8 @@ test('일반 콘텐츠는 세그먼트 오퍼를 쓰고 FAQ·가이드는 전용
   assert.doesNotMatch(flow, /OFFER_PAGES = \[[^\]]*'community'/u);
   const guide = await read('pages/guide.html');
   assert.doesNotMatch(guide, /data-gp-offer-slot/u);
-  assert.match(guide, /openProductMode\('detect'\)/u);
-  assert.match(guide, /openProductMode\('humanize'\)/u);
+  assert.match(guide, /openProductMode\('detect',/u);
+  assert.match(guide, /openProductMode\('humanize',/u);
   assert.match(guide, /data-tab="pricing" href="\/pricing"/u);
   assert.doesNotMatch(flow, /OFFER_PAGES = \[[^\]]*'guide'/u);
   const pricing = await read('pages/pricing.html');

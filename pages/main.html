@@ -107,8 +107,8 @@
      <section class="gp-lav-hero">
        <div class="gp-lav-entry" id="lavEntry">
        <h1 class="gp-lav-hero-title"><img src="/assets/img/brand-logo.webp" alt="교수님 피하기"></h1>
-       <p class="gp-lav-sub">AI 초안을 원문의 뜻과 장르에 맞게 자연스럽게 다듬어요.</p>
-       <p class="gp-lav-nikl">✓ 국립국어원 공개 어문규범과 로컬 언어 자료를 참고해 한국어 표현을 보조 점검해요</p>
+       <p class="gp-lav-sub" id="lavHeroSubtitle">AI 초안을 원문의 뜻과 장르에 맞게 자연스럽게 다듬어요.</p>
+       <p class="gp-lav-nikl" id="lavTrustNote">✓ 국립국어원 공개 어문규범과 로컬 언어 자료를 참고해 한국어 표현을 보조 점검해요</p>
 
        <!-- 상태별 오퍼(D): /checkout-context 세그먼트에 따라 문구·CTA가 바뀐다. 비로그인은 가입 유도. -->
        <div class="gp-lav-offer" id="lavHeroOffer" role="status" aria-live="polite" hidden>
@@ -130,10 +130,10 @@
            </button>
            <span class="gp-lav-count" id="lavCount" aria-live="polite"></span>
            <div class="gp-lav-mode" role="group" aria-label="실행 모드 선택">
-             <button type="button" class="on" data-mode="humanize" onclick="gpApplyProductMode('humanize')" aria-pressed="true">
+             <button type="button" class="on" data-mode="humanize" onclick="gpSelectProductMode('humanize', 'composer_toggle')" aria-pressed="true">
                <span class="material-symbols-outlined" aria-hidden="true">auto_fix_high</span><span class="lbl">휴머나이징</span>
              </button>
-             <button type="button" data-mode="detect" onclick="gpApplyProductMode('detect')" aria-pressed="false" title="100자당 1크레딧">
+             <button type="button" data-mode="detect" onclick="gpSelectProductMode('detect', 'composer_toggle')" aria-pressed="false" title="100자당 1크레딧">
                <span class="material-symbols-outlined" aria-hidden="true">search_insights</span><span class="lbl">AI 감지</span><em>100자당 1크레딧</em>
              </button>
            </div>

@@ -4054,7 +4054,10 @@ window.historyStartNew = function () {
 };
 window.historyContinueHumanize = function () {
  const text = historyComposerText('detect');
- if (text && historyOpenComposer('humanize', text) && window.gpTrack) window.gpTrack('history_reuse', { action: 'continue_humanize', source_type: 'detect' });
+ if (text && historyOpenComposer('humanize', text)) {
+  if (typeof window.gpTrackProductModeOpen === 'function') window.gpTrackProductModeOpen('humanize', 'history', 'history_detail', 'detect');
+  if (window.gpTrack) window.gpTrack('history_reuse', { action: 'continue_humanize', source_type: 'detect' });
+ }
 };
 window.historyRunAgain = function (mode) {
  const text = historyComposerText(mode);

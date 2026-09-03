@@ -20,8 +20,8 @@ test('문의 사이드는 FAQ, 서비스 시작, 충전, 운영시간 순으로 
   cursor = next;
  }
  assert.match(qna, /class="gp-support-balance" data-credit-balance/u);
- assert.match(qna, /openProductMode\('detect'\)/u);
- assert.match(qna, /openProductMode\('humanize'\)/u);
+ assert.match(qna, /openProductMode\('detect',/u);
+ assert.match(qna, /openProductMode\('humanize',/u);
  assert.match(qna, /data-tab="pricing" href="\/pricing"/u);
  assert.match(qna, /평일 기준 1영업일 이내 답변해요/u);
 });

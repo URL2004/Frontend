@@ -629,6 +629,25 @@
     if (ta) ta.placeholder = m === 'detect'
       ? 'AI가 썼는지 궁금한 글을 붙여넣어 보세요...'
       : '다듬을 초안이나 문단을 붙여넣어 보세요...';
+    var subtitle = $('lavHeroSubtitle');
+    if (subtitle) subtitle.textContent = m === 'detect'
+      ? 'AI식 문체 신호를 문단별로 확인하고, 필요한 부분은 바로 휴머나이징으로 이어가세요.'
+      : 'AI 초안을 원문의 뜻과 장르에 맞게 자연스럽게 다듬어요.';
+    var trust = $('lavTrustNote');
+    if (trust) trust.textContent = m === 'detect'
+      ? '✓ AI 감지는 문체 신호를 바탕으로 한 참고 지표이며, 실제 작성 주체를 확정하지 않아요'
+      : '✓ 국립국어원 공개 어문규범과 로컬 언어 자료를 참고해 한국어 표현을 보조 점검해요';
+    var rate = $('lavRateNote');
+    if (rate) rate.textContent = m === 'detect'
+      ? 'AI 감지 최소 100자 · 100자당 1크레딧'
+      : '기본 휴머나이징 최소 10크레딧 · 100자당 2크레딧';
+    var run = $('lavRunButton');
+    if (run) {
+      var len = ta ? ta.value.length : 0;
+      var credits = len ? (m === 'detect' ? detectCredit(len) : shortHumanizeCredit(len)) : 0;
+      run.setAttribute('aria-label', (m === 'detect' ? 'AI 감지' : '휴머나이징') + ' 시작 · '
+        + (credits ? '예상 ' + credits + '크레딧' : '예상 크레딧 계산 전'));
+    }
     if (!opts.skipUrl && typeof window.gpSyncProductModeUrl === 'function') {
       window.gpSyncProductModeUrl(m);
     }
@@ -2315,6 +2334,9 @@
   // 기존 방법 선택(choose) 화면에서. 보고서 데이터로 진단 배너·밴드를 채워 재진단 없이 이어가고,
   // 글은 입력칸(lavInput)에 그대로 남아 있어 같은 글로 바로 진행된다(컨텍스트 바 원문 N자 표기 동일).
   window.lavReportToHumanize = function () {
+    if (typeof window.gpTrackProductModeOpen === 'function') {
+      window.gpTrackProductModeOpen('humanize', 'main', 'detect_report_cta', 'detect');
+    }
     window.lavSetMode('humanize');   // 휴머나이저로 "이동" — 모드 상태도 함께 전환(입력 화면 복귀 시 일관)
     resetToneChoice();
     var d = lastReport;

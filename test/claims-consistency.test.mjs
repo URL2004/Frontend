@@ -46,8 +46,8 @@ test('FAQ는 홈페이지 리듬의 4개 분야와 접근 가능한 아코디언
   }
   assert.match(module, /btn\.setAttribute\('aria-expanded', open \? 'true' : 'false'\)/u);
   assert.match(module, /answer\.setAttribute\('aria-hidden', open \? 'false' : 'true'\)/u);
-  assert.match(faq, /openProductMode\('detect'\)/u);
-  assert.match(faq, /openProductMode\('humanize'\)/u);
+  assert.match(faq, /openProductMode\('detect',/u);
+  assert.match(faq, /openProductMode\('humanize',/u);
   assert.doesNotMatch(faq, /data-gp-offer-slot/u);
   assert.doesNotMatch(flow, /OFFER_PAGES = \['faq'/u);
 });

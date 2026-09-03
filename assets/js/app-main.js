@@ -183,9 +183,31 @@ function applyProductMode(productMode, opts) {
 }
 window.gpApplyProductMode = applyProductMode;
 
-window.openProductMode = function (productMode) {
+function trackProductModeOpen(productMode, sourceRoute, sourceSurface, sourceMode) {
+ const normalized = normalizeProductMode(productMode);
+ if (typeof window.gpTrack === 'function') {
+  window.gpTrack('product_mode_open', {
+   source_route: normalizeRouteTab(sourceRoute || getRouteTab()),
+   source_surface: String(sourceSurface || 'page_cta').slice(0, 80),
+   source_mode: sourceMode === 'detect' || sourceMode === 'humanize' ? sourceMode : '',
+   target_mode: normalized
+  });
+ }
+ return normalized;
+}
+window.gpTrackProductModeOpen = trackProductModeOpen;
+
+window.gpSelectProductMode = function (productMode, sourceSurface) {
+ const sourceMode = window.lavMode === 'detect' ? 'detect' : 'humanize';
+ const normalized = trackProductModeOpen(productMode, getRouteTab(), sourceSurface || 'composer_toggle', sourceMode);
+ return applyProductMode(normalized);
+};
+
+window.openProductMode = function (productMode, sourceSurface) {
+ const sourceRoute = getRouteTab();
+ const normalized = trackProductModeOpen(productMode, sourceRoute, sourceSurface || 'page_cta', '');
  switchTab('main');
- const normalized = applyProductMode(productMode);
+ applyProductMode(normalized);
  setTimeout(function () {
   const el = document.getElementById('lavInput') || document.getElementById('inputText');
   if (el) el.focus();
