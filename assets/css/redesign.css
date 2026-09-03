@@ -11879,11 +11879,11 @@ html.gp-rep-modal-open{overflow:hidden;}
 #mainContent[data-main-design="lavender"] .gp-rep-cta-help{margin:13px 0 0;font-size:var(--rep-fs-2);color:var(--rep-on-brand-muted);}
 /* 추천을 보류하는 상태 — 같은 자리에서 닫는 말만 남긴다. 파는 밴드가 아니라 마무리 카드로 낮춘다. */
 #mainContent[data-main-design="lavender"] .gp-rep-cta.is-quiet{
- background:#fff;border:1px solid var(--rep-line);min-height:0;
+ background:linear-gradient(115deg,#fff 0%,var(--rep-cream) 100%);border:1px solid var(--rep-line);min-height:196px;
  box-shadow:0 1px 2px rgba(26,23,71,.04);
 }
-#mainContent[data-main-design="lavender"] .gp-rep-cta.is-quiet::after{display:none;}
-#mainContent[data-main-design="lavender"] .gp-rep-cta.is-quiet .gp-rep-cta-copy{max-width:100%;padding:26px 28px;}
+#mainContent[data-main-design="lavender"] .gp-rep-cta.is-quiet::after{display:block;opacity:.72;}
+#mainContent[data-main-design="lavender"] .gp-rep-cta.is-quiet .gp-rep-cta-copy{max-width:62%;padding:26px 28px;}
 #mainContent[data-main-design="lavender"] .gp-rep-cta.is-quiet .gp-rep-cta-copy strong{font-size:var(--rep-fs-6);color:var(--rep-ink);}
 #mainContent[data-main-design="lavender"] .gp-rep-cta.is-quiet .gp-rep-cta-copy>p{color:var(--rep-copy);max-width:72ch;}
 #mainContent[data-main-design="lavender"] .gp-rep-cta.is-quiet .gp-rep-cta-btn{
@@ -11922,7 +11922,9 @@ html.gp-rep-modal-open{overflow:hidden;}
  #mainContent[data-main-design="lavender"] .gp-rep-s-side{grid-column:2;flex-direction:row;align-items:center;gap:8px;}
  #mainContent[data-main-design="lavender"] .gp-rep-cta{min-height:0;}
  #mainContent[data-main-design="lavender"] .gp-rep-cta::after{width:100%;aspect-ratio:auto;opacity:.28;}
+ #mainContent[data-main-design="lavender"] .gp-rep-cta.is-quiet::after{display:block;width:48%;opacity:.16;}
  #mainContent[data-main-design="lavender"] .gp-rep-cta-copy{max-width:100%;padding:26px 20px;}
+ #mainContent[data-main-design="lavender"] .gp-rep-cta.is-quiet .gp-rep-cta-copy{max-width:100%;padding:26px 20px;}
  #mainContent[data-main-design="lavender"] .gp-rep-cta-copy strong{font-size:var(--rep-fs-6);}
  #mainContent[data-main-design="lavender"] .gp-rep-cta-btn{width:100%;}
 }
@@ -12456,7 +12458,7 @@ html.gp-rep-modal-open{overflow:hidden;}
 
 /* v124: 인물 사진은 원 안에 전체가 들어온다 — 마커 원을 흰 바탕으로 두어 여백이 자연스럽다 */
 #mainContent[data-main-design="lavender"] .gp-rep-scope .blip-ring{fill:#fff;}
-#mainContent[data-main-design="lavender"] .gp-rep-cta{min-height:256px;}   /* 러너 그림은 밴드 높이에 비례(3:2) — 문구를 줄인 만큼 높이로 그림을 살린다 */
+#mainContent[data-main-design="lavender"] .gp-rep-cta:not(.is-quiet){min-height:256px;}   /* 러너 그림은 밴드 높이에 비례(3:2) — 문구를 줄인 만큼 높이로 그림을 살린다 */
 
 /* v127: 원인 레이더 축 정책 — 해당 없음·측정 안 함, 단문 안내 한 줄 (2026-09-03) */
 #mainContent[data-main-design="lavender"] .gp-rep-radar-profile{margin:0 0 8px;font-size:var(--rep-fs-1);font-weight:700;color:var(--rep-muted);word-break:keep-all;}
