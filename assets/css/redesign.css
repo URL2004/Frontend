@@ -12256,7 +12256,7 @@ html.gp-rep-modal-open{overflow:hidden;}
  padding:11px 12px;border-radius:12px;border:1px solid transparent;cursor:pointer;
  transition:background .15s ease,border-color .15s ease;
 }
-#mainContent[data-main-design="lavender"] .gp-rep-signals .axis:hover,#mainContent[data-main-design="lavender"] .gp-rep-signals .axis.is-on{background:var(--rep-cream);border-color:#ded6ff;}
+#mainContent[data-main-design="lavender"] .gp-rep-signals .axis:not(.na):hover,#mainContent[data-main-design="lavender"] .gp-rep-signals .axis.is-on{background:var(--rep-cream);border-color:#ded6ff;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.is-pinned{border-color:#f5b425;box-shadow:inset 0 0 0 1px #f5b425;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis:focus-visible{outline:2px solid var(--rep-brand-strong);outline-offset:2px;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .sig-head{grid-area:head;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;min-width:0;}
@@ -12275,14 +12275,12 @@ html.gp-rep-modal-open{overflow:hidden;}
 #mainContent[data-main-design="lavender"] .gp-rep-radar.is-drawn .sig-fill{width:calc(var(--v,0) * 1%);}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.lv-hot .sig-fill{background:#e3665a;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.lv-low .sig-fill{background:#3fb2c9;}
-#mainContent[data-main-design="lavender"] .gp-rep-signals .axis.lv-na .sig-bar{background:repeating-linear-gradient(90deg,#eeecf8 0 6px,#fff 6px 10px);}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .sig-level{
  grid-area:level;justify-self:end;padding:4px 10px;border-radius:999px;font-size:var(--rep-fs-1);font-weight:800;
  background:#ece5ff;color:var(--rep-brand-strong);white-space:nowrap;
 }
 #mainContent[data-main-design="lavender"] .gp-rep-signals .sig-level.hot{background:#fdeeec;color:var(--rep-coral);}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.lv-low .sig-level{background:#e2f5f8;color:var(--rep-teal);}
-#mainContent[data-main-design="lavender"] .gp-rep-signals .sig-level.na{background:#eef0f7;color:var(--rep-muted);}
 #mainContent[data-main-design="lavender"] .gp-rep-cause-match{
  margin:12px 0 0;padding:12px 14px;border-radius:12px;background:var(--rep-cream);color:var(--rep-copy);
 }
@@ -12463,7 +12461,6 @@ html.gp-rep-modal-open{overflow:hidden;}
 /* v127: 원인 레이더 축 정책 — 해당 없음·측정 안 함, 단문 안내 한 줄 (2026-09-03) */
 #mainContent[data-main-design="lavender"] .gp-rep-radar-profile{margin:0 0 8px;font-size:var(--rep-fs-1);font-weight:700;color:var(--rep-muted);word-break:keep-all;}
 #mainContent[data-main-design="lavender"] .gp-rep-radar-empty{margin:6px 0 0;padding:14px 16px;border:1px dashed var(--rep-line);border-radius:12px;background:#fdfcff;font-size:var(--rep-fs-2);line-height:1.6;color:var(--rep-copy);word-break:keep-all;}
-#mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na{opacity:.74;cursor:default;}
-#mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na .sig-fill{display:none;}
+#mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na{grid-template-columns:minmax(0,1fr);grid-template-areas:"head";gap:0;opacity:.74;cursor:default;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na .sig-fact{color:var(--rep-copy);}
 #mainContent[data-main-design="lavender"] .gp-rep-radar:has(.gp-rep-radar-empty){min-height:0;}

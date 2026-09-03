@@ -200,6 +200,71 @@ test('원인 레이더는 실측 다섯 축만 그리고 모집단 비교선을 
   assert.match(flow, /if \(generic == null\) generic = repMeasured\(model\.content\.generic\)/u);
 });
 
+test('해당 없음·측정 안 함 축은 이유만 남기고 막대·등급·상호작용을 만들지 않는다', async () => {
+  const flow = await read('assets/js/evasion-flow.js');
+  const marker = 'function repPaintRadarAxis(';
+  const start = flow.indexOf(marker);
+  assert.ok(start >= 0, '축 렌더러를 찾음');
+  const bodyStart = flow.indexOf('{', start);
+  let depth = 0;
+  let end = -1;
+  for (let i = bodyStart; i < flow.length; i += 1) {
+    if (flow[i] === '{') depth += 1;
+    if (flow[i] === '}') {
+      depth -= 1;
+      if (depth === 0) { end = i + 1; break; }
+    }
+  }
+  assert.ok(end > bodyStart, '축 렌더러 범위를 찾음');
+
+  class FakeNode {
+    constructor(tag = '') {
+      this.tagName = tag;
+      this.children = [];
+      this.className = '';
+      this.attrs = {};
+      this.listeners = {};
+      this.style = { values: {}, setProperty: (name, value) => { this.style.values[name] = value; } };
+    }
+    appendChild(node) { this.children.push(node); return node; }
+    setAttribute(name, value) { this.attrs[name] = String(value); }
+    getAttribute(name) { return this.attrs[name] ?? null; }
+    addEventListener(name, handler) { this.listeners[name] = handler; }
+    set textContent(value) { this._text = String(value); this.children = []; }
+    get textContent() { return this.children.length ? this.children.map(child => child.textContent).join('') : (this._text || ''); }
+  }
+  const sandbox = {
+    document: { createElement: tag => new FakeNode(tag) },
+    REP_AXIS_KEYS: ['uniform'],
+    repAxisFact: () => '실측 근거',
+    repRadarLevel: () => '높음',
+    repLinkAxis: () => {}
+  };
+  vm.runInNewContext(`${flow.slice(start, end)}\nglobalThis.renderAxis = repPaintRadarAxis;`, sandbox);
+
+  const inactiveList = new FakeNode('ol');
+  sandbox.renderAxis(inactiveList, {}, { name: '구체 근거 부족', value: 0, unknown: true, reason: '이 글 종류에는 적용하지 않아요.' }, 0);
+  const inactive = inactiveList.children[0];
+  assert.equal(inactive.children.length, 1, '비활성 축에는 머리글 한 개만 남는다');
+  assert.equal(inactive.children[0].className, 'sig-head');
+  assert.equal(inactive.getAttribute('aria-disabled'), 'true');
+  assert.equal(inactive.getAttribute('role'), null);
+  assert.equal(inactive.tabIndex, undefined);
+  assert.equal(inactive.children.some(node => node.className === 'sig-bar'), false);
+  assert.equal(inactive.children.some(node => String(node.className).includes('sig-level')), false);
+  assert.deepEqual(Object.keys(inactive.listeners), []);
+
+  const activeList = new FakeNode('ol');
+  sandbox.renderAxis(activeList, {}, { name: '문장 길이 균일', value: 0.8, unknown: false }, 0);
+  const active = activeList.children[0];
+  assert.equal(active.children.some(node => node.className === 'sig-bar'), true);
+  assert.equal(active.children.some(node => String(node.className).includes('sig-level')), true);
+  assert.equal(active.getAttribute('role'), 'button');
+  assert.equal(active.getAttribute('aria-pressed'), 'false');
+  assert.equal(active.tabIndex, 0);
+  assert.ok(active.listeners.click && active.listeners.keydown, '활성 축은 마우스·키보드 상호작용을 유지한다');
+});
+
 test('개선 포인트는 기준을 넘은 축에서만 만들어진다', async () => {
   const flow = await read('assets/js/evasion-flow.js');
   assert.match(flow, /function repBuildTips/u);

@@ -1992,6 +1992,40 @@
     label.textContent = model && model.causeAnalysis ? '추가 표면 지표 · 참고' : '표면 문체 지표 · 참고';
     host.appendChild(label);
   }
+  function repPaintRadarAxis(list, model, a, i) {
+    var key = REP_AXIS_KEYS[i];
+    var hot = !a.unknown && a.value >= 0.67;
+    var level = a.unknown ? 'na' : (hot ? 'hot' : (a.value >= 0.34 ? 'mid' : 'low'));
+    var li = document.createElement('li');
+    li.className = 'axis lv-' + level + (hot ? ' hot' : '') + (a.unknown ? ' na' : '');
+    li.setAttribute('data-axis', key);
+    li.style.setProperty('--i', String(i));
+    var head = document.createElement('div'); head.className = 'sig-head';
+    var name = document.createElement('b'); name.className = 'axis-name'; name.textContent = a.name;
+    var fact = document.createElement('span'); fact.className = 'sig-fact';
+    fact.textContent = a.unknown ? (a.reason || '이번엔 재지 못했어요') : repAxisFact(key, model);
+    head.appendChild(name); head.appendChild(fact);
+    li.appendChild(head);
+    if (a.unknown) {
+      // 해당 없음·측정 안 함에는 수치가 없다. 빈 막대·등급이나 조작 가능성도 만들지 않는다.
+      li.setAttribute('aria-disabled', 'true');
+      list.appendChild(li);
+      return;
+    }
+    li.style.setProperty('--v', String(Math.round(a.value * 100)));
+    var bar = document.createElement('div'); bar.className = 'sig-bar';
+    var fill = document.createElement('i'); fill.className = 'sig-fill'; bar.appendChild(fill);
+    var lvl = document.createElement('span'); lvl.className = 'axis-val sig-level' + (hot ? ' hot' : ''); lvl.textContent = repRadarLevel(a);
+    li.appendChild(bar); li.appendChild(lvl);
+    li.tabIndex = 0; li.setAttribute('role', 'button'); li.setAttribute('aria-pressed', 'false');
+    li.addEventListener('mouseenter', function () { repLinkAxis(key, false); });
+    li.addEventListener('mouseleave', function () { repLinkAxis(null, false); });
+    li.addEventListener('focus', function () { repLinkAxis(key, false); });
+    li.addEventListener('blur', function () { repLinkAxis(null, false); });
+    li.addEventListener('click', function () { repLinkAxis(key, true); });
+    li.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); repLinkAxis(key, true); } });
+    list.appendChild(li);
+  }
   function repPaintRadar(model) {
     var host = $('gpRepRadar');
     if (!host) return;
@@ -2037,36 +2071,7 @@
     var list = document.createElement('ol');
     list.className = 'gp-rep-signals';
     axes.forEach(function (a, i) {
-      var key = REP_AXIS_KEYS[i];
-      var hot = !a.unknown && a.value >= 0.67;
-      var level = a.unknown ? 'na' : (hot ? 'hot' : (a.value >= 0.34 ? 'mid' : 'low'));
-      var li = document.createElement('li');
-      li.className = 'axis lv-' + level + (hot ? ' hot' : '') + (a.unknown ? ' na' : '');
-      li.setAttribute('data-axis', key);
-      li.style.setProperty('--i', String(i));
-      li.style.setProperty('--v', a.unknown ? '0' : String(Math.round(a.value * 100)));
-      var head = document.createElement('div'); head.className = 'sig-head';
-      var name = document.createElement('b'); name.className = 'axis-name'; name.textContent = a.name;
-      var fact = document.createElement('span'); fact.className = 'sig-fact';
-      fact.textContent = a.unknown ? (a.reason || '이번엔 재지 못했어요') : repAxisFact(key, model);
-      head.appendChild(name); head.appendChild(fact);
-      var bar = document.createElement('div'); bar.className = 'sig-bar';
-      var fill = document.createElement('i'); fill.className = 'sig-fill'; bar.appendChild(fill);
-      var lvl = document.createElement('span'); lvl.className = 'axis-val sig-level' + (a.unknown ? ' na' : (hot ? ' hot' : '')); lvl.textContent = repRadarLevel(a);
-      li.appendChild(head); li.appendChild(bar); li.appendChild(lvl);
-      if (a.unknown) {
-        // 해당 없음·측정 안 함은 눌러도 보여줄 문장이 없다 — 연동 대상에서 뺀다.
-        li.setAttribute('aria-disabled', 'true');
-      } else {
-        li.tabIndex = 0; li.setAttribute('role', 'button'); li.setAttribute('aria-pressed', 'false');
-        li.addEventListener('mouseenter', function () { repLinkAxis(key, false); });
-        li.addEventListener('mouseleave', function () { repLinkAxis(null, false); });
-        li.addEventListener('focus', function () { repLinkAxis(key, false); });
-        li.addEventListener('blur', function () { repLinkAxis(null, false); });
-        li.addEventListener('click', function () { repLinkAxis(key, true); });
-        li.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); repLinkAxis(key, true); } });
-      }
-      list.appendChild(li);
+      repPaintRadarAxis(list, model, a, i);
     });
     host.appendChild(list);
     if (alt) {
