@@ -12283,6 +12283,18 @@ html.gp-rep-modal-open{overflow:hidden;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .sig-level.hot{background:#fdeeec;color:var(--rep-coral);}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.lv-low .sig-level{background:#e2f5f8;color:var(--rep-teal);}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .sig-level.na{background:#eef0f7;color:var(--rep-muted);}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match{
+ margin:12px 0 0;padding:12px 14px;border-radius:12px;background:var(--rep-cream);color:var(--rep-copy);
+}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match.is-partial,
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match.is-limited{background:#fff7e3;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match>b{display:block;font-size:var(--rep-fs-2);color:var(--rep-ink);}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match>p{margin:4px 0 0;font-size:var(--rep-fs-1);line-height:1.6;word-break:keep-all;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match>ul{margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li{display:flex;align-items:baseline;gap:7px;min-width:0;font-size:var(--rep-fs-1);line-height:1.55;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li strong{flex:0 0 auto;color:var(--rep-brand-strong);}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li span{min-width:0;overflow-wrap:break-word;word-break:keep-all;}
+#mainContent[data-main-design="lavender"] .gp-rep-surface-label{margin:14px 0 8px;color:var(--rep-muted);font-size:var(--rep-fs-1);font-weight:800;letter-spacing:.02em;}
 @media (prefers-reduced-motion:reduce){ #mainContent[data-main-design="lavender"] .gp-rep-signals .sig-fill{transition:none;} }
 
 
@@ -12292,7 +12304,10 @@ html.gp-rep-modal-open{overflow:hidden;}
  color:var(--rep-copy);opacity:.65;
 }
 #mainContent[data-main-design="lavender"] .gp-rep-ba-peek{background:#ece5ff;color:var(--rep-ink);border-radius:4px;padding:1px 3px;font-weight:700;}
-#mainContent[data-main-design="lavender"] .gp-rep-ba-col.after:not(.is-gated) .gp-rep-ba-peek{background:transparent;padding:0;font-weight:inherit;}
+#mainContent[data-main-design="lavender"] .gp-rep-change-marker{display:inline-flex;align-items:center;margin:0 4px;padding:1px 7px;border-radius:999px;vertical-align:.08em;white-space:nowrap;font-size:.7em;font-weight:850;line-height:1.55;}
+#mainContent[data-main-design="lavender"] .gp-rep-change-marker.is-insertion{background:#ece5ff;color:var(--rep-brand-strong);}
+#mainContent[data-main-design="lavender"] .gp-rep-change-marker.is-deletion{background:#fdeeec;color:var(--rep-coral);}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-focus.is-deletion{text-decoration:line-through;text-decoration-color:var(--rep-coral);text-decoration-thickness:2px;}
 #mainContent[data-main-design="lavender"] .gp-rep-ba-unlock{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:12px 0 0;}
 #mainContent[data-main-design="lavender"] .gp-rep-ba-unlock button{
  padding:9px 16px;border:0;border-radius:999px;cursor:pointer;
@@ -12445,7 +12460,7 @@ html.gp-rep-modal-open{overflow:hidden;}
 #mainContent[data-main-design="lavender"] .gp-rep-scope .blip-ring{fill:#fff;}
 #mainContent[data-main-design="lavender"] .gp-rep-cta{min-height:256px;}   /* 러너 그림은 밴드 높이에 비례(3:2) — 문구를 줄인 만큼 높이로 그림을 살린다 */
 
-/* v127: 원인 레이더 축 정책 — 해당 없음·측정 안 함·참고 표시, 단문 안내 한 줄 (2026-09-03) */
+/* v127: 원인 레이더 축 정책 — 해당 없음·측정 안 함, 단문 안내 한 줄 (2026-09-03) */
 #mainContent[data-main-design="lavender"] .gp-rep-radar-profile{margin:0 0 8px;font-size:var(--rep-fs-1);font-weight:700;color:var(--rep-muted);word-break:keep-all;}
 #mainContent[data-main-design="lavender"] .gp-rep-radar-empty{margin:6px 0 0;padding:14px 16px;border:1px dashed var(--rep-line);border-radius:12px;background:#fdfcff;font-size:var(--rep-fs-2);line-height:1.6;color:var(--rep-copy);word-break:keep-all;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na{opacity:.74;cursor:default;}

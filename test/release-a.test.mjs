@@ -302,14 +302,17 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>변경 이력</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'labs', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 49);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 50);
+  assert.match(admin, /AI 감지 v1\.25/u);
+  assert.match(admin, /점수·원인 정합성·장르별 근거 축·전후 예시 보강/u);
+  assert.match(admin, /AI 감지 이력 1,077건/u);
   assert.match(admin, /일반 3종 \+ 대용량 2종 · 시작 상품 5,900원 200크레딧/u);
   assert.match(admin, /정책 버전 credit-offer-v4-202609/u);
   assert.match(admin, /5,900원 스타터의 이벤트 추가를 0%로 고정/u);
   assert.match(admin, /원장 작업 상세·108건 전수평가·최종 문장 무결성/u);
   assert.match(admin, /결과 평균은 96\.0점, 원문 대비 평균은 \+12\.7점/u);
   assert.match(admin, /근거 없는 구체화/u);
-  assert.match(admin, /Backend 76fdc98 · Frontend 3f5ac3a/u);
+  assert.match(admin, /휴머나이징 v2\.5\.43 · AI 감지 v1\.25/u);
   assert.match(admin, /상시 상품 보너스·9월 이벤트·환불 기준 분리/u);
   assert.match(admin, /구조 무결성·문단 보강·3택 흐름·연구노트·공지/u);
   assert.match(admin, /Backend 34c8b26 · Frontend bfc3d2f/u);
@@ -396,8 +399,8 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
-  assert.equal(releases.length, 49);
-  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 9);
+  assert.equal(releases.length, 50);
+  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 10);
   for (const [, attrs, body] of releases) {
     if (/gp-admin-patch-state is-live/u.test(body)) assert.match(attrs, /\bopen\b/u);
     if (/gp-admin-patch-state is-superseded/u.test(body)) assert.doesNotMatch(attrs, /\bopen\b/u);

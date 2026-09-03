@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -30,10 +31,10 @@ test('보고서는 히어로(전후·게이지) → 계측 띠 → 근거 → CT
 test('전후 시연은 한 문장까지만이라고 화면에서 밝힌다', async () => {
   const report = await reportSection();
   // 여러 문장을 고쳐 보여주면 유료 휴머나이징을 무료로 주는 셈이 된다.
-  assert.match(report, /예시는 한 문장의 일부까지만 보여드려요/u);
+  assert.match(report, /예시는 실제로 달라지는 한 문장의 일부까지만 보여드려요/u);
   assert.match(report, /글 전체를 다듬는 건 휴머나이징에서 해요/u);
   assert.equal((report.match(/id="gpRepBefore"/gu) || []).length, 1, '전후 비교는 하나뿐');
-  assert.match(report, /휴머나이징 결과 · 사실은 그대로/u);
+  assert.match(report, /휴머나이징 미리보기 · 실제로 달라지는 표현/u);
 });
 
 test('보고서는 접근성 기준을 갖춘다', async () => {
@@ -161,7 +162,7 @@ test('판정은 문단 단위로만 하고, 문장에는 근거 있는 표식만
 
 test('원인 레이더는 실측 다섯 축만 그리고 모집단 비교선을 지어내지 않는다', async () => {
   const [main, flow] = await Promise.all([read('pages/main.html'), read('assets/js/evasion-flow.js')]);
-  for (const axis of ['문장 길이 균일', '같은 종결 반복', '일반 표현 비율', '구체 앵커 부족', '화자 입장 부족']) {
+  for (const axis of ['문장 길이 균일', '같은 종결 반복', '일반 표현 비율', '구체 근거 부족', '화자 입장 부족']) {
     assert.ok(flow.includes(axis), '레이더 축: ' + axis);
   }
   assert.doesNotMatch(main, /일반 패턴/u, '없는 모집단 평균선을 그리지 않는다');
@@ -177,11 +178,21 @@ test('원인 레이더는 실측 다섯 축만 그리고 모집단 비교선을 
   assert.match(flow, /function repAxisPolicy/u);
   assert.match(flow, /pol\.status === 'off' \|\| pol\.status === 'sparse'/u, 'off·sparse 축은 등급 대신 이유');
   assert.doesNotMatch(flow, /soft: true|' · 참고'/u, '참고 단계 없음 — 막대·등급이 있으면 수치처럼 읽히므로 못 가린 축은 비활성(na)');
-  assert.match(flow, /anchorLived \? '경험 문장 부족' : '구체 앵커 부족'/u, '자소서·에세이는 경험 문장 축');
+  assert.doesNotMatch(flow, /pol\.status === 'soft'|a\.soft|axis\.soft/u, '축 상태는 off·sparse·on만 사용한다');
+  assert.match(flow, /pol\.status && pol\.status !== 'on'[^]*?status: 'off'/u, '구형 soft 등 알 수 없는 상태는 표시하지 않는다');
+  assert.match(flow, /anchorLived \? '경험 문장 부족' : '구체 근거 부족'/u, '자소서·에세이는 경험 문장 축');
+  assert.match(flow, /anchorGrounded \? groundedRatio : anchor/u, '보고서·기록은 구체 사실·경험 문장 비율을 쓴다');
+  assert.match(flow, /구체 사실·경험 문장/u, 'grounded 축의 실측 근거를 사용자에게 설명한다');
+  assert.match(flow, /function repAxisCopy/u, '축을 눌렀을 때 안내도 측정 방식에 맞춘다');
+  assert.match(flow, /metric === 'lived'[^]*?실제 경험이 드러난 문장/u, '경험 축은 경험 문장으로 연결한다');
+  assert.match(flow, /metric === 'grounded'[^]*?구체적인 사실이나 경험이 있는 문장/u, '근거 축은 사실·경험 문장으로 연결한다');
+  assert.match(flow, /anchorMetric === 'lived'[^]*?s\.kind === 'lived'/u, '경험 축을 누르면 실제 경험 문장만 고른다');
+  assert.match(flow, /anchorMetric === 'grounded'[^]*?s\.kind === 'lived' \|\| s\.kind === 'specific'/u, '구체 근거 축은 사실·경험 문장을 함께 고른다');
   assert.match(flow, /policyRoot\.mode === 'sparse_all'/u);
   assert.match(flow, /gp-rep-radar-empty/u);
   assert.match(flow, /profileLabel \+ ' 기준으로 봤어요\.'/u);
   assert.match(flow, /anchorPol\.status === 'on' && anchorPol\.metric === 'lived'/u, '처방은 정책이 켠 축에서만');
+  assert.match(flow, /anchorPol\.status === 'on' && anchorPol\.metric === 'grounded'/u, '구체 근거 처방도 grounded 정책에서만 연다');
   assert.match(flow, /stancePol\.status === 'on'/u);
   assert.ok(!/Number\.isFinite\(anchor\) \? repClamp01\(1 - anchor \/ 0\.3\) : 1/u.test(flow),
     '없는 값을 최고치로 채우던 폴백이 남아 있지 않다');
@@ -272,7 +283,7 @@ test('원인 분석은 항목·실측·막대·등급 한 줄의 "신호 강도 
   assert.match(flow, /li\.style\.setProperty\('--v'/u, '막대 길이는 축 값');
   assert.match(css, /\.gp-rep-radar\.is-drawn \.sig-fill\{width:calc\(var\(--v,0\) \* 1%\);\}/u, '막대가 인트로에 차오른다');
   assert.match(css, /\.sig-bar::before\{left:34%;\}/u, '보통·높음 경계선(34·67%)');
-  assert.match(main, /막대가 길수록 AI식 신호가 강해요/u);
+  assert.match(main, /막대는 자동 계측한 표면 문체 신호만 보여줘요/u);
   assert.ok(!/class: 'glasses'|lens-body/u.test(flow), '렌즈 차트 잔재가 없다');
   assert.ok(!/v118b/u.test(css), '렌즈 CSS 잔재가 없다');
 });
@@ -383,20 +394,175 @@ test('v118 — 모바일 최적화와 인터랙션 보강이 한 세트로 들�
 });
 
 
-test('After 문장은 가장 많이 바뀐 자리만 보이고 나머지는 가려져 휴머나이징으로 이어진다', async () => {
+test('After 문장은 실제로 바뀐 자리만 보이고 나머지는 가려져 휴머나이징으로 이어진다', async () => {
   const [main, flow, css] = await Promise.all([read('pages/main.html'), read('assets/js/evasion-flow.js'), read('assets/css/redesign.css')]);
   // 감지만 돌려 짧은 글을 다듬어 가는 구멍을 막는다(사장님 9/2)
   assert.match(flow, /function repPaintAfter/u);
   assert.match(flow, /mask\.className = 'gp-rep-ba-mask'/u, '가려진 조각은 별도 스팬');
-  assert.match(flow, /mask\.textContent = p\.text/u, '화면은 서버가 준 가짜 글자만 그린다(원문 나머지는 응답에 없다)');
-  assert.match(flow, /vis\.className = 'gp-rep-ba-peek'/u, '공개 조각은 표시된다');
+  assert.match(flow, /mask\.textContent = partText/u, '화면은 서버가 준 가짜 글자만 그린다(원문 나머지는 응답에 없다)');
+  assert.match(flow, /changed\.className = 'gp-rep-ba-peek'/u, '공개 조각 중 실제 변경 범위만 표시된다');
   assert.match(main, /id="gpRepBaUnlock"[^>]*hidden/u);
   assert.match(main, /나머지는 휴머나이징에서 →/u);
-  assert.match(flow, /'휴머나이징 미리보기 · 가장 많이 바뀐 자리'/u, 'After 태그는 예시가 아니라 우리 기능을 명시');
+  assert.match(flow, /'휴머나이징 미리보기 · 실제로 달라지는 표현'/u, 'After 태그는 확인된 변화를 명시');
   assert.match(css, /\.gp-rep-ba-mask\{[^}]*filter:blur\(5px\)[^}]*user-select:none/u, '블러 + 선택 불가');
   // 개선 포인트도 전환으로 이어진다 — 권하지 않는 상태에서는 숨긴다
   assert.match(main, /id="gpRepTipsCta"[^>]*hidden/u);
   assert.match(flow, /tipsCta\.hidden = model\.conversionEligible === false \|\| actionable === 0/u);
+});
+
+test('전후 비교는 공백·구두점 변화나 검증되지 않은 동일 조각을 성과처럼 보여주지 않는다', async () => {
+  const [main, flow] = await Promise.all([read('pages/main.html'), read('assets/js/evasion-flow.js')]);
+  assert.match(flow, /function repPreviewComparable/u, '공백·구두점 제외 비교기를 둔다');
+  assert.ok(flow.includes("replace(/[^\\p{L}\\p{N}]+/gu, '')"), '문자·숫자만 남겨 표면 변화는 제외한다');
+  assert.match(flow, /example\.meaningfulChange !== true \|\| example\.afterAnchor !== 'changed'/u, '서버가 의미 있는 변화로 확인한 미리보기만 연다');
+  assert.match(flow, /changedComparable === beforeComparable/u, '실제 변경 범위가 원문과 같으면 닫는다');
+  assert.match(flow, /var exampleState = repPreviewChangeState\(example\)/u);
+  assert.match(flow, /실제로 달라진 표현을 확인할 수 없어 이번 미리보기는 표시하지 않았어요/u);
+  assert.match(flow, /heroNote\.hidden = !usable/u, '비교가 닫히면 예시 안내도 숨긴다');
+  assert.match(main, /id="gpRepHeroNote"/u);
+
+  const start = flow.indexOf('function repChangeKind');
+  const end = flow.indexOf('// ── After 문장 게이트', start);
+  assert.ok(start >= 0 && end > start, '미리보기 판정 함수 범위를 찾음');
+  const sandbox = {};
+  vm.runInNewContext(`${flow.slice(start, end)}\nresult = {
+    shortChanged: repPreviewChangeState({
+      before: '이 문장은 딱딱합니다.', after: '이 문장은 자연스럽습니다.',
+      afterParts: [{ text: '이 문장은 자연스럽습니다.', visible: true }],
+      beforeFocus: { start: 6, end: 11 }, afterFocus: { start: 6, end: 13 },
+      afterAnchor: 'changed', meaningfulChange: true, changeKind: 'replacement', gated: false
+    }),
+    same: repPreviewChangeState({
+      before: '같은 문장입니다.', after: '같은 문장입니다!',
+      afterParts: [{ text: '같은 문장입니다!', visible: true }],
+      beforeFocus: { start: 3, end: 5 }, afterFocus: { start: 3, end: 5 },
+      afterAnchor: 'changed', meaningfulChange: true, changeKind: 'replacement', gated: false
+    }),
+    insertion: repPreviewChangeState({
+      before: '나는 간다.', after: '나는 곧 간다.',
+      afterParts: [{ text: '나는 곧 간다.', visible: true }],
+      beforeFocus: { start: 3, end: 3 }, afterFocus: { start: 3, end: 4 },
+      afterAnchor: 'changed', meaningfulChange: true, changeKind: 'insertion', gated: false
+    }),
+    deletion: repPreviewChangeState({
+      before: '나는 곧 간다.', after: '나는 간다.',
+      afterParts: [{ text: '나는 간다.', visible: true }],
+      beforeFocus: { start: 3, end: 4 }, afterFocus: { start: 3, end: 3 },
+      afterAnchor: 'changed', meaningfulChange: true, changeKind: 'deletion', gated: false
+    }),
+    zeroReplacement: repPreviewChangeState({
+      before: '나는 간다.', after: '나는 간다.',
+      afterParts: [{ text: '나는 간다.', visible: true }],
+      beforeFocus: { start: 3, end: 3 }, afterFocus: { start: 3, end: 3 },
+      afterAnchor: 'changed', meaningfulChange: true, changeKind: 'replacement', gated: false
+    }),
+    unverified: repPreviewChangeState({
+      before: '원문입니다.', after: '새 문장입니다.',
+      beforeFocus: { start: 0, end: 6 }, afterFocus: { start: 0, end: 2 },
+      afterAnchor: 'changed', meaningfulChange: false, changeKind: 'replacement', gated: false
+    })
+  };`, sandbox);
+  assert.equal(sandbox.result.shortChanged.usable, true, '짧아도 서버가 검증한 실질 변화는 보여준다');
+  assert.equal(sandbox.result.same.usable, false, '구두점만 달라진 동일 문장은 숨긴다');
+  assert.equal(sandbox.result.insertion.usable, true, '삽입-only의 0길이 원문 focus를 허용한다');
+  assert.equal(sandbox.result.deletion.usable, true, '삭제-only의 0길이 결과 focus를 허용한다');
+  assert.equal(sandbox.result.zeroReplacement.usable, false, '교체인데 양쪽 focus가 비면 숨긴다');
+  assert.equal(sandbox.result.unverified.usable, false, '검증되지 않은 변화는 숨긴다');
+  assert.match(flow, /repAppendChangeMarker\(before, 'insertion'\)/u, '삽입 위치를 원문에 표시한다');
+  assert.match(flow, /repAppendChangeMarker\(after, 'deletion'\)/u, '삭제 위치를 결과에 표시한다');
+  assert.match(flow, /changed\.textContent = partText\.slice/u, '변경되지 않은 After 문맥은 mark로 감싸지 않는다');
+});
+
+test('점수 원인 커버리지를 받아 결정론 축이 설명하지 못한 신호를 함께 보여준다', async () => {
+  const [flow, css] = await Promise.all([read('assets/js/evasion-flow.js'), read('assets/css/redesign.css')]);
+  assert.match(flow, /reportView\.causeAnalysis/u);
+  assert.match(flow, /function repPaintCauseAnalysis/u);
+  assert.match(flow, /\['aligned', 'partial', 'limited'\]/u);
+  assert.match(flow, /AI 티 지수의 원인을 일부만 확인했어요/u, '부분 정합 상태를 숨기지 않는다');
+  assert.match(flow, /위 막대는 표면 문체만 자동 계측해요/u, '결정론 막대와 모델 점수의 판단 범위를 구분한다');
+  assert.ok(flow.indexOf('repPaintCauseAnalysis(model, host);') < flow.indexOf('repPaintSurfaceLabel(model, host);'), '점수 연결 원인이 표면 지표보다 먼저 온다');
+  assert.match(flow, /추가 표면 지표 · 참고/u);
+  assert.match(flow, /AI 티 지수에 반영된 판단 원인:/u, '스크린리더에도 원인을 먼저 전달한다');
+  assert.match(css, /\.gp-rep-cause-match\.is-partial/u);
+
+  const sortStart = flow.indexOf('function repOrderedCauseItems');
+  const sortEnd = flow.indexOf('function repPaintCauseAnalysis', sortStart);
+  const sandbox = {};
+  vm.runInNewContext(`${flow.slice(sortStart, sortEnd)}\nresult = repOrderedCauseItems([
+    { categoryLabel: '고립 강함', strength: 'strong', scope: 'isolated' },
+    { categoryLabel: '반복 보통', strength: 'moderate', scope: 'recurring' },
+    { categoryLabel: '전역 강함', strength: 'strong', scope: 'pervasive' },
+    { categoryLabel: '반복 강함', strength: 'strong', scope: 'recurring' }
+  ]).map(item => item.categoryLabel);`, sandbox);
+  assert.deepEqual(Array.from(sandbox.result), ['전역 강함', '반복 강함', '반복 보통', '고립 강함'], '반복·전역과 강한 원인을 고립 신호보다 먼저 보여준다');
+});
+
+test('삽입·삭제 미리보기는 0폭 위치를 표시하고 바뀌지 않은 결과 문맥은 강조하지 않는다', async () => {
+  const flow = await read('assets/js/evasion-flow.js');
+  const start = flow.indexOf('function repChangeKind');
+  const end = flow.indexOf('// ── 문단 칸 툴팁', start);
+  assert.ok(start >= 0 && end > start, '전후 미리보기 렌더러 범위를 찾음');
+
+  class FakeNode {
+    constructor(tag = '') {
+      this.tagName = tag;
+      this.children = [];
+      this.className = '';
+      this.hidden = false;
+      this.attrs = {};
+      this._text = '';
+      this.classList = { toggle() {} };
+    }
+    appendChild(child) { this.children.push(child); return child; }
+    setAttribute(name, value) { this.attrs[name] = String(value); }
+    getAttribute(name) { return this.attrs[name] || null; }
+    set textContent(value) { this._text = String(value); this.children = []; }
+    get textContent() { return this.children.length ? this.children.map(child => child.textContent).join('') : this._text; }
+  }
+  const nodes = {
+    gpRepBefore: new FakeNode('p'), gpRepAfter: new FakeNode('p'), gpRepAfterTag: new FakeNode('p'), gpRepBaUnlock: new FakeNode('div')
+  };
+  const afterCol = new FakeNode('article');
+  const sandbox = {
+    document: {
+      getElementById: id => nodes[id] || null,
+      querySelector: selector => selector === '.gp-rep-ba-col.after' ? afterCol : null,
+      createElement: tag => new FakeNode(tag),
+      createTextNode: text => { const node = new FakeNode('#text'); node.textContent = text; return node; }
+    }
+  };
+  vm.runInNewContext(`function $(id){ return document.getElementById(id); }\n${flow.slice(start, end)}`, sandbox);
+
+  const insertion = {
+    before: '나는 간다.', after: '나는 곧 간다.', afterParts: [{ text: '나는 곧 간다.', visible: true }],
+    beforeFocus: { start: 3, end: 3 }, afterFocus: { start: 3, end: 4 },
+    afterAnchor: 'changed', meaningfulChange: true, changeKind: 'insertion', gated: false
+  };
+  sandbox.repPaintBefore(insertion);
+  sandbox.repPaintAfter(insertion);
+  assert.ok(nodes.gpRepBefore.children.some(node => node.className.includes('is-insertion')), 'Before에 추가 위치 마커');
+  const insertionMarks = nodes.gpRepAfter.children.filter(node => node.className === 'gp-rep-ba-peek');
+  assert.deepEqual(insertionMarks.map(node => node.textContent), ['곧'], 'After에서는 삽입된 표현만 강조');
+  assert.equal(nodes.gpRepAfter.textContent, '나는 곧 간다.', '변경되지 않은 앞뒤 문맥도 손실 없이 표시');
+
+  const deletion = {
+    before: '나는 곧 간다.', after: '나는 간다.', afterParts: [{ text: '나는 간다.', visible: true }],
+    beforeFocus: { start: 3, end: 4 }, afterFocus: { start: 3, end: 3 },
+    afterAnchor: 'changed', meaningfulChange: true, changeKind: 'deletion', gated: false
+  };
+  sandbox.repPaintBefore(deletion);
+  sandbox.repPaintAfter(deletion);
+  assert.ok(nodes.gpRepBefore.children.some(node => node.className.includes('is-deletion') && node.textContent === '곧'), 'Before에서 삭제되는 표현 표시');
+  assert.ok(nodes.gpRepAfter.children.some(node => node.className.includes('is-deletion')), 'After에 삭제된 자리 마커');
+  assert.equal(nodes.gpRepAfter.children.some(node => node.className === 'gp-rep-ba-peek'), false, '삭제 뒤 남은 문맥은 변경으로 강조하지 않음');
+
+  const fullDeletion = {
+    before: '삭제', after: '', afterParts: [{ text: '', visible: true }],
+    beforeFocus: { start: 0, end: 2 }, afterFocus: { start: 0, end: 0 },
+    afterAnchor: 'changed', meaningfulChange: true, changeKind: 'deletion', gated: false
+  };
+  sandbox.repPaintAfter(fullDeletion);
+  assert.ok(nodes.gpRepAfter.children.some(node => node.className.includes('is-deletion')), '결과가 빈 전체 삭제도 자리 마커를 남김');
 });
 
 
@@ -414,6 +580,8 @@ test('Before에 바뀌는 자리를 표시하고 저장 버튼은 히어로 우�
   const [main, flow, css] = await Promise.all([read('pages/main.html'), read('assets/js/evasion-flow.js'), read('assets/css/redesign.css')]);
   assert.match(flow, /function repPaintBefore/u);
   assert.match(flow, /mark\.className = 'gp-rep-ba-focus'/u);
+  assert.match(css, /\.gp-rep-change-marker\.is-insertion/u);
+  assert.match(css, /\.gp-rep-change-marker\.is-deletion/u);
   assert.match(main, /<section class="gp-rep-hero"[^>]*>\s*<button type="button" class="gp-rep-share" id="gpRepShare"/u, '저장 버튼이 히어로 첫 자식');
   assert.match(css, /\.gp-rep-hero \.gp-rep-share\{position:absolute;top:18px;right:18px/u);
   assert.match(css, /\.gp-rep-zonekey\{flex-wrap:nowrap/u, '범례 한 줄');

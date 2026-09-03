@@ -936,24 +936,140 @@
   }
 
   // ── Before 문장 — 다듬을 때 바뀌는 자리를 원문에 표시한다(사용자 글이라 가릴 것 없다) ──
+  function repChangeKind(example) {
+    var kind = String((example && example.changeKind) || '').toLowerCase();
+    if (kind === 'lexical') return 'replacement';
+    return kind === 'replacement' || kind === 'insertion' || kind === 'deletion' ? kind : '';
+  }
+
+  function repFocusSpan(focus, total, allowEmpty) {
+    if (!focus) return null;
+    if (focus.start === null || focus.start === undefined || focus.start === ''
+      || focus.end === null || focus.end === undefined || focus.end === '') return null;
+    var start = Number(focus.start), end = Number(focus.end);
+    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end > total) return null;
+    if (!allowEmpty && end === start) return null;
+    return { start: start, end: end };
+  }
+
+  function repAppendChangeMarker(host, kind) {
+    if (!host) return;
+    var marker = document.createElement('span');
+    marker.className = 'gp-rep-change-marker is-' + kind;
+    marker.textContent = kind === 'insertion' ? '+ 추가 위치' : '− 삭제된 자리';
+    marker.setAttribute('aria-label', kind === 'insertion'
+      ? '이 위치에 표현이 추가돼요'
+      : '이 위치에서 표현이 삭제됐어요');
+    marker.title = marker.getAttribute('aria-label');
+    host.appendChild(marker);
+  }
+
   function repPaintBefore(example) {
     var before = $('gpRepBefore');
     if (!before) return;
     before.textContent = '';
     if (!example) return;
     var text = String(example.before || '');
-    var f = example.beforeFocus;
-    if (f && Number.isFinite(Number(f.start)) && Number.isFinite(Number(f.end)) && f.end > f.start && f.end <= text.length) {
+    var kind = repChangeKind(example);
+    var f = repFocusSpan(example.beforeFocus, text.length, kind === 'insertion');
+    if (f && kind === 'insertion' && f.start === f.end) {
+      before.appendChild(document.createTextNode(text.slice(0, f.start)));
+      repAppendChangeMarker(before, 'insertion');
+      before.appendChild(document.createTextNode(text.slice(f.end)));
+    } else if (f && f.end > f.start) {
       before.appendChild(document.createTextNode(text.slice(0, f.start)));
       var mark = document.createElement('mark');
-      mark.className = 'gp-rep-ba-focus';
-      mark.title = '다듬을 때 가장 크게 바뀌는 자리';
+      mark.className = 'gp-rep-ba-focus' + (kind === 'deletion' ? ' is-deletion' : '');
+      mark.title = kind === 'deletion' ? '다듬을 때 빠지는 표현' : '다듬을 때 가장 크게 바뀌는 자리';
       mark.textContent = text.slice(f.start, f.end);
       before.appendChild(mark);
       before.appendChild(document.createTextNode(text.slice(f.end)));
     } else {
       before.textContent = text;
     }
+  }
+
+  // 전후 미리보기는 단순히 두 문자열이 존재한다고 열지 않는다. 공백·구두점만 달라졌거나
+  // 공개된 After 조각이 원문에 그대로 있으면 사용자는 "무엇이 바뀌었나"를 확인할 수 없다.
+  // 서버가 확인한 changed 앵커와 실제 공개 조각을 함께 대조해, 증명할 수 있는 변화만 보여준다.
+  function repPreviewComparable(text) {
+    var value = String(text || '');
+    try { value = value.normalize('NFKC'); } catch (e) { /* 구형 브라우저 */ }
+    return value.toLocaleLowerCase('ko-KR').replace(/[^\p{L}\p{N}]+/gu, '');
+  }
+
+  function repPreviewParts(example) {
+    return example && Array.isArray(example.afterParts) && example.afterParts.length
+      ? example.afterParts
+      : [{ text: String((example && example.after) || ''), visible: true }];
+  }
+
+  function repPreviewAfterLength(example) {
+    return repPreviewParts(example).reduce(function (sum, part) { return sum + String((part && part.text) || '').length; }, 0);
+  }
+
+  // afterFocus는 전체 rewrite 좌표다. afterParts의 숨김 조각도 같은 길이를 유지하므로
+  // 누적 offset으로 공개 조각과 겹치는 실제 변경 텍스트만 안전하게 꺼낸다.
+  function repPreviewAfterFocusText(example, focus) {
+    var offset = 0, covered = 0, text = '';
+    repPreviewParts(example).forEach(function (part) {
+      var value = String((part && part.text) || '');
+      var end = offset + value.length;
+      var from = Math.max(focus.start, offset), to = Math.min(focus.end, end);
+      if (to > from && part && part.visible !== false) {
+        text += value.slice(from - offset, to - offset);
+        covered += to - from;
+      }
+      offset = end;
+    });
+    return covered === focus.end - focus.start ? text : '';
+  }
+
+  function repPreviewAfterMarkerVisible(example, position) {
+    var offset = 0, visible = false;
+    repPreviewParts(example).forEach(function (part) {
+      var end = offset + String((part && part.text) || '').length;
+      if (!visible && part && part.visible !== false && position >= offset && position <= end) visible = true;
+      offset = end;
+    });
+    return visible;
+  }
+
+  function repPreviewChangeState(example) {
+    if (!example || !example.before) return { usable: false, reason: 'missing' };
+    // gated는 긴 문장의 마스킹 방식일 뿐 변화 검증 값이 아니다. 짧은 문장은
+    // meaningfulChange로 확인하므로, 가리지 않은 결과도 실제 변화라면 보여준다.
+    if (example.meaningfulChange !== true || example.afterAnchor !== 'changed') {
+      return { usable: false, reason: 'unverified_change' };
+    }
+    var before = String(example.before || '');
+    var kind = repChangeKind(example);
+    if (!kind) return { usable: false, reason: 'unverified_change' };
+    var beforeFocus = repFocusSpan(example.beforeFocus, before.length, kind === 'insertion');
+    if (!beforeFocus || (kind === 'insertion' ? beforeFocus.start !== beforeFocus.end : beforeFocus.start === beforeFocus.end)) {
+      return { usable: false, reason: 'unverified_change' };
+    }
+
+    var afterLength = repPreviewAfterLength(example);
+    var afterFocus = repFocusSpan(example.afterFocus, afterLength, kind === 'deletion');
+    if (!afterFocus || (kind === 'deletion' ? afterFocus.start !== afterFocus.end : afterFocus.start === afterFocus.end)) {
+      return { usable: false, reason: 'unverified_change' };
+    }
+
+    var beforeComparable = repPreviewComparable(before.slice(beforeFocus.start, beforeFocus.end));
+    if (kind === 'deletion') {
+      if (!beforeComparable || !repPreviewAfterMarkerVisible(example, afterFocus.start)) {
+        return { usable: false, reason: 'no_meaningful_change' };
+      }
+      return { usable: true, reason: 'changed', kind: kind };
+    }
+
+    var changedAfter = repPreviewAfterFocusText(example, afterFocus);
+    var changedComparable = repPreviewComparable(changedAfter);
+    if (!changedComparable || (kind === 'replacement' && changedComparable === beforeComparable)) {
+      return { usable: false, reason: 'no_meaningful_change' };
+    }
+    return { usable: true, reason: 'changed', kind: kind, visible: changedAfter };
   }
 
   // ── After 문장 게이트 — 가장 많이 바뀐 자리만 보이고 나머지는 블러(서버가 이미 가짜 글자로 바꿔 보낸다) ──
@@ -963,23 +1079,43 @@
     var col = document.querySelector('.gp-rep-ba-col.after');
     if (!after) return;
     after.textContent = '';
-    var parts = example && Array.isArray(example.afterParts) && example.afterParts.length
-      ? example.afterParts
-      : (example ? [{ text: example.after || '', visible: true }] : []);
+    var parts = example ? repPreviewParts(example) : [];
     var gated = parts.some(function (p) { return p && p.visible === false; });
+    var kind = repChangeKind(example);
+    var afterFocus = example ? repFocusSpan(example.afterFocus, repPreviewAfterLength(example), kind === 'deletion') : null;
+    var offset = 0, markerPlaced = false;
     parts.forEach(function (p) {
-      if (!p || !p.text) return;
+      if (!p) return;
+      var partText = String(p.text || '');
+      var partStart = offset, partEnd = offset + partText.length;
+      offset = partEnd;
+      if (!partText && !(afterFocus && kind === 'deletion' && !markerPlaced && afterFocus.start === partStart)) return;
       if (p.visible === false) {
         var mask = document.createElement('span');
         mask.className = 'gp-rep-ba-mask';
         mask.setAttribute('aria-hidden', 'true');
-        mask.textContent = p.text;
+        mask.textContent = partText;
         after.appendChild(mask);
+      } else if (afterFocus && afterFocus.end > afterFocus.start) {
+        var from = Math.max(afterFocus.start, partStart), to = Math.min(afterFocus.end, partEnd);
+        if (from > partStart) after.appendChild(document.createTextNode(partText.slice(0, from - partStart)));
+        if (to > from) {
+          var changed = document.createElement('mark');
+          changed.className = 'gp-rep-ba-peek';
+          changed.textContent = partText.slice(from - partStart, to - partStart);
+          after.appendChild(changed);
+        }
+        var tail = Math.max(partStart, to);
+        if (tail < partEnd) after.appendChild(document.createTextNode(partText.slice(tail - partStart)));
+      } else if (afterFocus && kind === 'deletion' && !markerPlaced
+        && afterFocus.start >= partStart && afterFocus.start <= partEnd) {
+        var local = afterFocus.start - partStart;
+        after.appendChild(document.createTextNode(partText.slice(0, local)));
+        repAppendChangeMarker(after, 'deletion');
+        markerPlaced = true;
+        after.appendChild(document.createTextNode(partText.slice(local)));
       } else {
-        var vis = document.createElement('mark');
-        vis.className = 'gp-rep-ba-peek';
-        vis.textContent = p.text;
-        after.appendChild(vis);
+        after.appendChild(document.createTextNode(partText));
       }
     });
     if (gated) {
@@ -989,7 +1125,11 @@
       after.appendChild(sr);
     }
     if (col) col.classList.toggle('is-gated', gated);
-    if (tag) tag.textContent = gated ? '휴머나이징 미리보기 · 가장 많이 바뀐 자리' : '휴머나이징 결과 · 사실은 그대로';
+    if (tag) tag.textContent = kind === 'insertion'
+      ? '휴머나이징 미리보기 · 추가되는 표현'
+      : kind === 'deletion'
+        ? '휴머나이징 미리보기 · 빠지는 표현의 자리'
+        : '휴머나이징 미리보기 · 실제로 달라지는 표현';
     if (unlock) unlock.hidden = !gated;
   }
 
@@ -1286,6 +1426,12 @@
       ? '프로젝트 경험은 유지하고, 반복되는 종결과 일반적인 결론 문장을 먼저 다듬어 보세요.'
       : '확인된 사실과 경험은 유지하고, 두드러진 문체 신호만 골라 다듬어 보세요.');
     var limitation = synthesis.limitation || '문체 패턴을 바탕으로 한 참고 결과이며 작성 주체나 외부 검사 결과를 확정하지 않아요.';
+    var causeAnalysis = reportView.causeAnalysis && typeof reportView.causeAnalysis === 'object'
+      ? reportView.causeAnalysis
+      : null;
+    var alignment = reportView.alignment && typeof reportView.alignment === 'object'
+      ? reportView.alignment
+      : null;
     var preservation = reportView.preservation && Array.isArray(reportView.preservation.items)
       ? reportView.preservation.items
       : ['사실·수치·고유명사', '직접 경험과 프로젝트 맥락'];
@@ -1315,6 +1461,8 @@
       },
       synthesis: { headline: headline, description: description, limitation: limitation },
       measured: measured,
+      causeAnalysis: causeAnalysis,
+      alignment: alignment,
       preservation: preservation,
       paragraphs: paragraphs,
       sentenceMap: normalizeSentenceMap(d.sentenceMap),
@@ -1490,7 +1638,7 @@
       var shown = scoped.slice(0, REP_INLINE_KEY);
       shown.forEach(function (sentence) { list.appendChild(repSentenceRow(sentence)); });
       if (linkHead) {
-        var copy = REP_AXIS_COPY[repMapState.link] || { head: '', empty: '' };
+        var copy = repAxisCopy(repMapState.link, lastReportModel);
         linkHead.hidden = false;
         linkHead.textContent = '';
         var chip = document.createElement('b');
@@ -1775,16 +1923,24 @@
     var stance = repMeasured(m.stanceRatio);
     var anchorPolicy = policy.anchor || {};
     var stancePolicy = policy.stance || {};
-    // 자소서·에세이는 숫자·고유명사 대신 '실제 경험 문장' 비율이 구체성이다.
+    // 자소서·에세이는 '실제 경험 문장', 설명·기록 계열은 '구체 사실+경험 문장' 비율을 쓴다.
     var anchorLived = anchorPolicy.metric === 'lived';
+    var anchorGrounded = anchorPolicy.metric === 'grounded';
     var livedRatio = (model.content.lived != null && totalRaw != null && totalRaw > 0) ? model.content.lived / totalRaw : null;
-    var anchorRaw = anchorLived ? livedRatio : anchor;
+    var groundedRatio = repMeasured(m.groundedRatio);
+    if (groundedRatio == null && totalRaw != null && totalRaw > 0 && model.content.lived != null && model.content.specific != null) {
+      groundedRatio = Math.min(totalRaw, Number(model.content.lived) + Number(model.content.specific)) / totalRaw;
+    }
+    var anchorRaw = anchorLived ? livedRatio : (anchorGrounded ? groundedRatio : anchor);
     var anchorTarget = Number(anchorPolicy.target) > 0 ? Number(anchorPolicy.target) : 0.3;
     var stanceTarget = Number(stancePolicy.target) > 0 ? Number(stancePolicy.target) : 0.3;
     var axis = function (name, raw, compute, pol) {
       pol = pol || {};
       if (pol.status === 'off' || pol.status === 'sparse') {
         return { name: name, value: 0, unknown: true, status: pol.status, reason: pol.reason || '' };
+      }
+      if (pol.status && pol.status !== 'on') {
+        return { name: name, value: 0, unknown: true, status: 'off', reason: pol.reason || '이전 기준으로 저장된 축이라 표시하지 않았어요' };
       }
       if (raw == null) return { name: name, value: 0, unknown: true };
       return { name: name, value: repClamp01(compute(raw)), unknown: false };
@@ -1794,7 +1950,7 @@
       axis('문장 길이 균일', cv, function (v) { return 1 - v / 0.4; }, policy.uniform),
       axis('같은 종결 반복', run, function (v) { return v / 6; }, policy.ending),
       axis('일반 표현 비율', genericRatio, function (v) { return v; }, policy.generic),
-      axis(anchorLived ? '경험 문장 부족' : '구체 앵커 부족', anchorRaw, function (v) { return 1 - v / anchorTarget; }, anchorPolicy),
+      axis(anchorLived ? '경험 문장 부족' : '구체 근거 부족', anchorRaw, function (v) { return 1 - v / anchorTarget; }, anchorPolicy),
       axis('화자 입장 부족', stance, function (v) { return 1 - v / stanceTarget; }, stancePolicy)
     ];
   }
@@ -1818,10 +1974,23 @@
     if (key === 'anchor') {
       var anchorPol = repAxisPolicy(model).anchor || {};
       if (anchorPol.metric === 'lived') return c.lived != null ? '실제 경험 문장 ' + c.lived + '개' : '';
+      if (anchorPol.metric === 'grounded') {
+        var groundedCount = m.groundedCount != null
+          ? Number(m.groundedCount)
+          : Math.min(total, Number(c.lived) + Number(c.specific));
+        return Number.isFinite(groundedCount) ? '구체 사실·경험 문장 ' + groundedCount + '개' : '';
+      }
       return m.realAnchorCount != null ? '숫자·연도·고유명사 문장 ' + m.realAnchorCount + '개' : '';
     }
     if (key === 'stance') return (Number.isFinite(Number(m.stanceRatio)) && total) ? '화자 입장 문장 ' + Math.round(Number(m.stanceRatio) * total) + '개' : '';
     return '';
+  }
+  function repPaintSurfaceLabel(model, host) {
+    if (!host) return;
+    var label = document.createElement('p');
+    label.className = 'gp-rep-surface-label';
+    label.textContent = model && model.causeAnalysis ? '추가 표면 지표 · 참고' : '표면 문체 지표 · 참고';
+    host.appendChild(label);
   }
   function repPaintRadar(model) {
     var host = $('gpRepRadar');
@@ -1832,12 +2001,21 @@
     var alt = $('gpRepRadarAccessible');
     // 두세 문장짜리 글: 통계 축을 잰 척하지 않고 한 줄로 닫는다(점수·문장별 태그는 그대로).
     if (policyRoot && policyRoot.mode === 'sparse_all') {
+      repPaintCauseAnalysis(model, host);
+      repPaintSurfaceLabel(model, host);
       var empty = document.createElement('p');
       empty.className = 'gp-rep-radar-empty';
       empty.textContent = policyRoot.note || '짧은 글은 문체 통계 신호를 잴 수 없어요. 600자쯤(약 8문장)부터 원인 분석이 열려요.';
       host.appendChild(empty);
       if (hint) hint.hidden = true;
-      if (alt) alt.textContent = 'AI 감지 원인 분석. ' + empty.textContent;
+      if (alt) {
+        var sparseCauses = model.causeAnalysis && Array.isArray(model.causeAnalysis.items)
+          ? repOrderedCauseItems(model.causeAnalysis.items).slice(0, 3).map(function (item) { return String(item.categoryLabel || item.description || ''); }).filter(Boolean)
+          : [];
+        alt.textContent = 'AI 감지 원인 분석. '
+          + (sparseCauses.length ? 'AI 티 지수에 반영된 판단 원인: ' + sparseCauses.join(', ') + '. ' : '')
+          + '표면 문체 지표: ' + empty.textContent;
+      }
       return;
     }
     if (hint) hint.hidden = false;
@@ -1845,11 +2023,17 @@
     if (policyRoot && policyRoot.profileLabel) {
       var who = document.createElement('p');
       who.className = 'gp-rep-radar-profile';
-      who.textContent = policyRoot.lowConfidence
-        ? '글 종류를 확실히 가리지 못해 문체 신호 세 가지만 봤어요.'
-        : policyRoot.profileLabel + ' 기준으로 봤어요.';
+      who.textContent = policyRoot.ambiguousProfile
+        ? '비슷한 글 종류가 함께 감지돼 구체 근거·화자 입장은 표시하지 않았어요.'
+        : policyRoot.lowConfidence
+          ? '글 종류를 확실히 가리지 못해 구체 근거·화자 입장은 표시하지 않았어요.'
+          : policyRoot.profileLabel + ' 기준으로 봤어요.';
       host.appendChild(who);
     }
+    // 점수에 직접 연결된 모델 원인을 먼저 읽고, 결정론 막대는 보조 진단으로 뒤에 둔다.
+    // 막대가 모두 낮아도 점수가 높을 수 있다는 사실을 순서 자체로 오해 없이 전달한다.
+    repPaintCauseAnalysis(model, host);
+    repPaintSurfaceLabel(model, host);
     var list = document.createElement('ol');
     list.className = 'gp-rep-signals';
     axes.forEach(function (a, i) {
@@ -1886,10 +2070,77 @@
     });
     host.appendChild(list);
     if (alt) {
-      alt.textContent = 'AI 감지 원인 분석. ' + axes.map(function (a) {
-        return a.name + ' ' + repRadarLevel(a);
-      }).join(', ') + '.';
+      var causeAlt = model.causeAnalysis && Array.isArray(model.causeAnalysis.items)
+        ? repOrderedCauseItems(model.causeAnalysis.items).slice(0, 3).map(function (item) { return String(item.categoryLabel || item.description || ''); }).filter(Boolean)
+        : [];
+      alt.textContent = 'AI 감지 원인 분석. '
+        + (causeAlt.length ? 'AI 티 지수에 반영된 판단 원인: ' + causeAlt.join(', ') + '. ' : '')
+        + '추가 표면 지표: ' + axes.map(function (a) {
+          return a.name + ' ' + repRadarLevel(a);
+        }).join(', ') + '.';
     }
+  }
+
+  // 모델 점수와 결정론 다섯 축의 설명 범위가 다를 때, 점수에 실제 반영된 원인을 별도로 보여준다.
+  // 원인 커버리지가 부족한 결과는 그 사실도 숨기지 않아 "막대는 낮은데 점수만 높음" 모순을 막는다.
+  function repOrderedCauseItems(rawItems) {
+    var scopeRank = { pervasive: 3, recurring: 2, isolated: 1 };
+    var strengthRank = { strong: 2, moderate: 1, weak: 0 };
+    return (Array.isArray(rawItems) ? rawItems : [])
+      .map(function (item, index) { return { item: item, index: index }; })
+      .filter(function (row) {
+        var item = row.item;
+        return item && (item.strength === 'moderate' || item.strength === 'strong') && (item.categoryLabel || item.description);
+      })
+      .sort(function (a, b) {
+        var aBroad = a.item.scope === 'pervasive' || a.item.scope === 'recurring' ? 1 : 0;
+        var bBroad = b.item.scope === 'pervasive' || b.item.scope === 'recurring' ? 1 : 0;
+        return bBroad - aBroad
+          || (strengthRank[b.item.strength] || 0) - (strengthRank[a.item.strength] || 0)
+          || (scopeRank[b.item.scope] || 0) - (scopeRank[a.item.scope] || 0)
+          || a.index - b.index;
+      })
+      .map(function (row) { return row.item; });
+  }
+  function repPaintCauseAnalysis(model, host) {
+    var cause = model && model.causeAnalysis;
+    if (!cause || !host) return;
+    var status = ['aligned', 'partial', 'limited'].indexOf(cause.status) >= 0 ? cause.status : 'limited';
+    var items = repOrderedCauseItems(cause.items).slice(0, 3);
+    if (status === 'aligned' && !items.length) return;
+
+    var section = document.createElement('section');
+    section.className = 'gp-rep-cause-match is-' + status;
+    section.setAttribute('aria-label', 'AI 티 지수에 반영된 판단 원인');
+    var title = document.createElement('b');
+    title.textContent = status === 'aligned' ? 'AI 티 지수에 반영된 판단 원인'
+      : status === 'partial' ? 'AI 티 지수의 원인을 일부만 확인했어요'
+      : 'AI 티 지수의 세부 원인을 충분히 확인하지 못했어요';
+    section.appendChild(title);
+    var summary = String(cause.label || '').trim();
+    if (!summary && status !== 'aligned') {
+      summary = '위 막대는 표면 문체만 자동 계측해요. AI 티 지수는 문맥과 전개까지 함께 판단하므로 막대만으로 점수를 모두 설명할 수 없어요.';
+    }
+    if (summary) {
+      var note = document.createElement('p');
+      note.textContent = summary;
+      section.appendChild(note);
+    }
+    if (items.length) {
+      var ul = document.createElement('ul');
+      items.forEach(function (item) {
+        var li = document.createElement('li');
+        var name = document.createElement('strong');
+        name.textContent = String(item.categoryLabel || '문체 신호');
+        var desc = document.createElement('span');
+        desc.textContent = String(item.description || '');
+        li.appendChild(name);
+        if (desc.textContent) li.appendChild(desc);
+        ul.appendChild(li);
+      });
+      section.appendChild(ul);
+    }
+    host.appendChild(section);
   }
 
   // ── 축 ↔ 문장 연동 ──────────────────────────────────────────────────────────
@@ -1903,12 +2154,34 @@
     anchor: { head: '숫자·연도·고유명사가 있는 문장 — 여기가 유지할 근거예요', empty: '숫자·연도·고유명사가 든 문장이 아직 없어요.' },
     stance: { head: '화자의 입장이 드러난 문장', empty: '화자의 입장이 드러난 문장이 없어요.' }
   };
+  function repAxisCopy(key, model) {
+    if (key !== 'anchor') return REP_AXIS_COPY[key] || { head: '', empty: '' };
+    var metric = (((repAxisPolicy(model || {}).anchor) || {}).metric) || 'anchor';
+    if (metric === 'lived') {
+      return {
+        head: '실제 경험이 드러난 문장 — 여기가 유지할 근거예요',
+        empty: '실제 경험이 드러난 문장이 아직 없어요.'
+      };
+    }
+    if (metric === 'grounded') {
+      return {
+        head: '구체적인 사실이나 경험이 있는 문장 — 여기가 유지할 근거예요',
+        empty: '구체적인 사실이나 경험이 담긴 문장이 아직 없어요.'
+      };
+    }
+    return REP_AXIS_COPY.anchor;
+  }
   function repMatchesForAxis(key) {
     var all = repMapState.sentences || [];
     if (!all.length) return [];
     if (key === 'generic') return all.filter(function (s) { return s.kind === 'generic'; });
     if (key === 'ending') return all.filter(function (s) { return s.endingRun >= 4; });
-    if (key === 'anchor') return all.filter(function (s) { return s.kind === 'lived' || s.kind === 'specific'; });
+    if (key === 'anchor') {
+      var anchorMetric = ((((repAxisPolicy(lastReportModel || {}).anchor) || {}).metric) || 'anchor');
+      if (anchorMetric === 'lived') return all.filter(function (s) { return s.kind === 'lived'; });
+      if (anchorMetric === 'grounded') return all.filter(function (s) { return s.kind === 'lived' || s.kind === 'specific'; });
+      return all.filter(function (s) { return s.kind === 'specific'; });
+    }
     if (key === 'stance') return all.filter(function (s) { return REP_STANCE_RE.test(s.text || ''); });
     if (key === 'uniform') {
       var lens = all.map(function (s) { return Number(s.length) || 0; }).filter(Boolean);
@@ -1982,7 +2255,7 @@
       });
     }, 140);
   }
-  var REP_AXIS_NAME = { generic: '다듬을 후보 문장', ending: '같은 종결 반복', uniform: '문장 길이 편차', anchor: '구체 앵커', stance: '화자 입장' };
+  var REP_AXIS_NAME = { generic: '다듬을 후보 문장', ending: '같은 종결 반복', uniform: '문장 길이 편차', anchor: '구체 근거', stance: '화자 입장' };
   function repBindStatLinks() {
     document.querySelectorAll('#gpRepStats .is-link').forEach(function (tile) {
       if (tile.dataset.bound) return;
@@ -2155,6 +2428,12 @@
       if (model.content.total && Number(model.content.lived) === 0) {
         tips.push('실제로 겪은 장면이 담긴 문장이 없어요. 언제·어디서·무엇을 했는지 한 문장만 더해 보세요.');
       }
+    } else if (anchorPol.status === 'on' && anchorPol.metric === 'grounded') {
+      var groundedCount = Number(m.groundedCount);
+      if (!Number.isFinite(groundedCount)) groundedCount = Number(model.content.lived) + Number(model.content.specific);
+      if (model.content.total && groundedCount === 0) {
+        tips.push('구체적인 사실이나 경험 문장이 아직 없어요. 원문에서 확인할 수 있는 근거만 더해 보세요.');
+      }
     } else if (anchorPol.status === 'on' && Number(m.realAnchorCount) === 0) {
       tips.push('숫자·연도·고유명사 같은 구체 근거가 아직 없어요. 정확히 아는 값만 더해 보세요.');
     }
@@ -2267,7 +2546,8 @@
 
     // Before / After — 한 문장까지만. 전체는 휴머나이징의 몫이다.
     var example = d.example || {};
-    var usable = !!(example.before && example.after);
+    var exampleState = repPreviewChangeState(example);
+    var usable = exampleState.usable;
     // 예시가 없으면 좌우 칸이 빠지므로 3열 격자를 접어 게이지를 가운데로 둔다.
     if ($('gpRepBa')) { $('gpRepBa').hidden = false; $('gpRepBa').classList.toggle('is-solo', !usable); }
     repPaintBefore(usable ? example : null);
@@ -2281,11 +2561,15 @@
       baEmpty.hidden = usable;
       if (!usable) {
         // 우리 쪽 실패와 원문에 후보가 없는 경우를 구분해 말한다.
-        baEmpty.textContent = d.exampleStatus === 'unavailable'
-          ? '예시 문장을 다듬는 중 오류가 생겨 이번에는 미리보기를 만들지 못했어요. 아래 분석은 그대로 확인할 수 있어요.'
-          : '사실을 바꾸지 않고 보여줄 예시 문장을 원문에서 찾지 못했어요. 아래 분석에서 근거를 확인해 주세요.';
+        baEmpty.textContent = exampleState.reason === 'no_meaningful_change' || exampleState.reason === 'unverified_change'
+          ? '실제로 달라진 표현을 확인할 수 없어 이번 미리보기는 표시하지 않았어요. 아래 원인 분석은 그대로 확인할 수 있어요.'
+          : d.exampleStatus === 'unavailable'
+            ? '예시 문장을 다듬는 중 오류가 생겨 이번에는 미리보기를 만들지 못했어요. 아래 분석은 그대로 확인할 수 있어요.'
+            : '사실을 바꾸지 않고 보여줄 예시 문장을 원문에서 찾지 못했어요. 아래 분석에서 근거를 확인해 주세요.';
       }
     }
+    var heroNote = $('gpRepHeroNote');
+    if (heroNote) heroNote.hidden = !usable;
 
     // 교수님 레이더
     var dial = $('gpRepDial');
