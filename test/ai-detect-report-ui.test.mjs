@@ -138,12 +138,12 @@ test('전환 밴드는 추천을 보류할 때도 사라지지 않고 닫는 말
   assert.match(flow, /판단할 근거가 아직 부족해요/u);
   // 버튼을 감춘 상태에서 비용 줄만 남으면 "어디로 이동한다는 건지" 모순이 된다.
   assert.match(flow, /if \(goBtn && goBtn\.hidden\) return;/u);
-  // 흰 마무리 카드에서 강조 글자가 흰색이면 사라진다.
+  // 결과 상태가 달라도 기존 짙은 보라 배너와 러너 이미지는 그대로 유지한다.
   const css = await read('assets/css/redesign.css');
-  assert.match(css, /\.gp-rep-cta\.is-quiet \.gp-rep-cta-help b\{color:var\(--rep-ink\)/u);
-  assert.match(css, /\.gp-rep-cta\.is-quiet\{[^}]*background:linear-gradient\(115deg,#fff 0%,var\(--rep-cream\) 100%\)/u);
-  assert.match(css, /\.gp-rep-cta\.is-quiet::after\{display:block;opacity:\.72;\}/u, '낮은 점수의 마무리 카드도 브랜드 러너 배경을 유지한다');
-  assert.match(css, /@media \(max-width:640px\)[\s\S]*?\.gp-rep-cta\.is-quiet::after\{display:block;width:48%;opacity:\.16;\}/u, '모바일에서는 러너가 글자를 가리지 않게 낮은 농도로 남는다');
+  assert.match(css, /\.gp-rep-cta\{[\s\S]*?background:linear-gradient\(115deg,#2a1a6e 0%,#4b2fc4 48%,#6d4aff 100%\)/u);
+  assert.match(css, /\.gp-rep-cta::after\{[\s\S]*?cta-runner\.png/u);
+  assert.doesNotMatch(css, /\.gp-rep-cta\.is-quiet\{[^}]*background:/u, '조용한 상태에 별도 그라데이션을 덮어쓰지 않는다');
+  assert.doesNotMatch(css, /\.gp-rep-cta\.is-quiet::after\{[^}]*display:none/u, '조용한 상태에서도 기존 러너 이미지를 숨기지 않는다');
 });
 
 test('예시를 만들지 못하면 게이지가 가운데로 접힌다', async () => {
@@ -296,7 +296,7 @@ test('보고서 UI는 v116 시각 언어와 줄바꿈 규칙을 갖춘다', asyn
   assert.match(css, /\.gp-rep-modal-panel\{[\s\S]*?max-height:min\(82vh/u, '모달 본문은 자체 스크롤로 흐른다');
   assert.match(css, /html\.gp-rep-modal-open\{overflow:hidden;\}/u, '모달이 열리면 뒤 배경은 잠긴다');
   assert.match(css, /cta-runner\.png/u, 'CTA 밴드는 생성한 브랜드 일러스트를 쓴다');
-  assert.match(css, /\.gp-rep-cta:not\(\.is-quiet\)\{min-height:256px;\}/u, '큰 이미지 높이는 전환 대상 배너에만 적용한다');
+  assert.match(css, /\.gp-rep-cta\{min-height:256px;\}/u, '모든 결과 상태가 이전 배너 높이와 이미지를 공유한다');
   // v118: 480px에서도 1열로 쌓지 않는다(띠가 한 화면을 먹던 문제) — 2×2 유지
   assert.match(css, /@media \(max-width:480px\)[\s\S]*?\.gp-rep-stats\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/u);
   assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?transition:none!important/u);
