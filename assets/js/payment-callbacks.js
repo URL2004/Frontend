@@ -174,10 +174,19 @@
         status: res.status,
         code: data.code || '',
         message: data.error || data.message || 'confirm failed',
+        declineCategory: data.declineCategory || '',
         endpoint: '/confirm-payment'
       });
-      if (window.gpToast) window.gpToast('충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 사이트 내 고객센터로 문의해 주세요.', { type: 'error' });
-      else alert('충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 사이트 내 고객센터로 문의해 주세요.');
+      // 카드사·계좌 사유로 거절된 경우(잔액부족·한도초과·세션 만료)에는 서버가 결제사 원문을
+      // declined 표시와 함께 내려준다. 여기에 "결제가 됐는데 크레딧이 안 보이면" 문구를 띄우면
+      // 사용자가 진짜 이유를 모른 채 같은 결제를 되풀이한다(2026-09-04 실제 3회 재시도).
+      var declineMessage = data.declined === true && data.error
+        ? data.error
+        : '';
+      var failMessage = declineMessage
+        || '충전을 마치지 못했어요. 결제가 됐는데 크레딧이 안 보이면 사이트 내 고객센터로 문의해 주세요.';
+      if (window.gpToast) window.gpToast(failMessage, { type: 'error' });
+      else alert(failMessage);
       return false;
     } catch(err) {
       if (window.gpTrackPaymentError) window.gpTrackPaymentError('confirm_network_failed', {

@@ -52,6 +52,9 @@
       checkoutType: cleanText(raw.checkoutType || raw.checkout_type, 40),
       code: cleanText(raw.code, 80),
       message: cleanText(raw.message, 300),
+      // 서버가 이미 분류한 거절 사유(잔액부족·한도초과 등). 프런트 보고와 서버 로그를
+      // 같은 어휘로 맞춰 두 줄을 orderId로 이어 볼 수 있게 한다.
+      declineCategory: cleanText(raw.declineCategory, 40),
       status: safeNumber(raw.status),
       orderId: cleanText(raw.orderId, 120),
       amount: safeNumber(raw.amount),
