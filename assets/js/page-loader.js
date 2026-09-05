@@ -130,6 +130,7 @@
     if (!pageRoot.querySelector('#landingScreen')) pageRoot.innerHTML = await fetchText('/pages/landing.html');
     showOnly('landing');
     document.documentElement.dataset.gpInitialScreen = 'landing';
+    window.dispatchEvent(new CustomEvent('gp:landing-markup-ready'));
     return 'landing';
   }
 

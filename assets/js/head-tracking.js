@@ -9,16 +9,15 @@
  var NAVER_PENDING_LIMIT = 50;
  var lastPageViewKey = '';
 
- function scheduleNonCritical(task, delay) {
-  var schedule = function () {
-   setTimeout(function () {
-    if ('requestIdleCallback' in window) requestIdleCallback(task, { timeout: 2500 });
-    else task();
-   }, delay || 0);
-  };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedule, { once: true });
-  else schedule();
+ function internalTraffic() {
+  return /^\/admin(?:[\/-]|$)/.test(window.location.pathname || '')
+   || window.gpAnalyticsInternal === true
+   || (typeof window.isAdmin === 'function' && !!window.isAdmin());
  }
+ window.gpSetAnalyticsInternal = function (value) {
+  window.gpAnalyticsInternal = value === true;
+  if (measurementId) window['ga-disable-' + measurementId] = internalTraffic();
+ };
  var STORAGE_KEYS = {
   first: 'gp_attribution_first_touch',
   last: 'gp_attribution_last_touch',
@@ -39,6 +38,7 @@
  window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
 
  function initMetaPixel() {
+  if (internalTraffic()) return false;
   if (!/^\d{8,25}$/.test(metaPixelId)) return false;
   if (!window.fbq) {
    var fbq = window.fbq = function () {
@@ -64,6 +64,7 @@
  var metaPixelEnabled = initMetaPixel();
 
  function initNaverTracking() {
+  if (internalTraffic()) return false;
   if (naverTrackingInitialized) return true;
   if (!/^s_[a-z0-9]{6,64}$/i.test(naverCommonKey)) return false;
   if (!naverCookieDomain || !window.wcs || typeof window.wcs_do !== 'function') return false;
@@ -116,11 +117,12 @@
  }
 
  function trackNaverEvent(eventName, payload) {
+  if (internalTraffic()) return false;
   payload = payload || {};
   var type = naverEventType(eventName);
   if (!type) return false;
   var conversion = { type: type };
-  if (payload.transaction_id) conversion.id = clean(payload.transaction_id, 150);
+  if (payload.transaction_id || payload.run_id || payload.meta_event_id) conversion.id = clean(payload.transaction_id || payload.run_id || payload.meta_event_id, 150);
   if (type === 'purchase') {
    conversion.value = String(Math.max(0, Number(payload.value) || 0));
    conversion.currency = clean(payload.currency || 'KRW', 10).toUpperCase();
@@ -198,17 +200,19 @@
    traffic_content: clean(payload.traffic_content, 150),
    traffic_term: clean(payload.traffic_term, 150),
    use_case: clean(payload.use_case, 40),
+   activation_scope: clean(payload.activation_scope, 40),
    analysis_mode: clean(payload.analysis_mode || inferredMode, 50),
    humanize_mode: clean(payload.humanize_mode || (eventName === 'humanize_run' ? payload.mode : ''), 50),
    method: clean(payload.method, 50),
    segment: clean(payload.segment, 50),
    offer_variant: clean(payload.offer_variant, 50),
    pending_action: clean(payload.pending_action, 64),
-   paywall_source: clean(payload.paywall_source || payload.source, 64)
+   paywall_source: clean(payload.paywall_source || payload.ui_source || payload.source, 64)
   };
   if (eventName === 'sign_up') {
    params.content_name = 'account_registration';
    params.status = true;
+   params.currency = 'KRW';
   }
   if (payload.transaction_id) params.transaction_id = clean(payload.transaction_id, 150);
   if (Number.isFinite(Number(payload.chars))) params.chars = Math.max(0, Number(payload.chars));
@@ -229,7 +233,7 @@
  function trackMetaEvent(eventName, payload) {
   payload = payload || {};
   var eventID = metaEventId(eventName, payload.meta_event_id || payload.event_id);
-  if (!metaPixelEnabled || !window.fbq) return eventID;
+  if (internalTraffic() || !metaPixelEnabled || !window.fbq) return eventID;
   var standard = {
    sign_up: 'CompleteRegistration',
    select_item: 'ViewContent',
@@ -240,6 +244,7 @@
    analysis_start: 'AnalysisStart',
    detect_run: 'DetectComplete',
    humanize_run: 'HumanizeComplete',
+   first_feature_success: 'Activation',
    paywall_view: 'PaywallView',
    starter_offer_click: 'StarterOfferClick',
    job_resumed: 'JobResumed',
@@ -282,19 +287,22 @@
   try {
    var host = new URL(ref).hostname.toLowerCase();
    var currentHost = String(window.location.hostname || '').toLowerCase();
-   return host && host !== currentHost ? host : '';
+   if (host.replace(/^www\./, '') === currentHost.replace(/^www\./, '')) return '';
+   // 결제·인증 서비스를 거쳐 돌아온 방문은 새로운 획득 채널이 아니다.
+   if (['tosspayments.com', 'toss.im', 'accounts.google.com', 'kauth.kakao.com', 'accounts.kakao.com'].some(function (domain) { return hostMatches(host, domain); })) return '';
+   return host;
   } catch (_) { return ''; }
+ }
+
+ function hostMatches(host, domain) {
+  return host === domain || host.slice(-(domain.length + 1)) === '.' + domain;
  }
 
  function sourceFromHost(host) {
   if (!host) return '';
-  if (host.includes('instagram')) return 'instagram';
-  if (host.includes('naver')) return 'naver';
-  if (host.includes('google')) return 'google';
-  if (host.includes('kakao')) return 'kakao';
-  if (host.includes('youtube')) return 'youtube';
-  if (host.includes('facebook')) return 'facebook';
-  if (host.includes('twitter') || host.includes('x.com')) return 'twitter';
+  var domains = { 'instagram.com': 'instagram', 'naver.com': 'naver', 'google.com': 'google', 'google.co.kr': 'google', 'kakao.com': 'kakao', 'youtube.com': 'youtube', 'facebook.com': 'facebook', 'twitter.com': 'twitter', 't.co': 'twitter', 'x.com': 'twitter' };
+  var match = Object.keys(domains).find(function (domain) { return hostMatches(host, domain); });
+  if (match) return domains[match];
   return host;
  }
 
@@ -321,10 +329,12 @@
    values[key] = clean(params.get(PARAMS[key]), key === 'napm' ? 500 : 250);
   });
   var useCase = deriveUseCase(params);
-  var hasPaidId = !!(values.napm || values.gclid || values.fbclid);
-  var hasCampaignParam = !!(values.source || values.medium || values.campaign || values.content || values.term || hasPaidId);
+  // fbclid는 일반 Facebook 공유 링크에도 붙는다. 유료 여부는 UTM으로 구분한다.
+  var hasPaidId = !!(values.napm || values.gclid);
+  var hasCampaignParam = !!(values.source || values.medium || values.campaign || values.content || values.term || hasPaidId || values.fbclid);
   var source = values.source || (values.napm ? 'naver' : values.gclid ? 'google' : values.fbclid ? 'meta' : sourceFromHost(referrerHost)) || 'direct';
-  var medium = values.medium || (hasPaidId ? 'cpc' : referrerHost ? 'referral' : 'none');
+  var searchReferrer = /^(www\.)?google\.(com|co\.kr)$/.test(referrerHost) || /^(m\.)?search\.naver\.com$/.test(referrerHost);
+  var medium = values.medium || (hasPaidId ? 'cpc' : values.fbclid ? 'social' : searchReferrer ? 'organic' : referrerHost ? 'referral' : 'none');
   var landingPath = clean(window.location.pathname || '/', 250);
   var origin = clean(window.location.origin || '', 250);
   return {
@@ -350,8 +360,8 @@
 
  function captureAttribution() {
   var current = currentTouch();
-  var first = readJson(STORAGE_KEYS.first);
-  var last = readJson(STORAGE_KEYS.last);
+  var first = freshTouch(STORAGE_KEYS.first, 90);
+  var last = freshTouch(STORAGE_KEYS.last, 30);
   if (!first) {
    first = current.touch;
    writeJson(STORAGE_KEYS.first, first);
@@ -366,9 +376,15 @@
   return { first_touch: first, last_touch: last };
  }
 
+ function freshTouch(key, days) {
+  var touch = readJson(key);
+  var age = touch ? Date.now() - Date.parse(touch.captured_at || '') : NaN;
+  return Number.isFinite(age) && age >= 0 && age < days * 86400000 ? touch : null;
+ }
+
  function attributionSnapshot() {
-  var first = readJson(STORAGE_KEYS.first);
-  var last = readJson(STORAGE_KEYS.last);
+  var first = freshTouch(STORAGE_KEYS.first, 90);
+  var last = freshTouch(STORAGE_KEYS.last, 30);
   if (!first || !last) return captureAttribution();
   return { first_touch: first, last_touch: last };
  }
@@ -451,13 +467,51 @@
  window.gpMetaContext = metaContext;
 
  window.gpTrack = function (eventName, params) {
-  if (!eventName) return;
+  if (!eventName || internalTraffic()) return;
+  var safeParams = Object.assign({}, params || {});
+  // UI 위치 source가 GA 획득 source와 충돌하지 않도록 한 곳에서 이전한다.
+  if (safeParams.source != null) safeParams.ui_source = clean(safeParams.source, 100);
+  ['source', 'medium', 'campaign', 'campaign_source', 'campaign_medium', 'campaign_name', 'input_text', 'output_text', 'text', 'prompt', 'email', 'phone', 'name', 'uid', 'token', 'paymentKey', 'message', 'error_message', 'stack'].forEach(function (key) { delete safeParams[key]; });
   var payload = Object.assign({
    app_env: config.APP_ENV || 'production'
-  }, attributionContext(), params || {});
+  }, safeParams, attributionContext());
   if (measurementId) window.gtag('event', eventName, payload);
   trackNaverEvent(eventName, payload);
   return trackMetaEvent(eventName, payload);
+ };
+
+ // 작업 ID + 단계 단위로 재폴링·새로고침의 중복을 막는다. 원문/결과문은 받지 않는다.
+ window.gpTrackFeature = function (phase, details) {
+  details = details || {};
+  if (internalTraffic() || !/^(start|complete|error)$/.test(phase)) return false;
+  var feature = details.feature === 'detect' ? 'detect' : 'humanize';
+  var runId = clean(details.run_id, 150);
+  if (!runId) return false;
+  var key = feature + '|' + runId + '|' + phase;
+  var journal = readJson('gp_feature_events_v1');
+  var entries = Array.isArray(journal) ? journal.filter(function (entry) { return entry && Date.now() - entry.at < 7 * 86400000; }) : [];
+  if (entries.some(function (entry) { return entry.key === key; })) return false;
+  var payload = {
+   run_id: runId, analysis_mode: feature,
+   humanize_mode: feature === 'humanize' ? clean(details.mode, 40) : '',
+   chars: Math.max(0, Number(details.chars) || 0),
+   duration_ms: Math.max(0, Number(details.duration_ms) || 0),
+   error_code: clean(details.error_code, 64),
+   ui_source: 'composer'
+  };
+  window.gpTrack('analysis_' + phase, payload);
+  if (phase === 'complete') window.gpTrack(feature + '_run', Object.assign({}, payload, {
+   meta_event_id: stableMetaEventId(feature + '_run', runId)
+  }));
+  if (phase === 'complete' && details.activation && details.activation.firstSuccess === true) {
+   window.gpTrack('first_feature_success', Object.assign({}, payload, {
+    activation_scope: clean(details.activation.scope, 40),
+    meta_event_id: clean(details.activation.eventId, 180)
+   }));
+  }
+  entries.push({ key: key, at: Date.now() });
+  writeJson('gp_feature_events_v1', entries.slice(-300));
+  return true;
  };
 
  function analyticsSafeLocation(value) {
@@ -472,6 +526,7 @@
    Array.from(url.searchParams.keys()).forEach(function (key) {
     if (sensitiveKeys.has(String(key).toLowerCase())) url.searchParams.delete(key);
    });
+   url.hash = '';
    return url.toString();
   } catch (_) {
    return window.location.origin + window.location.pathname;
@@ -479,9 +534,9 @@
  }
 
  window.gpTrackPageView = function (routeTab, title, locationUrl) {
-  if (!measurementId && !metaPixelEnabled) return;
+  if (internalTraffic() || (!measurementId && !metaPixelEnabled)) return;
   var pageLocation = analyticsSafeLocation(locationUrl || window.location.href);
-  var key = String(routeTab || '') + '|' + pageLocation;
+  var key = pageLocation;
   if (key === lastPageViewKey) return;
   lastPageViewKey = key;
   var path;
@@ -506,14 +561,16 @@
   }
  };
 
- if (measurementId) {
+ if (measurementId && !internalTraffic()) {
   window.gtag('js', new Date());
-  window.gtag('config', measurementId, { send_page_view: false });
-  scheduleNonCritical(function () {
-   var gtagScript = document.createElement('script');
-   gtagScript.async = true;
-   gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(measurementId);
-   document.head.appendChild(gtagScript);
-  }, 4500);
+  window.gtag('config', measurementId, { send_page_view: false, page_location: analyticsSafeLocation(window.location.href), page_referrer: document.referrer ? analyticsSafeLocation(document.referrer) : '' });
+  var gtagScript = document.createElement('script');
+  gtagScript.async = true;
+  gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(measurementId);
+  document.head.appendChild(gtagScript);
+ }
+ window.gpTrackPageView('initial', document.title);
+ if (typeof window.dispatchEvent === 'function' && typeof window.CustomEvent === 'function') {
+  window.dispatchEvent(new window.CustomEvent('gp:attribution-ready'));
  }
 })();

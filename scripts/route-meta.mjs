@@ -13,10 +13,10 @@ export const ROUTES = [
     out: 'index.html',
     url: '/',
     partial: 'landing.html',
-    title: '교수님 피하기 – AI 감지 · 휴머나이징',
+    title: '교수님 피하기 | 한국어 AI 검사기 · 휴머나이징',
     h1: '교수님 피하기 AI 감지 · 휴머나이징',
     description:
-      'AI로 작성한 글을 원문의 뜻과 장르에 맞게 자연스럽게 다듬어요. AI 티 지수를 확인하고 필요한 문장을 휴머나이징해 보세요.',
+      '한국어 AI 검사기로 문단별 문체 신호를 점검하고 휴머나이징으로 표현을 다듬어요. 가입 20크레딧, 모드별 비용과 결과의 한계를 확인하고 시작하세요.',
     breadcrumb: null,
     faq: false
   },
@@ -48,10 +48,10 @@ export const ROUTES = [
     out: 'detect-report/index.html',
     url: '/detect-report',
     partial: 'detect-report.html',
-    title: 'AI 감지기 – AI 티 지수 확인 · 문장 분석 | 교수님 피하기',
+    title: '한국어 AI 검사기 · AI 판독 결과 읽는 법 | 교수님 피하기',
     h1: 'AI 감지기',
     description:
-      '제출 전 글을 붙여넣고 AI 작성 흔적과 AI 티 나는 문장을 확인하세요. AI 감지 결과를 바탕으로 휴머나이징까지 이어갈 수 있습니다.',
+      '과제·자소서·보고서의 AI식 문체 신호를 문단별로 점검하세요. 최소 100자, 100자당 1크레딧. AI 판독의 한계와 표절 검사와의 차이도 안내합니다.',
     breadcrumb: 'AI 감지기',
     faq: false
   },

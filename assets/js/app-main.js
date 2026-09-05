@@ -49,8 +49,8 @@ const PATH_ROUTES = {
 };
 const ROUTE_META = {
 main: {
-  title: '교수님 피하기 · AI 감지 · 휴머나이징',
-  description: 'AI식 문체 신호를 확인하고 원문의 뜻과 장르를 지키며 문장을 다듬는 AI 감지 · 휴머나이징 서비스, 교수님 피하기입니다.'
+  title: '교수님 피하기 | 한국어 AI 검사기 · 휴머나이징',
+  description: '한국어 AI 검사기로 문단별 문체 신호를 점검하고 휴머나이징으로 표현을 다듬어요. 가입 20크레딧, 모드별 비용과 결과의 한계를 확인하고 시작하세요.'
  },
  pricing: {
   title: '요금제 · 교수님 피하기',
@@ -61,8 +61,8 @@ blog: {
  description: '과제·자기소개서·리포트에서 반복 표현과 균일한 흐름을 점검하는 글쓰기 가이드를 모았어요.'
 },
 detectReport: {
- title: 'AI 감지기 · AI 티 지수 확인 | 교수님 피하기',
- description: '글을 붙여넣고 AI식 문체 신호가 두드러진 문장을 확인하세요. 결과를 바탕으로 휴머나이징까지 이어갈 수 있어요.'
+ title: '한국어 AI 검사기 · AI 판독 결과 읽는 법 | 교수님 피하기',
+ description: '과제·자소서·보고서의 AI식 문체 신호를 문단별로 점검하세요. 최소 100자, 100자당 1크레딧. AI 판독의 한계와 표절 검사와의 차이도 안내합니다.'
 },
 guide: {
  title: '사용 가이드 · 교수님 피하기',
@@ -2002,7 +2002,7 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
   traffic_source: localStorage.getItem('traffic_source') || 'direct'
  });
  const pendingMeta = typeof window.gpPendingCheckoutMeta === 'function' ? window.gpPendingCheckoutMeta() : {};
- if (window.gpTrack) window.gpTrack('begin_checkout', Object.assign({
+ const checkoutTracking = Object.assign({
   items: [{ item_id: creditSku, item_name: name + ' ' + credits + '크레딧', quantity: 1, price: amount }],
   value: amount,
   currency: 'KRW',
@@ -2011,7 +2011,7 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
   offer_variant: checkoutOptions.offerVariant || '',
   pending_action: checkoutOptions.pendingAction || '',
   paywall_source: checkoutOptions.source || ''
- }, pendingMeta));
+ }, pendingMeta);
 
   // 1. 테스트 키 대신 주신 'API 개별 연동' 라이브 클라이언트 키 적용
   const clientKey = window.APP_CONFIG.TOSS_CLIENT_KEY;
@@ -2047,6 +2047,7 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
     body: JSON.stringify({
      orderId,
      amount: Number(amount),
+     meta: window.gpMetaContext ? window.gpMetaContext() : {},
      purchaseKind: checkoutOptions.purchaseKind || 'credit_package',
      sourceOrderId: checkoutOptions.sourceOrderId || ''
     })
@@ -2065,6 +2066,8 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
    alert(prepareError?.message || '결제를 준비하지 못했어요. 잠시 후 다시 시도해 주세요.');
    return;
   }
+  // 서버 주문 접수와 동일한 ID. 결제 준비 실패는 checkout 성공으로 세지 않는다.
+  if (window.gpTrack) window.gpTrack('begin_checkout', { ...checkoutTracking, meta_event_id: 'checkout_' + orderId });
   if (typeof window.gpBindPendingCheckout === 'function') {
    window.gpBindPendingCheckout(orderId, {
     amount: Number(amount),

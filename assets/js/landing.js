@@ -418,7 +418,7 @@
     assignment: {
       h1: '과제의 AI 문체 신호,<br>제출 전에 확인한다.',
       sub: '수치·인용·내 주장은 유지하고, 확인이 필요한 문단부터 보여드려요.',
-      cta: '과제 1,000자 무료 감지'
+      cta: '가입하고 20크레딧으로 점검'
     },
     resume: {
       h1: '내 경험은 그대로,<br>AI식 상투어만 덜어낸다.',
@@ -434,8 +434,14 @@
       h1: '후기의 사실과 말투는 그대로,<br>반복 표현만 정리한다.',
       sub: '직접 경험하지 않은 장점이나 성과는 추가하지 않아요.',
       cta: '후기 문장 점검하기'
+    },
+    short: {
+      h1: '짧은 글도 자연스럽게,<br>내 뜻을 유지하며 다듬는다.',
+      sub: '휴머나이징은 50자부터 시작할 수 있어요. 가입 시 20크레딧으로 직접 확인하고, 결과는 원문과 비교해 검토해 주세요.',
+      cta: '50자 이상 짧은 글 다듬기'
     }
   };
+  var viewedVariants = {};
   function applyLandingUseCase() {
     try {
       var ctx = window.gpAttribution && window.gpAttribution.getContext ? window.gpAttribution.getContext() : null;
@@ -444,14 +450,19 @@
       var h1 = document.querySelector('.gp-lp-hero-inner h1');
       var sub = document.querySelector('.gp-lp-hero-sub');
       var cta = document.querySelector('.gp-lp-hero-cta .gp-lp-primary');
+      if (!h1 || !sub || !cta) return;
       if (h1) h1.innerHTML = v.h1;   // 정적 사전(LP_VARIANTS)만 주입 — 사용자 입력 아님
       if (sub) sub.textContent = v.sub;
       if (cta) cta.textContent = v.cta;
-      if (typeof window.gpTrack === 'function') window.gpTrack('landing_variant_view', { landing_variant: ctx.use_case });
+      if (!viewedVariants[ctx.use_case] && typeof window.gpTrack === 'function') {
+        window.gpTrack('landing_variant_view', { landing_variant: ctx.use_case });
+        viewedVariants[ctx.use_case] = true;
+      }
     } catch (e) { /* 변형 실패 시 기본 카피 유지 */ }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyLandingUseCase, { once: true });
   else applyLandingUseCase();
-  // 파셜 지연 주입(page-loader) 대비 — 랜딩 DOM이 늦게 들어와도 1회 재시도
-  setTimeout(applyLandingUseCase, 1500);
+  window.addEventListener('gp:landing-markup-ready', applyLandingUseCase);
+  window.addEventListener('gp:attribution-ready', applyLandingUseCase);
+  if (window.GP_PAGE_READY && typeof window.GP_PAGE_READY.then === 'function') window.GP_PAGE_READY.then(applyLandingUseCase).catch(function () {});
 })();

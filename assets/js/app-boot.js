@@ -65,17 +65,9 @@
   }
 
   function loadTrackingAfterFirstRender() {
-    var started = false;
-    var fallbackTimer = 0;
-    function start() {
-      if (started) return;
-      started = true;
-      clearTimeout(fallbackTimer);
-      window.removeEventListener('scroll', start);
-      window.removeEventListener('pointerdown', start);
-      window.removeEventListener('keydown', start);
-      idle(function () {
-        loadScript('/assets/js/head-tracking.js')
+    // 첫 랜딩이 준비된 직후 비동기로 시작한다. load/idle/첫 클릭 대기는
+    // 짧은 인앱 방문의 실제 유입을 빠뜨리고 CTA를 첫 이벤트로 만들었다.
+    return loadScript('/assets/js/head-tracking.js')
           .then(function () { return loadScript('/assets/js/vendor-init.js'); })
           .then(function () {
             // 네이버 검수 봇과 클릭 없이 머무는 방문도 유입·전환 추적을 초기화한다.
@@ -84,13 +76,6 @@
           .catch(function (error) {
             console.warn('Tracking was skipped.', error);
           });
-      }, 1200);
-    }
-    window.addEventListener('scroll', start, { once: true, passive: true });
-    window.addEventListener('pointerdown', start, { once: true, passive: true });
-    window.addEventListener('keydown', start, { once: true });
-    // 상호작용이 없어도 검수 봇과 첫 방문 유입을 놓치지 않도록 짧은 유예 뒤 시작한다.
-    fallbackTimer = setTimeout(start, 900);
   }
 
   var appAssetsPromise = null;

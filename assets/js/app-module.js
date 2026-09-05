@@ -280,6 +280,7 @@ function retryPendingPaymentCallback(reason) {
 onAuthStateChanged(auth, async u =>{
  try {
   window.gpAuthResolved = true;
+  if (window.gpSetAnalyticsInternal) window.gpSetAnalyticsInternal(!!(u && ADMIN_ROLES[u.uid]));
   if (u) {
   window.gpUserDataReady = false;
   showAuthenticatedShell(u, 'auth_state');
@@ -336,7 +337,7 @@ async function loadUser(u) {
   : null;
  let initialized;
  try {
-  initialized = await postAuthedJson('/account/initialize', signupAttribution ? { signupAttribution } : {}, u);
+  initialized = await postAuthedJson('/account/initialize', { ...(signupAttribution ? { signupAttribution } : {}), meta: window.gpMetaContext ? window.gpMetaContext() : {} }, u);
  } catch (error) {
   // 유입 태그가 구형·손상된 경우 가입 자체를 막지 않는다. 서버가 허용 필드만
   // 저장하도록 빈 attribution으로 멱등 재시도한다.

@@ -427,9 +427,7 @@ test('익명 홈은 서버 렌더 랜딩을 즉시 활성화하고 앱·인증 �
   assert.match(appModule, /if \(u\) \{[\s\S]{0,100}?showAuthenticatedShell\(u, 'auth_state'\);[\s\S]{0,100}?await loadUser\(u\)/u);
 
   assert.match(boot, /requestIdleCallback\(task, \{ timeout: timeout \|\| 1800 \}\)/u);
-  assert.match(boot, /addEventListener\('scroll', start, \{ once: true, passive: true \}\)/u);
-  assert.match(boot, /addEventListener\('pointerdown', start, \{ once: true, passive: true \}\)/u);
-  assert.match(boot, /fallbackTimer = setTimeout\(start, 900\)/u, '클릭 없는 광고 유입과 네이버 검수도 추적해야 함');
+  assert.match(boot, /return loadScript\('\/assets\/js\/head-tracking\.js'\)/u, '상호작용·load·idle 대기 없이 첫 랜딩을 추적해야 함');
   assert.match(boot, /head-tracking\.js'[\s\S]{0,180}?vendor-init\.js'[\s\S]{0,220}?gpEnsureNaverTracking/u);
   assert.match(landingJs, /demoStartTimer = setTimeout[\s\S]{0,180}3200/u);
   assert.match(boot, /if \(mode === 'landing'\)[\s\S]*?loadScript\('\/assets\/js\/landing\.js'\)/u);
@@ -437,7 +435,7 @@ test('익명 홈은 서버 렌더 랜딩을 즉시 활성화하고 앱·인증 �
   assert.match(vendors, /window\.gpLoadTossPayments = function/u);
   assert.match(vendors, /5500\);/u);
   assert.match(appMain, /await window\.gpLoadTossPayments\(\)/u);
-  assert.match(tracking, /4500\);/u);
+  assert.doesNotMatch(tracking, /4500\);/u, '최초 유입 측정은 4.5초 지연하지 않음; 실행·중복 계약은 marketing-tracking 테스트에서 검증');
   assert.doesNotMatch(index, /<script[^>]+(?:wcs\.naver\.net|js\.tosspayments\.com)/u);
   assert.doesNotMatch(index, /firebase-(?:app|auth|firestore)/u);
   assert.doesNotMatch(index, /assets\/css\/(?:app|redesign|writing-lab)\.css/u);

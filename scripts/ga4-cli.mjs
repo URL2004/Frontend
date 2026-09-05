@@ -17,6 +17,7 @@ const USER_DATA_ACKNOWLEDGEMENT =
   'I acknowledge that I have the necessary privacy disclosures and rights from my end users for the collection and processing of their data, including the association of such data with the visitation information Google Analytics collects from my site and/or app property.';
 
 const KEY_EVENTS = [
+  'first_feature_success',
   'purchase',
   'sign_up',
   'begin_checkout',
@@ -25,6 +26,12 @@ const KEY_EVENTS = [
 ];
 
 const CUSTOM_DIMENSIONS = [
+  ['UI Source', 'ui_source'],
+  ['Activation Scope', 'activation_scope'],
+  ['Use Case', 'use_case'],
+  ['Landing Variant', 'landing_variant'],
+  ['Traffic Medium', 'traffic_medium'],
+  ['Traffic Campaign', 'traffic_campaign'],
   ['App Environment', 'app_env'],
   ['Traffic Source', 'traffic_source'],
   ['Analysis Mode', 'analysis_mode'],

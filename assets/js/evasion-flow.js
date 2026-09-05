@@ -731,6 +731,7 @@
     });
     // 멱등키 — 응답이 유실된 재실행까지 같은 글·같은 작업 ID로 묶는다.
     var reqId = detectRequestIdFor(text, options.requestId);
+    if (window.gpTrackFeature) window.gpTrackFeature('start', { feature: 'detect', run_id: reqId, chars: text.length });
 
     async function runDetect() {
       var retry = $('lavDetectRetry');
@@ -743,11 +744,15 @@
         var resP = fetch(window.apiUrl('/detect-report'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json', 'X-Request-Id': reqId }),   // 토큰은 Authorization, 요청 식별자는 헤더·body에서 동일하게 유지
-          body: JSON.stringify({ text: text, requestId: reqId })
+          body: JSON.stringify({ text: text, requestId: reqId, meta: window.gpMetaContext ? window.gpMetaContext() : {} })
         });
         var out = await Promise.all([resP, minWait]);
         var res = out[0];
         var d = await res.json().catch(function () { return null; });
+
+        if ((!res.ok || !d || !d.ok) && res.status !== 409 && res.status !== 202 && !(d && d.code === 'PROCESSING') && window.gpTrackFeature) {
+          window.gpTrackFeature('error', { feature: 'detect', run_id: reqId, chars: text.length, duration_ms: Date.now() - startedAt, error_code: d && d.code || 'HTTP_' + res.status });
+        }
 
         // 잔액 부족
         if (res.status === 402 && d && d.code === 'INSUFFICIENT_CREDITS') {
@@ -818,6 +823,7 @@
           latency_bucket: detectLatencyBucket(Date.now() - startedAt)
         });
         renderReport(d);
+        if (window.gpTrackFeature) window.gpTrackFeature('complete', { feature: 'detect', run_id: reqId, chars: text.length, duration_ms: Date.now() - startedAt, activation: d.activation });
         cameFromReport = true;
         show('report');
         playReportIntro();
@@ -3280,6 +3286,7 @@
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
           body: JSON.stringify(body)
         }).then(parseTransformStart);
+        if (window.gpTrackFeature && r && r.jobId) window.gpTrackFeature('start', { feature: 'humanize', run_id: r.jobId, mode: mode, chars: text.length });
         if (gen !== pollGen) {
           if (r && r.jobId) makeJobCanceller(r.jobId)();
           return;
@@ -3575,6 +3582,7 @@
   function resumeTransformState(jobId, st) {
     if (!jobId || !st || !st.ok && !st.status) return false;
     st.jobId = jobId;
+    if (['queued', 'running', 'awaiting_approval'].indexOf(st.status) >= 0 && window.gpTrackFeature) window.gpTrackFeature('start', { feature: 'humanize', run_id: jobId, mode: st.mode, chars: st.inputChars });
     if (st.status === 'done') {
       renderJobDone(st);   // blog/formal 모드별 점수·배지·보관함 — 폴링 완료와 동일 렌더
       clearJobRef();
@@ -3806,6 +3814,7 @@
         return;
       }
       if (st.status === 'blocked' || st.status === 'error') {
+        if (window.gpTrackFeature) window.gpTrackFeature('error', { feature: 'humanize', run_id: jobId, mode: st.mode, chars: st.inputChars, duration_ms: st.durationMs, error_code: st.status === 'blocked' ? 'QUALITY_BLOCKED' : 'JOB_ERROR' });
         stopFormalTicker();
         if (st.gateDetail) console.warn('[evasion] 차단 상세:', st.gates, st.gateDetail);
         // 회피(blog/formal) 차단 → 동의 기반 재시도/보존형 화면. error·polish는 기존 안내.
@@ -3831,6 +3840,7 @@
 
   // 완료 렌더(폴링·재진입 공용): job mode에 따라 점수·배지·보관함 라벨 분기
   function renderJobDone(st) {
+    if (st && st.jobId && st.result && st.result.outputText && window.gpTrackFeature) window.gpTrackFeature('complete', { feature: 'humanize', run_id: st.jobId, mode: st.mode, chars: st.inputChars, duration_ms: st.durationMs, activation: st.activation });
     if (st && st.jobId) setActiveJobUi(st.jobId, 'done', '휴머나이징 완료');
     var label;
     var isPreservationFallback = !!(st.result && st.result.preservationFallback);
@@ -4210,6 +4220,7 @@
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
           body: JSON.stringify(Object.assign({ text: text, mode: 'formal', evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: 'keep', documentProfile: s.documentProfile || undefined, effectNoticeAccepted: !!s.effectNoticeAccepted }, reportHandoffFields(text)))
         }).then(parseTransformStart);
+        if (window.gpTrackFeature && r && r.jobId) window.gpTrackFeature('start', { feature: 'humanize', run_id: r.jobId, mode: 'formal', chars: text.length });
         if (gen !== pollGen) {
           if (r && r.jobId) makeJobCanceller(r.jobId)();
           return;
