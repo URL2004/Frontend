@@ -7597,7 +7597,8 @@ body[data-main-design="lavender"] .gp-dialog-confirm{background:linear-gradient(
    min-width:0 전파해 실제로 줄어들게(전송 버튼 찌그러짐/넘침 해결). */
 #mainContent[data-main-design="lavender"] .gp-lav-composer{min-width:0;}
 @media(max-width:560px){
- #mainContent[data-main-design="lavender"] .gp-lav-mode button .lbl{min-width:0;}
+ #mainContent[data-main-design="lavender"] .gp-lav-mode button .lbl{min-width:max-content;flex-shrink:0;}
+ #mainContent[data-main-design="lavender"] .gp-lav-mode button em{display:none;}
 }
 /* v77 보강: 에러 토스트 마크는 빨강 유지(에러 신호 명확). body[lavender] .gp-toast-mark(0-2-1)가 .gp-toast-error .gp-toast-mark(0-2-0)를 덮어 라벤더가 됐던 것 → 특이도 올려 빨강 복원 */
 body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:linear-gradient(135deg,#ef4444,#f97316);}

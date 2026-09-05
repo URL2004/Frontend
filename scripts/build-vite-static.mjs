@@ -1,4 +1,4 @@
-import { build } from 'vite';
+import { build, transformWithEsbuild } from 'vite';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -184,6 +184,16 @@ async function writeHashedAssetManifest() {
     const rel = posixPath(path.relative(dist, file));
     let content = await fs.readFile(file, 'utf8');
     content = replaceAssetReferences(content, manifest);
+    const css = rel.endsWith('.css');
+    content = (await transformWithEsbuild(content, rel, {
+      loader: css ? 'css' : 'js',
+      minifyWhitespace: true,
+      minifySyntax: true,
+      // Classic scripts expose names used by HTML handlers and other scripts.
+      minifyIdentifiers: false,
+      target: 'es2020',
+      legalComments: 'eof'
+    })).code;
     const hashed = hashedAssetPath(rel, contentHash(content));
     await fs.writeFile(path.join(dist, hashed), content, 'utf8');
     manifest[`/${rel}`] = `/${hashed}`;

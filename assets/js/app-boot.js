@@ -94,12 +94,29 @@
   }
 
   var appAssetsPromise = null;
+  function preloadAppScripts() {
+    var scripts = ['head-tracking', 'vendor-init', 'api', 'session-security', 'ui-feedback',
+      'modal-manager', 'humanize-pricing', 'conversion-flow', 'detect-presentation',
+      'app-main', 'input-quality', 'main-designs', 'evasion-flow', 'app-module', 'payment-callbacks'];
+    scripts.forEach(function (name) {
+      var link = document.createElement('link');
+      link.rel = name === 'app-module' || name === 'payment-callbacks' ? 'modulepreload' : 'preload';
+      if (link.rel === 'preload') link.as = 'script';
+      link.href = assetPath('/assets/js/' + name + '.js');
+      document.head.appendChild(link);
+    });
+  }
   function loadAppAssets() {
     if (appAssetsPromise) return appAssetsPromise;
     appAssetsPromise = (async function () {
-      await Promise.all([
+      preloadAppScripts();
+      var stylesReady = Promise.all([
         loadStyle('/assets/css/app.css', 'gpAppCss'),
-        loadStyle('/assets/css/redesign.css', 'gpRedesignCss'),
+        loadStyle('/assets/css/redesign.css', 'gpRedesignCss')
+      ]);
+      stylesReady.catch(function () {}); // Observe rejection immediately; the awaited promise still fails boot.
+      // Fonts enhance rendering but must not gate authentication or app startup.
+      Promise.allSettled([
         loadStyle('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css', 'gpPretendardCss'),
         loadStyle('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0', 'gpMaterialSymbols')
       ]);
@@ -124,6 +141,7 @@
       if (/^\/writing-lab(?:\/|$)/.test(window.location.pathname)) await loadScript('/assets/js/writing-lab.js');
       await loadScript('/assets/js/app-module.js', { module: true });
       await loadScript('/assets/js/payment-callbacks.js', { module: true });
+      await stylesReady;
       idle(function () {
         loadScript('https://developers.kakao.com/sdk/js/kakao.min.js', { async: true })
           .then(function () { if (typeof window.onKakaoLoad === 'function') window.onKakaoLoad(); })

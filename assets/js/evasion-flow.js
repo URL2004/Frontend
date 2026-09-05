@@ -2141,6 +2141,11 @@
         desc.textContent = String(item.description || '');
         li.appendChild(name);
         if (desc.textContent) li.appendChild(desc);
+        if (Array.isArray(item.locations) && item.locations.length) {
+          var location = document.createElement('small');
+          location.textContent = '참고 문장: ' + item.locations.map(function (row) { return Number(row.sentenceIndex) + 1; }).join(', ');
+          li.appendChild(location);
+        }
         ul.appendChild(li);
       });
       section.appendChild(ul);
@@ -4460,8 +4465,12 @@
       var body = null;
       try {
         var idToken = await evGetIdToken();
-        var res = await fetch(window.apiUrl('/transform/' + jobId), { headers: evAuthHeaders(idToken) });
-        if (res.ok) { try { body = await res.json(); } catch (e2) { body = null; } }
+        var pollController = new AbortController();
+        var pollTimer = setTimeout(function () { pollController.abort(); }, 15000);
+        try {
+          var res = await fetch(window.apiUrl('/transform/' + jobId), { headers: evAuthHeaders(idToken), signal: pollController.signal });
+          if (res.ok) { try { body = await res.json(); } catch (e2) { body = null; } }
+        } finally { clearTimeout(pollTimer); }
       } catch (e) { body = null; }
       var refine = body && body.refine;
       if (refine && refine.status === 'done') {
@@ -4471,6 +4480,11 @@
           // 보강된 문단만 펄스로 표시 — 남은 타겟 강조도 함께 갱신
           renderDoneBody(outputText, body.result && body.result.refineTargets, refine.paragraphIndex);
           renderRefineTargets(body);   // 구체화된 문단은 카드에서 빠지고 무료 횟수 갱신
+          renderBadges(body.result && body.result.floorReport, body.result);
+          renderPreservationBadge(body);
+          renderResultNotices(body);
+          renderBillingDisposition(body);
+          renderDoneNextStep(body);
           if (window.gpToast) window.gpToast('실제 경험이 문단에 자연스럽게 녹아 들어갔어요.', { type: 'success' });
           if (typeof window.gpTrack === 'function') window.gpTrack('refine_done', { deducted: !!refine.deducted });
         } else {
