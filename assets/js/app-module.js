@@ -3622,7 +3622,9 @@ function historyDetectView(item) {
 }
 
 function historyProbability(item) {
- const value = Number(historyDetectView(item).probability);
+ const raw = historyDetectView(item).probability;
+ if (raw === null || raw === undefined || raw === '' || typeof raw === 'boolean') return null;
+ const value = Number(raw);
  return Number.isFinite(value) ? Math.round(Math.max(0, Math.min(100, value))) : null;
 }
 
@@ -3630,9 +3632,9 @@ function historyWorkStatus(item) {
  if (item.type === 'detect') {
   const probability = historyProbability(item);
   if (probability == null) return { label: '분석 완료', tone: 'neutral' };
-  if (probability <= 20) return { label: `AI 생성 가능성 낮음 · ${probability}%`, tone: 'good' };
-  if (probability <= 49) return { label: `AI 생성 가능성 보통 · ${probability}%`, tone: 'notice' };
-  return { label: `AI 생성 가능성 높음 · ${probability}%`, tone: 'warn' };
+  if (probability <= 20) return { label: `AI식 문체 신호 낮음 · ${probability}/100`, tone: 'good' };
+  if (probability <= 49) return { label: `AI식 문체 신호 중간 · ${probability}/100`, tone: 'notice' };
+  return { label: `AI식 문체 신호 높음 · ${probability}/100`, tone: 'warn' };
  }
  // qualityStatus는 운영 품질 확인용 메타데이터다. 사용자 기록에는 내부 판정명을 노출하지 않는다.
  return { label: '작업 완료', tone: 'good' };

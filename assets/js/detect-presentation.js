@@ -41,9 +41,9 @@
   function professorRadarFor(value) {
     var p = probability(value);
     if (p === null) return { score: null, band: 'limited', label: '점수 확인 필요' };
-    if (p <= 20) return { score: p, band: 'low', label: '피하기에 유리한 편' };
-    if (p <= 49) return { score: p, band: 'revise', label: '보완 후 제출 권장' };
-    return { score: p, band: 'hard', label: '지금은 피하기 어려운 편' };
+    if (p <= 20) return { score: p, band: 'low', label: 'AI식 문체 신호 낮음' };
+    if (p <= 49) return { score: p, band: 'revise', label: 'AI식 문체 신호 중간' };
+    return { score: p, band: 'hard', label: 'AI식 문체 신호 높음' };
   }
 
   function compact(value) {

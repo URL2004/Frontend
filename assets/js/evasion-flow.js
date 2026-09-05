@@ -57,7 +57,8 @@
     return fallback;
   }
   function advancedCredit(len, evidence) {
-    return window.gpHumanizePricing.advancedCredits(len, evidence);
+    var plan = validStructurePlan();
+    return window.gpHumanizePricing.advancedCredits(plan ? plan.inputChars : len, evidence, structureSelected());
   }
 
   // ── 예상 비용(C) ─────────────────────────────────────────────────────────────
@@ -1292,7 +1293,7 @@
       svg.appendChild(tx);
     });
     // 구역 이름 — 짧고 직관적인 세 낱말.
-    [[82, '위험', 'z-hard'], [35, '주의', 'z-revise'], [10, '안전', 'z-low']].forEach(function (z) {
+    [[82, '높음', 'z-hard'], [35, '중간', 'z-revise'], [10, '낮음', 'z-low']].forEach(function (z) {
       var lp = repGaugePoint(z[0], G.R + G.band / 2 + 14);
       var anchorAt = lp[0] < G.cx - 20 ? 'end' : lp[0] > G.cx + 20 ? 'start' : 'middle';
       if (z[0] === 35) { anchorAt = 'middle'; lp[1] -= 2; }
@@ -1331,7 +1332,7 @@
     if (alt) {
       alt.textContent = score == null
         ? '교수님 게이지. 점수를 확인하지 못해 내 글 위치를 표시하지 않았어요.'
-        : '교수님 게이지. AI식 문체 신호 ' + score + '점, 100점 만점. ' + (model.radar.label || '') + '. 50~100 위험, 21~49 주의, 0~20 안전. 점수가 낮을수록 왼쪽 출발선의 교수님에게서 멀리 달아난 거예요.';
+        : 'AI식 문체 신호 ' + score + '점, 100점 만점. ' + (model.radar.label || '') + '. 50~100 높음, 21~49 중간, 0~20 낮음. 문체 신호의 정도를 나타냅니다.';
     }
   }
 
@@ -1381,8 +1382,8 @@
     return {
       score: score,
       band: radar.band || (shared && shared.band) || 'unknown',
-      label: radar.label || (shared && shared.label) || '',
-      headline: radar.headline || '',
+      label: (shared && shared.label) || radar.label || '',
+      headline: (shared && shared.label) || radar.headline || '',
       description: radar.description || '',
       disclaimer: radar.disclaimer || ''
     };
@@ -1452,6 +1453,7 @@
         label: styleSignal.label || styleLabelFor(styleBand),
         source: source,
         sourceLabel: sourceLabel,
+        evidenceLabel: status === 'limited' || contentStatus === 'limited' ? '분석 근거 제한' : d.confidence === 'high' ? '분석 근거 충분' : d.confidence === 'medium' ? '분석 근거 일부' : '분석 근거 제한',
         // 보정 여부는 화면에 쓰지 않되(사장님 결정), 다음 화면 핸드오프·디버깅에서 참조할 수 있게 모델에는 남긴다.
         calibrated: styleSignal.calibrated === true || d.calibrated === true,
         rawScore: reportNumber(d.rawProbability)
@@ -2375,7 +2377,7 @@
       ctx.fillStyle = '#e2dcff'; ctx.font = font('700', 20); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       [[100, '100'], [0, '0']].forEach(function (t) { var lp = gPoint(t[0], GR - BW / 2 - 26); ctx.fillText(t[1], lp[0], lp[1]); });
       var zl = function (score, text, color) { var lp = gPoint(score, GR + BW / 2 + 22); ctx.fillStyle = color; ctx.font = font('800', 22); ctx.fillText(text, lp[0], lp[1]); };
-      zl(82, '위험', '#ffb9ac'); zl(35, '주의', '#c9b8ff'); zl(10, '안전', '#9fd6e2');
+      zl(82, '높음', '#ffb9ac'); zl(35, '중간', '#c9b8ff'); zl(10, '낮음', '#9fd6e2');
       ctx.setLineDash([4, 9]); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(gx, gy, GR, -gAngle(100), -gAngle(0), false); ctx.stroke(); ctx.setLineDash([]);
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
@@ -2497,7 +2499,7 @@
       return;
     }
     if (model.radar.band === 'low') {
-      if (title) title.textContent = '지금 이 글은 피하기에 유리한 편이에요';
+      if (title) title.textContent = '이 글의 AI식 문체 신호가 낮게 감지됐어요';
       if (desc) desc.textContent = '두드러진 AI식 문체 신호가 없어 굳이 다듬지 않아도 괜찮아요. 그래도 문체를 손보고 싶다면 비용부터 확인해 보세요.';
       if (btn) { btn.hidden = false; btn.textContent = '그래도 방법·비용 보기 →'; }
       if (help) help.hidden = false;
@@ -2596,7 +2598,7 @@
     if ($('gpRepSource')) {
       // 엔진 간이 추정은 모델 판정과 신뢰도가 달라 점수 옆에서 밝힌다.
       // 이력 보정 사실은 화면에 표기하지 않는다(사장님 결정 2026-09-02). 값은 응답·관리자 원장에 남는다.
-      $('gpRepSource').textContent = model.style.source === 'engine' ? model.style.sourceLabel : '';
+      $('gpRepSource').textContent = model.style.source === 'engine' ? model.style.sourceLabel : model.style.evidenceLabel;
     }
 
     // ② 계측 띠
@@ -2844,6 +2846,93 @@
     renderConfirmCost();     // 모달 안에서 켜면 필요한 크레딧·시간이 즉시 바뀐다(2026-08-29)
   };
 
+  var structurePlan = null;
+  var structurePlanKey = '';
+  var structureLoading = false;
+  var structureEnabled = false;
+  function structureInputKey() {
+    return (($('lavInput') && $('lavInput').value) || '').trim() + '\u0000' + currentDocumentProfile();
+  }
+  function structureSelected() {
+    var el = $('lavStructure');
+    return !!(structureEnabled && el && el.checked && !el.disabled && !pendingPolish
+      && document.querySelector('input[name="lavTone"]:checked')?.value === 'formal');
+  }
+  function validStructurePlan() {
+    return structureSelected() && structurePlan && structurePlan.applied
+      && structurePlanKey === structureInputKey() && structurePlan.expiresAtMs > Date.now() ? structurePlan : null;
+  }
+  window.lavStructureChange = function () {
+    var area = $('lavStructurePreview');
+    if (area) area.hidden = !structureSelected();
+    renderConfirmCost(); renderSelectCosts(); updateConfirmStartState();
+  };
+  function syncStructureAvailability(advanced) {
+    var row = $('lavStructureRow'), el = $('lavStructure');
+    if (row) row.hidden = !advanced || !structureEnabled;
+    if (!advanced && el) el.checked = false;
+    if (!advanced && $('lavStructurePreview')) $('lavStructurePreview').hidden = true;
+    if (advanced) fetch(window.apiUrl('/transform/structure-config')).then(function (r) { return r.ok ? r.json() : null; }).then(function (cfg) {
+      structureEnabled = !!(cfg && cfg.enabled);
+      if (row) row.hidden = !structureEnabled || currentSettings().tone !== 'formal' || pendingPolish;
+      if (!structureEnabled && el) el.checked = false;
+      renderConfirmCost(); updateConfirmStartState();
+    }).catch(function () { if (row) row.hidden = true; });
+  }
+  document.addEventListener('input', function (event) {
+    if (event.target && event.target.id === 'lavInput') {
+      structurePlan = null; structurePlanKey = '';
+      if ($('lavStructurePreview')) $('lavStructurePreview').replaceChildren();
+      renderConfirmCost(); updateConfirmStartState();
+    }
+  });
+  async function prepareStructurePreview() {
+    if (structureLoading) return;
+    var key = structureInputKey(), area = $('lavStructurePreview');
+    structureLoading = true; updateConfirmStartState();
+    if (area) { area.hidden = false; area.textContent = '목차와 문단 변경안을 준비하고 있어요. 이 단계에서는 크레딧을 차감하지 않아요.'; }
+    try {
+      var token = await evGetIdToken(true);
+      if (!token) throw new Error('로그인 후 구조 변경안을 확인해 주세요.');
+      var response = await fetch(window.apiUrl('/transform/structure-plan'), { method: 'POST', headers: evAuthHeaders(token, {'Content-Type':'application/json'}), body: JSON.stringify({text: (($('lavInput') && $('lavInput').value)||'').trim(), mode:'formal', documentProfile:currentDocumentProfile() || undefined}) });
+      var started = await response.json();
+      if (!response.ok) throw new Error(started.error || '변경안을 준비하지 못했습니다.');
+      var id = started.jobId || (started.job && started.job.id);
+      var plan = null;
+      for (var attempt=0;attempt<180;attempt++) {
+        if (key !== structureInputKey()) throw new Error('원문이 바뀌었습니다. 변경안을 다시 확인해 주세요.');
+        var poll = await fetch(window.apiUrl('/transform/'+id), {headers:evAuthHeaders(await evGetIdToken(false))});
+        var state = await poll.json();
+        if (!poll.ok) throw new Error(state.error || '변경안 상태를 확인하지 못했습니다.');
+        if (state.status === 'done') { plan = state.result && state.result.structurePlan; break; }
+        if (['error','blocked','cancelled'].indexOf(state.status)>=0) throw new Error(state.error || '변경안을 준비하지 못했습니다.');
+        if (area) area.textContent = state.status === 'queued' ? '구조 변경안 준비를 기다리고 있어요. 대기열 순서에 따라 진행합니다.' : '문단 순서와 연결을 살펴보고 있어요.';
+        await new Promise(function (resolve) { setTimeout(resolve, 3000); });
+      }
+      if (!plan) throw new Error('변경안 준비가 지연되고 있어요. 잠시 후 다시 확인해 주세요.');
+      structurePlan = plan; structurePlanKey = key;
+      if (area) {
+        area.replaceChildren();
+        var intro = document.createElement('p'); intro.textContent = plan.reason || '변경안을 확인한 뒤 시작해 주세요.'; area.appendChild(intro);
+        if (plan.applied) {
+          var list = document.createElement('ol');
+          (plan.changes || []).forEach(function (change) {
+            var item=document.createElement('li');item.textContent=(change.fromPositions||[]).join('·')+'번 → '+change.toPosition+'번 · '+change.reason;
+            var excerpt=document.createElement('blockquote');excerpt.textContent=change.preview || '';item.appendChild(excerpt);list.appendChild(item);
+          });
+          area.appendChild(list);
+          var note=document.createElement('p');note.textContent='이 변경안으로 휴머나이징을 시작하면 구조 개선 '+plan.additionalCredits+'크레딧이 추가됩니다.';area.appendChild(note);
+        } else {
+          if ($('lavStructure')) $('lavStructure').checked = false;
+          var keep=document.createElement('p');keep.textContent='구조 추가요금 없이 원문 구조로 휴머나이징할 수 있어요.';area.appendChild(keep);
+        }
+      }
+    } catch (error) {
+      structurePlan = null; structurePlanKey = '';
+      if (area) area.textContent = error.message || '변경안을 준비하지 못했습니다. 옵션을 해제하면 원문 구조로 진행할 수 있어요.';
+    } finally { structureLoading=false;renderConfirmCost();renderSelectCosts();updateConfirmStartState(); }
+  }
+
   // 확인 모달의 크레딧·시간만 다시 계산 — 근거 보강 토글이 모달 안에서 바로 반영되게 분리
   function renderConfirmCost() {
     var modal = $('lavConfirmModal');
@@ -2854,6 +2943,8 @@
     var text = src ? src.value : '';
     var len = text.length;
     var evidenceCredit = $('lavEvidenceCredit');
+    var structureCredit = $('lavStructureCredit');
+    if (structureCredit) structureCredit.textContent = '+' + window.gpHumanizePricing.advancedStructureCredits(validStructurePlan()?.inputChars || len) + '크레딧';
     if (evidenceCredit) evidenceCredit.textContent = '+' + window.gpHumanizePricing.advancedEvidenceCredits(len) + '크레딧';
     var credit, time;
     if (s.tone === 'formal') {
@@ -2881,8 +2972,8 @@
   function updateConfirmStartState() {
     var b = lavStartBtn(); if (!b) return;
     var accepted = !effectNoticeRequired() || !!($('lavEffectNoticeAccepted') && $('lavEffectNoticeAccepted').checked);
-    b.disabled = _coachLoading || !accepted;
-    b.textContent = _coachLoading ? '추천 불러오는 중…' : (!accepted ? '위 내용을 확인해 주세요' : '시작하기');
+    b.disabled = _coachLoading || structureLoading || (!accepted && !(structureSelected() && !validStructurePlan()));
+    b.textContent = structureLoading ? '변경안 준비 중…' : _coachLoading ? '추천 불러오는 중…' : structureSelected() && !validStructurePlan() ? '변경안 미리보기' : (!accepted ? '위 내용을 확인해 주세요' : '시작하기');
   }
   function lavStartBtnState(loading) {   // 픽 로딩 중엔 시작 잠금(빈 창에서 그냥 넘어가는 것 방지)
     _coachLoading = !!loading;
@@ -2942,6 +3033,9 @@
   }
 
   window.lavDocumentProfileChange = function () {
+    structurePlan = null; structurePlanKey = '';
+    if ($('lavStructurePreview')) $('lavStructurePreview').replaceChildren();
+    renderConfirmCost(); updateConfirmStartState();
     var hint = $('lavDocumentProfileHint');
     var profile = currentDocumentProfile();
     renderDetailSummary();
@@ -2970,6 +3064,7 @@
   // 확인 모달은 여러 모드가 같은 DOM을 공유한다. 모드를 바꿀 때 이전 고급 옵션이
   // 다듬기·기본 확인창에 남지 않도록, 열 때마다 노출과 선택값을 함께 동기화한다.
   function setConfirmEvidenceAvailability(available) {
+    syncStructureAvailability(available === true);
     var row = $('lavEvidenceRow');
     var checkbox = $('lavEvidence');
     var enabled = available === true && !(checkbox && checkbox.disabled);
@@ -3247,6 +3342,8 @@
     if (m.lostFacts === 0) badge(true, '보호 사실 유지');
     if (m.repetition === 0) badge(true, '신규 반복 없음');
     if (m.judge === 'pass') badge(true, '의미 검증 완료');
+    if (result && result.structureImprovement && result.structureImprovement.requested) badge(result.structureImprovement.applied, result.structureImprovement.applied ? '확인한 구조 변경안 적용' : '구조 변경 미적용 · 추가요금 없음 · ' + (result.structureImprovement.reason || '확인한 변경안을 최종 결과에 적용하지 못했습니다.'));
+    if (result && result.creditBreakdown && result.structureImprovement && result.structureImprovement.requested) badge(null, '실제 차감 ' + (result.creditBreakdown.charged ?? result.creditBreakdown.total) + '크레딧');
     var korean = result && result.koreanRefinement;
     if (korean && korean.pass === true) badge(true, '한국어 표현 점검 완료');
     if (m.evidenceUsed > 0) badge(true, '승인 근거 ' + m.evidenceUsed + '건 · 수치·출처 일치');
@@ -3637,6 +3734,7 @@
     if (recoverGen !== pollGen) return false;
     var job = data && data.job;
     if (!data || !data.ok || !job || !job.id) return false;
+    if (job.structurePreview) return false;
     if (window.gpToast) window.gpToast('진행 중이던 작업으로 다시 들어갑니다.', { type: 'info' });
     return resumeTransformState(job.id, job);
   }
@@ -3707,7 +3805,7 @@
       var resumeSettings = resumePayload.settings || {};
       var resumeMode = resumePayload.flowMode || 'blog';
       var resumeNeeded = Number(err.needed) || (resumeMode === 'formal'
-        ? advancedCredit(resumeText.length, !!resumeSettings.evidence)
+        ? window.gpHumanizePricing.advancedCredits(resumeSettings.structureInputChars || resumeText.length, !!resumeSettings.evidence, !!resumeSettings.structurePlanId)
         : shortHumanizeCredit(resumeText.length));
       await window.gpOpenCreditCheckout({
         action: 'evasion_transform',
@@ -4218,7 +4316,7 @@
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
-          body: JSON.stringify(Object.assign({ text: text, mode: 'formal', evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: 'keep', documentProfile: s.documentProfile || undefined, effectNoticeAccepted: !!s.effectNoticeAccepted }, reportHandoffFields(text)))
+          body: JSON.stringify(Object.assign({ text: text, mode: 'formal', evidence: !!s.evidence, memo: s.memo || '', autoCoach: false, lang: evDetectLang(text), length: 'keep', documentProfile: s.documentProfile || undefined, effectNoticeAccepted: !!s.effectNoticeAccepted, structureMode:s.structurePlanId ? 'improve' : 'preserve', structurePlanId:s.structurePlanId || undefined }, reportHandoffFields(text)))
         }).then(parseTransformStart);
         if (window.gpTrackFeature && r && r.jobId) window.gpTrackFeature('start', { feature: 'humanize', run_id: r.jobId, mode: 'formal', chars: text.length });
         if (gen !== pollGen) {
@@ -4244,6 +4342,8 @@
   }
 
   window.lavStartJob = function () {
+    if (structureLoading) return;
+    if (structureSelected() && !validStructurePlan()) { void prepareStructurePreview(); return; }
     // 확인 버튼 연타나 늦게 열린 이전 확인창이 새 작업을 겹쳐 시작하지 못하게 한다.
     if (typeof window.lavPrepareNewSentence === 'function' && !window.lavPrepareNewSentence()) return;
     var polish = pendingPolish;       // 확인창 닫기 전에 캡처(lavCloseConfirm이 플래그를 비움)
@@ -4256,6 +4356,8 @@
     if (polish) return runShortJob('polish', null);    // 원문 보존 다듬기 — 확인 후 시작
     var s = currentSettings();
     s.effectNoticeAccepted = effectNoticeAccepted;
+    s.structurePlanId = validStructurePlan() ? validStructurePlan().id : null;
+    s.structureInputChars = validStructurePlan() ? validStructurePlan().inputChars : null;
     if (s.tone === 'blog') return runBlogEvasion(s);   // ★ P2 실연결(블로그 어투)
     return runFormalEvasion(s);                        // ★ P3+P4 실연결(격식 유지 재구성, job+폴링+근거 승인)
   };

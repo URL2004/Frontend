@@ -65,15 +65,21 @@
     return evidence.maxCredits;
   }
 
-  function advancedCredits(length, evidenceEnabled) {
+  function advancedStructureCredits(length) {
+    return Math.ceil(advancedBaseCredits(length) * 0.30);
+  }
+
+  function advancedCredits(length, evidenceEnabled, structureEnabled) {
     return advancedBaseCredits(length)
-      + (evidenceEnabled ? advancedEvidenceCredits(length) : 0);
+      + (evidenceEnabled ? advancedEvidenceCredits(length) : 0)
+      + (structureEnabled ? advancedStructureCredits(length) : 0);
   }
 
   global.gpHumanizePricing = Object.freeze({
     policy: policy,
     advancedBaseCredits: advancedBaseCredits,
     advancedEvidenceCredits: advancedEvidenceCredits,
+    advancedStructureCredits: advancedStructureCredits,
     advancedCredits: advancedCredits
   });
 })(window);

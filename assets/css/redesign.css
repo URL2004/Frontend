@@ -3968,6 +3968,9 @@ body[data-main-design="lavender"] #inviteModal .gp-modal-card svg path[stroke="#
 }
 .lav-confirm-modal[hidden]{display:none;}
 .lav-confirm-card{
+ box-sizing:border-box;
+ max-height:calc(100dvh - 40px);
+ overflow-y:auto;
  width:min(440px,100%);
  padding:26px 24px 22px;
  border:1px solid #e9ebf5;
@@ -8509,6 +8512,11 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .lav-confirm-opt:hover{border-color:#b9bbee;}
 .lav-confirm-opt:has(input:checked){border-color:#5a5bd8;background:#f2f2ff;}
 .lav-confirm-opt[hidden]{display:none!important;}
+.lav-structure-preview{font-size:13px;line-height:1.65;color:#454b62;max-height:260px;overflow:auto;padding:12px 14px;background:#f7f7fc;border-radius:10px;margin:12px 0;overflow-wrap:anywhere;}
+.lav-structure-preview[hidden]{display:none!important;}
+.lav-structure-preview ol{padding-left:20px;margin:8px 0;}
+.lav-structure-preview li+li{margin-top:12px;}
+.lav-structure-preview blockquote{margin:5px 0;padding-left:10px;border-left:2px solid #c9c9ec;color:#6a7188;}
 .lav-confirm-opt input{margin-top:3px;flex:0 0 auto;width:17px;height:17px;accent-color:#5a5bd8;cursor:pointer;}
 .lav-confirm-opt-t{display:flex;flex-direction:column;gap:4px;min-width:0;}
 .lav-confirm-opt-t b{color:#1f2437;font-size:14px;font-weight:700;}

@@ -83,11 +83,11 @@ test('렌더러는 evidence-v2와 구형 응답을 함께 처리하고 판정 �
   assert.match(flow, /repPaintCta\(model\)/u, '전환 밴드는 상태별 분기를 거쳐 그려진다');
 });
 
-test('폴백 점수와 보정은 화면에서 밝혀진다', async () => {
+test('간이 추정과 근거 충분성을 표시하고 이력 보정 배지는 추가하지 않는다', async () => {
   const flow = await read('assets/js/evasion-flow.js');
   // 같은 글이 LLM 판정과 엔진 간이 추정 사이에서 크게 달라질 수 있으므로 출처를 숨기지 않는다.
   assert.match(flow, /AI 모델 분석이 완료되지 않아 문체 엔진의 간이 추정으로 계산한 점수예요/u);
-  assert.match(flow, /model\.style\.source === 'engine' \? model\.style\.sourceLabel : ''/u, '게이지 옆에 출처가 붙는다');
+  assert.match(flow, /model\.style\.source === 'engine' \? model\.style\.sourceLabel : model\.style\.evidenceLabel/u, '게이지 옆에 분석 근거 상태가 붙는다');
   // 이력 보정 사실은 화면에 표기하지 않는다(사장님 결정 2026-09-02).
   // 값 자체는 응답·모델에 남아 관리자 원장에서 확인할 수 있다.
   assert.match(flow, /calibrated: styleSignal\.calibrated === true \|\| d\.calibrated === true/u);
@@ -134,7 +134,7 @@ test('전환 밴드는 추천을 보류할 때도 사라지지 않고 닫는 말
   assert.match(flow, /band\.hidden = false;/u, '밴드 자체는 항상 남는다');
   assert.match(flow, /band\.classList\.toggle\('is-quiet', !eligible\)/u);
   assert.match(flow, /지금은 추천을 보류했어요/u, '간이 추정이면 유료 수정을 권하지 않는다');
-  assert.match(flow, /지금 이 글은 피하기에 유리한 편이에요/u, '깨끗한 글은 그대로 두어도 된다고 말한다');
+  assert.match(flow, /이 글의 AI식 문체 신호가 낮게 감지됐어요/u, '낮은 점수는 문체 신호로 설명한다');
   assert.match(flow, /판단할 근거가 아직 부족해요/u);
   // 버튼을 감춘 상태에서 비용 줄만 남으면 "어디로 이동한다는 건지" 모순이 된다.
   assert.match(flow, /if \(goBtn && goBtn\.hidden\) return;/u);
@@ -332,14 +332,14 @@ test('게이지는 브랜드 세 구역 색을 두른 반원 "교수님 게이�
   assert.match(flow, /report\/runner\.png'[\s\S]{0,160}preserveAspectRatio: 'xMidYMid meet'/u, 'ima2 학생 리소스 — 전신이 원 안에 통째로(바지가 잘리지 않게)');
   assert.match(flow, /transform: 'translate\(' \+ \(pp\[0\] - 26\)/u, '교수님은 100 끝 바깥쪽(왼쪽)');
   assert.match(flow, /var s = 100 - \(100 - p\) \* e;/u, '인트로에서 학생은 교수님 옆에서 출발해 달아난다');
-  assert.match(flow, /\[\[82, '위험', 'z-hard'\], \[35, '주의', 'z-revise'\], \[10, '안전', 'z-low'\]\]/u, '구역 말은 위험·주의·안전');
+  assert.match(flow, /\[\[82, '높음', 'z-hard'\], \[35, '중간', 'z-revise'\], \[10, '낮음', 'z-low'\]\]/u, '구역은 문체 신호 높음·중간·낮음으로 표시한다');
   assert.ok(!/'피하기 어려움', 'z-hard'/u.test(flow), '옛 구역 말이 게이지에 남아 있지 않다');
   // 마커 위치는 속성 그룹, 등장 애니는 안쪽 CSS 그룹 — 같은 요소면 CSS가 translate를 덮는다
   assert.match(flow, /var blipAt = mk\('g', \{ class: 'blip-at', transform: 'translate\(/u);
   assert.match(css, /\.gp-rep-dial \.gp-rep-scope svg\{[^}]*transform:none/u);
   assert.match(flow, /b\.style\.strokeDashoffset = L \* \(1 - frac\)/u, '띠는 구역마다 제 몫만큼 채워진다');
-  assert.match(main, /title="멀리 달아났어요">0~20 안전/u, '범례는 한 줄(구간만), 뜻은 title');
-  assert.match(flow, /점수가 낮을수록 왼쪽 출발선의 교수님에게서 멀리 달아난 거예요/u, '스크린리더용 설명');
+  assert.match(main, /title="AI식 문체 신호 낮음">0~20 낮음/u, '범례는 문체 신호 구간을 설명한다');
+  assert.match(flow, /문체 신호의 정도를 나타냅니다/u, '스크린리더용 설명');
   assert.ok(!/RMIN/u.test(flow), '과녁 기하 잔재가 없다');
 });
 

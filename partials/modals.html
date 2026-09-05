@@ -139,6 +139,14 @@
         <i>관련 자료를 검색해 보여드리고, 직접 승인한 자료만 결과에 사용해요. 검색·검수 단계가 붙어 8분 이상 더 걸릴 수 있어요.</i>
       </span>
     </label>
+    <label class="lav-confirm-opt" id="lavStructureRow" hidden>
+      <input type="checkbox" id="lavStructure" onchange="lavStructureChange()">
+      <span class="lav-confirm-opt-t">
+        <b>글 구조 개선 <em id="lavStructureCredit">기본요금의 30% 추가</em></b>
+        <i>시작 전에 문단과 하위 목차 변경안을 확인해요. 상위 과제 목차와 인용·참고문헌은 보존하며, 구조 변경을 적용한 경우에만 추가 차감해요.</i>
+      </span>
+    </label>
+    <div id="lavStructurePreview" class="lav-structure-preview" hidden aria-live="polite"></div>
     <div class="lav-confirm-cost">
       <div class="lav-confirm-cost-main"><span>필요한 크레딧</span><b id="lavConfirmCredit">8 크레딧</b></div>
       <div><span>걸리는 시간</span><b id="lavConfirmTime">입력 길이로 계산</b></div>
@@ -152,7 +160,7 @@
     </label>
     <div class="lav-confirm-note">
       <p class="lav-confirm-safe"><span class="lav-confirm-check" aria-hidden="true">✓</span><span>완료될 때만 차감돼요. <b>실패하면 차감되지 않아요.</b></span></p>
-      <p class="lav-confirm-sub" id="lavConfirmSub">AI 티 지수는 글에 따라 달라질 수 있으며 보장값이 아니에요.</p>
+      <p class="lav-confirm-sub" id="lavConfirmSub">AI 티 지수는 글에 따라 달라져요. 원문 점수가 이미 낮거나 문체 변화가 작으면 점수 차이도 작을 수 있어요.</p>
     </div>
     <div class="lav-confirm-actions">
       <button type="button" class="ghost" onclick="lavCloseConfirm()">취소</button>

@@ -45,9 +45,9 @@ test('50%부터 높은 구간으로 모든 화면이 같은 경계를 쓴다', (
 });
 
 test('교수님 레이더는 공식 점수 밴드와 같은 경계를 쓴다', () => {
-  assert.deepEqual({ ...professorRadar(20) }, { score: 20, band: 'low', label: '피하기에 유리한 편' });
-  assert.deepEqual({ ...professorRadar(21) }, { score: 21, band: 'revise', label: '보완 후 제출 권장' });
-  assert.deepEqual({ ...professorRadar(49) }, { score: 49, band: 'revise', label: '보완 후 제출 권장' });
-  assert.deepEqual({ ...professorRadar(50) }, { score: 50, band: 'hard', label: '지금은 피하기 어려운 편' });
-  assert.deepEqual({ ...professorRadar(72) }, { score: 72, band: 'hard', label: '지금은 피하기 어려운 편' });
+  assert.deepEqual({ ...professorRadar(20) }, { score: 20, band: 'low', label: 'AI식 문체 신호 낮음' });
+  assert.deepEqual({ ...professorRadar(21) }, { score: 21, band: 'revise', label: 'AI식 문체 신호 중간' });
+  assert.deepEqual({ ...professorRadar(49) }, { score: 49, band: 'revise', label: 'AI식 문체 신호 중간' });
+  assert.deepEqual({ ...professorRadar(50) }, { score: 50, band: 'hard', label: 'AI식 문체 신호 높음' });
+  assert.deepEqual({ ...professorRadar(72) }, { score: 72, band: 'hard', label: 'AI식 문체 신호 높음' });
 });

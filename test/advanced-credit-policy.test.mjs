@@ -61,14 +61,24 @@ test('작업 선택·확인·결제 재개와 구형 실행 경로는 공용 계
     '공용 계산기는 작업실 흐름보다 먼저 로드해야 함'
   );
   assert.match(appMain, /window\.gpHumanizePricing\.advancedCredits\(len, false\)/u);
-  assert.match(evasion, /function advancedCredit\(len, evidence\)[\s\S]*?window\.gpHumanizePricing\.advancedCredits\(len, evidence\)/u);
+  assert.match(evasion, /function advancedCredit\(len, evidence\)[\s\S]*?window\.gpHumanizePricing\.advancedCredits\(plan \? plan\.inputChars : len, evidence, structureSelected\(\)\)/u);
   assert.match(evasion, /var gap = advancedCredit\(len, evOn\) - shortHumanizeCredit\(len\)/u);
   assert.match(evasion, /credit = advancedCredit\(len, s\.evidence\) \+ ' 크레딧'/u);
-  assert.match(evasion, /resumeMode === 'formal'[\s\S]*?advancedCredit\(resumeText\.length, !!resumeSettings\.evidence\)/u);
+  assert.match(evasion, /resumeMode === 'formal'[\s\S]*?advancedCredits\(resumeSettings\.structureInputChars \|\| resumeText\.length, !!resumeSettings\.evidence, !!resumeSettings\.structurePlanId\)/u);
   assert.match(evasion, /advancedEvidenceCredits\(len\)/u);
   assert.match(modals, /id="lavEvidenceCredit">입력 길이로 계산</u);
   assert.doesNotMatch(appMain, /len <= 10000 \? 200/u);
   assert.doesNotMatch(evasion, /RESTRUCTURE_TIERS|formalCredit/u);
+});
+
+test('structure option is priced from base alone with integer rounding', async () => {
+  const pricing = await loadPricingCalculator();
+  for (const length of [3000,3001,3351,10000,10001,20000,30000]) {
+    const extra = Math.ceil(pricing.advancedBaseCredits(length) * .3);
+    assert.equal(pricing.advancedStructureCredits(length), extra);
+    assert.equal(pricing.advancedCredits(length,true,true),pricing.advancedCredits(length,true)+extra);
+    assert.equal(pricing.advancedCredits(length,false,false),pricing.advancedBaseCredits(length));
+  }
 });
 
 test('요금표·가이드·약관·연구노트·공지의 단계형 정책과 대표값을 고정한다', async () => {
