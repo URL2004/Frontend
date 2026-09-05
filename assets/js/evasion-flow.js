@@ -2877,7 +2877,12 @@
       if (row) row.hidden = !structureEnabled || currentSettings().tone !== 'formal' || pendingPolish;
       if (!structureEnabled && el) el.checked = false;
       renderConfirmCost(); updateConfirmStartState();
-    }).catch(function () { if (row) row.hidden = true; });
+    }).catch(function () {
+      structureEnabled = false;
+      if (row) row.hidden = true;
+      if (el) el.checked = false;
+      renderConfirmCost(); updateConfirmStartState();
+    });
   }
   document.addEventListener('input', function (event) {
     if (event.target && event.target.id === 'lavInput') {
@@ -2910,6 +2915,7 @@
         await new Promise(function (resolve) { setTimeout(resolve, 3000); });
       }
       if (!plan) throw new Error('변경안 준비가 지연되고 있어요. 잠시 후 다시 확인해 주세요.');
+      if (key !== structureInputKey()) throw new Error('원문이 바뀌었습니다. 변경안을 다시 확인해 주세요.');
       structurePlan = plan; structurePlanKey = key;
       if (area) {
         area.replaceChildren();
