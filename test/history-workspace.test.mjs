@@ -80,7 +80,7 @@ test('휴머나이징 기록은 결과를 원문보다 먼저, AI 감지는 원�
 test('작업 상태와 이용 내역을 분리하고 복구 가능한 화면 상태를 제공한다', async () => {
   const source = await read('assets/js/app-module.js');
   const userHistory = source.slice(source.indexOf('function historyBillingInfo'), source.indexOf('// --- 환불 시스템 UI ---'));
-  assert.match(source, /<small>작업 상태<\/small>/u);
+  assert.match(source, /<small>\$\{isDetect \? 'AI 티 지수' : '작업 상태'\}<\/small>/u);
   assert.match(source, /<small>이용 내역<\/small>/u);
   assert.match(source, /이용권 포함/u);
   assert.doesNotMatch(userHistory, /검토 필요|과거 정책|관리자 무차감|무차감 · 관리자/u);

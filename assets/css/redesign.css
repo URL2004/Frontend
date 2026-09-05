@@ -11931,8 +11931,11 @@ html.gp-rep-modal-open{overflow:hidden;}
 }
 @media (max-width:480px){
  /* 1열로 쌓으면 띠가 한 화면을 먹는다 — 2×2를 유지하고 아이콘만 줄인다 */
- #mainContent[data-main-design="lavender"] .gp-rep-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 0;padding:14px 4px;}
- #mainContent[data-main-design="lavender"] .gp-rep-stats>div{padding:2px 12px;gap:9px;}
+ #mainContent[data-main-design="lavender"] .gp-rep-stats{grid-template-columns:minmax(0,1fr);gap:14px 0;padding:14px 4px;}
+ #mainContent[data-main-design="lavender"] .gp-rep-stats>div{padding:2px 12px;gap:9px;border-left:0;}
+ #mainContent[data-main-design="lavender"] .gp-rep-stats>div>div{min-width:0;flex:1;}
+ #mainContent[data-main-design="lavender"] .gp-rep-stats dt,
+ #mainContent[data-main-design="lavender"] .gp-rep-stats dd{white-space:normal;overflow-wrap:anywhere;}
  #mainContent[data-main-design="lavender"] .gp-rep-stats>div:nth-child(2n+1){border-left:0;}
  #mainContent[data-main-design="lavender"] .gp-rep-stat-ico{width:32px;height:32px;border-radius:9px;}
  #mainContent[data-main-design="lavender"] .gp-rep-stat-ico svg{width:16px;height:16px;}
@@ -12391,6 +12394,11 @@ html.gp-rep-modal-open{overflow:hidden;}
 #mainContent[data-main-design="lavender"] .gp-rep .gp-rep-hero-title{max-width:620px;padding:0 120px;box-sizing:content-box;}
 #mainContent[data-main-design="lavender"] .gp-rep-hero-foot{margin-top:16px;}
 #mainContent[data-main-design="lavender"] .gp-rep-hero-note{margin:0;}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation{max-width:650px;margin:14px auto 0;word-break:keep-all;overflow-wrap:anywhere;}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation[hidden]{display:none !important;}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-label{margin:0;color:var(--rep-brand-strong);font-size:var(--rep-fs-2);font-weight:700;font-variant-numeric:tabular-nums;}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-desc{margin:8px 0 0;color:var(--rep-copy);font-size:var(--rep-fs-3);line-height:1.75;white-space:pre-line;}
+#mainContent[data-main-design="lavender"] .gp-rep-evidence-reason{margin:7px 0 0;color:var(--rep-muted);font-size:var(--rep-fs-2);line-height:1.7;white-space:pre-line;}
 
 /* 범례 한 줄 */
 #mainContent[data-main-design="lavender"] .gp-rep-zonekey{flex-wrap:nowrap;gap:0 18px;margin-top:12px;}

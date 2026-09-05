@@ -81,7 +81,7 @@
   var appAssetsPromise = null;
   function preloadAppScripts() {
     var scripts = ['head-tracking', 'vendor-init', 'api', 'session-security', 'ui-feedback',
-      'modal-manager', 'humanize-pricing', 'conversion-flow', 'detect-presentation',
+      'modal-manager', 'humanize-pricing', 'conversion-flow', 'detect-interpretation', 'detect-presentation',
       'app-main', 'input-quality', 'main-designs', 'evasion-flow', 'app-module', 'payment-callbacks'];
     scripts.forEach(function (name) {
       var link = document.createElement('link');
@@ -118,6 +118,7 @@
       await loadScript('/assets/js/modal-manager.js');
       await loadScript('/assets/js/humanize-pricing.js');
       await loadScript('/assets/js/conversion-flow.js');
+      await loadScript('/assets/js/detect-interpretation.js');
       await loadScript('/assets/js/detect-presentation.js');
       await loadScript('/assets/js/app-main.js');
       await loadScript('/assets/js/input-quality.js');

@@ -298,7 +298,7 @@ test('보고서 UI는 v116 시각 언어와 줄바꿈 규칙을 갖춘다', asyn
   assert.match(css, /cta-runner\.png/u, 'CTA 밴드는 생성한 브랜드 일러스트를 쓴다');
   assert.match(css, /\.gp-rep-cta\{min-height:256px;\}/u, '모든 결과 상태가 이전 배너 높이와 이미지를 공유한다');
   // v118: 480px에서도 1열로 쌓지 않는다(띠가 한 화면을 먹던 문제) — 2×2 유지
-  assert.match(css, /@media \(max-width:480px\)[\s\S]*?\.gp-rep-stats\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/u);
+  assert.match(css, /@media \(max-width:480px\)[\s\S]*?\.gp-rep-stats\{grid-template-columns:minmax\(0,1fr\)/u);
   assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?transition:none!important/u);
 });
 
@@ -438,7 +438,7 @@ test('보고서의 글자 크기는 8단계 토큰만 쓰고 흐린 회색 리�
 test('v118 — 모바일 최적화와 인터랙션 보강이 한 세트로 들어 있다', async () => {
   const [main, flow, css] = await Promise.all([read('pages/main.html'), read('assets/js/evasion-flow.js'), read('assets/css/redesign.css')]);
   // 모바일: 계측 띠 2×2 유지 · 장문 문단 지도 접기 · 고정 바
-  assert.match(css, /@media \(max-width:480px\)\{[^}]*\.gp-rep-stats\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/u, '480px에서도 2×2');
+  assert.match(css, /@media \(max-width:480px\)\{[^}]*\.gp-rep-stats\{grid-template-columns:minmax\(0,1fr\)/u, '480px 이하는 한 열로 읽기 행동을 끝까지 표시');
   assert.match(main, /id="gpRepParaMore"/u);
   assert.match(flow, /cells\.scrollHeight > 210/u, '5줄을 넘을 때만 접는다');
   assert.match(main, /id="gpRepSticky"/u);

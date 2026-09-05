@@ -219,6 +219,11 @@
                <span>결과 이미지 저장</span>
              </button>
              <h3 class="gp-rep-hero-title" id="gpRepHeroTitle">분석 결과를 정리하고 있어요</h3>
+             <div class="gp-rep-interpretation" id="gpRepInterpretation" hidden>
+               <p class="gp-rep-interpretation-label" id="gpRepInterpretationLabel"></p>
+               <p class="gp-rep-interpretation-desc" id="gpRepInterpretationDesc"></p>
+               <p class="gp-rep-evidence-reason" id="gpRepEvidenceReason"></p>
+             </div>
              <ul class="gp-rep-keeps" id="gpRepKeeps" aria-label="그대로 유지될 내용"></ul>
 
              <div class="gp-rep-ba" id="gpRepBa">
@@ -229,7 +234,7 @@
                </article>
 
                <!-- 교수님 레이더 — 브랜드의 말을 그림으로: 중심에 교수님, 점수만큼 가까이 잡힌 학생.
-                    바깥 고리일수록 안전(피하기에 유리), 중심에 가까울수록 잡힌다(피하기 어려움).
+                    바깥 고리일수록 문체 신호가 낮고, 중심에 가까울수록 높다.
                     스코프 그림은 JS(repPaintScope)가 그린다. -->
                <div class="gp-rep-dial" id="gpRepDial">
                  <div class="gp-rep-scope" id="gpRepScope" role="img" aria-labelledby="gpRepScopeAlt"></div>

@@ -1340,7 +1340,7 @@
   var lastReportModel = null;
 
   function reportNumber(value) {
-    if (value === null || value === undefined || value === '') return null;
+    if ((typeof value !== 'number' && typeof value !== 'string') || (typeof value === 'string' && !value.trim())) return null;
     var n = Number(value);
     return Number.isFinite(n) ? n : null;
   }
@@ -1371,9 +1371,9 @@
     if (score == null) {
       return {
         score: null,
-        band: radar.band || 'limited',
-        label: radar.label || '간이 추정 기준',
-        headline: radar.headline || '교수님 레이더: 점수 확인 필요',
+        band: 'limited',
+        label: '점수 확인 필요',
+        headline: '점수 확인 필요',
         description: radar.description || '',
         disclaimer: radar.disclaimer || ''
       };
@@ -1381,7 +1381,7 @@
     var shared = typeof window.gpProfessorRadarBand === 'function' ? window.gpProfessorRadarBand(score) : null;
     return {
       score: score,
-      band: radar.band || (shared && shared.band) || 'unknown',
+      band: (shared && shared.band) || radar.band || 'unknown',
       label: (shared && shared.label) || radar.label || '',
       headline: (shared && shared.label) || radar.headline || '',
       description: radar.description || '',
@@ -1398,14 +1398,17 @@
 
   function buildReportModel(d) {
     var reportView = d.reportView || {};
+    var interpretation = d.interpretation || (typeof window.gpDetectInterpretationFor === 'function' ? window.gpDetectInterpretationFor(d) : null);
     var styleSignal = reportView.styleSignal || {};
     var measured = reportView.measuredEvidence || d.measuredEvidence || {};
-    var source = styleSignal.source || (d.probSource === 'engine' ? 'engine' : d.probSource === 'llm' ? 'llm' : 'unknown');
+    var source = styleSignal.source || (d.probSource === 'engine' ? 'engine' : d.probSource === 'llm' || d.probSource === 'cached_llm' ? 'llm' : 'unknown');
+    if (source === 'cached_llm') source = 'llm';
     var sourceLabel = styleSignal.sourceLabel || (source === 'llm' ? 'AI 모델 분석' : source === 'engine' ? '문체 엔진 간이 추정' : '분석 출처 미확인');
     var score = reportNumber(styleSignal.score);
     if (score == null) score = reportNumber(d.probability);
+    if (Object.prototype.hasOwnProperty.call(d, 'probability')) score = reportNumber(d.probability);
     if (score != null) score = Math.max(0, Math.min(100, Math.round(score)));
-    var styleBand = styleSignal.band || d.riskLevel || styleBandFor(score);
+    var styleBand = styleBandFor(score);
     var content = reportView.contentEvidence || {};
     var paragraphs = Array.isArray(d.paragraphs) ? d.paragraphs : [];
     var total = reportCount(content.total);
@@ -1445,15 +1448,17 @@
     var status = reportView.status || (score == null || source === 'engine' ? 'limited' : 'ready');
     var radar = professorRadarFor(status === 'limited' ? null : score, reportView.professorRadar);
     var conversionEligible = reportView.conversion && reportView.conversion.eligible === false ? false : status === 'ready';
+    if (interpretation && interpretation.status !== 'ready') conversionEligible = false;
     return {
       status: status,
       score: score,
+      interpretation: interpretation,
       style: {
         band: styleBand,
-        label: styleSignal.label || styleLabelFor(styleBand),
+        label: styleLabelFor(styleBand),
         source: source,
         sourceLabel: sourceLabel,
-        evidenceLabel: status === 'limited' || contentStatus === 'limited' ? '분석 근거 제한' : d.confidence === 'high' ? '분석 근거 충분' : d.confidence === 'medium' ? '분석 근거 일부' : '분석 근거 제한',
+        evidenceLabel: interpretation ? interpretation.evidence.label : status === 'limited' || contentStatus === 'limited' ? '분석 근거 제한' : d.confidence === 'high' ? '분석 근거 충분' : d.confidence === 'medium' ? '분석 근거 일부' : '분석 근거 제한',
         // 보정 여부는 화면에 쓰지 않되(사장님 결정), 다음 화면 핸드오프·디버깅에서 참조할 수 있게 모델에는 남긴다.
         calibrated: styleSignal.calibrated === true || d.calibrated === true,
         rawScore: reportNumber(d.rawProbability)
@@ -1467,7 +1472,7 @@
         specific: specific,
         total: total
       },
-      synthesis: { headline: headline, description: description, limitation: limitation },
+      synthesis: { headline: interpretation ? interpretation.headline : headline, description: interpretation ? interpretation.description : description, limitation: limitation },
       measured: measured,
       causeAnalysis: causeAnalysis,
       alignment: alignment,
@@ -2131,6 +2136,9 @@
       : 'AI 티 지수의 세부 원인을 충분히 확인하지 못했어요';
     section.appendChild(title);
     var summary = String(cause.label || '').trim();
+    if (model.interpretation && typeof window.gpDetectPublicNarrative === 'function') {
+      summary = window.gpDetectPublicNarrative(summary, model.interpretation);
+    }
     if (!summary && status !== 'aligned') {
       summary = '위 막대는 표면 문체만 자동 계측해요. AI 티 지수는 문맥과 전개까지 함께 판단하므로 막대만으로 점수를 모두 설명할 수 없어요.';
     }
@@ -2347,7 +2355,7 @@
       ctx.fillText(model.score == null ? '--' : String(model.score), 72, 110);
       var numW = ctx.measureText(model.score == null ? '--' : String(model.score)).width;
       ctx.fillStyle = '#b3aee0'; ctx.font = font('700', 30);
-      ctx.fillText('/100 · AI식 문체 신호', 72 + numW + 16, 190);
+      ctx.fillText('/100 · AI 티 지수', 72 + numW + 16, 190);
       var chip = model.radar.label || '';
       ctx.font = font('800', 30);
       var chipW = ctx.measureText(chip).width + 44;
@@ -2359,9 +2367,26 @@
         if (typeof item !== 'object') return String(item);
         return item.label + ' ' + (item.value != null ? item.value : (Number(item.count) || 0) + '문장');
       });
-      keeps.forEach(function (line, i) { ctx.fillText('· ' + line, 72, 356 + i * 40); });
+      if (model.interpretation) {
+        var info = model.interpretation;
+        ctx.font = font('700', 23);
+        ctx.fillText(info.label, 72, 344);
+        ctx.font = font('600', 24);
+        var words = Array.from(info.headline);
+        var lines = [], current = '';
+        words.forEach(function (char) {
+          if (current && ctx.measureText(current + char).width > 485) { lines.push(current); current = char; }
+          else current += char;
+        });
+        if (current) lines.push(current);
+        lines.slice(0, 2).forEach(function (line, i) { ctx.fillText(line + (i === 1 && lines.length > 2 ? '…' : ''), 72, 384 + i * 34); });
+        ctx.font = font('600', 21);
+        ctx.fillText(info.evidence.label, 72, 465);
+      } else keeps.forEach(function (line, i) { ctx.fillText('· ' + line, 72, 356 + i * 40); });
       ctx.fillStyle = '#b3aee0'; ctx.font = font('700', 22);
       ctx.fillText('gpkorea.ai.kr', 72, H - 84);
+      ctx.font = font('500', 19);
+      ctx.fillText('문체 패턴의 참고 결과이며 작성 주체나 외부 검사 결과를 확정하지 않아요.', 72, H - 43);
       // 오른쪽: 게이지 — 화면과 같은 반원 트랙. 0 왼쪽 → 100 오른쪽, 100 끝에 교수님.
       var gx = 900, gy = 400, GR = 200, BW = 40;
       var gAngle = function (score) { return Math.max(0, Math.min(100, score)) / 100 * Math.PI; };   // 100 왼쪽(교수님) → 0 오른쪽(안전)
@@ -2426,6 +2451,7 @@
   // ── 개선 포인트 ─────────────────────────────────────────────────────────────
   // 측정된 것만 말한다. 값이 기준을 넘은 축에서만 문장을 만들고, 없으면 유지 안내로 닫는다.
   function repBuildTips(model) {
+    if (model.interpretation) return model.interpretation.nextSteps.slice(0, 3);
     var m = model.measured || {};
     var tips = [];
     if (Number(m.maxEndingRun) >= 4) {
@@ -2498,15 +2524,24 @@
       if (help) help.hidden = true;
       return;
     }
+    if (model.interpretation && model.interpretation.status !== 'ready') {
+      if (title) title.textContent = '확인된 근거부터 살펴보세요';
+      if (desc) desc.textContent = model.interpretation.evidence.reason;
+      if (btn) btn.hidden = true;
+      if (help) help.hidden = true;
+      return;
+    }
     if (model.radar.band === 'low') {
       if (title) title.textContent = '이 글의 AI식 문체 신호가 낮게 감지됐어요';
-      if (desc) desc.textContent = '두드러진 AI식 문체 신호가 없어 굳이 다듬지 않아도 괜찮아요. 그래도 문체를 손보고 싶다면 비용부터 확인해 보세요.';
+      if (desc) desc.textContent = model.interpretation && model.interpretation.pattern
+        ? '전체 신호는 낮아요. 표시된 특징이 의도한 표현인지 먼저 읽어 보고, 다듬을 부분이 있다면 방법과 비용을 확인해 보세요.'
+        : '현재 표현과 사실 관계를 먼저 확인해 주세요. 문체를 손보고 싶다면 방법과 비용을 확인할 수 있어요.';
       if (btn) { btn.hidden = false; btn.textContent = '그래도 방법·비용 보기 →'; }
       if (help) help.hidden = false;
       return;
     }
     if (title) title.textContent = '판단할 근거가 아직 부족해요';
-    if (desc) desc.textContent = '문장 수가 적어 내용 근거를 충분히 확인하지 못했어요. 글을 더 붙여 넣고 다시 감지하면 더 정확하게 볼 수 있어요.';
+    if (desc) desc.textContent = '내용 근거를 충분히 확인하지 못했어요. 관련된 앞뒤 문맥이 있다면 함께 살펴봐 주세요.';
     if (btn) btn.hidden = true;
     if (help) help.hidden = true;
   }
@@ -2528,10 +2563,10 @@
 
   // ── 보고서 렌더 ─────────────────────────────────────────────────────────────
   function renderReport(d) {
-    if (typeof window.gpNormalizeDetectPresentation === 'function') {
-      d = window.gpNormalizeDetectPresentation(d);
-    }
     var srcInput = $('lavInput');
+    if (typeof window.gpNormalizeDetectPresentation === 'function') {
+      d = window.gpNormalizeDetectPresentation(d, { inputText: srcInput ? String(srcInput.value || '') : '' });
+    }
     try { Object.defineProperty(d, '__inputText', { value: srcInput ? String(srcInput.value || '') : '', enumerable: false, writable: true }); } catch (e) { /* 동결 객체면 생략 */ }
     lastReport = d;
     var model = buildReportModel(d);
@@ -2541,6 +2576,16 @@
 
     // ① 히어로 — 종합 한 문장과 유지될 내용
     if ($('gpRepHeroTitle')) $('gpRepHeroTitle').textContent = model.synthesis.headline || '';
+    var interpretation = model.interpretation;
+    if ($('gpRepInterpretation')) {
+      $('gpRepInterpretation').hidden = !interpretation;
+      if (interpretation) {
+        $('gpRepInterpretation').dataset.status = interpretation.status;
+        $('gpRepInterpretationLabel').textContent = interpretation.label || '';
+        $('gpRepInterpretationDesc').textContent = interpretation.description || '';
+        $('gpRepEvidenceReason').textContent = interpretation.evidence.reason || '';
+      }
+    }
     var keeps = $('gpRepKeeps');
     if (keeps) {
       keeps.textContent = '';
@@ -2626,7 +2671,7 @@
       var small = measured.sampleSize === 'small' || (model.content.total != null && model.content.total < 5);
       sample.hidden = !small;
       sample.textContent = small
-        ? '문장 ' + (model.content.total || 0) + '개는 표본이 적어요. 길이 편차·종결 반복은 참고만 하고, 글을 더 붙여 넣으면 더 정확해져요.'
+        ? '문장 ' + (model.content.total || 0) + '개는 표본이 적어요. 길이 편차·종결 반복은 참고만 하고, 앞뒤 문맥을 함께 확인해 주세요.'
         : '';
     }
 
@@ -2673,6 +2718,7 @@
     repSetupSticky(model);
     if ($('gpRepLimit')) {
       var limit = model.synthesis.limitation || '';
+      if (interpretation && interpretation.limitations.length) limit = interpretation.limitations.join(' ');
       if (model.style.source === 'engine') {
         limit = 'AI 모델 분석이 완료되지 않아 문체 엔진의 간이 추정으로 계산한 점수예요. ' + limit;
       }
@@ -2689,7 +2735,8 @@
     if (report) {
       report.dataset.announcement = score == null
         ? 'AI 감지 분석을 마쳤어요. 점수를 확인하지 못했어요.'
-        : 'AI 감지 분석을 마쳤어요. AI식 문체 신호 ' + score + '점, 100점 만점. ' + (model.radar.label || '');
+        : 'AI 감지 분석을 마쳤어요. AI 티 지수 ' + score + '점, 100점 만점. ' + (model.radar.label || '')
+          + (interpretation ? '. ' + interpretation.headline + ' ' + interpretation.evidence.label : '');
     }
   }
 

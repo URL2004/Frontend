@@ -3527,6 +3527,11 @@ window.saveHistory = async (type, inputText, detectResult, humanResult, credits)
   if (detectResult.probabilityCalibration) data.probabilityCalibration = detectResult.probabilityCalibration;
   data.summary = detectResult.summary || '';
   data.detail = detectResult.detail || '';
+  const interpretation = detectResult.reportView?.interpretation || detectResult.interpretation;
+  if (interpretation) data.interpretation = interpretation;
+  if (typeof detectResult.interpretationProof === 'string') data.interpretationProof = detectResult.interpretationProof;
+  if (detectResult.confidence) data.confidence = detectResult.confidence;
+  if (detectResult.probSource) data.probSource = detectResult.probSource;
  }
   if (humanResult) {
    data.outputText = humanResult.outputText || '';
@@ -3631,7 +3636,7 @@ function historyProbability(item) {
 function historyWorkStatus(item) {
  if (item.type === 'detect') {
   const probability = historyProbability(item);
-  if (probability == null) return { label: '분석 완료', tone: 'neutral' };
+  if (probability == null) return { label: '점수 확인 필요', tone: 'neutral' };
   if (probability <= 20) return { label: `AI식 문체 신호 낮음 · ${probability}/100`, tone: 'good' };
   if (probability <= 49) return { label: `AI식 문체 신호 중간 · ${probability}/100`, tone: 'notice' };
   return { label: `AI식 문체 신호 높음 · ${probability}/100`, tone: 'warn' };
@@ -3823,7 +3828,7 @@ function historyRenderDetail() {
  const probability = historyProbability(item);
  const hasOutput = !!historyCleanLine(item.outputText);
  const details = isDetect
-  ? `${historyDetailBlock('분석 요약', view.summary, true)}${historyDetailBlock('상세 분석', view.detail, false)}`
+  ? `${historyDetailBlock('분석 요약', view.summary, true)}${historyDetailBlock('이 결과를 읽는 방법', typeof window.gpDetectInterpretationText === 'function' ? window.gpDetectInterpretationText(view.interpretation) : '', true)}${historyDetailBlock('상세 분석', view.detail, false)}`
   : historyDetailBlock('휴머나이징 결과', item.outputText, true);
  const originalBlock = historyDetailBlock('원문', item.inputText, false);
  const noDetail = '<p class="gp-history-no-detail">저장된 상세 결과가 없어요.</p>';
@@ -3843,7 +3848,7 @@ function historyRenderDetail() {
    <div class="gp-history-detail-kicker"><span class="gp-history-kind ${isDetect ? 'detect' : 'humanize'}">${isDetect ? 'AI 감지' : '휴머나이징'}</span><time>${escapeHtml(historyDateText(item.createdAtMs))}</time></div>
    <h2>${escapeHtml(historyTitle(item))}</h2>
    <div class="gp-history-detail-meta">
-    <span><small>작업 상태</small><b class="${work.tone}">${escapeHtml(work.label)}${isDetect && probability != null ? ' (추정)' : ''}</b></span>
+    <span><small>${isDetect ? 'AI 티 지수' : '작업 상태'}</small><b class="${work.tone}">${escapeHtml(work.label)}</b></span>
     <span><small>이용 내역</small><b>${escapeHtml(billing.short)}</b></span>
    </div>
   </header>
