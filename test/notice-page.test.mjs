@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('신규·엔진 업데이트는 별도 상단 카드 없이 공지 목록 한 줄에서 강조한다', async () => {
+test('중요 공지만 목록 한 줄에서 강조하고 일반 업데이트의 배지는 제거한다', async () => {
   const [page, source, styles] = await Promise.all([
     read('pages/notice.html'),
     read('assets/js/app-module.js'),
@@ -17,9 +18,9 @@ test('신규·엔진 업데이트는 별도 상단 카드 없이 공지 목록 �
 
   assert.doesNotMatch(page, /gp-notice-featured|gp-notice-card|notice-(?:maintenance|analytics)\.png/u);
   assert.match(baseItems, /title: '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요'/u);
-  assert.match(baseItems, /highlightLabel: '업데이트 · 가격 안내'/u);
+  assert.equal(baseItems.match(/highlightLabel:/gu)?.length, 2);
   assert.match(baseItems, /title: '긴 글 구조 보존과 문단 보강을 개선했어요'/u);
-  assert.match(baseItems, /highlightLabel: '신규 · 엔진 업데이트'/u);
+  assert.doesNotMatch(baseItems, /highlightLabel: '(?:신규|업데이트|필수)/u);
   assert.match(baseItems, /사용자가 직접 입력한 실제 경험이나 사실/u);
   assert.match(baseItems, /해당 문단만 다시 다듬으며/u);
   assert.match(baseItems, /제목·절·문단의 순서와 경계를 원문과 다시 대조/u);
@@ -76,7 +77,6 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
   assert.match(baseItems, /제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요/u);
   assert.match(baseItems, /현재 적용 중인 크레딧 지급 기준/u);
   assert.match(baseItems, /title: '신규 가입 무료 크레딧을 20크레딧으로 조정했어요'/u);
-  assert.match(baseItems, /highlightLabel: '필수 · 가입 혜택'/u);
   assert.match(baseItems, /2026년 9월 2일 기준/u);
   assert.match(baseItems, /신규 계정에는 무료 20크레딧을 드려요/u);
   assert.match(baseItems, /기존 계정에는 이번 변경에 따른 추가 크레딧을 소급 지급하지 않아요/u);
@@ -134,7 +134,7 @@ test('공지 문구는 2026-09-02 양식 표준을 지킨다', async () => {
   }
 });
 
-test('돈·약관이 걸린 필수 공지는 고정하고, 재작성한 구공지 원본은 원격에서 숨긴다', async () => {
+test('요금 변경과 환불 기준만 중요 표시하고 재작성한 구공지 원본은 숨긴다', async () => {
   const source = await read('assets/js/app-module.js');
   const baseItems = source.slice(
     source.indexOf('const NOTICE_BASE_ITEMS'),
@@ -145,19 +145,12 @@ test('돈·약관이 걸린 필수 공지는 고정하고, 재작성한 구공�
     source.indexOf('// ===== MY PAGE =====')
   );
 
-  // 결제·크레딧·환불처럼 돈이 걸린 공지 네 건만 고정한다
-  assert.equal(baseItems.match(/pinned: true/gu)?.length, 4);
-  // '필수 ·' 배지는 고정 공지 전용 어휘다
-  assert.equal(baseItems.match(/highlightLabel: '필수 · /gu)?.length, 4);
-  for (const title of [
-    '상시 상품 보너스와 9월 개강 이벤트를 안내해요',
-    '환불과 취소 기준을 정리했어요',
-    '신규 가입 무료 크레딧을 20크레딧으로 조정했어요',
-    'AI 감지는 100자당 1크레딧으로 이용할 수 있어요'
-  ]) {
-    const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    assert.match(baseItems, new RegExp(`title: '${escaped}',\\r?\\n\\s+pinned: true,\\r?\\n\\s+highlightLabel: '필수 · `, 'u'));
-  }
+  const context = vm.createContext({});
+  vm.runInContext(baseItems + ';globalThis.items = NOTICE_BASE_ITEMS;', context);
+  const highlighted = Array.from(context.items).filter(item => item.highlightLabel);
+  assert.deepEqual(highlighted.map(item => item.id), ['advanced-credit-steps-20260902', 'refund-standard-20260830']);
+  assert.ok(highlighted.every(item => item.highlightLabel === '중요'));
+  assert.doesNotMatch(baseItems, /pinned:/u);
 
   // 2026-09-02 양식 통일 때 로컬로 옮겨 다시 쓴 구공지들의 원격 원본
   for (const title of [
@@ -178,27 +171,25 @@ test('돈·약관이 걸린 필수 공지는 고정하고, 재작성한 구공�
   assert.match(source, /NOTICE_RETIRED_TITLES[\s\S]*?'긴 문서 처리 속도·안정성 개선'/u);
 });
 
-test('상시 상품 보너스 공지는 정렬 방향과 원격 중복에 관계없이 상단에 고정된다', async () => {
+test('중요 표시와 관계없이 날짜순으로 정렬하고 로컬 정본을 원격 사본보다 우선한다', async () => {
   const source = await read('assets/js/app-module.js');
-  const baseItems = source.slice(
-    source.indexOf('const NOTICE_BASE_ITEMS'),
-    source.indexOf('const NOTICE_RETIRED_TITLES')
-  );
-  const noticeBlock = source.slice(
-    source.indexOf('// ===== NOTICE ====='),
-    source.indexOf('// ===== MY PAGE =====')
-  );
-
-  assert.match(baseItems, /title: '상시 상품 보너스와 9월 개강 이벤트를 안내해요',[\s\S]*?pinned: true,[\s\S]*?highlightLabel: '필수 · 크레딧 지급 기준'/u);
-  // 개명 전 제목은 퇴역 목록으로 남겨 원격 사본이 새 제목과 함께 뜨지 않게 한다
+  const block = source.slice(source.indexOf('const NOTICE_BASE_ITEMS'), source.indexOf('function renderNoticeList()'));
+  const context = vm.createContext({});
+  vm.runInContext(block + ';globalThis.state = noticeState;', context);
+  for (const direction of ['desc', 'asc']) {
+    context.state.sort = direction;
+    const items = vm.runInContext('noticeFilteredItems()', context);
+    const dates = Array.from(items, item => Date.parse(item.date.replaceAll('.', '-')));
+    assert.deepEqual(dates, [...dates].sort((a, b) => direction === 'desc' ? b - a : a - b));
+    if (direction === 'desc') assert.equal(items[0].date, '2026.09.06');
+  }
+  context.state.category = '정책';
+  context.state.query = '크레딧';
+  const filtered = vm.runInContext('noticeFilteredItems()', context);
+  assert.ok(filtered.length > 0);
+  assert.ok(filtered.every(item => item.category === '정책' && [item.title,item.body].join(' ').includes('크레딧')));
+  assert.match(source, /filter\(item => !NOTICE_BASE_TITLES\.has\(item\.title\.trim\(\)\.toLowerCase\(\)\)\)/u);
   assert.match(source, /NOTICE_RETIRED_TITLES[\s\S]*?'상시 상품 보너스와 9월 이벤트를 안내해요'/u);
-  assert.match(noticeBlock, /const NOTICE_PINNED_TITLES = new Set/u);
-  assert.ok(
-    noticeBlock.indexOf('const pinnedDiff = Number(noticeIsPinned(b)) - Number(noticeIsPinned(a))')
-      < noticeBlock.indexOf('const diff = noticeDateValue(b.date) - noticeDateValue(a.date)'),
-    '고정 공지 비교가 날짜 비교보다 먼저 실행되어야 함'
-  );
-  assert.match(noticeBlock, /filter\(item => !NOTICE_PINNED_TITLES\.has\(item\.title\.trim\(\)\.toLowerCase\(\)\)\)/u);
 });
 
 test('공지 분류 탭·검색·정렬·상세보기가 하나의 필터 상태로 동작한다', async () => {

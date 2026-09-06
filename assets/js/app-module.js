@@ -2426,7 +2426,6 @@ const NOTICE_BASE_ITEMS = [
   id: 'detect-report-update-20260906',
   category: '업데이트',
   title: 'AI 감지 결과와 문장 예시를 개선했어요',
-  highlightLabel: '업데이트 · AI 감지',
   date: '2026.09.06',
   views: 0,
   body: 'AI 감지 결과에서 점수의 의미와 확인할 문장을 더 쉽게 살펴볼 수 있도록 화면과 안내를 개선했어요.\n\n달라진 내용\n• 점수를 100점 기준의 문체 신호로 표시하고, 낮음·중간·높음 구간에 맞춰 설명해요.\n• 점수에 연결된 원인과 원문 위치를 함께 확인할 수 있어요.\n• 휴머나이징으로 달라질 수 있는 한 문장의 전후 예시를 다시 보여 드려요. 예시에서는 실제로 바뀐 구절을 강조해요.\n• 짧은 글은 분석 근거가 제한적이라는 점을 더 일관되게 안내해요.\n\n결과를 읽을 때\n점수는 작성자가 사람인지 AI인지 확정하는 확률이 아니에요. AI가 작성한 글도 낮게 나올 수 있고, 사람이 작성한 글에서 높은 신호가 관찰될 수도 있어요. 점수와 함께 원문에 표시된 근거를 확인해 주세요.\n\n전후 예시는 의미 있는 변경을 확인한 경우에 제공해요. 원문이 이미 자연스럽거나 변화가 작으면 예시가 없거나 휴머나이징 전후 점수 차이가 작을 수 있어요. 점수 하락이나 외부 검사 결과를 보장하지 않아요.'
@@ -2435,7 +2434,6 @@ const NOTICE_BASE_ITEMS = [
   id: 'structure-option-20260906',
   category: '업데이트',
   title: '고급 휴머나이징에 구조 개선을 추가했어요',
-  highlightLabel: '신규 · 구조 개선',
   date: '2026.09.06',
   views: 0,
   body: '고급 휴머나이징을 시작하기 전에 글 구조 개선을 선택할 수 있어요. 기본값은 꺼짐이며, 보고서·과제·설명문·에세이의 문단 흐름을 정리할 때 사용할 수 있어요.\n\n이용 방법\n1. 고급 휴머나이징에서 글 구조 개선을 선택해요.\n2. 이동·분리·합침이 필요한 문단과 변경 이유를 미리 확인해요.\n3. 시작 확인 화면에서 총 크레딧을 확인하고 실행해요.\n\n보존하는 내용\n상위 과제 목차와 문항, 표·직접 인용·참고문헌 등 보호 영역은 유지해요. 구조 개선을 지원하지 않는 문서는 기존 구조를 보존해요. 원문을 수정하면 변경안과 예상 요금을 다시 확인해야 해요.\n\n추가 크레딧\n고급 기본요금의 30%를 정수 크레딧으로 올림해 더해요. 근거 보강 요금에 30%를 중복 적용하지 않아요.\n• 3,000자 이하: 기본 100 + 구조 30 = 130크레딧\n• 10,000자: 기본 200 + 구조 60 = 260크레딧\n• 20,000자: 기본 400 + 구조 120 = 520크레딧\n• 30,000자: 기본 600 + 구조 180 = 780크레딧\n\n미리보기에는 크레딧이 들지 않아요. 구조 변경이 불필요하거나 적용되지 않은 경우에는 구조 추가요금을 차감하지 않아요. 전체 작업 실패 시에는 기존 무차감 기준을 적용하며, 결과에서 실제 차감액과 구조 적용 여부를 확인할 수 있어요.'
@@ -2444,7 +2442,6 @@ const NOTICE_BASE_ITEMS = [
   id: 'humanize-voice-update-20260906',
   category: '업데이트',
   title: '휴머나이징 말투 보존과 검토 안내를 개선했어요',
-  highlightLabel: '업데이트 · 휴머나이징',
   date: '2026.09.06',
   views: 0,
   body: '짧은 후기나 구어체 글을 다듬을 때 원문의 말투와 감정 표현을 더 잘 유지하도록 처리 지침을 보강했어요.\n\n달라진 내용\n• 말투를 명확히 구분하기 어려운 짧은 글에서는 감탄, 평가의 강도, 명사형 끝맺음을 불필요하게 획일화하지 않도록 했어요. 별도로 선택한 목표 문체가 있으면 그 설정을 우선해요.\n• 원문의 말투를 식별하지 못했는데도 말투가 바뀌었다고 표시하던 일부 검토 안내를 수정했어요.\n• 실제로 확인 가능한 말투 변화와 화자·인용·문서 구조 검사는 계속 적용해요.\n\n함께 보강한 문서 처리\n문서에서 추출된 제목·문단·인용과 URL을 보존하는 처리를 보강하고, 의미를 바로잡은 문장이 후속 정리 단계에서 되돌아가는 문제를 줄였어요.\n\n이용 시 참고\n자연스러운 원문이나 보호할 내용이 많은 글은 변경 폭이 작을 수 있어요. 결과를 사용하기 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요.'
@@ -2453,7 +2450,6 @@ const NOTICE_BASE_ITEMS = [
   id: 'pricing-tiers-20260903',
   category: '정책',
   title: '요금제를 일반 3종과 대용량 2종으로 정리했어요',
-  highlightLabel: '신규 · 요금제',
   date: '2026.09.03',
   views: 0,
   body: '충전 상품을 일반 요금제 3종과 대용량 요금제 2종으로 나누고, 시작 상품을 5,900원 200크레딧으로 바꿨어요.\n\n적용 시점\n2026년 9월 3일부터 새로 결제하는 주문에 적용해요.\n\n일반 요금제\n• 스타터: 5,900원 · 기준 200크레딧 · 개강 이벤트 0% · 총 200크레딧\n• 스탠다드: 14,500원 · 기준 500크레딧 + 상시 보너스 125크레딧\n• 프로: 29,000원 · 기준 1,000크레딧 + 상시 보너스 350크레딧\n\n대용량 요금제\n• 맥스: 58,000원 · 기준 2,000크레딧 + 상시 보너스 900크레딧\n• 팀·기관: 116,000원 · 기준 4,000크레딧 + 상시 보너스 2,000크레딧 · 문의 후 결제 방법을 안내해요\n\n종료되는 상품\n2,900원 스타터와 8,700원 라이트는 새 결제를 받지 않아요. 이미 결제한 크레딧은 그대로 남아 있고 유효기간 없이 사용할 수 있어요.\n\n크레딧 단가\n스타터의 기준 크레딧 단가는 이전과 같은 29원대이며 개강 이벤트 추가는 0%예요. 2026년 9월 30일까지 스탠다드·프로·맥스·팀·기관에는 기준 크레딧의 5%를 더 드려요.'
@@ -2462,7 +2458,7 @@ const NOTICE_BASE_ITEMS = [
   id: 'advanced-credit-steps-20260902',
   category: '정책',
   title: '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요',
-  highlightLabel: '업데이트 · 가격 안내',
+  highlightLabel: '중요',
   date: '2026.09.02',
   views: 0,
   body: '고급 휴머나이징 요금을 글자 수에 따라 5크레딧 단위로 더 세밀하게 조정했어요. 글자 수는 기존과 같이 공백을 포함해 계산합니다.\n\n고급 기본 요금\n• 3,000자 이하: 100크레딧\n• 3,001~10,000자: 105~200크레딧 · 3,000자 초과분 350자당 +5크레딧(올림)\n• 10,001~30,000자: 205~600크레딧 · 10,000자 초과분 250자당 +5크레딧(올림)\n\n근거 보강 추가금\n• 3,000자 이하: +50크레딧\n• 3,001~10,000자: +50~100크레딧 · 3,000자 초과분 700자가 채워질 때마다 +5크레딧\n• 10,001자 이상: +100크레딧\n\n대표 예시 (기본 / 근거 보강 포함)\n• 3,000자: 100 / 150크레딧\n• 3,001자: 105 / 155크레딧\n• 5,000자: 130 / 190크레딧\n• 7,000자: 160 / 235크레딧\n• 10,000자: 200 / 300크레딧\n• 15,000자: 300 / 400크레딧\n• 20,000자: 400 / 500크레딧\n• 30,000자: 600 / 700크레딧\n\n적용 범위\n변경 후 새로 접수되는 작업부터 적용해요. 이미 완료됐거나 진행 중인 작업의 차감액은 소급해 다시 계산하지 않아요.'
@@ -2471,8 +2467,6 @@ const NOTICE_BASE_ITEMS = [
   id: 'paid-credit-no-expiry-20260829',
   category: '정책',
   title: '상시 상품 보너스와 9월 개강 이벤트를 안내해요',
-  pinned: true,
-  highlightLabel: '필수 · 크레딧 지급 기준',
   date: '2026.09.03',
   views: 0,
   body: '현재 적용 중인 크레딧 지급 기준이에요.\n\n상시 상품 보너스\n스탠다드·프로·맥스·팀·기관은 결제할 때 상품별 보너스를 함께 받아요. 9월 개강 이벤트가 끝난 뒤에도 계속 지급됩니다.\n\n9월 개강 추가 크레딧 이벤트\n2026년 9월 30일 23시 59분(한국 시간)까지 결제 확인 요청이 서버에 접수된 주문 중 스탠다드·프로·맥스·팀·기관에는 기준 크레딧의 5%를 추가로 드려요. 스타터의 이벤트 추가는 0%예요.\n\n상품별 지급 구성 (기준 + 상시 보너스 + 개강 이벤트 = 총 지급량)\n• 스타터: 200 + 0 + 0 = 총 200크레딧\n• 스탠다드: 500 + 125 + 25 = 총 650크레딧\n• 프로: 1,000 + 350 + 50 = 총 1,400크레딧\n• 맥스: 2,000 + 900 + 100 = 총 3,000크레딧\n• 팀·기관(문의 전용): 4,000 + 2,000 + 200 = 총 6,200크레딧\n\n유효기간\n기준 크레딧과 상품·이벤트로 받은 추가 크레딧은 모두 유효기간 없이 사용할 수 있어요.'
@@ -2481,8 +2475,7 @@ const NOTICE_BASE_ITEMS = [
   id: 'refund-standard-20260830',
   category: '정책',
   title: '환불과 취소 기준을 정리했어요',
-  pinned: true,
-  highlightLabel: '필수 · 환불 안내',
+  highlightLabel: '중요',
   date: '2026.08.30',
   views: 0,
   body: '결제한 크레딧을 어떤 기준으로 환불해 드리는지 안내해요.\n\n적용 시점\n2026년 8월 30일부터 접수되는 요청에 적용해요.\n\n7일 이내에 사용하지 않았다면\n결제일로부터 7일 이내이고 크레딧을 한 번도 사용하지 않았다면 전액 환불해 드려요.\n\n일부만 사용했다면\n사용한 만큼을 뺀 금액을 환불해 드려요. 사용량은 주문별로 따로 기록해 두기 때문에 어떤 결제에서 얼마를 썼는지 그대로 계산돼요.\n\n함께 받은 추가 크레딧\n환불하는 주문으로 받은 상품 보너스와 이벤트 크레딧 중 남아 있는 분량은 함께 회수돼요.\n\n신청한 뒤에는\n처리가 끝날 때까지 해당 주문의 남은 크레딧은 사용할 수 없도록 예약돼요.\n\n과거 주문\n2026년 8월 30일 이전에 결제한 주문은 구매 당시 기준을 그대로 적용해요.\n\n접수 방법\n사이트 안의 고객센터에서 문의를 남겨 주시면 확인 후 안내해 드려요.'
@@ -2491,8 +2484,6 @@ const NOTICE_BASE_ITEMS = [
   id: 'signup-credit-20-20260902',
   category: '정책',
   title: '신규 가입 무료 크레딧을 20크레딧으로 조정했어요',
-  pinned: true,
-  highlightLabel: '필수 · 가입 혜택',
   date: '2026.09.02',
   views: 0,
   body: '2026년 9월 2일 기준, 서비스에 처음 가입해 계정 생성을 완료한 신규 계정에는 무료 20크레딧을 드려요. 가입과 로그인 뒤 잔액에서 확인할 수 있어요.\n\n적용 대상\n• 현재 서비스에 처음 가입해 새로 생성되는 계정\n\n기존 계정\n이미 생성된 기존 계정에는 이번 변경에 따른 추가 크레딧을 소급 지급하지 않아요. 기존 잔액과 결제·초대 등으로 받은 크레딧은 그대로 유지돼요.\n\n사용 예시\n600자 AI 감지는 6크레딧, 같은 분량의 기본 휴머나이징은 12크레딧이에요. 두 작업을 차례로 이용하면 총 18크레딧을 사용하고 2크레딧이 남아요. 실제 사용량은 입력한 글자 수와 선택한 기능에 따라 달라지며, 실행 전에 화면에서 확인할 수 있어요.\n\n유효기간\n가입 무료 크레딧은 유효기간 없이 사용할 수 있어요.'
@@ -2501,8 +2492,6 @@ const NOTICE_BASE_ITEMS = [
   id: 'detect-credit-policy',
   category: '정책',
   title: 'AI 감지는 100자당 1크레딧으로 이용할 수 있어요',
-  pinned: true,
-  highlightLabel: '필수 · 과금 안내',
   date: '2026.07.20',
   views: 0,
   body: 'AI 감지는 로그인 후 100자당 1크레딧으로 이용할 수 있어요.\n\n이용 방법\n실행하기 전에 예상 사용량을 화면에서 확인할 수 있어요.\n\n차감 기준\n전달 가능한 결과를 만들지 못하면 크레딧을 차감하지 않아요.'
@@ -2511,7 +2500,6 @@ const NOTICE_BASE_ITEMS = [
   id: 'humanize-v2541-refine',
   category: '업데이트',
   title: '긴 글 구조 보존과 문단 보강을 개선했어요',
-  highlightLabel: '신규 · 엔진 업데이트',
   date: '2026.08.29',
   views: 0,
   body: '긴 글을 처리할 때 제목·절·문단의 순서와 경계를 원문과 다시 대조해 서로 다른 절이 합쳐지거나 설명이 빠지는 문제를 줄였어요.\n\n문단 보강\n다듬기·기본 결과에서는 보강이 필요한 문단에 문단 보강 기능이 표시될 수 있어요. 사용자가 직접 입력한 실제 경험이나 사실을 바탕으로 해당 문단만 다시 다듬으며, 결과가 바뀌지 않거나 안전 검증을 통과하지 못한 보강 요청은 크레딧과 무료 횟수를 사용하지 않아요.\n\n확인해 주세요\n휴머나이징 결과는 제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요.'
@@ -2667,10 +2655,9 @@ const NOTICE_HIGHLIGHT_LABELS = new Map(
   .filter(item => item.highlightLabel)
   .map(item => [item.title.trim().toLowerCase(), item.highlightLabel])
 );
-const NOTICE_PINNED_TITLES = new Set(
- NOTICE_BASE_ITEMS
-  .filter(item => item.pinned)
-  .map(item => item.title.trim().toLowerCase())
+// 로컬 정본의 내용과 게시일은 원격 사본으로 덮어쓰지 않는다.
+const NOTICE_BASE_TITLES = new Set(
+ NOTICE_BASE_ITEMS.map(item => item.title.trim().toLowerCase())
 );
 const noticeState = {
  category: '',
@@ -2715,11 +2702,6 @@ function noticeCategoryOf(data) {
  return '공지';
 }
 
-function noticeIsPinned(item) {
- const title = String(item && item.title || '').trim().toLowerCase();
- return Boolean(item && item.pinned) || NOTICE_PINNED_TITLES.has(title);
-}
-
 function noticeFilteredItems() {
  const queryText = noticeState.query.toLowerCase();
  return noticeState.items
@@ -2729,8 +2711,6 @@ function noticeFilteredItems() {
    return [item.title, item.category, item.body].join(' ').toLowerCase().includes(queryText);
   })
   .sort((a, b) => {
-   const pinnedDiff = Number(noticeIsPinned(b)) - Number(noticeIsPinned(a));
-   if (pinnedDiff) return pinnedDiff;
    const diff = noticeDateValue(b.date) - noticeDateValue(a.date);
    return noticeState.sort === 'desc' ? diff : -diff;
   });
@@ -2912,7 +2892,7 @@ window.loadNotices = async () =>{
     views: Number(n.views || 0)
    };
   }).filter(item => !NOTICE_RETIRED_TITLES.has(item.title.trim()))
-    .filter(item => !NOTICE_PINNED_TITLES.has(item.title.trim().toLowerCase()));
+    .filter(item => !NOTICE_BASE_TITLES.has(item.title.trim().toLowerCase()));
   const remoteTitles = new Set(remoteItems.map(item => item.title.trim().toLowerCase()));
   noticeState.items = remoteItems.concat(
    NOTICE_BASE_ITEMS
