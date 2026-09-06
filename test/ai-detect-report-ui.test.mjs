@@ -476,7 +476,8 @@ test('After 문장은 실제로 바뀐 자리만 보이고 나머지는 가려�
   assert.match(css, /\.gp-rep-ba-mask\{[^}]*filter:blur\(5px\)[^}]*user-select:none/u, '블러 + 선택 불가');
   // 개선 포인트도 전환으로 이어진다 — 권하지 않는 상태에서는 숨긴다
   assert.match(main, /id="gpRepTipsCta"[^>]*hidden/u);
-  assert.match(flow, /tipsCta\.hidden = model\.conversionEligible === false \|\| actionable === 0/u);
+  // v125: 처방 아래 CTA는 접는다(바로 아래 전환 밴드와 버튼이 두 번 겹쳤다). 근거 계산은 남긴다.
+  assert.match(flow, /tipsCta\.hidden = true;/u);
 });
 
 test('전후 비교는 공백·구두점 변화나 검증되지 않은 동일 조각을 성과처럼 보여주지 않는다', async () => {
@@ -670,6 +671,14 @@ test('Before에 바뀌는 자리를 표시하고 저장 버튼은 히어로 우�
   assert.match(css, /\.gp-rep-change-marker\.is-insertion/u);
   assert.match(css, /\.gp-rep-change-marker\.is-deletion/u);
   assert.match(main, /<section class="gp-rep-hero"[^>]*>\s*<button type="button" class="gp-rep-share" id="gpRepShare"/u, '저장 버튼이 히어로 첫 자식');
+  // v125: 히어로는 판정 열(게이지) + 결론 열(제목·이유·버튼) → 전후 한 쌍. 게이지는 전후 격자 밖에 있다.
+  assert.match(main, /<div class="gp-rep-verdict">[\s\S]*?id="gpRepDial"[\s\S]*?class="gp-rep-verdict-copy"[\s\S]*?id="gpRepHeroTitle"[\s\S]*?id="gpRepVerdictBtn"/u, '게이지 → 제목 → 버튼 순서');
+  assert.ok(main.indexOf('id="gpRepVerdictBtn"') < main.indexOf('id="gpRepBa"'), '행동 버튼은 전후 예시보다 앞에 온다');
+  assert.ok(!/<div class="gp-rep-ba" id="gpRepBa">[\s\S]*?id="gpRepDial"/u.test(main), '게이지는 전후 격자 안에 없다');
+  assert.match(flow, /function repVerdictLabel/u, '판정 칩은 구간 이름이 아니라 행동이 보이는 말');
+  assert.match(flow, /\$\('gpRepBa'\)\.hidden = !usable/u, '예시가 없으면 전후 격자를 접는다');
+  assert.match(flow, /tipsCta\.hidden = true;/u, '처방 아래 CTA는 접고 밴드 하나로 닫는다');
+  assert.match(css, /\.gp-rep-verdict\{[^}]*grid-template-columns/u);
   assert.match(css, /\.gp-rep-hero \.gp-rep-share\{position:absolute;top:18px;right:18px/u);
   assert.match(css, /\.gp-rep-zonekey\{flex-wrap:nowrap/u, '범례 한 줄');
 });

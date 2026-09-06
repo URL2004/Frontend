@@ -2685,6 +2685,13 @@
     }
   }
 
+  // 판정 칩 문구 — 공유 라벨(detect-presentation.js gpProfessorRadarBand)을 그대로 쓴다.
+  //   'AI식 문체 신호 중간'처럼 행동을 단정하지 않는 말은 ecdc366(2026-09-05)에서 정한 정책이라 여기서 바꾸지 않는다.
+  //   점수가 모델 판정이 아닐 때(간이 추정·미확인)도 백엔드 라벨('간이 추정 기준' 등)이 그대로 온다.
+  function repVerdictLabel(model) {
+    return (model && model.radar && model.radar.label) || '판정 준비 중';
+  }
+
   // ── 보고서 렌더 ─────────────────────────────────────────────────────────────
   function renderReport(d) {
     var srcInput = $('lavInput');
@@ -2754,7 +2761,8 @@
     var exampleState = repPreviewChangeState(example);
     var usable = exampleState.usable;
     // 예시가 없으면 좌우 칸이 빠지므로 3열 격자를 접어 게이지를 가운데로 둔다.
-    if ($('gpRepBa')) { $('gpRepBa').hidden = false; $('gpRepBa').classList.toggle('is-solo', !usable); }
+    // v125: 게이지가 전후 격자 밖(판정 열)으로 나갔다 — 예시가 없으면 격자를 통째로 접고 한 줄 안내만 남긴다.
+    if ($('gpRepBa')) { $('gpRepBa').hidden = !usable; $('gpRepBa').classList.toggle('is-solo', !usable); }
     repPaintBefore(usable ? example : null);
     repPaintAfter(usable ? example : null);
     var beforeCol = document.querySelector('.gp-rep-ba-col.before');
@@ -2781,7 +2789,10 @@
     if (dial) dial.className = 'gp-rep-dial is-' + (model.radar.band || 'unknown');
     repPaintScope(model);
     if ($('gpRepScore')) $('gpRepScore').textContent = score == null ? '--' : String(score);
-    if ($('gpRepBandChip')) $('gpRepBandChip').textContent = model.radar.label || '판정 준비 중';
+    if ($('gpRepBandChip')) $('gpRepBandChip').textContent = repVerdictLabel(model);
+    // 히어로 버튼 — 추천을 보류하는 상태(간이 추정·근거 부족·이미 유리한 글)에서는 결론 옆 버튼을 감춘다. 닫는 말은 아래 밴드가 한다.
+    if ($('gpRepVerdictBtn')) $('gpRepVerdictBtn').hidden = model.conversionEligible === false;
+    if ($('gpRepVerdictAct')) $('gpRepVerdictAct').hidden = model.conversionEligible === false;
     if ($('gpRepSource')) {
       // 엔진 간이 추정은 모델 판정과 신뢰도가 달라 점수 옆에서 밝힌다.
       // 이력 보정 사실은 화면에 표기하지 않는다(사장님 결정 2026-09-02). 값은 응답·관리자 원장에 남는다.
@@ -2849,7 +2860,9 @@
       var tipsCta = $('gpRepTipsCta');
       if (tipsCta) {
         var actionable = tipLines.filter(function (line) { return !/두드러진 문체 신호가 없어요/.test(line); }).length;
-        tipsCta.hidden = model.conversionEligible === false || actionable === 0;
+        // v125: 바로 아래 전환 밴드와 버튼이 두 개 겹쳐 보였다 — 처방 아래 CTA는 접고 밴드 하나로 닫는다.
+        tipsCta.hidden = true;
+        void actionable;
         if ($('gpRepTipsCtaText')) $('gpRepTipsCtaText').textContent = '이 ' + actionable + '가지를 한 번에 손보려면';
       }
     }
@@ -4287,6 +4300,13 @@
       + balance.toLocaleString('ko-KR') + '크레딧';
     line.classList.toggle('is-short', balance < cost);
     line.hidden = false;
+    // 히어로의 결론 옆 버튼에도 같은 비용을 붙인다(v125) — 버튼이 감춰진 상태면 비용도 함께 감춘다.
+    var heroCost = $('gpRepVerdictCost'), heroBtn = $('gpRepVerdictBtn');
+    if (heroCost) {
+      heroCost.textContent = line.textContent;
+      heroCost.classList.toggle('is-short', balance < cost);
+      heroCost.hidden = !!(heroBtn && heroBtn.hidden);
+    }
   }
 
   function renderBillingDisposition(st) {

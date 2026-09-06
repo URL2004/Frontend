@@ -218,33 +218,10 @@
                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4h14v-4"/></svg>
                <span>결과 이미지 저장</span>
              </button>
-             <div class="gp-rep-hero-head">
-               <p class="gp-rep-interpretation-label" id="gpRepInterpretationLabel" hidden></p>
-               <h3 class="gp-rep-hero-title" id="gpRepHeroTitle">분석 결과를 정리하고 있어요</h3>
-             </div>
-             <!-- 해석 카드: 관찰 문장 → 확인 위치 칩 → 근거 수준 한 줄. 가운데 정렬 긴 문장 대신 왼쪽 정렬 카드 -->
-             <div class="gp-rep-interpretation" id="gpRepInterpretation" hidden>
-               <p class="gp-rep-interpretation-desc" id="gpRepInterpretationDesc"></p>
-               <div class="gp-rep-interpretation-where" id="gpRepInterpretationWhere" hidden>
-                 <span class="gp-rep-where-cap">확인 위치</span>
-                 <span class="gp-rep-where-list" id="gpRepInterpretationWhereList"></span>
-               </div>
-               <p class="gp-rep-evidence-reason" id="gpRepEvidenceReason"><b class="gp-rep-evidence-level" id="gpRepEvidenceLevel"></b><span id="gpRepEvidenceReasonText"></span></p>
-             </div>
-             <div class="gp-rep-keeps-wrap" id="gpRepKeepsWrap" hidden>
-               <span class="gp-rep-keeps-cap">유지할 근거</span>
-               <ul class="gp-rep-keeps" id="gpRepKeeps" aria-label="그대로 유지될 내용"></ul>
-             </div>
-
-             <div class="gp-rep-ba" id="gpRepBa">
-               <article class="gp-rep-ba-col before">
-                 <p class="gp-rep-ba-cap">Before</p>
-                 <p class="gp-rep-ba-text" id="gpRepBefore"></p>
-                 <p class="gp-rep-ba-tag bad">다듬을 후보 문장</p>
-               </article>
-
+             <!-- ① 판정 + 행동: 왼쪽 게이지(몇 점·위험한가), 오른쪽 제목·이유 한 줄·휴머나이징 버튼. 시선이 한 방향으로 흐른다(v125). -->
+             <div class="gp-rep-verdict">
                <!-- 교수님 레이더 — 브랜드의 말을 그림으로: 중심에 교수님, 점수만큼 가까이 잡힌 학생.
-                    바깥 고리일수록 문체 신호가 낮고, 중심에 가까울수록 높다.
+                    바깥 고리일수록 안전(피하기에 유리), 중심에 가까울수록 잡힌다(피하기 어려움).
                     스코프 그림은 JS(repPaintScope)가 그린다. -->
                <div class="gp-rep-dial" id="gpRepDial">
                  <div class="gp-rep-scope" id="gpRepScope" role="img" aria-labelledby="gpRepScopeAlt"></div>
@@ -255,13 +232,47 @@
                  </div>
                  <p class="gp-rep-bandchip" id="gpRepBandChip">판정 준비 중</p>
                  <p class="gp-rep-source" id="gpRepSource"></p>
+                 <!-- 구역 범례는 v125에서 화면에서 뺐다(게이지 색·구역 이름이 이미 말한다). 마크업은 보조기술·테스트 계약용으로 남긴다. -->
                  <ul class="gp-rep-zonekey" aria-label="게이지 구역 읽는 법">
                    <li class="z-hard" title="AI식 문체 신호 높음">50~100 높음</li>
                    <li class="z-revise" title="AI식 문체 신호 중간">21~49 중간</li>
                    <li class="z-low" title="AI식 문체 신호 낮음">0~20 낮음</li>
                  </ul>
                </div>
+               <div class="gp-rep-verdict-copy">
+                 <div class="gp-rep-hero-head">
+                   <p class="gp-rep-interpretation-label" id="gpRepInterpretationLabel" hidden></p>
+                   <h3 class="gp-rep-hero-title" id="gpRepHeroTitle">분석 결과를 정리하고 있어요</h3>
+                 </div>
+                 <!-- 이유 한 줄 → 확인 위치 칩 → 근거 수준 주석 -->
+                 <div class="gp-rep-interpretation" id="gpRepInterpretation" hidden>
+                   <p class="gp-rep-interpretation-desc" id="gpRepInterpretationDesc"></p>
+                   <div class="gp-rep-interpretation-where" id="gpRepInterpretationWhere" hidden>
+                     <span class="gp-rep-where-cap">확인 위치</span>
+                     <span class="gp-rep-where-list" id="gpRepInterpretationWhereList"></span>
+                   </div>
+                   <p class="gp-rep-evidence-reason" id="gpRepEvidenceReason"><b class="gp-rep-evidence-level" id="gpRepEvidenceLevel"></b><span id="gpRepEvidenceReasonText"></span></p>
+                 </div>
+                 <!-- 행동: 결론 바로 옆 버튼 하나. 비용은 옆에 작게 -->
+                 <div class="gp-rep-verdict-act" id="gpRepVerdictAct">
+                   <button type="button" class="gp-rep-verdict-btn" id="gpRepVerdictBtn" onclick="lavReportToHumanize()">휴머나이징으로 다듬기 →</button>
+                   <p class="gp-rep-verdict-cost" id="gpRepVerdictCost" hidden></p>
+                 </div>
+                 <!-- 유지할 근거 칩은 v125에서 화면에서 뺐다(원인 분석의 경험 문장 축이 같은 수를 보여준다). 마크업은 계약용. -->
+                 <div class="gp-rep-keeps-wrap" id="gpRepKeepsWrap" hidden>
+                   <span class="gp-rep-keeps-cap">유지할 근거</span>
+                   <ul class="gp-rep-keeps" id="gpRepKeeps" aria-label="그대로 유지될 내용"></ul>
+                 </div>
+               </div>
+             </div>
 
+             <!-- ② Before / After — 한 문장까지만. 전체는 휴머나이징의 몫이다. -->
+             <div class="gp-rep-ba" id="gpRepBa">
+               <article class="gp-rep-ba-col before">
+                 <p class="gp-rep-ba-cap">Before</p>
+                 <p class="gp-rep-ba-text" id="gpRepBefore"></p>
+                 <p class="gp-rep-ba-tag bad">다듬을 후보 문장</p>
+               </article>
                <article class="gp-rep-ba-col after">
                  <p class="gp-rep-ba-cap">After</p>
                  <p class="gp-rep-ba-text" id="gpRepAfter"></p>

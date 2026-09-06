@@ -12573,3 +12573,87 @@ html.gp-rep-modal-open{overflow:hidden;}
   #mainContent[data-main-design="lavender"] .gp-rep-cause-match{padding:12px 13px 10px;}
   #mainContent[data-main-design="lavender"] .gp-rep-cause-match li{padding:10px 12px;}
 }
+
+/* ===== v125: 보고서 한 방향 재구성 — 판정(게이지) → 이유 한 줄 → 행동 → 전후 한 쌍 (2026-09-06) =====
+   요소 8개(구간 칩·제목·해석 카드·유지 근거·Before·게이지+칩+범례·After·안내)가 한 장에 있던 히어로를 셋으로 줄인다.
+   같은 정보의 반복(점수 2번·'중간' 4번)을 걷어내고, 첫 시선 자리에 점수와 판정, 그 옆에 이유와 버튼을 둔다. */
+#mainContent[data-main-design="lavender"] .gp-rep-hero{padding:26px 30px 24px;text-align:left;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict{
+ display:grid;grid-template-columns:296px minmax(0,1fr);gap:8px 40px;align-items:center;
+}
+/* 판정 열 — 게이지 하나, 그 아래 점수와 판정 칩. 범례·근거 라벨·구간 칩·유지 근거는 화면에서 뺀다(중복). */
+#mainContent[data-main-design="lavender"] .gp-rep-verdict .gp-rep-dial{align-self:center;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict .gp-rep-scope{width:296px;height:296px;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict .gp-rep-dial-read{margin-top:-64px;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict .gp-rep-dial-read .num b{font-size:var(--rep-fs-8);}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict .gp-rep-bandchip{margin-top:10px;padding:7px 16px;font-size:var(--rep-fs-3);}
+#mainContent[data-main-design="lavender"] .gp-rep-zonekey,
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-label,
+#mainContent[data-main-design="lavender"] .gp-rep-keeps-wrap{display:none!important;}
+/* 결론 열 — 제목(좌측 정렬, 저장 버튼 폭만 비움) → 이유 → 확인 위치 → 근거 주석 → 버튼 */
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-copy{min-width:0;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-copy .gp-rep-hero-head{align-items:flex-start;margin:0;padding-right:150px;}
+#mainContent[data-main-design="lavender"] .gp-rep .gp-rep-verdict-copy .gp-rep-hero-title{
+ margin:0;max-width:none;padding:0;box-sizing:border-box;text-align:left;text-wrap:balance;font-size:var(--rep-fs-7);line-height:1.38;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-copy .gp-rep-interpretation{
+ max-width:none;margin:12px 0 0;padding:0;border:0;border-radius:0;background:transparent;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-copy .gp-rep-interpretation-desc{font-size:var(--rep-fs-4);line-height:1.75;color:var(--rep-copy);}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-copy .gp-rep-interpretation-where{margin-top:10px;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-copy .gp-rep-evidence-reason{margin:10px 0 0;padding-top:0;border-top:0;font-size:var(--rep-fs-1);}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-act{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:20px;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-act[hidden]{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-btn{
+ padding:13px 24px;border:0;border-radius:999px;cursor:pointer;
+ background:var(--rep-brand-strong);color:#fff;font-size:var(--rep-fs-4);font-weight:850;letter-spacing:-.01em;
+ box-shadow:0 10px 24px -12px rgba(75,52,204,.75);transition:transform .14s ease,box-shadow .14s ease;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-btn:hover{transform:translateY(-1px);box-shadow:0 14px 28px -12px rgba(75,52,204,.8);}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-btn[hidden]{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-cost{margin:0;font-size:var(--rep-fs-2);font-weight:700;color:var(--rep-muted);font-variant-numeric:tabular-nums;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-cost.is-short{color:var(--rep-coral);}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-cost[hidden]{display:none!important;}
+/* 전후 한 쌍 — 테두리 상자 대신 왼쪽 색띠 하나. 게이지는 여기 없다. */
+#mainContent[data-main-design="lavender"] .gp-rep-ba{
+ grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px 28px;align-items:stretch;
+ margin-top:22px;padding-top:22px;border-top:1px solid var(--rep-line);
+}
+#mainContent[data-main-design="lavender"] .gp-rep-ba[hidden]{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-col{
+ border:0;border-radius:0;background:transparent;padding:2px 0 0 16px;border-left:3px solid #f4a89c;align-self:auto;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-col.after{background:transparent;border-color:#b7a5ff;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-cap{margin:0 0 8px;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-text{font-size:var(--rep-fs-4);line-height:1.8;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-tag{margin-top:12px;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-empty{margin-top:22px;padding:14px 16px;font-size:var(--rep-fs-2);}
+#mainContent[data-main-design="lavender"] .gp-rep-hero-foot{justify-content:flex-start;margin-top:12px;}
+#mainContent[data-main-design="lavender"] .gp-rep-hero-note{color:var(--rep-muted);}
+/* 개선 포인트 — 카드는 얇게, 아래 밴드가 행동을 맡으니 처방 아래 CTA는 접는다 */
+#mainContent[data-main-design="lavender"] .gp-rep-tips-cta{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-tips{padding:20px 24px;}
+@media (max-width:1080px){
+  #mainContent[data-main-design="lavender"] .gp-rep-verdict{grid-template-columns:1fr;justify-items:center;gap:6px;}
+  #mainContent[data-main-design="lavender"] .gp-rep-verdict .gp-rep-dial{order:0;}
+  #mainContent[data-main-design="lavender"] .gp-rep-verdict-copy{width:100%;max-width:640px;text-align:center;}
+  #mainContent[data-main-design="lavender"] .gp-rep-verdict-copy .gp-rep-hero-head{align-items:center;margin-top:8px;padding-right:0;}
+  #mainContent[data-main-design="lavender"] .gp-rep .gp-rep-verdict-copy .gp-rep-hero-title{text-align:center;margin-top:0;}
+  #mainContent[data-main-design="lavender"] .gp-rep-verdict-copy .gp-rep-interpretation{text-align:left;}
+  #mainContent[data-main-design="lavender"] .gp-rep-verdict-act{justify-content:center;}
+  #mainContent[data-main-design="lavender"] .gp-rep-ba{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+  #mainContent[data-main-design="lavender"] .gp-rep-hero-head{margin-top:0;}
+  #mainContent[data-main-design="lavender"] .gp-rep-hero{padding-top:64px;}
+}
+@media (max-width:640px){
+  #mainContent[data-main-design="lavender"] .gp-rep-hero{padding:20px 18px 20px;}
+  #mainContent[data-main-design="lavender"] .gp-rep-verdict .gp-rep-scope{width:250px;height:250px;}
+  #mainContent[data-main-design="lavender"] .gp-rep-verdict .gp-rep-dial-read{margin-top:-54px;}
+  #mainContent[data-main-design="lavender"] .gp-rep .gp-rep-verdict-copy .gp-rep-hero-title{font-size:var(--rep-fs-6);}
+  #mainContent[data-main-design="lavender"] .gp-rep-verdict-act{flex-direction:column;align-items:stretch;}
+  #mainContent[data-main-design="lavender"] .gp-rep-verdict-btn{width:100%;}
+  #mainContent[data-main-design="lavender"] .gp-rep-verdict-cost{text-align:center;}
+  #mainContent[data-main-design="lavender"] .gp-rep-ba{grid-template-columns:1fr;gap:18px;}
+}
+/* v125: 예시가 없을 때의 한 줄은 상자 대신 구분선 아래 주석으로 */
+#mainContent[data-main-design="lavender"] .gp-rep-ba-empty{margin:20px 0 0;padding:16px 0 0;border:0;border-top:1px solid var(--rep-line);border-radius:0;background:transparent;color:var(--rep-muted);font-size:var(--rep-fs-2);}
