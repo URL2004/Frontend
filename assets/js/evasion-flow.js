@@ -2440,7 +2440,7 @@
       ctx.fillText(model.score == null ? '--' : String(model.score), 72, 110);
       var numW = ctx.measureText(model.score == null ? '--' : String(model.score)).width;
       ctx.fillStyle = '#b3aee0'; ctx.font = font('700', 30);
-      ctx.fillText('/100 · AI 감지 점수', 72 + numW + 16, 190);
+      ctx.fillText('/100 · AI 티 지수', 72 + numW + 16, 190);
       var chip = model.radar.label || '';
       ctx.font = font('800', 30);
       var chipW = ctx.measureText(chip).width + 44;
@@ -2887,7 +2887,7 @@
     if (report) {
       report.dataset.announcement = score == null
         ? 'AI 감지 분석을 마쳤어요. 점수를 확인하지 못했어요.'
-        : 'AI 감지 분석을 마쳤어요. AI 감지 점수 ' + score + '점, 100점 만점. ' + (model.radar.label || '')
+        : 'AI 감지 분석을 마쳤어요. AI 티 지수 ' + score + '점, 100점 만점. ' + (model.radar.label || '')
           + (interpretation ? '. ' + interpretation.headline + ' ' + interpretation.evidence.label : '');
     }
   }
