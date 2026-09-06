@@ -194,7 +194,7 @@
 
   var BLEND = [
     { img: '/assets/img/landing/shot-detect.webp',   alt: 'AI 감지 보고서 화면',        soon: false,
-      note: '글 전체의 AI 티 지수와 함께 주의가 필요한 문단을 보여줘요.' },
+      note: '글 전체의 AI 감지 점수와 함께 주의가 필요한 문단을 보여줘요.' },
     { img: '/assets/img/landing/shot-done.webp',     alt: '기본 휴머나이징 결과 화면',   soon: false,
       note: '원문의 장르와 말투와 사실을 지키면서 AI식 반복과 균일한 문장 흐름을 다시 구성해요.' },
     { img: '/assets/img/landing/shot-settings.webp', alt: '고급 휴머나이징 설정 화면',   soon: false,

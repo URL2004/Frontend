@@ -2543,7 +2543,7 @@ const NOTICE_BASE_ITEMS = [
   title: 'AI 감지 보고서를 열었어요',
   date: '2026.07.21',
   views: 2841,
-  body: '글 전체의 AI 티 지수와 문단별 문체 특징을 한눈에 확인할 수 있는 AI 감지 보고서를 열었어요.\n\n무엇을 볼 수 있나요\n참고 결과와 주요 근거를 하나의 종합 보고서로 보여드려요.'
+  body: '글 전체의 AI 감지 점수와 문단별 문체 특징을 한눈에 확인할 수 있는 AI 감지 보고서를 열었어요.\n\n무엇을 볼 수 있나요\n참고 결과와 주요 근거를 하나의 종합 보고서로 보여드려요.'
  },
  {
   id: 'detect-report-preview',
@@ -3848,7 +3848,7 @@ function historyRenderDetail() {
    <div class="gp-history-detail-kicker"><span class="gp-history-kind ${isDetect ? 'detect' : 'humanize'}">${isDetect ? 'AI 감지' : '휴머나이징'}</span><time>${escapeHtml(historyDateText(item.createdAtMs))}</time></div>
    <h2>${escapeHtml(historyTitle(item))}</h2>
    <div class="gp-history-detail-meta">
-    <span><small>${isDetect ? 'AI 티 지수' : '작업 상태'}</small><b class="${work.tone}">${escapeHtml(work.label)}</b></span>
+    <span><small>${isDetect ? 'AI 감지 점수' : '작업 상태'}</small><b class="${work.tone}">${escapeHtml(work.label)}</b></span>
     <span><small>이용 내역</small><b>${escapeHtml(billing.short)}</b></span>
    </div>
   </header>

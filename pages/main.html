@@ -218,13 +218,23 @@
                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 15v4h14v-4"/></svg>
                <span>결과 이미지 저장</span>
              </button>
-             <h3 class="gp-rep-hero-title" id="gpRepHeroTitle">분석 결과를 정리하고 있어요</h3>
-             <div class="gp-rep-interpretation" id="gpRepInterpretation" hidden>
-               <p class="gp-rep-interpretation-label" id="gpRepInterpretationLabel"></p>
-               <p class="gp-rep-interpretation-desc" id="gpRepInterpretationDesc"></p>
-               <p class="gp-rep-evidence-reason" id="gpRepEvidenceReason"></p>
+             <div class="gp-rep-hero-head">
+               <p class="gp-rep-interpretation-label" id="gpRepInterpretationLabel" hidden></p>
+               <h3 class="gp-rep-hero-title" id="gpRepHeroTitle">분석 결과를 정리하고 있어요</h3>
              </div>
-             <ul class="gp-rep-keeps" id="gpRepKeeps" aria-label="그대로 유지될 내용"></ul>
+             <!-- 해석 카드: 관찰 문장 → 확인 위치 칩 → 근거 수준 한 줄. 가운데 정렬 긴 문장 대신 왼쪽 정렬 카드 -->
+             <div class="gp-rep-interpretation" id="gpRepInterpretation" hidden>
+               <p class="gp-rep-interpretation-desc" id="gpRepInterpretationDesc"></p>
+               <div class="gp-rep-interpretation-where" id="gpRepInterpretationWhere" hidden>
+                 <span class="gp-rep-where-cap">확인 위치</span>
+                 <span class="gp-rep-where-list" id="gpRepInterpretationWhereList"></span>
+               </div>
+               <p class="gp-rep-evidence-reason" id="gpRepEvidenceReason"><b class="gp-rep-evidence-level" id="gpRepEvidenceLevel"></b><span id="gpRepEvidenceReasonText"></span></p>
+             </div>
+             <div class="gp-rep-keeps-wrap" id="gpRepKeepsWrap" hidden>
+               <span class="gp-rep-keeps-cap">유지할 근거</span>
+               <ul class="gp-rep-keeps" id="gpRepKeeps" aria-label="그대로 유지될 내용"></ul>
+             </div>
 
              <div class="gp-rep-ba" id="gpRepBa">
                <article class="gp-rep-ba-col before">
@@ -240,7 +250,7 @@
                  <div class="gp-rep-scope" id="gpRepScope" role="img" aria-labelledby="gpRepScopeAlt"></div>
                  <p class="sr-only" id="gpRepScopeAlt"></p>
                  <div class="gp-rep-dial-read">
-                   <span class="cap">AI 티 지수</span>
+                   <span class="cap">AI 감지 점수</span>
                    <span class="num"><b id="gpRepScore">--</b><span class="den">/100</span></span>
                  </div>
                  <p class="gp-rep-bandchip" id="gpRepBandChip">판정 준비 중</p>
@@ -334,9 +344,10 @@
              </section>
 
              <section class="gp-rep-panel gp-rep-cause" aria-labelledby="gpRepCauseTitle">
-               <div class="gp-rep-panel-head">
+               <div class="gp-rep-panel-head gp-rep-cause-head">
                  <h3 id="gpRepCauseTitle">AI 감지 원인 분석</h3>
-                 <p class="gp-rep-legend"><span>막대는 자동 계측한 표면 문체 신호만 보여줘요</span></p>
+                 <!-- 글 종류 칩(JS repPaintCauseProfile). 막대 설명 문장은 막대 바로 위 라벨로 내려갔다 -->
+                 <p class="gp-rep-legend gp-rep-cause-profile" id="gpRepCauseProfile" hidden></p>
                </div>
                <div class="gp-rep-radar" id="gpRepRadar"></div>
                <p class="sr-only" id="gpRepRadarAccessible"></p>

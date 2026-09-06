@@ -12,7 +12,7 @@ test('AI 감지 실행 확인은 분석 내용·비용·잔액·무차감 조건
 
   assert.match(source, /variant:\s*'detect'/u);
   assert.match(source, /title:\s*'AI 감지를 시작할까요\?'/u);
-  assert.match(source, /글 전체의 AI 티 지수와 두드러진 문체 신호를 확인해요/u);
+  assert.match(source, /글 전체의 AI 감지 점수와 두드러진 문체 신호를 확인해요/u);
   assert.match(source, /label:\s*'분석할 글'/u);
   assert.match(source, /label:\s*'사용 크레딧'/u);
   assert.match(source, /label:\s*'감지 후 잔액'/u);

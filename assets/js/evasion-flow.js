@@ -711,7 +711,7 @@
         ? await window.gpConfirm({
             variant: 'detect',
             title: 'AI 감지를 시작할까요?',
-            message: '글 전체의 AI 티 지수와 두드러진 문체 신호를 확인해요.',
+            message: '글 전체의 AI 감지 점수와 두드러진 문체 신호를 확인해요.',
             summary: detectSummary,
             safeText: unlimited
               ? '무제한 이용권으로 처리되며 크레딧은 차감되지 않아요.'
@@ -2002,8 +2002,39 @@
     if (!host) return;
     var label = document.createElement('p');
     label.className = 'gp-rep-surface-label';
-    label.textContent = model && model.causeAnalysis ? '추가 표면 지표 · 참고' : '표면 문체 지표 · 참고';
+    var head = document.createElement('b');
+    head.textContent = model && model.causeAnalysis ? '추가 표면 지표 · 참고' : '표면 문체 지표 · 참고';
+    label.appendChild(head);
+    // 이 문장은 막대에 대한 설명이라 막대 바로 위에 둔다(패널 제목 옆에 있으면 제목과 경쟁하며 두 줄로 꺾였다).
+    var note = document.createElement('small');
+    note.textContent = '막대는 자동 계측한 표면 문체 신호만 보여줘요';
+    label.appendChild(note);
     host.appendChild(label);
+  }
+  // 글 종류 안내는 패널 제목 옆 칩 한 개로. 판별이 흐린 경우만 본문 첫 줄에 문장으로 남긴다.
+  function repPaintCauseProfile(policyRoot, host) {
+    var slot = $('gpRepCauseProfile');
+    if (slot) { slot.textContent = ''; slot.hidden = true; }
+    if (!policyRoot || !policyRoot.profileLabel) return;
+    var text = policyRoot.ambiguousProfile
+      ? '비슷한 글 종류가 함께 감지돼 구체 근거·화자 입장은 표시하지 않았어요.'
+      : policyRoot.lowConfidence
+        ? '글 종류를 확실히 가리지 못해 구체 근거·화자 입장은 표시하지 않았어요.'
+        : policyRoot.profileLabel + ' 기준으로 봤어요.';
+    if (slot && !policyRoot.ambiguousProfile && !policyRoot.lowConfidence) {
+      var chip = document.createElement('span');
+      chip.className = 'gp-rep-cause-profile-chip';
+      chip.textContent = policyRoot.profileLabel + ' 기준';
+      chip.title = text;
+      slot.appendChild(chip);
+      slot.hidden = false;
+      return;
+    }
+    if (!host) return;
+    var who = document.createElement('p');
+    who.className = 'gp-rep-radar-profile';
+    who.textContent = text;
+    host.appendChild(who);
   }
   function repPaintRadarAxis(list, model, a, i) {
     var key = REP_AXIS_KEYS[i];
@@ -2048,6 +2079,7 @@
     var alt = $('gpRepRadarAccessible');
     // 두세 문장짜리 글: 통계 축을 잰 척하지 않고 한 줄로 닫는다(점수·문장별 태그는 그대로).
     if (policyRoot && policyRoot.mode === 'sparse_all') {
+      repPaintCauseProfile(policyRoot, host);
       repPaintCauseAnalysis(model, host);
       repPaintSurfaceLabel(model, host);
       var empty = document.createElement('p');
@@ -2060,23 +2092,14 @@
           ? repOrderedCauseItems(model.causeAnalysis.items).slice(0, 3).map(function (item) { return String(item.categoryLabel || item.description || ''); }).filter(Boolean)
           : [];
         alt.textContent = 'AI 감지 원인 분석. '
-          + (sparseCauses.length ? 'AI 티 지수에 반영된 판단 원인: ' + sparseCauses.join(', ') + '. ' : '')
+          + (sparseCauses.length ? 'AI 감지 점수에 반영된 판단 원인: ' + sparseCauses.join(', ') + '. ' : '')
           + '표면 문체 지표: ' + empty.textContent;
       }
       return;
     }
     if (hint) hint.hidden = false;
     var axes = repRadarAxes(model);
-    if (policyRoot && policyRoot.profileLabel) {
-      var who = document.createElement('p');
-      who.className = 'gp-rep-radar-profile';
-      who.textContent = policyRoot.ambiguousProfile
-        ? '비슷한 글 종류가 함께 감지돼 구체 근거·화자 입장은 표시하지 않았어요.'
-        : policyRoot.lowConfidence
-          ? '글 종류를 확실히 가리지 못해 구체 근거·화자 입장은 표시하지 않았어요.'
-          : policyRoot.profileLabel + ' 기준으로 봤어요.';
-      host.appendChild(who);
-    }
+    repPaintCauseProfile(policyRoot, host);
     // 점수에 직접 연결된 모델 원인을 먼저 읽고, 결정론 막대는 보조 진단으로 뒤에 둔다.
     // 막대가 모두 낮아도 점수가 높을 수 있다는 사실을 순서 자체로 오해 없이 전달한다.
     repPaintCauseAnalysis(model, host);
@@ -2092,7 +2115,7 @@
         ? repOrderedCauseItems(model.causeAnalysis.items).slice(0, 3).map(function (item) { return String(item.categoryLabel || item.description || ''); }).filter(Boolean)
         : [];
       alt.textContent = 'AI 감지 원인 분석. '
-        + (causeAlt.length ? 'AI 티 지수에 반영된 판단 원인: ' + causeAlt.join(', ') + '. ' : '')
+        + (causeAlt.length ? 'AI 감지 점수에 반영된 판단 원인: ' + causeAlt.join(', ') + '. ' : '')
         + '추가 표면 지표: ' + axes.map(function (a) {
           return a.name + ' ' + repRadarLevel(a);
         }).join(', ') + '.';
@@ -2129,44 +2152,101 @@
 
     var section = document.createElement('section');
     section.className = 'gp-rep-cause-match is-' + status;
-    section.setAttribute('aria-label', 'AI 티 지수에 반영된 판단 원인');
+    section.setAttribute('aria-label', 'AI 감지 점수에 반영된 판단 원인');
+    var head = document.createElement('div');
+    head.className = 'gp-rep-cause-match-head';
     var title = document.createElement('b');
-    title.textContent = status === 'aligned' ? 'AI 티 지수에 반영된 판단 원인'
-      : status === 'partial' ? 'AI 티 지수의 원인을 일부만 확인했어요'
-      : 'AI 티 지수의 세부 원인을 충분히 확인하지 못했어요';
-    section.appendChild(title);
+    title.textContent = status === 'aligned' ? '점수에 반영된 원인'
+      : status === 'partial' ? 'AI 감지 점수의 원인을 일부만 확인했어요'
+      : 'AI 감지 점수의 세부 원인을 충분히 확인하지 못했어요';
+    head.appendChild(title);
+    var badge = document.createElement('span');
+    badge.className = 'gp-rep-cause-status';
+    badge.textContent = status === 'aligned' ? '점수·원인 일치' : status === 'partial' ? '일부만 확인' : '확인 부족';
+    head.appendChild(badge);
+    section.appendChild(head);
     var summary = String(cause.label || '').trim();
     if (model.interpretation && typeof window.gpDetectPublicNarrative === 'function') {
       summary = window.gpDetectPublicNarrative(summary, model.interpretation);
     }
     if (!summary && status !== 'aligned') {
-      summary = '위 막대는 표면 문체만 자동 계측해요. AI 티 지수는 문맥과 전개까지 함께 판단하므로 막대만으로 점수를 모두 설명할 수 없어요.';
+      summary = '위 막대는 표면 문체만 자동 계측해요. AI 감지 점수는 문맥과 전개까지 함께 판단하므로 막대만으로 점수를 모두 설명할 수 없어요.';
     }
-    if (summary) {
+    // 정합 상태의 기본 문구는 배지가 이미 말한다 — 같은 말을 두 줄로 적지 않는다.
+    if (summary && !(status === 'aligned' && REP_CAUSE_DEFAULT_ALIGNED_RE.test(summary))) {
       var note = document.createElement('p');
       note.textContent = summary;
       section.appendChild(note);
     }
     if (items.length) {
       var ul = document.createElement('ul');
-      items.forEach(function (item) {
-        var li = document.createElement('li');
-        var name = document.createElement('strong');
-        name.textContent = String(item.categoryLabel || '문체 신호');
-        var desc = document.createElement('span');
-        desc.textContent = String(item.description || '');
-        li.appendChild(name);
-        if (desc.textContent) li.appendChild(desc);
-        if (Array.isArray(item.locations) && item.locations.length) {
-          var location = document.createElement('small');
-          location.textContent = '참고 문장: ' + item.locations.map(function (row) { return Number(row.sentenceIndex) + 1; }).join(', ');
-          li.appendChild(location);
-        }
-        ul.appendChild(li);
-      });
+      items.forEach(function (item) { ul.appendChild(repCauseItemRow(item)); });
       section.appendChild(ul);
     }
     host.appendChild(section);
+  }
+  var REP_CAUSE_DEFAULT_ALIGNED_RE = /^점수와 원인 설명이 맞게 연결됐어요\.?$/;
+  var REP_CAUSE_SCOPE = { isolated: '일부 문장', recurring: '여러 문장', pervasive: '글 전반' };
+  var REP_CAUSE_STRENGTH = { weak: '약함', moderate: '뚜렷함', strong: '강함' };
+  // 원인 한 항목 = 이름 + 범위·강도 칩 + 참고 문장 버튼. 예전엔 이름·설명문·문장 번호가 한 줄 11.5px에 붙어 있었다.
+  function repCauseItemRow(item) {
+    var li = document.createElement('li');
+    var row = document.createElement('div');
+    row.className = 'gp-rep-cause-row';
+    var name = document.createElement('strong');
+    name.textContent = String(item.categoryLabel || '문체 신호');
+    row.appendChild(name);
+    var scope = REP_CAUSE_SCOPE[item.scope] || '';
+    var strength = REP_CAUSE_STRENGTH[item.strength] || '';
+    if (scope || strength) {
+      var tags = document.createElement('span');
+      tags.className = 'gp-rep-cause-tags';
+      if (scope) {
+        var scopeTag = document.createElement('i');
+        scopeTag.className = 'gp-rep-cause-tag is-scope';
+        scopeTag.textContent = scope;
+        tags.appendChild(scopeTag);
+      }
+      if (strength) {
+        var strengthTag = document.createElement('i');
+        strengthTag.className = 'gp-rep-cause-tag is-' + item.strength;
+        strengthTag.textContent = strength;
+        tags.appendChild(strengthTag);
+      }
+      row.appendChild(tags);
+    }
+    li.appendChild(row);
+    // 범위·강도가 구조화된 항목의 설명문("X 신호가 여러 문장에서 뚜렷하게 관찰됨")은 칩과 같은 말이다.
+    // 구조화되지 않은 예전 형식 항목만 설명문을 그대로 보인다.
+    if (!scope && !strength && item.description) {
+      var desc = document.createElement('p');
+      desc.className = 'gp-rep-cause-desc';
+      desc.textContent = String(item.description);
+      li.appendChild(desc);
+    }
+    if (Array.isArray(item.locations) && item.locations.length) {
+      var refs = document.createElement('div');
+      refs.className = 'gp-rep-cause-refs';
+      var cap = document.createElement('span');
+      cap.textContent = '참고 문장';
+      refs.appendChild(cap);
+      var seen = {};
+      var indices = item.locations.map(function (loc) { return Number(loc && loc.sentenceIndex); })
+        .filter(function (idx) { if (!Number.isFinite(idx) || idx < 0 || seen[idx]) return false; seen[idx] = true; return true; })
+        .sort(function (a, b) { return a - b; });
+      indices.forEach(function (idx) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'gp-rep-cause-ref';
+        btn.textContent = String(idx + 1);
+        btn.title = (idx + 1) + '번 문장을 전체 문장에서 보기';
+        btn.setAttribute('aria-label', (idx + 1) + '번 문장 보기');
+        btn.addEventListener('click', function () { if (typeof window.gpRepJumpToSentence === 'function') window.gpRepJumpToSentence(idx); });
+        refs.appendChild(btn);
+      });
+      li.appendChild(refs);
+    }
+    return li;
   }
 
   // ── 축 ↔ 문장 연동 ──────────────────────────────────────────────────────────
@@ -2355,7 +2435,7 @@
       ctx.fillText(model.score == null ? '--' : String(model.score), 72, 110);
       var numW = ctx.measureText(model.score == null ? '--' : String(model.score)).width;
       ctx.fillStyle = '#b3aee0'; ctx.font = font('700', 30);
-      ctx.fillText('/100 · AI 티 지수', 72 + numW + 16, 190);
+      ctx.fillText('/100 · AI 감지 점수', 72 + numW + 16, 190);
       var chip = model.radar.label || '';
       ctx.font = font('800', 30);
       var chipW = ctx.measureText(chip).width + 44;
@@ -2561,6 +2641,50 @@
     });
   }
 
+  // 공유 해석 모듈(detect-interpretation.js)은 설명 끝에 '확인 위치: 2·4·5번 문단.'을 붙인다.
+  // 화면에서는 그 꼬리를 떼어 칩으로 보여준다 — 모듈 문구(백엔드와 동일 사본)는 건드리지 않는다.
+  var REP_LOCATION_NOTE_RE = /\s*확인 위치:\s*[^.]*?문단(?:\s*등)?\.?\s*$/;
+  function repStripLocationNote(text) {
+    return String(text || '').replace(REP_LOCATION_NOTE_RE, '').trim();
+  }
+  function repPaintInterpretationWhere(interpretation) {
+    var wrap = $('gpRepInterpretationWhere'), list = $('gpRepInterpretationWhereList');
+    if (!wrap || !list) return;
+    list.textContent = '';
+    var all = interpretation && interpretation.pattern && Array.isArray(interpretation.pattern.paragraphIndices)
+      ? interpretation.pattern.paragraphIndices.filter(function (n) { return Number.isFinite(Number(n)) && Number(n) >= 0; })
+      : [];
+    var shown = all.slice(0, 6);
+    wrap.hidden = !shown.length;
+    if (!shown.length) return;
+    shown.forEach(function (raw) {
+      var n = Number(raw);
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'gp-rep-where-chip';
+      chip.textContent = (n + 1) + '번 문단';
+      chip.title = '이 문단의 문장 보기';
+      chip.addEventListener('click', function () {
+        // 문단 지도가 있으면 그 칸을 고르고 데려간다. 없으면(짧은 글) 전체 문장 목록을 연다.
+        var cell = document.querySelector('#gpRepParaCells .gp-rep-paracell[data-para="' + n + '"]');
+        if (cell && typeof window.gpRepPickParagraph === 'function') {
+          if (repMapState.selected !== n) window.gpRepPickParagraph(n);
+          var map = $('gpRepParaMap');
+          if (map && typeof map.scrollIntoView === 'function') map.scrollIntoView({ behavior: repReducedMotion() ? 'auto' : 'smooth', block: 'center' });
+          return;
+        }
+        if (typeof window.gpRepOpenModal === 'function') window.gpRepOpenModal();
+      });
+      list.appendChild(chip);
+    });
+    if (all.length > shown.length) {
+      var more = document.createElement('span');
+      more.className = 'gp-rep-where-more';
+      more.textContent = '외 ' + (all.length - shown.length) + '곳';
+      list.appendChild(more);
+    }
+  }
+
   // ── 보고서 렌더 ─────────────────────────────────────────────────────────────
   function renderReport(d) {
     var srcInput = $('lavInput');
@@ -2579,11 +2703,25 @@
     var interpretation = model.interpretation;
     if ($('gpRepInterpretation')) {
       $('gpRepInterpretation').hidden = !interpretation;
+      var interpLabel = $('gpRepInterpretationLabel');
+      if (interpLabel) {
+        // 구간 라벨은 제목 위 눈썹 칩 — 카드 안 첫 줄에 두면 제목·설명과 셋이 나란히 경쟁했다.
+        interpLabel.hidden = !interpretation;
+        interpLabel.textContent = interpretation ? (interpretation.label || '') : '';
+        interpLabel.dataset.band = interpretation ? (interpretation.band || 'unknown') : 'unknown';
+      }
       if (interpretation) {
         $('gpRepInterpretation').dataset.status = interpretation.status;
-        $('gpRepInterpretationLabel').textContent = interpretation.label || '';
-        $('gpRepInterpretationDesc').textContent = interpretation.description || '';
-        $('gpRepEvidenceReason').textContent = interpretation.evidence.reason || '';
+        // '확인 위치: 2·4·5번 문단.'은 문장 속이 아니라 칩으로 따로 보여준다(공유 해석 모듈 문구는 그대로 두고 화면에서만 분리).
+        $('gpRepInterpretationDesc').textContent = interpretation.description ? repStripLocationNote(interpretation.description) : '';
+        repPaintInterpretationWhere(interpretation);
+        var evidenceLevel = $('gpRepEvidenceLevel'), evidenceText = $('gpRepEvidenceReasonText');
+        if (evidenceLevel) {
+          evidenceLevel.textContent = interpretation.evidence.label || '';
+          evidenceLevel.dataset.level = interpretation.evidence.level || '';
+        }
+        if (evidenceText) evidenceText.textContent = interpretation.evidence.reason || '';
+        else if ($('gpRepEvidenceReason')) $('gpRepEvidenceReason').textContent = interpretation.evidence.reason || '';
       }
     }
     var keeps = $('gpRepKeeps');
@@ -2599,12 +2737,16 @@
         li.appendChild(label);
         if (typeof item === 'object') {
           var value = document.createElement('b');
-          value.textContent = item.value != null ? String(item.value) : (Number(item.count) || 0) + '문장';
+          var keepCount = item.value != null ? null : (Number(item.count) || 0);
+          // '0문장'을 유지될 내용처럼 세우면 읽는 사람이 헷갈린다 — 없음은 없음으로 흐리게 적는다.
+          if (keepCount === 0) { li.classList.add('is-none'); value.textContent = '없음'; }
+          else value.textContent = item.value != null ? String(item.value) : keepCount + '문장';
           li.appendChild(value);
         }
         keeps.appendChild(li);
       });
       keeps.hidden = keeps.children.length === 0;
+      if ($('gpRepKeepsWrap')) $('gpRepKeepsWrap').hidden = keeps.hidden;
     }
 
     // Before / After — 한 문장까지만. 전체는 휴머나이징의 몫이다.
@@ -2643,7 +2785,8 @@
     if ($('gpRepSource')) {
       // 엔진 간이 추정은 모델 판정과 신뢰도가 달라 점수 옆에서 밝힌다.
       // 이력 보정 사실은 화면에 표기하지 않는다(사장님 결정 2026-09-02). 값은 응답·관리자 원장에 남는다.
-      $('gpRepSource').textContent = model.style.source === 'engine' ? model.style.sourceLabel : model.style.evidenceLabel;
+      // 근거 수준은 해석 카드가 이미 말한다(v124) — 게이지 아래에 같은 말을 한 번 더 두지 않는다. 해석이 없을 때만 남긴다.
+      $('gpRepSource').textContent = model.style.source === 'engine' ? model.style.sourceLabel : (model.interpretation ? '' : model.style.evidenceLabel);
     }
 
     // ② 계측 띠
@@ -2735,7 +2878,7 @@
     if (report) {
       report.dataset.announcement = score == null
         ? 'AI 감지 분석을 마쳤어요. 점수를 확인하지 못했어요.'
-        : 'AI 감지 분석을 마쳤어요. AI 티 지수 ' + score + '점, 100점 만점. ' + (model.radar.label || '')
+        : 'AI 감지 분석을 마쳤어요. AI 감지 점수 ' + score + '점, 100점 만점. ' + (model.radar.label || '')
           + (interpretation ? '. ' + interpretation.headline + ' ' + interpretation.evidence.label : '');
     }
   }

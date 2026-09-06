@@ -12475,3 +12475,101 @@ html.gp-rep-modal-open{overflow:hidden;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na{grid-template-columns:minmax(0,1fr);grid-template-areas:"head";gap:0;opacity:.74;cursor:default;}
 #mainContent[data-main-design="lavender"] .gp-rep-signals .axis.na .sig-fact{color:var(--rep-copy);}
 #mainContent[data-main-design="lavender"] .gp-rep-radar:has(.gp-rep-radar-empty){min-height:0;}
+
+/* ===== v124: 감지 보고서 가독성 — 해석 카드·유지할 근거·원인 카드(2026-09-06) =====
+   두 곳이 읽기 힘들었다: ① 히어로의 해석 문단이 가운데 정렬로 한 줄 90자까지 늘어나고 '확인 위치'가 문장 속에 묻힘,
+   ② 원인 카드가 이름·설명문·문장 번호를 11.5px 한 줄에 붙여 놓음. 라벨은 눈썹 칩으로, 문단은 왼쪽 정렬 카드로, 원인은 행 단위로. */
+#mainContent[data-main-design="lavender"] .gp-rep-hero-head{display:flex;flex-direction:column;align-items:center;}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-label{
+ display:inline-flex;align-items:center;gap:6px;margin:0;padding:5px 12px;border-radius:999px;
+ background:#ece5ff;color:var(--rep-brand-strong);font-size:var(--rep-fs-2);font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-label[data-band="low"]{background:#e2f5f8;color:var(--rep-teal);}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-label[data-band="high"]{background:#fdeeec;color:var(--rep-coral);}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-label[hidden]{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep .gp-rep-hero-title{margin-top:10px;}
+/* 해석 카드 — 왼쪽 정렬, 한 줄 34자 안팎 */
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation{
+ max-width:620px;margin:16px auto 0;padding:16px 20px;border:1px solid var(--rep-line);border-radius:14px;background:#fdfcff;text-align:left;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-desc{margin:0;font-size:var(--rep-fs-4);line-height:1.8;color:var(--rep-ink);white-space:normal;}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-where{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:12px;}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-where[hidden]{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-where-cap{font-size:var(--rep-fs-1);font-weight:800;color:var(--rep-muted);letter-spacing:.02em;margin-right:2px;}
+#mainContent[data-main-design="lavender"] .gp-rep-where-list{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;}
+#mainContent[data-main-design="lavender"] .gp-rep-where-chip{
+ display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;border:1px solid #d9d2fa;background:#fff;
+ color:var(--rep-brand-strong);font-family:inherit;font-size:var(--rep-fs-2);font-weight:800;font-variant-numeric:tabular-nums;line-height:1.3;cursor:pointer;
+ transition:background .15s ease,border-color .15s ease;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-where-chip:hover{background:var(--rep-cream);border-color:#c4b8f7;}
+#mainContent[data-main-design="lavender"] .gp-rep-where-more{font-size:var(--rep-fs-1);color:var(--rep-muted);}
+#mainContent[data-main-design="lavender"] .gp-rep-evidence-reason{
+ display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:12px 0 0;padding-top:12px;border-top:1px dashed var(--rep-line);
+ font-size:var(--rep-fs-2);line-height:1.65;color:var(--rep-muted);white-space:normal;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-evidence-level{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:var(--rep-fs-1);font-weight:800;color:var(--rep-copy);}
+#mainContent[data-main-design="lavender"] .gp-rep-evidence-level::before{content:'';width:8px;height:8px;border-radius:50%;background:#c9c4e6;}
+#mainContent[data-main-design="lavender"] .gp-rep-evidence-level[data-level="sufficient"]::before{background:#3fb2c9;}
+#mainContent[data-main-design="lavender"] .gp-rep-evidence-level[data-level="some"]::before{background:#f5b425;}
+#mainContent[data-main-design="lavender"] .gp-rep-evidence-level[data-level="limited"]::before{background:#e3665a;}
+#mainContent[data-main-design="lavender"] .gp-rep-evidence-level:empty{display:none;}
+/* 유지할 근거 — 라벨 한 칸 + 칩. 0은 '없음'으로 흐리게 */
+#mainContent[data-main-design="lavender"] .gp-rep-keeps-wrap{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px 10px;margin:14px auto 0;max-width:640px;}
+#mainContent[data-main-design="lavender"] .gp-rep-keeps-wrap[hidden]{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-keeps-cap{font-size:var(--rep-fs-1);font-weight:800;color:var(--rep-muted);letter-spacing:.02em;}
+#mainContent[data-main-design="lavender"] .gp-rep-keeps-wrap .gp-rep-keeps{margin:0;}
+#mainContent[data-main-design="lavender"] .gp-rep-keeps li{font-size:var(--rep-fs-2);}
+#mainContent[data-main-design="lavender"] .gp-rep-keeps li.is-none{background:#f4f4f8;color:var(--rep-muted);}
+#mainContent[data-main-design="lavender"] .gp-rep-keeps li.is-none b{color:var(--rep-muted);font-weight:700;}
+/* 원인 패널 머리 — 제목 + 글 종류 칩 */
+#mainContent[data-main-design="lavender"] .gp-rep-cause-profile{margin:0;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-profile[hidden]{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-profile-chip{
+ display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--rep-cream);color:var(--rep-brand-strong);font-size:var(--rep-fs-1);font-weight:800;white-space:nowrap;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-profile-chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7;}
+/* 원인 카드 — 머리(제목·상태 배지) → 항목(이름 · 범위·강도 칩) → 참고 문장 버튼 */
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match{margin:0 0 4px;padding:14px 16px 12px;border-radius:14px;border:1px solid #e3dcff;background:#f8f6ff;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match.is-partial,
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match.is-limited{background:#fff8e8;border-color:#f3e3b3;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match-head>b{display:block;font-size:var(--rep-fs-3);font-weight:800;color:var(--rep-ink);word-break:keep-all;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-status{flex:0 0 auto;padding:3px 9px;border-radius:999px;font-size:var(--rep-fs-1);font-weight:800;background:#e2f5f8;color:var(--rep-teal);white-space:nowrap;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match.is-partial .gp-rep-cause-status,
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match.is-limited .gp-rep-cause-status{background:#fdeeec;color:var(--rep-coral);}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match>p{margin:8px 0 0;font-size:var(--rep-fs-2);line-height:1.65;color:var(--rep-copy);word-break:keep-all;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match>ul{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li{
+ display:flex;flex-direction:column;align-items:stretch;gap:8px;min-width:0;padding:12px 14px;border-radius:12px;background:#fff;border:1px solid var(--rep-line);
+ font-size:var(--rep-fs-2);line-height:1.55;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li strong{flex:0 1 auto;font-size:var(--rep-fs-4);font-weight:800;color:var(--rep-ink);word-break:keep-all;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-tags{display:inline-flex;flex-wrap:wrap;gap:5px;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-tag{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#f1eefb;color:var(--rep-copy);font-size:var(--rep-fs-1);font-weight:700;font-style:normal;white-space:nowrap;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-tag.is-moderate{background:#ece5ff;color:var(--rep-brand-strong);}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-tag.is-strong{background:#fdeeec;color:var(--rep-coral);}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-desc{margin:0;color:var(--rep-copy);word-break:keep-all;overflow-wrap:break-word;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-refs{display:flex;flex-wrap:wrap;align-items:center;gap:5px;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-refs>span{font-size:var(--rep-fs-1);font-weight:800;color:var(--rep-muted);margin-right:3px;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-ref{
+ min-width:26px;height:24px;padding:0 7px;border-radius:7px;border:1px solid #d9d2fa;background:#fff;color:var(--rep-brand-strong);
+ font-family:inherit;font-size:var(--rep-fs-1);font-weight:800;font-variant-numeric:tabular-nums;line-height:1;cursor:pointer;
+ transition:background .15s ease,border-color .15s ease;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-ref:hover{background:var(--rep-cream);border-color:#c4b8f7;}
+/* 표면 지표 라벨 — 제목 + 설명 한 줄 */
+#mainContent[data-main-design="lavender"] .gp-rep-surface-label{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:16px 0 8px;}
+#mainContent[data-main-design="lavender"] .gp-rep-surface-label b{font-weight:800;color:var(--rep-muted);}
+#mainContent[data-main-design="lavender"] .gp-rep-surface-label small{font-size:var(--rep-fs-1);font-weight:500;color:var(--rep-muted);letter-spacing:0;}
+@media (max-width:1080px){
+  #mainContent[data-main-design="lavender"] .gp-rep-hero-head{margin-top:44px;}
+  #mainContent[data-main-design="lavender"] .gp-rep .gp-rep-hero-title{margin-top:10px;}
+}
+@media (max-width:640px){
+  #mainContent[data-main-design="lavender"] .gp-rep-hero-head{margin-top:0;}
+  #mainContent[data-main-design="lavender"] .gp-rep-interpretation{padding:14px 16px;}
+  #mainContent[data-main-design="lavender"] .gp-rep-cause-match{padding:12px 13px 10px;}
+  #mainContent[data-main-design="lavender"] .gp-rep-cause-match li{padding:10px 12px;}
+}

@@ -87,7 +87,7 @@ test('간이 추정과 근거 충분성을 표시하고 이력 보정 배지는 
   const flow = await read('assets/js/evasion-flow.js');
   // 같은 글이 LLM 판정과 엔진 간이 추정 사이에서 크게 달라질 수 있으므로 출처를 숨기지 않는다.
   assert.match(flow, /AI 모델 분석이 완료되지 않아 문체 엔진의 간이 추정으로 계산한 점수예요/u);
-  assert.match(flow, /model\.style\.source === 'engine' \? model\.style\.sourceLabel : model\.style\.evidenceLabel/u, '게이지 옆에 분석 근거 상태가 붙는다');
+  assert.match(flow, /model\.style\.source === 'engine' \? model\.style\.sourceLabel : \(model\.interpretation \? '' : model\.style\.evidenceLabel\)/u, '게이지 옆 분석 근거 상태는 해석 카드가 없을 때만 붙는다(중복 제거)');
   // 이력 보정 사실은 화면에 표기하지 않는다(사장님 결정 2026-09-02).
   // 값 자체는 응답·모델에 남아 관리자 원장에서 확인할 수 있다.
   assert.match(flow, /calibrated: styleSignal\.calibrated === true \|\| d\.calibrated === true/u);
@@ -351,7 +351,8 @@ test('원인 분석은 항목·실측·막대·등급 한 줄의 "신호 강도 
   assert.match(flow, /li\.style\.setProperty\('--v'/u, '막대 길이는 축 값');
   assert.match(css, /\.gp-rep-radar\.is-drawn \.sig-fill\{width:calc\(var\(--v,0\) \* 1%\);\}/u, '막대가 인트로에 차오른다');
   assert.match(css, /\.sig-bar::before\{left:34%;\}/u, '보통·높음 경계선(34·67%)');
-  assert.match(main, /막대는 자동 계측한 표면 문체 신호만 보여줘요/u);
+  assert.match(flow, /막대는 자동 계측한 표면 문체 신호만 보여줘요/u, '막대 설명은 막대 바로 위 라벨에 붙는다');
+  assert.ok(!/막대는 자동 계측한 표면 문체 신호만 보여줘요/u.test(main), '패널 제목 옆에서는 뺐다');
   assert.ok(!/class: 'glasses'|lens-body/u.test(flow), '렌즈 차트 잔재가 없다');
   assert.ok(!/v118b/u.test(css), '렌즈 CSS 잔재가 없다');
 });
@@ -546,12 +547,30 @@ test('점수 원인 커버리지를 받아 결정론 축이 설명하지 못한 
   assert.match(flow, /reportView\.causeAnalysis/u);
   assert.match(flow, /function repPaintCauseAnalysis/u);
   assert.match(flow, /\['aligned', 'partial', 'limited'\]/u);
-  assert.match(flow, /AI 티 지수의 원인을 일부만 확인했어요/u, '부분 정합 상태를 숨기지 않는다');
+  assert.match(flow, /AI 감지 점수의 원인을 일부만 확인했어요/u, '부분 정합 상태를 숨기지 않는다');
   assert.match(flow, /위 막대는 표면 문체만 자동 계측해요/u, '결정론 막대와 모델 점수의 판단 범위를 구분한다');
   assert.ok(flow.indexOf('repPaintCauseAnalysis(model, host);') < flow.indexOf('repPaintSurfaceLabel(model, host);'), '점수 연결 원인이 표면 지표보다 먼저 온다');
   assert.match(flow, /추가 표면 지표 · 참고/u);
-  assert.match(flow, /AI 티 지수에 반영된 판단 원인:/u, '스크린리더에도 원인을 먼저 전달한다');
+  assert.match(flow, /AI 감지 점수에 반영된 판단 원인:/u, '스크린리더에도 원인을 먼저 전달한다');
   assert.match(css, /\.gp-rep-cause-match\.is-partial/u);
+  // v124 가독성: 원인 항목은 이름·범위·강도 칩·참고 문장 버튼으로 쪼개고, 해석 카드의 '확인 위치'는 칩으로 뗀다
+  assert.match(flow, /function repCauseItemRow/u);
+  assert.match(flow, /gp-rep-cause-ref'/u, '참고 문장 번호는 누르면 전체 문장의 그 자리로 간다');
+  assert.match(flow, /window\.gpRepJumpToSentence\(idx\)/u);
+  assert.match(flow, /function repStripLocationNote/u);
+  assert.match(flow, /function repPaintInterpretationWhere/u);
+  assert.match(css, /\.gp-rep-cause-ref\{/u);
+  assert.match(css, /\.gp-rep-where-chip\{/u);
+  const stripStart = flow.indexOf('var REP_LOCATION_NOTE_RE');
+  const stripEnd = flow.indexOf('function repPaintInterpretationWhere', stripStart);
+  const stripBox = {};
+  vm.runInNewContext(`${flow.slice(stripStart, stripEnd)}
+    a = repStripLocationNote('5개 문장에서 반복되는 설명 순서이 관찰됐어요. 확인 위치: 2·4·5번 문단.');
+    b = repStripLocationNote('한 문장에서 상투적으로 이어지는 표현이 관찰됐어요. 확인 위치: 1·2·3번 문단 등.');
+    c = repStripLocationNote('위치가 없는 설명이에요.');`, stripBox);
+  assert.equal(stripBox.a, '5개 문장에서 반복되는 설명 순서이 관찰됐어요.');
+  assert.equal(stripBox.b, '한 문장에서 상투적으로 이어지는 표현이 관찰됐어요.');
+  assert.equal(stripBox.c, '위치가 없는 설명이에요.');
 
   const sortStart = flow.indexOf('function repOrderedCauseItems');
   const sortEnd = flow.indexOf('function repPaintCauseAnalysis', sortStart);

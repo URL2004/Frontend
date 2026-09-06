@@ -263,7 +263,7 @@ export const BLOG_ARTICLES = [
 <ul>
 <li>시작 전에 예상 크레딧과 시간을 먼저 보여드리고, <b>실패한 작업은 차감되지 않습니다</b>.</li>
 <li>완료 후에는 결과에서 구체성이 부족한 문단을 짚어드려요. 실제 겪은 일 한 줄을 적으면 그 문단만 다시 다듬을 수 있습니다.</li>
-<li>AI 티 지수와 외부 검사 결과는 글과 검사 도구에 따라 달라지며, 어떤 방식도 특정 점수를 보장하지 않습니다.</li>
+<li>AI 감지 점수와 외부 검사 결과는 글과 검사 도구에 따라 달라지며, 어떤 방식도 특정 점수를 보장하지 않습니다.</li>
 </ul>`,
     related: ['ai-detector-limits', 'credit-guide', 'pre-submit-fact-checklist'],
     ctaTitle: '내 글은 어떤 방식이 맞을지 바로 확인',
@@ -748,11 +748,11 @@ export const BLOG_ARTICLES = [
 <li>마지막으로 수치·인용·기관명을 원자료와 다시 대조해요.</li>
 </ol>
 </div>
-<p>교수님 피하기의 AI 감지는 표절 여부를 검사하는 기능이 아니에요. AI 티 지수와 문단별 문체 신호를 참고 결과로 보여주므로, 출처 확인은 별도의 표절 검사와 원자료 대조로 진행해야 해요.</p>`,
+<p>교수님 피하기의 AI 감지는 표절 여부를 검사하는 기능이 아니에요. AI 감지 점수와 문단별 문체 신호를 참고 결과로 보여주므로, 출처 확인은 별도의 표절 검사와 원자료 대조로 진행해야 해요.</p>`,
     related: ['ai-detector-limits', 'ai-writing-signs-checklist', 'pre-submit-fact-checklist'],
     ctaTitle: '두 검사의 역할부터 나눠 확인해 보세요',
     ctaDesc:
-      '교수님 피하기는 표절 여부를 판정하지 않아요. AI 감지에서는 AI 티 지수와 문단별 문체 신호를 참고 결과로 확인할 수 있어요.'
+      '교수님 피하기는 표절 여부를 판정하지 않아요. AI 감지에서는 AI 감지 점수와 문단별 문체 신호를 참고 결과로 확인할 수 있어요.'
   },
 
   {
@@ -819,6 +819,6 @@ export const BLOG_ARTICLES = [
     related: ['ai-detector-limits', 'ai-detector-vs-plagiarism-checker', 'preserve-vs-basic-vs-advanced'],
     ctaTitle: '주의가 필요한 문단부터 확인해 보세요',
     ctaDesc:
-      '글을 붙여넣으면 AI 티 지수와 문단별 문체 신호를 참고 결과로 확인할 수 있어요. 원문의 사실을 대조한 뒤 필요한 문단만 직접 점검해 보세요.'
+      '글을 붙여넣으면 AI 감지 점수와 문단별 문체 신호를 참고 결과로 확인할 수 있어요. 원문의 사실을 대조한 뒤 필요한 문단만 직접 점검해 보세요.'
   }
 ];
