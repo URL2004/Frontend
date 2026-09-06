@@ -556,14 +556,16 @@ test('점수 원인 커버리지를 받아 결정론 축이 설명하지 못한 
   assert.match(css, /\.gp-rep-cause-match\.is-partial/u);
   // v124 가독성: 원인 항목은 이름·범위·강도 칩·참고 문장 버튼으로 쪼개고, 해석 카드의 '확인 위치'는 칩으로 뗀다
   assert.match(flow, /function repCauseItemRow/u);
-  assert.match(flow, /gp-rep-cause-ref'/u, '참고 문장 번호는 누르면 전체 문장의 그 자리로 간다');
-  assert.match(flow, /window\.gpRepJumpToSentence\(idx\)/u);
+  // v127: 원인 행은 축과 같은 통로('cause:<category>')로 왼쪽 핵심 문장에 이어진다. 칩·번호 버튼 대신 문장 한 줄.
+  assert.match(flow, /li\.setAttribute\('data-axis', key\)/u, '원인 행도 data-axis로 연동된다');
+  assert.match(flow, /function repCauseItemForKey/u);
+  assert.match(flow, /if \(\/\^cause:\/\.test\(String\(key \|\| ''\)\)\) \{[\s\S]{0,200}repCauseSentenceIndices/u, '원인 키는 그 원인의 문장 번호로 매칭');
   assert.match(flow, /function repStripLocationNote/u);
-  assert.match(flow, /function repPaintInterpretationWhere/u);
-  assert.match(css, /\.gp-rep-cause-ref\{/u);
-  assert.match(css, /\.gp-rep-where-chip\{/u);
+  assert.match(flow, /function repPaintInterpretationLink/u, '히어로의 확인 위치는 아래 문장으로 내려가는 링크 하나');
+  assert.match(flow, /var key = 'cause:' \+ category;/u);
+  assert.match(css, /\.gp-rep-interpretation-link\{/u);
   const stripStart = flow.indexOf('var REP_LOCATION_NOTE_RE');
-  const stripEnd = flow.indexOf('function repPaintInterpretationWhere', stripStart);
+  const stripEnd = flow.indexOf('function repPaintInterpretationLink', stripStart);
   const stripBox = {};
   vm.runInNewContext(`${flow.slice(stripStart, stripEnd)}
     a = repStripLocationNote('5개 문장에서 반복되는 설명 순서이 관찰됐어요. 확인 위치: 2·4·5번 문단.');

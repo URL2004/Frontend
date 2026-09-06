@@ -12657,3 +12657,127 @@ html.gp-rep-modal-open{overflow:hidden;}
 }
 /* v125: 예시가 없을 때의 한 줄은 상자 대신 구분선 아래 주석으로 */
 #mainContent[data-main-design="lavender"] .gp-rep-ba-empty{margin:20px 0 0;padding:16px 0 0;border:0;border-top:1px solid var(--rep-line);border-radius:0;background:transparent;color:var(--rep-muted);font-size:var(--rep-fs-2);}
+
+/* ===== v126: 상자·라벨 감량 + 중복 정보 정리 (2026-09-06) =====
+   정보량은 그대로 두고, 같은 정보를 두 번 말하는 자리와 정보가 아닌 테두리·칩을 걷어낸다.
+   ① 판정 칩('AI식 문체 신호 중간')은 게이지의 구역 이름과 같은 말 → 화면에서 뺀다(스티키 바·공유 카드는 그대로).
+   ② 네이비 계측 띠 4타일은 원인 분석 막대(길이 편차·종결 반복·일반 표현)와 핵심 문장 머리(전체 문장 수)가 같은 수를 보여줌 → 뺀다.
+   ③ 원인 카드는 겹상자(카드 안 흰 상자) → 제목 한 줄 + 구분선 목록으로 편다. 막대 등급 알약은 '높음'만 남긴다(막대 길이가 이미 등급).
+   ④ 핵심 문장: 머리 범례 점 2개(행마다 배지가 있음)·문단 지도 범례(안내 문장이 같은 말)·글자 수 라벨을 뺀다. 행 테두리는 없애고 후보만 옅게 칠한다.
+   ⑤ 전후 예시: 배지 2개와 두 번째 버튼(히어로 버튼과 중복)을 뺀다. 개선 포인트: 개수 라벨을 뺀다.
+   마크업·JS는 그대로 두고(테스트·보조기술 계약) 표시만 끈다. */
+
+/* ① 판정 칩 */
+#mainContent[data-main-design="lavender"] .gp-rep-verdict .gp-rep-bandchip{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict .gp-rep-dial-read{margin-top:-60px;}
+
+/* ② 계측 띠 */
+#mainContent[data-main-design="lavender"] .gp-rep-stats,
+#mainContent[data-main-design="lavender"] .gp-rep-sample{display:none!important;}
+
+/* ③ 원인 패널 — 겹상자 해체 */
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match{margin:0;padding:0;border:0;border-radius:0;background:transparent;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match.is-partial,
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match.is-limited{background:transparent;border:0;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match-head{padding-bottom:10px;border-bottom:1px solid var(--rep-line);}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match-head>b{font-size:var(--rep-fs-2);font-weight:800;color:var(--rep-muted);letter-spacing:.02em;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-status{background:transparent;padding:0;color:var(--rep-teal);}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match.is-partial .gp-rep-cause-status,
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match.is-limited .gp-rep-cause-status{background:transparent;color:var(--rep-coral);}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match>p{margin:10px 0 0;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match>ul{margin:0;gap:0;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li{
+ padding:12px 0;border:0;border-radius:0;background:transparent;border-bottom:1px solid var(--rep-line);gap:7px;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-refs>span{display:none;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-refs::before{content:'문장';font-size:var(--rep-fs-1);font-weight:700;color:var(--rep-muted);margin-right:3px;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-ref{border-color:var(--rep-line);}
+/* 표면 지표 — 제목은 같은 톤의 구분 제목, 막대 등급 알약은 '높음'만 */
+#mainContent[data-main-design="lavender"] .gp-rep-surface-label{margin:18px 0 4px;padding-bottom:10px;border-bottom:1px solid var(--rep-line);}
+#mainContent[data-main-design="lavender"] .gp-rep-surface-label b{font-size:var(--rep-fs-2);letter-spacing:.02em;}
+#mainContent[data-main-design="lavender"] .gp-rep-signals{gap:2px;}
+#mainContent[data-main-design="lavender"] .gp-rep-signals .axis{padding:10px 8px;}
+#mainContent[data-main-design="lavender"] .gp-rep-signals .sig-level:not(.hot){display:none;}
+#mainContent[data-main-design="lavender"] .gp-rep-signals .axis:not(.lv-hot):not(.na){grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "bar";}
+#mainContent[data-main-design="lavender"] .gp-rep-signals .sig-bar{height:8px;}
+#mainContent[data-main-design="lavender"] .gp-rep-radar-hint{margin-top:12px;}
+
+/* ④ 핵심 문장 — 범례·글자 수·행 테두리 */
+#mainContent[data-main-design="lavender"] .gp-rep-sent .gp-rep-legend>span:not(:last-child){display:none;}
+#mainContent[data-main-design="lavender"] .gp-rep-paralegend{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-paracells{margin-bottom:0;}
+#mainContent[data-main-design="lavender"] .gp-rep-paramap{margin-bottom:12px;}
+#mainContent[data-main-design="lavender"] .gp-rep-map-lead{margin:0 0 10px;font-weight:600;color:var(--rep-muted);}
+#mainContent[data-main-design="lavender"] .gp-rep-s-len{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-sentences{gap:4px;}
+#mainContent[data-main-design="lavender"] .gp-rep-s{padding:11px 12px;border:1px solid transparent;border-radius:12px;background:transparent;}
+#mainContent[data-main-design="lavender"] .gp-rep-s.is-candidate{background:#fff6f4;border-color:transparent;}
+#mainContent[data-main-design="lavender"] .gp-rep-s:hover{border-color:#cfc6f5;box-shadow:none;}
+#mainContent[data-main-design="lavender"] .gp-rep-s-badge{background:transparent;padding:0;}
+#mainContent[data-main-design="lavender"] .gp-rep-s-badge.bad{background:transparent;}
+#mainContent[data-main-design="lavender"] .gp-rep-s-badge.good{background:transparent;}
+#mainContent[data-main-design="lavender"] .gp-rep-map-toggle{border:0;background:var(--rep-cream);}
+
+/* ⑤ 전후 예시·개선 포인트 */
+#mainContent[data-main-design="lavender"] .gp-rep-ba-tag,
+#mainContent[data-main-design="lavender"] .gp-rep-ba-unlock{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-ba-col{padding-top:0;}
+#mainContent[data-main-design="lavender"] .gp-rep-tips .gp-rep-legend{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-tips .gp-rep-panel-head{margin-bottom:10px;}
+#mainContent[data-main-design="lavender"] .gp-rep-tiplist{grid-template-columns:1fr;gap:8px;}
+#mainContent[data-main-design="lavender"] .gp-rep-tiplist li{grid-template-columns:22px minmax(0,1fr);gap:10px;}
+#mainContent[data-main-design="lavender"] .gp-rep-tiplist li::before{width:22px;height:22px;border-radius:7px;background-size:13px;}
+/* 아래 두 줄(참고 결과·크레딧)은 한 줄로 */
+#mainContent[data-main-design="lavender"] .gp-rep-limit{margin-top:0;}
+
+/* ===== v127: 칩을 문장으로, 히어로 → 핵심 문장 연결, 계측 띠 복원 (2026-09-06) =====
+   사장님: "1번 문단·3번 문단, 자기소개서 기준, 여러 문장·뚜렷함, 문장 2·5 — 이것도 다 라벨이다. 확인 위치는 히어로에 있을 이유가 없고,
+   히어로에서 핵심 문단을 보고 아래 문장으로 들어가면 연결되는 느낌이면 좋겠다. 요약 박스(계측 띠)는 한눈에 파악하기 좋으니 유지." */
+
+/* 계측 띠 복원(v126에서 뺐던 것) — 사용자가 한눈에 파악하는 요약 상자 */
+#mainContent[data-main-design="lavender"] .gp-rep-stats{display:grid!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-sample{display:block!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-sample[hidden]{display:none!important;}
+
+/* 히어로 — 확인 위치는 링크 한 줄. 이유 문장 바로 아래, 글자색 링크 */
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-where{display:block;margin:8px 0 0;}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-where[hidden]{display:none!important;}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-link{
+ display:inline-flex;align-items:center;gap:4px;padding:0;border:0;background:transparent;cursor:pointer;
+ color:var(--rep-brand-strong);font-family:inherit;font-size:var(--rep-fs-3);font-weight:800;
+ text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:4px;text-decoration-color:rgba(75,52,204,.35);
+ transition:text-decoration-color .15s ease;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-link:hover{text-decoration-color:var(--rep-brand-strong);}
+#mainContent[data-main-design="lavender"] .gp-rep-interpretation-link:focus-visible{outline:2px solid var(--rep-brand-strong);outline-offset:3px;border-radius:4px;}
+
+/* 원인 패널 머리 — 제목 아래 글 종류 한 문장(칩 아님) */
+#mainContent[data-main-design="lavender"] .gp-rep-cause .gp-rep-panel-head.gp-rep-cause-head{flex-direction:column;align-items:flex-start;gap:3px;margin-bottom:14px;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-profile{font-size:var(--rep-fs-2);color:var(--rep-muted);font-weight:500;}
+
+/* 원인 행 — 이름 + 문장 한 줄 + 오른쪽 '문장 보기'. 누르면 축처럼 켜진다 */
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li{
+ display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name go" "desc go";gap:3px 12px;align-items:center;
+ padding:12px 8px;margin:0 -8px;border-radius:12px;border:1px solid transparent;border-bottom:0;
+ transition:background .15s ease,border-color .15s ease;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li+li{box-shadow:inset 0 1px 0 var(--rep-line);}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li.is-linkable{cursor:pointer;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li.is-linkable:hover,
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li.is-on{background:var(--rep-cream);border-color:#ded6ff;box-shadow:none;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li.is-pinned{border-color:#f5b425;box-shadow:inset 0 0 0 1px #f5b425;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li:focus-visible{outline:2px solid var(--rep-brand-strong);outline-offset:2px;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li strong{grid-area:name;font-size:var(--rep-fs-4);}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li .gp-rep-cause-desc{grid-area:desc;margin:0;font-size:var(--rep-fs-2);color:var(--rep-muted);line-height:1.55;}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-go{
+ grid-area:go;align-self:center;padding:5px 10px;border-radius:999px;background:#fff;border:1px solid var(--rep-line);
+ font-size:var(--rep-fs-1);font-weight:800;color:var(--rep-brand-strong);white-space:nowrap;
+}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li.is-pinned .gp-rep-cause-go{background:#f5b425;border-color:#f5b425;color:var(--rep-ink);}
+#mainContent[data-main-design="lavender"] .gp-rep-cause-match li.is-pinned .gp-rep-cause-go::after{content:' ✓';}
+/* 아래 막대 목록과 원인 목록의 간격 */
+#mainContent[data-main-design="lavender"] .gp-rep-surface-label{margin-top:14px;}
+@media (max-width:640px){
+  #mainContent[data-main-design="lavender"] .gp-rep-cause-match li{grid-template-columns:minmax(0,1fr);grid-template-areas:"name" "desc" "go";}
+  #mainContent[data-main-design="lavender"] .gp-rep-cause-go{justify-self:start;}
+}

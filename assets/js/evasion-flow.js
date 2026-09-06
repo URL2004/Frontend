@@ -1656,7 +1656,7 @@
         linkHead.textContent = '';
         var chip = document.createElement('b');
         chip.className = 'gp-rep-link-chip';
-        chip.textContent = REP_AXIS_NAME[repMapState.link] || '';
+        chip.textContent = REP_AXIS_NAME[repMapState.link] || repCauseLinkName(repMapState.link) || '';
         linkHead.appendChild(chip);
         var desc = document.createElement('span');
         desc.textContent = scoped.length
@@ -2021,12 +2021,9 @@
       : policyRoot.lowConfidence
         ? '글 종류를 확실히 가리지 못해 구체 근거·화자 입장은 표시하지 않았어요.'
         : policyRoot.profileLabel + ' 기준으로 봤어요.';
-    if (slot && !policyRoot.ambiguousProfile && !policyRoot.lowConfidence) {
-      var chip = document.createElement('span');
-      chip.className = 'gp-rep-cause-profile-chip';
-      chip.textContent = policyRoot.profileLabel + ' 기준';
-      chip.title = text;
-      slot.appendChild(chip);
+    if (slot) {
+      // v127: 칩 대신 제목 아래 한 문장 — '자기소개서 기준으로 봤어요.' 판별이 흐린 경우의 문장도 같은 자리에.
+      slot.textContent = text;
       slot.hidden = false;
       return;
     }
@@ -2188,65 +2185,64 @@
   var REP_CAUSE_DEFAULT_ALIGNED_RE = /^점수와 원인 설명이 맞게 연결됐어요\.?$/;
   var REP_CAUSE_SCOPE = { isolated: '일부 문장', recurring: '여러 문장', pervasive: '글 전반' };
   var REP_CAUSE_STRENGTH = { weak: '약함', moderate: '뚜렷함', strong: '강함' };
-  // 원인 한 항목 = 이름 + 범위·강도 칩 + 참고 문장 버튼. 예전엔 이름·설명문·문장 번호가 한 줄 11.5px에 붙어 있었다.
+  // 원인 한 항목 = 이름 + 범위·강도·문장 수를 한 문장으로. 행을 누르면 그 원인이 관찰된 문장이 왼쪽 핵심 문장 자리에 켜진다(v127).
+  //   예전엔 이름·설명문·문장 번호가 11.5px 한 줄에 붙어 있었고, 그다음엔 칩 셋과 번호 버튼이 줄지어 있었다 — 둘 다 라벨 더미였다.
+  var REP_CAUSE_SCOPE_PROSE = { isolated: '일부 문장에서', recurring: '여러 문장에서', pervasive: '글 전반에서' };
+  var REP_CAUSE_STRENGTH_PROSE = { weak: '약하게', moderate: '뚜렷하게', strong: '강하게' };
+  function repCauseSentenceIndices(item) {
+    var seen = {};
+    return (Array.isArray(item && item.locations) ? item.locations : [])
+      .map(function (loc) { return Number(loc && loc.sentenceIndex); })
+      .filter(function (idx) { if (!Number.isFinite(idx) || idx < 0 || seen[idx]) return false; seen[idx] = true; return true; })
+      .sort(function (a, b) { return a - b; });
+  }
   function repCauseItemRow(item) {
     var li = document.createElement('li');
-    var row = document.createElement('div');
-    row.className = 'gp-rep-cause-row';
     var name = document.createElement('strong');
     name.textContent = String(item.categoryLabel || '문체 신호');
-    row.appendChild(name);
-    var scope = REP_CAUSE_SCOPE[item.scope] || '';
-    var strength = REP_CAUSE_STRENGTH[item.strength] || '';
+    li.appendChild(name);
+    var scope = REP_CAUSE_SCOPE_PROSE[item.scope] || '';
+    var strength = REP_CAUSE_STRENGTH_PROSE[item.strength] || '';
+    var indices = repCauseSentenceIndices(item);
+    var desc = document.createElement('span');
+    desc.className = 'gp-rep-cause-desc';
     if (scope || strength) {
-      var tags = document.createElement('span');
-      tags.className = 'gp-rep-cause-tags';
-      if (scope) {
-        var scopeTag = document.createElement('i');
-        scopeTag.className = 'gp-rep-cause-tag is-scope';
-        scopeTag.textContent = scope;
-        tags.appendChild(scopeTag);
-      }
-      if (strength) {
-        var strengthTag = document.createElement('i');
-        strengthTag.className = 'gp-rep-cause-tag is-' + item.strength;
-        strengthTag.textContent = strength;
-        tags.appendChild(strengthTag);
-      }
-      row.appendChild(tags);
+      desc.textContent = [scope, strength].filter(Boolean).join(' ') + ' 나타나요'
+        + (indices.length ? ' · ' + indices.length + '문장' : '');
+    } else {
+      desc.textContent = String(item.description || '');
     }
-    li.appendChild(row);
-    // 범위·강도가 구조화된 항목의 설명문("X 신호가 여러 문장에서 뚜렷하게 관찰됨")은 칩과 같은 말이다.
-    // 구조화되지 않은 예전 형식 항목만 설명문을 그대로 보인다.
-    if (!scope && !strength && item.description) {
-      var desc = document.createElement('p');
-      desc.className = 'gp-rep-cause-desc';
-      desc.textContent = String(item.description);
-      li.appendChild(desc);
-    }
-    if (Array.isArray(item.locations) && item.locations.length) {
-      var refs = document.createElement('div');
-      refs.className = 'gp-rep-cause-refs';
-      var cap = document.createElement('span');
-      cap.textContent = '참고 문장';
-      refs.appendChild(cap);
-      var seen = {};
-      var indices = item.locations.map(function (loc) { return Number(loc && loc.sentenceIndex); })
-        .filter(function (idx) { if (!Number.isFinite(idx) || idx < 0 || seen[idx]) return false; seen[idx] = true; return true; })
-        .sort(function (a, b) { return a - b; });
-      indices.forEach(function (idx) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'gp-rep-cause-ref';
-        btn.textContent = String(idx + 1);
-        btn.title = (idx + 1) + '번 문장을 전체 문장에서 보기';
-        btn.setAttribute('aria-label', (idx + 1) + '번 문장 보기');
-        btn.addEventListener('click', function () { if (typeof window.gpRepJumpToSentence === 'function') window.gpRepJumpToSentence(idx); });
-        refs.appendChild(btn);
-      });
-      li.appendChild(refs);
+    if (desc.textContent) li.appendChild(desc);
+    if (indices.length && item.category) {
+      var key = 'cause:' + item.category;
+      li.className = 'is-linkable';
+      li.setAttribute('data-axis', key);
+      li.tabIndex = 0; li.setAttribute('role', 'button'); li.setAttribute('aria-pressed', 'false');
+      li.title = '이 원인이 관찰된 문장 보기';
+      var go = document.createElement('span');
+      go.className = 'gp-rep-cause-go';
+      go.textContent = '문장 보기';
+      li.appendChild(go);
+      li.addEventListener('mouseenter', function () { repLinkAxis(key, false); });
+      li.addEventListener('mouseleave', function () { repLinkAxis(null, false); });
+      li.addEventListener('focus', function () { repLinkAxis(key, false); });
+      li.addEventListener('blur', function () { repLinkAxis(null, false); });
+      li.addEventListener('click', function () { repLinkAxis(key, true); });
+      li.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); repLinkAxis(key, true); } });
     }
     return li;
+  }
+  // 'cause:<category>' 링크 키 — 모델 원인도 결정론 축과 같은 통로로 문장에 이어진다
+  function repCauseItemForKey(key) {
+    if (!/^cause:/.test(String(key || '')) || !lastReportModel || !lastReportModel.causeAnalysis) return null;
+    var category = String(key).slice(6);
+    var items = Array.isArray(lastReportModel.causeAnalysis.items) ? lastReportModel.causeAnalysis.items : [];
+    for (var i = 0; i < items.length; i++) if (items[i] && items[i].category === category) return items[i];
+    return null;
+  }
+  function repCauseLinkName(key) {
+    var item = repCauseItemForKey(key);
+    return item ? String(item.categoryLabel || '문체 신호') : '';
   }
 
   // ── 축 ↔ 문장 연동 ──────────────────────────────────────────────────────────
@@ -2261,6 +2257,9 @@
     stance: { head: '화자의 입장이 드러난 문장', empty: '화자의 입장이 드러난 문장이 없어요.' }
   };
   function repAxisCopy(key, model) {
+    if (/^cause:/.test(String(key || ''))) {
+      return { head: '이 원인이 관찰된 문장', empty: '이 원인이 표시된 문장을 목록에서 찾지 못했어요.' };
+    }
     if (key !== 'anchor') return REP_AXIS_COPY[key] || { head: '', empty: '' };
     var metric = (((repAxisPolicy(model || {}).anchor) || {}).metric) || 'anchor';
     if (metric === 'lived') {
@@ -2280,6 +2279,12 @@
   function repMatchesForAxis(key) {
     var all = repMapState.sentences || [];
     if (!all.length) return [];
+    if (/^cause:/.test(String(key || ''))) {
+      var causeItem = repCauseItemForKey(key);
+      var wanted = {};
+      repCauseSentenceIndices(causeItem).forEach(function (idx) { wanted[idx] = true; });
+      return all.filter(function (s) { return wanted[s.index]; });
+    }
     if (key === 'generic') return all.filter(function (s) { return s.kind === 'generic'; });
     if (key === 'ending') return all.filter(function (s) { return s.endingRun >= 4; });
     if (key === 'anchor') {
@@ -2647,47 +2652,38 @@
   function repStripLocationNote(text) {
     return String(text || '').replace(REP_LOCATION_NOTE_RE, '').trim();
   }
-  function repPaintInterpretationWhere(interpretation) {
-    var wrap = $('gpRepInterpretationWhere'), list = $('gpRepInterpretationWhereList');
-    if (!wrap || !list) return;
-    list.textContent = '';
-    var all = interpretation && interpretation.pattern && Array.isArray(interpretation.pattern.paragraphIndices)
-      ? interpretation.pattern.paragraphIndices.filter(function (n) { return Number.isFinite(Number(n)) && Number(n) >= 0; })
+  // 히어로의 '확인 위치'는 칩 대신 아래 핵심 문장으로 이어지는 링크 하나다(v127).
+  //   누르면 그 원인이 관찰된 문장이 핵심 문장 자리에 켜지고 그 자리로 내려간다 — 위에서 결론을 읽고 아래에서 문장으로 들어간다.
+  function repPaintInterpretationLink(interpretation) {
+    var wrap = $('gpRepInterpretationWhere');
+    if (!wrap) return;
+    wrap.textContent = '';
+    var pattern = interpretation && interpretation.pattern;
+    var category = pattern && pattern.category;
+    var paragraphs = pattern && Array.isArray(pattern.paragraphIndices)
+      ? pattern.paragraphIndices.filter(function (n) { return Number.isFinite(Number(n)) && Number(n) >= 0; }).map(function (n) { return Number(n) + 1; })
       : [];
-    var shown = all.slice(0, 6);
-    wrap.hidden = !shown.length;
-    if (!shown.length) return;
-    shown.forEach(function (raw) {
-      var n = Number(raw);
-      var chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'gp-rep-where-chip';
-      chip.textContent = (n + 1) + '번 문단';
-      chip.title = '이 문단의 문장 보기';
-      chip.addEventListener('click', function () {
-        // 문단 지도가 있으면 그 칸을 고르고 데려간다. 없으면(짧은 글) 전체 문장 목록을 연다.
-        var cell = document.querySelector('#gpRepParaCells .gp-rep-paracell[data-para="' + n + '"]');
-        if (cell && typeof window.gpRepPickParagraph === 'function') {
-          if (repMapState.selected !== n) window.gpRepPickParagraph(n);
-          var map = $('gpRepParaMap');
-          if (map && typeof map.scrollIntoView === 'function') map.scrollIntoView({ behavior: repReducedMotion() ? 'auto' : 'smooth', block: 'center' });
-          return;
-        }
-        if (typeof window.gpRepOpenModal === 'function') window.gpRepOpenModal();
-      });
-      list.appendChild(chip);
+    wrap.hidden = !category;
+    if (!category) return;
+    var link = document.createElement('button');
+    link.type = 'button';
+    link.className = 'gp-rep-interpretation-link';
+    var where = paragraphs.length
+      ? paragraphs.slice(0, 3).join('·') + '번 문단' + (paragraphs.length > 3 ? ' 등' : '') + '의 해당 문장 보기'
+      : '해당 문장 보기';
+    link.textContent = where + ' ↓';
+    link.addEventListener('click', function () {
+      var key = 'cause:' + category;
+      if (repMapState.pinned !== key) repLinkAxis(key, true);
+      var head = $('gpRepLinkHead') || $('gpRepSentTitle');
+      if (head && typeof head.scrollIntoView === 'function') head.scrollIntoView({ behavior: repReducedMotion() ? 'auto' : 'smooth', block: 'center' });
     });
-    if (all.length > shown.length) {
-      var more = document.createElement('span');
-      more.className = 'gp-rep-where-more';
-      more.textContent = '외 ' + (all.length - shown.length) + '곳';
-      list.appendChild(more);
-    }
+    wrap.appendChild(link);
   }
 
   // 판정 칩 문구 — 공유 라벨(detect-presentation.js gpProfessorRadarBand)을 그대로 쓴다.
   //   'AI식 문체 신호 중간'처럼 행동을 단정하지 않는 말은 ecdc366(2026-09-05)에서 정한 정책이라 여기서 바꾸지 않는다.
-  //   점수가 모델 판정이 아닐 때(간이 추정·미확인)도 백엔드 라벨('간이 추정 기준' 등)이 그대로 온다.
+  //   v126부터 화면에서는 감췄지만(게이지 구역 이름과 중복) 스티키 바·공유 카드·보조기술은 이 값을 쓴다.
   function repVerdictLabel(model) {
     return (model && model.radar && model.radar.label) || '판정 준비 중';
   }
@@ -2721,7 +2717,7 @@
         $('gpRepInterpretation').dataset.status = interpretation.status;
         // '확인 위치: 2·4·5번 문단.'은 문장 속이 아니라 칩으로 따로 보여준다(공유 해석 모듈 문구는 그대로 두고 화면에서만 분리).
         $('gpRepInterpretationDesc').textContent = interpretation.description ? repStripLocationNote(interpretation.description) : '';
-        repPaintInterpretationWhere(interpretation);
+        repPaintInterpretationLink(interpretation);
         var evidenceLevel = $('gpRepEvidenceLevel'), evidenceText = $('gpRepEvidenceReasonText');
         if (evidenceLevel) {
           evidenceLevel.textContent = interpretation.evidence.label || '';
