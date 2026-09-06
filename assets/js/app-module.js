@@ -4162,7 +4162,7 @@ function gpRefundWindowEndMs(item) {
  return Math.max(explicitEnd, calendarDayEnd);
 }
 
-function gpCreditRefundPreview(order, currentCredits) {
+function gpCreditRefundPreview(order, currentCredits, trackedCredits = 0) {
  const amount = Math.max(0, Math.floor(Number(order.amount) || 0));
  const balance = Math.max(0, Math.floor(Number(currentCredits) || 0));
  const isBasePolicy = order.creditGrantPolicyVersion === REFUND_POLICY_VERSION
@@ -4179,13 +4179,14 @@ function gpCreditRefundPreview(order, currentCredits) {
    paidCredits + bonusCredits,
    Math.floor(Number(order.totalGrantedCredits) || 0)
   );
-  const lotPaidRemaining = Number(order.refundPaidCreditsRemaining);
-  const lotBonusRemaining = Number(order.refundBonusCreditsRemaining ?? order.refundEventBonusCreditsRemaining);
-  const hasOrderLot = Number.isFinite(lotPaidRemaining) && lotPaidRemaining >= 0
-   && Number.isFinite(lotBonusRemaining) && lotBonusRemaining >= 0;
+  const lotPaidRemaining = order.refundPaidCreditsRemaining;
+  const lotBonusRemaining = order.refundEventBonusCreditsRemaining;
+  const hasOrderLot = order.creditLotPolicyVersion === 'credit-lot-v1'
+   && typeof lotPaidRemaining === 'number' && Number.isFinite(lotPaidRemaining) && lotPaidRemaining >= 0
+   && typeof lotBonusRemaining === 'number' && Number.isFinite(lotBonusRemaining) && lotBonusRemaining >= 0;
   // 새 주문은 서버가 유지하는 주문별 잔여량을 우선한다. 과거 신규 주문처럼 lot 필드가
   // 아직 없는 경우에만 계정 전체 잔액을 주문 지급량으로 cap한 기존 안전 추정을 쓴다.
-  const balanceRecoverCredits = Math.min(balance, totalGrantedCredits);
+  const balanceRecoverCredits = Math.min(Math.max(0, balance - Math.max(0, Number(trackedCredits) || 0)), totalGrantedCredits);
   const balanceUsedCredits = Math.max(0, totalGrantedCredits - balanceRecoverCredits);
   const refundablePaidCredits = hasOrderLot
    ? Math.min(paidCredits, Math.floor(lotPaidRemaining))
@@ -4203,8 +4204,8 @@ function gpCreditRefundPreview(order, currentCredits) {
    refundablePaidCredits, paidCredits, packageBonusCredits, eventBonusCredits, bonusCredits, totalGrantedCredits
   };
  }
- const purchased = Math.max(0, Math.floor(Number(order.safeCredits ?? order.credits) || 0));
- const refundableCredits = Math.min(balance, purchased);
+ const purchased = Math.max(0, Math.floor(Number(order.totalGrantedCredits ?? order.safeCredits ?? order.credits) || 0));
+ const refundableCredits = Math.min(Math.max(0, balance - Math.max(0, Number(trackedCredits) || 0)), purchased);
  const usedCredits = Math.max(0, purchased - refundableCredits);
  const refundAmount = purchased > 0 ? Math.min(amount, Math.floor(amount * refundableCredits / purchased)) : 0;
  return {
@@ -4313,7 +4314,8 @@ window.loadRefundModalList = async () =>{
  el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3);font-size:13px;">환불 가능한 결제 내역이 없습니다.</div>';
  return;
   }
-  const currentCredits = window.UC || 0;
+  const refundUser = (await getDoc(doc(db, 'users', CU.uid))).data() || {};
+  const currentCredits = refundUser.credits || 0;
   const coupon = window.COUPON || null;
   el.innerHTML = refundable.map(item => {
   const o = item.data;
@@ -4353,7 +4355,7 @@ window.loadRefundModalList = async () =>{
       if (!canRequest) eligibilityNote = `정산 기준 ${calc.settlementUses}회를 모두 사용했습니다. 서비스 오류는 고객센터로 문의해주세요.`;
     }
   } else {
-    const calc = gpCreditRefundPreview(o, currentCredits);
+    const calc = gpCreditRefundPreview(o, currentCredits, refundUser.creditLotV1Balance);
     refundAmount = calc.refundAmount;
     if (calc.policy === 'base') {
      eligibilityNote = calc.paidUsedCredits > 0
@@ -4436,14 +4438,28 @@ window.requestRefund = async (orderId, kind, estimatedRefundAmount, requiresElig
 };
 
 // 관리자: 환불 요청 목록 (크레딧 + 정기결제 통합)
+function adminPendingRefund(order, kind) {
+ return order.refundPresentation || window.GPRefundAccounting.pendingRefund(order, kind || order.kind);
+}
+
+function adminSettledRefund(order) {
+ return window.GPRefundAccounting.amount(order.confirmedRefundAmount)
+  ?? window.GPRefundAccounting.confirmedRefundAmount(order);
+}
+
+function adminRefundValue(value, suffix = '') {
+ const number = window.GPRefundAccounting.amount(value);
+ return number === null ? '확인 필요' : number.toLocaleString('ko-KR') + suffix;
+}
+
 window.loadAdminRefundSummary = async () => {
  if (!window.isAdmin()) return;
  const attention = document.getElementById('adminAttentionRefunds');
  if (attention) delete attention.dataset.loadState;
  try {
   const [orderSnap, subSnap] = await Promise.all([
-   getDocs(query(collection(db, 'orders'), where('status', '==', 'refund_requested'), orderBy('createdAt', 'desc'))),
-   getDocs(query(collection(db, 'subscriptionOrders'), where('status', '==', 'refund_requested')))
+   getDocs(query(collection(db, 'orders'), where('status', 'in', ['refund_requested', 'refund_processing']))),
+   getDocs(query(collection(db, 'subscriptionOrders'), where('status', 'in', ['refund_requested', 'refund_processing'])))
   ]);
   adminSetRefundStat(orderSnap.size + subSnap.size);
   if (attention) attention.dataset.loadState = 'ok';
@@ -4459,8 +4475,8 @@ window.loadAdminRefundList = async () =>{
  el.innerHTML = '<div class="gp-admin-empty">불러오는 중...</div>';
  try {
  const [creditSnap, subSnap] = await Promise.all([
-   getDocs(query(collection(db,'orders'), where('status','==','refund_requested'), orderBy('createdAt','desc'))),
-   getDocs(query(collection(db,'subscriptionOrders'), where('status','==','refund_requested')))
+   getDocs(query(collection(db,'orders'), where('status','in',['refund_requested','refund_processing']))),
+   getDocs(query(collection(db,'subscriptionOrders'), where('status','in',['refund_requested','refund_processing'])))
  ]);
  const items = [
    ...creditSnap.docs.map(d => ({ id: d.id, kind: 'order', data: d.data() })),
@@ -4472,9 +4488,18 @@ window.loadAdminRefundList = async () =>{
    return bt - at;
  });
  adminSetRefundStat(items.length);
+ adminRefundQuotes.clear();
  if (items.length === 0) {
  el.innerHTML = '<div class="gp-admin-empty">대기 중인 환불 요청이 없습니다.</div>';
  return;
+ }
+ const users = new Map();
+ const uniqueUids = [...new Set(items.map(item => item.data.uid).filter(Boolean))];
+ // Bounded batches avoid one serial user read per request and repeated reads for the same user.
+ for (let start = 0; start < uniqueUids.length; start += 8) {
+  await Promise.all(uniqueUids.slice(start, start + 8).map(async uid => {
+   try { const snap = await getDoc(doc(db, 'users', uid)); if (snap.exists()) users.set(uid, snap.data()); } catch (e) { /* identity fallback only */ }
+  }));
  }
  let html = '<div class="gp-admin-refund-list">';
  for (const item of items) {
@@ -4482,33 +4507,23 @@ window.loadAdminRefundList = async () =>{
  const requestedDate = o.refundRequestedAt ? new Date(o.refundRequestedAt.toDate()).toLocaleString('ko-KR') : '';
  const paidMs = o.createdAt?.toMillis?.() || o.approvedAt?.toMillis?.() || o.requestedAt?.toMillis?.() || 0;
  const paidDate = paidMs ? new Date(paidMs).toLocaleString('ko-KR') : '';
- let userEmail = o.uid;
- let userCredits = 0;
- try {
-   const uSnap = await getDoc(doc(db,'users',o.uid));
-   if(uSnap.exists()) {
-     userEmail = uSnap.data().email || o.uid;
-     userCredits = uSnap.data().credits || 0;
-   }
- } catch(e){}
+ const userEmail = users.get(o.uid)?.email || o.uid;
  const isSub = item.kind === 'subscription';
+ const quote = adminPendingRefund(o, item.kind);
+ adminRefundQuotes.set(`${item.kind}:${item.id}`, quote);
  let itemLabel, refundDetail;
  if (isSub) {
    itemLabel = `정기결제 · ${SUB_TIER_LABELS[o.tier] || o.tier}`;
-   const expected = Math.max(0, Number(o.requestedRefundAmount) || Number(o.amount) || 0);
-   const used = Math.max(0, Number(o.refundUsedCount) || 0);
-   const settlementUses = Math.max(0, Number(o.refundSettlementUses) || 50);
-   const refundType = expected >= (Number(o.amount) || 0) ? '전액' : `${used}/${settlementUses}회 사용분 공제`;
-   refundDetail = `<div class="gp-admin-refund-detail">환불 예정 금액 <b class="neg">${expected.toLocaleString()}원</b> (${refundType} · 승인 시 서버 재검증)</div>`;
+   refundDetail = `<div class="gp-admin-refund-detail">접수된 환불 예정액 <b class="neg">${adminRefundValue(quote?.amount, '원')}</b> · 승인 시 현재 사용량으로 서버 재검증</div>`;
  } else {
-   const calc = gpCreditRefundPreview(o, userCredits);
-   if (calc.policy === 'base') {
-    itemLabel = `크레딧 · 기준 ${calc.paidCredits.toLocaleString()} + 추가 ${calc.bonusCredits.toLocaleString()}`;
-    refundDetail = `<div class="gp-admin-refund-detail">기준 사용 <b>${calc.paidUsedCredits.toLocaleString()}</b> · 기준 잔여 <b>${calc.refundablePaidCredits.toLocaleString()}</b> · 환불 예정 <b class="neg">${calc.refundAmount.toLocaleString()}원</b> · 남은 지급량 <b>${calc.recoverCredits.toLocaleString()}</b>크레딧 전부 회수</div>`;
+   if (quote?.policy === 'base') {
+    itemLabel = `크레딧 · 기준 ${adminRefundValue(quote.paidCredits)} + 추가 ${adminRefundValue(quote.bonusCredits)}`;
+    refundDetail = `<div class="gp-admin-refund-detail">기준 사용 <b>${adminRefundValue(quote.paidUsedCredits)}</b> · 환불 대상 기준 <b>${adminRefundValue(quote.refundablePaidCredits)}</b> · 환불 예정 <b class="neg">${adminRefundValue(quote.amount, '원')}</b> · ${quote.reserved ? '이미 예약된' : '접수된 회수 대상'} <b>${adminRefundValue(quote.credits)}</b>크레딧</div>`;
    } else {
-    itemLabel = `크레딧 · 기존 주문 ${calc.totalGrantedCredits.toLocaleString()}크레딧`;
-    refundDetail = `<div class="gp-admin-refund-detail">기존 비례 정책 · 사용 <b>${calc.usedCredits.toLocaleString()}</b> · 환불 예정 <b class="neg">${calc.refundAmount.toLocaleString()}원</b> · 차감 <b>${calc.recoverCredits.toLocaleString()}</b>크레딧</div>`;
+    itemLabel = `크레딧 · 기존 주문 ${adminRefundValue(quote?.totalGrantedCredits)}크레딧`;
+    refundDetail = `<div class="gp-admin-refund-detail">기존 비례 정책 · 사용 <b>${adminRefundValue(quote?.usedCredits)}</b> · 환불 예정 <b class="neg">${adminRefundValue(quote?.amount, '원')}</b> · ${quote?.reserved ? '이미 예약된' : '접수된 회수 대상'} <b>${adminRefundValue(quote?.credits)}</b>크레딧</div>`;
    }
+   refundDetail += `<div class="gp-admin-refund-detail">${quote?.reserved ? '예약된 크레딧은 사용 가능 잔액에서 이미 제외됐습니다. 승인 시 중복 차감하지 않습니다.' : '접수 당시 기록입니다. 승인 시 서버에서 최종 금액을 확인합니다.'}${quote?.reviewRequired ? ' 접수 수치가 불충분하여 확인이 필요합니다.' : ''}</div>`;
  }
  html += `<div class="gp-admin-refund-item">
  <div class="gp-admin-refund-top">
@@ -4534,13 +4549,18 @@ window.loadAdminRefundList = async () =>{
 };
 
 const adminRefundPending = new Set();
+const adminRefundQuotes = new Map();
 
 // 관리자: 환불 승인
 window.approveRefund = async (orderId, kind) =>{
  kind = kind || 'order';
+ const quote = adminRefundQuotes.get(`${kind}:${orderId}`);
+ const confirmation = quote && quote.amount !== null
+  ? `접수된 환불 예정액은 ${adminRefundValue(quote.amount, '원')}입니다.${quote.reserved ? ' 크레딧은 이미 예약되어 중복 차감하지 않습니다.' : ''} 승인 시 서버가 최종 금액을 확인하고 토스에서 실제 환불합니다.`
+  : '승인하면 서버가 환불액을 확인하고 토스에서 실제 환불을 진행합니다.';
  const ok = window.gpConfirm
-  ? await window.gpConfirm({ title: '환불을 승인할까요?', message: '승인하면 토스에서 실제 환불이 진행됩니다.', confirmText: '승인하기', danger: true })
- : confirm('이 환불을 승인하시겠습니까? 토스에서 실제 환불이 진행됩니다.');
+  ? await window.gpConfirm({ title: '환불을 승인할까요?', message: confirmation, confirmText: '승인하기', danger: true })
+ : confirm(confirmation);
  if (!ok) return;
  const pendingKey = `refund:${kind}:${orderId}`;
  if (adminRefundPending.has(pendingKey)) return;
@@ -4556,6 +4576,7 @@ window.approveRefund = async (orderId, kind) =>{
   alert('환불이 완료되었습니다.');
   await Promise.allSettled([
    window.loadAdminRefundList(),
+   window.loadAdminOverview(),
    window.loadOrderHistory(),
    window.loadAllCreditHistory(),
    window._adminSelectedUser ? window.adminSearchUser(true) : Promise.resolve()
@@ -4941,9 +4962,9 @@ function adminRenderUserBundle(data) {
  const coupon = user.coupon || null;
  const hist = adminUsageHistory(data);
  const orders = adminChargeHistory(data);
- const successfulOrders = orders.filter(order => !['failed', 'cancelled'].includes(String(order.status || '')));
+ const successfulOrders = orders.filter(order => ['paid', 'refund_requested', 'refund_processing', 'refund_rejected', 'partially_refunded', 'refunded'].includes(String(order.status || '')));
  const paidGross = successfulOrders.reduce((sum, order) => sum + adminNumber(order.amount), 0);
- const refundedTotal = successfulOrders.reduce((sum, order) => sum + adminNumber(order.refundedAmount || order.refundAmount), 0);
+ const refundedTotal = successfulOrders.reduce((sum, order) => sum + adminSettledRefund(order), 0);
  const netPaid = Math.max(0, paidGross - refundedTotal);
  const usedCredits = hist.reduce((sum, row) => sum + Math.max(0, adminNumber(row.used)), 0);
  const auditHtml = adminRenderCreditAudit(data.creditAudit);
@@ -5023,18 +5044,22 @@ function adminRenderUserBundle(data) {
   const title = isSub
    ? `정기결제 · ${escapeHtml(SUB_TIER_LABELS[o.tier] || o.tier || '-')}`
    : `크레딧 · ${grantTotal.toLocaleString('ko-KR')}크레딧`;
-  const priorRefunded = adminNumber(o.refundedAmount || o.refundAmount);
+  const priorRefunded = adminSettledRefund(o);
+  const pendingRefund = adminPendingRefund(o);
   const remainingMoney = Math.max(0, adminNumber(o.amount) - priorRefunded);
-  const canRefund = !!o.paymentKey && ['paid', 'refund_requested', 'refund_rejected', 'partially_refunded'].includes(o.status) && remainingMoney > 0;
+  const canRefund = !!o.paymentKey && ['paid', 'refund_requested', 'refund_rejected', 'partially_refunded'].includes(o.status) && remainingMoney > 0 && !(basePolicyOrder && o.refundCreditSettlementClosed && !pendingRefund);
   const disabledTitle = !o.paymentKey ? 'paymentKey가 없는 이전 결제건입니다.' : '현재 상태에서는 환불할 수 없습니다.';
   const refundMeta = o.status === 'refunded'
    ? `<span>환불 완료 ${adminMoney(priorRefunded)} · ${adminNumber(o.refundedCredits).toLocaleString('ko-KR')}크레딧</span>`
    : o.status === 'partially_refunded'
-   ? `<span>부분환불 ${adminMoney(priorRefunded)} · 잔여 ${adminMoney(remainingMoney)} 환불 가능</span>`
+   ? `<span>부분환불 ${adminMoney(priorRefunded)} · 미환불 결제액 ${adminMoney(remainingMoney)}${o.refundCreditSettlementClosed ? ' · 해당 주문 크레딧 정산 완료' : ''}</span>`
    : '';
 
   let actionBtn, panel = '';
-  if (!canRefund) {
+  if (pendingRefund) {
+   actionBtn = `<button type="button" class="gp-admin-mini-btn" onclick="adminSwitchTab('billing')">환불 요청 확인</button>`;
+   panel = `<div class="gp-admin-refund-detail">처리 중 환불액 ${adminRefundValue(pendingRefund.amount, '원')} · ${pendingRefund.reserved ? '이미 예약된' : '접수된 회수 대상'} ${adminRefundValue(pendingRefund.credits)}크레딧</div>`;
+  } else if (!canRefund) {
    actionBtn = `<button type="button" class="gp-admin-danger" disabled title="${escapeHtml(disabledTitle)}">환불</button>`;
   } else if (isSub) {
    actionBtn = `<button type="button" class="gp-admin-danger" onclick="adminDirectRefund(${orderIndex})">전액 환불</button>`;
@@ -5085,12 +5110,17 @@ window.adminSetChargePage = function(page) {
 
 // 결제건 정책 환불 계산(백엔드 processRefund 미러, 누적 부분환불 반영)
 function adminComputeRefund(order) {
- const priorAmount = adminNumber(order.refundedAmount || order.refundAmount);
+ const pending = adminPendingRefund(order);
+ if (pending) return { ...pending, amount: pending.amount, credits: pending.credits, pending: true };
+ const priorAmount = adminSettledRefund(order);
  const priorCredits = adminNumber(order.refundedCredits);
  const remainingMoney = Math.max(0, adminNumber(order.amount) - priorAmount);
  const current = adminNumber(window._adminSelectedUser?.credits);
  if (remainingMoney <= 0) return { amount: 0, credits: 0 };
- const calc = gpCreditRefundPreview(order, current);
+ const totalGrant = adminNumber(order.totalGrantedCredits ?? order.safeCredits ?? order.credits);
+ const tracked = Math.max(0, adminNumber(window._adminSelectedUser?.creditLotV1Balance));
+ const untracked = Math.min(Math.max(0, current - tracked), Math.max(0, totalGrant - priorCredits));
+ const calc = gpCreditRefundPreview(order, untracked);
  const remainingGrant = Math.max(0, adminNumber(calc.totalGrantedCredits) - priorCredits);
  return {
   ...calc,
@@ -5140,6 +5170,7 @@ async function adminRunRefund(i, body) {
   await window.adminSearchUser(true);
   await Promise.allSettled([
    window.loadAdminRefundList(),
+   window.loadAdminOverview(),
    window.loadAllCreditHistory(),
    window.loadOrderHistory(),
    window.loadAdminOverview()
@@ -7392,6 +7423,7 @@ window.adminDirectRefund = async function(i) {
   alert('주문 정보를 찾을 수 없습니다. 사용자를 다시 검색해주세요.');
   return;
  }
+ if (adminPendingRefund(order)) { window.adminSwitchTab('billing'); return; }
 
  // 구독: 전액 환불(모드 선택 없음)
  if (order.kind === 'subscription') {

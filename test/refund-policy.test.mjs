@@ -54,6 +54,7 @@ test('주문별 잔여 필드가 있으면 계정 전체 잔액보다 우선해 
     totalGrantedCredits: 2500,
     creditGrantPolicyVersion: 'credit-grant-base-v1',
     refundPaidCreditsRemaining: 1200,
+    creditLotPolicyVersion: 'credit-lot-v1',
     refundEventBonusCreditsRemaining: 500
   };
   assert.deepEqual(
@@ -77,8 +78,9 @@ test('현행 상품·이벤트 보너스는 하나의 비환불 잔액으로 회
     totalGrantedCredits: 3000,
     creditGrantPolicyVersion: 'credit-grant-base-v1',
     refundPaidCreditsRemaining: 1500,
+    creditLotPolicyVersion: 'credit-lot-v1',
     refundBonusCreditsRemaining: 700,
-    refundEventBonusCreditsRemaining: 10
+    refundEventBonusCreditsRemaining: 700
   };
   assert.deepEqual(
     { ...helpers.gpCreditRefundPreview(order, 9999) },
