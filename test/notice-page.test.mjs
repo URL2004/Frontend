@@ -42,7 +42,7 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
     source.indexOf('const NOTICE_RETIRED_TITLES')
   );
 
-  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 21);
+  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 24);
   for (const title of [
     '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요',
     '상시 상품 보너스와 9월 개강 이벤트를 안내해요',
@@ -116,7 +116,7 @@ test('공지 문구는 2026-09-02 양식 표준을 지킨다', async () => {
   );
   const titles = [...baseItems.matchAll(/title: '([^']+)'/gu)].map(match => match[1]);
 
-  assert.equal(titles.length, 21);
+  assert.equal(titles.length, 24);
   // 대괄호 접두어·이모지 없이 해요체 서술형 제목만 쓴다
   assert.doesNotMatch(baseItems, /title: '\[/u);
   assert.doesNotMatch(baseItems, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
