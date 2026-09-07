@@ -3,6 +3,12 @@
 The Instagram kit has PC/mobile and actual/drawn variants, videos, GIFs, stills,
 automatic demos and ZIP downloads. Example documents and scores are synthetic.
 
+The drawn demo has two composition tabs: the existing full card and the
+execution screen alone. Both PC/mobile versions include separate MP4, GIF and
+three scene PNG files, plus variant/device/all-media ZIP downloads. The selected
+composition persists in the `view=card|screen` URL query parameter. Download links
+use `download=1` for an attachment response and descriptive filenames.
+
 `private-media.bundle` is an AES-256-GCM encrypted gzip JSON file manifest, with
 header `GPM1`, a 12-byte IV, 16-byte authentication tag, then ciphertext. The
 public repository contains neither plaintext media nor its access URL/key.
