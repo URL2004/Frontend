@@ -272,3 +272,7 @@ console.log(`[sitemap-gen] generated sitemap.xml with ${sitemapCount} urls`);
 await stripPublishedHtmlComments();
 const assetManifest = await writeHashedAssetManifest();
 console.log(`[asset-manifest] generated ${Object.keys(assetManifest).length} immutable asset urls`);
+
+// Run last so the private share never enters the public asset manifest/sitemap.
+const { publishPrivateMedia } = await import('./private-media.mjs');
+await publishPrivateMedia({ root, dist });
