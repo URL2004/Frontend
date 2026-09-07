@@ -9,6 +9,11 @@ three scene PNG files, plus variant/device/all-media ZIP downloads. The selected
 composition persists in the `view=card|screen` URL query parameter. Download links
 use `download=1` for an attachment response and descriptive filenames.
 
+The execution-only composition retains the browser title bar, rounded window,
+shadow and sidebar. Only the surrounding promotional heading/description and
+outer timeline are hidden. Both drawn compositions explicitly identify the
+humanizing step as `휴머나이징`, including the active tool and progress labels.
+
 `private-media.bundle` is an AES-256-GCM encrypted gzip JSON file manifest, with
 header `GPM1`, a 12-byte IV, 16-byte authentication tag, then ciphertext. The
 public repository contains neither plaintext media nor its access URL/key.
