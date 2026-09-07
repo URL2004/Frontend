@@ -94,7 +94,7 @@ test('admin transport never places a credential in a URL or strips business payl
 
   assert.doesNotMatch(adminSurface, /[?&]idToken=/u);
   assert.match(adminSurface, /\{\s*credits,\s*count\s*\}/u);
-  assert.match(adminSurface, /\{\s*orderId,\s*kind\s*\}/u);
+  assert.match(adminSurface, /\{\s*orderId,\s*kind,\s*\.\.\.eligibilityReview\s*\}/u);
   assert.match(adminSurface, /\{\s*orderId,\s*rejectReason:\s*reason\.trim\(\),\s*kind\s*\}/u);
   assert.match(adminSurface, /\{\s*limit:\s*1000\s*\}/u);
 });

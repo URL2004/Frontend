@@ -141,12 +141,12 @@ test('청약철회 마감은 한국 시간 7일째 말일까지 보장한다', (
   );
 });
 
-test('환불 버튼은 저장된 기산일을 우선하고 기간 경과 주문도 추가 확인을 요청한다', () => {
+test('환불 버튼은 저장된 기산일을 우선하고 기간 경과 주문은 고객센터로 안내한다', () => {
   assert.match(moduleSource, /gpRefundWindowEndMs\(item\)/u);
   assert.match(moduleSource, /const requiresEligibilityReview = !missingWindowBasis && !within7/u);
-  assert.match(moduleSource, /일반 청약철회 기간이 지났지만 관계 법령상 잔액 환급·취소 사유/u);
+  assert.match(moduleSource, /canRequest = false;\s*eligibilityNote = '일반 환불 신청 기간이 지났습니다/u);
   assert.match(moduleSource, /청약철회 기준일을 확인할 수 없습니다/u);
-  assert.match(moduleSource, /requiresEligibilityReview \? '확인 요청' : '환불 요청'/u);
+  assert.match(moduleSource, /switchTab\(\\'qna\\'\)/u);
   assert.match(moduleSource, /used: d\.coupon\.used \|\| 0/u);
   assert.match(moduleSource, /window\.requestRefund\('\$\{jsAttr\(item\.id\)\}','\$\{jsAttr\(item\.kind\)\}',\$\{refundAmount\},\$\{requiresEligibilityReview\}\)/u);
   assert.match(mainSource, /window\.COUPON\.used = Math\.max\(0, Number\(window\.COUPON\.used\) \|\| 0\) \+ 1/u);

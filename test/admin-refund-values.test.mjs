@@ -20,7 +20,9 @@ function environment(rows=[order()]) {
   getDoc:async()=>{reads++;return {exists:()=>true,data:()=>({email:'synthetic@example.invalid',credits:0})};},
   adminSetRefundStat:n=>{count=n;},adminRefundQuotes:new Map()};
  vm.createContext(ctx);vm.runInContext(core,ctx);ctx.window.GPRefundAccounting=ctx.GPRefundAccounting;
- const start=source.indexOf('function adminPendingRefund('),end=source.indexOf('const adminRefundPending',start);
+ const helperStart=source.indexOf("const REFUND_POLICY_VERSION = 'credit-grant-base-v1';"),helperEnd=source.indexOf('// 두 컬렉션의 결제 내역 통합 조회',helperStart);
+ vm.runInContext(source.slice(helperStart,helperEnd),ctx);
+ const start=source.indexOf('function adminRefundNeedsReview('),end=source.indexOf('const adminRefundPending',start);
  vm.runInContext(source.slice(start,end),ctx);
  return {ctx,list,reads:()=>reads,count:()=>count};
 }
@@ -45,7 +47,7 @@ test('refund request counts include processing and do not omit old requests lack
 });
 test('nullable lot metadata and other-order credits do not create a wrong direct refund estimate',()=>{
  const e=environment();const start=source.indexOf("const REFUND_POLICY_VERSION = 'credit-grant-base-v1';"),end=source.indexOf('// 두 컬렉션의 결제 내역 통합 조회',start);
- vm.runInContext(source.slice(start,end),e.ctx);
+
  const base={amount:14500,paidCredits:500,totalGrantedCredits:650,bonusCredits:150,creditGrantPolicyVersion:'credit-grant-base-v1',creditLotPolicyVersion:'credit-lot-v1',refundPaidCreditsRemaining:null,refundEventBonusCreditsRemaining:null};
  assert.equal(e.ctx.gpCreditRefundPreview(base,550).refundAmount,11600);
  assert.equal(e.ctx.gpCreditRefundPreview({amount:10000,safeCredits:1000},900,800).refundAmount,1000);
