@@ -16,12 +16,12 @@ test('페이지·컴포저·감지 결과의 모드 전환은 공통 출발 맥�
     read('pages/main.html')
   ]);
 
-  assert.match(appMain, /gpTrack\('product_mode_open', \{[\s\S]*?source_route:[\s\S]*?source_surface:[\s\S]*?source_mode:[\s\S]*?target_mode:/u);
+  assert.match(appMain, /gpTrack\('product_mode_open', Object\.assign\(\{\}, extra[\s\S]*?\{[\s\S]*?source_route:[\s\S]*?source_surface:[\s\S]*?source_mode:[\s\S]*?target_mode:/u);
   assert.match(appMain, /window\.gpSelectProductMode = function/u);
   assert.match(appMain, /const sourceRoute = getRouteTab\(\);[\s\S]*?trackProductModeOpen\(productMode, sourceRoute/u);
   assert.match(main, /gpSelectProductMode\('detect', 'composer_toggle'\)/u);
   assert.match(main, /gpSelectProductMode\('humanize', 'composer_toggle'\)/u);
-  assert.match(evasion, /gpTrackProductModeOpen\('humanize', 'main', 'detect_report_cta', 'detect'\)/u);
+  assert.match(evasion, /gpTrackProductModeOpen\('humanize', 'main', 'detect_report_cta', 'detect',\s*Object\.assign\(\{ cta_surface:/u, '감지 결과에서 넘어올 때는 최초 밴드·버튼 표면을 함께 남긴다');
   assert.match(appModule, /gpTrackProductModeOpen\('humanize', 'history', 'history_detail', 'detect'\)/u);
 });
 

@@ -11903,6 +11903,12 @@ html.gp-rep-modal-open{overflow:hidden;}
  box-shadow:0 8px 22px -8px rgba(0,0,0,.55);transition:transform .14s ease,box-shadow .14s ease;
 }
 #mainContent[data-main-design="lavender"] .gp-rep-cta-btn:hover{transform:translateY(-2px);box-shadow:0 12px 26px -8px rgba(0,0,0,.6);}
+/* 접근만 열린 상태(지목할 문장 없음, 2026-09-07): 권하지 않되 막지 않는 부차 버튼 — 노랑 강조 대신 테두리만 */
+#mainContent[data-main-design="lavender"] .gp-rep-cta-btn.is-secondary{background:transparent;color:#fff;box-shadow:none;border:1.5px solid rgba(255,255,255,.75);font-weight:700;}
+#mainContent[data-main-design="lavender"] .gp-rep-cta-btn.is-secondary:hover{background:rgba(255,255,255,.12);box-shadow:none;}
+#mainContent[data-main-design="lavender"] .gp-rep-stickybar-btn.is-secondary{background:transparent;color:var(--rep-brand-strong);border:1.5px solid var(--rep-brand-strong);font-weight:700;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-btn.is-secondary{background:transparent;color:var(--rep-brand-strong);border:1.5px solid var(--rep-brand-strong);box-shadow:none;font-weight:750;}
+#mainContent[data-main-design="lavender"] .gp-rep-verdict-btn.is-secondary:hover{background:rgba(75,52,204,.08);box-shadow:none;}
 #mainContent[data-main-design="lavender"] .gp-rep-cta-cost{margin:0;font-size:var(--rep-fs-2);font-weight:700;color:#fff;}
 #mainContent[data-main-design="lavender"] .gp-rep-cta-cost.is-short{color:#ffd9a1;}
 #mainContent[data-main-design="lavender"] .gp-rep-cta-help{margin:13px 0 0;font-size:var(--rep-fs-2);color:var(--rep-on-brand-muted);}

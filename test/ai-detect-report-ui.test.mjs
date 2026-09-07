@@ -311,9 +311,50 @@ test('상한이 걸린 목록은 모달 머리에서 표시 개수를 밝힌다'
 
 test('CTA는 실제 후보 수로 말을 걸고 노랑 버튼으로 강조된다', async () => {
   const [flow, css] = await Promise.all([read('assets/js/evasion-flow.js'), read('assets/css/redesign.css')]);
-  assert.match(flow, /후보 ' \+ model\.content\.generic \+ '문장, 지금 휴머나이징해 볼까요\?/u, '밴드 제목은 우리 기능 이름(휴머나이징)을 쓴다');
-  assert.match(flow, /'이 글, 지금 휴머나이징해 볼까요\?'/u, '후보가 없으면 일반 문구로 폴백');
+  // "후보 N문장"은 서버가 원문 위치까지 확인한 문장 수(conversion.candidateSentences)다 — 계측 비율(content.generic)이 아니다.
+  assert.match(flow, /후보 ' \+ model\.candidateSentences \+ '문장, 지금 휴머나이징해 볼까요\?/u, '밴드 제목은 우리 기능 이름(휴머나이징)을 쓴다');
+  assert.doesNotMatch(flow, /후보 ' \+ model\.content\.generic \+ '문장/u, '계측 비율로 후보 수를 지어내지 않는다');
   assert.match(css, /\.gp-rep-cta-btn\{[\s\S]*?background:#f5b425;color:#1a1747/u, '버튼은 로고의 노랑, 잉크 글자(대비 9.1:1)');
+});
+
+test('유도는 접근과 추천 두 단계다 — 낮은 점수도 접근은 열고, 추천은 위치 확인 문장이 있을 때만 (사장님 2026-09-07)', async () => {
+  const [flow, main, css, head, appMain] = await Promise.all([
+    read('assets/js/evasion-flow.js'), read('pages/main.html'), read('assets/css/redesign.css'),
+    read('assets/js/head-tracking.js'), read('assets/js/app-main.js')
+  ]);
+  // 모델: 서버 conversion.access/recommend를 그대로 읽고, 구버전(eligible만)은 접근으로만 해석한다.
+  assert.match(flow, /conversion\.access != null \? conversion\.access !== false : conversion\.eligible !== false/u);
+  assert.match(flow, /var conversionRecommend = conversionAccess && !!conversion && conversion\.recommend === true;/u);
+  assert.match(flow, /if \(!candidateSentences\) conversionRecommend = false;/u, '후보 0문장이면 추천하지 않는다');
+  assert.doesNotMatch(flow, /if \(interpretation && interpretation\.status !== 'ready'\) conversionEligible = false;/u, '해석 상태로 접근을 끄던 규칙은 없앴다');
+  // 밴드: 접근만 열린 상태는 권하지 않되 막지 않는다(부차 버튼). 격하 문구 "그래도"는 쓰지 않는다.
+  assert.match(flow, /band\.classList\.toggle\('is-optional', eligible && !recommend\)/u);
+  assert.match(flow, /원문 위치와 연결된 정형 패턴이 확인되지 않아 수정을 권하지는 않아요\. 원하시면 문체를 다듬는 방법과 비용을 확인할 수 있어요\./u);
+  assert.match(flow, /btn\.textContent = '다듬기 방법·비용 보기'/u, '접근만 열린 상태의 버튼은 화살표 없는 부차 버튼');
+  assert.doesNotMatch(flow, /그래도 방법·비용 보기/u);
+  // 히어로·고정 바: 접근이 닫힌 상태에서만 감춘다. 낮은 점수에서 모바일 출구가 사라지지 않는다.
+  assert.match(flow, /\$\('gpRepVerdictBtn'\)\.hidden = model\.conversionAccess === false;/u);
+  assert.match(flow, /var eligible = model\.conversionAccess !== false;[\s\S]{0,200}var recommend = eligible && model\.conversionRecommend === true;[\s\S]{0,600}window\.lavReportToHumanize\('sticky'\)/u);
+  assert.doesNotMatch(flow, /var eligible = model\.conversionEligible !== false;/u, '화면 분기에 구버전 이름을 쓰지 않는다');
+  // 처방 아래 CTA는 v125 결정(밴드 하나로 닫는다)대로 계속 접어 둔다.
+  assert.match(flow, /tipsCta\.hidden = true;/u);
+  // "유지해도 좋아요"는 지목할 문장이 없을 때만.
+  assert.match(flow, /model\.candidateSentences > 0[\s\S]{0,120}위치가 확인된 ' \+ model\.candidateSentences \+ '문장만 살펴보면 돼요/u);
+  // 부차 버튼 스타일과 버튼별 진입 표면.
+  assert.match(css, /\.gp-rep-cta-btn\.is-secondary\{background:transparent;color:#fff/u);
+  assert.match(css, /\.gp-rep-verdict-btn\.is-secondary\{background:transparent;color:var\(--rep-brand-strong\)/u);
+  for (const surface of ['hero', 'band', 'tips', 'sticky']) assert.match(main, new RegExp(`lavReportToHumanize\\('${surface}'\\)`, 'u'), '진입 표면: ' + surface);
+  // 계측: 노출 → 클릭 → 이후 이벤트 전부에 최초 밴드·감지기 버전이 붙는다.
+  assert.match(flow, /window\.gpTrack\('detect_report_view', detectCtx\)/u);
+  assert.match(flow, /window\.gpTrack\('detect_cta_exposed', Object\.assign\(\{\}, detectCtx, \{[\s\S]*?cta_surfaces:/u);
+  assert.match(flow, /function repDetectContext\(model\)[\s\S]*?detect_band:[\s\S]*?detector_version:[\s\S]*?detect_cta_state:/u);
+  assert.match(flow, /gpTrackProductModeOpen\('humanize', 'main', 'detect_report_cta', 'detect',\s*Object\.assign\(\{ cta_surface:/u);
+  assert.match(head, /window\.gpSetDetectContext = function/u);
+  assert.match(head, /var safeParams = Object\.assign\(\{\}, detectContext\(\), params \|\| \{\}\);/u, '세션 컨텍스트는 모든 이벤트에 자동으로 붙고 명시 값이 우선한다');
+  assert.match(appMain, /function trackProductModeOpen\(productMode, sourceRoute, sourceSurface, sourceMode, extra\)/u);
+  // 서버 이력 핸드오프: 최초 밴드·감지기 버전(점수·요금과 무관).
+  assert.match(flow, /out\.sourceBand = band;/u);
+  assert.match(flow, /out\.sourceDetectorVersion = lastReportModel\.detectorVersion;/u);
 });
 
 

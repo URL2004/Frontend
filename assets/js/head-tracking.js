@@ -466,9 +466,39 @@
  };
  window.gpMetaContext = metaContext;
 
+ // 감지 보고서 컨텍스트 — 보고서가 뜬 뒤 같은 탭에서 일어나는 모든 이벤트(모드 선택·실행·완료·결제·환불)에
+ //   최초 점수 밴드·감지기 버전·버튼 상태를 붙인다. 새 감지가 뜨면 덮어쓴다. 원문·점수 근거는 담지 않는다.
+ var DETECT_CONTEXT_KEY = 'gp_detect_ctx_v1';
+ var DETECT_CONTEXT_FIELDS = ['detect_score', 'detect_band', 'detect_sub_band', 'detector_version', 'detect_cta_state', 'detect_candidates'];
+ function detectContext() {
+  try {
+   var raw = window.sessionStorage ? window.sessionStorage.getItem(DETECT_CONTEXT_KEY) : null;
+   var ctx = raw ? JSON.parse(raw) : null;
+   if (!ctx || typeof ctx !== 'object') return {};
+   var out = {};
+   DETECT_CONTEXT_FIELDS.forEach(function (key) {
+    if (ctx[key] === undefined || ctx[key] === null) return;
+    out[key] = typeof ctx[key] === 'number' ? ctx[key] : clean(ctx[key], 40);
+   });
+   return out;
+  } catch (e) { return {}; }
+ }
+ window.gpSetDetectContext = function (ctx) {
+  try {
+   if (!window.sessionStorage) return false;
+   if (!ctx || typeof ctx !== 'object') { window.sessionStorage.removeItem(DETECT_CONTEXT_KEY); return true; }
+   var out = {};
+   DETECT_CONTEXT_FIELDS.forEach(function (key) { if (ctx[key] !== undefined) out[key] = ctx[key]; });
+   window.sessionStorage.setItem(DETECT_CONTEXT_KEY, JSON.stringify(out));
+   return true;
+  } catch (e) { return false; }
+ };
+ window.gpGetDetectContext = detectContext;
+
  window.gpTrack = function (eventName, params) {
   if (!eventName || internalTraffic()) return;
-  var safeParams = Object.assign({}, params || {});
+  // 이벤트가 직접 준 detect_* 값이 세션 컨텍스트보다 우선한다.
+  var safeParams = Object.assign({}, detectContext(), params || {});
   // UI 위치 source가 GA 획득 source와 충돌하지 않도록 한 곳에서 이전한다.
   if (safeParams.source != null) safeParams.ui_source = clean(safeParams.source, 100);
   ['source', 'medium', 'campaign', 'campaign_source', 'campaign_medium', 'campaign_name', 'input_text', 'output_text', 'text', 'prompt', 'email', 'phone', 'name', 'uid', 'token', 'paymentKey', 'message', 'error_message', 'stack'].forEach(function (key) { delete safeParams[key]; });

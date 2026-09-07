@@ -1213,11 +1213,14 @@
   function repSetupSticky(model) {
     var bar = $('gpRepSticky'), hero = document.querySelector('.gp-rep-hero'), cta = $('gpRepNext');
     if (!bar || !hero || !cta) return;
-    var eligible = model.conversionEligible !== false;
+    // 접근이 열린 글이면 점수 밴드와 무관하게 휴머나이징으로 가는 출구를 남긴다(낮은 점수에서 출구가 사라지던 문제).
+    var eligible = model.conversionAccess !== false;
+    var recommend = eligible && model.conversionRecommend === true;
     if ($('gpRepStickyScore')) $('gpRepStickyScore').textContent = model.score == null ? '--' : model.score + '점';
     if ($('gpRepStickyLabel')) $('gpRepStickyLabel').textContent = model.radar.label || 'AI식 문체 신호';
-    if ($('gpRepStickyBtn')) $('gpRepStickyBtn').textContent = eligible ? '다듬기 방법 보기 →' : '전체 문장 보기';
-    if ($('gpRepStickyBtn')) $('gpRepStickyBtn').onclick = eligible ? function () { window.lavReportToHumanize(); } : function () { window.gpRepOpenModal(); };
+    if ($('gpRepStickyBtn')) $('gpRepStickyBtn').textContent = !eligible ? '전체 문장 보기' : recommend ? '다듬기 방법 보기 →' : '다듬기 방법·비용 보기';
+    if ($('gpRepStickyBtn')) $('gpRepStickyBtn').classList.toggle('is-secondary', eligible && !recommend);
+    if ($('gpRepStickyBtn')) $('gpRepStickyBtn').onclick = eligible ? function () { window.lavReportToHumanize('sticky'); } : function () { window.gpRepOpenModal(); };
     if (repStickyIo) { repStickyIo.disconnect(); repStickyIo = null; }
     if (!('IntersectionObserver' in window)) return;
     var heroOut = false, ctaIn = false;
@@ -1447,8 +1450,18 @@
       : ['사실·수치·고유명사', '직접 경험과 프로젝트 맥락'];
     var status = reportView.status || (score == null || source === 'engine' ? 'limited' : 'ready');
     var radar = professorRadarFor(status === 'limited' ? null : score, reportView.professorRadar);
-    var conversionEligible = reportView.conversion && reportView.conversion.eligible === false ? false : status === 'ready';
-    if (interpretation && interpretation.status !== 'ready') conversionEligible = false;
+    // 유도 계약(사장님 2026-09-07): 접근(access)은 점수 밴드와 무관, 추천(recommend)은 원문 위치가 확인된 문장이 있을 때만.
+    //   서버가 둘 다 내려보낸다. 구버전 응답(eligible만)은 eligible을 접근으로 읽고 추천은 하지 않는다.
+    var conversion = reportView.conversion && typeof reportView.conversion === 'object' ? reportView.conversion : null;
+    var conversionAccess = conversion
+      ? (conversion.access != null ? conversion.access !== false : conversion.eligible !== false)
+      : status === 'ready';
+    if (status === 'limited' || source === 'engine' || score == null) conversionAccess = false;
+    var conversionRecommend = conversionAccess && !!conversion && conversion.recommend === true;
+    var candidateSentences = conversion && Number.isFinite(Number(conversion.candidateSentences))
+      ? Math.max(0, Math.floor(Number(conversion.candidateSentences))) : 0;
+    if (!candidateSentences) conversionRecommend = false;
+    var conversionReasons = conversion && Array.isArray(conversion.reasons) ? conversion.reasons.filter(function (r) { return r && typeof r.label === 'string'; }) : [];
     return {
       status: status,
       score: score,
@@ -1479,7 +1492,29 @@
       preservation: preservation,
       paragraphs: paragraphs,
       sentenceMap: normalizeSentenceMap(d.sentenceMap),
-      conversionEligible: conversionEligible
+      // 구버전 이름은 접근과 같은 값으로 남긴다. 화면 분기는 access/recommend를 쓴다.
+      conversionEligible: conversionAccess,
+      conversionAccess: conversionAccess,
+      conversionRecommend: conversionRecommend,
+      candidateSentences: candidateSentences,
+      conversionReasons: conversionReasons,
+      // 퍼널 계측용 — 화면에는 쓰지 않는다.
+      detectorVersion: typeof d.detectorVersion === 'string' && /^[A-Za-z0-9._-]{1,40}$/.test(d.detectorVersion) ? d.detectorVersion : null
+    };
+  }
+
+  // 퍼널 계측 컨텍스트 — 보고서 노출부터 휴머나이징 실행·완료·결제까지 최초 밴드·감지기 버전을 같은 이름으로 싣는다.
+  function repDetectContext(model) {
+    var m = model || lastReportModel;
+    if (!m) return {};
+    var state = m.conversionAccess === false ? 'none' : m.conversionRecommend ? 'recommend' : 'access';
+    return {
+      detect_score: m.score == null ? -1 : Number(m.score),
+      detect_band: m.style && m.style.band || 'unknown',
+      detect_sub_band: m.interpretation && m.interpretation.subBand && m.interpretation.subBand.key || '',
+      detector_version: m.detectorVersion || '',
+      detect_cta_state: state,
+      detect_candidates: Number(m.candidateSentences) || 0
     };
   }
 
@@ -2569,36 +2604,59 @@
     if (stancePol.status === 'on' && model.content.total && Number.isFinite(Number(m.stanceRatio)) && Math.round(Number(m.stanceRatio) * model.content.total) === 0) {
       tips.push('글쓴이의 판단이 드러나는 문장이 없어요. "저는 ~라고 봤다"처럼 입장을 한두 문장 넣어 보세요.');
     }
-    if (!tips.length) tips.push('두드러진 문체 신호가 없어요. 지금 표현을 유지해도 좋아요.');
+    // 계측 축이 기준을 넘지 않아도 위치가 확인된 문장이 있으면 그 문장을 가리킨다. "유지해도 좋아요"는 지목할 문장이 없을 때만.
+    if (!tips.length) {
+      tips.push(model.candidateSentences > 0
+        ? '문체 통계 축은 기준을 넘지 않았어요. 위치가 확인된 ' + model.candidateSentences + '문장만 살펴보면 돼요.'
+        : '두드러진 문체 신호가 없어요. 지금 표현을 유지해도 좋아요.');
+    }
     return tips.slice(0, 3);
   }
 
   // ── 전환 밴드 ───────────────────────────────────────────────────────────────
-  // 유료 전환을 권할 수 있는 상태와 그렇지 않은 상태를 같은 자리에서 다른 말로 닫는다.
-  // 권하지 않는 상태에서는 버튼을 지우거나(추정 보류) 부차 버튼으로 낮춘다(이미 유리한 글).
+  // 세 상태(사장님 2026-09-07: 접근≠추천).
+  //   recommend — 원문 위치가 확인된 문장이 있다: 실제 후보 수로 말을 걸고 정상 버튼.
+  //   access    — 모델 판정은 끝났지만 지목할 문장이 없다: 권하지 않되 막지 않는다(중립 문구·부차 버튼). 점수가 낮아도 같다.
+  //   none      — 간이 추정·근거 부족: 버튼을 지우고 닫는 말만 남긴다.
   function repPaintCta(model) {
     var band = $('gpRepNext');
     if (!band) return;
     var title = $('gpRepCtaTitle'), desc = $('gpRepCtaDesc');
     var btn = $('gpRepCtaBtn'), help = $('gpRepCtaHelp'), cost = $('gpRepGoCost');
-    var eligible = model.conversionEligible !== false;
+    var eligible = model.conversionAccess !== false;
+    var recommend = eligible && model.conversionRecommend === true;
     band.hidden = false;
     band.classList.toggle('is-quiet', !eligible);
+    band.classList.toggle('is-optional', eligible && !recommend);
+    if (btn) btn.classList.toggle('is-secondary', eligible && !recommend);
+    // v125: 예상 변화 칩(원인 축 리드·문장 수 칩)은 밴드를 어수선하게 해 뺐다(사장님 9/2) — 제목·한 줄·버튼·비용만.
+    repPaintExpect(null);
 
-    if (eligible) {
-      if (title) {
-        title.textContent = model.content.generic > 0
-          ? '후보 ' + model.content.generic + '문장, 지금 휴머나이징해 볼까요?'
-          : '이 글, 지금 휴머나이징해 볼까요?';
+    if (recommend) {
+      // "후보 N문장"은 서버가 원문 위치까지 확인한 문장 수다 — 계측 비율이나 지어낸 숫자가 아니다.
+      if (title) title.textContent = '후보 ' + model.candidateSentences + '문장, 지금 휴머나이징해 볼까요?';
+      if (desc) {
+        desc.textContent = model.radar.band === 'low'
+          ? '점수는 낮지만 표시된 문장에서 정형 패턴이 확인됐어요. 뜻과 사실은 그대로, 그 문장의 문체만 다시 씁니다.'
+          : '뜻과 사실은 그대로, 문체만 다시 씁니다.';
       }
-      if (desc) desc.textContent = '뜻과 사실은 그대로, 문체만 다시 씁니다.';
       if (btn) { btn.hidden = false; btn.textContent = '추천 방법·비용 확인하기 →'; }
       if (help) help.hidden = false;
-      // v125: 예상 변화 칩(원인 축 리드·문장 수 칩)은 밴드를 어수선하게 해 뺐다(사장님 9/2) — 제목·한 줄·버튼·비용만.
       repPaintExpect(null);
       return;
     }
-    repPaintExpect(null);
+    if (eligible) {
+      // 권하지 않는다 — 개선점을 찾지 못한 글에 수정을 권하면 안 된다. 다만 기능으로 가는 길은 막지 않는다.
+      if (title) {
+        title.textContent = model.radar.band === 'low'
+          ? '이 글의 AI식 문체 신호가 낮게 감지됐어요'
+          : '지목할 문장이 적어 적극 권하지는 않아요';
+      }
+      if (desc) desc.textContent = '원문 위치와 연결된 정형 패턴이 확인되지 않아 수정을 권하지는 않아요. 원하시면 문체를 다듬는 방법과 비용을 확인할 수 있어요.';
+      if (btn) { btn.hidden = false; btn.textContent = '다듬기 방법·비용 보기'; }
+      if (help) help.hidden = false;
+      return;
+    }
 
     if (cost) cost.hidden = true;
     if (model.style.source === 'engine') {
@@ -2614,15 +2672,6 @@
       if (desc) desc.textContent = model.interpretation.evidence.reason;
       if (btn) btn.hidden = true;
       if (help) help.hidden = true;
-      return;
-    }
-    if (model.radar.band === 'low') {
-      if (title) title.textContent = '이 글의 AI식 문체 신호가 낮게 감지됐어요';
-      if (desc) desc.textContent = model.interpretation && model.interpretation.pattern
-        ? '전체 신호는 낮아요. 표시된 특징이 의도한 표현인지 먼저 읽어 보고, 다듬을 부분이 있다면 방법과 비용을 확인해 보세요.'
-        : '현재 표현과 사실 관계를 먼저 확인해 주세요. 문체를 손보고 싶다면 방법과 비용을 확인할 수 있어요.';
-      if (btn) { btn.hidden = false; btn.textContent = '그래도 방법·비용 보기 →'; }
-      if (help) help.hidden = false;
       return;
     }
     if (title) title.textContent = '판단할 근거가 아직 부족해요';
@@ -2786,9 +2835,14 @@
     repPaintScope(model);
     if ($('gpRepScore')) $('gpRepScore').textContent = score == null ? '--' : String(score);
     if ($('gpRepBandChip')) $('gpRepBandChip').textContent = repVerdictLabel(model);
-    // 히어로 버튼 — 추천을 보류하는 상태(간이 추정·근거 부족·이미 유리한 글)에서는 결론 옆 버튼을 감춘다. 닫는 말은 아래 밴드가 한다.
-    if ($('gpRepVerdictBtn')) $('gpRepVerdictBtn').hidden = model.conversionEligible === false;
-    if ($('gpRepVerdictAct')) $('gpRepVerdictAct').hidden = model.conversionEligible === false;
+    // 히어로 버튼 — 접근이 닫힌 상태(간이 추정·근거 부족)에서만 감춘다. 점수가 낮아도 접근은 열려 있고,
+    //   지목할 문장이 없으면 부차 버튼으로 낮춰 "권하지 않되 막지 않는다"(사장님 2026-09-07).
+    if ($('gpRepVerdictBtn')) {
+      $('gpRepVerdictBtn').hidden = model.conversionAccess === false;
+      $('gpRepVerdictBtn').textContent = model.conversionRecommend ? '휴머나이징으로 다듬기 →' : '휴머나이징 방법 보기';
+      $('gpRepVerdictBtn').classList.toggle('is-secondary', model.conversionAccess !== false && !model.conversionRecommend);
+    }
+    if ($('gpRepVerdictAct')) $('gpRepVerdictAct').hidden = model.conversionAccess === false;
     if ($('gpRepSource')) {
       // 엔진 간이 추정은 모델 판정과 신뢰도가 달라 점수 옆에서 밝힌다.
       // 이력 보정 사실은 화면에 표기하지 않는다(사장님 결정 2026-09-02). 값은 응답·관리자 원장에 남는다.
@@ -2855,8 +2909,9 @@
       // 처방 아래 전환 — 유료 수정을 권하지 않는 상태(간이 추정·근거 부족·유리한 글)에서는 붙이지 않는다.
       var tipsCta = $('gpRepTipsCta');
       if (tipsCta) {
-        var actionable = tipLines.filter(function (line) { return !/두드러진 문체 신호가 없어요/.test(line); }).length;
-        // v125: 바로 아래 전환 밴드와 버튼이 두 개 겹쳐 보였다 — 처방 아래 CTA는 접고 밴드 하나로 닫는다.
+        var actionable = tipLines.filter(function (line) { return !/두드러진 문체 신호가 없어요|문체 통계 축은 기준을 넘지 않았어요/.test(line); }).length;
+        // v125: 바로 아래 전환 밴드와 버튼이 두 개 겹쳐 보였다(사장님 9/2) — 처방 아래 CTA는 접고 밴드 하나로 닫는다.
+        //   2026-09-07 유도 재설계에서도 이 결정은 유지한다(접근/추천 분기는 히어로·밴드·고정 바 세 곳이 맡는다).
         tipsCta.hidden = true;
         void actionable;
         if ($('gpRepTipsCtaText')) $('gpRepTipsCtaText').textContent = '이 ' + actionable + '가지를 한 번에 손보려면';
@@ -2868,6 +2923,20 @@
     //   보고서가 '개선 포인트' 뒤 허공에서 끝났다. 밀지 않되 닫는 말은 남긴다.
     repPaintCta(model);
     repSetupSticky(model);
+    // 퍼널 계측 — 보고서 노출과 버튼 상태를 최초 밴드·감지기 버전과 함께 남긴다. 이후 모든 이벤트에 같은 컨텍스트가 붙는다.
+    var detectCtx = repDetectContext(model);
+    if (typeof window.gpSetDetectContext === 'function') window.gpSetDetectContext(detectCtx);
+    if (window.gpTrack) {
+      window.gpTrack('detect_report_view', detectCtx);
+      window.gpTrack('detect_cta_exposed', Object.assign({}, detectCtx, {
+        cta_surfaces: [
+          $('gpRepVerdictBtn') && !$('gpRepVerdictBtn').hidden ? 'hero' : '',
+          $('gpRepCtaBtn') && !$('gpRepCtaBtn').hidden ? 'band' : '',
+          $('gpRepTipsCta') && !$('gpRepTipsCta').hidden ? 'tips' : '',
+          model.conversionAccess !== false ? 'sticky' : ''
+        ].filter(Boolean).join(',')
+      }));
+    }
     if ($('gpRepLimit')) {
       var limit = model.synthesis.limitation || '';
       if (interpretation && interpretation.limitations.length) limit = interpretation.limitations.join(' ');
@@ -2895,9 +2964,11 @@
   // 보고서 → 휴머나이징 핸드오프: 해결 경로 선택은 보고서가 아니라
   // 기존 방법 선택(choose) 화면에서. 보고서 데이터로 진단 배너·밴드를 채워 재진단 없이 이어가고,
   // 글은 입력칸(lavInput)에 그대로 남아 있어 같은 글로 바로 진행된다(컨텍스트 바 원문 N자 표기 동일).
-  window.lavReportToHumanize = function () {
+  window.lavReportToHumanize = function (surface) {
     if (typeof window.gpTrackProductModeOpen === 'function') {
-      window.gpTrackProductModeOpen('humanize', 'main', 'detect_report_cta', 'detect');
+      // 어느 버튼(히어로·밴드·처방·고정 바)에서, 어떤 상태(recommend/access)로 넘어왔는지 최초 밴드와 함께 남긴다.
+      window.gpTrackProductModeOpen('humanize', 'main', 'detect_report_cta', 'detect',
+        Object.assign({ cta_surface: typeof surface === 'string' ? surface : 'band' }, repDetectContext()));
     }
     window.lavSetMode('humanize');   // 휴머나이저로 "이동" — 모드 상태도 함께 전환(입력 화면 복귀 시 일관)
     resetToneChoice();
@@ -3509,6 +3580,10 @@
     if (lastReportModel.score != null) out.sourceProbability = lastReportModel.score;
     var c = lastReportModel.content || {};
     if (c.total) out.sourceEvidence = { lived: Number(c.lived) || 0, specific: Number(c.specific) || 0, total: Number(c.total) || 0 };
+    // 퍼널 계측 — 서버 이력에 최초 밴드·감지기 버전을 남겨 밴드별 재생성·환불을 셀 수 있게 한다(점수·요금과 무관).
+    var band = lastReportModel.style && lastReportModel.style.band;
+    if (band === 'low' || band === 'moderate' || band === 'high') out.sourceBand = band;
+    if (lastReportModel.detectorVersion) out.sourceDetectorVersion = lastReportModel.detectorVersion;
     return out;
   }
 

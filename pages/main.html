@@ -253,7 +253,7 @@
                  </div>
                  <!-- 행동: 결론 바로 옆 버튼 하나. 비용은 옆에 작게 -->
                  <div class="gp-rep-verdict-act" id="gpRepVerdictAct">
-                   <button type="button" class="gp-rep-verdict-btn" id="gpRepVerdictBtn" onclick="lavReportToHumanize()">휴머나이징으로 다듬기 →</button>
+                   <button type="button" class="gp-rep-verdict-btn" id="gpRepVerdictBtn" onclick="lavReportToHumanize('hero')">휴머나이징으로 다듬기 →</button>
                    <p class="gp-rep-verdict-cost" id="gpRepVerdictCost" hidden></p>
                  </div>
                  <!-- 유지할 근거 칩은 v125에서 화면에서 뺐다(원인 분석의 경험 문장 축이 같은 수를 보여준다). 마크업은 계약용. -->
@@ -370,7 +370,7 @@
              <!-- 처방을 읽고 "직접 고치기엔 벅찬" 순간이 전환점이다 -->
              <div class="gp-rep-tips-cta" id="gpRepTipsCta" hidden>
                <span id="gpRepTipsCtaText">이 처방을 한 번에 손보려면</span>
-               <button type="button" onclick="lavReportToHumanize()">휴머나이징으로 다듬기 →</button>
+               <button type="button" onclick="lavReportToHumanize('tips')">휴머나이징으로 다듬기 →</button>
              </div>
            </section>
 
@@ -381,7 +381,7 @@
                <p id="gpRepCtaDesc">원문의 뜻과 사실은 그대로 두고 문체만 다시 씁니다.</p>
                <ul class="gp-rep-cta-expect" id="gpRepExpect" hidden aria-label="다듬었을 때 예상 변화"></ul>
                <div class="gp-rep-cta-row">
-                 <button type="button" class="gp-rep-cta-btn" id="gpRepCtaBtn" onclick="lavReportToHumanize()">추천 방법·비용 확인하기 →</button>
+                 <button type="button" class="gp-rep-cta-btn" id="gpRepCtaBtn" onclick="lavReportToHumanize('band')">추천 방법·비용 확인하기 →</button>
                  <p class="gp-rep-cta-cost" id="gpRepGoCost" hidden></p>
                </div>
                <p class="gp-rep-cta-help" id="gpRepCtaHelp"><b>지금은 차감되지 않아요</b></p>
@@ -414,7 +414,7 @@
            <!-- 모바일 고정 바 — 히어로를 지나면 나타나고, 전환 밴드가 보이면 사라진다 -->
            <div class="gp-rep-stickybar" id="gpRepSticky" hidden>
              <div class="gp-rep-stickybar-copy"><b id="gpRepStickyScore">--</b><span id="gpRepStickyLabel">AI식 문체 신호</span></div>
-             <button type="button" class="gp-rep-stickybar-btn" id="gpRepStickyBtn" onclick="lavReportToHumanize()">다듬기 방법 보기 →</button>
+             <button type="button" class="gp-rep-stickybar-btn" id="gpRepStickyBtn" onclick="lavReportToHumanize('sticky')">다듬기 방법 보기 →</button>
            </div>
            <p class="gp-rep-limit" id="gpRepLimit">문체 패턴을 바탕으로 한 참고 결과이며 작성 주체나 외부 검사 결과를 확정하지 않아요.</p>
            <p class="gp-rep-note" id="gpRepRemain"></p>

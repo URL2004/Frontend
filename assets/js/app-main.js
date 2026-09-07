@@ -183,15 +183,16 @@ function applyProductMode(productMode, opts) {
 }
 window.gpApplyProductMode = applyProductMode;
 
-function trackProductModeOpen(productMode, sourceRoute, sourceSurface, sourceMode) {
+function trackProductModeOpen(productMode, sourceRoute, sourceSurface, sourceMode, extra) {
  const normalized = normalizeProductMode(productMode);
  if (typeof window.gpTrack === 'function') {
-  window.gpTrack('product_mode_open', {
+  // extra: 감지 보고서에서 넘어올 때 최초 점수 밴드·버튼 상태(detect_* / cta_surface) — 밴드별 전환율 계측용.
+  window.gpTrack('product_mode_open', Object.assign({}, extra && typeof extra === 'object' ? extra : {}, {
    source_route: normalizeRouteTab(sourceRoute || getRouteTab()),
    source_surface: String(sourceSurface || 'page_cta').slice(0, 80),
    source_mode: sourceMode === 'detect' || sourceMode === 'humanize' ? sourceMode : '',
    target_mode: normalized
-  });
+  }));
  }
  return normalized;
 }
