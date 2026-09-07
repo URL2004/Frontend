@@ -4138,6 +4138,7 @@ const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 function gpTimestampMs(value) {
  if (!value) return 0;
+ if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
  if (typeof value.toMillis === 'function') return value.toMillis();
  if (typeof value.toDate === 'function') return value.toDate().getTime();
  if (value._seconds) return value._seconds * 1000;
@@ -4147,22 +4148,22 @@ function gpTimestampMs(value) {
 
 function gpOrderPaidAtMs(item) {
  const o = item.data || {};
- return item.kind === 'sub'
+ return item.kind === 'sub' || item.kind === 'subscription'
   ? gpTimestampMs(o.approvedAt || o.cycleStartedAt || o.requestedAt)
   : gpTimestampMs(o.createdAt || o.approvedAt || o.requestedAt);
 }
 
 function gpRefundWindowEndMs(item) {
  const o = item.data || {};
- const explicitEnd = gpTimestampMs(o.refundWindowEndsAt);
- const explicitStart = gpTimestampMs(o.refundWindowStartsAt);
+ const explicitEnd = gpTimestampMs(o.refundWindowEndsAt ?? o.refundWindowEndsAtMs);
+ const explicitStart = gpTimestampMs(o.refundWindowStartsAt ?? o.refundWindowStartsAtMs);
  const contractDeliveredAt = gpTimestampMs(o.contractDocumentDeliveredAt);
  const serviceAvailableAt = gpTimestampMs(o.serviceAvailableAt);
  const contractualStart = Math.max(contractDeliveredAt, serviceAvailableAt);
- const startsAt = explicitStart || contractualStart || gpOrderPaidAtMs(item);
+ const startsAt = Math.max(explicitStart, contractualStart, gpTimestampMs(o.termsSnapshotRecordedAt)) || gpOrderPaidAtMs(item) || Number(o.createdAtMs) || 0;
  const storedDays = Math.floor(Number(o.refundWindowDaysAtPurchase));
  const windowDays = Number.isFinite(storedDays) && storedDays > 0 ? storedDays : 7;
- if (!startsAt) return explicitEnd;
+ if (!startsAt) return 0;
  const kstStart = new Date(startsAt + KST_OFFSET_MS);
  const kstDayStartAsUtc = Date.UTC(kstStart.getUTCFullYear(), kstStart.getUTCMonth(), kstStart.getUTCDate());
  const calendarDayEnd = kstDayStartAsUtc + windowDays * 24 * 60 * 60 * 1000 + (24 * 60 * 60 * 1000 - 1) - KST_OFFSET_MS;
@@ -4333,7 +4334,7 @@ window.loadRefundModalList = async () =>{
    ? `정기결제 · ${SUB_TIER_LABELS[o.tier] || o.tier}`
    : `크레딧 충전 · ${Number(o.totalGrantedCredits || o.safeCredits || o.credits || 0).toLocaleString('ko-KR')}크레딧`;
   // 일반 청약철회 기간은 주문에 저장된 계약·이용 가능 시점 기준을 우선한다.
-  // 기간이 지난 주문은 추가 확인을 허용하고, 기준일 자체가 없으면 고객센터로 안내한다.
+  // 일반 요건을 벗어난 주문은 고객센터의 예외 검토로 안내한다.
   let eligibilityNote = '';
   let refundPreview = '';
   let canRequest = true;
@@ -4384,18 +4385,20 @@ window.loadRefundModalList = async () =>{
     canRequest = false;
     eligibilityNote = '청약철회 기준일을 확인할 수 없습니다. 주문번호와 함께 고객센터로 문의해 주세요.';
   } else if (requiresEligibilityReview) {
-    const reviewNotice = '일반 청약철회 기간이 지났지만 관계 법령상 잔액 환급·취소 사유가 있는지 추가 확인을 요청할 수 있어요.';
-    eligibilityNote = `${eligibilityNote ? eligibilityNote + ' ' : ''}${reviewNotice}`;
+    canRequest = false;
+    eligibilityNote = '일반 환불 신청 기간이 지났습니다. 법정 예외 사유가 있으면 고객센터로 문의해 주세요.';
   }
+  if (!canRequest) refundPreview = "";
   return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-  <div style="flex:1;min-width:0;">
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;">
+  <div style="flex:1 1 220px;min-width:0;">
   <div style="font-weight:600;font-size:14px;color:var(--text);">${(o.amount||0).toLocaleString()}원 · ${escapeHtml(title)}</div>
   <div style="color:var(--text3);font-size:12px;margin-top:4px;">${date}</div>
   ${refundPreview ? `<div style="color:var(--text);font-size:12px;font-weight:700;margin-top:7px;">${refundPreview}</div>` : ''}
   ${eligibilityNote ? `<div style="color:${canRequest?'var(--text3)':'var(--red)'};font-size:11px;margin-top:4px;">${eligibilityNote}</div>` : ''}
   </div>
- <button ${canRequest ? '' : 'disabled'} onclick="window.requestRefund('${jsAttr(item.id)}','${jsAttr(item.kind)}',${refundAmount},${requiresEligibilityReview})" style="padding:6px 14px;border-radius:6px;border:1px solid var(--red);background:none;color:${canRequest?'var(--red)':'var(--text3)'};font-size:12px;font-weight:600;cursor:${canRequest?'pointer':'not-allowed'};white-space:nowrap;opacity:${canRequest?'1':'.5'};">${canRequest ? (requiresEligibilityReview ? '확인 요청' : '환불 요청') : '문의 필요'}</button>
+ <button ${canRequest ? '' : 'disabled'} onclick="window.requestRefund('${jsAttr(item.id)}','${jsAttr(item.kind)}',${refundAmount},${requiresEligibilityReview})" style="padding:6px 14px;border-radius:6px;border:1px solid var(--red);background:none;color:${canRequest?'var(--red)':'var(--text3)'};font-size:12px;font-weight:600;cursor:${canRequest?'pointer':'not-allowed'};white-space:nowrap;opacity:${canRequest?'1':'.5'};">${canRequest ? '환불 요청' : '신청 불가'}</button>
+ ${!canRequest ? '<button type="button" class="gp-admin-mini-btn" onclick="document.getElementById(\'refundModal\').style.display=\'none\';switchTab(\'qna\')">고객센터</button>' : ''}
  </div>
 </div>`;
  }).join('');
@@ -4445,6 +4448,60 @@ window.requestRefund = async (orderId, kind, estimatedRefundAmount, requiresElig
 };
 
 // 관리자: 환불 요청 목록 (크레딧 + 정기결제 통합)
+function adminRefundNeedsReview(order, kind = order.kind, direct = false) {
+ if (order.refundReservationState === 'provider_canceling'
+   || (order.refundProcessing?.operationId && order.refundProcessing.phase !== 'requested_reserved')
+   || (order.status === 'refund_processing' && order.subscriptionRefundProcessing?.operationId)) return false;
+ if (direct && (kind === 'sub' || kind === 'subscription')) return true;
+ const receipt = Number(order.refundRequestSnapshot?.requestedAtMs) || gpTimestampMs(order.refundRequestedAt ?? order.refundRequestedAtMs);
+ const basis = order.status === 'refund_requested' ? receipt : (direct ? Date.now() : 0);
+ const end = gpRefundWindowEndMs({ kind, data: order });
+ return order.refundEligibilityReviewRequired === true || !basis || !end || basis > end;
+}
+
+const ADMIN_REFUND_EXCEPTIONS = [
+ ['service_not_provided', '서비스 미제공'],
+ ['service_not_as_described', '표시·계약 내용과 다른 제공'],
+ ['remaining_balance_settlement', '잔액 환급 사유 확인'],
+ ['other_statutory_ground', '기타 법정 사유 (중복·오결제 등)']
+];
+function adminRefundReviewForm(id) {
+ return `<fieldset id="${escapeHtml(id)}" class="gp-refund-review"><legend>환불 예외 검토 필요</legend>
+ <label>예외 유형<select data-review-code required><option value="">유형을 선택하세요</option>${ADMIN_REFUND_EXCEPTIONS.map(([code, label]) => `<option value="${code}">${label}</option>`).join('')}</select></label>
+ <label>검토 사유<textarea data-review-note required minlength="2" maxlength="500" rows="3" placeholder="확인한 사실과 환불 근거를 기록하세요"></textarea></label>
+ <label class="gp-refund-review-check"><input type="checkbox" data-review-confirm>구매 당시 정책과 예외 근거를 확인했습니다.</label></fieldset>`;
+}
+function adminReadRefundReview(root) {
+ const code = root?.querySelector('[data-review-code]');
+ const note = root?.querySelector('[data-review-note]');
+ const checked = root?.querySelector('[data-review-confirm]');
+ if (!ADMIN_REFUND_EXCEPTIONS.some(([value]) => value === code?.value) || (note?.value || '').trim().length < 2 || !checked?.checked) {
+  alert('예외 유형과 검토 사유를 입력하고 확인란을 체크해 주세요.');
+  (!code?.value ? code : (note?.value || '').trim().length < 2 ? note : checked)?.focus();
+  return null;
+ }
+ return { eligibilityReviewed: true, statutoryExceptionCode: code.value, eligibilityReviewNote: note.value.trim() };
+}
+async function adminCollectDirectRefundReview(order, kind) {
+ if (!adminRefundNeedsReview(order, kind, true)) return {};
+ const dialog = document.createElement('dialog');
+ dialog.className = 'gp-refund-review-dialog';
+ dialog.setAttribute('aria-label', '직접 환불 예외 검토');
+ dialog.innerHTML = `<form>${adminRefundReviewForm('directRefundReview')}<div class="gp-admin-refund-actions"><button type="button" data-cancel class="gp-admin-mini-btn">취소</button><button type="submit" class="gp-admin-primary">검토 기록 후 계속</button></div></form>`;
+ document.body.appendChild(dialog);
+ return new Promise(resolve => {
+  const finish = value => { dialog.close(); dialog.remove(); resolve(value); };
+  dialog.addEventListener('cancel', event => { event.preventDefault(); finish(null); });
+  dialog.querySelector('[data-cancel]').addEventListener('click', () => finish(null));
+  dialog.querySelector('form').addEventListener('submit', event => {
+   event.preventDefault();
+   const review = adminReadRefundReview(dialog);
+   if (review) finish(review);
+  });
+  dialog.showModal();
+ });
+}
+
 function adminPendingRefund(order, kind) {
  return order.refundPresentation || window.GPRefundAccounting.pendingRefund(order, kind || order.kind);
 }
@@ -4517,7 +4574,8 @@ window.loadAdminRefundList = async () =>{
  const userEmail = users.get(o.uid)?.email || o.uid;
  const isSub = item.kind === 'subscription';
  const quote = adminPendingRefund(o, item.kind);
- adminRefundQuotes.set(`${item.kind}:${item.id}`, quote);
+ const needsEligibilityReview = adminRefundNeedsReview(o, item.kind);
+ adminRefundQuotes.set(`${item.kind}:${item.id}`, { ...quote, needsEligibilityReview });
  let itemLabel, refundDetail;
  if (isSub) {
    itemLabel = `정기결제 · ${SUB_TIER_LABELS[o.tier] || o.tier}`;
@@ -4545,6 +4603,7 @@ window.loadAdminRefundList = async () =>{
  </div>
  </div>
  ${refundDetail}
+ ${needsEligibilityReview ? adminRefundReviewForm(`refund-review-${item.kind}-${item.id}`) : ''}
  <div class="gp-admin-refund-reason">사유: ${escapeHtml(o.cancelReason || '없음')}</div>
 </div>`;
  }
@@ -4562,6 +4621,9 @@ const adminRefundQuotes = new Map();
 window.approveRefund = async (orderId, kind) =>{
  kind = kind || 'order';
  const quote = adminRefundQuotes.get(`${kind}:${orderId}`);
+ const eligibilityReview = quote?.needsEligibilityReview
+  ? adminReadRefundReview(document.getElementById(`refund-review-${kind}-${orderId}`)) : {};
+ if (!eligibilityReview) return;
  const confirmation = quote && quote.amount !== null
   ? `접수된 환불 예정액은 ${adminRefundValue(quote.amount, '원')}입니다.${quote.reserved ? ' 크레딧은 이미 예약되어 중복 차감하지 않습니다.' : ''} 승인 시 서버가 최종 금액을 확인하고 토스에서 실제 환불합니다.`
   : '승인하면 서버가 환불액을 확인하고 토스에서 실제 환불을 진행합니다.';
@@ -4576,7 +4638,7 @@ window.approveRefund = async (orderId, kind) =>{
  const idToken = await CU.getIdToken();
  const res = await fetch(window.apiUrl('/approve-refund'), {
  method:'POST', headers: bearerJsonHeaders(idToken),
- body: JSON.stringify({ orderId, kind })
+ body: JSON.stringify({ orderId, kind, ...eligibilityReview })
  });
  const data = await res.json();
  if (res.ok && data.ok) {
@@ -5165,10 +5227,15 @@ window.adminToggleRefund = function(i) {
 };
 
 async function adminRunRefund(i, body) {
+ const order = adminSelectedChargeOrder(i);
+ if (!order) return;
  const pendingKey = `direct:${body.kind || 'order'}:${body.orderId || i}`;
  if (adminRefundPending.has(pendingKey)) return;
  adminRefundPending.add(pendingKey);
  try {
+  const review = await adminCollectDirectRefundReview(order, body.kind);
+  if (!review) return;
+  body = { ...body, ...review };
   const data = await adminPost('/admin/direct-refund', body);
   const isPartial = data.fullyRefunded === false;
   const doneMsg = `${isPartial ? '부분 환불' : '환불'} 완료: ${adminMoney(data.refundAmount)}${data.refundedCredits ? ' · ' + data.refundedCredits.toLocaleString('ko-KR') + '크레딧 차감' : ''}`;
