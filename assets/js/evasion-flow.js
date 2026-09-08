@@ -4716,9 +4716,10 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   };
 
-  // ── 사후 문단 보강(2026-08-27): 결과 아래 코칭 섹션 — 추상 문단에 실제 경험 한 줄을 받아 그 문단만 재생성.
-  //   프레이밍 계약: 추상성은 원문 귀속(엔진 실패가 아님) · 최대 2개 · 결과 본문과 시각 분리 · 무변화는 정직 안내·무과금.
+  // Optional contextual follow-up: one question, grounded in an existing experience.
+  // Skipping changes no result text and makes no API or billing request.
   var lavRefineJobId = null, lavRefineBusy = false, refinePollGen = 0;
+  var refineView = { jobId: null, skipped: false, drafts: {} };
 
   // 결과 본문을 문단 단위 DOM으로 렌더 — 보강 대상 문단을 본문 안에서 직접 강조한다.
   //   구분자(빈 줄)는 텍스트 노드로 보존 → container.textContent === outputText 그대로라
@@ -4728,7 +4729,9 @@
     if (!body) return;
     var text = outputText || '';
     var targetIdx = {};
-    (targets || []).forEach(function (t) { targetIdx[t.index] = true; });
+    (targets || []).forEach(function (t) {
+      if (t.coaching && t.coaching.version === 1 && !(refineView.jobId === lavRefineJobId && refineView.skipped)) targetIdx[t.index] = true;
+    });
     body.innerHTML = '';
     var parts = text.split(/(\n[ \t]*\n+)/);
     var contentIdx = 0;
@@ -4757,59 +4760,87 @@
     var wrap = $('lavDoneRefine'), list = $('lavDoneRefineList'), okLine = $('lavDoneRefineOk');
     if (!wrap || !list) return;
     var result = (st && st.result) || {};
-    var targets = result.refineTargets;
-    if (targets === undefined) { wrap.hidden = true; return; }   // 백엔드 플래그 OFF — 섹션 자체를 숨김
-    wrap.hidden = false;
+    // Old responses cannot provide a relevant question; do not show generic coaching.
+    var targets = (Array.isArray(result.refineTargets) ? result.refineTargets : []).filter(function (t) {
+      return Number.isInteger(t.index) && t.coaching && t.coaching.version === 1 && t.coaching.question;
+    }).slice(0, 1);
+    if (refineView.jobId !== lavRefineJobId) refineView = { jobId: lavRefineJobId, skipped: false, drafts: {} };
     list.innerHTML = '';
+    wrap.hidden = !targets.length;
+    if (okLine) okLine.hidden = true;
+    if (!targets.length) return;
+    var lead = wrap.querySelector('.lav-refine-lead');
+    if (lead) lead.hidden = refineView.skipped;
+    if (refineView.skipped) {
+      if (okLine) { okLine.hidden = false; okLine.textContent = '질문을 건너뛰었어요. 추가 입력 없이 결과를 복사하거나 내려받을 수 있어요.'; }
+      var undo = document.createElement('button');
+      undo.type = 'button'; undo.className = 'lav-refine-skip'; undo.textContent = '질문 다시 보기';
+      undo.onclick = function () {
+        refineView.skipped = false;
+        renderDoneBody(result.outputText, targets);
+        renderRefineTargets(st);
+        var field = list.querySelector('textarea'); if (field) field.focus();
+      };
+      list.appendChild(undo);
+      return;
+    }
     var refineInfo = result.refine || {};
     var freeLeft = Math.max(0, Number(refineInfo.freeLeft) || 0);
-    if (!targets.length) { if (okLine) okLine.hidden = false; return; }   // 빈 배열 = 구체성 충분(긍정 신호)
-    if (okLine) okLine.hidden = true;
-    targets.slice(0, 2).forEach(function (t) {
+    targets.forEach(function (t) {
+      var coaching = t.coaching;
       var card = document.createElement('div');
       card.className = 'lav-refine-card';
-      var quote = document.createElement('blockquote');
-      quote.className = 'lav-refine-quote';
-      quote.textContent = '“' + (t.snippet || '') + '…”';
-      quote.title = '누르면 결과에서 이 문단 위치로 이동해요';
-      quote.onclick = function () {   // 카드 ↔ 본문 강조 연결: 스니펫 클릭 = 해당 문단으로 스크롤 + 펄스
+      var heading = document.createElement('h3');
+      heading.className = 'lav-refine-question-title';
+      heading.textContent = coaching.title || '이 상황을 조금 더 알려주세요';
+      var quote = document.createElement('button');
+      quote.type = 'button'; quote.className = 'lav-refine-quote';
+      quote.textContent = '“' + (t.snippet || '') + '”';
+      quote.setAttribute('aria-label', '결과 본문에서 이 문단 보기: ' + (t.snippet || ''));
+      quote.title = '결과 본문에서 이 문단 보기';
+      quote.onclick = function () {
         var el = document.querySelector('#lavDoneBody .lav-para[data-para-idx="' + t.index + '"]');
         if (!el) return;
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('is-pulse');
-        setTimeout(function () { el.classList.remove('is-pulse'); }, 1300);
+        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+        el.setAttribute('tabindex', '-1'); el.focus({ preventScroll: true });
       };
+      var label = document.createElement('label');
+      label.className = 'lav-refine-question';
+      label.htmlFor = 'lavRefineMemo-' + t.index;
+      label.textContent = coaching.question;
       var hint = document.createElement('p');
-      hint.className = 'lav-refine-hint';
-      hint.textContent = '위 결과에서 보라색으로 칠해진 문단이에요. 원문에 구체적인 장면·수치가 없어 일반론으로 남아 있어요.';
-      // "뭘 써야 할지" 가이드 — 정적 텍스트라 innerHTML 사용(사용자 입력 없음)
-      var guide = document.createElement('div');
-      guide.className = 'lav-refine-guide';
-      guide.innerHTML = '<b>이 문단 주제로 직접 겪은 일을 한 줄이면 돼요</b>'
-        + '<span><i>언제·어디서</i> 작년 겨울, 편의점 야간 알바에서</span>'
-        + '<span><i>무슨 일</i> 정산이 30분 늦어 막차를 놓쳤다</span>'
-        + '<span><i>숫자가 있으면 더 좋아요</i> 2년간 · 세 번 · 30분</span>';
-      var row = document.createElement('div');
-      row.className = 'lav-refine-row';
+      hint.id = 'lavRefineHint-' + t.index; hint.className = 'lav-refine-hint';
+      hint.textContent = '기억나는 사실만 짧게 적어주세요. 정확한 횟수나 숫자는 없어도 괜찮아요. (선택 · 최대 500자)';
+      var row = document.createElement('div'); row.className = 'lav-refine-row';
       var input = document.createElement('textarea');
-      input.rows = 2;
-      input.maxLength = 500;
+      input.id = label.htmlFor; input.rows = 3; input.maxLength = 500;
       input.className = 'lav-refine-input';
-      input.placeholder = '예) 작년 겨울 편의점 야간 알바에서 정산이 30분 늦어 막차를 놓친 적이 있다';
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'lav-refine-btn';
+      input.setAttribute('aria-describedby', hint.id + ' lavRefineStatus-' + t.index);
+      input.placeholder = coaching.placeholder || '이 상황에서 직접 확인하거나 한 일을 적어주세요.';
+      input.value = refineView.drafts[t.index] || '';
+      input.oninput = function () { refineView.drafts[t.index] = input.value; input.removeAttribute('aria-invalid'); };
+      var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'lav-refine-btn';
       var credit = Number(t.credit) || 0;
       btn.textContent = freeLeft > 0
-        ? '내 경험 넣어 이 문단만 다시 다듬기 (무료 ' + freeLeft + '회 남음)'
-        : '내 경험 넣어 이 문단만 다시 다듬기 (' + credit + '크레딧)';
+        ? '문단 보완하기 (무료 ' + freeLeft + '회 남음)'
+        : '문단 보완하기 (' + credit + '크레딧)';
+      var skip = document.createElement('button');
+      skip.type = 'button'; skip.className = 'lav-refine-skip'; skip.textContent = '기억나지 않아요 · 건너뛰기';
+      skip.onclick = function () {
+        if (lavRefineBusy) return;
+        refineView.skipped = true;
+        renderDoneBody(result.outputText, []);
+        renderRefineTargets(st);
+        var undo = list.querySelector('button'); if (undo) undo.focus();
+      };
       var status = document.createElement('p');
-      status.className = 'lav-refine-status';
-      status.hidden = true;
-      btn.onclick = function () { lavRefineSubmit(t.index, credit, freeLeft, input, btn, status); };
-      row.appendChild(input); row.appendChild(btn);
-      card.appendChild(quote); card.appendChild(hint); card.appendChild(guide); card.appendChild(row); card.appendChild(status);
-      list.appendChild(card);
+      status.id = 'lavRefineStatus-' + t.index; status.className = 'lav-refine-status';
+      status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite'); status.hidden = true;
+      btn.onclick = function () { lavRefineSubmit(t.index, credit, freeLeft, input, btn, status, skip); };
+      row.appendChild(input); row.appendChild(btn); row.appendChild(skip);
+      card.appendChild(heading); card.appendChild(quote); card.appendChild(label); card.appendChild(hint);
+      card.appendChild(row); card.appendChild(status); list.appendChild(card);
     });
   }
 
@@ -4820,10 +4851,10 @@
     statusEl.classList.toggle('is-error', !!isError);
   }
 
-  async function lavRefineSubmit(idx, credit, freeLeft, input, btn, statusEl) {
+  async function lavRefineSubmit(idx, credit, freeLeft, input, btn, statusEl, skip) {
     if (lavRefineBusy || !lavRefineJobId) return;
     var memo = (input && input.value || '').trim();
-    if (memo.length < 5) { lavRefineStatus(statusEl, '실제 겪은 일을 5자 이상 적어 주세요.', true); return; }
+    if (memo.length < 5) { lavRefineStatus(statusEl, '기억나는 내용을 5자 이상 적어주세요. 떠오르지 않으면 건너뛸 수 있어요.', true); input.setAttribute('aria-invalid', 'true'); input.focus(); return; }
     // 유료 회차 클라이언트 프리체크 — accept-fallback과 동일 패턴
     if (freeLeft <= 0 && credit > 0 && window.UP !== 'unlimited' && (Number(window.UC) || 0) < credit) {
       if (typeof window.gpOpenCreditCheckout === 'function') {
@@ -4832,10 +4863,10 @@
       return;
     }
     lavRefineBusy = true;
-    input.disabled = true; btn.disabled = true;
+    input.disabled = true; btn.disabled = true; if (skip) skip.disabled = true;
     var prevLabel = btn.textContent;
     btn.textContent = '문단을 다시 다듬는 중…';
-    lavRefineStatus(statusEl, '실제 경험을 문단에 녹이는 중이에요. 30초~2분 정도 걸려요.');
+    lavRefineStatus(statusEl, '적어주신 내용을 문단에 반영하고 있어요.');
     if (typeof window.gpTrack === 'function') window.gpTrack('refine_start', { paragraph_index: idx, memo_length: memo.length, free: freeLeft > 0 });
     try {
       var idToken = await evGetIdToken();
@@ -4851,19 +4882,19 @@
           window.gpOpenCreditCheckout({ action: 'paragraph_refine', source: 'refine_card', neededCredits: (d && d.needed) || credit, currentCredits: Number(window.UC) || 0 });
         }
         lavRefineStatus(statusEl, (d && d.error) || '문단 보강을 시작하지 못했어요. 잠시 후 다시 시도해 주세요.', true);
-        lavRefineBusy = false; input.disabled = false; btn.disabled = false; btn.textContent = prevLabel;
+        lavRefineBusy = false; input.disabled = false; btn.disabled = false; if (skip) skip.disabled = false; btn.textContent = prevLabel;
         return;
       }
-      pollRefine(lavRefineJobId, ++refinePollGen, { input: input, btn: btn, statusEl: statusEl, prevLabel: prevLabel });
+      pollRefine(lavRefineJobId, ++refinePollGen, { input: input, btn: btn, skip: skip, statusEl: statusEl, prevLabel: prevLabel });
     } catch (e) {
       lavRefineStatus(statusEl, '네트워크 오류로 시작하지 못했어요. 잠시 후 다시 시도해 주세요.', true);
-      lavRefineBusy = false; input.disabled = false; btn.disabled = false; btn.textContent = prevLabel;
+      lavRefineBusy = false; input.disabled = false; btn.disabled = false; if (skip) skip.disabled = false; btn.textContent = prevLabel;
     }
   }
 
   function pollRefine(jobId, gen, ui) {
     var tries = 0, MAX_TRIES = 80;   // 3초 × 80 ≈ 4분(백엔드 타임아웃 3분 + 여유)
-    var restore = function () { ui.input.disabled = false; ui.btn.disabled = false; ui.btn.textContent = ui.prevLabel; };
+    var restore = function () { ui.input.disabled = false; ui.btn.disabled = false; if (ui.skip) ui.skip.disabled = false; ui.btn.textContent = ui.prevLabel; };
     var tick = async function () {
       if (gen !== refinePollGen || jobId !== lavRefineJobId) { lavRefineBusy = false; return; }   // 새 작업·재보강 시작 → 자연 종료
       tries++;
@@ -4890,7 +4921,7 @@
           renderResultNotices(body);
           renderBillingDisposition(body);
           renderDoneNextStep(body);
-          if (window.gpToast) window.gpToast('실제 경험이 문단에 자연스럽게 녹아 들어갔어요.', { type: 'success' });
+          if (window.gpToast) window.gpToast('적어주신 내용을 문단에 반영했어요.', { type: 'success' });
           if (typeof window.gpTrack === 'function') window.gpTrack('refine_done', { deducted: !!refine.deducted });
         } else {
           lavRefineStatus(ui.statusEl, refine.note || '문단이 크게 달라지지 않아 원래 문단을 유지했어요. 크레딧·무료 횟수는 쓰지 않았어요.');

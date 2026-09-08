@@ -9343,7 +9343,7 @@ body.gp-modal-open{overflow:hidden;}
  margin:2px 0;
 }
 .lav-para.is-refine-target::before{
- content:'✍️ 실제 경험 넣기 추천';
+ content:'선택 · 질문으로 보완';
  display:table;   /* 칩만 한 줄 차지(shrink-wrap) — 본문은 다음 줄부터 */
  font-size:12px;
  font-weight:700;
@@ -9373,6 +9373,12 @@ body.gp-modal-open{overflow:hidden;}
 .lav-refine-card:first-child{border-top:0;padding-top:2px;}
 .lav-refine-quote{margin:0 0 8px;font-size:13.5px;line-height:1.6;color:var(--text,#1f2437);background:rgba(90,91,216,.10);border:1px solid rgba(90,91,216,.28);padding:10px 12px;border-radius:8px;cursor:pointer;}
 .lav-refine-quote:hover{background:rgba(90,91,216,.16);}
+.lav-refine-question-title{font-size:16px;line-height:1.5;margin:4px 0 12px;color:var(--text,#1f2437);}
+button.lav-refine-quote{display:block;width:100%;text-align:left;font-family:inherit;overflow-wrap:anywhere;}
+.lav-refine-question{display:block;font-size:15px;font-weight:700;line-height:1.65;margin:16px 0 6px;color:var(--text,#1f2437);}
+.lav-refine-skip{align-self:flex-start;min-height:44px;padding:10px 0;border:0;background:transparent;color:#4749c9;font:inherit;font-size:13.5px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;}
+.lav-refine-skip:disabled{opacity:.55;cursor:default;}
+.lav-refine-quote:focus-visible,.lav-refine-skip:focus-visible,.lav-refine-btn:focus-visible{outline:2px solid #4749c9;outline-offset:3px;}
 .lav-refine-hint{font-size:13px;line-height:1.6;color:var(--text2,#3c4257);margin:0 0 10px;}
 /* "뭘 써야 할지" 가이드 — 한 줄 공식 3가지 */
 .lav-refine-guide{display:flex;flex-direction:column;gap:5px;margin:0 0 12px;padding:10px 12px;background:#fff;border:1px solid #e2e4f2;border-radius:10px;}
@@ -9394,10 +9400,11 @@ body.gp-modal-open{overflow:hidden;}
  resize:vertical;
  min-height:64px;
 }
-.lav-refine-input::placeholder{color:#9aa0bd;}
+.lav-refine-input::placeholder{color:#666d88;}
 .lav-refine-input:focus{outline:none;border-color:#5a5bd8;box-shadow:0 0 0 3px rgba(90,91,216,.15);}
 .lav-refine-btn{
  width:100%;
+ word-break:keep-all;
  font-size:14.5px;
  font-weight:700;
  padding:13px 16px;
