@@ -5,6 +5,17 @@ import vm from 'node:vm';
 
 const boot = fs.readFileSync(new URL('../assets/js/app-boot.js', import.meta.url), 'utf8');
 const moduleCode = fs.readFileSync(new URL('../assets/js/app-module.js', import.meta.url), 'utf8');
+test('production CSP permits the Firebase Google popup bootstrap script', () => {
+  const config = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+  const headers = config.headers.find(rule => rule.source === '/(.*)').headers;
+  for (const name of ['Content-Security-Policy', 'Content-Security-Policy-Report-Only']) {
+    const policy = headers.find(header => header.key === name).value;
+    const scripts = policy.split(';').map(x => x.trim()).find(x => x.startsWith('script-src ')).split(/\s+/);
+    assert.ok(scripts.includes('https://apis.google.com'), name + ' must permit Google API bootstrap');
+    assert.ok(scripts.includes('https://www.gstatic.com'), name + ' must permit Firebase SDK');
+    assert.ok(!scripts.includes('*'));
+  }
+});
 function bootFixture({ loaded, active = false }) {
   let calls = 0;
   const buttons = [{ disabled: false, setAttribute() {}, removeAttribute() {} }, { disabled: false, setAttribute() {}, removeAttribute() {} }];
