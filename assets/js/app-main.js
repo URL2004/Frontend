@@ -1333,9 +1333,8 @@ async function callTransformJob(payload) {
 
 function combineChunkResults(results, apiMode) {
  if (apiMode === 'detect') {
-  var probs = results.map(function(r){ return typeof r.probability === 'number' ? r.probability : 0; });
-  var avg = probs.reduce(function(a,b){return a+b;}, 0) / (probs.length || 1);
-  return Object.assign({}, results[0] || {}, { probability: Math.round(avg * 10) / 10 });
+  if (results.length !== 1) throw new Error('감지는 전체 글을 한 번에 분석해야 합니다.');
+  return results[0];
  }
  // humanize류
  var joined = results.map(function(r){ return r.outputText || ''; }).filter(Boolean).join('\n\n');
@@ -1344,6 +1343,7 @@ function combineChunkResults(results, apiMode) {
 }
 
 async function runChunkedText(fullText, opts) {
+ if (opts.mode === 'detect') return callAnalyzeApi(Object.assign({}, opts, { text: fullText, prevContext: '' }));
  // 내부 처리 — 청크 분할 후 순차 호출. 긴 입력일 때 사용자가
  // "멈춘 게 아니다"를 인지할 수 있도록 진행 상태 메시지를 갱신한다.
  var chunks = splitByBoundary(fullText, 4500, 5500);
@@ -1401,20 +1401,18 @@ async function runAnalysis() {
  const text = document.getElementById('inputText').value.trim();
  if (!text) { alert('처리할 글을 입력하거나 PDF를 첨부해 주세요.'); return; }
  if (text.length < 20) { alert('20자 이상 입력해 주세요.'); return; }
+ if (mode === 'detect' && text.length > 30000) { alert('AI 감지는 한 번에 30,000자까지 분석할 수 있어요.'); return; }
  const selectedTransformMode = mode === 'detect' ? null : publicTransformMode(humanizeMode);
  if (selectedTransformMode) {
   const minLen = transformMinLength(selectedTransformMode);
   if (text.length < minLen) { alert('이 모드는 최소 ' + minLen.toLocaleString() + '자부터 변환할 수 있어요.'); return; }
  }
 
- // ★ 긴 글 사전 차감 정합(P0-3): 청크 분할 시 서버는 청크별 과금 공식을 각각 적용하므로,
- //   단순 전체 길이 계산이 아니라 청크 합계로 선검증해야 "99%에서 크레딧 부족"으로 중간 중단되던 민원(#120)을 막는다.
+ // 감지는 전체 문서 한 건으로 분석·과금·이력을 연결한다.
  const precheckMode = mode === 'detect' ? 'detect' : 'humanize';
  let needed;
  if (mode !== 'detect') {
   needed = transformCreditNeeded(text, selectedTransformMode);
- } else if (text.length > 5500) {
-  needed = splitByBoundary(text, 4500, 5500).reduce(function (s, c) { return s + creditNeededForText(c, precheckMode); }, 0);
  } else {
   needed = creditNeededForText(text, precheckMode);
  }
@@ -1586,9 +1584,6 @@ async function runAnalysis() {
     if (hint) hint.textContent = '예상 처리 시간: ' + estimateRangeLabel({ lowSec: lowSec, highSec: highSec }) + '. 창을 닫아도 서버에서 계속 처리해요.';
    }
   });
- } else if (text.length > 5500) {
-  // 내부 자동 분할 — 유저 노출 없음
-  data = await runChunkedText(text, commonOpts);
  } else {
   data = await callAnalyzeApi(Object.assign({ text: text }, commonOpts));
  }
@@ -1601,7 +1596,7 @@ async function runAnalysis() {
  if (window.UP !== 'unlimited') { window.UC = Math.max(0, (window.UC || 0) - chargedNeeded); updateCreditUI(); }
 
  // 서버가 단일 호출 결과를 이미 저장했으면(historySaved) 중복 저장하지 않는다.
- // 청크(>5500자)·구형 서버 응답은 historySaved가 없어 기존대로 클라가 저장(폴백).
+ // 구형 서버 응답은 historySaved가 없어 클라이언트 저장으로 보완한다.
  if (!data.historySaved) {
   await window.saveHistory(
   currentMode,
@@ -1722,6 +1717,7 @@ window.gpResumeMainAnalysis = function (payload) {
 
 function renderDetect(r) {
  if (typeof window.gpNormalizeDetectPresentation === 'function') r = window.gpNormalizeDetectPresentation(r);
+ const comparisonText = typeof window.gpDetectHistoryComparisonText === 'function' ? window.gpDetectHistoryComparisonText(r) : '';
  const p = r.probability;
  let bc, bl, mainMsg, subMsg;
 
@@ -1772,6 +1768,7 @@ function renderDetect(r) {
  <div style="padding:0 24px 20px;text-align:center;">
  <div class="gauge-main-msg">${mainMsg}</div>
  <div class="gauge-sub-msg">${subMsg}</div>
+ ${comparisonText ? '<p class="gauge-sub-msg" role="status">' + escapeHtml(comparisonText) + '</p>' : ''}
 </div>
  <div class="dtabs">
  <button class="dtab active" onclick="dtab(this,'dt1')">상세 분석</button>

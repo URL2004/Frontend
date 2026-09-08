@@ -171,6 +171,20 @@
     });
   }
 
+  function historyComparisonText(result) {
+    var comparison = result && result.historyComparison;
+    if (!comparison || comparison.version !== 'humanize-comparison-v1' || comparison.basis !== 'history_adjusted_style') return '';
+    var before = probability(comparison.sourceProbability);
+    var after = probability(comparison.probability);
+    if (after === null || after !== probability(result.probability)) return '';
+    if (before === null) return '휴머나이징 결과의 재검사예요. 비교할 원글 검사 기록은 확인되지 않았어요.';
+    var delta = after - before;
+    var change = delta < 0 ? Math.abs(delta) + '점 감소' : delta > 0 ? delta + '점 증가' : '점수 변화 없음';
+    return '원글 ' + before + '점 → 휴머나이징 후 ' + after + '점 · ' + change + '. '
+      + (comparison.calibrationApplied ? '휴머나이징 이력을 반영한 서비스 점수 비교예요.' : '같은 서비스에서 검사한 문체 신호 점수 비교예요.');
+  }
+
+  global.gpDetectHistoryComparisonText = historyComparisonText;
   global.gpNormalizeDetectPresentation = normalize;
   global.gpDetectRiskBand = bandFor;
   global.gpProfessorRadarBand = professorRadarFor;

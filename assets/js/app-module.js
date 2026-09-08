@@ -3532,6 +3532,8 @@ window.saveHistory = async (type, inputText, detectResult, humanResult, credits)
   data.probability = typeof detectResult.probability === 'number' ? detectResult.probability : null;
   if (typeof detectResult.rawProbability === 'number') data.rawProbability = detectResult.rawProbability;
   if (detectResult.probabilityCalibration) data.probabilityCalibration = detectResult.probabilityCalibration;
+  if (detectResult.historyComparison) data.historyComparison = detectResult.historyComparison;
+  if (typeof detectResult.historyComparisonProof === 'string') data.historyComparisonProof = detectResult.historyComparisonProof;
   data.summary = detectResult.summary || '';
   data.detail = detectResult.detail || '';
   const interpretation = detectResult.reportView?.interpretation || detectResult.interpretation;
@@ -3834,8 +3836,10 @@ function historyRenderDetail() {
  const billing = historyBillingInfo(item.billingDisposition, item.credits);
  const probability = historyProbability(item);
  const hasOutput = !!historyCleanLine(item.outputText);
+ const comparisonText = isDetect && typeof window.gpDetectHistoryComparisonText === 'function'
+  ? window.gpDetectHistoryComparisonText(view) : '';
  const details = isDetect
-  ? `${historyDetailBlock('분석 요약', view.summary, true)}${historyDetailBlock('이 결과를 읽는 방법', typeof window.gpDetectInterpretationText === 'function' ? window.gpDetectInterpretationText(view.interpretation) : '', true)}${historyDetailBlock('상세 분석', view.detail, false)}`
+  ? `${historyDetailBlock('분석 요약', view.summary, true)}${historyDetailBlock('휴머나이징 전후 비교', comparisonText, true)}${historyDetailBlock('이 결과를 읽는 방법', typeof window.gpDetectInterpretationText === 'function' ? window.gpDetectInterpretationText(view.interpretation) : '', true)}${historyDetailBlock('상세 분석', view.detail, false)}`
   : historyDetailBlock('휴머나이징 결과', item.outputText, true);
  const originalBlock = historyDetailBlock('원문', item.inputText, false);
  const noDetail = '<p class="gp-history-no-detail">저장된 상세 결과가 없어요.</p>';

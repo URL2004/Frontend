@@ -1465,6 +1465,7 @@
     return {
       status: status,
       score: score,
+      historyComparisonText: typeof window.gpDetectHistoryComparisonText === 'function' ? window.gpDetectHistoryComparisonText(d) : '',
       interpretation: interpretation,
       style: {
         band: styleBand,
@@ -1472,7 +1473,7 @@
         source: source,
         sourceLabel: sourceLabel,
         evidenceLabel: interpretation ? interpretation.evidence.label : status === 'limited' || contentStatus === 'limited' ? '분석 근거 제한' : d.confidence === 'high' ? '분석 근거 충분' : d.confidence === 'medium' ? '분석 근거 일부' : '분석 근거 제한',
-        // 보정 여부는 화면에 쓰지 않되(사장님 결정), 다음 화면 핸드오프·디버깅에서 참조할 수 있게 모델에는 남긴다.
+        // 전후 비교와 다음 화면 핸드오프에서 같은 보정 상태를 참조한다.
         calibrated: styleSignal.calibrated === true || d.calibrated === true,
         rawScore: reportNumber(d.rawProbability)
       },
@@ -2834,6 +2835,10 @@
     if (dial) dial.className = 'gp-rep-dial is-' + (model.radar.band || 'unknown');
     repPaintScope(model);
     if ($('gpRepScore')) $('gpRepScore').textContent = score == null ? '--' : String(score);
+    if ($('gpRepComparison')) {
+      $('gpRepComparison').textContent = model.historyComparisonText || '';
+      $('gpRepComparison').hidden = !model.historyComparisonText;
+    }
     if ($('gpRepBandChip')) $('gpRepBandChip').textContent = repVerdictLabel(model);
     // 히어로 버튼 — 접근이 닫힌 상태(간이 추정·근거 부족)에서만 감춘다. 점수가 낮아도 접근은 열려 있고,
     //   지목할 문장이 없으면 부차 버튼으로 낮춰 "권하지 않되 막지 않는다"(사장님 2026-09-07).
@@ -2845,7 +2850,7 @@
     if ($('gpRepVerdictAct')) $('gpRepVerdictAct').hidden = model.conversionAccess === false;
     if ($('gpRepSource')) {
       // 엔진 간이 추정은 모델 판정과 신뢰도가 달라 점수 옆에서 밝힌다.
-      // 이력 보정 사실은 화면에 표기하지 않는다(사장님 결정 2026-09-02). 값은 응답·관리자 원장에 남는다.
+      // 이력 반영은 전후 비교 문구에서 설명하고 별도 배지는 추가하지 않는다.
       // 근거 수준은 해석 카드가 이미 말한다(v124) — 게이지 아래에 같은 말을 한 번 더 두지 않는다. 해석이 없을 때만 남긴다.
       $('gpRepSource').textContent = model.style.source === 'engine' ? model.style.sourceLabel : (model.interpretation ? '' : model.style.evidenceLabel);
     }
