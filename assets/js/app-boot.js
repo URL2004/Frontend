@@ -141,6 +141,13 @@
   }
 
   var socialLoginRequestPromise = null;
+  // Direct app routes do not load landing.js, but share its login-screen button.
+  window.gpLandingBackHome = function () {
+    if (typeof window.showScreen === 'function' && typeof window.switchTab === 'function') {
+      window.showScreen('app');
+      window.switchTab('main');
+    } else window.location.assign('/');
+  };
   window.gpRequestSocialLogin = async function (providerName) {
     var provider = providerName === 'kakao' ? 'kakao' : 'google';
     var handlerName = provider === 'kakao' ? 'kakaoLogin' : 'googleLogin';
@@ -157,8 +164,20 @@
       if (statusText) statusText.textContent = '로그인 기능을 준비하고 있어요.';
       if (status) status.hidden = false;
       try {
-        if (typeof window[handlerName] !== 'function') await loadAppAssets();
+        var neededAssets = typeof window[handlerName] !== 'function';
+        if (neededAssets) await loadAppAssets();
         if (typeof window[handlerName] !== 'function') throw new Error('로그인 기능을 불러오지 못했어요.');
+        // A network wait can consume the click's popup permission. Let the next
+        // explicit click open Google instead of attempting a blocked popup.
+        if (provider === 'google' && neededAssets && !navigator.userActivation?.isActive) {
+          buttons.forEach(function (button) {
+            if (!button) return;
+            button.disabled = false;
+            button.removeAttribute('aria-busy');
+          });
+          if (statusText) statusText.textContent = '준비됐어요. Google 로그인 버튼을 한 번 더 눌러 주세요.';
+          return null;
+        }
         return await window[handlerName]();
       } catch (error) {
         buttons.forEach(function (button) {

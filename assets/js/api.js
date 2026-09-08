@@ -143,6 +143,9 @@
     } catch (e) {}
   }
 
+  // Caught authentication failures never reach unhandledrejection.
+  window.gpReportClientError = reportClientError;
+
   window.addEventListener('error', function (event) {
     // 리소스 로드 실패(img/script)는 event.error가 없다 — 잡음이라 제외한다.
     if (!event || !event.error) return;

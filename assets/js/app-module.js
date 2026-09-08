@@ -1175,9 +1175,21 @@ window.googleLogin = async () =>{
   showAuthenticatedShell(result.user, 'google_direct');
   if (window.gpTrack) window.gpTrack('login', { method: 'google' });
  } catch(e) {
-  finishAuthTransition(e.code === 'auth/popup-closed-by-user' ? 'cancel' : 'error');
-  if (window.gpTrack) window.gpTrack(e.code === 'auth/popup-closed-by-user' ? 'login_cancel' : 'login_error', { method: 'google', message: String(e.message || '').slice(0, 120) });
-  if(e.code!=='auth/popup-closed-by-user') alert('로그인 실패: '+e.message);
+  const canceled = ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(e.code);
+  finishAuthTransition(canceled ? 'cancel' : 'error');
+  if (window.gpTrack) window.gpTrack(canceled ? 'login_cancel' : 'login_error', { method: 'google', code: String(e.code || '').slice(0, 80), message: String(e.message || '').slice(0, 120) });
+  if (!canceled) {
+   if (window.gpReportClientError) window.gpReportClientError({ message: 'Google login: ' + String(e.code || 'unknown'), source: 'googleLogin', errorName: e.code || 'GoogleLoginError' });
+   const messages = {
+    'auth/popup-blocked': '로그인 팝업이 차단됐어요. 이 사이트의 팝업을 허용한 뒤 Google 로그인 버튼을 다시 눌러 주세요.',
+    'auth/network-request-failed': '인터넷 연결을 확인한 뒤 Google 로그인을 다시 시도해 주세요.',
+    'auth/operation-not-supported-in-this-environment': '현재 브라우저에서 Google 로그인을 지원하지 않아요. Chrome 또는 Safari에서 열어 주세요.',
+    'auth/web-storage-unsupported': '브라우저 저장 공간을 사용할 수 없어요. 쿠키와 사이트 저장 공간을 허용한 뒤 다시 시도해 주세요.'
+   };
+   const message = messages[e.code] || 'Google 로그인을 완료하지 못했어요. 잠시 후 다시 시도해 주세요. (' + String(e.code || 'unknown') + ')';
+   if (window.gpToast) window.gpToast(message, { type: 'error', title: '로그인 확인 필요' });
+   else alert(message);
+  }
  }
 };
 window.openExternal = () =>{

@@ -479,7 +479,7 @@ test('카카오 로그인은 콜백을 즉시 처리하고 메인 전환 중 진
   assert.match(login, /onclick="gpRequestSocialLogin\('kakao'\)"/u);
   assert.doesNotMatch(login, /onclick="(?:googleLogin|kakaoLogin)\(\)"/u);
   assert.match(boot, /window\.gpRequestSocialLogin = async function/u);
-  assert.match(boot, /if \(typeof window\[handlerName\] !== 'function'\) await loadAppAssets\(\);/u);
+  assert.match(boot, /if \(neededAssets\) await loadAppAssets\(\);/u);
   assert.match(boot, /if \(socialLoginRequestPromise\) return socialLoginRequestPromise;/u);
   assert.match(css, /\.gp-auth-transition\{[\s\S]{0,240}?backdrop-filter/u);
   assert.match(css, /\.btn-google:disabled,.btn-kakao:disabled/u);
