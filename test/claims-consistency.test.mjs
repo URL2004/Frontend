@@ -276,14 +276,14 @@ test('use_case 흐름: 랜딩 변형·3택 프리셋·이벤트 파라미터가 
   assert.match(tracking, /use_case:\s*clean\(payload\.use_case, 40\)/u);
 });
 
-test('콘텐츠 데이터(연구노트 18편·템플릿 6종)도 금지 주장·유효기간 규칙을 지킨다', async () => {
+test('콘텐츠 데이터(연구노트 20편·템플릿 6종)도 금지 주장·유효기간 규칙을 지킨다', async () => {
   const [blog, templates] = await Promise.all([
     read('scripts/blog-data.mjs'),
     read('scripts/templates-data.mjs')
   ]);
   const { BLOG_ARTICLES } = await import('../scripts/blog-data.mjs');
   const { TEMPLATE_PAGES } = await import('../scripts/templates-data.mjs');
-  assert.equal(BLOG_ARTICLES.length, 18, '연구노트 18편이어야 함');
+  assert.equal(BLOG_ARTICLES.length, 20, '연구노트 20편이어야 함');
   assert.equal(TEMPLATE_PAGES.length, 6, '템플릿 파일럿 6종이어야 함');
   const all = blog + '\n' + templates;
   // 보장·날조형 표현 금지(감사보고서 §6·§8 게이트)
