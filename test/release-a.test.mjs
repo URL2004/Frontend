@@ -230,18 +230,14 @@ test('모드 추천을 열고 3택 카드 문구는 엔진이 실제로 하는 �
   assert.doesNotMatch(main, /lavPersonalBlock|lavAutoCoach|lavCoachPicks|data-flow="reduce"/u);
   assert.match(evasion, /function advancedUnavailable\(d\)/u);
   assert.match(evasion, /MODE_RECOMMENDATION_ENABLED = true/u);
-  // 3,000자 이하 고급 구간이 100크레딧으로 낮아져, 경계부터 추천을 노출한다.
-  assert.match(evasion, /ADVANCED_RECOMMEND_MIN_CHARS = 3000/u);
-  assert.match(evasion, /text\.replace\(\/\\s\/gu, ''\)\.length >= ADVANCED_RECOMMEND_MIN_CHARS/u);
-  assert.match(evasion, /&& advancedRecommendationLengthMet\(\)/u);
-  assert.match(evasion, /function isRecommendedMode[\s\S]*advancedRecommendationLengthMet\(\)/u);
-  assert.match(evasion, /basicRecommended\.hidden = !MODE_RECOMMENDATION_ENABLED \|\| recommendAdvanced/u);
-  assert.match(evasion, /formalRecommended\.hidden = !MODE_RECOMMENDATION_ENABLED \|\| !recommendAdvanced \|\| unfit/u);
-  assert.match(evasion, /recommendation_exposed: MODE_RECOMMENDATION_ENABLED/u);
+  assert.doesNotMatch(evasion, /ADVANCED_RECOMMEND_MIN_CHARS|advancedRecommendationLengthMet/u);
+  assert.match(evasion, /basicRecommended\.hidden = !recommendBasic/u);
+  assert.match(evasion, /formalRecommended\.hidden = !recommendAdvanced/u);
+  assert.match(evasion, /recommendation_exposed: recommendedMode\(d\) !== null/u);
   assert.match(evasion, /if \(d\.advancedEligible === false\) return true/u);
-  assert.match(evasion, /lastDiag\.recommendedMode === 'formal'/u);
+  assert.match(evasion, /d\.recommendedMode === 'formal'/u);
   assert.match(evasion, /formalRadio\.checked = recommendAdvanced/u);
-  assert.match(evasion, /recommendedMode:\s*d\.recommendedMode \|\| 'blog'/u);
+  assert.match(evasion, /recommendedMode:\s*d\.recommendedMode \|\| null/u);
   assert.doesNotMatch(evasion, /routeMode|routeReason/u);
   assert.match(evasion, /function fakeDiagnose\(\)[\s\S]*?diagnosisUnavailable: true/u);
   assert.doesNotMatch(evasion, /if \(len < 400\) return \{ grade: 'A'/u);

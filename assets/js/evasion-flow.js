@@ -291,21 +291,9 @@
   // 고신뢰 과제·논문 판정과 복잡한 구조를 함께 확인한 글에만 고급을 추천한다.
   // 추천 배지는 선택을 대신하지 않으며 사용자가 카드를 눌러야 실제 모드가 정해진다.
   var MODE_RECOMMENDATION_ENABLED = true;
-  // 고급 추천 길이 하한. 서버 판정(advancedRouting)은 공백 제외 1,500자부터 고급을 추천하지만,
-  // 짧은 글에서는 고급과 기본의 가격 차이가 커 배지와 금액이 서로 싸운다. 고급 단계형 요금과
-  // 기본 종량 요금의 차액이 80크레딧 이하로 좁혀지는 3,000자부터만 배지를 띄워,
-  // 뜰 때마다 가격 근거가 서게 한다.
-  var ADVANCED_RECOMMEND_MIN_CHARS = 3000;
-  // 고급 카드의 '기본 대비 차액' 노출 상한. 짧은 글에서는 고급이 기본의 5~10배라
-  // 차액을 적어 두면 구매를 막는 문구가 된다(600자면 +188). 두 카드에 각자 금액이
-  // 이미 찍히므로, 차액은 실제로 좁혀졌을 때(3,000자·1만 자처럼 구간 상한 부근)만 보여준다.
+  // Suitability follows the diagnosis; pricing is displayed independently.
   var ADVANCED_GAP_HINT_MAX_CREDITS = 80;
 
-  function advancedRecommendationLengthMet() {
-    var src = $('lavInput');
-    var text = src && src.value ? src.value : '';
-    return text.replace(/\s/gu, '').length >= ADVANCED_RECOMMEND_MIN_CHARS;
-  }
   var lavMemoOverride = '';   // 차단 화면 인라인 메모(재도전 시 1회 사용) — 사전 메모 아코디언 제거(2026-08-28) 후 유일한 사전 메모 경로
 
   function advancedUnavailable(d) {
@@ -374,16 +362,18 @@
       diagnosis_source: d && d.diagnosisSource || 'backend',
       needs_user_anchor: !!(d && d.needsUserAnchor),
       document_profile: d && d.documentProfile || 'unknown',
-      recommendation_exposed: MODE_RECOMMENDATION_ENABLED
+      recommendation_exposed: recommendedMode(d) !== null
     });
   }
 
+  function recommendedMode(d) {
+    if (!MODE_RECOMMENDATION_ENABLED || !d || d.diagnosisUnavailable || d.diagnosisSource === 'fallback') return null;
+    if (d.recommendedMode === 'formal') return advancedUnavailable(d) ? null : 'formal';
+    return d.recommendedMode === 'blog' ? 'blog' : null;
+  }
+
   function isRecommendedMode(mode) {
-    if (!MODE_RECOMMENDATION_ENABLED || mode === 'polish') return false;
-    var formal = !advancedUnavailable(lastDiag)
-      && advancedRecommendationLengthMet()
-      && !!(lastDiag && lastDiag.recommendedMode === 'formal');
-    return mode === (formal ? 'formal' : 'blog');
+    return recommendedMode(lastDiag) === mode;
   }
 
   function trackModeSelection(mode) {
@@ -482,10 +472,8 @@
   // 플래그가 닫힌 동안 세 카드를 중립적으로 유지하고 기본 라디오만 초기화한다.
   function applyAdvancedRouting() {
     var unfit = advancedUnavailable(lastDiag);
-    var recommendAdvanced = MODE_RECOMMENDATION_ENABLED
-      && !unfit
-      && advancedRecommendationLengthMet()
-      && !!(lastDiag && lastDiag.recommendedMode === 'formal');
+    var recommendAdvanced = isRecommendedMode('formal');
+    var recommendBasic = isRecommendedMode('blog');
     var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
     var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');
     if (formalRadio) {
@@ -506,11 +494,11 @@
     var ev = $('lavEvidence'); if (ev) { ev.disabled = unfit; if (unfit) ev.checked = false; }
     var basicRecommended = $('lavBasicRecommended');
     var formalRecommended = $('lavFormalRecommended');
-    if (basicRecommended) basicRecommended.hidden = !MODE_RECOMMENDATION_ENABLED || recommendAdvanced;
-    if (formalRecommended) formalRecommended.hidden = !MODE_RECOMMENDATION_ENABLED || !recommendAdvanced || unfit;
+    if (basicRecommended) basicRecommended.hidden = !recommendBasic;
+    if (formalRecommended) formalRecommended.hidden = !recommendAdvanced;
     var basicCard = $('lavCardBasic');
-    if (basicCard) basicCard.classList.toggle('is-recommended', MODE_RECOMMENDATION_ENABLED && !recommendAdvanced);
-    if (formalCard) formalCard.classList.toggle('is-recommended', MODE_RECOMMENDATION_ENABLED && recommendAdvanced && !unfit);
+    if (basicCard) basicCard.classList.toggle('is-recommended', recommendBasic);
+    if (formalCard) formalCard.classList.toggle('is-recommended', recommendAdvanced);
   }
 
   // 3택 카드 클릭: 숨김 라디오에 값 반영 후 확인 모달 직행(구 reduce 화면 생략 — 2026-08-28 단계 축소)
@@ -2998,7 +2986,7 @@
         restructureUnfitReason: d.restructureUnfitReason || '',
         restructureUnfitKind: d.restructureUnfitKind || null,
         advancedEligible: d.advancedEligible,
-        recommendedMode: d.recommendedMode || 'blog',
+        recommendedMode: d.recommendedMode || null,
         recommendationCode: d.recommendationCode || null,
         recommendationReason: d.recommendationReason || '',
         documentProfile: d.documentProfile || 'unknown',
@@ -3010,6 +2998,8 @@
           restructure: sol.restructure && sol.restructure.band
         }
       });
+    } else {
+      applyDiag(fakeDiagnose());
     }
     applyAdvancedRouting();   // 보고서 경유 진입도 3택 카드 상태·비용을 즉시 준비
     renderSelectCosts();
