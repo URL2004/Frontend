@@ -171,7 +171,7 @@ test('요금 변경과 환불 기준만 중요 표시하고 재작성한 구공�
   assert.match(source, /NOTICE_RETIRED_TITLES[\s\S]*?'긴 문서 처리 속도·안정성 개선'/u);
 });
 
-test('중요 표시와 관계없이 날짜순으로 정렬하고 로컬 정본을 원격 사본보다 우선한다', async () => {
+test('중요 공지는 정렬 방향과 관계없이 최상단에 고정하고 각 그룹 안에서는 날짜순을 지킨다', async () => {
   const source = await read('assets/js/app-module.js');
   const block = source.slice(source.indexOf('const NOTICE_BASE_ITEMS'), source.indexOf('function renderNoticeList()'));
   const context = vm.createContext({});
@@ -179,15 +179,25 @@ test('중요 표시와 관계없이 날짜순으로 정렬하고 로컬 정본�
   for (const direction of ['desc', 'asc']) {
     context.state.sort = direction;
     const items = vm.runInContext('noticeFilteredItems()', context);
-    const dates = Array.from(items, item => Date.parse(item.date.replaceAll('.', '-')));
-    assert.deepEqual(dates, [...dates].sort((a, b) => direction === 'desc' ? b - a : a - b));
-    if (direction === 'desc') assert.equal(items[0].date, '2026.09.06');
+    assert.equal(items.length, 24);
+    assert.ok(items.slice(0, 2).every(item => item.highlightLabel === '중요'));
+    assert.ok(items.slice(2).every(item => item.highlightLabel !== '중요'));
+    for (const group of [items.slice(0, 2), items.slice(2)]) {
+      const dates = Array.from(group, item => Date.parse(item.date.replaceAll('.', '-')));
+      assert.deepEqual(dates, [...dates].sort((a, b) => direction === 'desc' ? b - a : a - b));
+    }
   }
   context.state.category = '정책';
   context.state.query = '크레딧';
   const filtered = vm.runInContext('noticeFilteredItems()', context);
   assert.ok(filtered.length > 0);
   assert.ok(filtered.every(item => item.category === '정책' && [item.title,item.body].join(' ').includes('크레딧')));
+  assert.equal(filtered[0].highlightLabel, '중요');
+  context.state.category = '업데이트';
+  context.state.query = '';
+  assert.ok(vm.runInContext('noticeFilteredItems()', context).every(item => item.category === '업데이트'));
+  context.state.query = '존재하지않는공지검색어';
+  assert.equal(vm.runInContext('noticeFilteredItems()', context).length, 0);
   assert.match(source, /filter\(item => !NOTICE_BASE_TITLES\.has\(item\.title\.trim\(\)\.toLowerCase\(\)\)\)/u);
   assert.match(source, /NOTICE_RETIRED_TITLES[\s\S]*?'상시 상품 보너스와 9월 이벤트를 안내해요'/u);
 });

@@ -2723,6 +2723,9 @@ function noticeFilteredItems() {
    return [item.title, item.category, item.body].join(' ').toLowerCase().includes(queryText);
   })
   .sort((a, b) => {
+   // 중요 공지는 날짜 정렬과 무관하게 먼저 배치한다. 검색·분류 조건은 그대로 적용한다.
+   const importance = Number(noticeHighlightLabel(b) === '중요') - Number(noticeHighlightLabel(a) === '중요');
+   if (importance) return importance;
    const diff = noticeDateValue(b.date) - noticeDateValue(a.date);
    return noticeState.sort === 'desc' ? diff : -diff;
   });
