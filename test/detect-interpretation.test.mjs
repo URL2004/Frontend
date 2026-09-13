@@ -48,6 +48,16 @@ test('same score earns different actionable copy only from grounded categories',
   assert.deepEqual(build({ ...base, signalEvidence: [signal('ending_repetition')] }), ending);
 });
 
+test('weak catch-all cause cannot displace verified concrete guidance', () => {
+  const result = build({ ...base, signalEvidence: [
+    { ...signal('other_observed_style', 9), strength: 'weak' },
+    { ...signal('ending_repetition', 3), strength: 'moderate' }
+  ] });
+  assert.equal(result.pattern.category, 'ending_repetition');
+  assert.equal(result.score, base.probability);
+  assert.match(result.nextSteps[0], /문장 끝/);
+});
+
 test('unverified, out-of-bounds, duplicated locations do not invent repeated evidence', () => {
   const unverified = signal('ending_repetition');
   delete unverified.locationStatus;
