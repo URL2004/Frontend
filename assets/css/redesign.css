@@ -9510,6 +9510,8 @@ a.snav-btn{display:flex;}
 .lav-choice-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin:0 0 13px;}
 .lav-choice-heading .lav-flow-h{margin:0;font-size:18px;line-height:1.4;letter-spacing:-.012em;}
 .lav-choice-heading > p{margin:0;color:#858b9a;font-size:12px;line-height:1.5;text-align:right;}
+.lav-recommendation-reason{margin:0 0 16px;color:#626979;font-size:13px;line-height:1.65;overflow-wrap:anywhere;}
+.lav-recommendation-reason[hidden]{display:none;}
 
 .lav-select-grid{gap:11px;margin:0 0 11px;}
 .lav-sel-card{gap:0;padding:17px 16px 15px;border-width:1px;border-color:#e1e3eb;border-radius:14px;box-shadow:none;}

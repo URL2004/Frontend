@@ -362,7 +362,11 @@
       diagnosis_source: d && d.diagnosisSource || 'backend',
       needs_user_anchor: !!(d && d.needsUserAnchor),
       document_profile: d && d.documentProfile || 'unknown',
-      recommendation_exposed: recommendedMode(d) !== null
+      recommendation_exposed: recommendedMode(d) !== null,
+      recommended_mode: recommendedMode(d) || 'none',
+      recommendation_version: d && d.recommendationVersion || 'legacy',
+      recommendation_code: d && d.recommendationCode || 'unspecified',
+      additional_credits: d && d.recommendationSignals && d.recommendationSignals.additionalCredits
     });
   }
 
@@ -381,6 +385,10 @@
     window.gpTrack('humanize_mode_select', {
       selected_mode: mode,
       is_recommended: isRecommendedMode(mode),
+      recommended_mode: recommendedMode(lastDiag) || 'none',
+      recommendation_version: lastDiag && lastDiag.recommendationVersion || 'legacy',
+      recommendation_code: lastDiag && lastDiag.recommendationCode || 'unspecified',
+      additional_credits: lastDiag && lastDiag.recommendationSignals && lastDiag.recommendationSignals.additionalCredits,
       diagnosis_grade: lastDiag && lastDiag.grade || 'unavailable',
       needs_user_anchor: !!(lastDiag && lastDiag.needsUserAnchor),
       document_profile: lastDiag && lastDiag.documentProfile || 'unknown'
@@ -474,6 +482,15 @@
     var unfit = advancedUnavailable(lastDiag);
     var recommendAdvanced = isRecommendedMode('formal');
     var recommendBasic = isRecommendedMode('blog');
+    var reason = $('lavRecommendationReason');
+    if (reason) {
+      var reasonText = MODE_RECOMMENDATION_ENABLED && lastDiag && !lastDiag.diagnosisUnavailable
+        && lastDiag.diagnosisSource !== 'fallback' && lastDiag.recommendationReason || '';
+      reason.textContent = reasonText
+        ? (recommendAdvanced ? '고급 추천 · ' : recommendBasic ? '기본 추천 · ' : '선택 안내 · ') + reasonText
+        : '';
+      reason.hidden = !reasonText;
+    }
     var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
     var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');
     if (formalRadio) {
@@ -2989,6 +3006,8 @@
         recommendedMode: d.recommendedMode || null,
         recommendationCode: d.recommendationCode || null,
         recommendationReason: d.recommendationReason || '',
+        recommendationVersion: d.recommendationVersion || null,
+        recommendationSignals: d.recommendationSignals || null,
         documentProfile: d.documentProfile || 'unknown',
         profileConfidence: Number(d.profileConfidence) || 0,
         routingOverride: d.routingOverride || null,
