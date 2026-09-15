@@ -1398,10 +1398,10 @@
   }
 
   function contentEvidenceLabel(status) {
-    return status === 'strong' ? '구체 근거 충분'
-      : status === 'mixed' ? '구체 근거 일부'
-      : status === 'weak' ? '근거 보강 필요'
-      : '분석 근거 부족';
+    return status === 'strong' ? '구체 근거 비율 기준 충족'
+      : status === 'mixed' ? '구체 근거 일부 확인'
+      : status === 'weak' ? '구체 근거 비율 낮음'
+      : status === 'not_assessed' ? '내용 근거 측정 안 함' : '내용 근거 표본 부족';
   }
 
   function buildReportModel(d) {
@@ -1430,19 +1430,15 @@
     if (specific == null) specific = reportCount(measured.specificCount);
     var contentStatus = content.status || 'limited';
     var contentLabel = content.label || contentEvidenceLabel(contentStatus);
-    if (contentStatus === 'mixed' && !/보강/u.test(contentLabel)) contentLabel += ' · 보강 권장';
     var synthesis = reportView.synthesis || {};
     var headline = synthesis.headline;
     if (!headline) {
-      headline = contentStatus === 'weak' || contentStatus === 'mixed'
-        ? '문장 패턴은 정형적이고, 구체적인 근거는 일부만 확인됐어요.'
-        : styleBand === 'high'
-          ? 'AI식 문체 신호는 높지만, 확인된 내용 근거는 유지할 수 있어요.'
-          : '문체 신호와 내용 근거를 나눠 확인했어요.';
+      headline = styleBand === 'high'
+        ? 'AI식 문체 신호가 높게 측정됐어요. 표시된 문장을 확인해 주세요.'
+        : '문체 신호와 내용 근거를 나눠 확인했어요.';
     }
-    var description = synthesis.description || (contentStatus === 'weak' || contentStatus === 'mixed'
-      ? '프로젝트 경험은 유지하고, 반복되는 종결과 일반적인 결론 문장을 먼저 다듬어 보세요.'
-      : '확인된 사실과 경험은 유지하고, 두드러진 문체 신호만 골라 다듬어 보세요.');
+    var description = synthesis.description || content.reason
+      || '이 수치는 근거 문장의 비율이며 사실의 정확성이나 충분성을 판단하지 않아요. 확인하지 않은 내용은 추가하지 마세요.';
     var limitation = synthesis.limitation || '문체 패턴을 바탕으로 한 참고 결과이며 작성 주체나 외부 검사 결과를 확정하지 않아요.';
     var causeAnalysis = reportView.causeAnalysis && typeof reportView.causeAnalysis === 'object'
       ? reportView.causeAnalysis
@@ -1562,7 +1558,7 @@
     if (text) return text;
     return kind === 'concrete' ? '구체적인 맥락이 확인돼요. 이 분류는 문체 판정과 별개예요.'
       : kind === 'abstract_risk' ? '정형적인 문장 패턴이 두드러져 먼저 다듬는 편이 좋아요.'
-      : '경험·수치·대상을 한 가지 더 붙이면 내용이 선명해져요.';
+      : '앞뒤 문맥에서 어떤 역할을 하는 문장인지 확인해 주세요.';
   }
 
   // ── 문단 지도 ───────────────────────────────────────────────────────────────
@@ -2022,7 +2018,7 @@
   function repAxisFact(key, model) {
     var m = model.measured || {}, c = model.content || {};
     var total = Number(c.total) || Number(m.genericTotal) || 0;
-    if (key === 'uniform') return Number.isFinite(Number(m.lengthCV)) ? '길이 편차 ' + (Number(m.lengthCV) * 100).toFixed(1) + '%' : '';
+    if (key === 'uniform') return m.lengthCV != null && Number.isFinite(Number(m.lengthCV)) ? '길이 편차 ' + (Number(m.lengthCV) * 100).toFixed(1) + '%' : '';
     if (key === 'ending') return m.maxEndingRun ? '같은 종결 ' + m.maxEndingRun + '문장 연속' : '';
     if (key === 'generic') return (c.generic != null && total) ? '일반 표현 ' + c.generic + '/' + total + '문장' : '';
     if (key === 'anchor') {
@@ -2584,11 +2580,11 @@
       tips.push('같은 활용(예: ~했습니다)이 ' + m.maxEndingRun + '문장 이어져요. 몇 문장만 다른 어미로 끊어 보세요.');
     }
     var smallSample = m.sampleSize === 'small' || (model.content.total != null && model.content.total < 5);
-    if (!smallSample && Number.isFinite(Number(m.lengthCV)) && Number(m.lengthCV) < 0.25) {
+    if (!smallSample && m.lengthCV != null && Number.isFinite(Number(m.lengthCV)) && Number(m.lengthCV) < 0.25) {
       tips.push('문장 길이가 고르게 붙어 있어요. 짧은 문장과 긴 문장을 섞어 보세요.');
     }
     if (model.content.generic && model.content.total) {
-      tips.push('일반적인 표현 문장이 ' + model.content.generic + '/' + model.content.total + '개예요. 실제로 겪은 장면으로 바꿔 보세요.');
+      tips.push('일반적인 표현으로 분류된 문장이 ' + model.content.generic + '/' + model.content.total + '개예요. 같은 내용을 반복하는지 앞뒤 문맥을 확인해 주세요.');
     }
     // 앵커·화자 입장 처방은 정책이 '적용(on)'인 글 종류에서만 — 보고서에 "저는 ~라고 봤다"를 권하지 않는다.
     var pol = repAxisPolicy(model);
@@ -2607,7 +2603,7 @@
     } else if (anchorPol.status === 'on' && Number(m.realAnchorCount) === 0) {
       tips.push('숫자·연도·고유명사 같은 구체 근거가 아직 없어요. 정확히 아는 값만 더해 보세요.');
     }
-    if (stancePol.status === 'on' && model.content.total && Number.isFinite(Number(m.stanceRatio)) && Math.round(Number(m.stanceRatio) * model.content.total) === 0) {
+    if (stancePol.status === 'on' && model.content.total && m.stanceRatio != null && Number.isFinite(Number(m.stanceRatio)) && Math.round(Number(m.stanceRatio) * model.content.total) === 0) {
       tips.push('글쓴이의 판단이 드러나는 문장이 없어요. "저는 ~라고 봤다"처럼 입장을 한두 문장 넣어 보세요.');
     }
     // 계측 축이 기준을 넘지 않아도 위치가 확인된 문장이 있으면 그 문장을 가리킨다. "유지해도 좋아요"는 지목할 문장이 없을 때만.
@@ -2876,7 +2872,7 @@
         genericEl.textContent = '—';
       }
     }
-    setStat('gpRepStatRhythm', Number.isFinite(Number(measured.lengthCV))
+    setStat('gpRepStatRhythm', measured.lengthCV != null && Number.isFinite(Number(measured.lengthCV))
       ? (Number(measured.lengthCV) * 100).toFixed(1) + '%' : '—');
     setStat('gpRepStatEnding', measured.maxEndingRun ? measured.maxEndingRun + '문장 연속' : '—');
     // 2문장 통계를 786문장과 같은 확신으로 보이지 않게 — 5문장 미만이면 한 줄 붙인다.

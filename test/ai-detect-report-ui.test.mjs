@@ -460,7 +460,7 @@ test('5문장 미만은 표본 적음을 붙이고 길이 편차 처방을 내�
   const [main, flow] = await Promise.all([read('pages/main.html'), read('assets/js/evasion-flow.js')]);
   assert.match(main, /id="gpRepSample"/u);
   assert.match(flow, /표본이 적어요\. 길이 편차·종결 반복은 참고만 하고/u);
-  assert.match(flow, /if \(!smallSample && Number\.isFinite\(Number\(m\.lengthCV\)\)/u);
+  assert.match(flow, /if \(!smallSample && m\.lengthCV != null && Number\.isFinite\(Number\(m\.lengthCV\)\)/u);
 });
 
 test('보고서의 글자 크기는 8단계 토큰만 쓰고 흐린 회색 리터럴이 없다', async () => {

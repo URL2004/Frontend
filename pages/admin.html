@@ -105,10 +105,10 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">65개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">66개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 09.14</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 09.15</span>
       </div>
 
       <div class="gp-admin-filter-row gp-admin-patch-filters">
@@ -121,9 +121,9 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.51 · AI 감지 v1.32</strong>
-          <code>엔진 운영 배포 2026.09.14 00:23 한국 시간 · Backend b0b8efd</code>
-        <span>제목·연결 문장 보존 · 장문 자소서의 문단화와 행 고정 충돌 수정 · 최종 문단 상태 관측</span>
+          <strong>휴머나이징 v2.5.52 · AI 감지 v1.33</strong>
+          <code>엔진 운영 반영 2026.09.15 · Backend dc3ae90</code>
+        <span>질문·절 경계 보호 · 수치 누락 문맥 복원 · 긴 문단 재검사 · 감지 근거와 장르 정책 일치</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="2026년 9월 3일까지의 기존 감사 범위">
@@ -135,7 +135,16 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 직전 정밀 검토는 휴머나이징 357쌍과 AI 감지 300건, 이번 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다.</p>
 
       <div class="gp-admin-patch-timeline">
-        <div class="gp-admin-patch-month"><strong>2026년 8–9월</strong><span>32개 변경 묶음</span></div>
+        <div class="gp-admin-patch-month"><strong>2026년 8–9월</strong><span>33개 변경 묶음</span></div>
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.52 · 감지 v1.33</span><span class="gp-admin-patch-title"><b>복합 문서 문단·수치 보존과 감지 설명 일치 개선</b><small>2026.09.15 · Backend dc3ae90</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">문단·양식</span><span>질문형 문항과 명사형 제목을 보호하고, 발표 산문을 메일·행 고정 문서로 오인하던 경로를 수정했습니다. 다단계 절 번호 내부의 점은 제목 경계로 나누지 않습니다. PDF 단어 중간 줄바꿈은 문서 안의 정상 표기가 확인되는 경우만 복원합니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">가독성·수치</span><span>문서 전체의 문단 수를 채웠더라도 긴 개별 문단을 다시 확인합니다. 문장 순서와 내용은 바꾸지 않으며 인용·참고문헌 내부는 임의로 자르지 않습니다. 수치가 빠진 경우 양끝 문맥이 원문과 유일하게 대응하는 산문 문단만 원문으로 복원하고 기존 안전 감사를 적용합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">감지 안내</span><span>151건의 저장 측정값을 재생해 비활성 축의 부적절한 근거 보강 안내를 46건에서 0건으로 줄였습니다. 경험 문장과 구체 근거를 구분하고, 측정하지 않은 길이 편차를 0%로 표시하지 않습니다. 점수는 변경하지 않았으며 판별 정확도 개선 수치가 아닙니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증·한계</span><span>백엔드 1,583개 통과. 휴머나이징 5문서·다듬기 1회·감지 1회 실모델 검증에서 휴머나이징 수치와 구조 검사는 5/5 통과했습니다. 긴 문서 2건에는 의미 검토 경고가 남아 있으며 해결 완료로 표시하지 않습니다. 차단·과금 정책과 과거 사용자 결과는 변경하지 않았습니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.51</span><span class="gp-admin-patch-title"><b>문장 중간 분리·제목 소실·문단 되돌림 수정</b><small>2026.09.14 · Backend b0b8efd</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>
