@@ -298,7 +298,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>변경 이력</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'labs', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 66);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 67);
   assert.match(admin, /AI 감지 v1\.25/u);
   assert.match(admin, /점수·원인 정합성·장르별 근거 축·전후 예시 보강/u);
   assert.match(admin, /AI 감지 이력 1,077건/u);
@@ -400,8 +400,8 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
-  assert.equal(releases.length, 66);
-  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 25);
+  assert.equal(releases.length, 67);
+  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 26);
   for (const [, attrs, body] of releases) {
     if (/gp-admin-patch-state is-live/u.test(body)) assert.match(attrs, /\bopen\b/u);
     if (/gp-admin-patch-state is-superseded/u.test(body)) assert.doesNotMatch(attrs, /\bopen\b/u);
