@@ -137,12 +137,13 @@
       <div class="gp-admin-patch-timeline">
         <div class="gp-admin-patch-month"><strong>2026년 8–9월</strong><span>34개 변경 묶음</span></div>
         <details class="gp-admin-patch-release" open>
-          <summary><span class="gp-admin-patch-version">v2.5.53 · 감지 v1.34</span><span class="gp-admin-patch-title"><b>문단 처리 병목·장문 심사 대응·실제 호출 원가 개선</b><small>2026.09.16 · 잔여 의미 변화 확인으로 운영 배포 보류</small></span><span class="gp-admin-patch-state is-foundation">배포 보류</span></summary>
+          <summary><span class="gp-admin-patch-version">v2.5.53 · 감지 v1.34</span><span class="gp-admin-patch-title"><b>문단 처리 병목·장문 심사 대응·실제 호출 원가 개선</b><small>2026.09.16 · Backend 7541870</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>
             <li><span class="gp-admin-patch-area engine">문단·심사</span><span>이미 맞는 문단 경계는 내용 대응을 확인한 뒤 유지하고, 필요한 정렬만 계산 상한과 취소 처리를 적용합니다. 장문은 원문·결과의 공통 내용으로 심사 구간을 연결하며, 대응이 불명확하면 위치를 추측한 복원을 하지 않습니다.</span></li>
             <li><span class="gp-admin-patch-area safety">최종 검증</span><span>선택적 복구와 필수 최종 의미 재검증의 예산을 분리했습니다. 미검증 결과를 통과로 표시하지 않으며 기존 차단·과금 정책은 유지합니다.</span></li>
             <li><span class="gp-admin-patch-area observe">감지·원가</span><span>인용 속 영문 이니셜을 별도 문장으로 세던 오류와 따옴표·코드별 감지 대상 차이를 수정했습니다. 실패 응답과 채택하지 않은 후보의 확인된 비용도 실제 호출 원장에 포함합니다. 이 변경은 감지 정확도나 낮은 점수를 보장하지 않습니다.</span></li>
-            <li><span class="gp-admin-patch-area safety">검증 범위</span><span>백엔드 1,612개 회귀 통과. 과거 원문·결과 215쌍과 감지 151건의 레이아웃·위치를 로컬 재생하고 휴머나이징 12건·감지 8종을 실 API로 비교했습니다. 재시험에서 항목 누락·행위 방향은 개선됐지만 장문 2건의 의미 변화가 남아 배포를 보류합니다. 묶음 호출은 OFF로 유지하며 운영 반영 완료로 표시하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">실문서 보강</span><span>심사에서 확인된 인과 강도·비교와 부정·행위 방향·전문 개념 변형은 원문과 유일하게 대응하는 문장만 복원하고 다시 검증합니다. 불명확한 위치나 인용·코드는 추측으로 바꾸지 않으며, 재검증이 통과해야 채택합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증 범위</span><span>백엔드 1,619개 회귀 통과. 과거 원문·결과 215쌍과 감지 151건의 레이아웃·위치를 로컬 재생하고 휴머나이징 12건·감지 8종을 실 API로 비교했습니다. 남았던 인과·비교·수신 행위·전문 용어 사례는 수리 단계 실호출에서 문장 복구와 재심사 통과를 확인했습니다. 전체 신규 생성이나 운영 정확도 보장은 아니며, 묶음 호출은 OFF로 유지합니다.</span></li>
           </ul>
         </details>
         <details class="gp-admin-patch-release" open>
