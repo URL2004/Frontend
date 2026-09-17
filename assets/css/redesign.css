@@ -7876,6 +7876,16 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;color:var(--admin-text2);min-width:0;}
 .gp-admin-select{font-weight:700;cursor:pointer;min-width:84px;}
 .gp-admin-coupon-result{margin-top:10px;}
+.gp-coupon-summary{margin:0 0 10px;color:var(--admin-text);font-size:14px;font-weight:700;}
+.gp-coupon-tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.gp-coupon-tools .gp-admin-mini-btn,.gp-coupon-code-list .gp-admin-mini-btn{min-height:36px;flex-shrink:0;}
+.gp-coupon-code-list{list-style:none;margin:12px 0 0;padding:0;max-height:320px;overflow:auto;border:1px solid var(--admin-border);border-radius:8px;}
+.gp-coupon-code-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;}
+.gp-coupon-code-list li+li{border-top:1px solid var(--admin-border);}
+.gp-coupon-code-list code{font-size:13px;color:var(--admin-text);user-select:all;overflow-wrap:anywhere;}
+.gp-coupon-copy-fallback{width:100%;min-height:90px;margin-top:8px;}
+.gp-coupon-copy-fallback[hidden]{display:none!important;}
+@media(max-width:640px){.gp-coupon-tools .gp-admin-mini-btn,.gp-coupon-code-list .gp-admin-mini-btn{min-height:44px;}}
 .gp-admin-gate{margin-bottom:14px;padding:11px 14px;border:1px solid #ecc4bd;background:#fdf3f1;color:var(--admin-red);border-radius:8px;font-size:13px;font-weight:700;}
 .gp-admin-empty{padding:20px 10px;text-align:center;color:var(--admin-text3);font-size:13px;}
 .gp-admin-empty-compact{padding:14px 10px;}

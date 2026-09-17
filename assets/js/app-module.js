@@ -549,6 +549,65 @@ window.redeemCoupon = async function() {
  }
 };
 
+function renderCreatedCoupons(result, data) {
+ const codes = data.codes.map(c => c.display);
+ const codeLines = codes.join('\n');
+ result.replaceChildren();
+ const summary = document.createElement('p');
+ summary.className = 'gp-coupon-summary';
+ summary.textContent = codes.length.toLocaleString() + '개 · 코드당 ' + Number(data.credits).toLocaleString() + '크레딧';
+ const tools = document.createElement('div');
+ tools.className = 'gp-coupon-tools';
+ const status = document.createElement('p');
+ status.className = 'gp-admin-msg';
+ status.setAttribute('role', 'status');
+ status.setAttribute('aria-live', 'polite');
+ status.textContent = '코드만 복사해 전달할 수 있어요. 쿠폰은 각각 한 번 사용할 수 있어요.';
+ const fallback = document.createElement('textarea');
+ fallback.className = 'gp-admin-input gp-coupon-copy-fallback';
+ fallback.readOnly = true;
+ fallback.hidden = true;
+ fallback.setAttribute('aria-label', '직접 복사할 쿠폰 코드');
+ function button(label, action, parent = tools) {
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'gp-admin-mini-btn'; btn.textContent = label;
+  btn.onclick = action; parent.appendChild(btn); return btn;
+ }
+ async function copy(text, label, btn) {
+  if (btn.disabled) return;
+  btn.disabled = true;
+  try {
+   await adminWriteClipboardText(text);
+   fallback.hidden = true;
+   status.textContent = label + ' 복사했어요.';
+  } catch (_) {
+   fallback.value = text; fallback.hidden = false; fallback.focus(); fallback.select();
+   status.textContent = '자동 복사가 차단됐어요. 아래 선택된 코드를 직접 복사해 주세요.';
+  } finally { btn.disabled = false; }
+ }
+ const all = button('전체 코드 복사', () => copy(codeLines, '전체 ' + codes.length + '개 코드를', all));
+ function download(extension, contents, type) {
+  const url = URL.createObjectURL(new Blob([contents], { type }));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'coupons-' + data.batchId + '.' + extension;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  status.textContent = extension.toUpperCase() + ' 파일 다운로드를 요청했어요.';
+ }
+ button('TXT 다운로드', () => download('txt', codeLines, 'text/plain;charset=utf-8'));
+ button('CSV 다운로드', () => download('csv', '\uFEFFcode,credits\r\n' + codes.map(c => c + ',' + data.credits).join('\r\n'), 'text/csv;charset=utf-8'));
+ const list = document.createElement('ul');
+ list.className = 'gp-coupon-code-list'; list.setAttribute('aria-label', '발급된 쿠폰 코드');
+ codes.forEach(code => {
+  const row = document.createElement('li');
+  const text = document.createElement('code'); text.textContent = code; row.appendChild(text);
+  const btn = button('복사', () => copy(code, code + ' 코드를', btn), row);
+  btn.setAttribute('aria-label', '쿠폰 ' + code + ' 복사');
+  list.appendChild(row);
+ });
+ result.append(summary, tools, status, fallback, list);
+}
+
 window.adminCreateCoupons = async function() {
  const credEl = document.getElementById('couponCredits');
  const cntEl = document.getElementById('couponCount');
@@ -579,32 +638,7 @@ window.adminCreateCoupons = async function() {
   if (res.ok && data.ok) {
    msg.style.color = 'var(--green)';
    msg.textContent = '✅ ' + data.count + '개 발급 완료 (배치 ID: ' + data.batchId + ')';
-   const codeLines = data.codes.map(c => c.display).join('\n');
-   const csvLines = 'code,credits\n' + data.codes.map(c => c.display + ',' + data.credits).join('\n');
-   result.innerHTML = '';
-   const box = document.createElement('div');
-   box.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;max-height:240px;overflow:auto;font-family:monospace;font-size:13px;white-space:pre-wrap;';
-   box.textContent = codeLines;
-   result.appendChild(box);
-   const btnRow = document.createElement('div');
-   btnRow.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
-   const btnCopy = document.createElement('button');
-   btnCopy.textContent = '텍스트 복사';
-   btnCopy.style.cssText = 'padding:7px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;';
-   btnCopy.onclick = () => navigator.clipboard.writeText(codeLines).then(() => alert('복사됐어요!')).catch(() => alert('복사 실패'));
-   btnRow.appendChild(btnCopy);
-   const btnCsv = document.createElement('button');
-   btnCsv.textContent = 'CSV 다운로드';
-   btnCsv.style.cssText = 'padding:7px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;';
-   btnCsv.onclick = () => {
-    const blob = new Blob([csvLines], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'coupons-' + data.batchId + '.csv';
-    a.click(); URL.revokeObjectURL(url);
-   };
-   btnRow.appendChild(btnCsv);
-   result.appendChild(btnRow);
+   renderCreatedCoupons(result, data);
    if (typeof window.couponResetPaging === 'function') window.couponResetPaging();
    if (typeof window.loadCouponBatches === 'function') window.loadCouponBatches();
   } else {
