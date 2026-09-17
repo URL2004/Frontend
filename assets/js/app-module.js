@@ -559,11 +559,11 @@ window.adminCreateCoupons = async function() {
  if (!credEl || !cntEl || !msg || !result) return;
  if (submit && submit.disabled) return;
  if (!window.CU || !window.isAdmin()) { msg.style.color = 'var(--red)'; msg.textContent = '관리자 권한이 필요해요.'; return; }
- const credits = parseInt(credEl.value, 10);
- const count = parseInt(cntEl.value, 10);
+ const credits = /^\d+$/.test(credEl.value.trim()) ? Number(credEl.value.trim()) : NaN;
+ const count = /^\d+$/.test(cntEl.value.trim()) ? Number(cntEl.value.trim()) : NaN;
  const expiresAt = expEl.value ? new Date(expEl.value + 'T23:59:59').toISOString() : null;
- if (!Number.isInteger(credits) || credits < 1) { msg.style.color = 'var(--red)'; msg.textContent = '지급할 크레딧을 올바르게 입력해 주세요.'; return; }
- if (!Number.isInteger(count) || count < 1) { msg.style.color = 'var(--red)'; msg.textContent = '발급할 쿠폰 수를 올바르게 입력해 주세요.'; return; }
+ if (!Number.isSafeInteger(credits) || credits < 1 || credits > 10000) { msg.style.color = 'var(--red)'; msg.textContent = '크레딧은 1~10,000 사이의 정수로 입력해 주세요.'; return; }
+ if (!Number.isSafeInteger(count) || count < 1 || count > 400) { msg.style.color = 'var(--red)'; msg.textContent = '발급 개수는 1~400 사이의 정수로 입력해 주세요.'; return; }
  msg.style.color = 'var(--text3)'; msg.textContent = '발급 중...';
  result.innerHTML = '';
  adminSetBusy(submit, true, '발급 중');
