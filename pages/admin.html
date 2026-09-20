@@ -105,10 +105,10 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">67개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">79개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 09.15</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 09.20</span>
       </div>
 
       <div class="gp-admin-filter-row gp-admin-patch-filters">
@@ -121,9 +121,9 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.52 · AI 감지 v1.33</strong>
-          <code>엔진 운영 반영 2026.09.15 · Backend dc3ae90</code>
-        <span>질문·절 경계 보호 · 수치 누락 문맥 복원 · 긴 문단 재검사 · 감지 근거와 장르 정책 일치</span>
+          <strong>휴머나이징 v2.5.63 · AI 감지 v1.38</strong>
+          <code>엔진 운영 반영 2026.09.20 22:18 KST · Backend 52048ae</code>
+        <span>라벨 본문 문단화 · 최종 복원 충돌 해소 · 누락 주장 검사 · 원문 대비 자연스러움 보강</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="2026년 9월 3일까지의 기존 감사 범위">
@@ -132,10 +132,58 @@
         <div><dt>GPT·Claude 작업 기록</dt><dd>56개 세션</dd></div>
         <div><dt>정리 방식</dt><dd>기능 단위 병합</dd></div>
       </dl>
-      <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 직전 정밀 검토는 휴머나이징 357쌍과 AI 감지 300건, 이번 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다.</p>
+      <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
-        <div class="gp-admin-patch-month"><strong>2026년 8–9월</strong><span>34개 변경 묶음</span></div>
+        <div class="gp-admin-patch-month"><strong>2026년 8–9월</strong><span>46개 변경 묶음</span></div>
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.63</span><span class="gp-admin-patch-title"><b>라벨 본문 문단화와 최종 복원 충돌 수정</b><small>2026.09.20 · Backend 52048ae</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area engine">변경</span><span>긴 라벨 본문을 가독성 검사에서 일괄 제외하던 경로를 수정했습니다. 완결된 본문 문단은 유지하고, 문장 중간의 잘못된 줄바꿈은 계속 복원합니다.</span></li><li><span class="gp-admin-patch-area safety">범위·검증</span><span>전체 1,852개 테스트 통과. 저장된 415쌍과 제보 1쌍의 기존판 대비 출력 변경 2건을 확인했습니다. 이 검증은 로컬 재처리·모의 엔진 테스트이며 새 실모델 호출이나 전체 수동 의미 검수가 아닙니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">v2.5.62</span><span class="gp-admin-patch-title"><b>변경량을 채우려다 생기는 자연스러움 퇴행 보강</b><small>2026.09.20 · Backend 7e491f1</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area engine">변경</span><span>생성·회복 지침에서 의미·호응·자연스러움을 수정 개수보다 우선하도록 정리했습니다. 원문에 없던 행동 명사화, 조건과 희망의 어색한 연결, 일부 수식어 도치를 대조합니다.</span></li><li><span class="gp-admin-patch-area safety">범위·검증</span><span>전체 1,842개 테스트 통과. 확실한 원문 대응만 국소 복원하고 의미 심사를 거칩니다. 모든 문법 오류를 포괄하거나 자연스러움 개선을 보장하는 검사는 아닙니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">v2.5.61</span><span class="gp-admin-patch-title"><b>복합 문장의 누락 주장 복원과 중복 방지</b><small>2026.09.20 · Backend 115b25f</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area engine">변경</span><span>복합 문장에서 뒤쪽 주장만 누락된 경우도 확인하도록 심사 후보 연결을 보강했습니다. 확인된 누락 구절을 복원할 때 이미 남아 있는 문장 전체를 다시 붙이지 않도록 수정했습니다.</span></li><li><span class="gp-admin-patch-area safety">범위·검증</span><span>전체 1,826개 테스트 통과. 원문과 대응이 확인된 범위만 복원하며 추측한 내용을 추가하지 않습니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">v2.5.60 · 감지 v1.38</span><span class="gp-admin-patch-title"><b>기본·고급 문단 개선과 승인 구조의 적용 범위 정리</b><small>2026.09.20 · Backend 82ef065</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area engine">변경</span><span>제목·라벨이 있는 문서도 편집 가능한 본문은 모드에 맞게 문단을 개선합니다. 사용자가 승인한 구조 계획은 일반 문단화로 덮어쓰지 않도록 구분했습니다.</span></li><li><span class="gp-admin-patch-area safety">범위·검증</span><span>전체 1,816개 테스트 통과. 공통 인용 분석 변경에 맞춰 감지 전처리·캐시 버전도 갱신했습니다. 점수를 일괄 낮추거나 높이는 보정은 추가하지 않았습니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">v2.5.59 · 감지 v1.37</span><span class="gp-admin-patch-title"><b>한국어 문장 경계와 보호 코드 무결성 보강</b><small>2026.09.20 · Backend 89e14ba</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area engine">변경</span><span>한국어 보고서의 문장·문단 경계와 보호 구간 처리를 보강했습니다. 코드의 공백·들여쓰기를 일반 문단 정리 과정에서 바꾸지 않도록 검사합니다.</span></li><li><span class="gp-admin-patch-area safety">범위·검증</span><span>공통 분석 변경을 감지 버전과 함께 구분했습니다. 코드·인용 보호를 해제해 변경량을 늘리지 않습니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">v2.5.58</span><span class="gp-admin-patch-title"><b>구조 문서 안의 일반 본문 문단화</b><small>2026.09.20 · Backend 7b61765</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area engine">변경</span><span>제목·목록이 있다는 이유로 문서 전체의 산문 분할이 꺼지던 경로를 수정했습니다. 설명·대조·성찰 등 충분한 문맥이 확인되는 전환을 구분하고 미완결 구절의 제목 오인을 줄였습니다.</span></li><li><span class="gp-admin-patch-area safety">범위·검증</span><span>전체 1,675개 테스트 통과. 접속어 하나만으로 기계적으로 분리하지 않으며 문장 순서와 비공백 문자는 유지합니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">v2.5.57</span><span class="gp-admin-patch-title"><b>원문에 근거한 담화 경계 복원</b><small>2026.09.20 · Backend 97b5bfe</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area engine">변경</span><span>절이 있는 산문에서 원문에 드러난 설명 단위와 전환 경계를 복원하는 처리를 보강했습니다. 기존 경계 복원과 새 문단 생성은 구분하며 새 경계 생성은 후속 버전에서 보강했습니다.</span></li><li><span class="gp-admin-patch-area safety">범위·검증</span><span>후속 v2.5.58~63의 본문 문단화·복원 충돌 수정과 함께 적용됩니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">v2.5.56 · 감지 v1.36</span><span class="gp-admin-patch-title"><b>설명 전환과 인용을 감싼 작성자 문장 구분</b><small>2026.09.20 · Backend 79ffa6d</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area engine">변경</span><span>산문의 담화 경계와 인용 주변의 작성자 설명을 구분하는 처리를 보강했습니다. 인용 내용 보호와 작성자가 쓴 설명의 감지 대상 판정을 함께 점검했습니다.</span></li><li><span class="gp-admin-patch-area safety">범위·검증</span><span>변경된 감지 정책은 버전으로 구분합니다. 작성자가 알려지지 않은 운영 로그를 감지 정확도의 정답 데이터로 취급하지 않습니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">v2.5.55 · 감지 v1.35</span><span class="gp-admin-patch-title"><b>본문 경계·감지 근거 및 공백 민감성 보강</b><small>2026.09.20 · Backend e8120d1 · fccdb10</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area engine">변경</span><span>산문 경계 보존과 감지 설명의 근거 연결을 보강했습니다. 보조 통계 적용 범위가 붙여 넣은 공백만으로 달라지는 문제와 특수 공백 뒤 번호 제목의 경계 복원을 수정했습니다.</span></li><li><span class="gp-admin-patch-area safety">범위·검증</span><span>원문 위치·인용은 유지하며 공백 정규화는 해당 길이 판정 범위에 한정합니다. 모델 민감성과 장르별 점수 차이가 모두 해결됐다는 뜻은 아닙니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">v2.5.54</span><span class="gp-admin-patch-title"><b>한국어 지시 대상과 문장 관계 보존</b><small>2026.09.17 · Backend 4f789b5</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area engine">변경</span><span>한국어 지시 대상과 원문 근거가 있는 문장 관계를 보존하도록 검사를 보강했습니다. 단어가 비슷하더라도 행위나 관계가 바뀌는 사례를 구분합니다.</span></li><li><span class="gp-admin-patch-area safety">범위·검증</span><span>모든 글의 수동 의미 검수가 완료됐다는 의미는 아닙니다. 후속 누락 주장·자연성 검사와 함께 적용됩니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">관리자 쿠폰</span><span class="gp-admin-patch-title"><b>발급 값 검증과 복사·내보내기 도구</b><small>2026.09.17 · Backend d55b3c0 · Frontend fbf71b7 · 5f74a5c</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area engine">변경</span><span>쿠폰 발급 수량·지급량의 잘못된 입력을 서버와 관리자 화면에서 검증하고, 개별 코드 복사 및 내보내기 편의 기능을 추가했습니다.</span></li><li><span class="gp-admin-patch-area safety">범위·검증</span><span>발급 값을 임의로 보정해 생성하지 않으며 기존 발급 쿠폰은 소급 변경하지 않습니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">콘텐츠 정리</span><span class="gp-admin-patch-title"><b>작업노트·중요 공지·패치노트 최신화</b><small>2026.09.20 · Frontend 콘텐츠 갱신</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area engine">변경</span><span>9월 17일 패러프레이징·참고문헌 확인 글에 이어, 긴 라벨 본문 구분과 불필요한 재작성 점검 글을 추가했습니다. 문단 개선 및 의미·자연성 보강 공지 2건을 중요로 표시합니다.</span></li><li><span class="gp-admin-patch-area safety">범위·검증</span><span>기존 공지와 과거 패치 기록을 유지합니다. 새 예문은 설명용으로 작성했으며 실제 이용자 원문·계정 정보는 공개하지 않습니다.</span></li></ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.53 · 감지 v1.34</span><span class="gp-admin-patch-title"><b>문단 처리 병목·장문 심사 대응·실제 호출 원가 개선</b><small>2026.09.16 · Backend 7541870</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>

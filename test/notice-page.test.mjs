@@ -18,7 +18,7 @@ test('중요 공지만 목록 한 줄에서 강조하고 일반 업데이트의 
 
   assert.doesNotMatch(page, /gp-notice-featured|gp-notice-card|notice-(?:maintenance|analytics)\.png/u);
   assert.match(baseItems, /title: '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요'/u);
-  assert.equal(baseItems.match(/highlightLabel:/gu)?.length, 2);
+  assert.equal(baseItems.match(/highlightLabel:/gu)?.length, 4);
   assert.match(baseItems, /title: '긴 글 구조 보존과 문단 보강을 개선했어요'/u);
   assert.doesNotMatch(baseItems, /highlightLabel: '(?:신규|업데이트|필수)/u);
   assert.match(baseItems, /사용자가 직접 입력한 실제 경험이나 사실/u);
@@ -43,7 +43,7 @@ test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정�
     source.indexOf('const NOTICE_RETIRED_TITLES')
   );
 
-  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 24);
+  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 26);
   for (const title of [
     '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요',
     '상시 상품 보너스와 9월 개강 이벤트를 안내해요',
@@ -116,7 +116,7 @@ test('공지 문구는 2026-09-02 양식 표준을 지킨다', async () => {
   );
   const titles = [...baseItems.matchAll(/title: '([^']+)'/gu)].map(match => match[1]);
 
-  assert.equal(titles.length, 24);
+  assert.equal(titles.length, 26);
   // 대괄호 접두어·이모지 없이 해요체 서술형 제목만 쓴다
   assert.doesNotMatch(baseItems, /title: '\[/u);
   assert.doesNotMatch(baseItems, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
@@ -134,7 +134,7 @@ test('공지 문구는 2026-09-02 양식 표준을 지킨다', async () => {
   }
 });
 
-test('요금 변경과 환불 기준만 중요 표시하고 재작성한 구공지 원본은 숨긴다', async () => {
+test('최근 품질 안내와 요금·환불 기준을 중요 표시하고 재작성한 구공지 원본은 숨긴다', async () => {
   const source = await read('assets/js/app-module.js');
   const baseItems = source.slice(
     source.indexOf('const NOTICE_BASE_ITEMS'),
@@ -148,7 +148,7 @@ test('요금 변경과 환불 기준만 중요 표시하고 재작성한 구공�
   const context = vm.createContext({});
   vm.runInContext(baseItems + ';globalThis.items = NOTICE_BASE_ITEMS;', context);
   const highlighted = Array.from(context.items).filter(item => item.highlightLabel);
-  assert.deepEqual(highlighted.map(item => item.id), ['advanced-credit-steps-20260902', 'refund-standard-20260830']);
+  assert.deepEqual(highlighted.map(item => item.id), ['humanize-paragraph-update-20260920', 'humanize-meaning-naturalness-20260920', 'advanced-credit-steps-20260902', 'refund-standard-20260830']);
   assert.ok(highlighted.every(item => item.highlightLabel === '중요'));
   assert.doesNotMatch(baseItems, /pinned:/u);
 
@@ -179,10 +179,10 @@ test('중요 공지는 정렬 방향과 관계없이 최상단에 고정하고 �
   for (const direction of ['desc', 'asc']) {
     context.state.sort = direction;
     const items = vm.runInContext('noticeFilteredItems()', context);
-    assert.equal(items.length, 24);
-    assert.ok(items.slice(0, 2).every(item => item.highlightLabel === '중요'));
-    assert.ok(items.slice(2).every(item => item.highlightLabel !== '중요'));
-    for (const group of [items.slice(0, 2), items.slice(2)]) {
+    assert.equal(items.length, 26);
+    assert.ok(items.slice(0, 4).every(item => item.highlightLabel === '중요'));
+    assert.ok(items.slice(4).every(item => item.highlightLabel !== '중요'));
+    for (const group of [items.slice(0, 4), items.slice(4)]) {
       const dates = Array.from(group, item => Date.parse(item.date.replaceAll('.', '-')));
       assert.deepEqual(dates, [...dates].sort((a, b) => direction === 'desc' ? b - a : a - b));
     }
