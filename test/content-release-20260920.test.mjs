@@ -26,5 +26,5 @@ test('patchnotes include every missing engine release and an accurate current ve
  assert.match(html,/휴머나이징 v2\.5\.63 · AI 감지 v1\.38/);
  assert.match(html,/Backend 52048ae/);assert.match(html,/1,852개 테스트/);
  assert.match(html,/새 실모델 호출이나 전체 수동 의미 검수가 아닙니다/);
- assert.equal([...html.matchAll(/<details class="gp-admin-patch-release"/g)].length,79);
+ assert.equal([...html.matchAll(/<details class="gp-admin-patch-release"/g)].length,80);
 });

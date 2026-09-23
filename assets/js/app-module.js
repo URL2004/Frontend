@@ -5446,16 +5446,16 @@ function adminSetGptRuntimeForm(cfg) {
  const source = document.getElementById('adminGptRuntimeSource');
  if (source) source.textContent = cfg.source || '-';
 
- adminGptSetValue('adminGptModelHumanizePrimary', models.humanizePrimary || 'gpt-5.6-luna');
- adminGptSetValue('adminGptModelHumanizeEscalation', models.humanizeEscalation || 'gpt-5.6-terra');
- adminGptSetValue('adminGptModelJudge', models.judge || 'gpt-5.6-luna');
- adminGptSetValue('adminGptModelJudgeEscalation', models.judgeEscalation || 'gpt-5.6-terra');
- adminGptSetValue('adminGptModelRepair', models.repair || 'gpt-5.6-luna');
- adminGptSetValue('adminGptModelClassify', models.classify || 'gpt-5.6-luna');
- adminGptSetValue('adminGptModelDetect', models.detect || 'gpt-5.6-luna');
- adminGptSetValue('adminGptModelDetectEscalation', models.detectEscalation || 'gpt-5.6-terra');
- adminGptSetValue('adminGptModelEvidenceSearch', models.evidenceSearch || 'gpt-5.6-luna');
- adminGptSetValue('adminGptModelEvidenceEscalation', models.evidenceEscalation || 'gpt-5.6-terra');
+ adminGptSetValue('adminGptModelHumanizePrimary', models.humanizePrimary || 'gpt-6-luna');
+ adminGptSetValue('adminGptModelHumanizeEscalation', models.humanizeEscalation || 'gpt-6-sol');
+ adminGptSetValue('adminGptModelJudge', models.judge || 'gpt-6-luna');
+ adminGptSetValue('adminGptModelJudgeEscalation', models.judgeEscalation || 'gpt-6-sol');
+ adminGptSetValue('adminGptModelRepair', models.repair || 'gpt-6-luna');
+ adminGptSetValue('adminGptModelClassify', models.classify || 'gpt-6-luna');
+ adminGptSetValue('adminGptModelDetect', models.detect || 'gpt-6-luna');
+ adminGptSetValue('adminGptModelDetectEscalation', models.detectEscalation || 'gpt-6-sol');
+ adminGptSetValue('adminGptModelEvidenceSearch', models.evidenceSearch || 'gpt-6-luna');
+ adminGptSetValue('adminGptModelEvidenceEscalation', models.evidenceEscalation || 'gpt-6-sol');
 
  adminGptSetValue('adminGptReasonHumanize', adminGptReasoning(reasoning.humanize, 'medium'));
  adminGptSetValue('adminGptReasonFactDense', adminGptReasoning(reasoning.factDense, 'high'));
@@ -5476,7 +5476,7 @@ function adminSetGptRuntimeForm(cfg) {
  adminGptSetValue('adminGptEscPatchTargetThreshold', escalation.patchTargetThreshold || 12);
 
  const cacheLabel = cache.enabled === false ? '캐싱 꺼짐' : '캐싱 켜짐';
- adminSetMessage('adminGptRuntimeMsg', `GPT 운영 중 · ${models.humanizePrimary || 'gpt-5.6-luna'} · ${cacheLabel}`, 'info');
+ adminSetMessage('adminGptRuntimeMsg', `GPT 운영 중 · ${models.humanizePrimary || 'gpt-6-luna'} · ${cacheLabel}`, 'info');
 }
 
 function adminReadGptRuntimeForm() {
@@ -5490,16 +5490,16 @@ function adminReadGptRuntimeForm() {
  };
  return {
   models: {
-   humanizePrimary: value('adminGptModelHumanizePrimary', 'gpt-5.6-luna'),
-   humanizeEscalation: value('adminGptModelHumanizeEscalation', 'gpt-5.6-terra'),
-   judge: value('adminGptModelJudge', 'gpt-5.6-luna'),
-   judgeEscalation: value('adminGptModelJudgeEscalation', 'gpt-5.6-terra'),
-   repair: value('adminGptModelRepair', 'gpt-5.6-luna'),
-   classify: value('adminGptModelClassify', 'gpt-5.6-luna'),
-   detect: value('adminGptModelDetect', 'gpt-5.6-luna'),
-   detectEscalation: value('adminGptModelDetectEscalation', 'gpt-5.6-terra'),
-   evidenceSearch: value('adminGptModelEvidenceSearch', 'gpt-5.6-luna'),
-   evidenceEscalation: value('adminGptModelEvidenceEscalation', 'gpt-5.6-terra')
+   humanizePrimary: value('adminGptModelHumanizePrimary', 'gpt-6-luna'),
+   humanizeEscalation: value('adminGptModelHumanizeEscalation', 'gpt-6-sol'),
+   judge: value('adminGptModelJudge', 'gpt-6-luna'),
+   judgeEscalation: value('adminGptModelJudgeEscalation', 'gpt-6-sol'),
+   repair: value('adminGptModelRepair', 'gpt-6-luna'),
+   classify: value('adminGptModelClassify', 'gpt-6-luna'),
+   detect: value('adminGptModelDetect', 'gpt-6-luna'),
+   detectEscalation: value('adminGptModelDetectEscalation', 'gpt-6-sol'),
+   evidenceSearch: value('adminGptModelEvidenceSearch', 'gpt-6-luna'),
+   evidenceEscalation: value('adminGptModelEvidenceEscalation', 'gpt-6-sol')
   },
   reasoning: {
    humanize: value('adminGptReasonHumanize', 'medium'),

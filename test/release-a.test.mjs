@@ -298,7 +298,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>변경 이력</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'labs', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 79);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 80);
   assert.match(admin, /AI 감지 v1\.25/u);
   assert.match(admin, /점수·원인 정합성·장르별 근거 축·전후 예시 보강/u);
   assert.match(admin, /AI 감지 이력 1,077건/u);
@@ -309,7 +309,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /결과 평균은 96\.0점, 원문 대비 평균은 \+12\.7점/u);
   assert.match(admin, /근거 없는 구체화/u);
   assert.match(admin, /휴머나이징 v2\.5\.63 · AI 감지 v1\.38/u);
-  assert.match(admin, /2026\.06\.04 — 09\.20/u);
+  assert.match(admin, /2026\.06\.04 — 09\.23/u);
   assert.match(admin, /중요 공지를 정렬 방향과 관계없이 최상단 고정/u);
   assert.match(admin, /휴머나이징 357쌍과 AI 감지 300건/u);
   assert.match(admin, /신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다/u);
@@ -400,10 +400,10 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
-  assert.equal(releases.length, 79);
-  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 27);
+  assert.equal(releases.length, 80);
+  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 28);
   assert.match(releases[0][1], /\bopen\b/u);
-  assert.match(releases[0][2], /v2\.5\.63/u);
+  assert.match(releases[0][2], /Luna 기본·Sol 품질 재심사 전환/u);
   for (const [, attrs, body] of releases) {
     if (/gp-admin-patch-state is-superseded/u.test(body)) assert.doesNotMatch(attrs, /\bopen\b/u);
   }
@@ -412,19 +412,19 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(styles, /@media\(max-width:760px\)[^{]*\{/u);
 });
 
-test('관리자 GPT 설정은 Luna 기본·Terra 승격과 GPT-5.6 reasoning을 제공한다', async () => {
+test('관리자 GPT 설정은 Luna 기본·Sol 승격과 GPT-6 reasoning을 제공한다', async () => {
   const [admin, source] = await Promise.all([
     read('pages/admin.html'),
     read('assets/js/app-module.js')
   ]);
   const settings = admin.slice(admin.indexOf('data-admin-tab="settings"'));
-  assert.match(settings, /id="adminGptModelHumanizePrimary"[\s\S]*?<option value="gpt-5\.6-luna"/u);
-  assert.match(settings, /id="adminGptModelHumanizeEscalation"[\s\S]*?<option value="gpt-5\.6-terra"/u);
-  assert.match(settings, /Luna 실패 시 Terra 승격/u);
+  assert.match(settings, /id="adminGptModelHumanizePrimary"[\s\S]*?<option value="gpt-6-luna"/u);
+  assert.match(settings, /id="adminGptModelHumanizeEscalation"[\s\S]*?<option value="gpt-6-sol"/u);
+  assert.match(settings, /품질 재심사 시 Sol 승격/u);
   assert.match(settings, /<option value="max">max<\/option>/u);
   assert.doesNotMatch(settings, /<option value="gpt-5\.4/u);
-  assert.match(source, /humanizePrimary:\s*value\('adminGptModelHumanizePrimary', 'gpt-5\.6-luna'\)/u);
-  assert.match(source, /humanizeEscalation:\s*value\('adminGptModelHumanizeEscalation', 'gpt-5\.6-terra'\)/u);
+  assert.match(source, /humanizePrimary:\s*value\('adminGptModelHumanizePrimary', 'gpt-6-luna'\)/u);
+  assert.match(source, /humanizeEscalation:\s*value\('adminGptModelHumanizeEscalation', 'gpt-6-sol'\)/u);
   assert.match(source, /adminGptReasoningValues = \['none', 'low', 'medium', 'high', 'xhigh', 'max', 'default'\]/u);
   assert.doesNotMatch(source, /gpt-5\.4-(?:mini|nano)|gpt-5\.4'/u);
 });
