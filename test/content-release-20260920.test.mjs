@@ -23,8 +23,8 @@ test('two recent notices are important without removing billing notices',()=>{
 test('patchnotes include every missing engine release and an accurate current version',()=>{
  const html=readFileSync(new URL('../pages/admin.html',import.meta.url),'utf8');
  for(let version=54;version<=63;version++)assert.ok(html.includes(`v2.5.${version}`));
- assert.match(html,/휴머나이징 v2\.5\.63 · AI 감지 v1\.38/);
+ assert.match(html,/휴머나이징 v2\.5\.64 · AI 감지 v1\.39/);
  assert.match(html,/Backend 52048ae/);assert.match(html,/1,852개 테스트/);
  assert.match(html,/새 실모델 호출이나 전체 수동 의미 검수가 아닙니다/);
- assert.equal([...html.matchAll(/<details class="gp-admin-patch-release"/g)].length,80);
+ assert.equal([...html.matchAll(/<details class="gp-admin-patch-release"/g)].length,81);
 });

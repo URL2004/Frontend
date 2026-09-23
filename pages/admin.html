@@ -105,10 +105,10 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">80개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">81개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 09.23</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 09.24</span>
       </div>
 
       <div class="gp-admin-filter-row gp-admin-patch-filters">
@@ -121,9 +121,9 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.63 · AI 감지 v1.38</strong>
-          <code>모델 설정 운영 반영 2026.09.23 10:32 KST · Backend 04e50a3</code>
-        <span>GPT-6 Luna 기본 · Sol 재심사 · 역할별 추론 · 라벨 본문 문단화와 기존 안전 검증 유지</span>
+          <strong>휴머나이징 v2.5.64 · AI 감지 v1.39</strong>
+          <code>2026.09.24 · Backend 09dde77</code>
+        <span>복원 중복·숫자 줄바꿈·구조 감사 오탐 보강 · 감지 통계와 문장 근거 구분 · 모델·요금 유지</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="2026년 9월 3일까지의 기존 감사 범위">
@@ -135,6 +135,15 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.64 · 감지 v1.39</span><span class="gp-admin-patch-title"><b>문장 복원 무결성과 감지 근거 설명 개선</b><small>2026.09.24 · Backend 09dde77</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">휴머나이징</span><span>분리된 복문을 일부만 원문으로 복원하며 생기는 중복, 소수 안의 제목 번호 매칭, 단독 각주 목록화, 괄호 뒤 조사 오류를 보강했습니다. 원문과 대응이 확인된 범위만 수정합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">감사</span><span>번호가 붙은 절차 본문을 제목으로 잠그거나 제목 다음 ‘이 분석을…’을 떨어진 조사로 판단하는 오탐을 수정했습니다. 장문의 의미 관계 심사에서 잘못 연결된 문장을 재확인하며 실제 구조 손실·의미 변경 검사는 유지합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">AI 감지</span><span>문장별 근거와 학습된 문체 통계를 설명에서 구분했습니다. 통계가 반영된 점수를 문장 근거만으로 충분히 설명한다고 표시하지 않습니다. 점수 일괄 보정이나 요금·전달 정책 변경은 없습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증·제한</span><span>백엔드 1,878개, 프런트 329개 통과·1개 조건부 스킵. 저장된 휴머나이징 579쌍·감지 407건을 자동 재생하고 휴머나이징 6회·감지 4회 실호출했습니다. 실호출에서 발견한 추가 오탐 수정은 반환 결과 재생과 회귀 테스트로 확인했습니다. 전수 수동 의미 검수나 전체 장르 무결점 검증은 아니며, 장문 처리시간·일부 문체 경고는 후속 과제입니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">GPT-6</span><span class="gp-admin-patch-title"><b>Luna 기본·Sol 품질 재심사 전환</b><small>2026.09.23 · 모델·작업별 추론 설정</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>

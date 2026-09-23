@@ -16,6 +16,22 @@ const base = { probability: 32, probSource: 'llm', confidence: 'high', textLengt
 const signal = (category, locations = 2) => ({ category, strength: 'strong', locationStatus: 'source_range_verified',
   locations: Array.from({ length: locations }, (_, i) => ({ sentenceIndex: i, start: i * 50, end: i * 50 + 30 })) });
 
+test('statistics explanation survives browser fallback without turning weak causes into strong evidence', () => {
+  const statisticalSupport = { version:'statistical-assist-v5-whitespace-stable',modelVersion:'korean-style-statistics-v1',
+    applied:true,originalScore:18,score:49,margin:0.2,features:300,profile:'general',basis:'independent_statistics' };
+  const result = normalize({ probability:49,probSource:'llm',confidence:'high',inputChars:1000,
+    statisticalSupport,signalEvidence:[{...signal('generic_abstraction'),strength:'weak'}],
+    reportView:{measuredEvidence:{sentenceTotal:10},causeAnalysis:{status:'aligned'}} });
+  assert.equal(result.probability,49);
+  assert.equal(result.interpretation.evidence.level,'some');
+  assert.match(result.interpretation.description,/문체 통계/);
+  const historyResult = normalize({probability:49,probSource:'llm',detectConfidence:'high',inputText:'합성 문장. '.repeat(80),
+    detectStatisticalSupport:statisticalSupport,detectCauseAlignment:{status:'aligned'},
+    interpretation:{version:'detect-interpretation-v2',sample:{sentences:10}}});
+  assert.match(historyResult.interpretation.description,/문체 통계/);
+  assert.equal(historyResult.interpretation.evidence.level,'some');
+});
+
 test('six descriptive ranges retain the original low/middle/high score boundaries', () => {
   for (const [score, band, key] of [[0,'low','minimal'],[10,'low','minimal'],[11,'low','low'],[20,'low','low'],[21,'moderate','noticeable'],[34,'moderate','noticeable'],[35,'moderate','mixed'],[49,'moderate','mixed'],[50,'high','repeated'],[69,'high','repeated'],[70,'high','pronounced'],[100,'high','pronounced']]) {
     const result = build({ ...base, probability: score });

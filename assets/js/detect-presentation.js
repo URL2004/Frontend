@@ -75,16 +75,18 @@
     var sentences = measured.sentenceTotal;
     if (sentences == null) sentences = (source.sentenceMap || {}).total;
     if (sentences == null) sentences = (report.contentEvidence || {}).total;
+    if (sentences == null && supplied && supplied.sample) sentences = supplied.sample.sentences;
     var modelSource = source.probSource || (report.styleSignal || {}).source || 'unknown';
     if (modelSource === 'cached_llm') modelSource = 'llm';
     return global.GPDetectInterpretation.buildDetectInterpretation({
       probability: score,
       probSource: modelSource,
-      confidence: source.confidence || null,
+      confidence: source.confidence || source.detectConfidence || null,
       textLength: input !== null ? input.length : source.inputChars == null ? null : source.inputChars,
       sentenceTotal: sentences == null ? null : sentences,
       signalEvidence: Array.isArray(source.signalEvidence) ? source.signalEvidence : ((report.causeAnalysis || {}).items || []),
-      causeCoverageStatus: (report.causeAnalysis || {}).status || null
+      statisticalSupport: source.statisticalSupport || source.detectStatisticalSupport || null,
+      causeCoverageStatus: (report.causeAnalysis || {}).status || (source.detectCauseAlignment || {}).status || null
     });
   }
 
