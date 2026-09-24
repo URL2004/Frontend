@@ -105,10 +105,10 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">83개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">84개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 09.24</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 09.25</span>
       </div>
 
       <div class="gp-admin-filter-row gp-admin-patch-filters">
@@ -121,9 +121,9 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.66 · AI 감지 v1.41</strong>
-          <code>2026.09.24 · Backend 3cc34ed</code>
-        <span>편집 대상 본문 전체 1차 처리 · 감지 근거 위치 연결 수정 · 모델·요금·전달 정책 유지</span>
+          <strong>휴머나이징 v2.5.67 · AI 감지 v1.41</strong>
+          <code>2026.09.25 · Backend 80e7543</code>
+        <span>PDF 좌표 기반 행·열 추출 · 과도한 추출 공백 정리 · 구조 검사 범위 명시 · 모델·요금·전달 정책 유지</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="2026년 9월 3일까지의 기존 감사 범위">
@@ -135,6 +135,15 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.67</span><span class="gp-admin-patch-title"><b>PDF 추출 행·열과 공백 처리 무결성 보강</b><small>2026.09.25 · Backend 80e7543</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area frontend">PDF 입력</span><span>PDF 문자열을 공백으로 이어 붙이던 방식을 좌표 기반 물리적 행·열 추출로 바꿨습니다. 확인된 열 구분과 빈 셀을 유지하며, 읽기 순서가 불확실한 입력은 변환 전에 확인 안내를 표시합니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">전처리</span><span>페이지 번호와 과도한 추출 공백이 반복되는 번호형 보고서도 정규화 대상으로 확인합니다. 인용·코드·표의 보호 구분자는 유지하며 페이지를 넘는 문장의 원래 소속을 추측해 합치지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">검사 범위</span><span>관리자 구조 검사는 서버에 입력된 텍스트 기준임을 명시합니다. 원본 PDF 대조가 없는 상태와 읽기 순서 미확인을 별도로 표시합니다. 모델·요금·전달·과금 정책은 변경하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증·제한</span><span>백엔드 1,964개, 프런트 345개 통과·1개 조건부 스킵. 합성 PDF 2페이지의 표 3행을 실제 추출 경로로 확인했습니다. 신규 유료 모델 재실행은 하지 않았습니다. 원본 PDF가 없는 과거 작업의 표 복원, 복잡한 병합 셀과 페이지 간 논리적 행 복원, 전체 의미 품질 개선을 검증 완료로 주장하지 않습니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.66</span><span class="gp-admin-patch-title"><b>구조가 많은 문서의 짧은 본문 처리 누락 수정</b><small>2026.09.24 · 본문 처리 범위와 실행 관측</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>
