@@ -298,7 +298,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>변경 이력</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'labs', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 81);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 83);
   assert.match(admin, /AI 감지 v1\.25/u);
   assert.match(admin, /점수·원인 정합성·장르별 근거 축·전후 예시 보강/u);
   assert.match(admin, /AI 감지 이력 1,077건/u);
@@ -308,7 +308,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /원장 작업 상세·108건 전수평가·최종 문장 무결성/u);
   assert.match(admin, /결과 평균은 96\.0점, 원문 대비 평균은 \+12\.7점/u);
   assert.match(admin, /근거 없는 구체화/u);
-  assert.match(admin, /휴머나이징 v2\.5\.64 · AI 감지 v1\.39/u);
+  assert.match(admin, /휴머나이징 v2\.5\.66 · AI 감지 v1\.41/u);
   assert.match(admin, /2026\.06\.04 — 09\.24/u);
   assert.match(admin, /중요 공지를 정렬 방향과 관계없이 최상단 고정/u);
   assert.match(admin, /휴머나이징 357쌍과 AI 감지 300건/u);
@@ -400,10 +400,10 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
-  assert.equal(releases.length, 81);
-  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 29);
+  assert.equal(releases.length, 83);
+  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 31);
   assert.match(releases[0][1], /\bopen\b/u);
-  assert.match(releases[0][2], /문장 복원 무결성과 감지 근거 설명 개선/u);
+  assert.match(releases[0][2], /구조가 많은 문서의 짧은 본문 처리 누락 수정/u);
   for (const [, attrs, body] of releases) {
     if (/gp-admin-patch-state is-superseded/u.test(body)) assert.doesNotMatch(attrs, /\bopen\b/u);
   }

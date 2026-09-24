@@ -105,7 +105,7 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">81개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">83개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
         <span class="gp-admin-patch-range">2026.06.04 — 09.24</span>
@@ -121,9 +121,9 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.64 · AI 감지 v1.39</strong>
-          <code>2026.09.24 · Backend 09dde77</code>
-        <span>복원 중복·숫자 줄바꿈·구조 감사 오탐 보강 · 감지 통계와 문장 근거 구분 · 모델·요금 유지</span>
+          <strong>휴머나이징 v2.5.66 · AI 감지 v1.41</strong>
+          <code>2026.09.24 · Backend 3cc34ed</code>
+        <span>편집 대상 본문 전체 1차 처리 · 감지 근거 위치 연결 수정 · 모델·요금·전달 정책 유지</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="2026년 9월 3일까지의 기존 감사 범위">
@@ -135,6 +135,23 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.66</span><span class="gp-admin-patch-title"><b>구조가 많은 문서의 짧은 본문 처리 누락 수정</b><small>2026.09.24 · 본문 처리 범위와 실행 관측</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">원인·수정</span><span>라벨이 많은 문서에서 대표 본문 12개(다듬기 8개)만 먼저 처리하고 나머지를 선택적 회복에 맡기던 제한을 제거했습니다. 짧거나 명사형으로 끝나더라도 편집 가능한 본문은 1차 처리에 포함합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">관측</span><span>편집 대상·처리 시도·미시도 조각 수를 별도로 기록합니다. 모델 실패와 아예 처리하지 않은 구간을 구분하며, 과거 작업 수치는 소급 변경하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">보호·제한</span><span>제목·인용·코드 등 구조 보호와 의미 검증, 과금·전달 정책은 유지합니다. 손상된 문구의 뜻을 임의로 추측하거나 번호를 자동 재배열하지 않습니다. 모든 오타 교정이나 처리시간 단축을 보장하는 변경은 아닙니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증 범위</span><span>운영 제보의 원문·결과를 일치 확인하고, 기본·고급·다듬기 전체 실행 모의 테스트에서 중간 본문 교정과 처리 누락 방지를 검증했습니다. 백엔드 1,957개 테스트 통과. 이번 수정의 신규 유료 모델 재실행은 하지 않았으며 묶음 호출 플래그도 변경하지 않았습니다.</span></li>
+          </ul>
+        </details>
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.65 · 감지 v1.41</span><span class="gp-admin-patch-title"><b>문장·인용 처리 보강 및 감지 설명 위치 정합성</b><small>2026.09.24 · Backend 8facb95 / 154d568</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">휴머나이징</span><span>원문에 근거한 문법·혼용 문자 수리와 조사에 이어지는 인용 문단 처리를 보강하고, 문장·인용 분석의 반복 계산을 줄였습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">AI 감지</span><span>모델이 심사한 문장 위치를 화면의 문장·문단 위치로 연결합니다. 통계 신호나 일부 근거만으로 설명이 완전하다고 표시하지 않으며, 분석 범위와 설명의 충분성을 구분합니다. 점수를 일괄 낮추지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">감지 검증</span><span>이전 407건과 신규 12건(중복 포함)의 저장 로그를 재생해 위치 연결을 확인했습니다. 백엔드 1,946개 테스트 통과. AI 작성 여부의 정답 자료나 감지 정확도 수치로 해석하지 않습니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.64 · 감지 v1.39</span><span class="gp-admin-patch-title"><b>문장 복원 무결성과 감지 근거 설명 개선</b><small>2026.09.24 · Backend 09dde77</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>
