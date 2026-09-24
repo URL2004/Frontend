@@ -932,7 +932,7 @@ function loadPdfJs() {
  return pdfJsPromise;
 }
 
-async function extractPdfText(file) {
+async function extractPdfText(file, diagnostics = {}) {
  const pdfjsLib = await loadPdfJs();
  const buf = await file.arrayBuffer();
  // PDF.js 3.x의 CVE-2024-4367 공식 완화책. 업로드된 PDF의 eval 및
@@ -950,14 +950,18 @@ async function extractPdfText(file) {
    throw new Error('PDF는 한 번에 100쪽까지만 불러올 수 있어요. 문서를 나눠 주세요.');
   }
   let out = '';
+  const reviewCodes = new Set();
   for (let i = 1; i <= pdf.numPages; i++) {
    const page = await withPdfDeadline(pdf.getPage(i), deadline);
    const content = await withPdfDeadline(page.getTextContent(), deadline);
-   out += content.items.map(it => it.str).join(' ') + '\n\n';
+   const layout = window.GPPdfTextLayout.extractPage(content);
+   for (const code of layout.reviewCodes) reviewCodes.add(code);
+   out += layout.text + '\n\n';
    if (out.length > PDF_MAX_EXTRACTED_CHARS) {
     throw new Error('PDF에서 읽은 글이 30,000자를 넘어요. 필요한 부분만 나눠서 올려 주세요.');
    }
   }
+  diagnostics.reviewCodes = [...reviewCodes];
   return out.trim();
  } finally {
   try {
@@ -1001,7 +1005,8 @@ async function extractAndFillFromPdf(file) {
  if (window.gpToast) window.gpToast(file.name + '에서 텍스트를 읽고 있어요.', { type: 'info', title: 'PDF 처리 중' });
 
  try {
-  const text = await extractPdfText(file);
+  const diagnostics = {};
+  const text = await extractPdfText(file, diagnostics);
   if (!text || text.length < 5) {
    alert('이 PDF에서는 글자를 읽어올 수 없어요.\n스캔 이미지나 보호된 파일일 수 있으니, 텍스트를 직접 복사해 붙여넣어 주세요.');
    clearPDF();
@@ -1011,6 +1016,9 @@ async function extractAndFillFromPdf(file) {
   if (inputText.id === 'lavInput' && typeof window.lavSyncCount === 'function') window.lavSyncCount(inputText);
   else updateCount(inputText);
   if (window.gpToast) window.gpToast(text.length.toLocaleString() + '자를 입력창에 넣었어요.', { type: 'success', title: 'PDF 불러오기 완료' });
+  if (diagnostics.reviewCodes?.length) {
+   alert('PDF에 여러 열이나 읽는 순서가 불확실한 부분이 있어요.\n변환 전에 입력창에서 표의 좌우 내용과 페이지 사이 문장이 올바르게 이어지는지 확인해 주세요. 원본 PDF의 표 모양은 자동으로 복원되지 않아요.');
+  }
   if (text.length < 100) {
    alert('읽어 온 텍스트가 ' + text.length + '자로 너무 짧아요. 스캔 PDF인지 확인해 주세요.');
   }

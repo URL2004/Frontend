@@ -5,7 +5,7 @@ import test from 'node:test';
 const appMain = fs.readFileSync(new URL('../assets/js/app-main.js', import.meta.url), 'utf8');
 
 test('PDF 텍스트 추출은 PDF.js eval과 문서 스크립팅을 비활성화한다', () => {
-  const start = appMain.indexOf('async function extractPdfText(file)');
+  const start = appMain.indexOf('async function extractPdfText(file, diagnostics = {})');
   const end = appMain.indexOf('\nfunction handlePDF(input)', start);
   assert.notEqual(start, -1);
   assert.notEqual(end, -1);

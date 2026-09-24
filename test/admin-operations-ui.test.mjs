@@ -180,6 +180,9 @@ test('크레딧 원장은 연결 가능한 작업만 안전한 상세 화면으�
   assert.match(source, /window\.gpNormalizeDetectPresentation\(history\)/u);
   assert.match(source, /typeof detectView\.probability === 'number' && Number\.isFinite\(detectView\.probability\)/u);
   assert.match(source, /adminLedgerDetailPairs\('AI 감지 결과'/u);
+  assert.match(source, /입력 텍스트 구조/u);
+  assert.match(source, /서버에 입력된 텍스트 · 원본 PDF 대조 제외/u);
+  assert.match(source, /reading_order_unverified/u);
   assert.match(source, /adminLedgerTextBlock\('탐지 요약', detectView\.summary\)/u);
   assert.match(source, /adminLedgerTextBlock\('탐지 상세', detectView\.detail\)/u);
   assert.match(source, /\['사용자 UID', ledger\.uid\]/u);

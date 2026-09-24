@@ -121,6 +121,7 @@
       await loadScript('/assets/js/refund-accounting.js');
       await loadScript('/assets/js/detect-interpretation.js');
       await loadScript('/assets/js/detect-presentation.js');
+      await loadScript('/assets/js/pdf-text-layout.js');
       await loadScript('/assets/js/app-main.js');
       await loadScript('/assets/js/input-quality.js');
       await loadScript('/assets/js/main-designs.js');
