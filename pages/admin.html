@@ -136,13 +136,13 @@
 
       <div class="gp-admin-patch-timeline">
         <details class="gp-admin-patch-release" open>
-          <summary><span class="gp-admin-patch-version">v2.5.68 · 감지 v1.42</span><span class="gp-admin-patch-title"><b>원문 대비 신규 오류와 장문 열거·복구 무결성 보강</b><small>2026.09.25 · 원문·결과 97쌍 전문 대조</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <summary><span class="gp-admin-patch-version">v2.5.68 · 감지 v1.42</span><span class="gp-admin-patch-title"><b>원문 대비 신규 오류와 장문 열거·복구 무결성 보강</b><small>2026.09.25 · 원문·결과 97쌍 전문 대조</small></span><span class="gp-admin-patch-state">최종 검증 중</span></summary>
           <ul>
             <li><span class="gp-admin-patch-area engine">열거·인용</span><span>한글 순번과 ‘첫 번째 의의는’ 같은 열거 틀은 보호하고 본문은 편집합니다. 저자-연도 인용과 본문 안 1./2.를 문장 끝으로 잘못 분리하지 않도록 보완했습니다. 대응하는 원문 목록의 항목 시작을 앞 문단에 붙이지 않습니다.</span></li>
             <li><span class="gp-admin-patch-area safety">수리 충돌</span><span>누락된 독립 절을 복원할 때 같은 주제 명사를 반복 술어로 오인하던 검사를 수정했습니다. 두 문장을 합친 후보를 한 문장에만 적용해 나머지 문장을 중복시키는 부분 채택을 방지하고, 복구 문장 앞뒤의 부분 의역 중복도 심사합니다. 모든 제목이 중복 없이 같은 순서로 대응하면 그 경계로 장문 심사를 연결해, 일부 문장 대응 충돌 때문에 문서 전체 수리가 꺼지는 문제를 보완했습니다. 유사하다는 이유로 내용을 자동 삭제하지 않습니다.</span></li>
             <li><span class="gp-admin-patch-area engine">한국어·구조</span><span>원문 대응이 확인된 신규 한자 혼입과 중복 술어 틀, 인용 뒤 ‘란’ 공백을 교정합니다. 독후감의 제목·지은이·줄거리 라벨과 완결된 펜스 없는 함수 코드도 보호합니다. 근거 없는 최상급과 간접 의문의 발언 의도 변화는 문맥 심사 후보로 확인합니다.</span></li>
             <li><span class="gp-admin-patch-area observe">감지 입력</span><span>공통 문장·코드 처리 변경에 맞춰 감지 입력과 캐시 버전을 갱신했습니다. 감지 점수를 임의로 낮추는 보정, 모델·요금·전달·과금 정책 변경은 없습니다.</span></li>
-            <li><span class="gp-admin-patch-area safety">검증·제한</span><span>97쌍 전문 직접 대조와 독립 모델 교차검수를 구분해 기록했습니다. 백엔드 2,002개 회귀 테스트 통과. 로컬 표면 수리 재생 97건과 감지 입력 52건에서 검사한 인용·코드·수치·구조·위치 손실은 없었습니다. 장문·코드·목록·독후감 실호출의 실패도 숨기지 않고 수정 후 재검증했습니다. 모든 글의 재생성, 사람 블라인드 평가, 감지 정확도 또는 전체 문장 품질의 무오류 보장은 아닙니다. 원본 없는 과거 PDF의 행·열은 추측 복원하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증·제한</span><span>97쌍 전문 직접 대조와 독립 모델 교차검수를 구분해 기록했습니다. 백엔드 2,006개 회귀 테스트 통과. 로컬 표면 수리 재생 97건과 감지 입력 52건에서 검사한 인용·코드·수치·구조·위치 손실은 없었습니다. 코드·목록·독후감 등의 실호출을 확인했지만 최종 장문 수정본의 실검증은 미완료이며, 완료 전 운영 반영은 보류합니다. 일반 복구와 의미 수리의 호출·시간 예약을 분리하고 수리 실패 시 앞선 의미 판정을 유지하도록 보완했습니다. 모든 글의 재생성, 사람 블라인드 평가, 감지 정확도 또는 전체 문장 품질의 무오류 보장은 아닙니다. 원본 없는 과거 PDF의 행·열은 추측 복원하지 않습니다.</span></li>
           </ul>
         </details>
         <details class="gp-admin-patch-release" open>
