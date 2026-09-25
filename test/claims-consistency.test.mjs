@@ -283,7 +283,7 @@ test('콘텐츠 데이터(연구노트 31편·템플릿 6종)도 금지 주장·
   ]);
   const { BLOG_ARTICLES } = await import('../scripts/blog-data.mjs');
   const { TEMPLATE_PAGES } = await import('../scripts/templates-data.mjs');
-  assert.equal(BLOG_ARTICLES.length, 31, '연구노트 31편이어야 함');
+  assert.equal(BLOG_ARTICLES.length, 33, '연구노트 33편이어야 함');
   assert.equal(TEMPLATE_PAGES.length, 6, '템플릿 파일럿 6종이어야 함');
   const all = blog + '\n' + templates;
   // 보장·날조형 표현 금지(감사보고서 §6·§8 게이트)
