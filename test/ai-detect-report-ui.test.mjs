@@ -79,7 +79,7 @@ test('렌더러는 evidence-v2와 구형 응답을 함께 처리하고 판정 �
   assert.match(flow, /reportView\.measuredEvidence \|\| d\.measuredEvidence/u);
   assert.match(flow, /source === 'engine' \? 'limited'/u);
   assert.match(flow, /reportContext: true/u);
-  assert.match(flow, /reportMeta: 'AI식 문체 신호 '/u);
+  assert.match(flow, /reportMeta: 'AI식 문체 점수 '/u);
   assert.match(flow, /repPaintCta\(model\)/u, '전환 밴드는 상태별 분기를 거쳐 그려진다');
 });
 
@@ -134,7 +134,7 @@ test('전환 밴드는 추천을 보류할 때도 사라지지 않고 닫는 말
   assert.match(flow, /band\.hidden = false;/u, '밴드 자체는 항상 남는다');
   assert.match(flow, /band\.classList\.toggle\('is-quiet', !eligible\)/u);
   assert.match(flow, /지금은 추천을 보류했어요/u, '간이 추정이면 유료 수정을 권하지 않는다');
-  assert.match(flow, /이 글의 AI식 문체 신호가 낮게 감지됐어요/u, '낮은 점수는 문체 신호로 설명한다');
+  assert.match(flow, /이 글의 AI식 문체 점수가 낮은 구간이에요/u, '낮은 점수는 점수 구간으로 설명한다');
   assert.match(flow, /판단할 근거가 아직 부족해요/u);
   // 버튼을 감춘 상태에서 비용 줄만 남으면 "어디로 이동한다는 건지" 모순이 된다.
   assert.match(flow, /if \(goBtn && goBtn\.hidden\) return;/u);
@@ -379,8 +379,8 @@ test('게이지는 브랜드 세 구역 색을 두른 반원 "교수님 게이�
   assert.match(flow, /var blipAt = mk\('g', \{ class: 'blip-at', transform: 'translate\(/u);
   assert.match(css, /\.gp-rep-dial \.gp-rep-scope svg\{[^}]*transform:none/u);
   assert.match(flow, /b\.style\.strokeDashoffset = L \* \(1 - frac\)/u, '띠는 구역마다 제 몫만큼 채워진다');
-  assert.match(main, /title="AI식 문체 신호 낮음">0~20 낮음/u, '범례는 문체 신호 구간을 설명한다');
-  assert.match(flow, /문체 신호의 정도를 나타냅니다/u, '스크린리더용 설명');
+  assert.match(main, /title="AI식 문체 점수 낮은 구간">0~20 낮은 구간/u, '범례는 점수 구간을 설명한다');
+  assert.match(flow, /참고 점수이며 AI 작성 확률이 아닙니다/u, '스크린리더용 설명');
   assert.ok(!/RMIN/u.test(flow), '과녁 기하 잔재가 없다');
 });
 
@@ -426,7 +426,7 @@ test('예상 변화는 결정론 두 축만 말하고 문체 점수를 지어내
   assert.match(flow, /rows\.push\(\{ label: '일반 표현', value: generic \+ '문장/u);
   assert.ok(!/to: '0%'/u.test(flow), '결과를 약속하는 화살표가 없다');
   // 화면 문구에 문체 점수 예측이 없다(주석의 반례 인용은 제외하고 렌더 문자열만 본다)
-  assert.ok(!/label: '(문체 점수|AI식 문체 신호)'/u.test(flow), '점수 예측 행이 없다');
+  assert.ok(!/label: '(문체 점수|AI식 문체 신호|AI식 문체 점수)'/u.test(flow), '점수 예측 행이 없다');
   assert.ok(!/textContent = '[^']*예상 점수/u.test(flow), '점수 예측 문구가 없다');
   assert.doesNotMatch(flow, /다듬을 대상 \(원인 축 기준\)/u, '예상 변화 칩 리드는 뺐다 — 밴드는 제목·한 줄·버튼·비용만');
   assert.match(flow, /repPaintExpect\(null\);\s*return;/u, '권하는 상태에서도 칩을 그리지 않는다');

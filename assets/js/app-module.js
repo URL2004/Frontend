@@ -2540,7 +2540,7 @@ const NOTICE_BASE_ITEMS = [
   highlightLabel: '중요',
   date: '2026.09.20',
   views: 0,
-  body: '표현을 많이 바꾸는 과정에서 오히려 문장이 길고 어색해지거나, 복합 문장의 일부 내용이 빠지는 사례를 줄이기 위해 지침과 검사를 보강했어요.\n\n달라진 내용\n• 변경량을 채우기 위한 재표현보다 의미·문장 호응·장르에 맞는 자연스러움을 우선하도록 정리했어요.\n• 원문에는 없던 불필요한 명사화와 일부 어색한 조건문·어순 변화를 대조해요.\n• 복합 문장의 누락된 주장을 복원할 때 이미 있는 설명을 중복해서 붙이지 않도록 보강했어요.\n\n결과를 볼 때\n원문이 이미 자연스럽거나 보호해야 할 정보가 많으면 변경 폭이 작을 수 있어요. 반대로 변경된 단어가 많다는 이유만으로 더 좋은 글이라고 판단하지는 말아 주세요. 계획과 결과, 조건과 결론, 작성자의 실제 경험이 그대로인지 비교해 주세요.\n\n확인 범위와 한계\n모든 문법 오류나 의미 변화를 자동으로 찾아낸다는 보장은 아니에요. AI 감지 점수도 글의 사실성·완성도를 보증하지 않아요. 작업 결과에서 문제가 확인되면 고객센터로 문의해 주세요. 새로 실행하는 작업에 적용되며, 기존 결과를 자동으로 다시 작성하거나 재과금하지 않아요.'
+  body: '표현을 많이 바꾸는 과정에서 오히려 문장이 길고 어색해지거나, 복합 문장의 일부 내용이 빠지는 사례를 줄이기 위해 지침과 검사를 보강했어요.\n\n달라진 내용\n• 변경량을 채우기 위한 재표현보다 의미·문장 호응·장르에 맞는 자연스러움을 우선하도록 정리했어요.\n• 원문에는 없던 불필요한 명사화와 일부 어색한 조건문·어순 변화를 대조해요.\n• 복합 문장의 누락된 주장을 복원할 때 이미 있는 설명을 중복해서 붙이지 않도록 보강했어요.\n\n결과를 볼 때\n원문이 이미 자연스럽거나 보호해야 할 정보가 많으면 변경 폭이 작을 수 있어요. 반대로 변경된 단어가 많다는 이유만으로 더 좋은 글이라고 판단하지는 말아 주세요. 계획과 결과, 조건과 결론, 작성자의 실제 경험이 그대로인지 비교해 주세요.\n\n확인 범위와 한계\n모든 문법 오류나 의미 변화를 자동으로 찾아낸다는 보장은 아니에요. AI식 문체 점수도 글의 사실성·완성도를 보증하지 않아요. 작업 결과에서 문제가 확인되면 고객센터로 문의해 주세요. 새로 실행하는 작업에 적용되며, 기존 결과를 자동으로 다시 작성하거나 재과금하지 않아요.'
  },
  {
   id: 'detect-report-update-20260906',
@@ -2678,7 +2678,7 @@ const NOTICE_BASE_ITEMS = [
   title: 'AI 감지 보고서를 열었어요',
   date: '2026.07.21',
   views: 2841,
-  body: '글 전체의 AI 감지 점수와 문단별 문체 특징을 한눈에 확인할 수 있는 AI 감지 보고서를 열었어요.\n\n무엇을 볼 수 있나요\n참고 결과와 주요 근거를 하나의 종합 보고서로 보여드려요.'
+  body: '글 전체의 AI식 문체 점수와 문단별 문체 특징을 한눈에 확인할 수 있는 AI 감지 보고서를 열었어요.\n\n무엇을 볼 수 있나요\n참고 결과와 주요 근거를 하나의 종합 보고서로 보여드려요.'
  },
  {
   id: 'detect-report-preview',
@@ -3769,9 +3769,9 @@ function historyWorkStatus(item) {
  if (item.type === 'detect') {
   const probability = historyProbability(item);
   if (probability == null) return { label: '점수 확인 필요', tone: 'neutral' };
-  if (probability <= 20) return { label: `AI식 문체 신호 낮음 · ${probability}/100`, tone: 'good' };
-  if (probability <= 49) return { label: `AI식 문체 신호 중간 · ${probability}/100`, tone: 'notice' };
-  return { label: `AI식 문체 신호 높음 · ${probability}/100`, tone: 'warn' };
+  if (probability <= 20) return { label: `낮은 구간 · ${probability}/100`, tone: 'good' };
+  if (probability <= 49) return { label: `중간 구간 · ${probability}/100`, tone: 'notice' };
+  return { label: `높은 구간 · ${probability}/100`, tone: 'warn' };
  }
  // qualityStatus는 운영 품질 확인용 메타데이터다. 사용자 기록에는 내부 판정명을 노출하지 않는다.
  return { label: '작업 완료', tone: 'good' };
@@ -5391,7 +5391,7 @@ function adminDetectCalibrationExample(cfg) {
  const maxReduction = Number(cfg.maxReduction) || 0;
  const floor = Number(cfg.floor) || 0;
  const adjusted = Math.max(floor, raw - Math.min(maxReduction, Math.round(raw * factor)));
- return `예시: 원점수 ${raw}% → 표시 ${Math.round(adjusted)}%`;
+ return `예시: 원점수 ${raw}점 → 표시 ${Math.round(adjusted)}점`;
 }
 
 function adminSetDetectCalibrationForm(cfg) {
@@ -6916,7 +6916,7 @@ function adminProbBadge(p) {
  if (typeof p !== 'number') return '';
  const v = Math.round(p);
  const cls = v <= 20 ? 'safe' : v <= 49 ? 'warn' : 'risk';
- return `<span class="gp-admin-log-prob ${cls}">AI ${v}%</span>`;
+ return `<span class="gp-admin-log-prob ${cls}">문체 ${v}/100</span>`;
 }
 
 let adminUserLogGeneration = 0;
@@ -8051,7 +8051,7 @@ function adminRenderLedgerDetail(data) {
   adminLedgerStatusBadge('품질', history.qualityStatus || archive.qualityStatus),
   adminLedgerStatusBadge('효과', history.effectStatus || engine.effectStatus || archive.effectStatus),
   adminLedgerStatusBadge('과금', history.billingDisposition || engine.billingDisposition || archive.billingDisposition || ledger.billingDisposition),
-  adminLedgerStatusBadge('AI 감지', isDetect && Number.isFinite(detectProbability) ? `${Math.round(detectProbability)}%` : '')
+  adminLedgerStatusBadge('AI식 문체 점수', isDetect && Number.isFinite(detectProbability) ? `${Math.round(detectProbability)}/100` : '')
  ].join('');
  const opsStatus = data.opsStatus === 'error' ? 'error' : (ops.length ? 'ok' : 'empty');
  const opsHtml = opsStatus === 'error'
@@ -8060,8 +8060,8 @@ function adminRenderLedgerDetail(data) {
    ? `<section class="gp-admin-ledger-detail-section"><h3>작업·감사 로그</h3><ol class="gp-admin-ledger-ops">${ops.map(item => `<li><div><strong>${escapeHtml(item.event || item.code || '운영 기록')}</strong><time>${escapeHtml(adminDateText(item.createdAtMs || item.createdMs || item.atMs))}</time></div><p>${escapeHtml(item.message || item.action || item.reason || '')}</p></li>`).join('')}</ol></section>`
    : '<section class="gp-admin-ledger-detail-section"><h3>작업·감사 로그</h3><div class="gp-admin-ledger-empty-note">이 작업과 연결된 별도 운영 로그가 없습니다.</div></section>';
  const detectHtml = isDetect ? `${adminLedgerDetailPairs('AI 감지 결과', [
-  ['보정 감지율', Number.isFinite(detectProbability) ? `${Math.round(detectProbability)}%` : ''],
-  ['원 감지율', Number.isFinite(detectRawProbability) ? `${Math.round(detectRawProbability)}%` : ''],
+  ['표시 점수', Number.isFinite(detectProbability) ? `${Math.round(detectProbability)}/100` : ''],
+  ['보정 전 점수', Number.isFinite(detectRawProbability) ? `${Math.round(detectRawProbability)}/100` : ''],
   ['보정 방식', history.probabilityCalibration?.match]
  ])}${adminLedgerTextBlock('탐지 요약', detectView.summary)}${adminLedgerTextBlock('탐지 상세', detectView.detail)}` : '';
  return `<div class="gp-admin-ledger-detail-badges">${badges}</div>

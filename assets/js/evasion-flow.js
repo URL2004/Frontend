@@ -1222,7 +1222,7 @@
     var eligible = model.conversionAccess !== false;
     var recommend = eligible && model.conversionRecommend === true;
     if ($('gpRepStickyScore')) $('gpRepStickyScore').textContent = model.score == null ? '--' : model.score + '점';
-    if ($('gpRepStickyLabel')) $('gpRepStickyLabel').textContent = model.radar.label || 'AI식 문체 신호';
+    if ($('gpRepStickyLabel')) $('gpRepStickyLabel').textContent = model.radar.label || 'AI식 문체 점수';
     if ($('gpRepStickyBtn')) $('gpRepStickyBtn').textContent = !eligible ? '전체 문장 보기' : recommend ? '다듬기 방법 보기 →' : '다듬기 방법·비용 보기';
     if ($('gpRepStickyBtn')) $('gpRepStickyBtn').classList.toggle('is-secondary', eligible && !recommend);
     if ($('gpRepStickyBtn')) $('gpRepStickyBtn').onclick = eligible ? function () { window.lavReportToHumanize('sticky'); } : function () { window.gpRepOpenModal(); };
@@ -1340,7 +1340,7 @@
     if (alt) {
       alt.textContent = score == null
         ? '교수님 게이지. 점수를 확인하지 못해 내 글 위치를 표시하지 않았어요.'
-        : 'AI식 문체 신호 ' + score + '점, 100점 만점. ' + (model.radar.label || '') + '. 50~100 높음, 21~49 중간, 0~20 낮음. 문체 신호의 정도를 나타냅니다.';
+        : 'AI식 문체 점수 ' + score + '점, 100점 만점. ' + (model.radar.label || '') + '. 50~100 높은 구간, 21~49 중간 구간, 0~20 낮은 구간. 반복 표현과 글의 전개에서 관찰한 특징을 종합한 참고 점수이며 AI 작성 확률이 아닙니다.';
     }
   }
 
@@ -1366,10 +1366,10 @@
   }
 
   function styleLabelFor(band) {
-    return band === 'high' ? 'AI식 문체 신호 · 높음'
-      : band === 'moderate' ? 'AI식 문체 신호 · 중간'
-      : band === 'low' ? 'AI식 문체 신호 · 낮음'
-      : 'AI식 문체 신호 · 확인 필요';
+    return band === 'high' ? 'AI식 문체 점수 · 높은 구간'
+      : band === 'moderate' ? 'AI식 문체 점수 · 중간 구간'
+      : band === 'low' ? 'AI식 문체 점수 · 낮은 구간'
+      : 'AI식 문체 점수 · 확인 필요';
   }
 
   // 교수님 레이더 밴드 — 서버가 준 값을 우선하고, 없으면 화면 공용 기준(detect-presentation)으로 같은 경계를 쓴다.
@@ -1435,7 +1435,7 @@
     var headline = synthesis.headline;
     if (!headline) {
       headline = styleBand === 'high'
-        ? 'AI식 문체 신호가 높게 측정됐어요. 표시된 문장을 확인해 주세요.'
+        ? 'AI식 문체 점수가 높은 구간이에요. 표시된 문장을 확인해 주세요.'
         : '문체 신호와 내용 근거를 나눠 확인했어요.';
     }
     var description = synthesis.description || content.reason
@@ -2633,7 +2633,7 @@
       // 권하지 않는다 — 개선점을 찾지 못한 글에 수정을 권하면 안 된다. 다만 기능으로 가는 길은 막지 않는다.
       if (title) {
         title.textContent = model.radar.band === 'low'
-          ? '이 글의 AI식 문체 신호가 낮게 감지됐어요'
+          ? '이 글의 AI식 문체 점수가 낮은 구간이에요'
           : '지목할 문장이 적어 적극 권하지는 않아요';
       }
       if (desc) desc.textContent = '원문 위치와 연결된 정형 패턴이 확인되지 않아 수정을 권하지는 않아요. 원하시면 문체를 다듬는 방법과 비용을 확인할 수 있어요.';
@@ -2715,7 +2715,7 @@
   }
 
   // 판정 칩 문구 — 공유 라벨(detect-presentation.js gpProfessorRadarBand)을 그대로 쓴다.
-  //   'AI식 문체 신호 중간'처럼 행동을 단정하지 않는 말은 ecdc366(2026-09-05)에서 정한 정책이라 여기서 바꾸지 않는다.
+  //   행동을 단정하지 않는 말(ecdc366, 2026-09-05)은 유지하고, 2026-09-26부터 라벨은 '높은/중간/낮은 구간'으로 통일한다(신호→점수).
   //   v126부터 화면에서는 감췄지만(게이지 구역 이름과 중복) 스티키 바·공유 카드·보조기술은 이 값을 쓴다.
   function repVerdictLabel(model) {
     return (model && model.radar && model.radar.label) || '판정 준비 중';
@@ -2952,7 +2952,7 @@
         reportView: d.reportView || {},
         reportSynthesis: reportModel.synthesis,
         contentEvidence: reportModel.content,
-        reportMeta: 'AI식 문체 신호 ' + (reportModel.score == null ? '확인 필요' : reportModel.score + '/100')
+        reportMeta: 'AI식 문체 점수 ' + (reportModel.score == null ? '확인 필요' : reportModel.score + '/100')
           + ' · 교수님 레이더 ' + reportModel.radar.label + ' · 내용 근거 ' + reportModel.content.label,
         abstractRiskRatio: Number(d.abstractRiskRatio) || 0,
         needsUserAnchor: Number(d.abstractRiskRatio) >= 0.5 || d.grade === 'C',

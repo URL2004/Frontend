@@ -32,8 +32,8 @@ test('1% 옆의 높은 가능성 문구를 낮은 구간 설명으로 교정한�
   });
 
   assert.equal(out.riskLevel, 'low');
-  assert.equal(out.riskLabel, 'AI식 문체 신호 · 낮음');
-  assert.match(out.summary, /낮게 감지/);
+  assert.equal(out.riskLabel, 'AI식 문체 점수 · 낮은 구간');
+  assert.match(out.summary, /낮은 구간/);
   assert.doesNotMatch(out.summary + out.detail, /가능성이 (?:매우 )?높/);
 });
 
@@ -45,7 +45,7 @@ test('평균 점수로 합쳐진 결과도 최종 점수 구간을 우선한다'
   });
 
   assert.equal(out.riskLevel, 'moderate');
-  assert.match(out.summary, /일부 감지/);
+  assert.match(out.summary, /중간 구간/);
   assert.match(out.detail, /중간 구간/);
 });
 
@@ -57,9 +57,9 @@ test('50%부터 높은 구간으로 모든 화면이 같은 경계를 쓴다', (
 });
 
 test('교수님 레이더는 공식 점수 밴드와 같은 경계를 쓴다', () => {
-  assert.deepEqual({ ...professorRadar(20) }, { score: 20, band: 'low', label: 'AI식 문체 신호 낮음' });
-  assert.deepEqual({ ...professorRadar(21) }, { score: 21, band: 'revise', label: 'AI식 문체 신호 중간' });
-  assert.deepEqual({ ...professorRadar(49) }, { score: 49, band: 'revise', label: 'AI식 문체 신호 중간' });
-  assert.deepEqual({ ...professorRadar(50) }, { score: 50, band: 'hard', label: 'AI식 문체 신호 높음' });
-  assert.deepEqual({ ...professorRadar(72) }, { score: 72, band: 'hard', label: 'AI식 문체 신호 높음' });
+  assert.deepEqual({ ...professorRadar(20) }, { score: 20, band: 'low', label: '낮은 구간' });
+  assert.deepEqual({ ...professorRadar(21) }, { score: 21, band: 'revise', label: '중간 구간' });
+  assert.deepEqual({ ...professorRadar(49) }, { score: 49, band: 'revise', label: '중간 구간' });
+  assert.deepEqual({ ...professorRadar(50) }, { score: 50, band: 'hard', label: '높은 구간' });
+  assert.deepEqual({ ...professorRadar(72) }, { score: 72, band: 'hard', label: '높은 구간' });
 });

@@ -235,9 +235,9 @@
                  <p class="gp-rep-source" id="gpRepComparison" role="status" hidden></p>
                  <!-- 구역 범례는 v125에서 화면에서 뺐다(게이지 색·구역 이름이 이미 말한다). 마크업은 보조기술·테스트 계약용으로 남긴다. -->
                  <ul class="gp-rep-zonekey" aria-label="게이지 구역 읽는 법">
-                   <li class="z-hard" title="AI식 문체 신호 높음">50~100 높음</li>
-                   <li class="z-revise" title="AI식 문체 신호 중간">21~49 중간</li>
-                   <li class="z-low" title="AI식 문체 신호 낮음">0~20 낮음</li>
+                   <li class="z-hard" title="AI식 문체 점수 높은 구간">50~100 높은 구간</li>
+                   <li class="z-revise" title="AI식 문체 점수 중간 구간">21~49 중간 구간</li>
+                   <li class="z-low" title="AI식 문체 점수 낮은 구간">0~20 낮은 구간</li>
                  </ul>
                </div>
                <div class="gp-rep-verdict-copy">
@@ -412,7 +412,7 @@
 
            <!-- 모바일 고정 바 — 히어로를 지나면 나타나고, 전환 밴드가 보이면 사라진다 -->
            <div class="gp-rep-stickybar" id="gpRepSticky" hidden>
-             <div class="gp-rep-stickybar-copy"><b id="gpRepStickyScore">--</b><span id="gpRepStickyLabel">AI식 문체 신호</span></div>
+             <div class="gp-rep-stickybar-copy"><b id="gpRepStickyScore">--</b><span id="gpRepStickyLabel">AI식 문체 점수</span></div>
              <button type="button" class="gp-rep-stickybar-btn" id="gpRepStickyBtn" onclick="lavReportToHumanize('sticky')">다듬기 방법 보기 →</button>
            </div>
            <p class="gp-rep-limit" id="gpRepLimit">문체 패턴을 바탕으로 한 참고 결과이며 작성 주체나 외부 검사 결과를 확정하지 않아요.</p>

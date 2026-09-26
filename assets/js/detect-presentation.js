@@ -5,21 +5,21 @@
   var BANDS = {
     low: {
       level: 'low',
-      label: 'AI식 문체 신호 · 낮음',
-      summary: 'AI식 문체 신호가 낮게 감지됐어요.',
-      detail: function (p) { return '문체 신호 ' + p + '/100은 낮은 구간입니다. 일부 정형적 특징은 참고 신호이며, 내용 근거는 별도로 확인해 주세요.'; }
+      label: 'AI식 문체 점수 · 낮은 구간',
+      summary: 'AI식 문체 점수가 낮은 구간이에요.',
+      detail: function (p) { return 'AI식 문체 점수 ' + p + '/100은 낮은 구간입니다. 일부 정형적 특징은 참고 신호이며, 내용 근거는 별도로 확인해 주세요.'; }
     },
     moderate: {
       level: 'moderate',
-      label: 'AI식 문체 신호 · 중간',
-      summary: 'AI식 문체 신호가 일부 감지됐어요.',
-      detail: function (p) { return '문체 신호 ' + p + '/100은 중간 구간이에요. 일부 정형적인 문체 특징이 관찰됐지만 작성 주체를 단정하지 않아요.'; }
+      label: 'AI식 문체 점수 · 중간 구간',
+      summary: 'AI식 문체 점수가 중간 구간이에요.',
+      detail: function (p) { return 'AI식 문체 점수 ' + p + '/100은 중간 구간이에요. 일부 정형적인 문체 특징이 관찰됐지만 작성 주체를 단정하지 않아요.'; }
     },
     high: {
       level: 'high',
-      label: 'AI식 문체 신호 · 높음',
-      summary: 'AI식 문체 신호가 높게 감지됐어요.',
-      detail: function (p) { return '문체 신호 ' + p + '/100은 높은 구간이에요. 표시된 문체 특징이 점수를 높인 근거로 관찰됐어요.'; }
+      label: 'AI식 문체 점수 · 높은 구간',
+      summary: 'AI식 문체 점수가 높은 구간이에요.',
+      detail: function (p) { return 'AI식 문체 점수 ' + p + '/100은 높은 구간이에요. 표시된 문체 특징이 점수를 높인 근거로 관찰됐어요.'; }
     }
   };
 
@@ -41,9 +41,9 @@
   function professorRadarFor(value) {
     var p = probability(value);
     if (p === null) return { score: null, band: 'limited', label: '점수 확인 필요' };
-    if (p <= 20) return { score: p, band: 'low', label: 'AI식 문체 신호 낮음' };
-    if (p <= 49) return { score: p, band: 'revise', label: 'AI식 문체 신호 중간' };
-    return { score: p, band: 'hard', label: 'AI식 문체 신호 높음' };
+    if (p <= 20) return { score: p, band: 'low', label: '낮은 구간' };
+    if (p <= 49) return { score: p, band: 'revise', label: '중간 구간' };
+    return { score: p, band: 'hard', label: '높은 구간' };
   }
 
   function compact(value) {
@@ -108,7 +108,7 @@
       label: info.label || band.label,
       headline: observed ? (band.level === 'low' ? '전체 신호는 낮아요. 확인할 부분: ' : '') + pattern.label + (band.level === 'low' ? '' : '부터 살펴보세요') : band.summary,
       description: observed ? pattern.locationCount + '개 문장에서 확인한 특징: ' + pattern.description + '.'
-        : '반복 표현과 문장 전개 등에서 나타나는 AI식 문체 신호를 100점 기준으로 표시해요.',
+        : '반복 표현과 글의 전개에서 관찰한 특징을 종합한 참고 점수예요. AI 작성 확률이 아니에요.',
       nextSteps: observed ? (info.status === 'ready' && Array.isArray(info.nextSteps) && info.nextSteps.length
         ? info.nextSteps.slice(0, 3) : ['표시된 ' + pattern.label + ' 항목의 문장을 앞뒤 문맥과 함께 확인해 주세요.']) : []
     };
@@ -127,6 +127,7 @@
     return [
       /(?:가능성|확률|위험|의심)(?:이|은|도)?\s*(?:매우\s*)?(?:높|크|강)/,
       /(?:AI식\s*)?문체\s*신호(?:가|는|도)?\s*(?:매우\s*)?높/,
+      /(?:점수|문체)[^.!?\n]{0,20}높은\s*구간/,
       /(?:AI|인공지능|기계|자동)[^.!?\n]{0,50}(?:생성|작성|보조|의심|흔적)[^.!?\n]{0,35}(?:높|강|뚜렷|명확)/,
       /(?:AI|인공지능)[^.!?\n]{0,40}(?:작성|생성)(?:한|된)?\s*글(?:로|일)\s*(?:보|판단)/
     ].some(function (pattern) { return pattern.test(text); });
@@ -137,6 +138,7 @@
     return [
       /(?:가능성|확률|위험|의심)(?:이|은|도)?\s*(?:매우\s*)?(?:낮|작|약)/,
       /(?:AI식\s*)?문체\s*신호(?:가|는|도)?\s*(?:매우\s*)?낮/,
+      /(?:점수|문체)[^.!?\n]{0,20}낮은\s*구간/,
       /(?:AI|인공지능|기계|자동)[^.!?\n]{0,50}(?:생성|작성|보조|의심|흔적)[^.!?\n]{0,35}(?:낮|약|없|미미)/,
       /사람이\s*(?:직접\s*)?쓴\s*글(?:로|일)\s*(?:보|판단)/
     ].some(function (pattern) { return pattern.test(text); });
