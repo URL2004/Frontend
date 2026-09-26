@@ -227,12 +227,16 @@
                  <div class="gp-rep-scope" id="gpRepScope" role="img" aria-labelledby="gpRepScopeAlt"></div>
                  <p class="sr-only" id="gpRepScopeAlt"></p>
                  <div class="gp-rep-dial-read">
-                   <span class="cap">AI 감지 점수</span>
+                   <span class="cap">AI식 문체 점수</span>
                    <span class="num"><b id="gpRepScore">--</b><span class="den">/100</span></span>
                  </div>
                  <p class="gp-rep-bandchip" id="gpRepBandChip">판정 준비 중</p>
                  <p class="gp-rep-source" id="gpRepSource"></p>
                  <p class="gp-rep-source" id="gpRepComparison" role="status" hidden></p>
+                 <details class="gp-rep-calibration" id="gpRepCalibration" hidden>
+                   <summary id="gpRepCalibrationLabel">휴머나이징 이력 보정</summary>
+                   <p id="gpRepCalibrationDetail"></p>
+                 </details>
                  <!-- 구역 범례는 v125에서 화면에서 뺐다(게이지 색·구역 이름이 이미 말한다). 마크업은 보조기술·테스트 계약용으로 남긴다. -->
                  <ul class="gp-rep-zonekey" aria-label="게이지 구역 읽는 법">
                    <li class="z-hard" title="AI식 문체 신호 높음">50~100 높음</li>
