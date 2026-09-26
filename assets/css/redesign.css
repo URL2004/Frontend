@@ -1,3 +1,9 @@
+/* Score meaning is separate from the optional history adjustment. */
+.gp-rep-calibration { max-width: 48ch; margin: 12px auto 0; color: #43366b; font-size: 13px; line-height: 1.65; text-align: left; }
+.gp-rep-calibration[hidden] { display: none !important; }
+.gp-rep-calibration summary { cursor: pointer; padding: 6px 0; color: #4b34cc; font-weight: 700; }
+.gp-rep-calibration summary:focus-visible { outline: 2px solid #6d4aff; outline-offset: 3px; border-radius: 4px; }
+.gp-rep-calibration p { margin: 6px 0 0; overflow-wrap: anywhere; }
 /* Light lavender application tokens — single source of truth. */
 :root{
   --brand:#5a5bd8;

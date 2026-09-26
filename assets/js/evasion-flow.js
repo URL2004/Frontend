@@ -1,4 +1,4 @@
-﻿/* 회피 모드 워크스페이스 — P0 정적 목업 (더미 데이터, 백엔드 미연결) */
+/* 회피 모드 워크스페이스 — P0 정적 목업 (더미 데이터, 백엔드 미연결) */
 (function () {
   function $(id) { return document.getElementById(id); }
   var SIGNUP_GRANT_CREDITS = 20;
@@ -716,7 +716,7 @@
         ? await window.gpConfirm({
             variant: 'detect',
             title: 'AI 감지를 시작할까요?',
-            message: '글 전체의 AI 감지 점수와 두드러진 문체 신호를 확인해요.',
+            message: '글 전체의 AI식 문체 점수와 두드러진 문체 신호를 확인해요.',
             summary: detectSummary,
             safeText: unlimited
               ? '무제한 이용권으로 처리되며 크레딧은 차감되지 않아요.'
@@ -1467,6 +1467,7 @@
       status: status,
       score: score,
       historyComparisonText: typeof window.gpDetectHistoryComparisonText === 'function' ? window.gpDetectHistoryComparisonText(d) : '',
+      calibrationDetails: typeof window.gpDetectCalibrationDetails === 'function' ? window.gpDetectCalibrationDetails(d) : null,
       interpretation: interpretation,
       style: {
         band: styleBand,
@@ -2126,7 +2127,7 @@
           ? repOrderedCauseItems(model.causeAnalysis.items).slice(0, 3).map(function (item) { return String(item.categoryLabel || item.description || ''); }).filter(Boolean)
           : [];
         alt.textContent = 'AI 감지 원인 분석. '
-          + (sparseCauses.length ? 'AI 감지 점수에 반영된 판단 원인: ' + sparseCauses.join(', ') + '. ' : '')
+          + (sparseCauses.length ? 'AI식 문체 점수에 반영된 판단 원인: ' + sparseCauses.join(', ') + '. ' : '')
           + '표면 문체 지표: ' + empty.textContent;
       }
       return;
@@ -2149,7 +2150,7 @@
         ? repOrderedCauseItems(model.causeAnalysis.items).slice(0, 3).map(function (item) { return String(item.categoryLabel || item.description || ''); }).filter(Boolean)
         : [];
       alt.textContent = 'AI 감지 원인 분석. '
-        + (causeAlt.length ? 'AI 감지 점수에 반영된 판단 원인: ' + causeAlt.join(', ') + '. ' : '')
+        + (causeAlt.length ? 'AI식 문체 점수에 반영된 판단 원인: ' + causeAlt.join(', ') + '. ' : '')
         + '추가 표면 지표: ' + axes.map(function (a) {
           return a.name + ' ' + repRadarLevel(a);
         }).join(', ') + '.';
@@ -2186,13 +2187,13 @@
 
     var section = document.createElement('section');
     section.className = 'gp-rep-cause-match is-' + status;
-    section.setAttribute('aria-label', 'AI 감지 점수에 반영된 판단 원인');
+    section.setAttribute('aria-label', 'AI식 문체 점수에 반영된 판단 원인');
     var head = document.createElement('div');
     head.className = 'gp-rep-cause-match-head';
     var title = document.createElement('b');
     title.textContent = status === 'aligned' ? '점수에 반영된 원인'
-      : status === 'partial' ? 'AI 감지 점수의 원인을 일부만 확인했어요'
-      : 'AI 감지 점수의 세부 원인을 충분히 확인하지 못했어요';
+      : status === 'partial' ? 'AI식 문체 점수의 원인을 일부만 확인했어요'
+      : 'AI식 문체 점수의 세부 원인을 충분히 확인하지 못했어요';
     head.appendChild(title);
     var badge = document.createElement('span');
     badge.className = 'gp-rep-cause-status';
@@ -2204,7 +2205,7 @@
       summary = window.gpDetectPublicNarrative(summary, model.interpretation);
     }
     if (!summary && status !== 'aligned') {
-      summary = '위 막대는 표면 문체만 자동 계측해요. AI 감지 점수는 문맥과 전개까지 함께 판단하므로 막대만으로 점수를 모두 설명할 수 없어요.';
+      summary = '위 막대는 표면 문체만 자동 계측해요. AI식 문체 점수는 문맥과 전개까지 함께 판단하므로 막대만으로 점수를 모두 설명할 수 없어요.';
     }
     // 정합 상태의 기본 문구는 배지가 이미 말한다 — 같은 말을 두 줄로 적지 않는다.
     if (summary && !(status === 'aligned' && REP_CAUSE_DEFAULT_ALIGNED_RE.test(summary))) {
@@ -2477,7 +2478,11 @@
       ctx.fillText(model.score == null ? '--' : String(model.score), 72, 110);
       var numW = ctx.measureText(model.score == null ? '--' : String(model.score)).width;
       ctx.fillStyle = '#b3aee0'; ctx.font = font('700', 30);
-      ctx.fillText('/100 · AI 감지 점수', 72 + numW + 16, 190);
+      ctx.fillText('/100 · AI식 문체 점수', 72 + numW + 16, 190);
+      if (model.calibrationDetails) {
+        ctx.font = font('600', 20); ctx.fillStyle = '#e2dcff';
+        ctx.fillText('이력 보정: ' + model.calibrationDetails.before + ' → ' + model.calibrationDetails.after + '점 (서비스 조정)', 72, 232);
+      }
       var chip = model.radar.label || '';
       ctx.font = font('800', 30);
       var chipW = ctx.measureText(chip).width + 44;
@@ -2840,6 +2845,12 @@
       $('gpRepComparison').textContent = model.historyComparisonText || '';
       $('gpRepComparison').hidden = !model.historyComparisonText;
     }
+    if ($('gpRepCalibration')) {
+      $('gpRepCalibration').hidden = !model.calibrationDetails;
+      $('gpRepCalibration').open = false;
+      $('gpRepCalibrationLabel').textContent = model.calibrationDetails ? model.calibrationDetails.label : '';
+      $('gpRepCalibrationDetail').textContent = model.calibrationDetails ? model.calibrationDetails.text : '';
+    }
     if ($('gpRepBandChip')) $('gpRepBandChip').textContent = repVerdictLabel(model);
     // 히어로 버튼 — 접근이 닫힌 상태(간이 추정·근거 부족)에서만 감춘다. 점수가 낮아도 접근은 열려 있고,
     //   지목할 문장이 없으면 부차 버튼으로 낮춰 "권하지 않되 막지 않는다"(사장님 2026-09-07).
@@ -2962,7 +2973,7 @@
     if (report) {
       report.dataset.announcement = score == null
         ? 'AI 감지 분석을 마쳤어요. 점수를 확인하지 못했어요.'
-        : 'AI 감지 분석을 마쳤어요. AI 감지 점수 ' + score + '점, 100점 만점. ' + (model.radar.label || '')
+        : 'AI 감지 분석을 마쳤어요. AI식 문체 점수 ' + score + '점, 100점 만점. ' + (model.radar.label || '')
           + (interpretation ? '. ' + interpretation.headline + ' ' + interpretation.evidence.label : '');
     }
   }

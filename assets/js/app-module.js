@@ -3926,7 +3926,7 @@ function historyRenderDetail() {
    <div class="gp-history-detail-kicker"><span class="gp-history-kind ${isDetect ? 'detect' : 'humanize'}">${isDetect ? 'AI 감지' : '휴머나이징'}</span><time>${escapeHtml(historyDateText(item.createdAtMs))}</time></div>
    <h2>${escapeHtml(historyTitle(item))}</h2>
    <div class="gp-history-detail-meta">
-    <span><small>${isDetect ? 'AI 감지 점수' : '작업 상태'}</small><b class="${work.tone}">${escapeHtml(work.label)}</b></span>
+    <span><small>${isDetect ? 'AI식 문체 점수' : '작업 상태'}</small><b class="${work.tone}">${escapeHtml(work.label)}</b></span>
     <span><small>이용 내역</small><b>${escapeHtml(billing.short)}</b></span>
    </div>
   </header>
@@ -7020,9 +7020,11 @@ window.adminToggleLogItem = async function(id) {
        ? '정규화 정확 일치'
        : '작업내역 일치';
     const note = raw !== null && raw !== Math.round(detectView.probability)
-     ? `<div style="margin-top:6px;color:var(--text3);font-size:12px;">원점수 ${raw}% · ${escapeHtml(matchInfo)}</div>`
+     ? `<div style="margin-top:6px;color:var(--text3);font-size:12px;">보정 전 ${raw}/100 · ${escapeHtml(matchInfo)} · 서비스 이력 조정</div>`
      : '';
-    html += `<div class="gp-admin-log-block"><div class="gp-admin-log-block-head"><span>AI 감지 점수</span></div><div class="gp-admin-log-text">${Math.round(detectView.probability)}/100${note}</div></div>`;
+    html += `<div class="gp-admin-log-block"><div class="gp-admin-log-block-head"><span>AI식 문체 점수</span></div><div class="gp-admin-log-text">${Math.round(detectView.probability)}/100${note}</div></div>`;
+    const adjustment = window.gpDetectCalibrationDetails?.(it);
+    if (adjustment) html += block(adjustment.label, adjustment.text, false);
    }
    html += block('탐지 요약', detectView.summary, false);
    html += block('탐지 상세', detectView.detail, true);

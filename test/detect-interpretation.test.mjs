@@ -13,8 +13,24 @@ vm.runInContext(read('assets/js/detect-presentation.js'), browser);
 const build = browser.GPDetectInterpretation.buildDetectInterpretation;
 const normalize = browser.gpNormalizeDetectPresentation;
 const base = { probability: 32, probSource: 'llm', confidence: 'high', textLength: 1000, sentenceTotal: 10, causeCoverageStatus: 'aligned' };
-const signal = (category, locations = 2) => ({ category, strength: 'strong', locationStatus: 'source_range_verified',
+const signal = (category, locations = 2) => ({ category, strength: 'strong', scope: 'recurring', locationStatus: 'source_range_verified',
   locations: Array.from({ length: locations }, (_, i) => ({ sentenceIndex: i, start: i * 50, end: i * 50 + 30 })) });
+
+test('calibration details disclose adjustment and distinguish unchanged history matches',()=>{
+  const show=browser.gpDetectCalibrationDetails;
+  const scoreAdjustment={matched:true,before:25,after:15,delta:-10,basis:'service_history'};
+  assert.equal(show({probability:15,scoreAdjustment}).delta,-10);
+  assert.match(show({probability:15,scoreAdjustment}).text,/AI 작성 확률이 아니/);
+  assert.match(show({probability:5,scoreAdjustment:{...scoreAdjustment,before:5,after:5,delta:0}}).label,/점수 변화 없음/);
+  assert.equal(show({probability:15,scoreAdjustment:{matched:false}}),null);
+  assert.equal(show({probability:20,scoreAdjustment}),null);
+});
+
+test('browser uses the server scope and retains unscored statistics disclosure',()=>{
+  for(const scope of ['isolated','recurring','pervasive'])assert.equal(build({...base,signalEvidence:[{...signal('ending_repetition'),scope}]}).pattern.scope,scope);
+  const r=build({...base,statisticalReference:{basis:'independent_statistics',scoreApplied:false}});
+  assert.equal(r.score,32);assert(r.limitations.some(s=>s.includes('점수에는 반영하지 않았어요')));
+});
 
 test('statistics explanation survives browser fallback without turning weak causes into strong evidence', () => {
   const statisticalSupport = { version:'statistical-assist-v5-whitespace-stable',modelVersion:'korean-style-statistics-v1',
@@ -58,7 +74,7 @@ test('same score earns different actionable copy only from grounded categories',
   const structure = build({ ...base, signalEvidence: [signal('overstructured_progression')] });
   assert.notEqual(ending.headline, structure.headline);
   assert.match(ending.nextSteps[0], /문장 끝/);
-  assert.match(structure.nextSteps[0], /목차 형식은 유지/);
+  assert.match(structure.nextSteps[0], /내용상 필요한 순서는 유지/);
   assert.equal(ending.pattern.locationCount, 2);
   assert.equal(ending.pattern.scope, 'recurring');
   assert.deepEqual(build({ ...base, signalEvidence: [signal('ending_repetition')] }), ending);
@@ -80,6 +96,7 @@ test('unverified, out-of-bounds, duplicated locations do not invent repeated evi
   assert.equal(build({ ...base, signalEvidence: [unverified] }).pattern, null);
   assert.equal(build({ ...base, signalEvidence: [{ ...signal('ending_repetition'), locations: [{ sentenceIndex: 0, start: 0, end: 1001 }] }] }).pattern, null);
   const one = signal('ending_repetition', 1);
+  one.scope = 'isolated'; // The server owns scope; this fixture represents one verified unit.
   one.locations.push(one.locations[0]);
   const result = build({ ...base, signalEvidence: [one, one] });
   assert.equal(result.pattern.locationCount, 1);
@@ -129,7 +146,7 @@ test('stored interpretation wins consistently, stale score descriptor is rebuilt
 test('legacy reports derive grounded feedback using text and measured evidence', () => {
   const result = normalize({ probability: 17, probSource: 'llm', confidence: 'high', inputText: '가'.repeat(1000),
     reportView: { measuredEvidence: { sentenceTotal: 10 }, causeAnalysis: { status: 'aligned', items: [signal('lexical_template')] } } });
-  assert.match(result.summary, /전체 신호는 낮고/);
+  assert.match(result.summary, /전체 신호는 낮아요/);
   assert.equal(result.interpretation.pattern.category, 'lexical_template');
   assert.equal(result.interpretation.sample.characters, 1000);
   const styleOnly = normalize({ reportView: { styleSignal: { score: 32, source: 'llm' } } });

@@ -589,11 +589,11 @@ test('점수 원인 커버리지를 받아 결정론 축이 설명하지 못한 
   assert.match(flow, /reportView\.causeAnalysis/u);
   assert.match(flow, /function repPaintCauseAnalysis/u);
   assert.match(flow, /\['aligned', 'partial', 'limited'\]/u);
-  assert.match(flow, /AI 감지 점수의 원인을 일부만 확인했어요/u, '부분 정합 상태를 숨기지 않는다');
+  assert.match(flow, /AI식 문체 점수의 원인을 일부만 확인했어요/u, '부분 정합 상태를 숨기지 않는다');
   assert.match(flow, /위 막대는 표면 문체만 자동 계측해요/u, '결정론 막대와 모델 점수의 판단 범위를 구분한다');
   assert.ok(flow.indexOf('repPaintCauseAnalysis(model, host);') < flow.indexOf('repPaintSurfaceLabel(model, host);'), '점수 연결 원인이 표면 지표보다 먼저 온다');
   assert.match(flow, /추가 표면 지표 · 참고/u);
-  assert.match(flow, /AI 감지 점수에 반영된 판단 원인:/u, '스크린리더에도 원인을 먼저 전달한다');
+  assert.match(flow, /AI식 문체 점수에 반영된 판단 원인:/u, '스크린리더에도 원인을 먼저 전달한다');
   assert.match(css, /\.gp-rep-cause-match\.is-partial/u);
   // v124 가독성: 원인 항목은 이름·범위·강도 칩·참고 문장 버튼으로 쪼개고, 해석 카드의 '확인 위치'는 칩으로 뗀다
   assert.match(flow, /function repCauseItemRow/u);

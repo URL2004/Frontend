@@ -60,7 +60,7 @@
     var score = probability(source.probability);
     if (source.probability === undefined) score = probability((report.styleSignal || {}).score);
     var supplied = report.interpretation || source.interpretation;
-    if (supplied && supplied.version === global.GPDetectInterpretation.VERSION
+    if (supplied && ['detect-interpretation-v1', 'detect-interpretation-v2', 'detect-interpretation-v3', global.GPDetectInterpretation.VERSION].indexOf(supplied.version) >= 0
       && supplied.score === score && supplied.evidence && Array.isArray(supplied.nextSteps)
       && supplied.nextSteps.every(function (step) { return typeof step === 'string'; })
       && Array.isArray(supplied.limitations) && supplied.limitations.every(function (line) { return typeof line === 'string'; })
@@ -86,6 +86,9 @@
       sentenceTotal: sentences == null ? null : sentences,
       signalEvidence: Array.isArray(source.signalEvidence) ? source.signalEvidence : ((report.causeAnalysis || {}).items || []),
       statisticalSupport: source.statisticalSupport || source.detectStatisticalSupport || null,
+      statisticalReference: source.statisticalReference || source.detectStatisticalReference || null,
+      calibrationApplied: !!(source.probabilityCalibration && source.probabilityCalibration.applied),
+      preCalibrationProbability: source.rawProbability,
       causeCoverageStatus: (report.causeAnalysis || {}).status || (source.detectCauseAlignment || {}).status || null
     });
   }
@@ -187,6 +190,18 @@
   }
 
   global.gpDetectHistoryComparisonText = historyComparisonText;
+  global.gpDetectCalibrationDetails = function (result) {
+    var current = probability(result && result.probability);
+    var meta = result && result.probabilityCalibration, clean = result && result.scoreAdjustment;
+    var raw = probability(clean ? clean.before : meta && meta.rawProbability);
+    var after = probability(clean ? clean.after : meta && meta.calibratedProbability);
+    var matched = clean ? clean.matched === true : meta && meta.reason === 'own_humanized_history_match';
+    if (!matched || current === null || raw === null || after !== current || after > raw) return null;
+    return { applied: after < raw, before: raw, after: after, delta: after - raw,
+      label: after < raw ? '휴머나이징 이력 보정 적용' : '휴머나이징 이력 일치 · 점수 변화 없음',
+      text: '보정 전 ' + raw + '점 → 표시 ' + after + '점 · 조정 ' + (after - raw) + '점. '
+        + '동일 사용자의 검증된 휴머나이징 결과에 적용한 서비스 조정이며, 순수 문체 개선 폭이나 AI 작성 확률이 아니에요.' };
+  };
   global.gpNormalizeDetectPresentation = normalize;
   global.gpDetectRiskBand = bandFor;
   global.gpProfessorRadarBand = professorRadarFor;
