@@ -68,11 +68,11 @@ button,input,select,textarea{font:inherit}
 .gp-lp-brand{display:inline-flex;align-items:center;text-decoration:none}
 .gp-lp-brand img{height:40px;width:auto;display:block}
 .gp-lp-nav-links{display:flex;gap:2px;margin-left:6px}
-.gp-lp-nav-links button{
+.gp-lp-nav-links :is(button,a){
  padding:8px 13px;border:0;border-radius:10px;background:transparent;
- color:var(--lp-ink2);font-size:14px;font-weight:600;cursor:pointer;
+ color:var(--lp-ink2);font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;
 }
-.gp-lp-nav-links button:hover{background:rgba(90,91,216,.09);color:var(--lp-ink)}
+.gp-lp-nav-links :is(button,a):hover{background:rgba(90,91,216,.09);color:var(--lp-ink)}
 .gp-lp-nav-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
 .gp-lp-price-shortcut{display:none}
 

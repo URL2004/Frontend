@@ -1,64 +1,205 @@
+<!-- DESIGN CONTRACT · /detect-report (2026-09-26)
+THESIS: 검색해서 온 학생의 질문 다섯 개에 차례로 답하고, 답마다 보고서 조각으로 증명한다. 카드 세 장과 긴 본문 덩어리로 된 SEO 페이지를 거부한다.
+OWN-WORLD: 라벤더 바탕 위 흰 판, 강조는 보라 하나, 계측은 네이비 띠, 교수님 반원 게이지(높음 코랄 · 중간 라벤더 · 낮음 틸), 로고 노랑은 화면마다 버튼 하나, Pretendard 850.
+STORY: 점수는 확률이 아니라 다시 볼 곳을 가리키는 신호라는 걸 이해하고, 문장 단위 근거를 받는다고 믿고, 내 글 검사하기를 누른다.
+FIRST VIEWPORT: 왼쪽에 질문형 H1 · 설명 · 노란 검사 버튼 · 사실 세 개, 오른쪽 라벤더 면에 설명용 예시 게이지(학생이 교수님에게서 64점 자리까지 달아남)와 판정 문장, 아래에 질문 목차 다섯 개.
+FORM: 학생이 묻는 순서대로(후보 목록 6위), seed ff2c3575.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+-->
 <div id="detectReportContent" style="display:none">
- <section class="gp-seo-page gp-detect-page">
-  <div class="gp-seo-hero gp-detect-hero">
-   <div>
-    <span class="gp-seo-kicker">한국어 AI 검사기 · AI 판독기</span>
-    <h1>내 글의 AI식 문체 신호를 문단별로 확인하세요</h1>
-    <p>과제·자기소개서·보고서의 반복 표현과 일반론 중심 문장을 살펴보세요. AI 검사 결과는 작성자를 확정하는 증거가 아니라, 다시 검토할 부분을 찾는 참고 자료예요.</p>
-    <p class="gp-detect-credit-rate">최소 100자 · 100자당 1크레딧</p>
-    <div class="gp-seo-actions">
-     <button type="button" class="gp-seo-primary" onclick="openProductMode('detect', 'detect_report_hero')">내 글 검사하기</button>
-     <a class="gp-seo-secondary" data-tab="faq" href="/faq">정확도 안내 보기</a>
-    </div>
-   </div>
-   <div class="gp-detect-meter" aria-hidden="true">
-    <div>
-     <span>AI식 문체 점수</span>
-     <strong>높음</strong>
-    </div>
-    <i></i>
-    <p>반복 표현, 균일한 문장 길이, 일반론 중심 결론을 우선 점검해요.</p>
-   </div>
-  </div>
+ <article class="gp-dr" aria-labelledby="drTitle">
 
-  <div class="gp-detect-grid">
-   <article>
-    <span>01</span>
-    <h3>AI식 문체 점수 확인</h3>
-    <p>글 전체의 문체 신호를 100점 기준으로 보고, 어떤 부분을 다시 살펴볼지 가늠해요. AI가 작성했을 확률은 아니에요.</p>
-   </article>
-   <article>
-    <span>02</span>
-    <h3>AI식 특징이 두드러진 문장 확인</h3>
-    <p>지나치게 매끄럽거나 반복적인 표현을 찾아 다시 살펴볼 부분을 좁혀요.</p>
-   </article>
-   <article>
-    <span>03</span>
-    <h3>휴머나이징 연결</h3>
-    <p>필요하면 바로 휴머나이징으로 이동해 원문의 뜻과 장르를 지키면서 다시 구성할 수 있어요.</p>
-   </article>
-  </div>
+  <section class="gp-dr-hero">
+   <div class="gp-dr-hero-copy">
+    <h1 id="drTitle">내 글, 어디가 AI처럼 읽힐까요?</h1>
+    <p class="gp-dr-lede">한국어 AI 검사기가 과제·자기소개서·보고서의 AI식 문체 신호를 문단과 문장 단위로 짚어 드려요. 점수 하나로 끝내지 않고, 다시 볼 문장과 그 이유를 함께 보여줘요.</p>
+    <div class="gp-dr-actions">
+     <button type="button" class="gp-dr-go" onclick="openProductMode('detect', 'detect_report_hero')">내 글 검사하기<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11m-4.5-4.5L15 10l-4.5 4.5"/></svg></button>
+     <a class="gp-dr-link" data-tab="faq" href="/faq">정확도 안내 보기</a>
+    </div>
+    <ul class="gp-dr-facts" aria-label="이용 기준">
+     <li>최소 <b>100자</b></li>
+     <li><b>100자당 1</b>크레딧</li>
+     <li>가입 시 <b>20</b>크레딧</li>
+    </ul>
+   </div>
 
-  <section class="gp-detect-note">
-   <h2>한국어 AI 검사기는 어떻게 사용하나요?</h2>
-   <ol>
-    <li>직접 확인할 권한이 있는 글을 100자 이상 붙여넣고 실행 전 크레딧을 확인해요.</li>
-    <li>전체 점수와 문단별 설명을 읽고, 표시된 표현이 원문에 있는지 대조해요.</li>
-    <li>반복과 일반론이 글의 목적에 필요한지 판단한 뒤, 사실과 인용을 보존하며 수정해요.</li>
-   </ol>
-   <p>‘AI 검사기’, ‘AI 판독기’, ‘AI 탐지기’라는 이름으로 찾더라도 점수의 의미와 검증 범위를 먼저 확인해 주세요. 이 서비스의 점수는 AI가 작성했을 확률이 아니에요.</p>
-   <h2>AI 판독 결과는 이렇게 읽어 보세요</h2>
-   <p>같은 문장 길이와 반복되는 연결어가 표시되면, 근거가 빠진 주장인지 또는 글의 목적에 필요한 반복인지 원문과 함께 확인해 주세요. 신호가 높다고 AI가 썼다고 단정하거나, 낮다고 사람의 글이라고 확정할 수는 없어요.</p>
-   <p><b>설명용 예시</b>로 “다양한 활동을 통해 소통 능력을 길렀습니다”라는 문장은 활동과 행동이 구체적이지 않아요. 실제로 한 행동이 원문에 있다면 그 내용을 중심으로 다듬고, 없는 경험이나 숫자를 새로 만들지 않는 것이 좋아요. 이 예시는 실제 검사 점수나 통과 사례가 아니에요.</p>
-   <h2>AI 검사와 표절 검사는 다른 기능이에요</h2>
-   <p>이 서비스는 문체 신호를 분석합니다. 외부 문헌과의 문구 유사성이나 출처 누락을 확인하는 표절 검사를 대신하지 않아요. 인용과 참고문헌은 별도로 검토해 주세요.</p>
-   <p><a href="/blog/ai-detector-vs-plagiarism-checker">AI 감지와 표절 검사의 차이</a>에서 확인 항목을 나누고, <a href="/blog/ai-detection-evaluation-notes">감지 검증 기록과 표본의 한계</a>도 함께 읽어 보세요.</p>
-   <h2>가입 20크레딧으로 이용하는 예</h2>
-   <p>공백 포함 600자 감지는 6크레딧, 같은 글의 기본 휴머나이징은 12크레딧으로 합계 18크레딧이에요. 감지는 최소 100자, 기본 휴머나이징은 최소 50자이며 10크레딧부터 사용해요. 고급 모드는 별도 비용을 실행 전에 확인해 주세요.</p>
-   <p><a href="/guide">모드별 사용 방법</a> · <a href="/pricing">작업별 크레딧과 요금</a> · <a href="/privacy">입력 정보 처리 안내</a></p>
-   <h3>AI 감지는 보조 기준입니다</h3>
-   <p>AI 감지 결과는 작성 여부를 확정하는 판정이 아니며 외부 검사 결과와 다를 수 있어요. 제출 전에 반복 표현과 문장 리듬, 구체성을 점검하는 참고 자료로 활용해 주세요.</p>
-   <button type="button" onclick="openProductMode('detect', 'detect_report_body')">내 글 붙여넣기</button>
+   <figure class="gp-dr-specimen" aria-labelledby="drSpecimenCap">
+    <figcaption id="drSpecimenCap" class="gp-dr-tag">설명용 예시 화면</figcaption>
+    <div class="gp-dr-gauge" style="--s:64" role="img" aria-label="AI식 문체 점수 예시 64점, 100점 만점. 50~100 높음, 21~49 중간, 0~20 낮음.">
+     <svg viewBox="0 0 340 214" aria-hidden="true">
+      <path class="gp-dr-ring" d="M86 166 A84 84 0 0 1 254 166"/>
+      <path class="gp-dr-ring" d="M16 166 A154 154 0 0 1 324 166"/>
+      <path class="gp-dr-band z-hard" d="M46 166 A124 124 0 0 1 170 42"/>
+      <path class="gp-dr-band z-mid" d="M173.9 42.06 A124 124 0 0 1 267.98 89.99"/>
+      <path class="gp-dr-band z-low" d="M270.32 93.11 A124 124 0 0 1 294 166"/>
+      <path class="gp-dr-band-on" pathLength="100" d="M46 166 A124 124 0 0 1 117.2 53.8"/>
+      <text class="gp-dr-zone z-hard" x="41" y="86" text-anchor="end">높음</text>
+      <text class="gp-dr-zone z-mid" x="238" y="31" text-anchor="middle">중간</text>
+      <text class="gp-dr-zone z-low" x="314" y="124" text-anchor="start">낮음</text>
+      <text class="gp-dr-tick" x="76" y="170" text-anchor="middle">100</text>
+      <text class="gp-dr-tick" x="264" y="170" text-anchor="middle">0</text>
+     </svg>
+     <span class="gp-dr-prof"><img src="/assets/img/report/professor.png" alt="" width="320" height="314" loading="lazy" decoding="async"><em>교수님</em></span>
+     <span class="gp-dr-arm"><span class="gp-dr-blip"><img src="/assets/img/report/runner.png" alt="" width="271" height="320" loading="lazy" decoding="async"><em>내 글</em></span></span>
+     <span class="gp-dr-read"><small>AI식 문체 점수</small><strong><span class="gp-dr-num">64</span><i>/100</i></strong></span>
+    </div>
+    <span class="gp-dr-band-chip">AI식 문체 신호 높음</span>
+    <div class="gp-dr-verdict">
+     <strong>종결 표현부터 살펴보세요</strong>
+     <p>4개 문장에서 확인한 특징: 반복되는 문장 끝 표현. 확인 위치: 1번 문단.</p>
+     <p class="gp-dr-hero-sent is-candidate"><span class="gp-dr-n">1</span><span>저는 대학 시절 다양한 활동을 통해 소통 능력을 <mark class="m-end">길렀습니다</mark>.</span><span class="gp-dr-badge">다시 볼 문장</span></p>
+    </div>
+   </figure>
+
+   <nav class="gp-dr-index" aria-label="이 페이지에서 답하는 질문">
+    <span>이 페이지에서 답하는 질문</span>
+    <button type="button" onclick="gpScrollToSection('drQScore')">점수는 확률인가요?<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v9m-3.5-3.5L8 12l3.5-3.5"/></svg></button>
+    <button type="button" onclick="gpScrollToSection('drQWhere')">어디를 고쳐야 하나요?<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v9m-3.5-3.5L8 12l3.5-3.5"/></svg></button>
+    <button type="button" onclick="gpScrollToSection('drQPlagiarism')">표절 검사와 같나요?<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v9m-3.5-3.5L8 12l3.5-3.5"/></svg></button>
+    <button type="button" onclick="gpScrollToSection('drQCost')">비용은 얼마인가요?<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v9m-3.5-3.5L8 12l3.5-3.5"/></svg></button>
+    <button type="button" onclick="gpScrollToSection('drQNext')">결과를 받으면요?<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v9m-3.5-3.5L8 12l3.5-3.5"/></svg></button>
+   </nav>
   </section>
- </section>
+
+  <div class="gp-dr-sheet">
+
+   <section class="gp-dr-q" id="drQScore" tabindex="-1" aria-labelledby="drQScoreH">
+    <div class="gp-dr-q-head">
+     <h2 id="drQScoreH"><span class="gp-dr-qm" aria-hidden="true">Q</span>점수는 AI가 썼을 확률인가요?</h2>
+     <p class="gp-dr-a"><span class="gp-dr-am" aria-hidden="true">A</span>아니에요. 다시 읽어 볼 곳을 알려주는 문체 신호예요.</p>
+     <p>AI식 문체 점수는 반복되는 문장 끝, 비슷한 문장 길이, 일반론 중심 결론 같은 신호가 글 전체에서 얼마나 겹치는지를 100점 기준으로 보여줘요. 신호가 높다고 AI가 썼다고 단정하거나, 낮다고 사람의 글이라고 확정할 수는 없어요.</p>
+     <p>‘AI 검사기’, ‘AI 판독기’, ‘AI 탐지기’라는 이름으로 찾더라도 점수의 의미와 검증 범위를 먼저 확인해 주세요. <a href="/blog/ai-detection-evaluation-notes">감지 검증 기록과 표본의 한계</a>도 공개해 두었어요.</p>
+    </div>
+    <figure class="gp-dr-scale" aria-labelledby="drScaleCap">
+     <figcaption id="drScaleCap">점수 구간은 이렇게 읽어요</figcaption>
+     <div class="gp-dr-scale-track" aria-hidden="true">
+      <span class="gp-dr-scale-prof"><img src="/assets/img/report/professor.png" alt="" width="320" height="314" loading="lazy" decoding="async"></span>
+      <i class="z-hard"></i><i class="z-mid"></i><i class="z-low"></i>
+      <span class="gp-dr-scale-run"><img src="/assets/img/report/runner.png" alt="" width="271" height="320" loading="lazy" decoding="async"></span>
+     </div>
+     <div class="gp-dr-scale-ticks" aria-hidden="true"><span>100</span><span>50</span><span>20</span><span>0</span></div>
+     <dl class="gp-dr-zones">
+      <div class="z-hard"><dt>높음<b>50~100</b></dt><dd>여러 문장에서 신호가 반복돼요. 보고서가 먼저 살펴볼 원인과 문장을 짚어 줘요.</dd></div>
+      <div class="z-mid"><dt>중간<b>21~49</b></dt><dd>일부 문장에서 신호가 보여요. 표시된 문장이 글의 목적에 맞는지 확인해 보세요.</dd></div>
+      <div class="z-low"><dt>낮음<b>0~20</b></dt><dd>위치까지 연결된 뚜렷한 신호가 적어요. 낮은 점수가 사람 작성 확인을 뜻하지는 않아요.</dd></div>
+     </dl>
+     <p class="gp-dr-note">AI 감지 결과는 작성 여부를 확정하는 판정이 아니며 외부 검사 결과와 다를 수 있어요.</p>
+    </figure>
+   </section>
+
+   <section class="gp-dr-q gp-dr-q--wide" id="drQWhere" tabindex="-1" aria-labelledby="drQWhereH">
+    <div class="gp-dr-q-head">
+     <h2 id="drQWhereH"><span class="gp-dr-qm" aria-hidden="true">Q</span>어디를 고쳐야 하는지도 알려주나요?</h2>
+     <div>
+      <p class="gp-dr-a"><span class="gp-dr-am" aria-hidden="true">A</span>네. 점수에 연결된 원인과 원문 위치를 문장 단위로 짚어 줘요.</p>
+      <p>같은 문장 길이와 반복되는 연결어가 표시되면, 근거가 빠진 주장인지 또는 글의 목적에 필요한 반복인지 원문과 함께 확인해 주세요. 구체적인 행동이 담긴 문장은 유지할 근거로 따로 표시해요.</p>
+     </div>
+    </div>
+    <figure class="gp-dr-report" aria-labelledby="drReportCap">
+     <figcaption id="drReportCap" class="gp-dr-tag">설명용 예시 · 자기소개서 한 문단</figcaption>
+     <dl class="gp-dr-strip">
+      <div><dt>전체 문장</dt><dd>4<small>문장</small></dd></div>
+      <div><dt>다시 볼 후보</dt><dd>3<small>문장</small></dd></div>
+      <div><dt>같은 끝맺음</dt><dd>4<small>문장 연속</small></dd></div>
+     </dl>
+     <div class="gp-dr-report-body">
+      <ol class="gp-dr-sents">
+       <li class="is-candidate"><span class="gp-dr-n">1</span><p>저는 대학 시절 <mark class="m-general">다양한 활동을 통해</mark> 소통 능력을 <mark class="m-end">길렀습니다</mark>.</p><span class="gp-dr-badge">다시 볼 문장</span></li>
+       <li class="is-candidate"><span class="gp-dr-n">2</span><p><mark class="m-link">이러한 경험은</mark> 협업의 중요성을 깨닫는 계기가 <mark class="m-end">되었습니다</mark>.</p><span class="gp-dr-badge">다시 볼 문장</span></li>
+       <li class="is-keep"><span class="gp-dr-n">3</span><p>특히 팀 프로젝트에서 역할을 나누고 일정을 조율하는 일을 <mark class="m-end">맡았습니다</mark>.</p><span class="gp-dr-badge">유지할 근거</span></li>
+       <li class="is-candidate"><span class="gp-dr-n">4</span><p><mark class="m-link">이를 통해</mark> 어떤 환경에서도 성장할 수 있는 사람이 <mark class="m-end">되었습니다</mark>.</p><span class="gp-dr-badge">다시 볼 문장</span></li>
+      </ol>
+      <div class="gp-dr-causes">
+       <h3>원인</h3>
+       <ul>
+        <li><button type="button" class="gp-dr-cause" data-c="end" aria-pressed="false" onclick="gpDetectPageCause(this)"><mark class="m-end">종결 표현</mark></button><em>4문장</em><span>반복되는 문장 끝 표현</span><i style="--w:100%"></i></li>
+        <li><button type="button" class="gp-dr-cause" data-c="link" aria-pressed="false" onclick="gpDetectPageCause(this)"><mark class="m-link">연결과 결론</mark></button><em>2문장</em><span>정형적인 연결·마무리 표현</span><i style="--w:50%"></i></li>
+        <li><button type="button" class="gp-dr-cause" data-c="general" aria-pressed="false" onclick="gpDetectPageCause(this)"><mark class="m-general">일반적인 설명</mark></button><em>1문장</em><span>주제에 폭넓게 쓰이는 일반론</span><i style="--w:25%"></i></li>
+       </ul>
+       <p>원인 이름을 누르면 해당 표현만 남겨 보여줘요. 다시 누르면 전체를 봐요.</p>
+      </div>
+     </div>
+    </figure>
+   </section>
+
+   <section class="gp-dr-q" id="drQPlagiarism" tabindex="-1" aria-labelledby="drQPlagiarismH">
+    <div class="gp-dr-q-head">
+     <h2 id="drQPlagiarismH"><span class="gp-dr-qm" aria-hidden="true">Q</span>표절 검사와 같은 건가요?</h2>
+     <p class="gp-dr-a"><span class="gp-dr-am" aria-hidden="true">A</span>달라요. AI 감지는 문체를, 표절 검사는 출처를 봐요.</p>
+     <p>이 서비스는 문체 신호를 분석해요. 외부 문헌과의 문구 유사성이나 출처 누락을 확인하는 표절 검사를 대신하지 않아요. 인용과 참고문헌은 별도로 검토해 주세요.</p>
+     <p><a href="/blog/ai-detector-vs-plagiarism-checker">AI 감지와 표절 검사의 차이</a>에서 확인 항목을 나눠 볼 수 있어요.</p>
+    </div>
+    <div class="gp-dr-compare-wrap">
+     <table class="gp-dr-compare">
+      <caption>AI 감지와 표절 검사 비교</caption>
+      <thead>
+       <tr><td></td><th scope="col" class="is-ours">AI 감지</th><th scope="col">표절 검사</th></tr>
+      </thead>
+      <tbody>
+       <tr><th scope="row">살펴보는 것</th><td class="is-ours">반복 표현·문장 리듬·일반론 같은 문체 신호</td><td>외부 문헌과의 문구 유사성·출처 누락</td></tr>
+       <tr><th scope="row">받는 결과</th><td class="is-ours">다시 볼 문장과 그 이유</td><td>문구가 겹치는 구간과 비교 출처</td></tr>
+       <tr><th scope="row">이럴 때</th><td class="is-ours">제출 전에 문장을 다듬고 싶을 때</td><td>인용과 참고문헌을 점검할 때</td></tr>
+      </tbody>
+     </table>
+    </div>
+   </section>
+
+   <section class="gp-dr-q" id="drQCost" tabindex="-1" aria-labelledby="drQCostH">
+    <div class="gp-dr-q-head">
+     <h2 id="drQCostH"><span class="gp-dr-qm" aria-hidden="true">Q</span>비용은 얼마인가요?</h2>
+     <p class="gp-dr-a"><span class="gp-dr-am" aria-hidden="true">A</span>100자당 1크레딧이에요. 가입하면 20크레딧을 드려요.</p>
+     <p>직접 확인할 권한이 있는 글을 100자 이상 붙여넣고, 실행 전에 차감될 크레딧을 확인해요. 공백 포함 600자 감지는 6크레딧, 같은 글의 기본 휴머나이징은 12크레딧으로 합계 18크레딧이에요.</p>
+     <p>감지는 최소 100자, 기본 휴머나이징은 최소 50자이며 10크레딧부터 사용해요. 고급 모드는 별도 비용을 실행 전에 확인해 주세요.</p>
+     <p class="gp-dr-links"><a data-tab="guide" href="/guide">모드별 사용 방법</a><a data-tab="pricing" href="/pricing">작업별 크레딧과 요금</a><a href="/privacy">입력 정보 처리 안내</a></p>
+    </div>
+    <figure class="gp-dr-credit" aria-labelledby="drCreditCap">
+     <figcaption id="drCreditCap">가입 20크레딧으로 600자 글 한 편</figcaption>
+     <ol class="gp-dr-cells" aria-hidden="true">
+      <li class="c-detect"></li><li class="c-detect"></li><li class="c-detect"></li><li class="c-detect"></li><li class="c-detect"></li><li class="c-detect"></li>
+      <li class="c-human"></li><li class="c-human"></li><li class="c-human"></li><li class="c-human"></li><li class="c-human"></li><li class="c-human"></li>
+      <li class="c-human"></li><li class="c-human"></li><li class="c-human"></li><li class="c-human"></li><li class="c-human"></li><li class="c-human"></li>
+      <li class="c-left"></li><li class="c-left"></li>
+     </ol>
+     <dl class="gp-dr-strip gp-dr-credit-legend">
+      <div class="c-detect"><dt>AI 감지<small>600자 · 100자당 1</small></dt><dd>6<small>크레딧</small></dd></div>
+      <div class="c-human"><dt>기본 휴머나이징<small>600자 · 100자당 2</small></dt><dd>12<small>크레딧</small></dd></div>
+      <div class="c-left"><dt>남는 크레딧</dt><dd>2<small>크레딧</small></dd></div>
+     </dl>
+    </figure>
+   </section>
+
+   <section class="gp-dr-q" id="drQNext" tabindex="-1" aria-labelledby="drQNextH">
+    <div class="gp-dr-q-head">
+     <h2 id="drQNextH"><span class="gp-dr-qm" aria-hidden="true">Q</span>결과를 받으면 무엇부터 하나요?</h2>
+     <p class="gp-dr-a"><span class="gp-dr-am" aria-hidden="true">A</span>표시된 문장을 원문과 대조하고, 필요한 곳만 다듬어요.</p>
+     <ol class="gp-dr-steps">
+      <li>전체 점수와 문단별 설명을 읽고, 표시된 표현이 원문에 있는지 대조해요.</li>
+      <li>반복과 일반론이 글의 목적에 필요한지 판단해요.</li>
+      <li>사실과 인용을 보존하며 직접 고치거나, 휴머나이징으로 원문의 뜻과 장르를 지키면서 다시 구성해요.</li>
+     </ol>
+    </div>
+    <figure class="gp-dr-anatomy">
+     <p class="gp-dr-anat-sent">“<mark class="m-general">다양한 활동을 통해</mark> 소통 능력을 길렀습니다”</p>
+     <dl>
+      <div><dt>짚는 점</dt><dd>활동과 행동이 구체적이지 않아요. 어떤 활동에서 무엇을 했는지 드러나지 않아요.</dd></div>
+      <div><dt>다듬는 방향</dt><dd>실제로 한 행동이 원문에 있다면 그 내용을 중심으로 다듬어요.</dd></div>
+      <div><dt>하지 않는 것</dt><dd>없는 경험이나 숫자를 새로 만들지 않아요.</dd></div>
+     </dl>
+     <figcaption class="gp-dr-note">설명용 예시예요. 이 예시는 실제 검사 점수나 통과 사례가 아니에요.</figcaption>
+    </figure>
+   </section>
+
+  </div>
+
+  <section class="gp-dr-close" aria-labelledby="drCloseH">
+   <div class="gp-dr-close-copy">
+    <h2 id="drCloseH">제출 전에 한 번, 내 글을 확인해 보세요</h2>
+    <p>AI 감지는 보조 기준이에요. 외부 검사 결과와 다를 수 있으니, 반복 표현과 문장 리듬, 구체성을 점검하는 참고 자료로 활용해 주세요.</p>
+   </div>
+   <button type="button" class="gp-dr-go" onclick="openProductMode('detect', 'detect_report_body')">내 글 붙여넣기<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11m-4.5-4.5L15 10l-4.5 4.5"/></svg></button>
+   <img class="gp-dr-close-runner" src="/assets/img/report/runner.png" alt="" width="271" height="320" loading="lazy" decoding="async">
+  </section>
+
+ </article>
 </div>

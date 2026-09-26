@@ -660,6 +660,28 @@ document.addEventListener('click', function (e) {
  if (fn && typeof window[fn] === 'function') window[fn](a.getAttribute('data-tab-arg') || undefined);
 });
 
+// 안내 페이지 안의 목차 버튼. 해시(#)는 위 라우터가 탭 이름으로 읽으므로 쓰지 않고 스크롤만 옮긴다.
+window.gpScrollToSection = function (id) {
+ var el = document.getElementById(id);
+ if (!el) return;
+ var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+ try { el.focus({ preventScroll: true }); } catch (_) {}
+};
+
+// /detect-report 예시 보고서: 원인 이름을 누르면 그 원인의 표현만 남기고, 다시 누르면 푼다(호버·포커스는 CSS 미리보기).
+window.gpDetectPageCause = function (btn) {
+ var report = btn && btn.closest ? btn.closest('.gp-dr-report') : null;
+ if (!report) return;
+ var cause = btn.getAttribute('data-c') || '';
+ var next = report.getAttribute('data-cause') === cause ? '' : cause;
+ if (next) report.setAttribute('data-cause', next);
+ else report.removeAttribute('data-cause');
+ report.querySelectorAll('.gp-dr-cause').forEach(function (b) {
+  b.setAttribute('aria-pressed', String(b.getAttribute('data-c') === next));
+ });
+};
+
 // 구독 비활성 기간에는 Pro 설명 화면에서 준비 상태와 충전 경로만 보여 줍니다.
 function goToPro() {
  if (!window.PRO_ENABLED) {

@@ -170,6 +170,14 @@
     window.scrollTo({ top: 0, behavior: 'auto' });
   };
 
+  // 상단 메뉴의 페이지 링크: href는 검색엔진·새 탭용으로 두고, 일반 클릭만 앱 탭으로 연다.
+  window.gpLandingOpenTab = function (event, tabName, source) {
+    if (event && (event.defaultPrevented || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return true;
+    if (event && event.preventDefault) event.preventDefault();
+    window.gpLandingEnterApp(tabName, source);
+    return false;
+  };
+
   window.gpLandingScrollTo = function (id) {
     var el = document.getElementById(id);
     if (!el) return;
