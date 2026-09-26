@@ -1353,6 +1353,15 @@
     return Number.isFinite(n) ? n : null;
   }
 
+  // 저장된 옛 결과(캐시·이력)의 라벨을 현재 표기로 바꿔 보여준다. 값은 저장된 그대로 두고 표시만 정규화한다(2026-09-26).
+  function repLegacyLabel(label) {
+    var text = String(label || '');
+    if (!text) return '';
+    return text
+      .replace('문장이 적어 판정 보류', '문장이 적어 근거 확인 어려움')
+      .replace(/^AI식 문체 신호 (높음|중간|낮음)$/, function (_, w) { return { 높음: '높은 구간', 중간: '중간 구간', 낮음: '낮은 구간' }[w]; });
+  }
+
   function reportCount(value) {
     var n = reportNumber(value);
     return n == null ? null : Math.max(0, Math.round(n));
@@ -1430,7 +1439,7 @@
     var specific = reportCount(content.specific);
     if (specific == null) specific = reportCount(measured.specificCount);
     var contentStatus = content.status || 'limited';
-    var contentLabel = content.label || contentEvidenceLabel(contentStatus);
+    var contentLabel = repLegacyLabel(content.label) || contentEvidenceLabel(contentStatus);
     var synthesis = reportView.synthesis || {};
     var headline = synthesis.headline;
     if (!headline) {
@@ -2489,7 +2498,7 @@
       ctx.fillStyle = '#b3aee0'; ctx.font = font('700', 22);
       ctx.fillText('gpkorea.ai.kr', 72, H - 84);
       ctx.font = font('500', 19);
-      ctx.fillText('문체 패턴의 참고 결과이며 작성 주체나 외부 검사 결과를 확정하지 않아요.', 72, H - 43);
+      ctx.fillText('반복 표현과 글의 전개에서 관찰한 특징을 종합한 참고 점수이며 AI 작성 확률이 아니에요.', 72, H - 43);
       // 오른쪽: 게이지 — 화면과 같은 반원 트랙. 0 왼쪽 → 100 오른쪽, 100 끝에 교수님.
       var gx = 900, gy = 400, GR = 200, BW = 40;
       var gAngle = function (score) { return Math.max(0, Math.min(100, score)) / 100 * Math.PI; };   // 100 왼쪽(교수님) → 0 오른쪽(안전)

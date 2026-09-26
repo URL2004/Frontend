@@ -587,7 +587,7 @@ export const BLOG_ARTICLES = [
   },
   {
     slug: 'low-ai-detection-score-checklist',
-    title: 'AI 감지 점수가 낮을 때 확인할 것',
+    title: 'AI식 문체 점수가 낮을 때 확인할 것',
     description: '낮은 AI 감지 점수가 사람 작성 확인을 뜻하지 않는 이유와, 짧은 탐구 보고서·정돈된 과제에서 점수와 분석 근거를 함께 읽는 순서를 설명해요.',
     category: 'AI 감지',
     date: '2026-09-07',

@@ -738,3 +738,13 @@ test('계측 띠는 누를 수 있다는 표시가 있고, 누르면 무엇이 �
   assert.match(css, /\.gp-rep-stats\.is-nudge \.gp-rep-stat-go\{animation:gpRepNudge/u, '첫 열림 뒤 유도 깜빡임');
   assert.match(css, /\.gp-rep-link-chip\{[^}]*background:#f5b425/u, '같은 노란 칩으로 잇는다');
 });
+
+import fsLegacy from 'node:fs';
+import pathLegacy from 'node:path';
+import { fileURLToPath as toPathLegacy } from 'node:url';
+test('저장된 옛 라벨은 표시 단계에서 현재 표기로 정규화한다', () => {
+  const src = fsLegacy.readFileSync(pathLegacy.join(pathLegacy.dirname(toPathLegacy(import.meta.url)), '..', 'assets', 'js', 'evasion-flow.js'), 'utf8');
+  assert.match(src, /var contentLabel = repLegacyLabel\(content\.label\)/u, '내용 근거 라벨은 정규화를 거친다');
+  assert.match(src, /'문장이 적어 판정 보류', '문장이 적어 근거 확인 어려움'/u, '금지어 라벨을 현재 표기로 바꾼다');
+  assert.match(src, /높음: '높은 구간', 중간: '중간 구간', 낮음: '낮은 구간'/u, '옛 밴드 라벨을 구간 표기로 바꾼다');
+});

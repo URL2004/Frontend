@@ -63,3 +63,17 @@ test('교수님 레이더는 공식 점수 밴드와 같은 경계를 쓴다', (
   assert.deepEqual({ ...professorRadar(50) }, { score: 50, band: 'hard', label: '높은 구간' });
   assert.deepEqual({ ...professorRadar(72) }, { score: 72, band: 'hard', label: '높은 구간' });
 });
+
+test('구간 표현은 현재 결과를 단정하는 문장만 모순으로 보고 부정·과거·조건 문장은 보존한다', () => {
+  const kept = '이 점수는 낮은 구간이 아니에요. 이전 점수는 높은 구간이었지만 이번에는 중간 구간이에요. 짧은 글에서는 점수가 낮은 구간이어도 근거가 충분하지 않아요.';
+  const out = normalize({ probability: 32, summary: '일부 문장 패턴이 정형적으로 보여요.', detail: kept });
+  assert.equal(out.detail, kept);
+  assert.equal(out.summary, '일부 문장 패턴이 정형적으로 보여요.');
+  assert.equal(out.narrativeConsistencyAdjusted, false);
+  const fixed = normalize({ probability: 32, summary: 'AI식 문체 점수가 높은 구간이에요.', detail: 'AI식 문체 점수 70/100은 높은 구간입니다. 표시된 문장을 확인해 주세요.' });
+  assert.match(fixed.summary, /중간 구간/);
+  assert.match(fixed.detail, /중간 구간/);
+  assert.equal(fixed.narrativeConsistencyAdjusted, true);
+  const low = normalize({ probability: 12, detail: 'AI식 문체 점수 12/100은 낮은 구간입니다. 사람 작성 확인을 뜻하지 않아요.' });
+  assert.match(low.detail, /낮은 구간입니다/);
+});
