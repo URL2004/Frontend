@@ -68,7 +68,9 @@
     };
 
     if (window.gpTrack) {
-      window.gpTrack(isCancelCode(payload.code) ? 'checkout_cancel' : 'payment_error', {
+      window.gpTrack(isCancelCode(payload.code) ? 'checkout_cancel' : payload.stage === 'request_payment_failed' ? 'checkout_error' : 'payment_error', {
+        transaction_id: payload.orderId || undefined,
+        checkout_linked: payload.orderId ? 1 : 0,
         payment_stage: payload.stage,
         checkout_type: payload.checkoutType,
         code: payload.code,

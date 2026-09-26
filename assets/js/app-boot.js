@@ -113,6 +113,7 @@
       await loadScript('/assets/js/head-tracking.js');
       await loadScript('/assets/js/vendor-init.js');
       await loadScript('/assets/js/api.js');
+      await loadScript('/assets/js/auth-diagnostics.js');
       await loadScript('/assets/js/session-security.js');
       await loadScript('/assets/js/ui-feedback.js');
       await loadScript('/assets/js/modal-manager.js');
@@ -168,19 +169,26 @@
         var neededAssets = typeof window[handlerName] !== 'function';
         if (neededAssets) await loadAppAssets();
         if (typeof window[handlerName] !== 'function') throw new Error('로그인 기능을 불러오지 못했어요.');
+        var waitedForKakao = provider === 'kakao' && !window.Kakao?.Auth && typeof window.gpPrepareKakaoLogin === 'function';
+        if (waitedForKakao) await window.gpPrepareKakaoLogin();
         // A network wait can consume the click's popup permission. Let the next
-        // explicit click open Google instead of attempting a blocked popup.
-        if (provider === 'google' && neededAssets && !navigator.userActivation?.isActive) {
+        // explicit click open the provider instead of attempting a blocked popup.
+        if ((neededAssets || waitedForKakao) && !navigator.userActivation?.isActive) {
           buttons.forEach(function (button) {
             if (!button) return;
             button.disabled = false;
             button.removeAttribute('aria-busy');
           });
-          if (statusText) statusText.textContent = '준비됐어요. Google 로그인 버튼을 한 번 더 눌러 주세요.';
+          if (statusText) statusText.textContent = '준비됐어요. ' + (provider === 'kakao' ? '카카오' : 'Google') + ' 로그인 버튼을 한 번 더 눌러 주세요.';
           return null;
         }
         return await window[handlerName]();
       } catch (error) {
+        if (window.gpAuthDiagnostics) {
+          var failedAttempt = window.gpAuthDiagnostics.start(provider, 'popup');
+          window.gpAuthDiagnostics.stage(failedAttempt, 'sdk');
+          window.gpAuthDiagnostics.finish(failedAttempt, 'error', error);
+        }
         buttons.forEach(function (button) {
           if (!button) return;
           button.disabled = false;

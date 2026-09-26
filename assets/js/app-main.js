@@ -1995,7 +1995,7 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
      })
     : confirm(confirmMsg));
  if (!buyOk) {
-  if (window.gpTrack) window.gpTrack('checkout_cancel', { checkout_type: 'credits', value: amount, currency: 'KRW', code: 'PRE_CONFIRM_CANCEL' });
+  if (window.gpTrack) window.gpTrack('checkout_cancel', { checkout_type: 'credits', checkout_linked: 0, payment_stage: 'pre_confirm', value: amount, currency: 'KRW', code: 'PRE_CONFIRM_CANCEL' });
   return;
  }
 
@@ -2073,7 +2073,7 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
    return;
   }
   // 서버 주문 접수와 동일한 ID. 결제 준비 실패는 checkout 성공으로 세지 않는다.
-  if (window.gpTrack) window.gpTrack('begin_checkout', { ...checkoutTracking, meta_event_id: 'checkout_' + orderId });
+  if (window.gpTrack) window.gpTrack('begin_checkout', { ...checkoutTracking, transaction_id: orderId, checkout_linked: 1, meta_event_id: 'checkout_' + orderId });
   if (typeof window.gpBindPendingCheckout === 'function') {
    window.gpBindPendingCheckout(orderId, {
     amount: Number(amount),
@@ -2105,13 +2105,7 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
  });
  } catch(e) {
  if (typeof window.gpUnbindPendingCheckout === 'function') window.gpUnbindPendingCheckout(orderId);
- if (window.gpTrack) window.gpTrack(e.code === 'USER_CANCEL' ? 'checkout_cancel' : 'checkout_error', {
-  checkout_type: 'credits',
-  value: amount,
-  currency: 'KRW',
-  code: e.code || '',
-  message: String(e.message || '').slice(0, 120)
-  });
+ // One taxonomy and one event per failure, including user cancellation.
   if (window.gpTrackPaymentError) window.gpTrackPaymentError('request_payment_failed', {
    checkoutType: 'credits',
    amount,

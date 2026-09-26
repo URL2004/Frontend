@@ -26,6 +26,9 @@ const KEY_EVENTS = [
 ];
 
 const CUSTOM_DIMENSIONS = [
+  ['Login Provider', 'method'],
+  ['Authentication Stage', 'auth_stage'],
+  ['Authentication Error Code', 'error_code'],
   ['UI Source', 'ui_source'],
   ['Activation Scope', 'activation_scope'],
   ['Use Case', 'use_case'],

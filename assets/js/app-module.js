@@ -961,7 +961,7 @@ function clearKakaoCallbackQuery() {
 }
 
 function isKakaoOAuthCallback(params) {
- return params.has('code')
+ return (params.has('code') || (params.has('error') && params.has('state')))
   && params.get('success') !== '1'
   && params.get('fail') !== '1'
   && params.get('subfail') !== '1'
@@ -980,6 +980,7 @@ function syncKakaoProfileInBackground(user, data) {
 
 async function exchangeKakaoIdentity(accessToken, timing, options) {
  options = options || {};
+ if (!options.reauthentication) window.gpAuthDiagnostics?.stage(timing.attempt, 'backend_exchange');
  setAuthTransitionMessage('카카오 계정 확인 중', '안전하게 로그인 정보를 확인하고 있어요.');
  const backendStartedAt = performance.now();
  const controller = new AbortController();
@@ -1011,6 +1012,7 @@ async function exchangeKakaoIdentity(accessToken, timing, options) {
 
  setAuthTransitionMessage('로그인 마무리 중', '작업 화면에 계정을 연결하고 있어요.');
  const firebaseStartedAt = performance.now();
+ if (!options.reauthentication) window.gpAuthDiagnostics?.stage(timing.attempt, 'firebase_signin');
  const result = await signInWithCustomToken(auth, data.customToken);
  timing.firebaseMs = Math.round(performance.now() - firebaseStartedAt);
  timing.created = data.created ? 1 : 0;
@@ -1024,9 +1026,10 @@ async function exchangeKakaoIdentity(accessToken, timing, options) {
 
  showAuthenticatedShell(result.user, 'kakao_direct');
  syncKakaoProfileInBackground(result.user, data);
- if (window.gpTrack && !options.reauthentication) {
-  window.gpTrack('login', { method: 'kakao' });
-  window.gpTrack('login_complete_timing', {
+ if (!options.reauthentication) {
+  if (window.gpAuthDiagnostics) window.gpAuthDiagnostics.finish(timing.attempt, 'success');
+  else if (window.gpTrack) window.gpTrack('login', { method: 'kakao' });
+  if (window.gpTrack) window.gpTrack('login_complete_timing', {
    method: 'kakao',
    backend_ms: timing.backendMs || 0,
    firebase_ms: timing.firebaseMs || 0,
@@ -1091,6 +1094,8 @@ function consumeKakaoOAuthState(received) {
 }
 
 window.kakaoRedirectLogin = async function () {
+ const attempt = window.gpAuthDiagnostics?.start('kakao', 'redirect');
+ try {
  const context = createKakaoOAuthState();
  const challenge = await kakaoPkceChallenge(context.verifier);
  const authorizeUrl = new URL('https://kauth.kakao.com/oauth/authorize');
@@ -1101,40 +1106,58 @@ window.kakaoRedirectLogin = async function () {
  authorizeUrl.searchParams.set('code_challenge', challenge);
  authorizeUrl.searchParams.set('code_challenge_method', 'S256');
  window.location.assign(authorizeUrl.toString());
+ } catch (error) {
+  window.gpAuthDiagnostics?.finish(attempt, 'error', { code: 'storage_unavailable' });
+  failAuthTransition();
+  if (window.gpToast) window.gpToast('로그인을 준비하지 못했어요. 브라우저 저장 공간을 허용한 뒤 다시 시도해 주세요.', { type: 'error' });
+ }
 };
 
 function waitForKakaoSdk() {
  if (window.Kakao?.Auth) return Promise.resolve(window.Kakao);
  const ready = window.gpKakaoReady;
- if (!ready || typeof ready.then !== 'function') return Promise.reject(new Error('카카오 로그인 모듈을 불러오지 못했어요.'));
+ if (!ready || typeof ready.then !== 'function') return Promise.reject(Object.assign(new Error('카카오 로그인 모듈을 불러오지 못했어요.'), { code: 'KAKAO_SDK_UNAVAILABLE' }));
  return Promise.race([
   ready,
-  wait(6000).then(() => { throw new Error('카카오 로그인 연결이 지연되고 있어요. 다시 시도해 주세요.'); })
+  wait(6000).then(() => { throw Object.assign(new Error('카카오 로그인 연결이 지연되고 있어요. 다시 시도해 주세요.'), { code: 'KAKAO_SDK_TIMEOUT' }); })
  ]).then(sdk => {
-  if (!sdk?.Auth) throw new Error('카카오 로그인 모듈을 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.');
+  if (!sdk?.Auth) throw Object.assign(new Error('카카오 로그인 모듈을 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.'), { code: 'KAKAO_SDK_UNAVAILABLE' });
   return sdk;
  });
 }
+window.gpPrepareKakaoLogin = waitForKakaoSdk;
 
 window.handleKakaoCallback = async () =>{
  const params = new URLSearchParams(location.search);
  const code = params.get('code');
- if (!code || !isKakaoOAuthCallback(params)) return false;
+ if (!isKakaoOAuthCallback(params)) return false;
+ const attempt = window.gpAuthDiagnostics?.resume('kakao');
+ window.gpAuthDiagnostics?.stage(attempt, 'callback');
  const verifier = consumeKakaoOAuthState(params.get('state'));
  // The authorization code is a short-lived credential. Remove it from the
  // address bar before any await, analytics call or third-party script can see it.
  clearKakaoCallbackQuery();
+ if (attempt?.done) return false;
  if (!verifier) {
   failAuthTransition();
   const message = '카카오 로그인 요청이 만료됐거나 일치하지 않아요. 로그인 버튼을 다시 눌러 주세요.';
-  if (window.gpTrack) window.gpTrack('login_error', { method: 'kakao', flow: 'redirect', code: 'oauth_state_invalid' });
+  if (window.gpAuthDiagnostics) window.gpAuthDiagnostics.finish(attempt, 'error', 'oauth_state_invalid');
+  else if (window.gpTrack) window.gpTrack('login_error', { method: 'kakao', flow: 'redirect', code: 'oauth_state_invalid' });
   if (window.gpToast) window.gpToast(message, { type: 'error', title: '로그인 확인 필요' });
   else alert(message);
   return false;
  }
- const timing = { startedAt: performance.now(), flow: 'redirect' };
+ if (params.has('error')) {
+  finishAuthTransition('cancel');
+  const canceled = params.get('error') === 'access_denied';
+  window.gpAuthDiagnostics?.finish(attempt, canceled ? 'cancel' : 'error', canceled ? 'access_denied' : 'unknown');
+  if (!canceled && window.gpToast) window.gpToast('카카오 로그인을 완료하지 못했어요. 다시 시도해 주세요.', { type: 'error' });
+  return false;
+ }
+ const timing = { startedAt: performance.now(), flow: 'redirect', attempt };
  beginAuthTransition('kakao', '카카오 로그인 확인 중', '작업 화면을 먼저 준비하고 있어요.');
  try {
+  window.gpAuthDiagnostics?.stage(attempt, 'token_exchange');
   const tokenStartedAt = performance.now();
   const tokenRes = await fetch('https://kauth.kakao.com/oauth/token', {
    method: 'POST',
@@ -1149,12 +1172,13 @@ window.handleKakaoCallback = async () =>{
   });
   const tokenData = await tokenRes.json().catch(() => ({}));
   timing.tokenMs = Math.round(performance.now() - tokenStartedAt);
-  if (!tokenRes.ok || !tokenData.access_token) throw new Error('카카오 인증 정보를 확인하지 못했어요.');
+  if (!tokenRes.ok || !tokenData.access_token) throw Object.assign(new Error('카카오 인증 정보를 확인하지 못했어요.'), { code: 'KAKAO_TOKEN_EXCHANGE_FAILED' });
   await exchangeKakaoIdentity(tokenData.access_token, timing);
   return true;
  } catch(e) {
   failAuthTransition();
-  if (window.gpTrack) window.gpTrack('login_error', { method: 'kakao', flow: 'redirect', message: String(e.message || '').slice(0, 120) });
+  if (window.gpAuthDiagnostics) window.gpAuthDiagnostics.finish(attempt, 'error', e);
+  else if (window.gpTrack) window.gpTrack('login_error', { method: 'kakao', flow: 'redirect', code: 'unknown' });
   if (window.gpToast) window.gpToast(e.message || '카카오 로그인에 실패했어요.', { type: 'error', title: '로그인 확인 필요' });
   else alert('카카오 로그인 실패: ' + (e.message || JSON.stringify(e)));
   return false;
@@ -1162,16 +1186,22 @@ window.handleKakaoCallback = async () =>{
 };
 
 window.kakaoLogin = async () =>{
+ const attempt = window.gpAuthDiagnostics?.start('kakao', 'popup');
  if (/KAKAOTALK/i.test(navigator.userAgent)) {
-  document.querySelector('.kakao-warn').style.display = 'flex';
+  const help = document.querySelector('.kakao-warn');
+  if (help) help.style.display = 'flex';
+  setSocialLoginControls(false);
+  window.gpAuthDiagnostics?.finish(attempt, 'error', 'inapp_unsupported');
   return;
  }
- const timing = { startedAt: performance.now(), flow: 'popup' };
+ const timing = { startedAt: performance.now(), flow: 'popup', attempt };
  try {
   setSocialLoginControls(true, '카카오 로그인 창에서 인증을 계속해 주세요.');
   window.gpWarmAuthBackend();
-  if (window.gpTrack) window.gpTrack('login_start', { method: 'kakao' });
+  if (!window.gpAuthDiagnostics && window.gpTrack) window.gpTrack('login_start', { method: 'kakao' });
+  window.gpAuthDiagnostics?.stage(attempt, 'sdk');
   const sdk = await waitForKakaoSdk();
+  window.gpAuthDiagnostics?.stage(attempt, 'popup');
   const popupStartedAt = performance.now();
   const authResult = await new Promise((resolve, reject) =>{
    sdk.Auth.login({
@@ -1186,7 +1216,8 @@ window.kakaoLogin = async () =>{
  } catch(e) {
   failAuthTransition();
   const canceled = e && e.error_code === 'CANCELED';
-  if (window.gpTrack) window.gpTrack(canceled ? 'login_cancel' : 'login_error', { method: 'kakao', message: String(e.message || '').slice(0, 120) });
+  if (window.gpAuthDiagnostics) window.gpAuthDiagnostics.finish(attempt, canceled ? 'cancel' : 'error', e);
+  else if (window.gpTrack) window.gpTrack(canceled ? 'login_cancel' : 'login_error', { method: 'kakao', code: canceled ? 'CANCELED' : 'unknown' });
   if (!canceled) {
    if (window.gpToast) window.gpToast(e.message || '카카오 로그인에 실패했어요.', { type: 'error', title: '로그인 확인 필요' });
    else alert('카카오 로그인 실패: ' + (e.message || JSON.stringify(e)));
@@ -1201,17 +1232,27 @@ if (isKakaoOAuthCallback(new URLSearchParams(location.search))) {
 }
 
 window.googleLogin = async () =>{
- if (/KAKAOTALK/i.test(navigator.userAgent)) { document.querySelector('.kakao-warn').style.display='flex'; return; }
+ const attempt = window.gpAuthDiagnostics?.start('google', 'popup');
+ if (/KAKAOTALK|Instagram|FBAN|FBAV/i.test(navigator.userAgent)) {
+  const help = document.querySelector('.kakao-warn');
+  if (help) help.style.display = 'flex';
+  setSocialLoginControls(false);
+  window.gpAuthDiagnostics?.finish(attempt, 'error', 'inapp_unsupported');
+  return;
+ }
  try {
   setSocialLoginControls(true, 'Google 로그인 창에서 인증을 계속해 주세요.');
-  if (window.gpTrack) window.gpTrack('login_start', { method: 'google' });
+  if (!window.gpAuthDiagnostics && window.gpTrack) window.gpTrack('login_start', { method: 'google' });
+  window.gpAuthDiagnostics?.stage(attempt, 'popup');
   const result = await signInWithPopup(auth, provider);
   showAuthenticatedShell(result.user, 'google_direct');
-  if (window.gpTrack) window.gpTrack('login', { method: 'google' });
+  if (window.gpAuthDiagnostics) window.gpAuthDiagnostics.finish(attempt, 'success');
+  else if (window.gpTrack) window.gpTrack('login', { method: 'google' });
  } catch(e) {
-  const canceled = ['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(e.code);
+  const canceled = ['auth/popup-closed-by-user', 'auth/cancelled-popup-request', 'auth/user-cancelled'].includes(e.code);
   finishAuthTransition(canceled ? 'cancel' : 'error');
-  if (window.gpTrack) window.gpTrack(canceled ? 'login_cancel' : 'login_error', { method: 'google', code: String(e.code || '').slice(0, 80), message: String(e.message || '').slice(0, 120) });
+  if (window.gpAuthDiagnostics) window.gpAuthDiagnostics.finish(attempt, canceled ? 'cancel' : 'error', e);
+  else if (window.gpTrack) window.gpTrack(canceled ? 'login_cancel' : 'login_error', { method: 'google', code: String(e.code || '').slice(0, 80) });
   if (!canceled) {
    if (window.gpReportClientError) window.gpReportClientError({ message: 'Google login: ' + String(e.code || 'unknown'), source: 'googleLogin', errorName: e.code || 'GoogleLoginError' });
    const messages = {
@@ -1227,9 +1268,24 @@ window.googleLogin = async () =>{
  }
 };
 window.openExternal = () =>{
- const url = location.href;
- if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(url);
- else location.href='intent://'+url.replace(/https?:\/\//,'')+'#Intent;scheme=https;package=com.android.chrome;end';
+ const safe = new URL(location.href);
+ ['code', 'state', 'error', 'error_description', 'paymentKey', 'orderId', 'token', 'access_token'].forEach(key => safe.searchParams.delete(key));
+ safe.hash = '';
+ const url = safe.toString();
+ const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+ if (ios && /KAKAOTALK/i.test(navigator.userAgent)) location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(url);
+ else if (!ios && /Android/i.test(navigator.userAgent)) location.href='intent://'+url.replace(/https?:\/\//,'')+'#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='+encodeURIComponent(url)+';end';
+ else if (window.gpToast) window.gpToast('앱 메뉴에서 Safari 또는 기본 브라우저로 열기를 선택해 주세요.');
+};
+window.gpCopyLoginDraft = async () => {
+ const input = document.getElementById('lavInput');
+ if (!input?.value) { if (window.gpToast) window.gpToast('복사할 입력 글이 없어요.'); return; }
+ try {
+  await navigator.clipboard.writeText(input.value);
+  if (window.gpToast) window.gpToast('글을 복사했어요. 외부 브라우저에서 붙여넣어 주세요.');
+ } catch (_) {
+  if (window.gpToast) window.gpToast('자동 복사를 사용할 수 없어요. 입력 화면에서 글을 선택해 복사해 주세요.');
+ }
 };
 window.logout = async () =>{
  const ok = window.gpConfirm
