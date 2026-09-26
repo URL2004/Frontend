@@ -3,9 +3,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 test('paragraph integrity notes disclose detector limitations and preserve earlier releases', () => {
   const html = readFileSync(new URL('../pages/admin.html', import.meta.url), 'utf8');
-  assert.match(html, /휴머나이징 v2\.5\.73 · AI 감지 v1\.42/);
+  assert.match(html, /휴머나이징 v2\.5\.74 · AI 감지 v1\.43/);
   assert.match(html, /v2\.5\.74 · 감지 v1\.43/);
   assert.match(html, /113건은 개발·회귀 자료/);
+  const latest = html.split('<div class="gp-admin-patch-timeline">')[1].split('</details>')[0];
+  assert.match(latest, /gp-admin-patch-state is-live">운영 반영/);
+  assert.match(latest, /백엔드 2,160개, 프런트 348개/);
+  assert.match(latest, /전량 신규 생성은 아닙니다/);
+  assert.match(latest, /일부 진단 오탐/);
+  assert.doesNotMatch(latest, /배포 보류|진행 중/);
   assert.match(html, /원문·결과 97쌍 전문 대조/);
   assert.match(html, /사람 블라인드 평가, 감지 정확도 또는 전체 문장 품질의 무오류 보장은 아닙니다/);
   assert.match(html, /Backend dc3ae90/);

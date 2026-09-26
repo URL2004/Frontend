@@ -308,7 +308,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /원장 작업 상세·108건 전수평가·최종 문장 무결성/u);
   assert.match(admin, /결과 평균은 96\.0점, 원문 대비 평균은 \+12\.7점/u);
   assert.match(admin, /근거 없는 구체화/u);
-  assert.match(admin, /휴머나이징 v2\.5\.73 · AI 감지 v1\.42/u);
+  assert.match(admin, /휴머나이징 v2\.5\.74 · AI 감지 v1\.43/u);
   assert.match(admin, /2026\.06\.04 — 09\.26/u);
   assert.match(admin, /중요 공지를 정렬 방향과 관계없이 최상단 고정/u);
   assert.match(admin, /휴머나이징 357쌍과 AI 감지 300건/u);

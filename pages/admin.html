@@ -121,9 +121,9 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.73 · AI 감지 v1.42</strong>
-          <code>2026.09.26 · 기술 설명 관계 보존</code>
-        <span>푸리에·콘벌루션 설명 검증 · 최종 의미 재검증 · 모델·요금·전달 정책 유지</span>
+          <strong>휴머나이징 v2.5.74 · AI 감지 v1.43</strong>
+          <code>2026.09.26 · 장문 무결성과 문체 신호 개선</code>
+        <span>수식·조건 관계 보존 · AI식 문체 점수 · 모델·요금·전달 정책 유지</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="2026년 9월 3일까지의 기존 감사 범위">
@@ -136,12 +136,14 @@
 
       <div class="gp-admin-patch-timeline">
         <details class="gp-admin-patch-release" open>
-          <summary><span class="gp-admin-patch-version">v2.5.74 · 감지 v1.43</span><span class="gp-admin-patch-title"><b>관계 보존과 AI식 문체 점수 설명 개선</b><small>2026.09.26 · 휴머나이징 60쌍·감지 53건 개발 자료 대조</small></span><span class="gp-admin-patch-state is-experiment">배포 보류</span></summary>
+          <summary><span class="gp-admin-patch-version">v2.5.74 · 감지 v1.43</span><span class="gp-admin-patch-title"><b>관계 보존과 AI식 문체 점수 설명 개선</b><small>2026.09.26 · 휴머나이징 60쌍·감지 53건 개발 자료 대조</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>
             <li><span class="gp-admin-patch-area engine">의미·구조</span><span>주체와 행위, 조건과 결과, 수치와 대상, 변수와 정의, 지시어의 선행 내용까지 대조합니다. 원문 자체의 문제와 새 오류를 구분하고, 정확한 대응 구간이 확인된 경우만 국소 복구한 뒤 다시 검증합니다. 제목·수식 오탐, 소제목 누락, 불완전한 도입구 고립과 연속 경험 문장의 과분리를 보완합니다.</span></li>
             <li><span class="gp-admin-patch-area safety">최종 검증</span><span>공백만 달라져도 표·열거·조건 관계가 바뀌면 이전 판정을 재사용하지 않습니다. 마지막 심사에서 확인된 오류는 동일한 제한시간 안에서 재검증 가능한 경우에만 좁게 복구합니다. 미검증·불확실·실패를 정상으로 바꾸지 않으며 새 품질 차단이나 무차감 정책은 추가하지 않습니다.</span></li>
-            <li><span class="gp-admin-patch-area observe">감지·보정</span><span>결과 명칭을 ‘AI식 문체 점수’로 정리합니다. 사용자 화면의 이력 보정·분석 근거 제한·짧은 글 안내는 제거하고, 핵심 문장·원인 분석·개선 포인트는 유지합니다. 검증된 자기 이력의 보정 계산은 유지합니다. 독립 통계 승격은 점수에 반영하지 않고 참고 신호로만 남깁니다. 낮은 평균을 맞추기 위한 일괄 가산은 하지 않습니다.</span></li>
-            <li><span class="gp-admin-patch-area safety">검증·미완료</span><span>113건은 개발·회귀 자료입니다. 기존 비교에 이어 휴머나이징 6문서와 후속 복구·재심사, 별도 문체 대조 6입력의 현행·수정판 비교를 실행했습니다. 백엔드 2,134개, 프런트 348개 테스트가 통과했고 조건부 1개는 제외됐습니다. 추가 비용 집계 상한은 5,000원 안입니다. 장문 전체 재검증과 주체 관계 복구가 완료되지 않아 운영 반영을 보류합니다. 국소 통과를 전체 엔진 검증 완료로 보지 않으며, 전체 무오류나 운영 성능 개선을 주장하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">감지·보정</span><span>결과 명칭을 ‘AI식 문체 점수’로 정리합니다. 사용자 화면의 이력 보정·분석 근거 제한·짧은 글 안내는 제거하고, 핵심 문장·원인 분석·개선 포인트는 유지합니다. 검증된 자기 이력의 보정 계산은 유지합니다. 숫자·전문용어가 있다는 이유만으로 반복 문체를 놓치지 않도록 판정을 보완하고, 확인된 문장 근거와 점수가 충돌하면 기존 상위 모델로 재심사합니다. 낮은 평균을 맞추기 위한 일괄 가산은 하지 않습니다. 독립 통계 승격은 점수 대신 참고 정보로만 남깁니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">복구 순서</span><span>나뉜 문장 중 일부에 긴 원문 전체를 덮어써 중복을 만드는 복구를 방지합니다. 새로 확정된 변수·수치 대응은 기존 상위 심사 모델이 먼저 검토하며, 수리 횟수 상한은 유지합니다. 심사 근거의 줄바꿈이 공백으로 바뀌어도 단어 경계와 유일한 위치가 확인되는 경우에만 복구 구간을 연결합니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">수식·공백</span><span>반복되는 같은 수식의 뒤쪽 위치를 먼저 선택해 중간 블록을 누락하던 경계 탐색을 수정했습니다. 실제 번호 제목과 본문 안 절 참조를 구별하고, 정상 단어를 잘못 띄우거나 빈 문단 너머의 숫자와 글자를 단위로 묶는 오탐을 보완했습니다. 수식 내용·순서가 실제로 달라진 경우는 계속 검사합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증·제한</span><span>백엔드 2,160개, 프런트 348개 테스트 통과·기존 조건부 1개 제외. 113건은 개발·회귀 자료이며 전량 신규 생성은 아닙니다. 대표 장문 전체 재생성, 수식 구조 실패 후 재실행, 저장 응답 재생과 변경 심사 실호출을 구분해 최종 의미·구조를 대조했습니다. 별도 합성 문체 대조 6건은 강한 신호 68~86점·약한 신호 4~8점이었고, 실제 입력 6건은 각 3회 반복 검사했습니다. 일부 진단 오탐·정형 표현 목표 경고와 점수 반복 변동은 남습니다. 모든 글의 무오류나 전체 감지 정확도를 보장하는 결과는 아닙니다.</span></li>
           </ul>
         </details>
         <details class="gp-admin-patch-release" open>
