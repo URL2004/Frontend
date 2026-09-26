@@ -83,11 +83,11 @@ test('렌더러는 evidence-v2와 구형 응답을 함께 처리하고 판정 �
   assert.match(flow, /repPaintCta\(model\)/u, '전환 밴드는 상태별 분기를 거쳐 그려진다');
 });
 
-test('간이 추정과 근거 충분성을 표시하고 이력 보정 배지는 추가하지 않는다', async () => {
+test('점수 이름만 명료화하고 이력 보정·근거 수준 배지는 표시하지 않는다', async () => {
   const flow = await read('assets/js/evasion-flow.js');
   // 같은 글이 LLM 판정과 엔진 간이 추정 사이에서 크게 달라질 수 있으므로 출처를 숨기지 않는다.
   assert.match(flow, /AI 모델 분석이 완료되지 않아 문체 엔진의 간이 추정으로 계산한 점수예요/u);
-  assert.match(flow, /model\.style\.source === 'engine' \? model\.style\.sourceLabel : \(model\.interpretation \? '' : model\.style\.evidenceLabel\)/u, '게이지 옆 분석 근거 상태는 해석 카드가 없을 때만 붙는다(중복 제거)');
+  assert.match(flow, /model\.style\.source === 'engine' \? model\.style\.sourceLabel : ''/u, '실제 모델 실패의 간이 추정 출처만 유지한다');
   // 이력 보정 사실은 화면에 표기하지 않는다(사장님 결정 2026-09-02).
   // 값 자체는 응답·모델에 남아 관리자 원장에서 확인할 수 있다.
   assert.match(flow, /calibrated: styleSignal\.calibrated === true \|\| d\.calibrated === true/u);
@@ -190,8 +190,8 @@ test('원인 레이더는 실측 다섯 축만 그리고 모집단 비교선을 
   assert.match(flow, /metric === 'grounded'[^]*?구체적인 사실이나 경험이 있는 문장/u, '근거 축은 사실·경험 문장으로 연결한다');
   assert.match(flow, /anchorMetric === 'lived'[^]*?s\.kind === 'lived'/u, '경험 축을 누르면 실제 경험 문장만 고른다');
   assert.match(flow, /anchorMetric === 'grounded'[^]*?s\.kind === 'lived' \|\| s\.kind === 'specific'/u, '구체 근거 축은 사실·경험 문장을 함께 고른다');
-  assert.match(flow, /policyRoot\.mode === 'sparse_all'/u);
-  assert.match(flow, /gp-rep-radar-empty/u);
+  assert.doesNotMatch(flow, /policyRoot\.mode === 'sparse_all'/u, '짧은 글도 하단 분석 행을 접지 않는다');
+  assert.doesNotMatch(flow, /600자쯤|gp-rep-radar-empty/u);
   assert.match(flow, /profileLabel \+ ' 기준으로 봤어요\.'/u);
   assert.match(flow, /anchorPol\.status === 'on' && anchorPol\.metric === 'lived'/u, '처방은 정책이 켠 축에서만');
   assert.match(flow, /anchorPol\.status === 'on' && anchorPol\.metric === 'grounded'/u, '구체 근거 처방도 grounded 정책에서만 연다');
@@ -273,7 +273,7 @@ test('개선 포인트는 기준을 넘은 축에서만 만들어진다', async 
   // 3연속은 한국어 격식체에서 흔해 신호로 보지 않는다 — 백엔드 ENDING_RUN_MIN(4)과 같은 문턱.
   assert.match(flow, /Number\(m\.maxEndingRun\) >= 4/u);
   assert.match(flow, /sentence\.endingRun >= 4 && sentence\.ending \? raw\.lastIndexOf/u, '밑줄도 같은 문턱을 쓴다');
-  assert.match(flow, /두드러진 문체 신호가 없어요\. 지금 표현을 유지해도 좋아요\./u, '넘은 축이 없으면 유지 안내로 닫는다');
+  assert.match(flow, /문장 사이의 연결과 사실·인용의 정확성을 확인해 주세요\./u, '측정 근거가 없을 때 정상 판정을 지어내지 않는다');
 });
 
 test('계측 띠는 실측 네 값만 싣고 지어낸 라벨이 없다', async () => {
@@ -456,10 +456,10 @@ test('보고서에서 넘어간 작업은 원점수·근거 수를 함께 보내
   assert.match(flow, /renderPreservationBadge\(st\);/u, '완료 렌더에서 호출');
 });
 
-test('5문장 미만은 표본 적음을 붙이고 길이 편차 처방을 내지 않는다', async () => {
+test('짧은 글 안내는 제거하되 검증되지 않은 길이 편차 처방은 내지 않는다', async () => {
   const [main, flow] = await Promise.all([read('pages/main.html'), read('assets/js/evasion-flow.js')]);
-  assert.match(main, /id="gpRepSample"/u);
-  assert.match(flow, /표본이 적어요\. 길이 편차·종결 반복은 참고만 하고/u);
+  assert.doesNotMatch(main, /id="gpRepSample"|id="gpRepCalibration"|id="gpRepEvidenceReason"/u);
+  assert.doesNotMatch(flow, /표본이 적어요\. 길이 편차·종결 반복은 참고만 하고/u);
   assert.match(flow, /if \(!smallSample && m\.lengthCV != null && Number\.isFinite\(Number\(m\.lengthCV\)\)/u);
 });
 

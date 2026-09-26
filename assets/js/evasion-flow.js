@@ -1407,6 +1407,7 @@
   function buildReportModel(d) {
     var reportView = d.reportView || {};
     var interpretation = d.interpretation || (typeof window.gpDetectInterpretationFor === 'function' ? window.gpDetectInterpretationFor(d) : null);
+    var scoreCopy = typeof window.gpDetectScoreCopy === 'function' ? window.gpDetectScoreCopy(interpretation) : null;
     var styleSignal = reportView.styleSignal || {};
     var measured = reportView.measuredEvidence || d.measuredEvidence || {};
     var source = styleSignal.source || (d.probSource === 'engine' ? 'engine' : d.probSource === 'llm' || d.probSource === 'cached_llm' ? 'llm' : 'unknown');
@@ -1467,7 +1468,6 @@
       status: status,
       score: score,
       historyComparisonText: typeof window.gpDetectHistoryComparisonText === 'function' ? window.gpDetectHistoryComparisonText(d) : '',
-      calibrationDetails: typeof window.gpDetectCalibrationDetails === 'function' ? window.gpDetectCalibrationDetails(d) : null,
       interpretation: interpretation,
       style: {
         band: styleBand,
@@ -1488,7 +1488,7 @@
         specific: specific,
         total: total
       },
-      synthesis: { headline: interpretation ? interpretation.headline : headline, description: interpretation ? interpretation.description : description, limitation: limitation },
+      synthesis: { headline: scoreCopy ? scoreCopy.headline : headline, description: scoreCopy ? scoreCopy.description : description, limitation: limitation },
       measured: measured,
       causeAnalysis: causeAnalysis,
       alignment: alignment,
@@ -2033,7 +2033,7 @@
       }
       return m.realAnchorCount != null ? '숫자·연도·고유명사 문장 ' + m.realAnchorCount + '개' : '';
     }
-    if (key === 'stance') return (Number.isFinite(Number(m.stanceRatio)) && total) ? '화자 입장 문장 ' + Math.round(Number(m.stanceRatio) * total) + '개' : '';
+    if (key === 'stance') return (m.stanceRatio != null && Number.isFinite(Number(m.stanceRatio)) && total) ? '화자 입장 문장 ' + Math.round(Number(m.stanceRatio) * total) + '개' : '';
     return '';
   }
   function repPaintSurfaceLabel(model, host) {
@@ -2082,7 +2082,7 @@
     var head = document.createElement('div'); head.className = 'sig-head';
     var name = document.createElement('b'); name.className = 'axis-name'; name.textContent = a.name;
     var fact = document.createElement('span'); fact.className = 'sig-fact';
-    fact.textContent = a.unknown ? (a.reason || '이번엔 재지 못했어요') : repAxisFact(key, model);
+    fact.textContent = a.unknown ? (repAxisFact(key, model) || repRadarLevel(a)) : repAxisFact(key, model);
     head.appendChild(name); head.appendChild(fact);
     li.appendChild(head);
     if (a.unknown) {
@@ -2112,26 +2112,8 @@
     var hint = $('gpRepRadarHint');
     host.textContent = '';
     var alt = $('gpRepRadarAccessible');
-    // 두세 문장짜리 글: 통계 축을 잰 척하지 않고 한 줄로 닫는다(점수·문장별 태그는 그대로).
-    if (policyRoot && policyRoot.mode === 'sparse_all') {
-      repPaintCauseProfile(policyRoot, host);
-      repPaintCauseAnalysis(model, host);
-      repPaintSurfaceLabel(model, host);
-      var empty = document.createElement('p');
-      empty.className = 'gp-rep-radar-empty';
-      empty.textContent = policyRoot.note || '짧은 글은 문체 통계 신호를 잴 수 없어요. 600자쯤(약 8문장)부터 원인 분석이 열려요.';
-      host.appendChild(empty);
-      if (hint) hint.hidden = true;
-      if (alt) {
-        var sparseCauses = model.causeAnalysis && Array.isArray(model.causeAnalysis.items)
-          ? repOrderedCauseItems(model.causeAnalysis.items).slice(0, 3).map(function (item) { return String(item.categoryLabel || item.description || ''); }).filter(Boolean)
-          : [];
-        alt.textContent = 'AI 감지 원인 분석. '
-          + (sparseCauses.length ? 'AI식 문체 점수에 반영된 판단 원인: ' + sparseCauses.join(', ') + '. ' : '')
-          + '표면 문체 지표: ' + empty.textContent;
-      }
-      return;
-    }
+    // Keep all analysis rows for short input too. A measured fact can be shown
+    // without inventing a risk grade for a sparse or inapplicable axis.
     if (hint) hint.hidden = false;
     var axes = repRadarAxes(model);
     repPaintCauseProfile(policyRoot, host);
@@ -2479,10 +2461,6 @@
       var numW = ctx.measureText(model.score == null ? '--' : String(model.score)).width;
       ctx.fillStyle = '#b3aee0'; ctx.font = font('700', 30);
       ctx.fillText('/100 · AI식 문체 점수', 72 + numW + 16, 190);
-      if (model.calibrationDetails) {
-        ctx.font = font('600', 20); ctx.fillStyle = '#e2dcff';
-        ctx.fillText('이력 보정: ' + model.calibrationDetails.before + ' → ' + model.calibrationDetails.after + '점 (서비스 조정)', 72, 232);
-      }
       var chip = model.radar.label || '';
       ctx.font = font('800', 30);
       var chipW = ctx.measureText(chip).width + 44;
@@ -2499,7 +2477,7 @@
         ctx.font = font('700', 23);
         ctx.fillText(info.label, 72, 344);
         ctx.font = font('600', 24);
-        var words = Array.from(info.headline);
+        var words = Array.from(model.synthesis.headline);
         var lines = [], current = '';
         words.forEach(function (char) {
           if (current && ctx.measureText(current + char).width > 485) { lines.push(current); current = char; }
@@ -2507,8 +2485,6 @@
         });
         if (current) lines.push(current);
         lines.slice(0, 2).forEach(function (line, i) { ctx.fillText(line + (i === 1 && lines.length > 2 ? '…' : ''), 72, 384 + i * 34); });
-        ctx.font = font('600', 21);
-        ctx.fillText(info.evidence.label, 72, 465);
       } else keeps.forEach(function (line, i) { ctx.fillText('· ' + line, 72, 356 + i * 40); });
       ctx.fillStyle = '#b3aee0'; ctx.font = font('700', 22);
       ctx.fillText('gpkorea.ai.kr', 72, H - 84);
@@ -2578,7 +2554,8 @@
   // ── 개선 포인트 ─────────────────────────────────────────────────────────────
   // 측정된 것만 말한다. 값이 기준을 넘은 축에서만 문장을 만들고, 없으면 유지 안내로 닫는다.
   function repBuildTips(model) {
-    if (model.interpretation) return model.interpretation.nextSteps.slice(0, 3);
+    var copy = typeof window.gpDetectScoreCopy === 'function' ? window.gpDetectScoreCopy(model.interpretation) : null;
+    if (copy && copy.nextSteps.length) return copy.nextSteps.slice(0, 3);
     var m = model.measured || {};
     var tips = [];
     if (Number(m.maxEndingRun) >= 4) {
@@ -2605,7 +2582,7 @@
       if (model.content.total && groundedCount === 0) {
         tips.push('구체적인 사실이나 경험 문장이 아직 없어요. 원문에서 확인할 수 있는 근거만 더해 보세요.');
       }
-    } else if (anchorPol.status === 'on' && Number(m.realAnchorCount) === 0) {
+    } else if (anchorPol.status === 'on' && m.realAnchorCount != null && Number(m.realAnchorCount) === 0) {
       tips.push('숫자·연도·고유명사 같은 구체 근거가 아직 없어요. 정확히 아는 값만 더해 보세요.');
     }
     if (stancePol.status === 'on' && model.content.total && m.stanceRatio != null && Number.isFinite(Number(m.stanceRatio)) && Math.round(Number(m.stanceRatio) * model.content.total) === 0) {
@@ -2615,7 +2592,7 @@
     if (!tips.length) {
       tips.push(model.candidateSentences > 0
         ? '문체 통계 축은 기준을 넘지 않았어요. 위치가 확인된 ' + model.candidateSentences + '문장만 살펴보면 돼요.'
-        : '두드러진 문체 신호가 없어요. 지금 표현을 유지해도 좋아요.');
+        : '문장 사이의 연결과 사실·인용의 정확성을 확인해 주세요.');
     }
     return tips.slice(0, 3);
   }
@@ -2675,8 +2652,8 @@
       return;
     }
     if (model.interpretation && model.interpretation.status !== 'ready') {
-      if (title) title.textContent = '확인된 근거부터 살펴보세요';
-      if (desc) desc.textContent = model.interpretation.evidence.reason;
+      if (title) title.textContent = '문장의 표현을 확인해 보세요';
+      if (desc) desc.textContent = '핵심 문장과 원인 분석에서 확인한 표현을 살펴보세요.';
       if (btn) btn.hidden = true;
       if (help) help.hidden = true;
       return;
@@ -2771,16 +2748,8 @@
       }
       if (interpretation) {
         $('gpRepInterpretation').dataset.status = interpretation.status;
-        // '확인 위치: 2·4·5번 문단.'은 문장 속이 아니라 칩으로 따로 보여준다(공유 해석 모듈 문구는 그대로 두고 화면에서만 분리).
-        $('gpRepInterpretationDesc').textContent = interpretation.description ? repStripLocationNote(interpretation.description) : '';
+        $('gpRepInterpretationDesc').textContent = repStripLocationNote(model.synthesis.description);
         repPaintInterpretationLink(interpretation);
-        var evidenceLevel = $('gpRepEvidenceLevel'), evidenceText = $('gpRepEvidenceReasonText');
-        if (evidenceLevel) {
-          evidenceLevel.textContent = interpretation.evidence.label || '';
-          evidenceLevel.dataset.level = interpretation.evidence.level || '';
-        }
-        if (evidenceText) evidenceText.textContent = interpretation.evidence.reason || '';
-        else if ($('gpRepEvidenceReason')) $('gpRepEvidenceReason').textContent = interpretation.evidence.reason || '';
       }
     }
     var keeps = $('gpRepKeeps');
@@ -2845,12 +2814,6 @@
       $('gpRepComparison').textContent = model.historyComparisonText || '';
       $('gpRepComparison').hidden = !model.historyComparisonText;
     }
-    if ($('gpRepCalibration')) {
-      $('gpRepCalibration').hidden = !model.calibrationDetails;
-      $('gpRepCalibration').open = false;
-      $('gpRepCalibrationLabel').textContent = model.calibrationDetails ? model.calibrationDetails.label : '';
-      $('gpRepCalibrationDetail').textContent = model.calibrationDetails ? model.calibrationDetails.text : '';
-    }
     if ($('gpRepBandChip')) $('gpRepBandChip').textContent = repVerdictLabel(model);
     // 히어로 버튼 — 접근이 닫힌 상태(간이 추정·근거 부족)에서만 감춘다. 점수가 낮아도 접근은 열려 있고,
     //   지목할 문장이 없으면 부차 버튼으로 낮춰 "권하지 않되 막지 않는다"(사장님 2026-09-07).
@@ -2862,9 +2825,7 @@
     if ($('gpRepVerdictAct')) $('gpRepVerdictAct').hidden = model.conversionAccess === false;
     if ($('gpRepSource')) {
       // 엔진 간이 추정은 모델 판정과 신뢰도가 달라 점수 옆에서 밝힌다.
-      // 이력 반영은 전후 비교 문구에서 설명하고 별도 배지는 추가하지 않는다.
-      // 근거 수준은 해석 카드가 이미 말한다(v124) — 게이지 아래에 같은 말을 한 번 더 두지 않는다. 해석이 없을 때만 남긴다.
-      $('gpRepSource').textContent = model.style.source === 'engine' ? model.style.sourceLabel : (model.interpretation ? '' : model.style.evidenceLabel);
+      $('gpRepSource').textContent = model.style.source === 'engine' ? model.style.sourceLabel : '';
     }
 
     // ② 계측 띠
@@ -2886,15 +2847,6 @@
     setStat('gpRepStatRhythm', measured.lengthCV != null && Number.isFinite(Number(measured.lengthCV))
       ? (Number(measured.lengthCV) * 100).toFixed(1) + '%' : '—');
     setStat('gpRepStatEnding', measured.maxEndingRun ? measured.maxEndingRun + '문장 연속' : '—');
-    // 2문장 통계를 786문장과 같은 확신으로 보이지 않게 — 5문장 미만이면 한 줄 붙인다.
-    var sample = $('gpRepSample');
-    if (sample) {
-      var small = measured.sampleSize === 'small' || (model.content.total != null && model.content.total < 5);
-      sample.hidden = !small;
-      sample.textContent = small
-        ? '문장 ' + (model.content.total || 0) + '개는 표본이 적어요. 길이 편차·종결 반복은 참고만 하고, 앞뒤 문맥을 함께 확인해 주세요.'
-        : '';
-    }
 
     // ③ 문장·원인·개선
     repSetupMap(model);
@@ -2956,7 +2908,6 @@
     }
     if ($('gpRepLimit')) {
       var limit = model.synthesis.limitation || '';
-      if (interpretation && interpretation.limitations.length) limit = interpretation.limitations.join(' ');
       if (model.style.source === 'engine') {
         limit = 'AI 모델 분석이 완료되지 않아 문체 엔진의 간이 추정으로 계산한 점수예요. ' + limit;
       }
@@ -2974,7 +2925,7 @@
       report.dataset.announcement = score == null
         ? 'AI 감지 분석을 마쳤어요. 점수를 확인하지 못했어요.'
         : 'AI 감지 분석을 마쳤어요. AI식 문체 점수 ' + score + '점, 100점 만점. ' + (model.radar.label || '')
-          + (interpretation ? '. ' + interpretation.headline + ' ' + interpretation.evidence.label : '');
+          + '. ' + model.synthesis.headline;
     }
   }
 

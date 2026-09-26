@@ -16,14 +16,32 @@ const base = { probability: 32, probSource: 'llm', confidence: 'high', textLengt
 const signal = (category, locations = 2) => ({ category, strength: 'strong', scope: 'recurring', locationStatus: 'source_range_verified',
   locations: Array.from({ length: locations }, (_, i) => ({ sentenceIndex: i, start: i * 50, end: i * 50 + 30 })) });
 
-test('calibration details disclose adjustment and distinguish unchanged history matches',()=>{
-  const show=browser.gpDetectCalibrationDetails;
-  const scoreAdjustment={matched:true,before:25,after:15,delta:-10,basis:'service_history'};
-  assert.equal(show({probability:15,scoreAdjustment}).delta,-10);
-  assert.match(show({probability:15,scoreAdjustment}).text,/AI 작성 확률이 아니/);
-  assert.match(show({probability:5,scoreAdjustment:{...scoreAdjustment,before:5,after:5,delta:0}}).label,/점수 변화 없음/);
-  assert.equal(show({probability:15,scoreAdjustment:{matched:false}}),null);
-  assert.equal(show({probability:20,scoreAdjustment}),null);
+test('public score copy omits sample warnings and calibration without changing scores or metadata',()=>{
+  assert.equal(browser.gpDetectCalibrationDetails, undefined);
+  for (let probability = 0; probability <= 100; probability++) {
+    const input = { probability, probSource: 'llm', inputChars: 140,
+      reportView: { measuredEvidence: { sentenceTotal: 2 } },
+      scoreAdjustment: { matched: true, before: Math.min(100, probability + 10), after: probability } };
+    const snapshot = JSON.stringify(input);
+    const result = normalize(input);
+    const copy = browser.gpDetectScoreCopy(result.interpretation);
+    assert.equal(result.probability, probability);
+    assert.equal(result.scoreAdjustment, input.scoreAdjustment);
+    assert.equal(JSON.stringify(input), snapshot);
+    assert.doesNotMatch(JSON.stringify(copy) + browser.gpDetectInterpretationText(result.interpretation), /해석 범위|분석 근거 제한|이력 보정|보정 전|짧은 글/);
+    assert.doesNotMatch(copy.description, /사람이 쓴|AI가 작성했을 확률/);
+  }
+});
+
+test('short reports retain verified causes without claiming missing evidence', () => {
+  const info = build({ ...base, textLength: 160, sentenceTotal: 2, signalEvidence: [signal('ending_repetition')] });
+  const copy = browser.gpDetectScoreCopy(info);
+  assert.match(copy.headline, /종결 표현/);
+  assert.match(copy.description, /2개 문장/);
+  assert.match(copy.nextSteps[0], /종결 표현/);
+  const noEvidence = browser.gpDetectScoreCopy(build({ ...base, textLength: 160, sentenceTotal: 2 }));
+  assert.equal(noEvidence.nextSteps.length, 0);
+  assert.doesNotMatch(noEvidence.description, /확인한 특징|개 문장/);
 });
 
 test('browser uses the server scope and retains unscored statistics disclosure',()=>{
@@ -135,7 +153,7 @@ test('stored interpretation wins consistently, stale score descriptor is rebuilt
   const item = { probability: 32, interpretation: saved, inputText: '기록 원문', summary: '이전 요약', detail: '첫 문단\n\n둘째 문단' };
   const result = normalize(item);
   assert.equal(result.interpretation, saved);
-  assert.equal(result.summary, saved.headline);
+  assert.equal(result.summary, browser.gpDetectScoreCopy(saved).headline);
   assert.equal(result.detail, item.detail);
   assert.equal(browser.gpDetectInterpretationText(saved).includes(saved.nextSteps[0]), true);
   const changed = normalize({ ...item, probability: 70 });
@@ -172,12 +190,12 @@ test('old calibration prose and score contradictions are replaced without editin
   assert.equal(result.inputText, inputText);
   assert.match(result.detail, /^첫 문단의 근거는 유지해 주세요\.\n\n/);
   assert.match(result.detail, /\n\n마지막 문단은 2024년 자료를 인용해요\.$/);
-  assert.equal(result.detail.includes(saved.description), true);
+  assert.equal(result.detail.includes(browser.gpDetectScoreCopy(saved).description), true);
   assert.doesNotMatch(result.detail, /변환 이력|보정/);
   const contradictory = normalize({ probability: 12, interpretation: saved, detail: 'AI식 문체 신호가 높게 감지됐어요. 자료 출처는 별도로 확인해 주세요.' });
   assert.doesNotMatch(contradictory.detail, /신호가 높/);
   assert.match(contradictory.detail, /자료 출처는 별도로 확인해 주세요\./);
-  assert.equal(browser.gpDetectPublicNarrative('확인된 변환 이력을 반영한 점수와 원인 설명을 함께 표시해요.', saved), saved.description);
+  assert.equal(browser.gpDetectPublicNarrative('확인된 변환 이력을 반영한 점수와 원인 설명을 함께 표시해요.', saved), browser.gpDetectScoreCopy(saved).description);
 });
 
 test('empty editor does not replace stored report length with zero', () => {
@@ -198,7 +216,7 @@ test('numeric authorship claims are replaced without removing useful analysis or
       detail: claim + ' 문장 끝의 반복을 확인해 주세요.\n\n인용 자료의 응답률은 32.5%예요.' });
     assert.equal(result.inputText, inputText);
     assert.equal(result.detail.includes(claim), false);
-    assert.equal(result.detail.includes(result.interpretation.description), true);
+    assert.equal(result.detail.includes(browser.gpDetectScoreCopy(result.interpretation).description), true);
     assert.match(result.detail, /문장 끝의 반복을 확인해 주세요\.\n\n인용 자료의 응답률은 32\.5%예요\.$/);
   }
 });
@@ -222,9 +240,9 @@ test('browser bootstrap, result, history and image export share the same interpr
   const boot = read('assets/js/app-boot.js');
   assert.ok(boot.indexOf("loadScript('/assets/js/detect-interpretation.js')") < boot.indexOf("loadScript('/assets/js/detect-presentation.js')"));
   const flow = read('assets/js/evasion-flow.js');
-  assert.match(flow, /gpRepInterpretationDesc'\)\.textContent = interpretation\.description/);
-  assert.match(flow, /ctx\.fillText\(info\.evidence\.label/);
-  assert.match(flow, /model\.interpretation\.nextSteps\.slice/);
+  assert.match(flow, /gpRepInterpretationDesc'\)\.textContent = repStripLocationNote\(model\.synthesis\.description\)/);
+  assert.doesNotMatch(flow, /ctx\.fillText\(info\.evidence\.label/);
+  assert.match(flow, /gpDetectScoreCopy\(model\.interpretation\)/);
   assert.match(read('assets/js/app-module.js'), /gpDetectInterpretationText\(view\.interpretation\)/);
   assert.match(read('assets/js/app-module.js'), /if \(typeof detectResult\.interpretationProof === 'string'\) data\.interpretationProof = detectResult\.interpretationProof;/);
   const main = read('pages/main.html');

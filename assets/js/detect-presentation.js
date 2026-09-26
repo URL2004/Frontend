@@ -93,12 +93,33 @@
     });
   }
 
+  // Display copy is separate from diagnostic metadata. Keep the score and
+  // verified evidence unchanged; sample size does not replace the result title.
+  function scoreCopy(info) {
+    if (!info) return null;
+    var score = probability(info.score), band = bandFor(score);
+    if (!band || info.status === 'unavailable') return {
+      label: '점수 확인 필요', headline: '분석 결과를 확인할 수 없어요',
+      description: '저장된 결과를 다시 열거나 분석 상태를 확인해 주세요.', nextSteps: []
+    };
+    var pattern = info.pattern;
+    var observed = pattern && pattern.locationCount > 0 && pattern.label && pattern.description;
+    return {
+      label: info.label || band.label,
+      headline: observed ? (band.level === 'low' ? '전체 신호는 낮아요. 확인할 부분: ' : '') + pattern.label + (band.level === 'low' ? '' : '부터 살펴보세요') : band.summary,
+      description: observed ? pattern.locationCount + '개 문장에서 확인한 특징: ' + pattern.description + '.'
+        : '반복 표현과 문장 전개 등에서 나타나는 AI식 문체 신호를 100점 기준으로 표시해요.',
+      nextSteps: observed ? (info.status === 'ready' && Array.isArray(info.nextSteps) && info.nextSteps.length
+        ? info.nextSteps.slice(0, 3) : ['표시된 ' + pattern.label + ' 항목의 문장을 앞뒤 문맥과 함께 확인해 주세요.']) : []
+    };
+  }
+
   function interpretationText(info) {
     if (!info) return '';
-    return [info.label, info.description,
-      info.evidence ? info.evidence.label + '\n' + info.evidence.reason : '',
-      info.nextSteps.length ? '다음으로 확인할 점\n' + info.nextSteps.map(function (step) { return '• ' + step; }).join('\n') : '',
-      (info.limitations || []).join('\n')].filter(Boolean).join('\n\n');
+    var copy = scoreCopy(info);
+    return [copy.label, copy.description,
+      copy.nextSteps.length ? '다음으로 확인할 점\n' + copy.nextSteps.map(function (step) { return '• ' + step; }).join('\n') : '',
+      DISCLAIMER].filter(Boolean).join('\n\n');
   }
 
   function claimsHigh(value) {
@@ -146,7 +167,7 @@
       if (replaced) return '';
       replaced = true;
       var leading = (sentence.match(/^\s*/) || [''])[0];
-      return leading + info.description;
+      return leading + scoreCopy(info).description;
     }).trim();
   }
 
@@ -158,7 +179,7 @@
     var interpretation = interpretationFor(source, context);
     if (!band) return Object.assign({}, source, {
       probability: p, interpretation: interpretation,
-      summary: interpretation ? interpretation.headline : source.summary,
+      summary: interpretation ? scoreCopy(interpretation).headline : source.summary,
       detail: interpretation ? publicNarrative(source.detail, interpretation) : source.detail
     });
     var summary = narrative(source.summary);
@@ -169,7 +190,7 @@
       probability: p,
       riskLevel: band.level,
       riskLabel: band.label,
-      summary: interpretation ? interpretation.headline : summaryMismatch ? band.summary : summary,
+      summary: interpretation ? scoreCopy(interpretation).headline : summaryMismatch ? band.summary : summary,
       detail: interpretation && detail ? publicNarrative(detail, interpretation) : detailMismatch ? (band.detail(p) + '\n\n' + DISCLAIMER) : detail,
       interpretation: interpretation,
       narrativeConsistencyAdjusted: !!source.narrativeConsistencyAdjusted || summaryMismatch || detailMismatch
@@ -182,26 +203,16 @@
     var before = probability(comparison.sourceProbability);
     var after = probability(comparison.probability);
     if (after === null || after !== probability(result.probability)) return '';
-    if (before === null) return '휴머나이징 결과의 재검사예요. 비교할 원글 검사 기록은 확인되지 않았어요.';
+    // Adjustment metadata remains in the response. Do not present an adjusted
+    // delta as pure writing improvement when adjustment details are not shown.
+    if (before === null || comparison.calibrationApplied === true) return '';
     var delta = after - before;
     var change = delta < 0 ? Math.abs(delta) + '점 감소' : delta > 0 ? delta + '점 증가' : '점수 변화 없음';
-    return '원글 ' + before + '점 → 휴머나이징 후 ' + after + '점 · ' + change + '. '
-      + (comparison.calibrationApplied ? '휴머나이징 이력을 반영한 서비스 점수 비교예요.' : '같은 서비스에서 검사한 문체 신호 점수 비교예요.');
+    return '원글 ' + before + '점 → 휴머나이징 후 ' + after + '점 · ' + change + '. 같은 서비스에서 검사한 문체 신호 점수 비교예요.';
   }
 
   global.gpDetectHistoryComparisonText = historyComparisonText;
-  global.gpDetectCalibrationDetails = function (result) {
-    var current = probability(result && result.probability);
-    var meta = result && result.probabilityCalibration, clean = result && result.scoreAdjustment;
-    var raw = probability(clean ? clean.before : meta && meta.rawProbability);
-    var after = probability(clean ? clean.after : meta && meta.calibratedProbability);
-    var matched = clean ? clean.matched === true : meta && meta.reason === 'own_humanized_history_match';
-    if (!matched || current === null || raw === null || after !== current || after > raw) return null;
-    return { applied: after < raw, before: raw, after: after, delta: after - raw,
-      label: after < raw ? '휴머나이징 이력 보정 적용' : '휴머나이징 이력 일치 · 점수 변화 없음',
-      text: '보정 전 ' + raw + '점 → 표시 ' + after + '점 · 조정 ' + (after - raw) + '점. '
-        + '동일 사용자의 검증된 휴머나이징 결과에 적용한 서비스 조정이며, 순수 문체 개선 폭이나 AI 작성 확률이 아니에요.' };
-  };
+  global.gpDetectScoreCopy = scoreCopy;
   global.gpNormalizeDetectPresentation = normalize;
   global.gpDetectRiskBand = bandFor;
   global.gpProfessorRadarBand = professorRadarFor;

@@ -233,10 +233,6 @@
                  <p class="gp-rep-bandchip" id="gpRepBandChip">판정 준비 중</p>
                  <p class="gp-rep-source" id="gpRepSource"></p>
                  <p class="gp-rep-source" id="gpRepComparison" role="status" hidden></p>
-                 <details class="gp-rep-calibration" id="gpRepCalibration" hidden>
-                   <summary id="gpRepCalibrationLabel">휴머나이징 이력 보정</summary>
-                   <p id="gpRepCalibrationDetail"></p>
-                 </details>
                  <!-- 구역 범례는 v125에서 화면에서 뺐다(게이지 색·구역 이름이 이미 말한다). 마크업은 보조기술·테스트 계약용으로 남긴다. -->
                  <ul class="gp-rep-zonekey" aria-label="게이지 구역 읽는 법">
                    <li class="z-hard" title="AI식 문체 신호 높음">50~100 높음</li>
@@ -249,12 +245,11 @@
                    <p class="gp-rep-interpretation-label" id="gpRepInterpretationLabel" hidden></p>
                    <h3 class="gp-rep-hero-title" id="gpRepHeroTitle">분석 결과를 정리하고 있어요</h3>
                  </div>
-                 <!-- 이유 한 줄 → 확인 위치 칩 → 근거 수준 주석 -->
+                 <!-- 확인한 문체 특징 → 해당 문장으로 이동 -->
                  <div class="gp-rep-interpretation" id="gpRepInterpretation" hidden>
                    <p class="gp-rep-interpretation-desc" id="gpRepInterpretationDesc"></p>
                    <!-- 확인 위치는 칩이 아니라 아래 핵심 문장으로 내려가는 링크 하나(JS repPaintInterpretationLink) -->
                    <p class="gp-rep-interpretation-where" id="gpRepInterpretationWhere" hidden></p>
-                   <p class="gp-rep-evidence-reason" id="gpRepEvidenceReason"><b class="gp-rep-evidence-level" id="gpRepEvidenceLevel"></b><span id="gpRepEvidenceReasonText"></span></p>
                  </div>
                  <!-- 행동: 결론 바로 옆 버튼 하나. 비용은 옆에 작게 -->
                  <div class="gp-rep-verdict-act" id="gpRepVerdictAct">
@@ -318,7 +313,6 @@
                <span class="gp-rep-stat-go" aria-hidden="true">문장 보기</span>
              </div>
            </dl>
-           <p class="gp-rep-sample" id="gpRepSample" hidden></p>
 
            <!-- ③ 본문 2단 -->
            <div class="gp-rep-grid">

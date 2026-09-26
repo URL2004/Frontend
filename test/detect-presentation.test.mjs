@@ -14,12 +14,12 @@ const professorRadar = context.window.gpProfessorRadarBand;
 const historyComparison = context.window.gpDetectHistoryComparisonText;
 
 test('재검사 비교는 실제 서버 연결값으로 감소·동률·증가를 구분한다', () => {
-  const comparison = { version: 'humanize-comparison-v1', basis: 'history_adjusted_style', sourceProbability: 72, probability: 68, calibrationApplied: true };
+  const comparison = { version: 'humanize-comparison-v1', basis: 'history_adjusted_style', sourceProbability: 72, probability: 68, calibrationApplied: false };
   assert.match(historyComparison({ probability: 68, historyComparison: comparison }), /원글 72점 → 휴머나이징 후 68점 · 4점 감소/);
-  assert.match(historyComparison({ probability: 68, historyComparison: comparison }), /이력을 반영/);
+  assert.equal(historyComparison({ probability: 68, historyComparison: { ...comparison, calibrationApplied: true } }), '');
   assert.match(historyComparison({ probability: 0, historyComparison: { ...comparison, sourceProbability: 0, probability: 0 } }), /점수 변화 없음/);
   assert.match(historyComparison({ probability: 80, historyComparison: { ...comparison, probability: 80, calibrationApplied: false } }), /8점 증가/);
-  assert.match(historyComparison({ probability: 68, historyComparison: { ...comparison, sourceProbability: null } }), /확인되지/);
+  assert.equal(historyComparison({ probability: 68, historyComparison: { ...comparison, sourceProbability: null } }), '');
   assert.equal(historyComparison({ probability: 20, historyComparison: comparison }), '');
   assert.equal(historyComparison({ probability: 68 }), '');
 });

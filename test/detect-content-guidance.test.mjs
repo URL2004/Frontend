@@ -15,7 +15,7 @@ test('content evidence labels describe observations rather than ordering unsuppo
 });
 test('legacy tips do not turn missing rhythm measurements into zero or add experience to unknown genres',()=>{
  const text=flow.slice(flow.indexOf('  function repBuildTips'),flow.indexOf('  // ── 전환 밴드'));
- const context=vm.createContext({repAxisPolicy:()=>({anchor:{status:'off'},stance:{status:'off'}})});
+ const context=vm.createContext({window:{},repAxisPolicy:()=>({anchor:{status:'off'},stance:{status:'off'}})});
  vm.runInContext(text,context);
  const tips=context.repBuildTips({measured:{lengthCV:null},content:{total:10,generic:8}}).join(' ');
  assert.doesNotMatch(tips,/길이가 고르게|실제로 겪은|더해 보세요/);

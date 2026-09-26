@@ -42,6 +42,9 @@ test('saved history detail renders only the comparison matching the visible scor
   const start = source.indexOf('function historyDetailBlock(');
   vm.runInNewContext(source.slice(start, source.indexOf('function historyRender()', start)), sandbox);
   sandbox.historyRenderDetail();
+  assert.doesNotMatch(panel.innerHTML, /휴머나이징 전후 비교|이력 보정|이력을 반영/);
+  sandbox.historyState.items[0].historyComparison = { ...data.historyComparison, calibrationApplied: false };
+  sandbox.historyRenderDetail();
   assert.match(panel.innerHTML, /휴머나이징 전후 비교/);
   assert.match(panel.innerHTML, /원글 72점.*68점.*4점 감소/);
   sandbox.historyState.items[0].probability = 40;
