@@ -8065,9 +8065,9 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 
 @media(max-width:760px){
  .gp-admin-patch-current{grid-template-columns:auto minmax(0,1fr);gap:5px 10px;}
- .gp-admin-patch-current code,.gp-admin-patch-current>span:last-child{grid-row:2;}
- .gp-admin-patch-current code{grid-column:1;}
- .gp-admin-patch-current>span:last-child{grid-column:2;}
+ .gp-admin-patch-current code,.gp-admin-patch-current>span:last-child{grid-column:1 / -1;min-width:0;overflow-wrap:anywhere;}
+ .gp-admin-patch-current code{grid-row:2;}
+ .gp-admin-patch-current>span:last-child{grid-row:3;}
  .gp-admin-patch-audit{grid-template-columns:1fr 1fr;}
  .gp-admin-patch-audit>div{padding:9px 10px;border-top:1px solid var(--admin-line);}
  .gp-admin-patch-audit>div:nth-child(odd){padding-left:2px;border-left:none;}

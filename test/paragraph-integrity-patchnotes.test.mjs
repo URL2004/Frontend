@@ -49,3 +49,9 @@ test('paragraph integrity notes disclose detector limitations and preserve earli
   assert.match(html, /v2\.5\.53 · 감지 v1\.34/);
   assert.match(html, /실패 응답과 채택하지 않은 후보/);
 });
+
+test('mobile current-release summary gives metadata and description full-width rows', () => {
+  const css = readFileSync(new URL('../assets/css/redesign.css', import.meta.url), 'utf8');
+  assert.match(css, /\.gp-admin-patch-current code,\.gp-admin-patch-current>span:last-child\{grid-column:1 \/ -1;min-width:0;overflow-wrap:anywhere;/);
+  assert.match(css, /\.gp-admin-patch-current>span:last-child\{grid-row:3;/);
+});
