@@ -5,6 +5,15 @@
   var localKey = 'gpLocalNotifications';
   var remoteItems = [];
   var activeDialog = null;
+  // 운영팀 메시지 플로팅: 기기마다 한 번만 띄운다. 오래된 미확인 메시지가 배포 직후
+  // 한꺼번에 뜨지 않도록 최근 7일 안에 온 것만 대상으로 한다.
+  var floatKeyPrefix = 'gpOperatorFloated:';
+  var floatMaxAgeMs = 7 * 86400000;
+  var floatQueue = [];
+  var floatShownIds = {};
+  var lastUnread = -1;
+  var ringTimer = null;
+  var floatOwner = '';
 
   window.gpNativeAlert = nativeAlert;
   window.gpNativeConfirm = nativeConfirm;
@@ -86,7 +95,7 @@
       var p = $('gpNotificationPanel');
       if (!p || p.hidden) return;
       if (p.contains(e.target)) return;
-      var bell = e.target.closest && e.target.closest('.gp-lav-bell');
+      var bell = e.target.closest && e.target.closest('.gp-lav-bell, #gpOperatorFloat');
       if (bell) return;
       window.gpCloseNotificationCenter();
     });
@@ -99,6 +108,11 @@
         if (activeDialog) {
           e.preventDefault();
           closeDialog(null);
+          return;
+        }
+        var float = $('gpOperatorFloat');
+        if (float && !float.hidden && float.contains(document.activeElement)) {
+          dismissOperatorFloat('close');
           return;
         }
         window.gpCloseNotificationCenter();
@@ -219,6 +233,7 @@
     root.classList.toggle('prompt', !!promptMode);
     root.classList.toggle('variant-detect', opts.variant === 'detect');
     root.classList.toggle('variant-purchase', opts.variant === 'purchase');
+    root.classList.toggle('variant-notify', opts.variant === 'notify');
     title.textContent = opts.title || (promptMode ? '내용을 입력해 주세요' : '내용을 확인해 주세요');
     message.textContent = opts.message || '';
     message.hidden = !message.textContent;
@@ -234,7 +249,17 @@
     if (promptMode) {
       promptInput.value = opts.defaultValue || '';
       promptInput.placeholder = opts.placeholder || '';
-      promptHint.textContent = opts.hint || '';
+      promptInput.rows = opts.rows || 4;
+      if (opts.maxLength) promptInput.setAttribute('maxlength', String(opts.maxLength));
+      else promptInput.removeAttribute('maxlength');
+      var renderHint = function () {
+        var base = opts.hint || '';
+        promptHint.textContent = opts.maxLength
+          ? (base ? base + ' · ' : '') + promptInput.value.length + '/' + opts.maxLength + '자'
+          : base;
+      };
+      promptInput.oninput = renderHint;
+      renderHint();
     }
     root.onclick = function (e) {
       var cancel = e.target && e.target.closest ? e.target.closest('[data-gp-dialog-cancel]') : null;
@@ -339,7 +364,190 @@
       badge.style.display = unread > 0 ? 'inline-flex' : 'none';
     }
     var bell = document.querySelector('.gp-lav-bell');
-    if (bell) bell.classList.toggle('has-unread', unread > 0);
+    if (bell) {
+      bell.classList.toggle('has-unread', unread > 0);
+      bell.setAttribute('aria-label', unread > 0 ? '알림, 읽지 않은 알림 ' + unread + '개' : '알림');
+    }
+    if (lastUnread >= 0 && unread > lastUnread) ringBell();
+    lastUnread = unread;
+  }
+  // 새 알림이 들어온 순간 한 번 크게 흔든다. 안 읽은 알림이 남아 있는 동안의
+  // 주기적인 흔들림은 CSS(.has-unread)가 맡는다.
+  function ringBell() {
+    var bell = document.querySelector('.gp-lav-bell');
+    if (!bell || bell.getAttribute('aria-expanded') === 'true') return;
+    bell.classList.remove('is-ringing');
+    void bell.offsetWidth;
+    bell.classList.add('is-ringing');
+    clearTimeout(ringTimer);
+    ringTimer = setTimeout(function () { bell.classList.remove('is-ringing'); }, 1400);
+  }
+
+  function isOperatorMessage(n) {
+    var key = String(n.clientId || n.id || '');
+    if (n.type === 'qna') return /^qna_answered_/.test(key);
+    return n.type === 'notice' && /^(admin_|job_incident_)/.test(key);
+  }
+  function floatStoreKey() {
+    var uid = window.CU && window.CU.uid;
+    return uid ? floatKeyPrefix + uid : '';
+  }
+  function getFloatedIds() {
+    var key = floatStoreKey();
+    if (!key) return [];
+    try {
+      var v = JSON.parse(localStorage.getItem(key) || '[]');
+      return Array.isArray(v) ? v : [];
+    } catch (e) { return []; }
+  }
+  function rememberFloated(n) {
+    var key = floatStoreKey();
+    if (!key || !n) return;
+    var ids = getFloatedIds().filter(function (x) { return x !== n.id; });
+    ids.unshift(n.id);
+    try { localStorage.setItem(key, JSON.stringify(ids.slice(0, 100))); } catch (e) {}
+  }
+  function queueOperatorMessages() {
+    var owner = floatStoreKey();
+    if (owner !== floatOwner) {
+      floatOwner = owner;
+      floatQueue = [];
+      floatShownIds = {};
+      lastUnread = -1;
+    }
+    var live = {};
+    remoteItems.forEach(function (x) { live[String(x.id)] = x; });
+    floatQueue = floatQueue.filter(function (q) { return live[q.id] && !live[q.id].read; })
+      .map(function (q) { return normalizeNotification(live[q.id], 'remote'); });
+    if (floatStoreKey()) {
+      var seen = getFloatedIds();
+      var cutoff = now() - floatMaxAgeMs;
+      remoteItems.map(function (x) { return normalizeNotification(x, 'remote'); })
+        .filter(function (n) {
+          return !n.read && isOperatorMessage(n) && n.createdAt >= cutoff &&
+            !floatShownIds[n.id] && seen.indexOf(n.id) === -1;
+        })
+        .sort(function (a, b) { return a.createdAt - b.createdAt; })
+        .forEach(function (n) {
+          floatShownIds[n.id] = true;
+          floatQueue.push(n);
+        });
+    }
+    renderOperatorFloat();
+  }
+  function ensureOperatorFloat() {
+    var el = $('gpOperatorFloat');
+    if (el) return el;
+    el = document.createElement('section');
+    el.id = 'gpOperatorFloat';
+    el.className = 'gp-operator-float';
+    el.hidden = true;
+    el.setAttribute('role', 'region');
+    el.setAttribute('aria-labelledby', 'gpOperatorFloatTitle');
+    el.innerHTML =
+      '<div class="gp-operator-float-head">' +
+        '<span class="gp-operator-float-icon material-symbols-outlined" aria-hidden="true">campaign</span>' +
+        '<span class="gp-operator-float-label"><b id="gpOperatorFloatLabel"></b><small id="gpOperatorFloatMeta"></small></span>' +
+        '<button type="button" class="gp-operator-float-x" data-float-close aria-label="메시지 닫기">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>' +
+        '</button>' +
+      '</div>' +
+      '<h3 id="gpOperatorFloatTitle"></h3>' +
+      '<p id="gpOperatorFloatMessage"></p>' +
+      '<div class="gp-operator-float-actions">' +
+        '<button type="button" class="gp-operator-float-secondary" data-float-open>알림함 보기</button>' +
+        '<button type="button" class="gp-operator-float-primary" data-float-ack></button>' +
+      '</div>' +
+      '<p class="sr-only" id="gpOperatorFloatLive" aria-live="polite"></p>';
+    el.addEventListener('click', function (e) {
+      var t = e.target && e.target.closest ? e.target.closest('[data-float-close],[data-float-open],[data-float-ack]') : null;
+      if (!t) return;
+      if (t.hasAttribute('data-float-close')) dismissOperatorFloat('close');
+      else if (t.hasAttribute('data-float-open')) dismissOperatorFloat('open');
+      else dismissOperatorFloat('ack');
+    });
+    document.body.appendChild(el);
+    return el;
+  }
+  function operatorFollowTab(n) {
+    var tab = n && n.action && n.action.tab ? String(n.action.tab) : '';
+    return tab && tab !== 'main' && tab !== 'community' ? tab : '';
+  }
+  function renderOperatorFloat() {
+    var current = floatQueue[0];
+    var el = $('gpOperatorFloat');
+    if (!current) {
+      if (el && !el.hidden) {
+        el.classList.remove('is-in');
+        setTimeout(function () { if (!floatQueue.length) el.hidden = true; }, 200);
+      }
+      return;
+    }
+    el = ensureOperatorFloat();
+    var isAnswer = current.type === 'qna';
+    var label = isAnswer ? '운영팀 답변' : '운영팀 메시지';
+    $('gpOperatorFloatLabel').textContent = label;
+    $('gpOperatorFloatMeta').textContent = timeLabel(current.createdAt) +
+      (floatQueue.length > 1 ? ' · ' + floatQueue.length + '개 중 1' : '');
+    $('gpOperatorFloatTitle').textContent = current.title;
+    $('gpOperatorFloatMessage').textContent = current.message;
+    var ack = el.querySelector('[data-float-ack]');
+    ack.textContent = operatorFollowTab(current)
+      ? (isAnswer ? '답변 보기' : '바로 보기')
+      : (floatQueue.length > 1 ? '확인하고 다음' : '확인했어요');
+    el.classList.toggle('is-answer', isAnswer);
+    var wasHidden = el.hidden;
+    el.hidden = false;
+    if (wasHidden || el.getAttribute('data-current') !== current.id) {
+      el.setAttribute('data-current', current.id);
+      $('gpOperatorFloatLive').textContent = label + ': ' + current.title;
+      el.classList.remove('is-in');
+      void el.offsetWidth;
+      requestAnimationFrame(function () { el.classList.add('is-in'); });
+      ringBell();
+      rememberFloated(current);
+    }
+  }
+  async function dismissOperatorFloat(mode) {
+    var current = floatQueue[0];
+    if (!current) return renderOperatorFloat();
+    if (mode === 'ack' && current.source === 'remote' && window.markRead) {
+      var owner = floatOwner;
+      var button = $('gpOperatorFloat').querySelector('[data-float-ack]');
+      if (button.disabled) return;
+      button.disabled = true;
+      try { await window.markRead(current.id); }
+      catch (e) {
+        if (owner === floatOwner) window.gpToast('읽음 처리에 실패했어요. 다시 시도해 주세요.', 'error');
+        return;
+      } finally { button.disabled = false; }
+      if (owner !== floatOwner) return;
+      // 읽음 구독이 먼저 도착해 다음 메시지가 올라와도 다음 항목을 지우지 않는다.
+      floatQueue = floatQueue.filter(function (n) { return n.id !== current.id; });
+      var nextTab = operatorFollowTab(current);
+      if (nextTab) followNotification(current);
+      renderOperatorFloat();
+      return;
+    }
+    if (mode === 'open') {
+      floatQueue.forEach(rememberFloated);
+      floatQueue = [];
+      renderOperatorFloat();
+      window.gpOpenNotificationCenter(null, true);
+      return;
+    }
+    rememberFloated(current);
+    floatQueue.shift();
+    if (mode === 'ack') {
+      var tab = operatorFollowTab(current);
+      markNotificationRead(current);
+      if (tab) {
+        floatQueue.forEach(rememberFloated);
+        floatQueue = [];
+        followNotification(current);
+      }
+    }
+    renderOperatorFloat();
   }
   function renderNotifications() {
     ensureShell();
@@ -421,26 +629,58 @@
   window.gpSetRemoteNotifications = function (items) {
     remoteItems = Array.isArray(items) ? items : [];
     renderNotifications();
+    queueOperatorMessages();
+  };
+  // 실시간 구독(app-module.js)이 새로 들어온 알림만 넘길 때 쓴다 — 목록 전체를 다시 읽지 않는다.
+  window.gpUpsertRemoteNotifications = function (items) {
+    if (!Array.isArray(items) || !items.length) return;
+    items.forEach(function (item) {
+      var at = -1;
+      remoteItems.forEach(function (x, i) { if (String(x.id) === String(item.id)) at = i; });
+      if (at >= 0) remoteItems[at] = item;
+      else remoteItems.push(item);
+    });
+    renderNotifications();
+    queueOperatorMessages();
   };
   window.gpRenderNotifications = renderNotifications;
+  window.gpRemoveRemoteNotifications = function (ids) {
+    remoteItems = remoteItems.filter(function (n) { return ids.indexOf(String(n.id)) === -1; });
+    renderNotifications();
+    queueOperatorMessages();
+  };
   window.gpUpdateNotificationBadge = updateBadge;
-  window.gpOpenNotificationCenter = function (event) {
+  function setBellExpanded(open) {
+    var bell = document.querySelector('.gp-lav-bell');
+    if (bell) bell.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open && bell) bell.classList.remove('is-ringing');
+  }
+  window.gpOpenNotificationCenter = function (event, forceOpen) {
     if (event && event.stopPropagation) event.stopPropagation();
     ensureShell();
     var panel = $('gpNotificationPanel');
     if (!panel) return;
-    panel.hidden = !panel.hidden;
+    panel.hidden = forceOpen ? false : !panel.hidden;
+    setBellExpanded(!panel.hidden);
+    if (!panel.hidden && floatQueue.length) {
+      // 알림함에서 같은 메시지를 보게 되므로 플로팅은 접는다.
+      floatQueue.forEach(rememberFloated);
+      floatQueue = [];
+      renderOperatorFloat();
+    }
     if (!panel.hidden && typeof window.loadNotifications === 'function') window.loadNotifications();
     renderNotifications();
   };
   window.gpCloseNotificationCenter = function () {
     var panel = $('gpNotificationPanel');
     if (panel) panel.hidden = true;
+    setBellExpanded(false);
   };
   window.gpMarkAllNotificationsRead = function () {
     setLocalItems(getLocalItems().map(function (n) { n.read = true; return n; }));
     remoteItems.slice().forEach(function (n) { if (!n.read && window.markRead) window.markRead(n.id); n.read = true; });
     renderNotifications();
+    queueOperatorMessages();
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { ensureShell(); renderNotifications(); });

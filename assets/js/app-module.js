@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged, reauthenticateWithPopup, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, orderBy, query, where, limit, startAfter, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, onSnapshot, orderBy, query, where, limit, startAfter, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { compactPageNumbers, paginateItems } from './board-pagination.js';
 
 // XSS 방어: 사용자 입력이 innerHTML에 들어갈 때 escape 필수
@@ -290,6 +290,7 @@ onAuthStateChanged(auth, async u =>{
   if (window.gpSessionSecurity) window.gpSessionSecurity.bindUser('');
   CU = null; window.CU = null;
   window.gpUserDataReady = false;
+  stopNotificationWatch();
   if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications([]);
   if (window.GP_REQUESTED_APP_SCREEN === 'login') {
    showScreen('login');
@@ -403,6 +404,7 @@ async function loadUser(u) {
   window.gpUserDataReady = true;
   updateCreditUI();
  window.updateNotifBadge(u.uid);
+ startNotificationWatch(u.uid);
  setTimeout(() => { if (typeof window.loadSidebarHistory === 'function') window.loadSidebarHistory(); }, 300);
  // 저장 실패로 localStorage에 백업된 기록이 있으면 로그인·데이터 로드 후 자동 재시도.
  setTimeout(() => { if (typeof window.flushPendingHistory === 'function') window.flushPendingHistory(); }, 1200);
@@ -3471,8 +3473,10 @@ window.loadNotifications = async () =>{
   return;
  }
  const el = document.getElementById('notifList');
+ const ownerUid = CU.uid;
  try {
- const snap = await getDocs(query(collection(db,'users',CU.uid,'notifications'),orderBy('createdAt','desc')));
+ const snap = await getDocs(query(collection(db,'users',ownerUid,'notifications'),orderBy('createdAt','desc')));
+ if (!CU || CU.uid !== ownerUid) return;
  const items = snap.docs.map(notifFromDoc);
  if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications(items);
  if (!el) return;
@@ -3528,6 +3532,7 @@ window.updateNotifBadge = async (uid) =>{
  if (!CU || CU.uid !== uid) return;
  try {
  const snap = await getDocs(query(collection(db,'users',CU.uid,'notifications')));
+ if (!CU || CU.uid !== uid) return;
  const items = snap.docs.map(notifFromDoc);
  if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications(items);
  else {
@@ -3538,6 +3543,32 @@ window.updateNotifBadge = async (uid) =>{
  }
  } catch(e) {}
 };
+
+// 운영팀이 보낸 알림이 로그인 중인 화면에 바로 뜨도록 안 읽은 알림만 실시간 구독한다.
+// 들어온 문서만 알림 센터에 합치고(목록 전체를 다시 읽지 않음), 플로팅 여부는 ui-feedback.js가 정한다.
+let notifWatchUnsub = null;
+function stopNotificationWatch() {
+ if (!notifWatchUnsub) return;
+ try { notifWatchUnsub(); } catch (_) {}
+ notifWatchUnsub = null;
+}
+function startNotificationWatch(uid) {
+ stopNotificationWatch();
+ if (!uid) return;
+ notifWatchUnsub = onSnapshot(
+  query(collection(db,'users',uid,'notifications'), where('read','==',false)),
+  snap => {
+   if (!CU || CU.uid !== uid) return;
+   const changed = snap.docChanges()
+    .filter(c => c.type === 'added' || c.type === 'modified')
+    .map(c => notifFromDoc(c.doc));
+   const removed = snap.docChanges().filter(c => c.type === 'removed').map(c => c.doc.id);
+   if (removed.length && window.gpRemoveRemoteNotifications) window.gpRemoveRemoteNotifications(removed);
+   if (changed.length && window.gpUpsertRemoteNotifications) window.gpUpsertRemoteNotifications(changed);
+  },
+  e => { console.log('알림 실시간 구독 오류:', e); }
+ );
+}
 
 window.toggleLike = async (postId) =>{
  if (blockClosedCommunity()) return;
@@ -7515,7 +7546,7 @@ window.adminNotifyAffected = async function() {
  if (!uids.length) { alert('알림 보낼 사용자를 선택하세요.'); return; }
  const defMsg = '재구성 작업 중 일시적 오류로 진행이 중단됐어요. 원인은 수정 완료됐고, 크레딧은 차감되지 않았습니다. 번거로우시겠지만 다시 시도해 주세요. 불편을 드려 죄송합니다.';
  const message = window.gpPrompt
-  ? await window.gpPrompt({ title: '영향 사용자 알림', message: `${uids.length}명에게 인앱 알림을 보냅니다.`, placeholder: '알림 메시지', defaultValue: defMsg, confirmText: '발송', required: true })
+  ? await window.gpPrompt({ title: '영향 사용자 알림', message: `${uids.length}명에게 인앱 알림을 보냅니다. 접속 중인 사용자에게는 화면에 바로 떠요.`, placeholder: '알림 메시지', defaultValue: defMsg, confirmText: '발송', required: true, variant: 'notify', rows: 8, maxLength: 500 })
   : prompt('알림 메시지', defMsg);
  if (!message || message.trim().length < 2) return;
  try {
@@ -7534,7 +7565,7 @@ window.adminNotifySelectedUser = async function() {
  const who = user.email || user.name || user.uid;
  const defMsg = '운영팀 안내입니다. 확인이 필요한 내용이 있어 알림을 보냈습니다.';
  const message = window.gpPrompt
-  ? await window.gpPrompt({ title: '사용자 알림', message: `${who} 사용자에게 인앱 알림을 보냅니다.`, placeholder: '알림 메시지', defaultValue: defMsg, confirmText: '발송', required: true })
+  ? await window.gpPrompt({ title: '사용자 알림', message: `${who} 사용자에게 인앱 알림을 보냅니다. 접속 중이면 화면에 바로 떠요.`, placeholder: '알림 메시지', defaultValue: defMsg, confirmText: '발송', required: true, variant: 'notify', rows: 8, maxLength: 500 })
   : prompt('알림 메시지', defMsg);
  if (!message || message.trim().length < 2) return;
  if (!window._adminSelectedUser || window._adminSelectedUser.uid !== user.uid) {
