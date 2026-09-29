@@ -3490,7 +3490,7 @@ window.loadNotifications = async () =>{
   ? "switchTab('"+jsAttr(requestedTab)+"')"
   : "";
  return '<button type="button" style="display:block;width:100%;text-align:left;background:var(--surface);border:1px solid '+borderColor+';border-radius:var(--rs);padding:14px;margin-bottom:8px;cursor:pointer;" onclick="gpOpenNotification(\''+jsAttr(n.id)+'\')">'
- +'<div style="font-size:13px;font-weight:'+fontWeight+';">'+escapeHtml(n.message)+'</div>'
+ +'<div style="font-size:13px;font-weight:'+fontWeight+';">'+escapeHtml(n.message.length > 220 ? n.message.slice(0, 220) + '…' : n.message)+'</div>'
  +'<div style="font-size:12px;color:var(--text3);margin-top:4px;">'+date+'</div></button>';
  };
  // markRead가 재렌더해도 펼침 상태(_notifShowAll)는 유지된다
@@ -7546,7 +7546,7 @@ window.adminNotifyAffected = async function() {
  if (!uids.length) { alert('알림 보낼 사용자를 선택하세요.'); return; }
  const defMsg = '재구성 작업 중 일시적 오류로 진행이 중단됐어요. 원인은 수정 완료됐고, 크레딧은 차감되지 않았습니다. 번거로우시겠지만 다시 시도해 주세요. 불편을 드려 죄송합니다.';
  const message = window.gpPrompt
-  ? await window.gpPrompt({ title: '영향 사용자 알림', message: `${uids.length}명에게 인앱 알림을 보냅니다. 접속 중인 사용자에게는 화면에 바로 떠요.`, placeholder: '알림 메시지', defaultValue: defMsg, confirmText: '발송', required: true, variant: 'notify', rows: 8, maxLength: 500 })
+  ? await window.gpPrompt({ title: '영향 사용자 알림', message: `${uids.length}명에게 인앱 알림을 보냅니다. 긴 글은 상세 보기에서 전체 내용을 확인할 수 있어요.`, placeholder: '알림 메시지', defaultValue: defMsg, confirmText: '발송', required: true, variant: 'notify', rows: 12, maxLength: 50000 })
   : prompt('알림 메시지', defMsg);
  if (!message || message.trim().length < 2) return;
  try {
@@ -7565,7 +7565,7 @@ window.adminNotifySelectedUser = async function() {
  const who = user.email || user.name || user.uid;
  const defMsg = '운영팀 안내입니다. 확인이 필요한 내용이 있어 알림을 보냈습니다.';
  const message = window.gpPrompt
-  ? await window.gpPrompt({ title: '사용자 알림', message: `${who} 사용자에게 인앱 알림을 보냅니다. 접속 중이면 화면에 바로 떠요.`, placeholder: '알림 메시지', defaultValue: defMsg, confirmText: '발송', required: true, variant: 'notify', rows: 8, maxLength: 500 })
+  ? await window.gpPrompt({ title: '사용자 알림', message: `${who} 사용자에게 인앱 알림을 보냅니다. 긴 글은 상세 보기에서 전체 내용을 확인할 수 있어요.`, placeholder: '알림 메시지', defaultValue: defMsg, confirmText: '발송', required: true, variant: 'notify', rows: 12, maxLength: 50000 })
   : prompt('알림 메시지', defMsg);
  if (!message || message.trim().length < 2) return;
  if (!window._adminSelectedUser || window._adminSelectedUser.uid !== user.uid) {

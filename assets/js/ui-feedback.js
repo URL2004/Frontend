@@ -70,6 +70,7 @@
           '</div>' +
         '</div>' +
         '<div class="gp-dialog-actions">' +
+          '<button type="button" class="gp-dialog-cancel" id="gpDialogCopy" hidden>전체 복사</button>' +
           '<button type="button" class="gp-dialog-cancel" data-gp-dialog-cancel>취소</button>' +
           '<button type="button" class="gp-dialog-confirm" data-gp-dialog-confirm>확인</button>' +
         '</div>' +
@@ -251,6 +252,14 @@
     confirmBtn.textContent = opts.confirmText || (promptMode ? '입력 완료' : '확인');
     cancelBtn.textContent = opts.cancelText || '취소';
     cancelBtn.hidden = !!opts.hideCancel;
+    var copyBtn = $('gpDialogCopy');
+    copyBtn.hidden = opts.variant !== 'notification-detail';
+    copyBtn.onclick = async function () {
+      try {
+        await navigator.clipboard.writeText(opts.message || '');
+        toast('전체 내용을 복사했어요.', { type: 'success' });
+      } catch (e) { toast('복사하지 못했어요. 본문을 선택해 복사해 주세요.', { type: 'error' }); }
+    };
     promptWrap.hidden = !promptMode;
     if (promptMode) {
       promptInput.value = opts.defaultValue || '';
@@ -496,7 +505,7 @@
     $('gpOperatorFloatMeta').textContent = timeLabel(current.createdAt) +
       (floatQueue.length > 1 ? ' · ' + floatQueue.length + '개 중 1' : '');
     $('gpOperatorFloatTitle').textContent = current.title;
-    $('gpOperatorFloatMessage').textContent = current.message;
+    $('gpOperatorFloatMessage').textContent = notificationPreview(current.message);
     var ack = el.querySelector('[data-float-ack]');
     ack.textContent = operatorFollowTab(current)
       ? (isAnswer ? '답변 보기' : '바로 보기')
@@ -568,7 +577,7 @@
     list.innerHTML = items.map(function (n) {
       return '<button type="button" class="gp-notification-item' + (n.read ? '' : ' unread') + '" data-id="' + esc(n.id) + '" data-source="' + esc(n.source) + '">' +
         '<span class="material-symbols-outlined" aria-hidden="true">' + esc(iconForType(n.type)) + '</span>' +
-        '<span class="gp-notification-body"><b>' + esc(n.title) + '</b><em>' + esc(n.message) + '</em><small>' + esc(timeLabel(n.createdAt)) + '</small></span>' +
+        '<span class="gp-notification-body"><b>' + esc(n.title) + '</b><em>' + esc(notificationPreview(n.message)) + '</em><small>' + esc(timeLabel(n.createdAt)) + '</small></span>' +
       '</button>';
     }).join('');
     list.querySelectorAll('.gp-notification-item').forEach(function (btn) {
@@ -582,7 +591,7 @@
   async function openNotificationDetail(n) {
     window.gpCloseNotificationCenter();
     var action = n.action || {};
-    var canFollow = !!action.tab && action.tab !== 'community' && action.tab !== 'mypage' && !n.postId;
+    var canFollow = !!action.tab && !['community', 'mypage', 'main'].includes(action.tab) && !n.postId;
     var result = openDialog({
       variant: 'notification-detail', title: n.title || '알림', message: n.message,
       note: timeLabel(n.createdAt), confirmText: canFollow ? '관련 화면 보기' : '닫기',
@@ -596,6 +605,10 @@
     var n = combinedItems().find(function (item) { return item.id === notificationId; });
     if (n) return openNotificationDetail(n);
   };
+  function notificationPreview(message) {
+    var text = String(message || '');
+    return text.length > 220 ? text.slice(0, 220) + '…' : text;
+  }
   async function markNotificationRead(n) {
     if (n.read) return;
     if (n.source === 'local') {

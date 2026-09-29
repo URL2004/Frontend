@@ -66,17 +66,19 @@ test('운영팀 메시지는 실시간으로 받아 기기마다 한 번 플로�
   assert.match(feedback, /var floatMaxAgeMs = 7 \* 86400000;/u);
   assert.match(feedback, /floatKeyPrefix \+ uid/u);
   // 메시지 본문은 textContent로만 넣는다.
-  assert.match(feedback, /\$\('gpOperatorFloatMessage'\)\.textContent = current\.message;/u);
+  assert.match(feedback, /\$\('gpOperatorFloatMessage'\)\.textContent = notificationPreview\(current\.message\);/u);
   assert.doesNotMatch(feedback, /gpOperatorFloatMessage'\)\.innerHTML/u);
 });
 
-test('관리자 알림 발송 모달은 넓은 입력창과 500자 카운터를 쓴다', async () => {
+test('관리자 장문 알림은 5만자 입력과 전체 복사, 제한된 미리보기를 제공한다', async () => {
   const [module, feedback, css] = await Promise.all([
     read('assets/js/app-module.js'), read('assets/js/ui-feedback.js'), read('assets/css/redesign.css')
   ]);
   const prompts = module.match(/gpPrompt\(\{ title: '(?:영향 사용자 알림|사용자 알림)'[^\n]*/gu) || [];
   assert.equal(prompts.length, 2);
-  for (const call of prompts) assert.match(call, /variant: 'notify', rows: 8, maxLength: 500/u);
+  for (const call of prompts) assert.match(call, /variant: 'notify', rows: 12, maxLength: 50000/u);
   assert.match(feedback, /root\.classList\.toggle\('variant-notify', opts\.variant === 'notify'\)/u);
-  assert.match(css, /\.gp-dialog-root\.variant-notify \.gp-dialog-card\{width:min\(640px,100%\);/u);
+  assert.match(css, /\.gp-dialog-root\.variant-notify \.gp-dialog-card\{width:min\(840px,100%\);/u);
+  assert.match(feedback, /navigator.clipboard.writeText\(opts.message \|\| ''\)/u);
+  assert.match(feedback, /text.length > 220/u);
 });

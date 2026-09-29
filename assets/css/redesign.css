@@ -11168,7 +11168,7 @@ body[data-main-design="lavender"] .gp-notification-panel{border-radius:22px;}
 }
 
 /* 관리자 → 사용자 알림 발송 모달 */
-.gp-dialog-root.variant-notify .gp-dialog-card{width:min(640px,100%);padding:30px 30px 26px;}
+.gp-dialog-root.variant-notify .gp-dialog-card{width:min(840px,100%);padding:30px 30px 26px;}
 .gp-dialog-root.variant-notify .gp-dialog-card h2{font-size:23px;}
 .gp-dialog-root.variant-notify .gp-dialog-card p{font-size:15px;}
 .gp-dialog-root.variant-notify .gp-prompt-wrap textarea{min-height:220px;padding:16px 18px;font-size:16px;line-height:1.65;}
@@ -11204,6 +11204,10 @@ body[data-main-design="lavender"] .gp-dialog-root.variant-notify .gp-prompt-wrap
 }
 .gp-operator-float-icon svg{display:block;width:24px;height:24px;}
 .gp-dialog-root.variant-notification-detail .gp-dialog-card{width:min(840px,100%);padding:36px;}
+.gp-dialog-root.variant-notification-detail .gp-dialog-card{display:flex;flex-direction:column;max-height:calc(100dvh - 32px);overflow:hidden;}
+.gp-dialog-root.variant-notification-detail .gp-dialog-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:8px;}
+.gp-dialog-root.variant-notification-detail .gp-dialog-actions{flex-shrink:0;}
+#gpDialogCopy[hidden]{display:none!important;}
 .gp-dialog-root.variant-notification-detail .gp-dialog-card h2{font-size:24px;line-height:1.4;}
 .gp-dialog-root.variant-notification-detail #gpDialogMessage{font-size:17px;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere;}
 .gp-dialog-root.variant-notification-detail .gp-dialog-icon svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
