@@ -4,6 +4,19 @@ import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
+test('알림 목록과 실시간 카드에서 큰 상세 모달을 열고 SVG 아이콘을 사용한다', async () => {
+  const [feedback, module, css] = await Promise.all([read('assets/js/ui-feedback.js'), read('assets/js/app-module.js'), read('assets/css/redesign.css')]);
+  assert.match(feedback, /openNotificationDetail\(n\)/u);
+  assert.match(feedback, /openNotificationDetail\(current\)/u);
+  assert.match(feedback, /variant: 'notification-detail'/u);
+  assert.match(feedback, /await window.markRead\(n.id\)/u);
+  assert.match(module, /onclick="gpOpenNotification/u);
+  assert.match(css, /variant-notification-detail[^\n]*680px/u);
+  assert.match(css, /#gpDialogMessage[^\n]*white-space:pre-wrap/u);
+  assert.match(feedback, /gp-operator-float-icon" aria-hidden="true"><svg/u);
+  assert.doesNotMatch(feedback, /gp-operator-float-icon material-symbols/u);
+});
+
 test('계정 전환·다른 탭 읽음 처리·지연 목록 응답을 분리한다', async () => {
   const [feedback, module] = await Promise.all([read('assets/js/ui-feedback.js'), read('assets/js/app-module.js')]);
   assert.match(feedback, /owner !== floatOwner[\s\S]*?floatQueue = \[\];[\s\S]*?floatShownIds = \{\}/u);

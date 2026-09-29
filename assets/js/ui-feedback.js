@@ -206,6 +206,10 @@
   }
   function renderDialogIcon(icon, opts, promptMode) {
     if (!icon) return;
+    if (opts.variant === 'notification-detail') {
+      icon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h6"/></svg>';
+      return;
+    }
     if (opts.variant === 'detect') {
       icon.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h10M4 10h7M4 15h5"/><circle cx="15.5" cy="14.5" r="4.5"/><path d="m19 18 2 2"/></svg>';
       return;
@@ -234,6 +238,7 @@
     root.classList.toggle('variant-detect', opts.variant === 'detect');
     root.classList.toggle('variant-purchase', opts.variant === 'purchase');
     root.classList.toggle('variant-notify', opts.variant === 'notify');
+    root.classList.toggle('variant-notification-detail', opts.variant === 'notification-detail');
     title.textContent = opts.title || (promptMode ? '내용을 입력해 주세요' : '내용을 확인해 주세요');
     message.textContent = opts.message || '';
     message.hidden = !message.textContent;
@@ -245,6 +250,7 @@
     note.hidden = !note.textContent;
     confirmBtn.textContent = opts.confirmText || (promptMode ? '입력 완료' : '확인');
     cancelBtn.textContent = opts.cancelText || '취소';
+    cancelBtn.hidden = !!opts.hideCancel;
     promptWrap.hidden = !promptMode;
     if (promptMode) {
       promptInput.value = opts.defaultValue || '';
@@ -446,7 +452,7 @@
     el.setAttribute('aria-labelledby', 'gpOperatorFloatTitle');
     el.innerHTML =
       '<div class="gp-operator-float-head">' +
-        '<span class="gp-operator-float-icon material-symbols-outlined" aria-hidden="true">campaign</span>' +
+        '<span class="gp-operator-float-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l10-4v14L8 15H4zM8 15l2 5h3l-2-4M21 9v6"/></svg></span>' +
         '<span class="gp-operator-float-label"><b id="gpOperatorFloatLabel"></b><small id="gpOperatorFloatMeta"></small></span>' +
         '<button type="button" class="gp-operator-float-x" data-float-close aria-label="메시지 닫기">' +
           '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>' +
@@ -455,7 +461,7 @@
       '<h3 id="gpOperatorFloatTitle"></h3>' +
       '<p id="gpOperatorFloatMessage"></p>' +
       '<div class="gp-operator-float-actions">' +
-        '<button type="button" class="gp-operator-float-secondary" data-float-open>알림함 보기</button>' +
+        '<button type="button" class="gp-operator-float-secondary" data-float-open>자세히 보기</button>' +
         '<button type="button" class="gp-operator-float-primary" data-float-ack></button>' +
       '</div>' +
       '<p class="sr-only" id="gpOperatorFloatLive" aria-live="polite"></p>';
@@ -533,7 +539,7 @@
       floatQueue.forEach(rememberFloated);
       floatQueue = [];
       renderOperatorFloat();
-      window.gpOpenNotificationCenter(null, true);
+      openNotificationDetail(current);
       return;
     }
     rememberFloated(current);
@@ -569,19 +575,35 @@
       btn.onclick = function () {
         var n = combinedItems().find(function (x) { return x.id === btn.getAttribute('data-id') && x.source === btn.getAttribute('data-source'); });
         if (!n) return;
-        markNotificationRead(n);
-        followNotification(n);
+        openNotificationDetail(n);
       };
     });
   }
-  function markNotificationRead(n) {
+  async function openNotificationDetail(n) {
+    window.gpCloseNotificationCenter();
+    var action = n.action || {};
+    var canFollow = !!action.tab && action.tab !== 'community' && !n.postId;
+    var result = openDialog({
+      variant: 'notification-detail', title: n.title || '알림', message: n.message,
+      note: timeLabel(n.createdAt), confirmText: canFollow ? '관련 화면 보기' : '닫기',
+      cancelText: '닫기', hideCancel: !canFollow
+    }, false);
+    try { await markNotificationRead(n); }
+    catch (e) { toast('읽음 처리에 실패했어요. 알림을 다시 열어 주세요.', { type: 'error' }); }
+    if (await result && canFollow) followNotification(n);
+  }
+  window.gpOpenNotification = function (notificationId) {
+    var n = combinedItems().find(function (item) { return item.id === notificationId; });
+    if (n) return openNotificationDetail(n);
+  };
+  async function markNotificationRead(n) {
     if (n.source === 'local') {
       setLocalItems(getLocalItems().map(function (x) {
         if ((x.clientId || x.id) === (n.clientId || n.id)) x.read = true;
         return x;
       }));
     } else if (window.markRead) {
-      try { window.markRead(n.id); } catch (e) {}
+      await window.markRead(n.id);
     }
     remoteItems = remoteItems.map(function (x) {
       if (String(x.id) === String(n.id)) x.read = true;

@@ -3489,9 +3489,9 @@ window.loadNotifications = async () =>{
  const action = !n.postId && requestedTab && requestedTab !== 'community'
   ? "switchTab('"+jsAttr(requestedTab)+"')"
   : "";
- return '<div style="background:var(--surface);border:1px solid '+borderColor+';border-radius:var(--rs);padding:14px;margin-bottom:8px;cursor:pointer;" onclick="markRead(\''+jsAttr(n.id)+'\');'+action+'">'
+ return '<button type="button" style="display:block;width:100%;text-align:left;background:var(--surface);border:1px solid '+borderColor+';border-radius:var(--rs);padding:14px;margin-bottom:8px;cursor:pointer;" onclick="gpOpenNotification(\''+jsAttr(n.id)+'\')">'
  +'<div style="font-size:13px;font-weight:'+fontWeight+';">'+escapeHtml(n.message)+'</div>'
- +'<div style="font-size:12px;color:var(--text3);margin-top:4px;">'+date+'</div></div>';
+ +'<div style="font-size:12px;color:var(--text3);margin-top:4px;">'+date+'</div></button>';
  };
  // markRead가 재렌더해도 펼침 상태(_notifShowAll)는 유지된다
  const showAll = window._notifShowAll === true;
