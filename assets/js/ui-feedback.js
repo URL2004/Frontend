@@ -582,7 +582,7 @@
   async function openNotificationDetail(n) {
     window.gpCloseNotificationCenter();
     var action = n.action || {};
-    var canFollow = !!action.tab && action.tab !== 'community' && !n.postId;
+    var canFollow = !!action.tab && action.tab !== 'community' && action.tab !== 'mypage' && !n.postId;
     var result = openDialog({
       variant: 'notification-detail', title: n.title || '알림', message: n.message,
       note: timeLabel(n.createdAt), confirmText: canFollow ? '관련 화면 보기' : '닫기',
@@ -597,6 +597,7 @@
     if (n) return openNotificationDetail(n);
   };
   async function markNotificationRead(n) {
+    if (n.read) return;
     if (n.source === 'local') {
       setLocalItems(getLocalItems().map(function (x) {
         if ((x.clientId || x.id) === (n.clientId || n.id)) x.read = true;

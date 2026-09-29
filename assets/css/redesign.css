@@ -11208,6 +11208,8 @@ body[data-main-design="lavender"] .gp-dialog-root.variant-notify .gp-prompt-wrap
 .gp-dialog-root.variant-notification-detail #gpDialogMessage{font-size:17px;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere;}
 .gp-dialog-root.variant-notification-detail .gp-dialog-icon svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .gp-dialog-root.variant-notification-detail .gp-dialog-cancel[hidden]{display:none!important;}
+.gp-dialog-root.variant-notification-detail .gp-dialog-actions{display:flex;gap:12px;flex-wrap:wrap;}
+.gp-dialog-root.variant-notification-detail .gp-dialog-actions button{width:auto;min-width:100px;min-height:46px;padding:12px 22px;white-space:nowrap;flex-shrink:0;}
 @media(max-width:600px){
  .gp-dialog-root.variant-notification-detail .gp-dialog-card{padding:24px 20px;}
  .gp-dialog-root.variant-notification-detail #gpDialogMessage{font-size:16px;}

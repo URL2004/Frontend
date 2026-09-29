@@ -10,6 +10,7 @@ test('알림 목록과 실시간 카드에서 큰 상세 모달을 열고 SVG �
   assert.match(feedback, /openNotificationDetail\(current\)/u);
   assert.match(feedback, /variant: 'notification-detail'/u);
   assert.match(feedback, /await window.markRead\(n.id\)/u);
+  assert.match(feedback, /async function markNotificationRead\(n\) \{\s*if \(n.read\) return;/u);
   assert.match(module, /onclick="gpOpenNotification/u);
   assert.match(css, /variant-notification-detail[^\n]*680px/u);
   assert.match(css, /#gpDialogMessage[^\n]*white-space:pre-wrap/u);
