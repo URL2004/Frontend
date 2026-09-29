@@ -11203,7 +11203,7 @@ body[data-main-design="lavender"] .gp-dialog-root.variant-notify .gp-prompt-wrap
  background:#efeefc;color:#6254cf;
 }
 .gp-operator-float-icon svg{display:block;width:24px;height:24px;}
-.gp-dialog-root.variant-notification-detail .gp-dialog-card{width:min(680px,100%);padding:32px;}
+.gp-dialog-root.variant-notification-detail .gp-dialog-card{width:min(840px,100%);padding:36px;}
 .gp-dialog-root.variant-notification-detail .gp-dialog-card h2{font-size:24px;line-height:1.4;}
 .gp-dialog-root.variant-notification-detail #gpDialogMessage{font-size:17px;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere;}
 .gp-dialog-root.variant-notification-detail .gp-dialog-icon svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
