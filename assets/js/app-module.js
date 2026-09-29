@@ -5534,15 +5534,15 @@ function adminSetGptRuntimeForm(cfg) {
  if (source) source.textContent = cfg.source || '-';
 
  adminGptSetValue('adminGptModelHumanizePrimary', models.humanizePrimary || 'gpt-6-luna');
- adminGptSetValue('adminGptModelHumanizeEscalation', models.humanizeEscalation || 'gpt-6-sol');
+ adminGptSetValue('adminGptModelHumanizeEscalation', models.humanizeEscalation || 'gpt-6.1-sol');
  adminGptSetValue('adminGptModelJudge', models.judge || 'gpt-6-luna');
- adminGptSetValue('adminGptModelJudgeEscalation', models.judgeEscalation || 'gpt-6-sol');
+ adminGptSetValue('adminGptModelJudgeEscalation', models.judgeEscalation || 'gpt-6.1-sol');
  adminGptSetValue('adminGptModelRepair', models.repair || 'gpt-6-luna');
  adminGptSetValue('adminGptModelClassify', models.classify || 'gpt-6-luna');
  adminGptSetValue('adminGptModelDetect', models.detect || 'gpt-6-luna');
- adminGptSetValue('adminGptModelDetectEscalation', models.detectEscalation || 'gpt-6-sol');
+ adminGptSetValue('adminGptModelDetectEscalation', models.detectEscalation || 'gpt-6.1-sol');
  adminGptSetValue('adminGptModelEvidenceSearch', models.evidenceSearch || 'gpt-6-luna');
- adminGptSetValue('adminGptModelEvidenceEscalation', models.evidenceEscalation || 'gpt-6-sol');
+ adminGptSetValue('adminGptModelEvidenceEscalation', models.evidenceEscalation || 'gpt-6.1-sol');
 
  adminGptSetValue('adminGptReasonHumanize', adminGptReasoning(reasoning.humanize, 'medium'));
  adminGptSetValue('adminGptReasonFactDense', adminGptReasoning(reasoning.factDense, 'high'));
@@ -5578,15 +5578,15 @@ function adminReadGptRuntimeForm() {
  return {
   models: {
    humanizePrimary: value('adminGptModelHumanizePrimary', 'gpt-6-luna'),
-   humanizeEscalation: value('adminGptModelHumanizeEscalation', 'gpt-6-sol'),
+   humanizeEscalation: value('adminGptModelHumanizeEscalation', 'gpt-6.1-sol'),
    judge: value('adminGptModelJudge', 'gpt-6-luna'),
-   judgeEscalation: value('adminGptModelJudgeEscalation', 'gpt-6-sol'),
+   judgeEscalation: value('adminGptModelJudgeEscalation', 'gpt-6.1-sol'),
    repair: value('adminGptModelRepair', 'gpt-6-luna'),
    classify: value('adminGptModelClassify', 'gpt-6-luna'),
    detect: value('adminGptModelDetect', 'gpt-6-luna'),
-   detectEscalation: value('adminGptModelDetectEscalation', 'gpt-6-sol'),
+   detectEscalation: value('adminGptModelDetectEscalation', 'gpt-6.1-sol'),
    evidenceSearch: value('adminGptModelEvidenceSearch', 'gpt-6-luna'),
-   evidenceEscalation: value('adminGptModelEvidenceEscalation', 'gpt-6-sol')
+   evidenceEscalation: value('adminGptModelEvidenceEscalation', 'gpt-6.1-sol')
   },
   reasoning: {
    humanize: value('adminGptReasonHumanize', 'medium'),

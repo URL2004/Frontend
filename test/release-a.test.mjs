@@ -419,12 +419,12 @@ test('관리자 GPT 설정은 Luna 기본·Sol 승격과 GPT-6 reasoning을 제�
   ]);
   const settings = admin.slice(admin.indexOf('data-admin-tab="settings"'));
   assert.match(settings, /id="adminGptModelHumanizePrimary"[\s\S]*?<option value="gpt-6-luna"/u);
-  assert.match(settings, /id="adminGptModelHumanizeEscalation"[\s\S]*?<option value="gpt-6-sol"/u);
+  assert.match(settings, /id="adminGptModelHumanizeEscalation"[\s\S]*?<option value="gpt-6.1-sol"/u);
   assert.match(settings, /품질 재심사 시 Sol 승격/u);
   assert.match(settings, /<option value="max">max<\/option>/u);
   assert.doesNotMatch(settings, /<option value="gpt-5\.4/u);
   assert.match(source, /humanizePrimary:\s*value\('adminGptModelHumanizePrimary', 'gpt-6-luna'\)/u);
-  assert.match(source, /humanizeEscalation:\s*value\('adminGptModelHumanizeEscalation', 'gpt-6-sol'\)/u);
+  assert.match(source, /humanizeEscalation:\s*value\('adminGptModelHumanizeEscalation', 'gpt-6.1-sol'\)/u);
   assert.match(source, /adminGptReasoningValues = \['none', 'low', 'medium', 'high', 'xhigh', 'max', 'default'\]/u);
   assert.doesNotMatch(source, /gpt-5\.4-(?:mini|nano)|gpt-5\.4'/u);
 });
