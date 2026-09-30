@@ -1,0 +1,17 @@
+{
+  "date": "2026-09-30",
+  "tool": "Built-in image_gen",
+  "format": "WebP, 1200px width, libwebp quality 82",
+  "images": [
+    {
+      "slug": "research-search-keywords-and-boolean",
+      "prompt": "Use case: stylized-concept. Asset: editorial cover for a Korean university guide about building literature search keywords. Create one wide 16:9 landscape illustration. A miniature sculptural library with three groups of thin standing books in lavender, muted teal, and terracotta; colored fine cords from the groups converge on a single open ivory index card at the center. Visually communicate connecting search concepts and discovering sources. Tactile paper-cut and matte ceramic editorial art, cream background, soft daylight, refined simple silhouettes, clean spacious arrangement. Main subject concentrated in center 65% width and middle 55% height to survive square and 2.4:1 crops. No readable text, letters, numerals, logos, watermark, magnifying glass, checkmarks or flowers. This is an illustration, not a website screenshot.",
+      "asset": "assets/img/blog/research-search-keywords-and-boolean.webp"
+    },
+    {
+      "slug": "research-methods-writing-guide",
+      "prompt": "Use case: stylized-concept. Asset: editorial cover for a Korean university writing guide about documenting research methods. Create one wide 16:9 landscape illustration. A carefully arranged miniature experimental workbench: three shallow circular ivory trays with distinct paper samples, a small muted coral caliper, a lavender ruler without numbers, and three stepped rectangular platforms connected by a single thin indigo route line to show an ordered procedure. Slightly elevated isometric viewpoint, tactile matte ceramic and folded paper materials, soft sunlight and gentle shadows, pale lilac background, indigo and apricot accents. Visually distinct from books or search imagery. Keep the key workbench objects centered within central 65% width and middle 55% height for 2.4:1 and square crops. No readable text, letters, numerals, logos, watermark, magnifying glass, checkmarks or flowers. Standalone editorial art, no UI.",
+      "asset": "assets/img/blog/research-methods-writing-guide.webp"
+    }
+  ]
+}
