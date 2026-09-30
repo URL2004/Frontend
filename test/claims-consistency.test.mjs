@@ -77,8 +77,8 @@ test('사용 가이드는 현재 작업 흐름·기능·단가와 직접 행동�
   assert.match(guide, /100자당 1크레딧/u);
   assert.match(guide, /최소 10 · 100자당 2/u);
   assert.match(guide, /5크레딧 단위 · 100~600크레딧/u);
-  assert.match(guide, /스타터는 5,900원에 기준 200크레딧을 지급하고 개강 이벤트는 0%라 총 200크레딧/u);
-  assert.match(guide, /다른 상품은 2026년 9월 30일까지 기준 크레딧의 5%를 이벤트 크레딧으로 더 드려요/u);
+  assert.match(guide, /스타터는 5,900원에 기준 200크레딧을 지급하고 가을 이벤트는 0%라 총 200크레딧/u);
+  assert.match(guide, /14,500원 스탠다드부터는 2026년 10월 31일까지 기준 크레딧의 10%를 이벤트 크레딧으로 더 드려요/u);
   assert.match(guide, /일반 요금제 3종\(스타터·스탠다드·프로\)과 대용량 요금제 2종\(맥스·팀·기관\)/u);
   assert.match(guide, /외부 탐지기 결과는 보장하지 않아요/u);
   assert.match(guide, /작업 기록/u);
@@ -162,17 +162,17 @@ test('가격·크레딧 수치는 단일 원천(conversion-flow PLANS)과 pricin
   assert.equal(plans.length, 4, 'PLANS 4종이어야 함');
   assert.deepEqual(plans, [
     { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 0, credits: 200 },
-    { amount: 14500, paidCredits: 500, packageBonusCredits: 125, eventBonusCredits: 25, credits: 650 },
-    { amount: 29000, paidCredits: 1000, packageBonusCredits: 350, eventBonusCredits: 50, credits: 1400 },
-    { amount: 58000, paidCredits: 2000, packageBonusCredits: 900, eventBonusCredits: 100, credits: 3000 }
+    { amount: 14500, paidCredits: 500, packageBonusCredits: 125, eventBonusCredits: 50, credits: 675 },
+    { amount: 29000, paidCredits: 1000, packageBonusCredits: 350, eventBonusCredits: 100, credits: 1450 },
+    { amount: 58000, paidCredits: 2000, packageBonusCredits: 900, eventBonusCredits: 200, credits: 3100 }
   ]);
-  assert.match(flow, /var INQUIRY_PLAN = \{ amount: 116000, paidCredits: 4000, packageBonusCredits: 2000, eventBonusCredits: 200, label: '팀·기관' \}/u);
-  assert.match(flow, /CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v4-202609'/u);
+  assert.match(flow, /var INQUIRY_PLAN = \{ amount: 116000, paidCredits: 4000, packageBonusCredits: 2000, eventBonusCredits: 400, label: '팀·기관' \}/u);
+  assert.match(flow, /CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v5-202610'/u);
   assert.doesNotMatch(flow, /amount: (?:2900|8700),/u, '종료 상품(2,900·8,700)이 결제 카탈로그에 재유입');
   assert.doesNotMatch(pricing, /payToss\((?:2900|8700|116000),/u, '종료 상품 또는 문의 전용 상품에 결제 버튼');
-  assert.match(pricing, /id="gpPlanInquiry"[^>]+data-plan-inquiry-amount="116000"[^>]+data-plan-paid="4000"[^>]+data-plan-package="2000"[^>]+data-plan-event="200"/u);
-  assert.match(pricing, /총 6,200 크레딧/u);
-  assert.match(landing, /116,000원<\/b><span>총 6,200크레딧/u);
+  assert.match(pricing, /id="gpPlanInquiry"[^>]+data-plan-inquiry-amount="116000"[^>]+data-plan-paid="4000"[^>]+data-plan-package="2000"[^>]+data-plan-event="400"/u);
+  assert.match(pricing, /총 6,400 크레딧/u);
+  assert.match(landing, /116,000원<\/b><span>총 6,400크레딧/u);
   for (const { amount, paidCredits, packageBonusCredits, eventBonusCredits, credits } of plans) {
     assert.equal(paidCredits + packageBonusCredits + eventBonusCredits, credits, `${amount} 지급량 합계 불일치`);
     assert.ok(pricing.includes(`payToss(${amount},${credits}`), `pricing.html payToss(${amount},${credits}) 부재`);

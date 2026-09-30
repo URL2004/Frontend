@@ -11948,6 +11948,58 @@ body[data-main-design="lavender"] .gp-dialog-root.variant-notify .gp-prompt-wrap
  #mainContent[data-main-design="lavender"] .gp-guide-credit-layout{grid-template-columns:minmax(340px,1fr) minmax(0,1fr);}
 }
 
+/* ───────── lavender v129: 10월 가을이 온다 이벤트 (2026-10-01) ─────────
+   충전 화면에서 이벤트가 한눈에 보이게 한다. 배너는 가을 톤(번트 오렌지)으로 브랜드 보라와 구분하고,
+   이벤트 대상 카드(14,500원부터) 머리에 칩을 붙인다. 칩·이벤트 행의 노출은 conversion-flow.js가
+   서버 오퍼로 다시 맞추고, 행사가 끝나면 배너·칩·이벤트 행이 함께 접힌다. */
+#mainContent[data-main-design="lavender"] .gp-pricing-event.is-autumn{
+ display:flex;align-items:center;justify-content:flex-start;gap:16px;
+ padding:16px 18px;border:1px solid #f4c9a3;border-radius:14px;
+ background:linear-gradient(120deg,#fff7ee 0%,#fff1e2 62%,#fde8d2 100%);
+ color:#3b2a1e;
+}
+#mainContent[data-main-design="lavender"] .gp-pricing-event.is-autumn .gp-pricing-event-rate{
+ flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ min-width:88px;padding:9px 12px;border-radius:12px;
+ background:#c2410c;color:#fff;
+ font-size:24px;font-weight:900;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+}
+#mainContent[data-main-design="lavender"] .gp-pricing-event.is-autumn .gp-pricing-event-rate small{
+ display:block;margin-bottom:4px;font-size:10.5px;font-weight:700;letter-spacing:0;line-height:1.2;
+}
+#mainContent[data-main-design="lavender"] .gp-pricing-event.is-autumn .gp-pricing-event-copy{flex:1 1 auto;min-width:0;}
+#mainContent[data-main-design="lavender"] .gp-pricing-event.is-autumn strong{
+ display:block;color:#9a3412;font-size:15px;white-space:normal;
+}
+#mainContent[data-main-design="lavender"] .gp-pricing-event.is-autumn span{
+ display:block;margin-top:4px;color:#5b4636;font-size:13.5px;
+}
+#mainContent[data-main-design="lavender"] .gp-pricing-event.is-autumn .gp-event-left{background:#ffe2c8;color:#9a3412;}
+#mainContent[data-main-design="lavender"] .gp-pricing-event.is-autumn .gp-event-left.is-urgent{background:#c2410c;color:#fff;}
+@media(max-width:700px){
+ #mainContent[data-main-design="lavender"] .gp-pricing-event.is-autumn{align-items:flex-start;gap:12px;padding:14px;}
+ #mainContent[data-main-design="lavender"] .gp-pricing-event.is-autumn .gp-pricing-event-rate{min-width:70px;padding:8px 9px;font-size:20px;}
+ #mainContent[data-main-design="lavender"] .gp-pricing-event.is-autumn .gp-pricing-event-rate small{font-size:10px;}
+}
+/* 카드 머리 칩: 상품명 옆에 붙이고, 오른쪽 배지(가성비 추천 등)와 겹치면 다음 줄로 내린다. */
+#mainContent[data-main-design="lavender"] #pricingContent .plan-hd-row{flex-wrap:wrap;justify-content:flex-start;gap:6px 8px;}
+#mainContent[data-main-design="lavender"] #pricingContent .gp-plan-event-chip{
+ display:inline-flex;align-items:center;padding:3px 9px;border:1px solid #f4c9a3;border-radius:999px;
+ background:#fff3e8;color:#9a3412;font-size:12px;font-weight:800;line-height:1.4;white-space:nowrap;
+}
+.gp-plan-event-chip[hidden]{display:none!important;}   /* inline-flex가 [hidden]을 덮는 반복 사고 가드 */
+/* 지급 구성의 이벤트 행도 같은 가을 톤으로 — 상시 보너스(보라)와 한눈에 구분된다. */
+#mainContent[data-main-design="lavender"] #pricingContent .plan-feats li.feat-event strong{color:#c2410c;}
+#mainContent[data-main-design="lavender"] #pricingContent .plan-feats li.feat-event em{background:#fff1e4;color:#9a3412;font-style:normal;}
+/* 보너스 두 행이 라벨/값 두 줄로 갈라지던 문제: 5장 가로 배치 시절(v120 이전)의 1열 규칙이 남아 있었다.
+   지금은 한 묶음이 3장이라 폭이 충분하므로 기준 크레딧 행과 같이 라벨 왼쪽·값 오른쪽 한 줄로 맞춘다. */
+@media(min-width:1181px){
+ #mainContent[data-main-design="lavender"] #pricingContent .gp-plan-grid .plan-feats li:is(.feat-package,.feat-event){
+  grid-template-columns:minmax(0,1fr) auto !important;
+  align-items:center;
+ }
+}
+
 /* ===== lavender v116: AI 감지 보고서 · 실험실 리포트 (seed 26e340ec) =====
    구성: ① 히어로 카드(Before · 원형 게이지 · After) ② 네이비 계측 띠
         ③ 2단(문장별 분석 / 원인 레이더 + 개선 포인트) ④ 보라 그라디언트 전환 밴드

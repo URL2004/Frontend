@@ -12,7 +12,7 @@
 
   var DISMISS_KEY = 'gp_landing_dismissed_v1';
   var LOGIN_PENDING_KEY = 'gp_landing_login_pending_v1';
-  var CREDIT_EVENT_ENDS_AT_MS = Date.parse('2026-10-01T00:00:00+09:00');
+  var CREDIT_EVENT_ENDS_AT_MS = Date.parse('2026-11-01T00:00:00+09:00');
   var landingLoginPendingMemory = false;
 
   function syncLandingCreditEvent() {

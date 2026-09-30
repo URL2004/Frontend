@@ -86,7 +86,7 @@ test('가격표 카드는 가격→총 지급량→스타터 비교→기본 1,0
     read('assets/js/conversion-flow.js')
   ]);
   assert.equal((pricing.match(/data-plan-efficiency/gu) || []).length, 5, '카드마다 기준 금액 한 줄');
-  for (const value of [590, 446, 414, 387, 374]) assert.match(pricing, new RegExp(`기본 1,000자 1회<\\/span><strong>약 ${value}원`, 'u'));
+  for (const value of [590, 430, 400, 374, 363]) assert.match(pricing, new RegExp(`기본 1,000자 1회<\\/span><strong>약 ${value}원`, 'u'));
   // 5,900원 시작 상품은 상위 상품의 정수배가 아니므로 '같은 금액을 스타터 단가로 샀을 때' 대비 상시 지급량 차이로 비교한다.
   assert.match(pricing, /스타터 단가 대비<\/span><strong>기준 상품<\/strong>/u);
   assert.match(pricing, /스타터 단가 대비<\/span><strong>\+133 크레딧<\/strong>/u);
@@ -117,14 +117,14 @@ test('가격표 카드는 가격→총 지급량→스타터 비교→기본 1,0
   const appMain = await read('assets/js/app-main.js');
   assert.match(appMain, /window\.gpPrefillQuestion = gpPrefillQuestion;/u, '문의 사전입력 함수 노출');
   assert.match(appMain, /window\.gpInquiryPlanCreditsAt/u, '문의 사전입력은 가격 정책의 행사 경계를 재사용');
-  assert.doesNotMatch(appMain, /팀·기관 요금제\(116,000원 · 6,200크레딧\) 문의드려요/u, '행사 종료 후에도 6,200크레딧을 고정 약속하지 않음');
+  assert.doesNotMatch(appMain, /팀·기관 요금제\(116,000원 · 6,[24]00크레딧\) 문의드려요/u, '행사 종료 후에도 이벤트 포함 지급량을 고정 약속하지 않음');
   assert.equal((pricing.match(/aria-label="[^"]*기준 [^"]+총 [^"]+크레딧을 [^"]+원에 충전하기"/gu) || []).length, 4, '결제 버튼마다 기준·추가·총 지급량 맥락');
   assert.ok(pricing.indexOf('class="gp-coupon-panel"') > pricing.indexOf('id="gpPlanList"'), '쿠폰 입력은 가격 카드 다음 맨 아래');
   assert.doesNotMatch(pricing, /class="gp-top-actions"|class="pc-fx"|class="pc-tr/u, '중복 상단 버튼 또는 장식 트래커 재유입');
   assert.doesNotMatch(pricing, /class="plan-card[^"]*"[^>]+onclick=/u, '카드 전체 클릭 재유입');
 });
 
-test('팀·기관 문의 사전입력 지급량은 개강 이벤트 마감 즉시 6,200에서 6,000으로 바뀐다', async () => {
+test('팀·기관 문의 사전입력 지급량은 가을 이벤트 기간에만 6,400이고 앞뒤로는 6,000이다', async () => {
   const flow = await read('assets/js/conversion-flow.js');
   const window = {};
   vm.runInNewContext(flow, {
@@ -141,9 +141,12 @@ test('팀·기관 문의 사전입력 지급량은 개강 이벤트 마감 즉�
     clearTimeout() {}
   });
 
-  assert.equal(window.gpInquiryPlanCreditsAt(Date.parse('2026-09-30T23:59:59.999+09:00')), 6200);
-  assert.equal(window.gpInquiryPlanCreditsAt(Date.parse('2026-10-01T00:00:00+09:00')), 6000);
-  assert.equal(window.gpInquiryPlanCreditsAt(Date.parse('2026-10-01T00:00:00.001+09:00')), 6000);
+  // 9월 개강 이벤트(+5%)는 서버 일정표에만 남는다. 가격 화면 미러는 현재 행사만 안다.
+  assert.equal(window.gpInquiryPlanCreditsAt(Date.parse('2026-09-30T23:59:59.999+09:00')), 6000);
+  assert.equal(window.gpInquiryPlanCreditsAt(Date.parse('2026-10-01T00:00:00+09:00')), 6400);
+  assert.equal(window.gpInquiryPlanCreditsAt(Date.parse('2026-10-31T23:59:59.999+09:00')), 6400);
+  assert.equal(window.gpInquiryPlanCreditsAt(Date.parse('2026-11-01T00:00:00+09:00')), 6000);
+  assert.equal(window.gpInquiryPlanCreditsAt(Date.parse('2026-11-01T00:00:00.001+09:00')), 6000);
 });
 
 test('기간 이벤트 종료·서버 비활성화 시 상시 상품 보너스는 유지하고 이벤트만 제거한다', async () => {
@@ -154,13 +157,18 @@ test('기간 이벤트 종료·서버 비활성화 시 상시 상품 보너스�
     read('pages/landing.html'),
     read('assets/js/landing.js')
   ]);
-  assert.match(flow, /CREDIT_EVENT_ENDS_AT_MS = Date\.parse\('2026-10-01T00:00:00\+09:00'\)/u);
+  assert.match(flow, /CREDIT_EVENT_STARTS_AT_MS = Date\.parse\('2026-10-01T00:00:00\+09:00'\)/u);
+  assert.match(flow, /CREDIT_EVENT_ENDS_AT_MS = Date\.parse\('2026-11-01T00:00:00\+09:00'\)/u);
   assert.match(flow, /eventDeclaredInactive[\s\S]*?context\.creditEvent\.active === false/u);
   assert.match(flow, /eventPanel\.hidden = !anyEvent/u);
   assert.match(flow, /eventRow\.hidden = !anyEvent/u, '행사 중에는 스타터 0% 행도 보이고 종료 후에는 모든 이벤트 행을 숨긴다');
   assert.match(flow, /plan\.amount === 5900 \|\| eventDeclaredInactive \? 0/u, '구형 서버 응답도 스타터 이벤트를 되살리지 않는다');
   assert.match(flow, /if \(plan\.amount === 5900 \|\| eventDeclaredInactive\) total = paid \+ packageBonus/u);
-  assert.match(flow, /if \(anyEvent\) parts\.push\('개강 이벤트 ' \+ format\(plan\.eventBonusCredits\) \+ '크레딧'\)/u, '행사 중 스타터 aria-label에도 0크레딧을 명시한다');
+  assert.match(flow, /if \(anyEvent\) parts\.push\('가을 이벤트 ' \+ format\(plan\.eventBonusCredits\) \+ '크레딧'\)/u, '행사 중 스타터 aria-label에도 0크레딧을 명시한다');
+  // 카드 머리 이벤트 칩도 서버 오퍼 기준으로 켜고 끈다(스타터·행사 종료 시 숨김).
+  assert.match(flow, /function syncPlanEventChip\(card, eventBonus, paidCredits\)/u);
+  assert.match(flow, /syncPlanEventChip\(card, plan\.eventBonusCredits, plan\.paidCredits\)/u);
+  assert.match(flow, /syncPlanEventChip\(card, eventBonus, paid\)/u, '문의 전용 카드 칩도 행사 종료를 따라간다');
   assert.match(flow, /window\.gpCreditOfferForAmount = async function/u);
   assert.equal((pricing.match(/data-plan-amount="\d+"/gu) || []).length, 4, '서버 오퍼를 덮어쓸 상품 키 4개(문의 전용 제외)');
   assert.match(flow, /function syncInquiryCard\(eventActive\)/u, '문의 전용 카드도 이벤트 종료를 따라간다');
@@ -188,7 +196,7 @@ test('직접 충전 확인창은 금액·지급 구성·환불 기준을 구조�
   assert.match(main, /label:\s*'결제 금액'/u);
   assert.match(main, /label:\s*'기준 크레딧'/u);
   assert.match(main, /label:\s*'상품 보너스'/u);
-  assert.match(main, /label:\s*'개강 이벤트 추가'/u);
+  assert.match(main, /label:\s*'가을 이벤트 추가'/u);
   assert.match(main, /label:\s*'총 지급'[\s\S]{0,80}?emphasis:\s*true/u);
   assert.match(main, /safeText:/u);
   assert.match(main, /note:\s*refundNotice/u);

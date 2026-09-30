@@ -1914,9 +1914,10 @@ function maintenancePreviewQuery() {
 }
 
 const CREDIT_GRANT_POLICY_VERSION = 'credit-grant-base-v1';
-const CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v4-202609';
-const CREDIT_EVENT_LOCAL_START_MS = Date.parse('2026-08-29T00:00:00+09:00');
-const CREDIT_EVENT_LOCAL_END_MS = Date.parse('2026-10-01T00:00:00+09:00');
+const CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v5-202610';
+// 10월 가을이 온다 이벤트: 14,500원 스탠다드부터 기준 크레딧 +10%(스타터 제외).
+const CREDIT_EVENT_LOCAL_START_MS = Date.parse('2026-10-01T00:00:00+09:00');
+const CREDIT_EVENT_LOCAL_END_MS = Date.parse('2026-11-01T00:00:00+09:00');
 function localCreditEventProduct(paidCredits, packageBonusCredits, configuredEventBonusCredits) {
  const now = Date.now();
  const eventActive = now >= CREDIT_EVENT_LOCAL_START_MS && now < CREDIT_EVENT_LOCAL_END_MS;
@@ -1932,9 +1933,9 @@ function localCreditEventProduct(paidCredits, packageBonusCredits, configuredEve
 }
 const CREDIT_EVENT_PRODUCTS = {
  5900: localCreditEventProduct(200, 0, 0),
- 14500: localCreditEventProduct(500, 125, 25),
- 29000: localCreditEventProduct(1000, 350, 50),
- 58000: localCreditEventProduct(2000, 900, 100)
+ 14500: localCreditEventProduct(500, 125, 50),
+ 29000: localCreditEventProduct(1000, 350, 100),
+ 58000: localCreditEventProduct(2000, 900, 200)
 };
 
 async function payToss(amount, credits, name, plan, checkoutOptions) {
@@ -1965,7 +1966,7 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
     if (currentOffer && Number(currentOffer.paidCredits) > 0) {
      const paidCredits = Number(currentOffer.paidCredits);
      const packageBonusCredits = Math.max(0, Number(currentOffer.packageBonusCredits) || 0);
-     // v4에서 스타터는 개강 이벤트 0%다. 전환 중 구형 응답이 남아도 결제 확인값은 200으로 고정한다.
+     // v4부터 스타터는 기간 이벤트 0%다. 전환 중 구형 응답이 남아도 결제 확인값은 200으로 고정한다.
      const eventBonusCredits = Number(amount) === 5900 ? 0 : Math.max(0, Number(currentOffer.eventBonusCredits) || 0);
      const computedTotal = paidCredits + packageBonusCredits + eventBonusCredits;
      const offeredTotal = Number(amount) === 5900
@@ -1995,11 +1996,11 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
    { label: '기준 크레딧', value: Number(paidCredits).toLocaleString('ko-KR') + '크레딧' }
   ];
   if (packageCredits > 0) purchaseSummary.push({ label: '상품 보너스', value: '+' + Number(packageCredits).toLocaleString('ko-KR') + '크레딧' });
-  if (eventCredits > 0) purchaseSummary.push({ label: '개강 이벤트 추가', value: '+' + Number(eventCredits).toLocaleString('ko-KR') + '크레딧' });
+  if (eventCredits > 0) purchaseSummary.push({ label: '가을 이벤트 추가', value: '+' + Number(eventCredits).toLocaleString('ko-KR') + '크레딧' });
   purchaseSummary.push({ label: '총 지급', value: Number(shownCredits).toLocaleString('ko-KR') + '크레딧', emphasis: true });
   const refundNotice = '잔액은 기존 잔액, 오래된 주문, 각 주문의 기준·추가 크레딧 순으로 사용해요. 환불액은 신청 시 남은 기준 크레딧으로 계산하고, 같은 주문의 남은 추가 크레딧은 함께 회수해요. 일반 청약철회는 계약 내용을 받은 날(이용 가능 시점이 더 늦으면 그날)부터 7일 이내이며, 7일이 지나도 법정 예외는 별도로 처리해요.';
   const eventNotice = eventCredits > 0
-   ? '9월 개강 이벤트 크레딧은 2026년 9월 30일까지 결제 요청분에 추가돼요. '
+   ? '10월 가을이 온다 이벤트 크레딧은 2026년 10월 31일까지 결제 요청분에 추가돼요. '
    : '';
   const confirmMsg = `${Number(shownCredits).toLocaleString('ko-KR')}크레딧을 ${Number(amount).toLocaleString('ko-KR')}원에 구매할까요?\n${eventNotice}지급된 크레딧은 유효기간이 없어요.\n${refundNotice}`;
  const buyOk = checkoutOptions.skipConfirm === true
@@ -2193,7 +2194,7 @@ function showPolicy(type) {
 1. 크레딧은 유료 결제 또는 무료 지급을 통해 획득할 수 있습니다.
 2. 결제는 토스페이먼츠를 통해 이루어집니다.
 3. 유료로 충전한 기준 크레딧과 상품 보너스·결제 이벤트로 추가 지급된 크레딧은 유효기간 없이 사용할 수 있습니다.
-4. 상품별 상시 보너스는 결제 시 함께 지급하며, 2026년 9월 30일까지 결제 요청분에는 기준 크레딧의 5%를 이벤트 크레딧으로 추가 지급합니다.
+4. 상품별 상시 보너스는 결제 시 함께 지급하며, 2026년 10월 1일부터 10월 31일까지 결제 요청분 중 14,500원 이상 상품에는 기준 크레딧의 10%를 이벤트 크레딧으로 추가 지급합니다.
 5. 일반 청약철회는 서면 또는 전자문서로 계약 내용을 받은 날부터 7일 이내에 신청할 수 있습니다. 다만 크레딧을 사용할 수 있게 된 시점이 그보다 늦으면 그날부터 기간을 계산합니다.
 6. 크레딧은 주문에 귀속되지 않은 기존 잔액, 결제 시점이 오래된 주문 순으로 사용합니다. 각 주문 안에서는 결제금액에 해당하는 기준 크레딧을 먼저 사용하고, 그 다음 상품 보너스·이벤트 추가 크레딧을 사용합니다.
 7. 일반 환불액은 해당 주문의 결제금액에 신청 접수 시점의 남은 기준 크레딧 비율을 곱해 계산합니다. 별도 결제대가 없이 지급된 상품 보너스·이벤트 추가 크레딧에는 독립된 현금 환불액을 계산하지 않으며, 환불이 완료되면 같은 주문에 남은 기준·추가 크레딧을 함께 회수합니다.

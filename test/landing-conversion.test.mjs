@@ -264,17 +264,17 @@ test('충전 사다리는 기준·상품 보너스·기간 이벤트 지급량�
   ]);
   assert.match(pricing, /payToss\(5900,200,/u);
   assert.match(pricing, /총 200 크레딧/u);
-  assert.match(pricing, /개강 이벤트 <em>\(0%\)<\/em><\/span><strong>\+0<\/strong>/u);
-  assert.match(pricing, /aria-label="기준 200크레딧, 9월 개강 이벤트 0크레딧, 총 200크레딧을 5,900원에 충전하기"/u);
+  assert.match(pricing, /가을 이벤트 <em>\(0%\)<\/em><\/span><strong>\+0<\/strong>/u);
+  assert.match(pricing, /aria-label="기준 200크레딧, 가을 이벤트 0크레딧, 총 200크레딧을 5,900원에 충전하기"/u);
   assert.match(flow, /\{ amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 0, credits: 200, label: '스타터' \}/u);
-  assert.match(flow, /CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v4-202609'/u);
+  assert.match(flow, /CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v5-202610'/u);
   assert.match(landing, /data-event-credits="0"><b>5,900원<\/b><span>총 200크레딧/u);
   assert.doesNotMatch(`${pricing}\n${landing}\n${flow}`, /payToss\((?:2900|8700),|2,900원<\/b>|8,700원<\/b>|label: '라이트'/u, '종료 상품(2,900·8,700) 결제 진입 재유입');
   assert.ok(!pricing.includes('plan-discount'), '할인율 배지 재유입');
   assert.match(pricing, /기본 1,000자 1회<\/span><strong>약 590원/u);
 });
 
-test('가격 카드는 스타터 0%와 다른 상품 5% 기간 이벤트를 분리해 표시한다', async () => {
+test('가격 카드는 스타터 0%와 14,500원부터 10% 가을 이벤트를 분리해 표시한다', async () => {
   const [pricing, landing, flow, modals, css] = await Promise.all([
     read('pages/pricing.html'),
     read('pages/landing.html'),
@@ -282,13 +282,21 @@ test('가격 카드는 스타터 0%와 다른 상품 5% 기간 이벤트를 분�
     read('partials/modals.html'),
     read('assets/css/redesign.css')
   ]);
-  const rates = [...pricing.matchAll(/개강 이벤트 <em>\(\+?(\d+)%\)<\/em>/gu)].map((m) => Number(m[1]));
-  assert.deepEqual(rates, [0, 5, 5, 5, 5]);
-  assert.match(pricing, /스타터는 이벤트 추가 0%, 스탠다드·프로·맥스·팀·기관은 기준 크레딧의 5%/u);
-  // 개강 이벤트 명칭은 결제 동선(충전·랜딩·결제창) 전체에서 같아야 한다
-  assert.match(pricing, /9월 개강 추가 크레딧 이벤트 · 2026년 9월 30일까지/u);
-  assert.match(landing, /9월 개강 추가 크레딧 이벤트 · 2026년 9월 30일까지/u);
-  assert.match(modals, /<dt>개강 이벤트 추가<\/dt>/u);
+  const rates = [...pricing.matchAll(/가을 이벤트 <em>\(\+?(\d+)%\)<\/em>/gu)].map((m) => Number(m[1]));
+  assert.deepEqual(rates, [0, 10, 10, 10, 10]);
+  assert.match(pricing, /14,500원 스탠다드부터 프로·맥스·팀·기관까지 기준 크레딧의 10%를 더 드려요\. 스타터는 이벤트 추가 0%/u);
+  // 이벤트 명칭은 결제 동선(충전·랜딩·결제창) 전체에서 같아야 한다
+  assert.match(pricing, /10월 가을이 온다 이벤트 · 2026년 10월 31일까지/u);
+  assert.match(landing, /10월 가을이 온다 이벤트 · 2026년 10월 31일까지/u);
+  assert.match(modals, /<dt>가을 이벤트 추가<\/dt>/u);
+  assert.doesNotMatch(`${pricing}\n${landing}\n${modals}`, /개강 이벤트|9월 30일까지/u, '종료된 9월 개강 이벤트 문구 잔존');
+  // 충전 화면 강조: 가을 톤 배너(+10%)와 이벤트 대상 카드 4장(14,500원부터)의 머리 칩
+  assert.match(pricing, /class="gp-pricing-event is-autumn"/u);
+  assert.match(pricing, /class="gp-pricing-event-rate" aria-hidden="true"><small>기준 크레딧<\/small>\+10%<\/b>/u);
+  const chipAmounts = [...pricing.matchAll(/data-plan-(?:inquiry-)?amount="(\d+)"[^>]*>[\s\S]*?<div class="plan-hd-row">([\s\S]*?)<\/div>/gu)]
+    .filter((m) => m[2].includes('gp-plan-event-chip')).map((m) => Number(m[1]));
+  assert.deepEqual(chipAmounts, [14500, 29000, 58000, 116000], '스타터에는 이벤트 칩을 달지 않는다');
+  assert.match(css, /\.gp-plan-event-chip\[hidden\]\{display:none!important;\}/u);
   // 남은 기간 배지 — 마감이 실제로 있는 행사라 표기는 정직해야 하고,
   // 한 달 앞에서 초를 째깍이면 가짜 타이머로 읽히므로 단위는 일 → 시·분까지만 내려간다.
   assert.match(pricing, /id="gpCreditEventLeft"/u);
@@ -301,6 +309,7 @@ test('가격 카드는 스타터 0%와 다른 상품 5% 기간 이벤트를 분�
   assert.match(flow, /kstDayIndex\(endsAtMs - 1\) - kstDayIndex\(nowMs\)/u);
   assert.match(css, /\.gp-event-left\[hidden\]\{display:none!important;\}/u);
   assert.deepEqual([...pricing.matchAll(/class="feat-package"[^>]*>[\s\S]*?<strong>\+([\d,]+)<\/strong>/gu)].map((m) => Number(m[1].replace(/,/g, ''))), [0, 125, 350, 900, 2000]);
+  assert.deepEqual([...pricing.matchAll(/class="feat-event"[^>]*>[\s\S]*?<strong>\+([\d,]+)<\/strong>/gu)].map((m) => Number(m[1].replace(/,/g, ''))), [0, 50, 100, 200, 400]);
   // 보너스 두 행 강조는 실제 마크업 클래스에 걸려 있어야 한다(.feat-bonus만 잡으면 죽은 규칙이 된다)
   assert.match(css, /\.plan-feats li:is\(\.feat-bonus,\.feat-package,\.feat-event\) strong\{color:#4b4cc6;\}/u);
   // 버튼 위계: 스탠다드만 채운 보라로 남기고 나머지는 보조 버튼으로 낮춘다.
@@ -316,7 +325,7 @@ test('가격 카드는 스타터 0%와 다른 상품 5% 기간 이벤트를 분�
     assert.match(pricing, new RegExp(`data-plan-total-for="${amount}"`, 'u'), `${amount} 총 크레딧 훅 부재`);
   }
   for (const surface of [pricing, landing, flow, modals]) {
-    assert.match(surface, /2026년 9월 30일까지/u);
+    assert.match(surface, /2026년 10월 31일까지/u);
     assert.doesNotMatch(surface, /첫 구매|첫 결제|firstPurchase|firstBonus/u);
   }
   assert.ok(!pricing.includes('나눠 사면'), '분할 비교 문구 재유입');

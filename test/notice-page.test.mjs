@@ -15,6 +15,41 @@ test('격식체 재작성은 공지별 수치와 적용 조건을 보존한다',
  const source = await read('assets/js/app-module.js');
  const context = noticeContext(source);
  const expectedNumbers = {
+ "autumn-credit-event-20261001": [
+  "1",
+  "10",
+  "10",
+  "10",
+  "10",
+  "10",
+  "100",
+  "1000",
+  "116000",
+  "125",
+  "1450",
+  "14500",
+  "14500",
+  "200",
+  "200",
+  "2000",
+  "2000",
+  "2026",
+  "23",
+  "29000",
+  "31",
+  "3100",
+  "350",
+  "400",
+  "4000",
+  "50",
+  "500",
+  "58000",
+  "59",
+  "5900",
+  "6400",
+  "675",
+  "900"
+ ],
  "humanize-paragraph-update-20260920": [],
  "humanize-meaning-naturalness-20260920": [],
  "detect-report-update-20260906": [
@@ -137,10 +172,15 @@ test('격식체 재작성은 공지별 수치와 적용 조건을 보존한다',
   "0",
   "0",
   "0",
+  "10",
+  "10",
+  "10",
+  "10",
   "100",
   "1000",
   "125",
-  "1400",
+  "1450",
+  "14500",
   "200",
   "200",
   "200",
@@ -148,21 +188,16 @@ test('격식체 재작성은 공지별 수치와 적용 조건을 보존한다',
   "2000",
   "2026",
   "23",
-  "25",
-  "30",
-  "3000",
+  "31",
+  "3100",
   "350",
+  "400",
   "4000",
-  "5",
   "50",
   "500",
   "59",
-  "6200",
-  "650",
-  "9",
-  "9",
-  "9",
-  "9",
+  "6400",
+  "675",
   "900"
  ],
  "refund-standard-20260830": [
@@ -240,7 +275,7 @@ test('격식체 재작성은 공지별 수치와 적용 조건을 보존한다',
  "humanize-quality-20260326": [],
  "payment-open-20260401": []
 };
- assert.equal(context.items.length, 26);
+ assert.equal(context.items.length, 27);
  for (const item of context.items) {
   const actual = ( (item.title + '\n' + item.body).match(/\d[\d,]*(?:\.\d+)?/gu) || [] ).map(n => n.replaceAll(',', '')).sort();
   assert.deepEqual(actual, expectedNumbers[item.id], item.id + ': 날짜·시간·금액·크레딧 보존');
@@ -252,6 +287,9 @@ test('격식체 재작성은 공지별 수치와 적용 조건을 보존한다',
  assert.match(find('signup-credit-20-20260902'), /기존 계정[\s\S]*소급해 지급하지 않습니다/);
  assert.match(find('signup-credit-20-20260902'), /기존 잔액과 결제·초대[\s\S]*그대로 유지/);
  assert.match(find('paid-credit-no-expiry-20260829'), /결제 확인 요청[\s\S]*한국 시간[\s\S]*서버에 접수된 주문/);
+ assert.match(find('autumn-credit-event-20261001'), /2026년 10월 1일부터 10월 31일 23시 59분\(한국 시간\)까지 결제 확인 요청이 서버에 접수된 주문/);
+ assert.match(find('autumn-credit-event-20261001'), /스타터\(5,900원\)는 이벤트 대상이 아니며/);
+ assert.match(find('autumn-credit-event-20261001'), /상시 보너스는 계속 지급/);
  assert.match(find('refund-standard-20260830'), /한 번도 사용하지 않은 경우 전액 환불/);
  assert.match(find('refund-standard-20260830'), /사용한 만큼의 금액을 제외하고 환불/);
  assert.match(find('refund-standard-20260830'), /구매 당시의 기준이 그대로 적용/);
@@ -301,7 +339,7 @@ test('공지 문구는 2026-09-02 양식 표준을 지킨다', async () => {
   );
   const titles = [...baseItems.matchAll(/title: '([^']+)'/gu)].map(match => match[1]);
 
-  assert.equal(titles.length, 26);
+  assert.equal(titles.length, 27);
   // 대괄호 접두어·이모지 없이 격식체 서술형 제목만 쓴다
   assert.doesNotMatch(baseItems, /title: '\[/u);
   assert.doesNotMatch(baseItems, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
@@ -364,7 +402,7 @@ test('중요 공지는 정렬 방향과 관계없이 최상단에 고정하고 �
   for (const direction of ['desc', 'asc']) {
     context.state.sort = direction;
     const items = vm.runInContext('noticeFilteredItems()', context);
-    assert.equal(items.length, 26);
+    assert.equal(items.length, 27);
     assert.ok(items.slice(0, 4).every(item => item.highlightLabel === '중요'));
     assert.ok(items.slice(4).every(item => item.highlightLabel !== '중요'));
     for (const group of [items.slice(0, 4), items.slice(4)]) {

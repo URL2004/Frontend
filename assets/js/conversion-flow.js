@@ -4,24 +4,24 @@
   var PENDING_KEY = 'gp_pending_paid_job_v1';
   var RESUMED_PREFIX = 'gp_resumed_paid_job_';
   var MAX_PENDING_AGE = 2 * 60 * 60 * 1000;
-  var CREDIT_EVENT_STARTS_AT_MS = Date.parse('2026-08-29T00:00:00+09:00');
-  var CREDIT_EVENT_ENDS_AT_MS = Date.parse('2026-10-01T00:00:00+09:00');
-  var CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v4-202609';
+  var CREDIT_EVENT_STARTS_AT_MS = Date.parse('2026-10-01T00:00:00+09:00');
+  var CREDIT_EVENT_ENDS_AT_MS = Date.parse('2026-11-01T00:00:00+09:00');
+  var CREDIT_OFFER_POLICY_VERSION = 'credit-offer-v5-202610';
   var SIGNUP_GRANT_CREDITS = 20;
   // 지급량 소스 오브 트루스는 Backend/lib/conversionOffers.js의 CREDIT_PRODUCTS다.
   // 여기·pricing.html·landing.html 표기가 어긋나면 claims-consistency 테스트가 깨진다.
-  // 상품 보너스는 상시 지급한다. 2026-09-30 결제 요청분의 개강 이벤트는
-  // 스타터 0%, 스탠다드·프로·맥스·팀·기관 5%로 적용한다.
+  // 상품 보너스는 상시 지급한다. 2026-10-31 결제 요청분까지의 '가을이 온다' 이벤트는
+  // 14,500원 스탠다드부터(스탠다드·프로·맥스·팀·기관) 기준 크레딧 10%, 스타터 0%로 적용한다.
   var PLANS = [
     { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 0, credits: 200, label: '스타터' },
-    { amount: 14500, paidCredits: 500, packageBonusCredits: 125, eventBonusCredits: 25, credits: 650, label: '스탠다드' },
-    { amount: 29000, paidCredits: 1000, packageBonusCredits: 350, eventBonusCredits: 50, credits: 1400, label: '프로' },
-    { amount: 58000, paidCredits: 2000, packageBonusCredits: 900, eventBonusCredits: 100, credits: 3000, label: '맥스' }
+    { amount: 14500, paidCredits: 500, packageBonusCredits: 125, eventBonusCredits: 50, credits: 675, label: '스탠다드' },
+    { amount: 29000, paidCredits: 1000, packageBonusCredits: 350, eventBonusCredits: 100, credits: 1450, label: '프로' },
+    { amount: 58000, paidCredits: 2000, packageBonusCredits: 900, eventBonusCredits: 200, credits: 3100, label: '맥스' }
   ];
   // 2026-09-03 요금제 개편: 2,900·8,700원은 새 결제를 받지 않는다(서버 카탈로그에는 환불·콜백 스냅샷용으로 남는다).
   // 팀·기관(116,000원)은 문의 전용이라 결제 카탈로그(PLANS)에 넣지 않는다 — 결제창 상품 선택·서버 오퍼 병합·
   // 재구매 안내에서 제외되고, 가격표 카드의 지급량 표기만 이벤트 기간에 맞춰 동기화한다(syncInquiryCard).
-  var INQUIRY_PLAN = { amount: 116000, paidCredits: 4000, packageBonusCredits: 2000, eventBonusCredits: 200, label: '팀·기관' };
+  var INQUIRY_PLAN = { amount: 116000, paidCredits: 4000, packageBonusCredits: 2000, eventBonusCredits: 400, label: '팀·기관' };
   var contextCache = null;
   var contextUid = '';
   var modalState = null;
@@ -52,7 +52,7 @@
     return inquiryPlanCreditTotal(localEventActive(now));
   };
 
-  // ── 개강 이벤트 남은 기간 배지 ────────────────────────────────────────────
+  // ── 기간 이벤트(10월 가을이 온다) 남은 기간 배지 ─────────────────────────────
   // 마감이 실제로 있는 행사라 표기 자체는 정직하지만, 한 달 앞에서 초를 째깍이면
   // 가짜 타이머로 읽혀 신뢰를 깎는다. 남은 기간에 따라 단위를 바꾸고(일 → 시·분),
   // 마지막 7일부터만 반전 배지로 강조해 급함이 필요한 구간에서만 눈에 띄게 한다.
@@ -66,7 +66,7 @@
   }
 
   // 남은 '일'은 시간 나눗셈이 아니라 한국 시간 날짜 차이로 센다.
-  // 마감이 10/01 00:00 KST이므로 8/31 어느 시각이든 9/30까지 30일로 읽혀야 한다.
+  // 마감이 11/01 00:00 KST이므로 10/1 어느 시각이든 10/31까지 30일로 읽혀야 한다.
   function kstDayIndex(ms) { return Math.floor((ms + KST_OFFSET_MS) / 86400000); }
 
   function eventCountdownLabel(nowMs, endsAtMs) {
@@ -155,8 +155,8 @@
       segment: balance === SIGNUP_GRANT_CREDITS ? 'trial_unused' : (balance < SIGNUP_GRANT_CREDITS ? 'trial_engaged' : 'new_unfunded'),
       balance: balance,
       paidOrderCount: 0,
-      experiment: { key: 'credit_event_20260930', variant: 'all_users' },
-      creditEvent: { active: eventActive, displayEndsOn: '2026-09-30', endsAtMs: CREDIT_EVENT_ENDS_AT_MS },
+      experiment: { key: 'autumn_credit_event_20261031', variant: 'all_users' },
+      creditEvent: { active: eventActive, displayEndsOn: '2026-10-31', endsAtMs: CREDIT_EVENT_ENDS_AT_MS },
       creditOffers: offers.map(function (offer) {
         return {
           amount: offer.amount,
@@ -361,7 +361,7 @@
     var bonusNode = byId('gpCreditCheckoutBonus');
     if (bonusNode) {
       bonusNode.hidden = eventBonus <= 0;
-      bonusNode.textContent = eventBonus > 0 ? '개강 이벤트 보너스는 2026년 9월 30일까지 결제 요청분에 적용돼요.' : '';
+      bonusNode.textContent = eventBonus > 0 ? '가을이 온다 이벤트 크레딧은 2026년 10월 31일까지 결제 요청분에 적용돼요.' : '';
     }
     var offer = document.querySelector('.gp-credit-offer');
     if (offer) offer.setAttribute('aria-busy', 'false');
@@ -639,11 +639,20 @@
   function starterBonusCopy(context) {
     var starter = planCatalog(context)[0];
     if (!starter.eventBonusCredits) return '총 ' + format(starter.credits) + '크레딧';
-    return '총 ' + format(starter.credits) + '크레딧 · 개강 이벤트 ' + format(starter.eventBonusCredits) + '크레딧 포함';
+    return '총 ' + format(starter.credits) + '크레딧 · 가을 이벤트 ' + format(starter.eventBonusCredits) + '크레딧 포함';
   }
 
   function catalogPlan(catalog, amount) {
     return catalog.find(function (plan) { return plan.amount === number(amount); }) || null;
+  }
+
+  // 카드 머리의 이벤트 칩: 이벤트 대상 상품에만 보이고, 행사가 끝나거나 서버가 끄면 함께 접힌다.
+  function syncPlanEventChip(card, eventBonus, paidCredits) {
+    var chip = card.querySelector('.gp-plan-event-chip');
+    if (!chip) return;
+    var percent = paidCredits > 0 ? Math.round(eventBonus * 100 / paidCredits) : 0;
+    chip.hidden = !(eventBonus > 0 && percent > 0);
+    if (!chip.hidden) chip.textContent = '가을 이벤트 +' + percent + '%';
   }
 
   // 팀·기관 카드는 결제 카탈로그 밖이라 서버 오퍼가 오지 않는다. 이벤트 종료 판단만 공유해 지급량·환산값을 맞춘다.
@@ -659,6 +668,7 @@
     if (totalValue) totalValue.textContent = '총 ' + format(total) + ' 크레딧';
     var eventRow = card.querySelector('.feat-event');
     if (eventRow) eventRow.hidden = eventBonus <= 0;
+    syncPlanEventChip(card, eventBonus, paid);
     var efficiencyValue = card.querySelector('[data-plan-efficiency] strong');
     if (efficiencyValue) efficiencyValue.textContent = '약 ' + format(Math.round(INQUIRY_PLAN.amount * 20 / total)) + '원';
   }
@@ -766,6 +776,7 @@
         var eventStrong = eventRow.querySelector('strong');
         if (eventStrong) eventStrong.textContent = '+' + format(plan.eventBonusCredits);
       }
+      syncPlanEventChip(card, plan.eventBonusCredits, plan.paidCredits);
       var efficiency = card.querySelector('[data-plan-efficiency]');
       var efficiencyValue = efficiency && efficiency.querySelector('strong');
       if (efficiencyValue) efficiencyValue.textContent = '약 ' + format(Math.round(plan.amount * 20 / plan.credits)) + '원';
@@ -774,7 +785,7 @@
         button.setAttribute('onclick', "payToss(" + plan.amount + ',' + plan.credits + ",'크레딧 충전','')");
         var parts = ['기준 ' + format(plan.paidCredits) + '크레딧'];
         if (plan.packageBonusCredits > 0) parts.push('상품 보너스 ' + format(plan.packageBonusCredits) + '크레딧');
-        if (anyEvent) parts.push('개강 이벤트 ' + format(plan.eventBonusCredits) + '크레딧');
+        if (anyEvent) parts.push('가을 이벤트 ' + format(plan.eventBonusCredits) + '크레딧');
         button.setAttribute('aria-label', parts.join(', ') + ', 총 ' + format(plan.credits) + '크레딧을 ' + format(plan.amount) + '원에 충전하기');
       }
     });
@@ -1292,7 +1303,7 @@
       segment: 'trial_engaged',
       balance: 4,
       paidOrderCount: 0,
-      experiment: { key: 'credit_event_20260930', variant: 'all_users' },
+      experiment: { key: 'autumn_credit_event_20261031', variant: 'all_users' },
       starterOffer: { amount: 5900, paidCredits: 200, packageBonusCredits: 0, eventBonusCredits: 0, totalCredits: 200 },
       lastPackage: null
     };
