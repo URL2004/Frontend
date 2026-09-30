@@ -123,12 +123,12 @@ test('요금표·가이드·약관·연구노트·공지의 단계형 정책과 
   assert.ok(stepsStart > 0, '고급 단계형 정책 공지 부재');
   const firstNotice = notice.slice(stepsStart, notice.indexOf('\n },', stepsStart) + 4);
   assert.match(firstNotice, /id: 'advanced-credit-steps-20260902'/u);
-  assert.match(firstNotice, /title: '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요'/u);
+  assert.match(firstNotice, /title: '고급 휴머나이징 크레딧 기준을 조정했습니다'/u);
   assert.doesNotMatch(firstNotice, /pinned: true/u);
   assert.match(firstNotice, /highlightLabel: '중요'/u);
   assert.match(firstNotice, /date: '2026\.09\.02'/u);
-  assert.match(firstNotice, /변경 후 새로 접수되는 작업부터 적용해요/u);
-  assert.match(firstNotice, /이미 완료됐거나 진행 중인 작업의 차감액은 소급해 다시 계산하지 않아요/u);
+  assert.match(firstNotice, /변경 후 새로 접수되는 작업부터 적용합니다/u);
+  assert.match(firstNotice, /이미 완료됐거나 진행 중인 작업의 차감액은 소급해 다시 계산하지 않습니다/u);
   assert.match(landing, /고급 휴머나이징<small>3,000자 이하 100크레딧 · 정밀 검증<\/small>/u);
 });
 

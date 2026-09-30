@@ -5,107 +5,292 @@ import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('중요 공지만 목록 한 줄에서 강조하고 일반 업데이트의 배지는 제거한다', async () => {
-  const [page, source, styles] = await Promise.all([
-    read('pages/notice.html'),
-    read('assets/js/app-module.js'),
-    read('assets/css/redesign.css')
-  ]);
-  const baseItems = source.slice(
-    source.indexOf('const NOTICE_BASE_ITEMS'),
-    source.indexOf('const NOTICE_RETIRED_TITLES')
-  );
+function noticeContext(source) {
+ const context = vm.createContext({});
+ vm.runInContext(source.slice(source.indexOf('const NOTICE_BASE_ITEMS'), source.indexOf('const NOTICE_CATEGORIES')) + ';globalThis.items = NOTICE_BASE_ITEMS;globalThis.retired = NOTICE_RETIRED_TITLES;globalThis.copies = NOTICE_REMOTE_COPY;', context);
+ return context;
+}
 
-  assert.doesNotMatch(page, /gp-notice-featured|gp-notice-card|notice-(?:maintenance|analytics)\.png/u);
-  assert.match(baseItems, /title: '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요'/u);
-  assert.equal(baseItems.match(/highlightLabel:/gu)?.length, 4);
-  assert.match(baseItems, /title: '긴 글 구조 보존과 문단 보강을 개선했어요'/u);
-  assert.doesNotMatch(baseItems, /highlightLabel: '(?:신규|업데이트|필수)/u);
-  assert.match(baseItems, /사용자가 직접 입력한 실제 경험이나 사실/u);
-  assert.match(baseItems, /해당 문단만 다시 다듬으며/u);
-  assert.match(baseItems, /제목·절·문단의 순서와 경계를 원문과 다시 대조/u);
-  assert.match(baseItems, /서로 다른 절이 합쳐지거나 설명이 빠지는 문제를 줄였어요/u);
-  assert.match(baseItems, /글쓰기 연구노트와 장르별 템플릿을 추가했어요/u);
-  assert.doesNotMatch(baseItems, /가격 계산기/u);
-  assert.doesNotMatch(baseItems, /정확도 개선|v2\.5\.41/u);
-  assert.match(source, /NOTICE_HIGHLIGHT_LABELS/u);
-  assert.match(source, /notice-row' \+ \(highlightLabel \? ' is-highlighted' : ''\)/u);
-  assert.match(source, /class="gp-notice-row-badge"/u);
-  assert.match(source, /class="gbr-ttl-text"/u);
-  assert.match(styles, /#noticeList \.notice-row\.is-highlighted/u);
-  assert.match(styles, /#noticeList \.gp-notice-row-badge/u);
+test('격식체 재작성은 공지별 수치와 적용 조건을 보존한다', async () => {
+ const source = await read('assets/js/app-module.js');
+ const context = noticeContext(source);
+ const expectedNumbers = {
+ "humanize-paragraph-update-20260920": [],
+ "humanize-meaning-naturalness-20260920": [],
+ "detect-report-update-20260906": [
+  "100"
+ ],
+ "structure-option-20260906": [
+  "1",
+  "100",
+  "10000",
+  "120",
+  "130",
+  "180",
+  "2",
+  "200",
+  "20000",
+  "260",
+  "3",
+  "30",
+  "30",
+  "30",
+  "3000",
+  "30000",
+  "400",
+  "520",
+  "60",
+  "600",
+  "780"
+ ],
+ "humanize-voice-update-20260906": [],
+ "pricing-tiers-20260903": [
+  "0",
+  "0",
+  "1000",
+  "116000",
+  "125",
+  "14500",
+  "2",
+  "2",
+  "200",
+  "200",
+  "200",
+  "2000",
+  "2000",
+  "2026",
+  "2026",
+  "29",
+  "2900",
+  "29000",
+  "3",
+  "3",
+  "3",
+  "30",
+  "350",
+  "4000",
+  "5",
+  "500",
+  "58000",
+  "5900",
+  "5900",
+  "8700",
+  "9",
+  "9",
+  "900"
+ ],
+ "advanced-credit-steps-20260902": [
+  "100",
+  "100",
+  "100",
+  "100",
+  "10000",
+  "10000",
+  "10000",
+  "10000",
+  "10001",
+  "10001",
+  "105",
+  "105",
+  "130",
+  "150",
+  "15000",
+  "155",
+  "160",
+  "190",
+  "200",
+  "200",
+  "20000",
+  "205",
+  "235",
+  "250",
+  "300",
+  "300",
+  "3000",
+  "3000",
+  "3000",
+  "3000",
+  "3000",
+  "30000",
+  "30000",
+  "3001",
+  "3001",
+  "3001",
+  "350",
+  "400",
+  "400",
+  "5",
+  "5",
+  "5",
+  "5",
+  "50",
+  "50",
+  "500",
+  "5000",
+  "600",
+  "600",
+  "700",
+  "700",
+  "7000"
+ ],
+ "paid-credit-no-expiry-20260829": [
+  "0",
+  "0",
+  "0",
+  "100",
+  "1000",
+  "125",
+  "1400",
+  "200",
+  "200",
+  "200",
+  "2000",
+  "2000",
+  "2026",
+  "23",
+  "25",
+  "30",
+  "3000",
+  "350",
+  "4000",
+  "5",
+  "50",
+  "500",
+  "59",
+  "6200",
+  "650",
+  "9",
+  "9",
+  "9",
+  "9",
+  "900"
+ ],
+ "refund-standard-20260830": [
+  "2026",
+  "2026",
+  "30",
+  "30",
+  "7",
+  "7",
+  "8",
+  "8"
+ ],
+ "signup-credit-20-20260902": [
+  "12",
+  "18",
+  "2",
+  "2",
+  "20",
+  "20",
+  "2026",
+  "6",
+  "600",
+  "9"
+ ],
+ "detect-credit-policy": [
+  "1",
+  "1",
+  "100",
+  "100"
+ ],
+ "humanize-v2541-refine": [],
+ "service-refresh-20260829": [],
+ "payment-credit-sync-20260826": [],
+ "job-resume-20260813": [],
+ "multilingual-input-20260801": [],
+ "credit-history-split-20260722": [
+  "20"
+ ],
+ "humanize-v25": [],
+ "detect-report-launch": [],
+ "detect-report-preview": [],
+ "friend-invite-event": [
+  "20",
+  "20"
+ ],
+ "application-genre-quality": [],
+ "long-document-performance": [],
+ "maintenance-history-2026-spring": [
+  "03",
+  "09",
+  "13",
+  "13",
+  "13",
+  "14",
+  "14",
+  "18",
+  "2026",
+  "2026",
+  "2026",
+  "2026",
+  "2026",
+  "23",
+  "3",
+  "3",
+  "30",
+  "5",
+  "5",
+  "5",
+  "5",
+  "5",
+  "5",
+  "50",
+  "9"
+ ],
+ "humanize-quality-20260326": [],
+ "payment-open-20260401": []
+};
+ assert.equal(context.items.length, 26);
+ for (const item of context.items) {
+  const actual = ( (item.title + '\n' + item.body).match(/\d[\d,]*(?:\.\d+)?/gu) || [] ).map(n => n.replaceAll(',', '')).sort();
+  assert.deepEqual(actual, expectedNumbers[item.id], item.id + ': 날짜·시간·금액·크레딧 보존');
+ }
+ const find = id => context.items.find(item => item.id === id).body;
+ assert.match(find('advanced-credit-steps-20260902'), /공백을 포함/);
+ assert.match(find('advanced-credit-steps-20260902'), /새로 접수되는 작업부터 적용/);
+ assert.match(find('advanced-credit-steps-20260902'), /소급해 다시 계산하지 않습니다/);
+ assert.match(find('signup-credit-20-20260902'), /기존 계정[\s\S]*소급해 지급하지 않습니다/);
+ assert.match(find('signup-credit-20-20260902'), /기존 잔액과 결제·초대[\s\S]*그대로 유지/);
+ assert.match(find('paid-credit-no-expiry-20260829'), /결제 확인 요청[\s\S]*한국 시간[\s\S]*서버에 접수된 주문/);
+ assert.match(find('refund-standard-20260830'), /한 번도 사용하지 않은 경우 전액 환불/);
+ assert.match(find('refund-standard-20260830'), /사용한 만큼의 금액을 제외하고 환불/);
+ assert.match(find('refund-standard-20260830'), /구매 당시의 기준이 그대로 적용/);
+ assert.match(find('refund-standard-20260830'), /고객센터/);
+ assert.match(find('humanize-v2541-refine'), /달라지지 않거나 안전 검증을 통과하지 못한[\s\S]*크레딧과 무료 횟수가 차감되지 않습니다/);
+ assert.match(find('structure-option-20260906'), /근거 보강 요금[\s\S]*중복 적용하지 않습니다/);
+ assert.match(find('structure-option-20260906'), /구조 변경이 필요하지 않거나 적용되지 않으면[\s\S]*차감하지 않습니다/);
+ assert.match(find('detect-report-update-20260906'), /확정하는 확률이 아닙니다/);
+ assert.match(find('detect-report-update-20260906'), /외부 검사 결과는 보장하지 않습니다/);
 });
 
-test('공지는 제외 요청한 주제를 숨기고 7월 이후 필요한 정책 변경까지 표시한다', async () => {
-  const source = await read('assets/js/app-module.js');
-  const baseItems = source.slice(
-    source.indexOf('const NOTICE_BASE_ITEMS'),
-    source.indexOf('const NOTICE_RETIRED_TITLES')
-  );
+test('원격 공지 문구는 목록·직접 상세에 적용하고 이후 관리자 편집을 보존한다', async () => {
+ const source = await read('assets/js/app-module.js');
+ const context = noticeContext(source);
+ assert.equal(context.copies.size, 4);
+ for (const [id, copy] of context.copies) {
+  const original = { title: copy.originalTitle, body: copy.originalBody, views: 123, authorName: '운영자' };
+  const changed = context.noticeRemoteCopy(id, original);
+  assert.equal(changed.title, copy.title);
+  assert.equal(changed.body, copy.body);
+  assert.equal(changed.views, 123);
+  assert.equal(changed.authorName, '운영자');
+  const edited = { ...original, body: '관리자가 새로 작성한 공지입니다.' };
+  assert.equal(context.noticeRemoteCopy(id, edited), edited);
+ }
+ assert.match(source, /const n = noticeRemoteCopy\(d.id, d.data\(\)\)/u);
+ assert.match(source, /const n = noticeRemoteCopy\(id, data\)/u);
+ assert.equal(context.noticeRemoteCopy('future-notice', { title: '새 공지' }).title, '새 공지');
+});
 
-  assert.equal(baseItems.match(/\n\s+id:\s*'/gu)?.length, 26);
-  for (const title of [
-    '고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요',
-    '상시 상품 보너스와 9월 개강 이벤트를 안내해요',
-    '환불과 취소 기준을 정리했어요',
-    '신규 가입 무료 크레딧을 20크레딧으로 조정했어요',
-    'AI 감지는 100자당 1크레딧으로 이용할 수 있어요',
-    '긴 글 구조 보존과 문단 보강을 개선했어요',
-    '화면 구성과 글쓰기 자료를 새로 정리했어요',
-    '결제 반영과 취소 처리를 안정화했어요',
-    '작업이 중단돼도 이어서 처리해요',
-    '휴머나이징은 한국어 원문을 지원해요',
-    '사용 내역과 충전 내역을 나눠서 볼 수 있어요',
-    '문단 구조 보존을 강화했어요',
-    'AI 감지 보고서를 열었어요',
-    '감지 보고서를 문단별로 펼쳐 볼 수 있어요',
-    '친구를 초대하면 둘 다 20크레딧을 받아요',
-    '자소서와 지원서 처리 품질을 개선했어요',
-    '긴 문서를 더 안정적으로 처리해요',
-    '2026년 3~5월 점검 이력을 안내해요',
-    '휴머나이징 품질을 강화했어요',
-    '결제 시스템을 열었어요'
-  ]) {
-    assert.match(baseItems, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'u'));
-  }
-  assert.doesNotMatch(baseItems, /(?:최대 3만 자|결과 보관함|환불 정책|서비스 리브랜딩|원문 문단 역할과 사례·결론 연결 보존 강화|AI 감지 점수·설명 일관성 개선|논문·자소서·전문 기록 장르별 맞춤 처리 확대|서비스 안정화 점검 완료)/u);
-  assert.match(baseItems, /3,001~10,000자: 105~200크레딧/u);
-  assert.match(baseItems, /3,000자 초과분 700자가 채워질 때마다 \+5크레딧/u);
-  assert.match(baseItems, /변경 후 새로 접수되는 작업부터 적용해요/u);
-  assert.match(baseItems, /이미 완료됐거나 진행 중인 작업의 차감액은 소급해 다시 계산하지 않아요/u);
-  assert.match(baseItems, /결과가 바뀌지 않거나 안전 검증을 통과하지 못한 보강 요청은 크레딧과 무료 횟수를 사용하지 않아요/u);
-  assert.match(baseItems, /제출 전에 수치·인용·고유명사와 사실관계를 직접 확인해 주세요/u);
-  assert.match(baseItems, /현재 적용 중인 크레딧 지급 기준/u);
-  assert.match(baseItems, /title: '신규 가입 무료 크레딧을 20크레딧으로 조정했어요'/u);
-  assert.match(baseItems, /2026년 9월 2일 기준/u);
-  assert.match(baseItems, /신규 계정에는 무료 20크레딧을 드려요/u);
-  assert.match(baseItems, /기존 계정에는 이번 변경에 따른 추가 크레딧을 소급 지급하지 않아요/u);
-  assert.match(baseItems, /기존 잔액과 결제·초대 등으로 받은 크레딧은 그대로 유지돼요/u);
-  assert.match(baseItems, /600자 AI 감지는 6크레딧, 같은 분량의 기본 휴머나이징은 12크레딧/u);
-  assert.match(baseItems, /총 18크레딧을 사용하고 2크레딧이 남아요/u);
-  assert.match(baseItems, /가입 무료 크레딧은 유효기간 없이 사용할 수 있어요/u);
-  assert.doesNotMatch(baseItems, /신규 계정에는 무료 25크레딧|기존 계정에도 (?:추가 )?20크레딧|기존 계정.{0,30}소급 지급(?:해요|합니다|돼요)/u);
-  assert.doesNotMatch(baseItems, /크레딧 지급·환불 기준|환불 기준|사용량은 기준 크레딧부터 먼저 차감/u);
-  assert.match(baseItems, /2026년 9월 30일 23시 59분\(한국 시간\)까지 결제 확인 요청이 서버에 접수된 주문/u);
-  assert.match(baseItems, /스타터: 200 \+ 0 \+ 0 = 총 200크레딧/u);
-  assert.match(baseItems, /스타터의 이벤트 추가는 0%예요/u);
-  assert.doesNotMatch(baseItems, /라이트: 300 \+ 30 \+ 15/u, '종료 상품이 지급 기준 공지에 남음');
-  assert.match(baseItems, /팀·기관\(문의 전용\): 4,000 \+ 2,000 \+ 200 = 총 6,200크레딧/u);
-  // 2026-09-03 요금제 개편 공지 — 시작 상품 5,900원/200크레딧, 종료 상품, 대용량 2종
-  assert.match(baseItems, /title: '요금제를 일반 3종과 대용량 2종으로 정리했어요'/u);
-  assert.match(baseItems, /시작 상품을 5,900원 200크레딧으로 바꿨어요/u);
-  assert.match(baseItems, /2,900원 스타터와 8,700원 라이트는 새 결제를 받지 않아요/u);
-  assert.match(baseItems, /이미 결제한 크레딧은 그대로 남아 있고 유효기간 없이 사용할 수 있어요/u);
-  assert.match(baseItems, /팀·기관: 116,000원 · 기준 4,000크레딧 \+ 상시 보너스 2,000크레딧 · 문의 후 결제 방법을 안내해요/u);
-  assert.match(baseItems, /맥스: 2,000 \+ 900 \+ 100 = 총 3,000크레딧/u);
-  assert.doesNotMatch(baseItems, /개인정보처리방침 변경 내용을 안내해요/u);
-  assert.match(source, /NOTICE_RETIRED_TITLES[\s\S]*?'개인정보처리방침 변경 내용을 안내해요'/u);
-  assert.match(source, /\.filter\(item => !NOTICE_RETIRED_TITLES\.has\(item\.title\.trim\(\)\)\)/u);
-  assert.match(baseItems, /(?:해요|했어요|돼요|됐어요|드려요|있어요|없어요|않아요)/u);
-
-  // 환불 기준은 공지로 안내하되, 소급 적용 오해와 접수 창구 혼선을 막는 두 문장을 반드시 포함한다
-  assert.match(baseItems, /2026년 8월 30일 이전에 결제한 주문은 구매 당시 기준을 그대로 적용해요/u);
-  assert.match(baseItems, /사이트 안의 고객센터에서 문의를 남겨 주시면/u);
+test('모든 기존 공지의 제목과 본문은 격식체이며 이전 제목은 중복 노출하지 않는다', async () => {
+ const context = noticeContext(await read('assets/js/app-module.js'));
+ const copies = Array.from(context.copies.values());
+ for (const item of Array.from(context.items).concat(copies)) {
+  assert.ok(item.title.length <= 30, item.title);
+  assert.doesNotMatch(item.title + '\n' + item.body, /(?:[가-힣]+(?:해요|어요|아요|예요|에요|나요)|주세요)(?=[.!?\s]|$)/u);
+  assert.doesNotMatch(item.title, /^\[|[.]$/u);
+ }
+ for (const title of ["긴 본문과 항목 설명의 문단 나눔을 개선했어요","원문의 뜻과 자연스러움을 확인하는 검사를 보강했어요","AI 감지 결과와 문장 예시를 개선했어요","고급 휴머나이징에 구조 개선을 추가했어요","휴머나이징 말투 보존과 검토 안내를 개선했어요","요금제를 일반 3종과 대용량 2종으로 정리했어요","고급 휴머나이징 크레딧 기준을 더 세밀하게 조정했어요","상시 상품 보너스와 9월 개강 이벤트를 안내해요","환불과 취소 기준을 정리했어요","신규 가입 무료 크레딧을 20크레딧으로 조정했어요","AI 감지는 100자당 1크레딧으로 이용할 수 있어요","긴 글 구조 보존과 문단 보강을 개선했어요","화면 구성과 글쓰기 자료를 새로 정리했어요","결제 반영과 취소 처리를 안정화했어요","작업이 중단돼도 이어서 처리해요","휴머나이징은 한국어 원문을 지원해요","사용 내역과 충전 내역을 나눠서 볼 수 있어요","문단 구조 보존을 강화했어요","AI 감지 보고서를 열었어요","감지 보고서를 문단별로 펼쳐 볼 수 있어요","친구를 초대하면 둘 다 20크레딧을 받아요","자소서와 지원서 처리 품질을 개선했어요","긴 문서를 더 안정적으로 처리해요","2026년 3~5월 점검 이력을 안내해요","휴머나이징 품질을 강화했어요","결제 시스템을 열었어요"]) assert.ok(context.retired.has(title), title);
 });
 
 test('공지 문구는 2026-09-02 양식 표준을 지킨다', async () => {
@@ -117,7 +302,7 @@ test('공지 문구는 2026-09-02 양식 표준을 지킨다', async () => {
   const titles = [...baseItems.matchAll(/title: '([^']+)'/gu)].map(match => match[1]);
 
   assert.equal(titles.length, 26);
-  // 대괄호 접두어·이모지 없이 해요체 서술형 제목만 쓴다
+  // 대괄호 접두어·이모지 없이 격식체 서술형 제목만 쓴다
   assert.doesNotMatch(baseItems, /title: '\[/u);
   assert.doesNotMatch(baseItems, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
   for (const title of titles) {
