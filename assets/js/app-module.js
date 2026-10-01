@@ -6060,13 +6060,24 @@ function rpIsHeading(line) {
  return RP_TOP.test(line) || RP_SUB.test(line);
 }
 
+// 한 문단을 결과가 최대 4개로 나누거나(1:k) 여러 문단을 합친 경우(k:1)까지 짝짓는다.
+// 묶는 개수가 늘수록 감점을 조금씩 키워 무리한 합치기를 막는다.
 // 대각선 띠 안에서만 계산해 긴 글(수백 줄)도 즉시 끝난다.
+const RP_MOVES = [[1, 1], [1, 2], [1, 3], [1, 4], [2, 1], [3, 1], [4, 1], [1, 0], [0, 1]];
+// groups[k-1][i] = i번째부터 k개 문단을 합친 글자쌍 집합(미리 한 번만 만든다).
+function rpGroups(grams) {
+ const groups = [grams];
+ for (let k = 2; k <= 4; k++) {
+  const prev = groups[k - 2];
+  groups.push(grams.map((s, i) => (i + k - 1 < grams.length ? rpUnion(prev[i], grams[i + k - 1]) : null)));
+ }
+ return groups;
+}
 function rpAlign(A, B) {
  const n = A.length, m = B.length;
- const ga = A.map(rpGrams), gb = B.map(rpGrams);
- const band = Math.max(12, Math.abs(n - m) + 8);
+ const ga = rpGroups(A.map(rpGrams)), gb = rpGroups(B.map(rpGrams));
+ const band = Math.max(14, Math.abs(n - m) + 10);
  const NEG = -1e9;
- const moves = [[1, 1], [1, 2], [2, 1], [1, 0], [0, 1]];
  const S = Array.from({ length: n + 1 }, () => new Float64Array(m + 1).fill(NEG));
  const P = Array.from({ length: n + 1 }, () => new Int8Array(m + 1));
  S[0][0] = 0;
@@ -6075,13 +6086,15 @@ function rpAlign(A, B) {
   for (let j = Math.max(0, c - band); j <= Math.min(m, c + band); j++) {
    const cur = S[i][j];
    if (cur === NEG) continue;
-   for (let k = 0; k < 5; k++) {
-    const ni = i + moves[k][0], nj = j + moves[k][1];
+   for (let k = 0; k < RP_MOVES.length; k++) {
+    const [di, dj] = RP_MOVES[k];
+    const ni = i + di, nj = j + dj;
     if (ni > n || nj > m) continue;
     let sc = -0.3;
-    if (k === 0) sc = rpSim(ga[i], gb[j]);
-    else if (k === 1) sc = rpSim(ga[i], rpUnion(gb[j], gb[j + 1])) - 0.15;
-    else if (k === 2) sc = rpSim(rpUnion(ga[i], ga[i + 1]), gb[j]) - 0.15;
+    if (di && dj) {
+     const extra = di + dj - 2;
+     sc = rpSim(ga[di - 1][i], gb[dj - 1][j]) - (extra ? 0.1 + 0.05 * extra : 0);
+    }
     if (cur + sc > S[ni][nj]) { S[ni][nj] = cur + sc; P[ni][nj] = k + 1; }
    }
   }
@@ -6090,9 +6103,10 @@ function rpAlign(A, B) {
  let i = n, j = m;
  while (i > 0 || j > 0) {
   const k = P[i][j];
-  if (!k) { out.push([A.slice(0, i).join(' '), B.slice(0, j).join(' ')]); break; }
-  const [di, dj] = moves[k - 1];
-  out.push([A.slice(i - di, i).join(' '), B.slice(j - dj, j).join(' ')]);
+  if (!k) { out.push([A.slice(0, i).join('\n\n'), B.slice(0, j).join('\n\n')]); break; }
+  const [di, dj] = RP_MOVES[k - 1];
+  // 한 칸에 묶인 여러 문단은 빈 줄로 이어 실제 문단 나눔이 보이게 한다.
+  out.push([A.slice(i - di, i).join('\n\n'), B.slice(j - dj, j).join('\n\n')]);
   i -= di; j -= dj;
  }
  return out.reverse();
@@ -6102,7 +6116,7 @@ function rpAlign(A, B) {
 function rpSegs(tokens, keep) {
  let w = 0;
  const flags = tokens.map((t) => (/^\s+$/.test(t) ? -1 : (keep[w++] ? 0 : 1)));
- flags.forEach((f, k) => { if (f === -1) flags[k] = flags[k - 1] === 1 && flags[k + 1] === 1 ? 1 : 0; });
+ flags.forEach((f, k) => { if (f === -1) flags[k] = !/\n/.test(tokens[k]) && flags[k - 1] === 1 && flags[k + 1] === 1 ? 1 : 0; });
  const out = [];
  tokens.forEach((t, k) => { const last = out[out.length - 1]; if (last && last[1] === flags[k]) last[0] += t; else out.push([t, flags[k]]); });
  return out;
@@ -6142,7 +6156,7 @@ window.adminResultPreviewSet = function(before, after) {
  if (!before.trim() || !after.trim()) { adminRP.model = null; window.adminResultPreviewRender(); return; }
  const rows = rpAlign(rpLines(before), rpLines(after)).map(([a, b]) => {
   const d = rpDiff(a, b);
-  return { h: rpIsHeading(a || b), b: d.b, a: d.a, warn: !!a && !!b && rpNums(a) !== rpNums(b) };
+  return { h: rpIsHeading(a || b) && !/\n/.test(a + b), b: d.b, a: d.a, warn: !!a && !!b && rpNums(a) !== rpNums(b) };
  });
  adminRP.model = { rows, before, after, lb: before.trim().length, la: after.trim().length };
  window.adminResultPreviewRender();
