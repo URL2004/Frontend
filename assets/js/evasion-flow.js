@@ -1,6 +1,45 @@
 /* 회피 모드 워크스페이스 — P0 정적 목업 (더미 데이터, 백엔드 미연결) */
 (function () {
   function $(id) { return document.getElementById(id); }
+
+  // ── 결과 화면 A안(관리자 미리보기, 2026-10-02) ──
+  // 관리자 랩에서 켠 관리자 브라우저에서만 결과 카드를 원문·다듬은 글 나란히(A안)로 보여 준다.
+  // 결과 본문(#lavDoneBody)은 그대로 두고 숨기기만 하므로 복사·다운로드·문단 보강은 기존대로 동작한다.
+  var RESULT_DESIGN_KEY = 'gp_admin_result_design';
+  var resultCompareLoad = null;
+  var resultPreviewSource = null;   // 예시 글로 연 결과의 원문(실제 작업은 입력칸 원문을 쓴다)
+  function resultDesignOn() {
+    try { return localStorage.getItem(RESULT_DESIGN_KEY) === 'A' && !!(window.isAdmin && window.isAdmin()); } catch (e) { return false; }
+  }
+  function loadResultCompare() {
+    if (window.gpResultCompare) return Promise.resolve(window.gpResultCompare);
+    if (resultCompareLoad) return resultCompareLoad;
+    resultCompareLoad = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = '/assets/js/result-compare.js';
+      s.onload = function () { resolve(window.gpResultCompare); };
+      s.onerror = function () { resultCompareLoad = null; reject(new Error('result-compare load failed')); };
+      document.head.appendChild(s);
+    });
+    return resultCompareLoad;
+  }
+  function syncResultDesign() {
+    var flow = $('lavFlow'), on = resultDesignOn(), host = $('lavDoneCompare');
+    if (flow) flow.classList.toggle('is-result-a', on && flow.dataset.step === 'done');
+    if (!on) { if (host) host.textContent = ''; return; }
+    var body = $('lavDoneBody');
+    if (!body || !body.parentNode) return;
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'lavDoneCompare';
+      host.className = 'lav-done-compare';
+      body.parentNode.insertBefore(host, body.nextSibling);
+    }
+    var source = resultPreviewSource != null ? resultPreviewSource : (($('lavInput') || {}).value || '');
+    var output = body.textContent || '';
+    loadResultCompare().then(function (c) { if (c && resultDesignOn()) c.mount(host, source, output); }).catch(function () {});
+  }
+
   var SIGNUP_GRANT_CREDITS = 20;
   var SHORT_HUMANIZE_MIN_CREDITS = 10;
   function shortHumanizeCredit(len) {
@@ -247,6 +286,7 @@
       if (on) { c.style.animation = 'none'; void c.offsetWidth; c.style.animation = ''; }
     });
     flow.dataset.step = name;
+    flow.classList.toggle('is-result-a', name === 'done' && resultDesignOn());
     var label = $('lavFlowStep'); if (label) label.textContent = STEP_LABEL[name] || '';
     var ctx = $('lavFlowCtx'), src = $('lavInput');
     if (ctx && src) ctx.textContent = '원문 ' + (src.value || '').length.toLocaleString() + '자';   // 글자수 통일: 공백 포함(과금·메인 컴포저와 동일)
@@ -4199,6 +4239,7 @@
 
   // 완료 렌더(폴링·재진입 공용): job mode에 따라 점수·배지·보관함 라벨 분기
   function renderJobDone(st) {
+    resultPreviewSource = st && st.__adminPreview ? st.__adminPreview.source : null;
     if (st && st.jobId && st.result && st.result.outputText && window.gpTrackFeature) window.gpTrackFeature('complete', { feature: 'humanize', run_id: st.jobId, mode: st.mode, chars: st.inputChars, duration_ms: st.durationMs, activation: st.activation });
     if (st && st.jobId) setActiveJobUi(st.jobId, 'done', '휴머나이징 완료');
     var label;
@@ -4730,7 +4771,48 @@
         if (el) el.classList.remove('is-refreshed');
       }, 1800);
     }
+    // 결과 본문을 다시 그릴 때마다(완료·재진입·문단 보강) A안 비교 화면도 맞춘다.
+    //   refine-coaching 테스트는 이 함수 묶음만 떼어 실행하므로 존재를 확인하고 부른다.
+    if (typeof syncResultDesign === 'function') syncResultDesign();
   }
+
+  // 관리자 미리보기: 원문·결과를 넣으면 실제 완료 화면과 같은 경로로 결과 카드를 연다.
+  //   작업 ID가 없으므로 기록·알림·과금 안내·이용 지표는 남지 않는다.
+  window.lavAdminPreviewDone = function (before, after, mode) {
+    if (!resultDesignOn() || !String(after || '').trim()) return false;
+    var m = mode === 'polish' || mode === 'formal' ? mode : 'blog';
+    renderJobDone({ status: 'done', mode: m, result: { outputText: String(after) }, __adminPreview: { source: String(before || '') } });
+    show('done');
+    lavInitCollapse('lavDoneBody', 'lavDoneToggle');
+    // 입력칸은 건드리지 않으므로, 흐름 머리의 원문 글자 수는 예시 원문 기준으로 다시 쓴다.
+    var ctx = $('lavFlowCtx');
+    if (ctx) ctx.textContent = '원문 ' + String(before || '').length.toLocaleString() + '자';
+    return true;
+  };
+
+  window.lavResultDesignBoot = function (opts) {
+    opts = opts || {};
+    var flow = $('lavFlow');
+    if (!resultDesignOn()) {
+      if (window.gpResultCompare) window.gpResultCompare.hideBar();
+      document.body.classList.remove('gp-rdp-on');
+      syncResultDesign();
+      return;
+    }
+    loadResultCompare().then(function (c) {
+      c.showBar({
+        onSample: function (b, a, m) { window.lavAdminPreviewDone(b, a, m); },
+        onOff: function () {
+          try { localStorage.removeItem(RESULT_DESIGN_KEY); } catch (e) {}
+          window.lavResultDesignBoot();
+        }
+      });
+      document.body.classList.add('gp-rdp-on');
+      syncResultDesign();
+      var showingDone = flow && !flow.hidden && flow.dataset.step === 'done';
+      if (opts.openSample && !showingDone) c.openSample();
+    }).catch(function () {});
+  };
 
   function renderRefineTargets(st) {
     var wrap = $('lavDoneRefine'), list = $('lavDoneRefineList'), okLine = $('lavDoneRefineOk');
@@ -4923,5 +5005,18 @@
     };
     setTimeout(tick, 3000);
   }
+
+  // 새로고침해도 A안을 켜 둔 관리자에게만 띠를 다시 띄운다(로그인 확인 뒤, 일반 사용자는 아무것도 하지 않는다).
+  (function bootResultDesign() {
+    var flag = false;
+    try { flag = localStorage.getItem(RESULT_DESIGN_KEY) === 'A'; } catch (e) {}
+    if (!flag) return;
+    var tries = 0;
+    function check() {
+      if (window.CU && window.isAdmin) { if (window.isAdmin()) window.lavResultDesignBoot(); return; }
+      if (++tries < 40) setTimeout(check, 500);
+    }
+    setTimeout(check, 300);
+  })();
 
 })();

@@ -8176,11 +8176,16 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-lab-chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;background:#eef0ff;color:var(--admin-blue);font-size:11px;font-weight:800;}
 .gp-admin-lab-json{flex:1;min-height:260px;max-height:520px;overflow:auto;margin:0;border:1px solid var(--admin-line);border-radius:8px;background:#111827;color:#e5e7eb;padding:12px;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word;}
 @media(max-width:960px){.gp-admin-lab-toolbar,.gp-admin-lab-result-grid{grid-template-columns:1fr;}.gp-admin-lab-head-actions{justify-content:flex-start;}}
-/* 결과 화면 미리보기(시안 A, 2026-10-02): 원문·다듬은 글 문단 나란히 */
-.gp-rp{display:flex;flex-direction:column;gap:12px;}
-.gp-rp-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-.gp-rp-bar h3{margin:0;font-size:15px;font-weight:800;letter-spacing:-.02em;color:#1c1b2e;}
+/* 결과 화면 A안(관리자 미리보기, 2026-10-02): 운영 결과 카드를 원문·다듬은 글 문단 나란히로 바꿔 본다.
+   관리자 랩에서 켠 관리자에게만 .is-result-a가 붙는다. 기존 본문(#lavDoneBody)은 숨기기만 해 복사·다운로드가 그대로다. */
+.lav-done-compare{display:none;}
+.gp-lav-flow.is-result-a{width:min(1180px,100%);}
+.gp-lav-flow.is-result-a .lav-done-compare{display:flex;flex-direction:column;gap:8px;margin:0 0 4px;}
+.gp-lav-flow.is-result-a #lavDoneBody,.gp-lav-flow.is-result-a #lavDoneToggle,.gp-lav-flow.is-result-a #lavDoneScoreWrap{display:none!important;}
+.gp-lav-flow.is-result-a .gp-rp-tools{justify-content:flex-end;}
+.gp-lav-flow.is-result-a .gp-rp-view{max-height:max(380px,calc(100vh - 460px));}
 .gp-rp-tools{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.gp-rp-switch.is-off{opacity:.45;cursor:not-allowed;}
 .gp-rp-switch{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:36px;font-size:13px;font-weight:700;color:#3d4458;cursor:pointer;user-select:none;}
 .gp-rp-switch input{position:absolute;opacity:0;width:1px;height:1px;margin:0;}
 .gp-rp-switch i{position:relative;flex-shrink:0;width:34px;height:20px;border-radius:999px;background:#c9ccd9;transition:background .15s;}
@@ -8188,9 +8193,26 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-rp-switch input:checked+i{background:#6d4aff;}
 .gp-rp-switch input:checked+i::after{transform:translateX(14px);}
 .gp-rp-switch input:focus-visible+i{outline:2px solid #4b34cc;outline-offset:2px;}
-.gp-rp-input{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end;}
-.gp-rp-input[hidden]{display:none!important;}
-.gp-rp-input textarea{width:100%;resize:vertical;font-size:13px;line-height:1.6;}
+/* 관리자 띠: 운영 화면 하단에 A안 적용 상태·예시 글 입력 */
+.gp-rdp{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:1200;width:auto;max-width:calc(100vw - 32px);display:flex;flex-direction:column;gap:8px;font-family:Pretendard,"Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;}
+.gp-rdp[hidden]{display:none!important;}
+body.gp-rdp-on .gp-lav-main{padding-bottom:96px;}
+.gp-rdp-row{display:flex;align-items:center;gap:10px;padding:7px 7px 7px 16px;border-radius:999px;background:#1c1b2e;color:#fff;box-shadow:0 18px 40px -18px rgba(28,27,46,.6);}
+.gp-rdp-dot{flex-shrink:0;width:8px;height:8px;border-radius:50%;background:#f5b425;}
+.gp-rdp-label{font-size:13.5px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;}
+.gp-rdp-sub{margin-right:auto;font-size:12px;color:#c9c4ea;white-space:nowrap;}
+.gp-rdp-btn{height:36px;padding:0 14px;border:0;border-radius:999px;background:#fff;color:#1c1b2e;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;}
+.gp-rdp-btn.is-quiet{background:rgba(255,255,255,.12);color:#fff;}
+.gp-rdp-btn:focus-visible,.gp-rdp-go:focus-visible{outline:2px solid #f5b425;outline-offset:2px;}
+.gp-rdp-panel{box-sizing:border-box;width:min(760px,calc(100vw - 32px));display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid #e4e2ee;border-radius:16px;background:#fff;box-shadow:0 24px 60px -24px rgba(28,27,46,.45);}
+.gp-rdp-panel[hidden]{display:none!important;}
+.gp-rdp-texts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
+.gp-rdp-text{box-sizing:border-box;width:100%;min-height:150px;padding:10px 12px;border:1px solid #e4e2ee;border-radius:10px;background:#fff;color:#1c1b2e;font:14px/1.6 Pretendard,"Noto Sans KR",sans-serif;resize:vertical;}
+.gp-rdp-text:focus,.gp-rdp-mode:focus{outline:2px solid #6d4aff;outline-offset:1px;}
+.gp-rdp-foot{display:flex;justify-content:flex-end;align-items:center;gap:8px;}
+.gp-rdp-mode{height:40px;padding:0 10px;border:1px solid #e4e2ee;border-radius:10px;background:#fff;color:#1c1b2e;font-size:13.5px;}
+.gp-rdp-go{height:40px;padding:0 18px;border:0;border-radius:10px;background:#1c1b2e;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;}
+@media(max-width:760px){.gp-rdp{width:calc(100vw - 24px);}.gp-rdp-sub{display:none;}.gp-rdp-texts{grid-template-columns:minmax(0,1fr);}.gp-rdp-text{min-height:110px;}}
 /* 긴 글 기준 조판: 다듬은 글=따뜻한 흰 종이(아주 옅은 결), 원문=한 톤 가라앉은 초안 종이.
    본문 Pretendard 16/1.85(원문 15/1.85), 한 칸 보기 17/1.9·약 40자 폭. 바뀐 곳은 글자 아래 절반에만 형광펜 띠. */
 .gp-rp-view{--rp-ink:#1c1b2e;--rp-ink2:#4f5468;--rp-mute:#6b7086;--rp-line:rgba(28,27,46,.06);--rp-paper:#fffdfa;
@@ -8244,7 +8266,6 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-rp-view.is-single .gp-rp-row.is-h .gp-rp-cell p{font-size:17.5px;}
 .gp-rp-view.is-single .gp-rp-row:hover>.gp-rp-cell{box-shadow:none;}
 @media(max-width:760px){
-.gp-rp-input{grid-template-columns:minmax(0,1fr);}
 .gp-rp-head,.gp-rp-row{grid-template-columns:minmax(0,1fr);}
 .gp-rp-col--b{display:none;}
 .gp-rp-col{padding:0 18px;}
@@ -8253,6 +8274,7 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-rp-cell--b{order:2;padding-top:0;border-right:0;background:transparent;}
 .gp-rp-cell--b p{padding:10px 12px;border-radius:10px;background:rgba(226,227,238,.45);font-size:14px;line-height:1.75;}
 .gp-rp-row.is-h .gp-rp-cell--b{display:none;}
+.gp-rp-row.is-same .gp-rp-cell--b{display:none;}
 .gp-rp-row:hover>.gp-rp-cell{box-shadow:none;}
 .gp-rp-view.is-single .gp-rp-col--a,.gp-rp-view.is-single .gp-rp-cell--a{padding-left:18px;padding-right:18px;}
 .gp-rp-view.is-single .gp-rp-cell--a p{font-size:16.5px;line-height:1.85;}

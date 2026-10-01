@@ -5888,7 +5888,6 @@ function adminLabRenderResult(st) {
  const result = (st && st.result) || {};
  const out = document.getElementById('adminLabOutput');
  if (out) out.value = result.outputText || '';
- if (window.adminResultPreviewSet) window.adminResultPreviewSet(document.getElementById('adminLabInput')?.value || '', result.outputText || '');
  const baselineWrap = document.getElementById('adminLabBaselineWrap');
  const baselineOut = document.getElementById('adminLabBaselineOutput');
  const baselineText = result.baselineOutputText || '';
@@ -6038,185 +6037,18 @@ async function adminLabPoll(jobId, tokenId) {
  throw new Error('작업이 예상보다 오래 걸립니다. 잠시 후 다시 확인해 주세요.');
 }
 
-// ── 결과 화면 미리보기(시안 A, 2026-10-02) ─────────────────────────────
-// 원문·결과를 줄 단위 유사도로 짝짓고(1:1·1:2·2:1), 어절 단위로 바뀐 곳을 표시한다.
-// 글은 textContent로만 넣는다(사용자 글에 태그가 섞여도 그대로 글자로 보인다).
-const adminRP = { model: null };
-const RP_EMPTY = '테스트를 실행하거나 원문·결과를 붙여넣으면 여기에 나란히 보여요.';
-const RP_TOP = /^(#{1,2}\s|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\s*[.)]|[IVX]{1,4}\.\s|<[^>]{1,20}>|제\s?\d+\s?[장절]|-\s?(서론|본론|결론))/;
-const RP_SUB = /^(#{3,}\s|\d{1,2}(\.\d{1,2})*\.?\s|[가-하]\.\s|\[[^\]]{2,60}\]\s*$)/;
-
-function rpLines(s) { return String(s || '').replace(/\r/g, '').split('\n').map((l) => l.trim()).filter(Boolean); }
-function rpGrams(s) { const t = s.replace(/\s+/g, ''); const set = new Set(); for (let i = 0; i < t.length - 1; i++) set.add(t.slice(i, i + 2)); return set; }
-function rpSim(A, B) {
- if (!A.size || !B.size) return 0;
- const [s, l] = A.size < B.size ? [A, B] : [B, A];
- let n = 0; s.forEach((g) => { if (l.has(g)) n++; });
- return (2 * n) / (A.size + B.size);
-}
-function rpUnion(A, B) { const u = new Set(A); B.forEach((g) => u.add(g)); return u; }
-function rpIsHeading(line) {
- if (!line || line.length > 70 || /[다요]\.\s*$/.test(line)) return false;
- return RP_TOP.test(line) || RP_SUB.test(line);
-}
-
-// 한 문단을 결과가 최대 4개로 나누거나(1:k) 여러 문단을 합친 경우(k:1)까지 짝짓는다.
-// 묶는 개수가 늘수록 감점을 조금씩 키워 무리한 합치기를 막는다.
-// 대각선 띠 안에서만 계산해 긴 글(수백 줄)도 즉시 끝난다.
-const RP_MOVES = [[1, 1], [1, 2], [1, 3], [1, 4], [2, 1], [3, 1], [4, 1], [1, 0], [0, 1]];
-// groups[k-1][i] = i번째부터 k개 문단을 합친 글자쌍 집합(미리 한 번만 만든다).
-function rpGroups(grams) {
- const groups = [grams];
- for (let k = 2; k <= 4; k++) {
-  const prev = groups[k - 2];
-  groups.push(grams.map((s, i) => (i + k - 1 < grams.length ? rpUnion(prev[i], grams[i + k - 1]) : null)));
- }
- return groups;
-}
-function rpAlign(A, B) {
- const n = A.length, m = B.length;
- const ga = rpGroups(A.map(rpGrams)), gb = rpGroups(B.map(rpGrams));
- const band = Math.max(14, Math.abs(n - m) + 10);
- const NEG = -1e9;
- const S = Array.from({ length: n + 1 }, () => new Float64Array(m + 1).fill(NEG));
- const P = Array.from({ length: n + 1 }, () => new Int8Array(m + 1));
- S[0][0] = 0;
- for (let i = 0; i <= n; i++) {
-  const c = n ? Math.round((i * m) / n) : 0;
-  for (let j = Math.max(0, c - band); j <= Math.min(m, c + band); j++) {
-   const cur = S[i][j];
-   if (cur === NEG) continue;
-   for (let k = 0; k < RP_MOVES.length; k++) {
-    const [di, dj] = RP_MOVES[k];
-    const ni = i + di, nj = j + dj;
-    if (ni > n || nj > m) continue;
-    let sc = -0.3;
-    if (di && dj) {
-     const extra = di + dj - 2;
-     sc = rpSim(ga[di - 1][i], gb[dj - 1][j]) - (extra ? 0.1 + 0.05 * extra : 0);
-    }
-    if (cur + sc > S[ni][nj]) { S[ni][nj] = cur + sc; P[ni][nj] = k + 1; }
-   }
-  }
- }
- const out = [];
- let i = n, j = m;
- while (i > 0 || j > 0) {
-  const k = P[i][j];
-  if (!k) { out.push([A.slice(0, i).join('\n\n'), B.slice(0, j).join('\n\n')]); break; }
-  const [di, dj] = RP_MOVES[k - 1];
-  // 한 칸에 묶인 여러 문단은 빈 줄로 이어 실제 문단 나눔이 보이게 한다.
-  out.push([A.slice(i - di, i).join('\n\n'), B.slice(j - dj, j).join('\n\n')]);
-  i -= di; j -= dj;
- }
- return out.reverse();
-}
-
-// 어절 LCS. 바뀐 어절 사이의 공백도 같이 칠해 끊김 없이 보이게 한다.
-function rpSegs(tokens, keep) {
- let w = 0;
- const flags = tokens.map((t) => (/^\s+$/.test(t) ? -1 : (keep[w++] ? 0 : 1)));
- flags.forEach((f, k) => { if (f === -1) flags[k] = !/\n/.test(tokens[k]) && flags[k - 1] === 1 && flags[k + 1] === 1 ? 1 : 0; });
- const out = [];
- tokens.forEach((t, k) => { const last = out[out.length - 1]; if (last && last[1] === flags[k]) last[0] += t; else out.push([t, flags[k]]); });
- return out;
-}
-function rpDiff(a, b) {
- const ta = a ? a.split(/(\s+)/).filter(Boolean) : [];
- const tb = b ? b.split(/(\s+)/).filter(Boolean) : [];
- const wa = ta.filter((t) => !/^\s+$/.test(t)), wb = tb.filter((t) => !/^\s+$/.test(t));
- const n = wa.length, m = wb.length;
- const keepA = new Uint8Array(n), keepB = new Uint8Array(m);
- if (n && m && n * m <= 4e6) {
-  const L = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
-  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = wa[i] === wb[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
-  for (let i = 0, j = 0; i < n && j < m;) {
-   if (wa[i] === wb[j]) { keepA[i] = keepB[j] = 1; i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) i++; else j++;
-  }
- }
- return { b: rpSegs(ta, keepA), a: rpSegs(tb, keepB) };
-}
-function rpNums(s) { return (String(s).match(/\d+/g) || []).sort().join(','); }
-
-function rpEl(tag, cls, text) {
- const e = document.createElement(tag);
- if (cls) e.className = cls;
- if (text != null) e.textContent = text;
- return e;
-}
-function rpPara(segs, hl) {
- const p = rpEl('p');
- segs.forEach(([t, f]) => { p.appendChild(f && hl ? rpEl('mark', '', t) : document.createTextNode(t)); });
- return p;
-}
-
-window.adminResultPreviewSet = function(before, after) {
- before = String(before || '');
- after = String(after || '');
- if (!before.trim() || !after.trim()) { adminRP.model = null; window.adminResultPreviewRender(); return; }
- const rows = rpAlign(rpLines(before), rpLines(after)).map(([a, b]) => {
-  const d = rpDiff(a, b);
-  return { h: rpIsHeading(a || b) && !/\n/.test(a + b), b: d.b, a: d.a, warn: !!a && !!b && rpNums(a) !== rpNums(b) };
- });
- adminRP.model = { rows, before, after, lb: before.trim().length, la: after.trim().length };
- window.adminResultPreviewRender();
+// 결과 화면 A안을 운영 작업 화면에 적용해 보는 관리자 전용 스위치(2026-10-02).
+//   이 브라우저에만 저장되고, 관리자에게만 적용된다. 실제 렌더는 evasion-flow의 lavResultDesignBoot가 맡는다.
+window.adminResultDesignOpen = function() {
+ if (!window.CU || !window.isAdmin()) return;
+ try { localStorage.setItem('gp_admin_result_design', 'A'); } catch (e) {}
+ if (typeof window.switchTab === 'function') window.switchTab('main');
+ if (typeof window.lavResultDesignBoot === 'function') window.lavResultDesignBoot({ openSample: true });
 };
-
-window.adminResultPreviewRender = function() {
- const view = document.getElementById('rpView');
- if (!view) return;
- const M = adminRP.model;
- view.textContent = '';
- if (!M) { view.classList.remove('is-single'); view.appendChild(rpEl('p', 'gp-rp-empty', RP_EMPTY)); return; }
- const hl = document.getElementById('rpHl')?.checked !== false;
- const orig = document.getElementById('rpOrig')?.checked !== false;
- view.classList.toggle('is-single', !orig);
- const head = rpEl('div', 'gp-rp-head');
- const hb = rpEl('div', 'gp-rp-col gp-rp-col--b');
- hb.append(rpEl('b', '', '원문'), rpEl('span', '', M.lb.toLocaleString('ko-KR') + '자'));
- const ha = rpEl('div', 'gp-rp-col gp-rp-col--a');
- const copy = rpEl('button', 'gp-rp-copy', '복사');
- copy.type = 'button';
- copy.addEventListener('click', () => window.adminResultPreviewCopy());
- ha.append(rpEl('b', '', '다듬은 글'), rpEl('span', '', M.la.toLocaleString('ko-KR') + '자'), copy);
- head.append(hb, ha);
- const body = rpEl('div', 'gp-rp-body');
- const frag = document.createDocumentFragment();
- M.rows.forEach((r) => {
-  const row = rpEl('div', 'gp-rp-row' + (r.h ? ' is-h' : ''));
-  const cb = rpEl('div', 'gp-rp-cell gp-rp-cell--b');
-  cb.appendChild(rpPara(r.b, hl));
-  const ca = rpEl('div', 'gp-rp-cell gp-rp-cell--a');
-  ca.appendChild(rpPara(r.a, hl));
-  if (r.warn) ca.appendChild(rpEl('span', 'gp-rp-warn', '숫자가 원문과 달라요'));
-  row.append(cb, ca);
-  frag.appendChild(row);
- });
- body.appendChild(frag);
- view.append(head, body);
-};
-
-window.adminResultPreviewCopy = async function() {
- const text = adminRP.model?.after || '';
- if (!text) return;
- await navigator.clipboard.writeText(text);
- if (window.gpToast) window.gpToast('다듬은 글을 복사했습니다.', { type: 'success', title: '복사 완료' });
-};
-
-window.adminResultPreviewToggleInput = function() {
- const box = document.getElementById('rpInput');
- if (!box) return;
- box.hidden = !box.hidden;
- if (!box.hidden) {
-  const b = document.getElementById('rpBefore'), a = document.getElementById('rpAfter');
-  if (b && !b.value) b.value = adminRP.model?.before || '';
-  if (a && !a.value) a.value = adminRP.model?.after || '';
-  b?.focus();
- }
-};
-
-window.adminResultPreviewFromInput = function() {
- window.adminResultPreviewSet(document.getElementById('rpBefore')?.value, document.getElementById('rpAfter')?.value);
+window.adminResultDesignOff = function() {
+ try { localStorage.removeItem('gp_admin_result_design'); } catch (e) {}
+ if (typeof window.lavResultDesignBoot === 'function') window.lavResultDesignBoot();
+ if (window.gpToast) window.gpToast('결과 화면 A안을 껐어요.', { type: 'success' });
 };
 
 window.adminHumanizeLabCount = function() {
@@ -6246,7 +6078,6 @@ window.adminHumanizeLabClear = function() {
  const jobId = document.getElementById('adminLabJobId');
  if (jobId) jobId.textContent = '';
  adminLabRenderChips([]);
- if (window.adminResultPreviewSet) window.adminResultPreviewSet('', '');
  adminLabSetStatus('', '');
  adminLabSetBusy(false);
  window.adminHumanizeLabCount();

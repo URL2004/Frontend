@@ -105,26 +105,6 @@
       </div>
     </section>
 
-    <!-- 결과 화면 미리보기(시안 A, 2026-10-02): 원문·다듬은 글을 문단끼리 나란히 놓는다. 관리자 확인용. -->
-    <section class="gp-admin-panel gp-rp" id="adminResultPreview">
-      <div class="gp-rp-bar">
-        <h3>결과 화면 미리보기</h3>
-        <div class="gp-rp-tools">
-          <label class="gp-rp-switch"><input id="rpHl" type="checkbox" checked onchange="adminResultPreviewRender()"><i aria-hidden="true"></i>바뀐 곳</label>
-          <label class="gp-rp-switch"><input id="rpOrig" type="checkbox" checked onchange="adminResultPreviewRender()"><i aria-hidden="true"></i>원문</label>
-          <button type="button" class="gp-admin-refresh" onclick="adminResultPreviewToggleInput()">직접 붙여넣기</button>
-        </div>
-      </div>
-      <div id="rpInput" class="gp-rp-input" hidden>
-        <textarea id="rpBefore" class="gp-admin-input" rows="6" placeholder="원문"></textarea>
-        <textarea id="rpAfter" class="gp-admin-input" rows="6" placeholder="휴머나이징 결과"></textarea>
-        <button type="button" class="gp-admin-primary" onclick="adminResultPreviewFromInput()">미리보기</button>
-      </div>
-      <div id="rpView" class="gp-rp-view">
-        <p class="gp-rp-empty">테스트를 실행하거나 원문·결과를 붙여넣으면 여기에 나란히 보여요.</p>
-      </div>
-    </section>
-
     <!-- ── 자소서 생성 랩(글쓰기 랩 실험, 2026-08-24): 생성(Writer) → 휴머나이징(기존 admin lab 경로) → 무날조 검수 체인.
          운영 기능에는 적용하지 않는 관리자 전용·무과금 실험이다. -->
     <section class="gp-admin-panel gp-wlab-panel">
