@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-02",
+  "tool": "Built-in image_gen",
+  "format": "WebP, 1200px width, libwebp quality 82",
+  "images": [
+    {
+      "slug": "survey-question-writing-guide",
+      "prompt": "Use case: stylized-concept. Asset: cover illustration for Korean university guide on writing clear survey questions. Wide 16:9 landscape. A tabletop mobile made from five small blank ivory cards hanging separately from a graceful lavender branching frame; each card holds exactly one different tactile geometric shape, circle, triangle, square, arch, wave. Three muted teal and apricot ceramic choice tokens on the table. Clear idea of separating questions and making answer choices. Refined paper sculpture and matte ceramic, ivory background, natural soft side light, airy editorial art with center-focused composition. Keep all important elements within central 65% width and middle 55% height for square and 2.4:1 crops. No words, letters, numbers, logos, watermark, checkmarks, books, flowers or magnifying glasses.",
+      "asset": "assets/img/blog/survey-question-writing-guide.webp"
+    },
+    {
+      "slug": "percent-vs-percentage-point-guide",
+      "prompt": "Use case: stylized-concept. Asset: cover illustration for a Korean university report-writing guide about percentage versus percentage-point differences. Wide 16:9 landscape. Two large sculptural lavender circular discs stand upright side by side on a low ivory plinth. Each disc has a small contrasting coral sector, clearly different sector sizes. A separate slender indigo measuring bracket floats in the gap between discs to suggest comparison. Restrained lavender, deep indigo, coral and ivory palette, tactile matte ceramic, pale cream studio background, soft sunlight, minimal premium editorial still life, frontal slightly elevated view. Main subjects centered within 65% width and middle 55% height so square and 2.4:1 crops keep both discs visible. Decorative conceptual illustration, not a precise data chart. No text, numbers, percentage signs, logos, watermark, paper documents, bar charts, checkmarks, flowers or magnifying glasses.",
+      "asset": "assets/img/blog/percent-vs-percentage-point-guide.webp"
+    }
+  ]
+}
