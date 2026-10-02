@@ -7,19 +7,19 @@
       level: 'low',
       label: 'AI식 문체 점수 · 낮은 구간',
       summary: 'AI식 문체 점수가 낮은 구간이에요.',
-      detail: function (p) { return 'AI식 문체 점수 ' + p + '/100은 낮은 구간입니다. 일부 정형적 특징은 참고 신호이며, 내용 근거는 별도로 확인해 주세요.'; }
+      detail: function (p) { return 'AI식 문체 점수 ' + p + '/100은 낮은 구간입니다. 글에 나타난 AI식 표현과 전개를 종합한 점수예요.'; }
     },
     moderate: {
       level: 'moderate',
       label: 'AI식 문체 점수 · 중간 구간',
       summary: 'AI식 문체 점수가 중간 구간이에요.',
-      detail: function (p) { return 'AI식 문체 점수 ' + p + '/100은 중간 구간이에요. 일부 정형적인 문체 특징이 관찰됐지만 작성 주체를 단정하지 않아요.'; }
+      detail: function (p) { return 'AI식 문체 점수 ' + p + '/100은 중간 구간이에요. 글에 나타난 AI식 표현과 전개를 종합한 점수예요.'; }
     },
     high: {
       level: 'high',
       label: 'AI식 문체 점수 · 높은 구간',
       summary: 'AI식 문체 점수가 높은 구간이에요.',
-      detail: function (p) { return 'AI식 문체 점수 ' + p + '/100은 높은 구간이에요. 표시된 문체 특징이 점수를 높인 근거로 관찰됐어요.'; }
+      detail: function (p) { return 'AI식 문체 점수 ' + p + '/100은 높은 구간이에요. 글에 나타난 AI식 표현과 전개를 종합한 점수예요.'; }
     }
   };
 
@@ -84,7 +84,7 @@
       confidence: source.confidence || source.detectConfidence || null,
       textLength: input !== null ? input.length : source.inputChars == null ? null : source.inputChars,
       sentenceTotal: sentences == null ? null : sentences,
-      signalEvidence: Array.isArray(source.signalEvidence) ? source.signalEvidence : ((report.causeAnalysis || {}).items || []),
+      signalEvidence: Array.isArray(source.signalEvidence) ? source.signalEvidence : Array.isArray(source.detectCauseEvidence) ? source.detectCauseEvidence : ((report.causeAnalysis || {}).items || []),
       statisticalSupport: source.statisticalSupport || source.detectStatisticalSupport || null,
       statisticalReference: source.statisticalReference || source.detectStatisticalReference || null,
       calibrationApplied: !!(source.probabilityCalibration && source.probabilityCalibration.applied),
@@ -107,8 +107,8 @@
     return {
       label: info.label || band.label,
       headline: observed ? (band.level === 'low' ? '전체 신호는 낮아요. 확인할 부분: ' : '') + pattern.label + (band.level === 'low' ? '' : '부터 살펴보세요') : band.summary,
-      description: observed ? pattern.locationCount + '개 문장에서 확인한 특징: ' + pattern.description + '.'
-        : '반복 표현과 글의 전개에서 관찰한 특징을 종합한 참고 점수이며 AI 작성 확률이 아니에요.',
+      description: '글에 나타난 AI식 표현과 전개를 종합한 점수예요.',
+      evidenceDescription: observed ? pattern.locationCount + '개 문장에서 확인한 특징: ' + pattern.description + '.' : '',
       nextSteps: observed ? (info.status === 'ready' && Array.isArray(info.nextSteps) && info.nextSteps.length
         ? info.nextSteps.slice(0, 3) : ['표시된 ' + pattern.label + ' 항목의 문장을 앞뒤 문맥과 함께 확인해 주세요.']) : []
     };
@@ -117,7 +117,7 @@
   function interpretationText(info) {
     if (!info) return '';
     var copy = scoreCopy(info);
-    return [copy.label, copy.description,
+    return [copy.label, copy.description, copy.evidenceDescription,
       copy.nextSteps.length ? '다음으로 확인할 점\n' + copy.nextSteps.map(function (step) { return '• ' + step; }).join('\n') : '',
       DISCLAIMER].filter(Boolean).join('\n\n');
   }
@@ -166,6 +166,9 @@
     // Only stored analysis prose is handled here. Input text and quoted evidence are untouched.
     var replaced = false;
     return text.replace(/(?:[^\n.!?。！？]|\.(?=\d))+[.!?。！？]*/g, function (sentence) {
+      if (/문체\s*특징[^.!?]{0,25}점수를\s*높인\s*(?:근거|신호)|점수에\s*(?:연결된|반영된)\s*(?:판단\s*)?원인/.test(sentence)) {
+        return '원문에서 확인한 문체 특징을 아래에서 살펴보세요.';
+      }
       if (!staleCalibrationNarrative(sentence) && !numericAuthorshipClaim(sentence) && !contradicts(sentence, info.band)) return sentence;
       if (replaced) return '';
       replaced = true;
@@ -214,6 +217,78 @@
     return '원글 ' + before + '점 → 휴머나이징 후 ' + after + '점 · ' + change + '. 같은 서비스에서 검사한 문체 신호 점수 비교예요.';
   }
 
+  // Read-only history adapter. Never re-score or re-run a saved analysis.
+  // Only a matching response snapshot may supply missing presentation fields.
+  function historySource(record) {
+    var row = record || {}, cache = row.detectResponseCache;
+    var snapshot = cache && typeof cache === 'object' && !Array.isArray(cache)
+      && probability(row.probability) !== null && probability(cache.probability) === probability(row.probability)
+      && (!row.detectorVersion || cache.detectorVersion === row.detectorVersion)
+      && (!cache.inputText || cache.inputText === row.inputText) ? cache : {};
+    var result = Object.assign({}, row);
+    ['reportView', 'measuredEvidence', 'sentenceMap', 'paragraphs', 'signalEvidence'].forEach(function (key) {
+      if (result[key] == null && snapshot[key] != null) result[key] = snapshot[key];
+    });
+    // History locations use the original UTF-16 coordinates, not projected UI IDs.
+    var evidence = Array.isArray(row.detectCauseEvidence) ? row.detectCauseEvidence
+      : Array.isArray(result.signalEvidence) ? result.signalEvidence : ((result.reportView || {}).causeAnalysis || {}).items || [];
+    if (!Array.isArray(evidence)) evidence = [];
+    var text = typeof row.inputText === 'string' ? row.inputText : '';
+    result.signalEvidence = evidence.filter(function (item) { return item && typeof item === 'object'; }).map(function (item) {
+      var seen = {};
+      var locations = item.locationStatus === 'source_range_verified' && Array.isArray(item.locations)
+        ? item.locations.filter(function (loc) {
+          if (!loc || !Number.isSafeInteger(loc.sentenceIndex) || loc.sentenceIndex < 0
+            || !Number.isSafeInteger(loc.start) || !Number.isSafeInteger(loc.end)
+            || loc.start < 0 || loc.end <= loc.start || loc.end > text.length || !text.slice(loc.start, loc.end).trim()) return false;
+          var key = loc.start + ':' + loc.end;
+          if (seen[key]) return false;
+          seen[key] = true;
+          return true;
+        }) : [];
+      return Object.assign({}, item, { locations: locations, locationStatus: locations.length ? 'source_range_verified' : 'unlocated' });
+    });
+    return result;
+  }
+
+  function historySections(record) {
+    var source = historySource(record), view = normalize(source), info = view.interpretation;
+    var sections = [];
+    var add = function (title, text) { if (typeof text === 'string' && text.trim()) sections.push({ title: title, text: text.trim() }); };
+    add('분석 요약', view.summary);
+    // Use the public descriptor, not the stored diagnostic prose. That prose
+    // contains sample-size / calibration notices deliberately absent in the UI.
+    add('점수 안내', interpretationText(info));
+    add('휴머나이징 전후 비교', historyComparisonText(view));
+    // Retain useful legacy analysis, excluding only diagnostic/template copy.
+    // Never apply this filter to the user's original text or evidence quotes.
+    var template = info ? [info.description, info.evidence && info.evidence.reason]
+      .concat(info.nextSteps || [], info.limitations || [], [scoreCopy(info).description, DISCLAIMER]) : [];
+    var legacy = narrative(source.detail);
+    template.filter(Boolean).forEach(function (line) { legacy = legacy.split(line).join(''); });
+    legacy = publicNarrative(legacy, info).split(/\n+/).filter(function (line) {
+      return line.trim() && !/짧은\s*글|문장\s*수가\s*적|문장이\s*(?:적어|충분하지)|분석\s*근거\s*제한|근거가\s*제한|해석에\s*주의|비교하기\s*어려|보정|작성\s*주체.*확정/.test(line)
+        && !(info && line.includes(scoreCopy(info).description));
+    }).join('\n\n');
+    add('상세 분석', legacy);
+    if (typeof global.gpDetectHistoryMetrics === 'function') {
+      global.gpDetectHistoryMetrics(source).forEach(function (section) { add(section.title, section.text); });
+    }
+    var labels = global.GPDetectInterpretation && global.GPDetectInterpretation.PATTERN_LABELS || {};
+    var scopes = { isolated: '일부 문장', recurring: '여러 문장', pervasive: '글 전반' };
+    var strengths = { weak: '약함', moderate: '뚜렷함', strong: '강함' };
+    var causes = source.signalEvidence.filter(function (item) { return item.locations.length && labels[item.category]; }).map(function (item) {
+      var label = labels[item.category];
+      var title = (typeof label === 'string' ? label : label.label) || item.categoryLabel;
+      return [title, [scopes[item.scope], strengths[item.strength]].filter(Boolean).join(' · '),
+        item.locations.map(function (loc) { return '“' + source.inputText.slice(loc.start, loc.end) + '”'; }).join('\n')].filter(Boolean).join('\n');
+    });
+    add('원문에서 확인한 문체 특징', causes.join('\n\n'));
+    return sections;
+  }
+
+  global.gpDetectHistorySource = historySource;
+  global.gpDetectHistorySections = historySections;
   global.gpDetectHistoryComparisonText = historyComparisonText;
   global.gpDetectScoreCopy = scoreCopy;
   global.gpNormalizeDetectPresentation = normalize;

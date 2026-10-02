@@ -62,7 +62,8 @@ test('사용자 휴머나이징 기록은 결과만 보여주고 모델의 작�
   const detail = source.slice(source.indexOf('function historyRenderDetail'), source.indexOf('function historyRender()'));
   assert.match(detail, /historyDetailBlock\('휴머나이징 결과', item\.outputText, true\)/u);
   assert.match(detail, /historyDetailBlock\('분석 요약', view\.summary, true\)/u);
-  assert.match(detail, /historyDetailBlock\('상세 분석', view\.detail, false\)/u);
+  assert.match(detail, /gpDetectHistorySections\(item\)/u);
+  assert.doesNotMatch(detail, /historyDetailBlock\('상세 분석', view\.detail/u);
   assert.doesNotMatch(detail, /작업 요약|상세 정보|item\.humanSummary|item\.humanDetail/u);
   assert.doesNotMatch(search, /item\.humanSummary|item\.humanDetail/u);
 });

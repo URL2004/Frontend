@@ -42,8 +42,9 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
      </svg>
      <span class="gp-dr-prof"><img src="/assets/img/report/professor.png" alt="" width="320" height="314" loading="lazy" decoding="async"><em>교수님</em></span>
      <span class="gp-dr-arm"><span class="gp-dr-blip"><img src="/assets/img/report/runner.png" alt="" width="271" height="320" loading="lazy" decoding="async"><em>내 글</em></span></span>
-     <span class="gp-dr-read"><small>AI식 문체 점수</small><strong><span class="gp-dr-num">64</span><i>/100</i></strong></span>
+     <span class="gp-dr-read"><small>AI식 문체 점수</small><strong role="img" aria-label="100점 만점에 64점"><span class="gp-dr-num">64</span><i>/100</i></strong></span>
     </div>
+    <p class="gp-dr-note">글에 나타난 AI식 표현과 전개를 종합한 점수예요.</p>
     <span class="gp-dr-band-chip">높은 구간</span>
     <div class="gp-dr-verdict">
      <strong>종결 표현부터 살펴보세요</strong>
@@ -68,7 +69,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <div class="gp-dr-q-head">
      <h2 id="drQScoreH"><span class="gp-dr-qm" aria-hidden="true">Q</span>점수는 AI가 썼을 확률인가요?</h2>
      <p class="gp-dr-a"><span class="gp-dr-am" aria-hidden="true">A</span>아니에요. 다시 읽어 볼 곳을 알려주는 문체 신호예요.</p>
-     <p>AI식 문체 점수는 반복되는 문장 끝, 비슷한 문장 길이, 일반론 중심 결론 같은 신호가 글 전체에서 얼마나 겹치는지를 100점 기준으로 보여줘요. 신호가 높다고 AI가 썼다고 단정하거나, 낮다고 사람의 글이라고 확정할 수는 없어요.</p>
+     <p>글에 나타난 AI식 표현과 전개를 종합한 점수예요. 원문에서 확인한 특징은 해당 문장과 함께 보여주고, 문장 길이와 반복 표현을 살펴보는 다섯 지표는 별도로 표시해요. 이 막대를 더해 총점을 계산하지는 않아요.</p>
      <p>‘AI 검사기’, ‘AI 판독기’, ‘AI 탐지기’라는 이름으로 찾더라도 점수의 의미와 검증 범위를 먼저 확인해 주세요. <a href="/blog/ai-detection-evaluation-notes">감지 검증 기록과 표본의 한계</a>도 공개해 두었어요.</p>
     </div>
     <figure class="gp-dr-scale" aria-labelledby="drScaleCap">
@@ -80,9 +81,9 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
      </div>
      <div class="gp-dr-scale-ticks" aria-hidden="true"><span>100</span><span>50</span><span>20</span><span>0</span></div>
      <dl class="gp-dr-zones">
-      <div class="z-hard"><dt>높음<b>50~100</b></dt><dd>여러 문장에서 신호가 반복돼요. 보고서가 먼저 살펴볼 원인과 문장을 짚어 줘요.</dd></div>
-      <div class="z-mid"><dt>중간<b>21~49</b></dt><dd>일부 문장에서 신호가 보여요. 표시된 문장이 글의 목적에 맞는지 확인해 보세요.</dd></div>
-      <div class="z-low"><dt>낮음<b>0~20</b></dt><dd>위치까지 연결된 뚜렷한 신호가 적어요. 낮은 점수가 사람 작성 확인을 뜻하지는 않아요.</dd></div>
+      <div class="z-hard"><dt>높은 구간<b>50~100</b></dt><dd>AI식 문체 점수가 높은 구간이에요. 원문에서 확인한 문체 특징과 해당 문장을 살펴보세요.</dd></div>
+      <div class="z-mid"><dt>중간 구간<b>21~49</b></dt><dd>AI식 문체 점수가 중간 구간이에요. 표시된 문장이 글의 목적에 맞는지 확인해 보세요.</dd></div>
+      <div class="z-low"><dt>낮은 구간<b>0~20</b></dt><dd>AI식 문체 점수가 낮은 구간이에요. 낮은 점수가 사람 작성 확인을 뜻하지는 않아요.</dd></div>
      </dl>
      <p class="gp-dr-note">AI 감지 결과는 작성 여부를 확정하는 판정이 아니며 외부 검사 결과와 다를 수 있어요.</p>
     </figure>
@@ -92,7 +93,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <div class="gp-dr-q-head">
      <h2 id="drQWhereH"><span class="gp-dr-qm" aria-hidden="true">Q</span>어디를 고쳐야 하는지도 알려주나요?</h2>
      <div>
-      <p class="gp-dr-a"><span class="gp-dr-am" aria-hidden="true">A</span>네. 점수에 연결된 원인과 원문 위치를 문장 단위로 짚어 줘요.</p>
+      <p class="gp-dr-a"><span class="gp-dr-am" aria-hidden="true">A</span>네. 원문에서 확인한 문체 특징과 해당 문장을 보여줘요.</p>
       <p>같은 문장 길이와 반복되는 연결어가 표시되면, 근거가 빠진 주장인지 또는 글의 목적에 필요한 반복인지 원문과 함께 확인해 주세요. 구체적인 행동이 담긴 문장은 유지할 근거로 따로 표시해요.</p>
      </div>
     </div>
@@ -111,13 +112,13 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
        <li class="is-candidate"><span class="gp-dr-n">4</span><p><mark class="m-link">이를 통해</mark> 어떤 환경에서도 성장할 수 있는 사람이 <mark class="m-end">되었습니다</mark>.</p><span class="gp-dr-badge">다시 볼 문장</span></li>
       </ol>
       <div class="gp-dr-causes">
-       <h3>원인</h3>
+       <h3>문체 특징</h3>
        <ul>
         <li><button type="button" class="gp-dr-cause" data-c="end" aria-pressed="false" onclick="gpDetectPageCause(this)"><mark class="m-end">종결 표현</mark></button><em>4문장</em><span>반복되는 문장 끝 표현</span><i style="--w:100%"></i></li>
         <li><button type="button" class="gp-dr-cause" data-c="link" aria-pressed="false" onclick="gpDetectPageCause(this)"><mark class="m-link">연결과 결론</mark></button><em>2문장</em><span>정형적인 연결·마무리 표현</span><i style="--w:50%"></i></li>
         <li><button type="button" class="gp-dr-cause" data-c="general" aria-pressed="false" onclick="gpDetectPageCause(this)"><mark class="m-general">일반적인 설명</mark></button><em>1문장</em><span>주제에 폭넓게 쓰이는 일반론</span><i style="--w:25%"></i></li>
        </ul>
-       <p>원인 이름을 누르면 해당 표현만 남겨 보여줘요. 다시 누르면 전체를 봐요.</p>
+       <p>특징 이름을 누르면 해당 표현만 남겨 보여줘요. 다시 누르면 전체를 봐요.</p>
       </div>
      </div>
     </figure>

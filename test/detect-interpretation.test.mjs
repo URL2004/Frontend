@@ -37,7 +37,8 @@ test('short reports retain verified causes without claiming missing evidence', (
   const info = build({ ...base, textLength: 160, sentenceTotal: 2, signalEvidence: [signal('ending_repetition')] });
   const copy = browser.gpDetectScoreCopy(info);
   assert.match(copy.headline, /종결 표현/);
-  assert.match(copy.description, /2개 문장/);
+  assert.equal(copy.description, '글에 나타난 AI식 표현과 전개를 종합한 점수예요.');
+  assert.match(copy.evidenceDescription, /2개 문장/);
   assert.match(copy.nextSteps[0], /종결 표현/);
   const noEvidence = browser.gpDetectScoreCopy(build({ ...base, textLength: 160, sentenceTotal: 2 }));
   assert.equal(noEvidence.nextSteps.length, 0);
@@ -240,10 +241,12 @@ test('browser bootstrap, result, history and image export share the same interpr
   const boot = read('assets/js/app-boot.js');
   assert.ok(boot.indexOf("loadScript('/assets/js/detect-interpretation.js')") < boot.indexOf("loadScript('/assets/js/detect-presentation.js')"));
   const flow = read('assets/js/evasion-flow.js');
-  assert.match(flow, /gpRepInterpretationDesc'\)\.textContent = repStripLocationNote\(model\.synthesis\.description\)/);
+  assert.match(flow, /gpRepInterpretationDesc'\)\.textContent = repStripLocationNote\(model\.synthesis\.evidenceDescription \|\| ''\)/);
+  assert.match(read('pages/main.html'), /id="gpRepScoreDefinition">글에 나타난 AI식 표현과 전개를 종합한 점수예요\./);
   assert.doesNotMatch(flow, /ctx\.fillText\(info\.evidence\.label/);
   assert.match(flow, /gpDetectScoreCopy\(model\.interpretation\)/);
-  assert.match(read('assets/js/app-module.js'), /gpDetectInterpretationText\(view\.interpretation\)/);
+  assert.match(read('assets/js/app-module.js'), /gpDetectHistorySections\(item\)/);
+  assert.match(read('assets/js/detect-presentation.js'), /add\('점수 안내', interpretationText\(info\)\)/);
   assert.match(read('assets/js/app-module.js'), /if \(typeof detectResult\.interpretationProof === 'string'\) data\.interpretationProof = detectResult\.interpretationProof;/);
   const main = read('pages/main.html');
   assert.equal((main.match(/id="gpRepInterpretation"/g) || []).length, 1);

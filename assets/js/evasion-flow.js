@@ -1412,7 +1412,7 @@
     if (alt) {
       alt.textContent = score == null
         ? '교수님 게이지. 점수를 확인하지 못해 내 글 위치를 표시하지 않았어요.'
-        : 'AI식 문체 점수 ' + score + '점, 100점 만점. ' + (model.radar.label || '') + '. 50~100 높은 구간, 21~49 중간 구간, 0~20 낮은 구간. 반복 표현과 글의 전개에서 관찰한 특징을 종합한 참고 점수이며 AI 작성 확률이 아닙니다.';
+        : 'AI식 문체 점수, 100점 만점에 ' + score + '점. ' + (model.radar.label || '') + '. 50~100 높은 구간, 21~49 중간 구간, 0~20 낮은 구간.';
     }
   }
 
@@ -1569,7 +1569,8 @@
         specific: specific,
         total: total
       },
-      synthesis: { headline: scoreCopy ? scoreCopy.headline : headline, description: scoreCopy ? scoreCopy.description : description, limitation: limitation },
+      synthesis: { headline: scoreCopy ? scoreCopy.headline : headline, description: scoreCopy ? scoreCopy.description : description,
+        evidenceDescription: scoreCopy ? scoreCopy.evidenceDescription : '', limitation: limitation },
       measured: measured,
       causeAnalysis: causeAnalysis,
       alignment: alignment,
@@ -2094,6 +2095,18 @@
   }
 
   var REP_AXIS_KEYS = ['uniform', 'ending', 'generic', 'anchor', 'stance'];
+  // History reuses the result screen's measured-axis policy, labels and bands.
+  // Pure projection: no DOM changes, model request, billing or editor state.
+  window.gpDetectHistoryMetrics = function (data) {
+    var model = buildReportModel(data), measured = model.measured || {};
+    if (!Object.keys(measured).length) return [];
+    var axes = repRadarAxes(model);
+    var rows = axes.map(function (axis, i) {
+      var fact = repAxisFact(REP_AXIS_KEYS[i], model);
+      return axis.name + ' · ' + repRadarLevel(axis) + (fact ? '\n' + fact : '');
+    });
+    return [{ title: '문체 지표', text: '문장 길이와 반복 표현을 따로 살펴봐요. 이 지표를 더해 총점을 계산하지는 않아요.\n\n' + rows.join('\n\n') }];
+  };
   // ── 원인 분석 = 신호 강도 바 다섯 줄 ──
   //   오각형 레이더는 값을 읽기 어렵다. 항목 · 실측 한 줄 · 막대 · 등급을 한 줄에 놓으면
   //   "무엇이, 얼마나, 왜"가 한 번에 읽힌다. 막대 색은 과녁·게이지의 세 구역 색과 같다.
@@ -2122,11 +2135,11 @@
     var label = document.createElement('p');
     label.className = 'gp-rep-surface-label';
     var head = document.createElement('b');
-    head.textContent = model && model.causeAnalysis ? '추가 표면 지표 · 참고' : '표면 문체 지표 · 참고';
+    head.textContent = '문체 지표';
     label.appendChild(head);
     // 이 문장은 막대에 대한 설명이라 막대 바로 위에 둔다(패널 제목 옆에 있으면 제목과 경쟁하며 두 줄로 꺾였다).
     var note = document.createElement('small');
-    note.textContent = '막대는 자동 계측한 표면 문체 신호만 보여줘요';
+    note.textContent = '문장 길이와 반복 표현을 따로 살펴봐요. 이 막대를 더해 총점을 계산하지는 않아요.';
     label.appendChild(note);
     host.appendChild(label);
   }
@@ -2212,9 +2225,9 @@
       var causeAlt = model.causeAnalysis && Array.isArray(model.causeAnalysis.items)
         ? repOrderedCauseItems(model.causeAnalysis.items).slice(0, 3).map(function (item) { return String(item.categoryLabel || item.description || ''); }).filter(Boolean)
         : [];
-      alt.textContent = 'AI 감지 원인 분석. '
-        + (causeAlt.length ? 'AI식 문체 점수에 반영된 판단 원인: ' + causeAlt.join(', ') + '. ' : '')
-        + '추가 표면 지표: ' + axes.map(function (a) {
+      alt.textContent = '문체 지표. '
+        + (causeAlt.length ? '원문에서 확인한 문체 특징: ' + causeAlt.join(', ') + '. ' : '')
+        + '따로 살펴보는 문체 지표: ' + axes.map(function (a) {
           return a.name + ' ' + repRadarLevel(a);
         }).join(', ') + '.';
     }
@@ -2246,30 +2259,22 @@
     if (!cause || !host) return;
     var status = ['aligned', 'partial', 'limited'].indexOf(cause.status) >= 0 ? cause.status : 'limited';
     var items = repOrderedCauseItems(cause.items).slice(0, 3);
-    if (status === 'aligned' && !items.length) return;
+    if (!items.length) return;
 
     var section = document.createElement('section');
     section.className = 'gp-rep-cause-match is-' + status;
-    section.setAttribute('aria-label', 'AI식 문체 점수에 반영된 판단 원인');
+    section.setAttribute('aria-label', '원문에서 확인한 문체 특징');
     var head = document.createElement('div');
     head.className = 'gp-rep-cause-match-head';
     var title = document.createElement('b');
-    title.textContent = status === 'aligned' ? '점수에 반영된 원인'
-      : status === 'partial' ? 'AI식 문체 점수의 원인을 일부만 확인했어요'
-      : 'AI식 문체 점수의 세부 원인을 충분히 확인하지 못했어요';
+    title.textContent = '원문에서 확인한 문체 특징';
     head.appendChild(title);
     var badge = document.createElement('span');
     badge.className = 'gp-rep-cause-status';
-    badge.textContent = status === 'aligned' ? '점수·원인 일치' : status === 'partial' ? '일부만 확인' : '확인 부족';
+    badge.textContent = '문장 확인';
     head.appendChild(badge);
     section.appendChild(head);
-    var summary = String(cause.label || '').trim();
-    if (model.interpretation && typeof window.gpDetectPublicNarrative === 'function') {
-      summary = window.gpDetectPublicNarrative(summary, model.interpretation);
-    }
-    if (!summary && status !== 'aligned') {
-      summary = '위 막대는 표면 문체만 자동 계측해요. AI식 문체 점수는 문맥과 전개까지 함께 판단하므로 막대만으로 점수를 모두 설명할 수 없어요.';
-    }
+    var summary = '원문에서 확인한 문체 특징을 아래에서 살펴보세요.';
     // 정합 상태의 기본 문구는 배지가 이미 말한다 — 같은 말을 두 줄로 적지 않는다.
     if (summary && !(status === 'aligned' && REP_CAUSE_DEFAULT_ALIGNED_RE.test(summary))) {
       var note = document.createElement('p');
@@ -2319,7 +2324,7 @@
       li.className = 'is-linkable';
       li.setAttribute('data-axis', key);
       li.tabIndex = 0; li.setAttribute('role', 'button'); li.setAttribute('aria-pressed', 'false');
-      li.title = '이 원인이 관찰된 문장 보기';
+      li.title = '이 특징이 나타난 문장 보기';
       var go = document.createElement('span');
       go.className = 'gp-rep-cause-go';
       go.textContent = '문장 보기';
@@ -2359,7 +2364,7 @@
   };
   function repAxisCopy(key, model) {
     if (/^cause:/.test(String(key || ''))) {
-      return { head: '이 원인이 관찰된 문장', empty: '이 원인이 표시된 문장을 목록에서 찾지 못했어요.' };
+      return { head: '이 특징이 나타난 문장', empty: '이 특징이 표시된 문장을 목록에서 찾지 못했어요.' };
     }
     if (key !== 'anchor') return REP_AXIS_COPY[key] || { head: '', empty: '' };
     var metric = (((repAxisPolicy(model || {}).anchor) || {}).metric) || 'anchor';
@@ -2542,6 +2547,8 @@
       var numW = ctx.measureText(model.score == null ? '--' : String(model.score)).width;
       ctx.fillStyle = '#b3aee0'; ctx.font = font('700', 30);
       ctx.fillText('/100 · AI식 문체 점수', 72 + numW + 16, 190);
+      ctx.font = font('500', 18);
+      ctx.fillText('글에 나타난 AI식 표현과 전개를 종합한 점수예요.', 72, 238);
       var chip = model.radar.label || '';
       ctx.font = font('800', 30);
       var chipW = ctx.measureText(chip).width + 44;
@@ -2570,7 +2577,7 @@
       ctx.fillStyle = '#b3aee0'; ctx.font = font('700', 22);
       ctx.fillText('gpkorea.ai.kr', 72, H - 84);
       ctx.font = font('500', 19);
-      ctx.fillText('반복 표현과 글의 전개에서 관찰한 특징을 종합한 참고 점수이며 AI 작성 확률이 아니에요.', 72, H - 43);
+      ctx.fillText('점수만으로 누가 썼는지, 다른 검사를 통과할지는 알 수 없어요.', 72, H - 43);
       // 오른쪽: 게이지 — 화면과 같은 반원 트랙. 0 왼쪽 → 100 오른쪽, 100 끝에 교수님.
       var gx = 900, gy = 400, GR = 200, BW = 40;
       var gAngle = function (score) { return Math.max(0, Math.min(100, score)) / 100 * Math.PI; };   // 100 왼쪽(교수님) → 0 오른쪽(안전)
@@ -2734,7 +2741,7 @@
     }
     if (model.interpretation && model.interpretation.status !== 'ready') {
       if (title) title.textContent = '문장의 표현을 확인해 보세요';
-      if (desc) desc.textContent = '핵심 문장과 원인 분석에서 확인한 표현을 살펴보세요.';
+      if (desc) desc.textContent = '핵심 문장과 문체 지표에서 확인한 표현을 살펴보세요.';
       if (btn) btn.hidden = true;
       if (help) help.hidden = true;
       return;
@@ -2829,7 +2836,8 @@
       }
       if (interpretation) {
         $('gpRepInterpretation').dataset.status = interpretation.status;
-        $('gpRepInterpretationDesc').textContent = repStripLocationNote(model.synthesis.description);
+        $('gpRepInterpretationDesc').textContent = repStripLocationNote(model.synthesis.evidenceDescription || '');
+        $('gpRepInterpretationDesc').hidden = !model.synthesis.evidenceDescription;
         repPaintInterpretationLink(interpretation);
       }
     }
@@ -2877,7 +2885,7 @@
       if (!usable) {
         // 우리 쪽 실패와 원문에 후보가 없는 경우를 구분해 말한다.
         baEmpty.textContent = exampleState.reason === 'no_meaningful_change' || exampleState.reason === 'unverified_change'
-          ? '실제로 달라진 표현을 확인할 수 없어 이번 미리보기는 표시하지 않았어요. 아래 원인 분석은 그대로 확인할 수 있어요.'
+          ? '실제로 달라진 표현을 확인할 수 없어 이번 미리보기는 표시하지 않았어요. 아래 문체 지표는 그대로 확인할 수 있어요.'
           : d.exampleStatus === 'unavailable'
             ? '예시 문장을 다듬는 중 오류가 생겨 이번에는 미리보기를 만들지 못했어요. 아래 분석은 그대로 확인할 수 있어요.'
             : '사실을 바꾸지 않고 보여줄 예시 문장을 원문에서 찾지 못했어요. 아래 분석에서 근거를 확인해 주세요.';
@@ -2891,6 +2899,7 @@
     if (dial) dial.className = 'gp-rep-dial is-' + (model.radar.band || 'unknown');
     repPaintScope(model);
     if ($('gpRepScore')) $('gpRepScore').textContent = score == null ? '--' : String(score);
+    if ($('gpRepScoreRead')) $('gpRepScoreRead').setAttribute('aria-label', score == null ? 'AI식 문체 점수 확인 필요' : 'AI식 문체 점수, 100점 만점에 ' + score + '점');
     if ($('gpRepComparison')) {
       $('gpRepComparison').textContent = model.historyComparisonText || '';
       $('gpRepComparison').hidden = !model.historyComparisonText;

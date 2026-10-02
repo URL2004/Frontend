@@ -3995,7 +3995,7 @@ function historyRenderList() {
        <span class="gp-history-row-top"><span class="gp-history-kind ${isDetect ? 'detect' : 'humanize'}">${isDetect ? 'AI 감지' : '휴머나이징'}</span><time>${escapeHtml(historyDateText(item.createdAtMs))}</time></span>
        <strong>${escapeHtml(historyTitle(item))}</strong>
        <span class="gp-history-row-preview">${escapeHtml(historyPreview(item))}</span>
-       <span class="gp-history-row-meta"><span class="gp-history-work ${work.tone}">${escapeHtml(work.label)}</span><span class="gp-history-billing">${escapeHtml(billing.short)}</span></span>
+       <span class="gp-history-row-meta"><span class="gp-history-work ${work.tone}" aria-label="${isDetect && historyProbability(item) != null ? 'AI식 문체 점수, 100점 만점에 ' + historyProbability(item) + '점' : escapeHtml(work.label)}">${escapeHtml(work.label)}</span><span class="gp-history-billing">${escapeHtml(billing.short)}</span></span>
       </button>
      </div>`;
     }).join('')}</div>
@@ -4045,10 +4045,10 @@ function historyRenderDetail() {
  const billing = historyBillingInfo(item.billingDisposition, item.credits);
  const probability = historyProbability(item);
  const hasOutput = !!historyCleanLine(item.outputText);
- const comparisonText = isDetect && typeof window.gpDetectHistoryComparisonText === 'function'
-  ? window.gpDetectHistoryComparisonText(view) : '';
  const details = isDetect
-  ? `${historyDetailBlock('분석 요약', view.summary, true)}${historyDetailBlock('휴머나이징 전후 비교', comparisonText, true)}${historyDetailBlock('이 결과를 읽는 방법', typeof window.gpDetectInterpretationText === 'function' ? window.gpDetectInterpretationText(view.interpretation) : '', true)}${historyDetailBlock('상세 분석', view.detail, false)}`
+  ? (typeof window.gpDetectHistorySections === 'function'
+    ? window.gpDetectHistorySections(item).map(section => historyDetailBlock(section.title, section.text, section.title === '분석 요약')).join('')
+    : historyDetailBlock('분석 요약', view.summary, true))
   : historyDetailBlock('휴머나이징 결과', item.outputText, true);
  const originalBlock = historyDetailBlock('원문', item.inputText, false);
  const noDetail = '<p class="gp-history-no-detail">저장된 상세 결과가 없어요.</p>';
@@ -4068,7 +4068,7 @@ function historyRenderDetail() {
    <div class="gp-history-detail-kicker"><span class="gp-history-kind ${isDetect ? 'detect' : 'humanize'}">${isDetect ? 'AI 감지' : '휴머나이징'}</span><time>${escapeHtml(historyDateText(item.createdAtMs))}</time></div>
    <h2>${escapeHtml(historyTitle(item))}</h2>
    <div class="gp-history-detail-meta">
-    <span><small>${isDetect ? 'AI식 문체 점수' : '작업 상태'}</small><b class="${work.tone}">${escapeHtml(work.label)}</b></span>
+    <span><small>${isDetect ? 'AI식 문체 점수' : '작업 상태'}</small><b class="${work.tone}" aria-label="${isDetect && probability != null ? 'AI식 문체 점수, 100점 만점에 ' + probability + '점' : escapeHtml(work.label)}">${escapeHtml(work.label)}</b></span>
     <span><small>이용 내역</small><b>${escapeHtml(billing.short)}</b></span>
    </div>
   </header>

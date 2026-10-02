@@ -380,7 +380,7 @@ test('게이지는 브랜드 세 구역 색을 두른 반원 "교수님 게이�
   assert.match(css, /\.gp-rep-dial \.gp-rep-scope svg\{[^}]*transform:none/u);
   assert.match(flow, /b\.style\.strokeDashoffset = L \* \(1 - frac\)/u, '띠는 구역마다 제 몫만큼 채워진다');
   assert.match(main, /title="AI식 문체 점수 낮은 구간">0~20 낮은 구간/u, '범례는 점수 구간을 설명한다');
-  assert.match(flow, /참고 점수이며 AI 작성 확률이 아닙니다/u, '스크린리더용 설명');
+  assert.match(flow, /100점 만점에 ' \+ score \+ '점/u, '스크린리더는 점수 단위를 풀어 읽는다');
   assert.ok(!/RMIN/u.test(flow), '과녁 기하 잔재가 없다');
 });
 
@@ -392,8 +392,8 @@ test('원인 분석은 항목·실측·막대·등급 한 줄의 "신호 강도 
   assert.match(flow, /li\.style\.setProperty\('--v'/u, '막대 길이는 축 값');
   assert.match(css, /\.gp-rep-radar\.is-drawn \.sig-fill\{width:calc\(var\(--v,0\) \* 1%\);\}/u, '막대가 인트로에 차오른다');
   assert.match(css, /\.sig-bar::before\{left:34%;\}/u, '보통·높음 경계선(34·67%)');
-  assert.match(flow, /막대는 자동 계측한 표면 문체 신호만 보여줘요/u, '막대 설명은 막대 바로 위 라벨에 붙는다');
-  assert.ok(!/막대는 자동 계측한 표면 문체 신호만 보여줘요/u.test(main), '패널 제목 옆에서는 뺐다');
+  assert.match(flow, /문장 길이와 반복 표현을 따로 살펴봐요\. 이 막대를 더해 총점을 계산하지는 않아요\./u, '막대는 총점 합산이 아닌 별도 지표');
+  assert.ok(!/이 막대를 더해 총점을 계산/u.test(main), '정의는 막대 위에 한 번만 둔다');
   assert.ok(!/class: 'glasses'|lens-body/u.test(flow), '렌즈 차트 잔재가 없다');
   assert.ok(!/v118b/u.test(css), '렌즈 CSS 잔재가 없다');
 });
@@ -589,11 +589,11 @@ test('점수 원인 커버리지를 받아 결정론 축이 설명하지 못한 
   assert.match(flow, /reportView\.causeAnalysis/u);
   assert.match(flow, /function repPaintCauseAnalysis/u);
   assert.match(flow, /\['aligned', 'partial', 'limited'\]/u);
-  assert.match(flow, /AI식 문체 점수의 원인을 일부만 확인했어요/u, '부분 정합 상태를 숨기지 않는다');
-  assert.match(flow, /위 막대는 표면 문체만 자동 계측해요/u, '결정론 막대와 모델 점수의 판단 범위를 구분한다');
+  assert.doesNotMatch(flow, /원인을 일부만 확인했어요|세부 원인을 충분히 확인하지 못했어요/u, '진단 상태로 제한 배너를 만들지 않는다');
+  assert.match(flow, /이 막대를 더해 총점을 계산하지는 않아요/u, '지표와 총점을 구분한다');
   assert.ok(flow.indexOf('repPaintCauseAnalysis(model, host);') < flow.indexOf('repPaintSurfaceLabel(model, host);'), '점수 연결 원인이 표면 지표보다 먼저 온다');
-  assert.match(flow, /추가 표면 지표 · 참고/u);
-  assert.match(flow, /AI식 문체 점수에 반영된 판단 원인:/u, '스크린리더에도 원인을 먼저 전달한다');
+  assert.match(flow, /head\.textContent = '문체 지표'/u);
+  assert.match(flow, /원문에서 확인한 문체 특징:/u, '스크린리더에도 문체 특징을 먼저 전달한다');
   assert.match(css, /\.gp-rep-cause-match\.is-partial/u);
   // v124 가독성: 원인 항목은 이름·범위·강도 칩·참고 문장 버튼으로 쪼개고, 해석 카드의 '확인 위치'는 칩으로 뗀다
   assert.match(flow, /function repCauseItemRow/u);

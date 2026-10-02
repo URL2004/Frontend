@@ -228,8 +228,9 @@
                  <p class="sr-only" id="gpRepScopeAlt"></p>
                  <div class="gp-rep-dial-read">
                    <span class="cap">AI식 문체 점수</span>
-                   <span class="num"><b id="gpRepScore">--</b><span class="den">/100</span></span>
+                   <span class="num" id="gpRepScoreRead" role="img" aria-label="AI식 문체 점수 확인 필요"><b id="gpRepScore">--</b><span class="den">/100</span></span>
                  </div>
+                 <p class="gp-rep-source" id="gpRepScoreDefinition">글에 나타난 AI식 표현과 전개를 종합한 점수예요.</p>
                  <p class="gp-rep-bandchip" id="gpRepBandChip">판정 준비 중</p>
                  <p class="gp-rep-source" id="gpRepSource"></p>
                  <p class="gp-rep-source" id="gpRepComparison" role="status" hidden></p>
@@ -353,7 +354,7 @@
 
              <section class="gp-rep-panel gp-rep-cause" aria-labelledby="gpRepCauseTitle">
                <div class="gp-rep-panel-head gp-rep-cause-head">
-                 <h3 id="gpRepCauseTitle">AI 감지 원인 분석</h3>
+                 <h3 id="gpRepCauseTitle">문체 지표</h3>
                  <!-- 글 종류 칩(JS repPaintCauseProfile). 막대 설명 문장은 막대 바로 위 라벨로 내려갔다 -->
                  <p class="gp-rep-legend gp-rep-cause-profile" id="gpRepCauseProfile" hidden></p>
                </div>
