@@ -4997,12 +4997,20 @@ function adminHistoryAmountHtml(h) {
  return `<span style="color:var(--red);">-${adminNumber(h.used)}</span>`;
 }
 
+// 관리자 표시만 제외. 사용자 사용 내역·잔액·감사 원장은 변경하지 않는다.
+function adminLedgerRowVisible(row) {
+ return !(row?.type === 'admin_adjust' && (
+  row.campaignId === 'humanize-incident-20261002-100'
+  || (row.id || row.creditHistoryId) === 'admin_compensation_20261002_100'
+ ));
+}
+
 function adminUsageHistory(data) {
  const explicit = data && data.creditUsageHistory;
  const rows = Array.isArray(explicit)
   ? explicit
   : (Array.isArray(data && data.creditHistory) ? data.creditHistory : []).filter(h => h && h.type !== 'charge');
- return rows;
+ return rows.filter(adminLedgerRowVisible);
 }
 
 function adminChargeHistory(data) {
@@ -7882,7 +7890,7 @@ window.loadAllCreditHistory = async () =>{
  const data = await res.json();
  if (!res.ok || !data.ok) throw new Error(data.error || '전체 사용자 내역을 불러오지 못했습니다.');
 
- const allHistory = (data.history || []).map(h => ({
+ const allHistory = (data.history || []).filter(adminLedgerRowVisible).map(h => ({
   ...h,
   createdAtMs: Number(h.createdAtMs) || 0
  }));
@@ -7915,7 +7923,7 @@ window.loadAdminCreditUsageSummary = async () => {
   const data = await adminPost('/admin/credit-history', { limit: 1000 });
   const sum = Object.values(data.dailyUsed || {}).reduce((total, used) => total + (Number(used) || 0), 0);
   stat7d.textContent = sum.toLocaleString('ko-KR');
-  stat7d.title = '전체 사용자 최신 원장 1,000건 안에서 최근 7일 사용량을 합산한 값입니다.';
+  stat7d.title = '10월 2일 일괄 보상 지급을 제외한 최신 원장 1,000건 안에서 최근 7일 사용량을 합산한 값입니다. 최대 30초 간격으로 갱신됩니다.';
   stat7d.dataset.loadState = 'ok';
  } catch (_) {
   stat7d.textContent = '측정 실패';
@@ -7964,7 +7972,7 @@ window.filterAdminHistory = async () => {
   }
   const histSnap = await getDocs(query(collection(db, 'users', uid, 'creditHistory'), orderBy('createdAt', 'desc')));
   if (generation !== adminHistoryFilterGeneration) return;
-  let filtered = histSnap.docs.map(d => ({ ...d.data(), id: d.id, creditHistoryId: d.id, userName, userEmail: email, uid }));
+  let filtered = histSnap.docs.map(d => ({ ...d.data(), id: d.id, creditHistoryId: d.id, userName, userEmail: email, uid })).filter(adminLedgerRowVisible);
   if (from) filtered = filtered.filter(h => {
    const ms = adminHistoryCreatedMs(h);
    return ms && ms >= new Date(from).getTime();
@@ -7981,7 +7989,7 @@ window.filterAdminHistory = async () => {
  }
 
  // 이메일 없으면 기존 로직 (전체 1000건에서 날짜 필터)
- let filtered = window._adminHistory.data;
+ let filtered = window._adminHistory.data.filter(adminLedgerRowVisible);
  if (from) filtered = filtered.filter(h => {
   const ms = adminHistoryCreatedMs(h);
   return ms && ms >= new Date(from).getTime();
@@ -8015,7 +8023,7 @@ window.adminResetHistoryFilters = function() {
  window._adminHistory.dateFrom = '';
  window._adminHistory.dateTo = '';
  window._adminHistory.emailFilter = '';
- window._adminHistory.filtered = window._adminHistory.data.slice();
+ window._adminHistory.filtered = window._adminHistory.data.filter(adminLedgerRowVisible);
  window._adminHistory.page = 0;
  adminRememberFilters();
  window.renderAdminHistory();
@@ -8024,7 +8032,8 @@ window.adminResetHistoryFilters = function() {
 window.renderAdminHistory = () =>{
  const el = document.getElementById('adminCreditHistory');
  if (!el) return;
- const { filtered, page, pageSize } = window._adminHistory;
+ const { page, pageSize } = window._adminHistory;
+ const filtered = window._adminHistory.filtered.filter(adminLedgerRowVisible);
  const total = filtered.length;
  const totalPages = Math.max(1, Math.ceil(total / pageSize));
  const start = page * pageSize;
@@ -8047,7 +8056,7 @@ window.renderAdminHistory = () =>{
  return;
  }
 
- html += `<p class="gp-admin-limit-note">${window._adminHistory.emailFilter ? '정확한 이메일로 조회한 사용자 전체 원장' : '전체 사용자 최신 1,000건 범위'} · 현재 필터 ${total.toLocaleString('ko-KR')}건</p><div class="gp-admin-table-wrap" tabindex="0" aria-label="크레딧 원장 가로 스크롤"><table class="gp-admin-table">
+ html += `<p class="gp-admin-limit-note">${window._adminHistory.emailFilter ? '이메일로 조회한 사용자 원장' : '전체 사용자 최신 1,000건 범위 · 최대 30초 간격 갱신'} · 10월 2일 일괄 보상 지급은 이 화면에서 제외 · 현재 필터 ${total.toLocaleString('ko-KR')}건</p><div class="gp-admin-table-wrap" tabindex="0" aria-label="크레딧 원장 가로 스크롤"><table class="gp-admin-table">
  <caption>크레딧 충전·사용·환불·조정 원장</caption>
  <thead><tr>
  <th scope="col">날짜</th><th scope="col">유저</th><th scope="col">종류</th><th scope="col" class="num">증감</th><th scope="col" class="num">잔여</th><th scope="col">작업</th>
