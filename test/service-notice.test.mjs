@@ -3,16 +3,17 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 const read = p => readFile(new URL('../'+p,import.meta.url),'utf8');
-test('장애 공지는 메인 상단에서 사과와 미확정 보상 안내를 제공한다',async()=>{
+test('장애 공지는 사과·지급 기준시각·보상 금액·확인 방법을 명시한다',async()=>{
  const html=await read('pages/main.html');
  const banner=html.slice(html.indexOf('<aside class="gp-service-notice"'),html.indexOf('<section class="gp-lav-hero"'));
  assert.match(banner,/불편을 드려 죄송합니다/);
- assert.match(banner,/대상·수량·일정은 별도로 안내/);
+ assert.match(banner,/10월 2일 21시 17분 기준 전체 회원에게 보상 100크레딧을 지급했습니다/);
+ assert.match(banner,/사용 내역에서 확인/);
  assert.match(banner,/aria-labelledby="gpServiceNoticeTitle"/);
  assert.match(banner,/aria-label="정상화 안내 닫기"/);
- assert.match(banner,/humanize-20261002-resolved/);
+ assert.match(banner,/humanize-20261002-compensated/);
  assert.match(banner,/현재는 정상적으로 이용하실 수 있습니다/);
- assert.doesNotMatch(banner,/지급했습니다|\d+크레딧/);
+ assert.doesNotMatch(banner,/지급할 예정|별도로 안내/);
 });
 test('공지는 닫기·탭 전환·상태 변경을 분리하고 저장소 실패에도 동작한다',async()=>{
  const source=await read('assets/js/main-designs.js');
