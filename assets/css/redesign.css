@@ -8312,7 +8312,7 @@ body.gp-rdp-on .gp-lav-main{padding-bottom:96px;}
 .gp-rdp-go{height:40px;padding:0 18px;border:0;border-radius:10px;background:#1c1b2e;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;}
 @media(max-width:760px){.gp-rdp{width:calc(100vw - 24px);}.gp-rdp-sub{display:none;}.gp-rdp-texts{grid-template-columns:minmax(0,1fr);}.gp-rdp-text{min-height:110px;}}
 /* 긴 글 기준 조판: 다듬은 글=따뜻한 흰 종이(아주 옅은 결), 원문=한 톤 가라앉은 초안 종이.
-   본문 Pretendard 16/1.85(원문 15/1.85), 한 칸 보기 17/1.9·약 40자 폭. 바뀐 곳은 글자 아래 절반에만 형광펜 띠. */
+   본문 Pretendard 16/1.85(PC는 원문도 같은 크기 — 좌우 줄 맞춰 비교, 모바일 원문 상자는 14), 한 칸 보기 17/1.9·약 40자 폭. 바뀐 곳은 글자 아래 절반에만 형광펜 띠. */
 .gp-rp-view{
  display:flex;flex-direction:column;max-height:min(82vh,940px);border:1px solid var(--rp-border);border-radius:var(--rp-r-card);overflow:hidden;background:var(--rp-paper);
  box-shadow:0 1px 2px rgba(28,27,46,.04);font-family:Pretendard,"Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
@@ -8339,7 +8339,7 @@ body.gp-rdp-on .gp-lav-main{padding-bottom:96px;}
 .gp-rp-cell{min-width:0;padding:20px 28px 22px;word-break:keep-all;overflow-wrap:break-word;}
 .gp-rp-cell p{margin:0;white-space:pre-wrap;text-wrap:pretty;}
 .gp-rp-cell--b{background:rgba(226,227,238,.36);border-right:1px solid var(--rp-border-soft);}
-.gp-rp-cell--b p{font-size:15px;line-height:1.85;letter-spacing:-.005em;color:var(--rp-ink2);}
+.gp-rp-cell--b p{font-size:16px;line-height:1.85;letter-spacing:-.01em;color:var(--rp-ink2);}
 .gp-rp-cell--a p{font-size:16px;line-height:1.85;letter-spacing:-.01em;color:var(--rp-ink);}
 .gp-rp-row:hover>.gp-rp-cell{box-shadow:inset 0 0 0 100vmax rgba(109,74,255,.035);}
 .gp-rp-row.is-h .gp-rp-cell{padding-top:30px;padding-bottom:4px;}
