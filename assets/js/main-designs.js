@@ -19,6 +19,23 @@
   // 라벤더에서 탭이 바뀌어도 라벤더 셸(#mainContent)은 항상 보이고,
   // 메인 탭이 아닐 때는 히어로만 숨겨 탭 콘텐츠가 그 자리에 나온다.
   var lavTab = null;
+  var serviceNoticeDismissed = {};
+  function syncServiceNotice() {
+    var notice = document.getElementById('gpServiceNotice');
+    if (!notice) return;
+    var key = 'gp-service-notice:' + notice.dataset.noticeVersion;
+    var dismissed = serviceNoticeDismissed[key] === true;
+    try { dismissed = dismissed || sessionStorage.getItem(key) === '1'; } catch (_) {}
+    notice.hidden = lavTab !== 'main' || dismissed;
+  }
+  window.gpDismissServiceNotice = function () {
+    var notice = document.getElementById('gpServiceNotice');
+    if (!notice) return;
+    var key = 'gp-service-notice:' + notice.dataset.noticeVersion;
+    serviceNoticeDismissed[key] = true;
+    try { sessionStorage.setItem(key, '1'); } catch (_) {}
+    notice.hidden = true;
+  };
   function detectTab() {
     for (var i = 0; i < TAB_IDS.length; i++) {
       var el = document.getElementById(TAB_IDS[i] + 'Content');
@@ -30,6 +47,7 @@
   function lavApplyTab() {
     if (document.body.dataset.mainDesign !== 'lavender') return;
     if (lavTab === null) lavTab = detectTab();
+    syncServiceNotice();
     var main = getMain();
     if (main) main.style.display = 'block';
     var hero = document.querySelector('.gp-lav-hero');
