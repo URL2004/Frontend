@@ -9,8 +9,10 @@ test('장애 공지는 메인 상단에서 사과와 미확정 보상 안내를 
  assert.match(banner,/불편을 드려 죄송합니다/);
  assert.match(banner,/대상·수량·일정은 별도로 안내/);
  assert.match(banner,/aria-labelledby="gpServiceNoticeTitle"/);
- assert.match(banner,/aria-label="이용 오류 안내 닫기"/);
- assert.doesNotMatch(banner,/지급했습니다|\d+크레딧|정상적으로 이용/);
+ assert.match(banner,/aria-label="정상화 안내 닫기"/);
+ assert.match(banner,/humanize-20261002-resolved/);
+ assert.match(banner,/현재는 정상적으로 이용하실 수 있습니다/);
+ assert.doesNotMatch(banner,/지급했습니다|\d+크레딧/);
 });
 test('공지는 닫기·탭 전환·상태 변경을 분리하고 저장소 실패에도 동작한다',async()=>{
  const source=await read('assets/js/main-designs.js');
