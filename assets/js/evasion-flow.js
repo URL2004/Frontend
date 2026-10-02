@@ -2,15 +2,19 @@
 (function () {
   function $(id) { return document.getElementById(id); }
 
-  // ── 결과 화면 A안(관리자 미리보기, 2026-10-02) ──
-  // 관리자 랩에서 켠 관리자 브라우저에서만 결과 카드를 원문·다듬은 글 나란히(A안)로 보여 준다.
+  // ── 결과 화면 A안(2026-10-02 관리자 미리보기 → 같은 날 전체 적용) ──
+  // 모든 사용자의 결과 카드를 원문·다듬은 글 나란히(A안)로 보여 준다.
   // 결과 본문(#lavDoneBody)은 그대로 두고 숨기기만 하므로 복사·다운로드·문단 보강은 기존대로 동작한다.
-  var RESULT_DESIGN_KEY = 'gp_admin_result_design';
+  // 비교 화면(result-compare.js)을 불러오지 못하거나 그리다 오류가 나면 이 페이지에선 기존 카드로 돌아간다.
+  // 관리자 랩의 '예시 글' 띠(원문·결과를 직접 넣어 보는 도구)는 켠 관리자에게만 보인다.
+  var ADMIN_SAMPLE_KEY = 'gp_admin_result_design';
   var resultCompareLoad = null;
+  var resultDesignFailed = false;
   var resultPreviewSource = null;   // 예시 글로 연 결과의 원문(실제 작업은 입력칸 원문을 쓴다)
   var refineForCompare = null;      // A안 비교 화면에서 대상 문단 옆에 붙일 문단 보강(renderRefineTargets가 채운다)
-  function resultDesignOn() {
-    try { return localStorage.getItem(RESULT_DESIGN_KEY) === 'A' && !!(window.isAdmin && window.isAdmin()); } catch (e) { return false; }
+  function resultDesignOn() { return !resultDesignFailed; }
+  function adminSampleOn() {
+    try { return localStorage.getItem(ADMIN_SAMPLE_KEY) === 'A' && !!(window.isAdmin && window.isAdmin()); } catch (e) { return false; }
   }
   function loadResultCompare() {
     if (window.gpResultCompare) return Promise.resolve(window.gpResultCompare);
@@ -24,12 +28,30 @@
     });
     return resultCompareLoad;
   }
+  // 비교 화면을 비운다. 대상 문단 옆으로 옮겨 둔 보강 카드는 제자리(다음 작업 안내 앞)로 돌려놓는다.
+  function releaseCompare(host) {
+    if (!host) return;
+    var card = $('lavDoneRefine');
+    if (card && host.contains(card)) {
+      var next = $('lavDoneNext');
+      if (next && next.parentNode) next.parentNode.insertBefore(card, next);
+      card.classList.remove('is-docked');
+    }
+    host.textContent = '';
+  }
+  function failResultDesign() {
+    if (resultDesignFailed) return;
+    resultDesignFailed = true;
+    syncResultDesign();
+  }
   function syncResultDesign() {
     var flow = $('lavFlow'), on = resultDesignOn(), host = $('lavDoneCompare');
-    if (flow) flow.classList.toggle('is-result-a', on && flow.dataset.step === 'done');
-    if (!on) { if (host) host.textContent = ''; return; }
+    // 비교 화면이 준비된 뒤에만 A안으로 바꾼다(불러오는 동안·실패하면 기존 카드가 보인다).
+    if (flow) flow.classList.toggle('is-result-a', on && !!window.gpResultCompare && flow.dataset.step === 'done');
     var body = $('lavDoneBody');
-    if (!body || !body.parentNode) return;
+    var output = body ? body.textContent || '' : '';
+    if (!on || !output.trim()) { releaseCompare(host); return; }
+    if (!body.parentNode) return;
     if (!host) {
       host = document.createElement('div');
       host.id = 'lavDoneCompare';
@@ -37,9 +59,15 @@
       body.parentNode.insertBefore(host, body.nextSibling);
     }
     var source = resultPreviewSource != null ? resultPreviewSource : (($('lavInput') || {}).value || '');
-    var output = body.textContent || '';
     var refine = refineForCompare ? Object.assign({ el: $('lavDoneRefine') }, refineForCompare) : null;
-    loadResultCompare().then(function (c) { if (c && resultDesignOn()) c.mount(host, source, output, { refine: refine }); }).catch(function () {});
+    loadResultCompare().then(function (c) {
+      if (!c || !resultDesignOn()) return;
+      try { c.mount(host, source, output, { refine: refine }); } catch (e) { failResultDesign(); return; }
+      // 보강 버튼을 대상 문단 옆에 못 붙였으면 보강 카드는 원래 자리(버튼 줄 아래)에 그대로 보인다.
+      var card = $('lavDoneRefine');
+      if (card) card.classList.toggle('has-pill', !!host.querySelector('.gp-rp-refine'));
+      if (flow) flow.classList.toggle('is-result-a', flow.dataset.step === 'done');
+    }).catch(failResultDesign);
   }
 
   var SIGNUP_GRANT_CREDITS = 20;
@@ -288,7 +316,9 @@
       if (on) { c.style.animation = 'none'; void c.offsetWidth; c.style.animation = ''; }
     });
     flow.dataset.step = name;
-    flow.classList.toggle('is-result-a', name === 'done' && resultDesignOn());
+    flow.classList.toggle('is-result-a', name === 'done' && resultDesignOn() && !!window.gpResultCompare);
+    // 결과가 나오기 전에 비교 화면을 미리 불러 둔다(완료 순간 바로 A안으로 그리도록).
+    if (name !== 'done' && resultDesignOn() && !window.gpResultCompare) loadResultCompare().catch(function () {});
     var label = $('lavFlowStep'); if (label) label.textContent = STEP_LABEL[name] || '';
     var ctx = $('lavFlowCtx'), src = $('lavInput');
     if (ctx && src) ctx.textContent = '원문 ' + (src.value || '').length.toLocaleString() + '자';   // 글자수 통일: 공백 포함(과금·메인 컴포저와 동일)
@@ -4408,10 +4438,20 @@
     }
   }
 
-  // A안: 이번 작업의 확정 차감과 현재 잔액을 버튼 아래 한 줄로(예상 금액은 쓰지 않는다).
+  // A안: 이번 작업의 확정 차감과 현재 잔액을 버튼 아래 한 줄로.
+  //   금액은 서버가 확정한 creditBreakdown.charged만 쓴다(예상 합계 total은 쓰지 않는다).
+  //   차감 확인 중·무제한·관리자 테스트 등은 기존 차감 안내(renderBillingDisposition)와 같은 말을 쓴다.
+  var doneCreditSt = null;
+  var DONE_CREDIT_TEXT = {
+    waived_quality_shortfall: '과거 무차감 정책으로 처리된 작업이에요',
+    waived_repeat_low_benefit: '과거 무차감 정책으로 처리된 작업이에요',
+    plan_unlimited: '무제한 이용권으로 처리했어요',
+    admin_no_charge: '관리자 테스트로 처리되어 크레딧을 차감하지 않았어요'
+  };
   function renderDoneCredit(st) {
     var actions = document.querySelector('.lav-done .lav-done-actions');
     if (!actions || !actions.parentNode) return;
+    doneCreditSt = st || null;
     var line = $('lavDoneCredit');
     if (!line) {
       line = document.createElement('p');
@@ -4420,18 +4460,27 @@
       actions.parentNode.insertBefore(line, actions.nextSibling);
     }
     var result = (st && st.result) || {};
-    var disposition = (st && st.billingDisposition) || result.billingDisposition || '';
+    var meta = result.engineMeta || (st && st.engineMeta) || {};
+    var disposition = (st && st.billingDisposition) || result.billingDisposition || meta.billingDisposition || '';
     var cb = result.creditBreakdown || {};
-    var charged = cb.charged != null ? Number(cb.charged)
-      : (disposition === 'charged' && !(st && st.deducted === false) ? Number(cb.total) : NaN);
+    var review = disposition === 'charged' && !!st && st.deducted === false;
+    var coupon = !!st && st.billingMode === 'coupon';
     var parts = [];
-    if (disposition === 'charged' && isFinite(charged)) parts.push('이번 변환 ' + charged.toLocaleString('ko-KR') + '크레딧');
-    else if (disposition && disposition !== 'charged') parts.push('이번 작업은 크레딧이 차감되지 않았어요');
+    if (review) parts.push('크레딧 처리 상태를 확인하고 있어요. 작업 기록에서 최종 상태를 확인해 주세요');
+    else if (disposition === 'charged' && !coupon) {
+      var charged = cb.charged != null && cb.charged !== '' ? Number(cb.charged) : NaN;
+      parts.push(isFinite(charged) ? '이번 변환 ' + charged.toLocaleString('ko-KR') + '크레딧' : '크레딧 차감이 완료됐어요');
+    } else if (DONE_CREDIT_TEXT[disposition]) parts.push(DONE_CREDIT_TEXT[disposition]);
     var balance = Number(window.UC);
-    if (parts.length && window.CU && window.UP !== 'unlimited' && isFinite(balance)) parts.push('현재 잔액 ' + Math.max(0, balance).toLocaleString('ko-KR') + '크레딧');
+    if (parts.length && !review && window.CU && window.UP !== 'unlimited' && isFinite(balance)) parts.push('현재 잔액 ' + Math.max(0, balance).toLocaleString('ko-KR') + '크레딧');
     line.textContent = parts.join(' · ');
     line.hidden = !parts.length;
   }
+  // 잔액이 바뀌면(문단 보강 차감·충전 등) 크레딧 줄의 잔액도 맞춘다 — app-module의 updateCreditUI가 부른다.
+  window.lavRefreshDoneCredit = function () {
+    var flow = $('lavFlow');
+    if (doneCreditSt && flow && flow.dataset.step === 'done') renderDoneCredit(doneCreditSt);
+  };
 
   function renderBillingDisposition(st) {
     var wrap = $('lavBillingNotice');
@@ -4827,10 +4876,10 @@
     if (typeof syncResultDesign === 'function') syncResultDesign();
   }
 
-  // 관리자 미리보기: 원문·결과를 넣으면 실제 완료 화면과 같은 경로로 결과 카드를 연다.
+  // 관리자 예시 글: 원문·결과를 넣으면 실제 완료 화면과 같은 경로로 결과 카드를 연다.
   //   작업 ID가 없으므로 기록·알림·과금 안내·이용 지표는 남지 않는다.
   window.lavAdminPreviewDone = function (before, after, mode, extra) {
-    if (!resultDesignOn() || !String(after || '').trim()) return false;
+    if (!(window.isAdmin && window.isAdmin()) || !String(after || '').trim()) return false;
     var m = mode === 'polish' || mode === 'formal' ? mode : 'blog';
     extra = extra || {};
     renderJobDone({
@@ -4850,7 +4899,7 @@
   window.lavResultDesignBoot = function (opts) {
     opts = opts || {};
     var flow = $('lavFlow');
-    if (!resultDesignOn()) {
+    if (!adminSampleOn()) {
       if (window.gpResultCompare) window.gpResultCompare.hideBar();
       document.body.classList.remove('gp-rdp-on');
       syncResultDesign();
@@ -4860,7 +4909,7 @@
       c.showBar({
         onSample: function (b, a, m) { window.lavAdminPreviewDone(b, a, m); },
         onOff: function () {
-          try { localStorage.removeItem(RESULT_DESIGN_KEY); } catch (e) {}
+          try { localStorage.removeItem(ADMIN_SAMPLE_KEY); } catch (e) {}
           window.lavResultDesignBoot();
         }
       });
@@ -5070,10 +5119,10 @@
     setTimeout(tick, 3000);
   }
 
-  // 새로고침해도 A안을 켜 둔 관리자에게만 띠를 다시 띄운다(로그인 확인 뒤, 일반 사용자는 아무것도 하지 않는다).
+  // 새로고침해도 예시 글 띠를 켜 둔 관리자에게만 띠를 다시 띄운다(로그인 확인 뒤, 일반 사용자는 아무것도 하지 않는다).
   (function bootResultDesign() {
     var flag = false;
-    try { flag = localStorage.getItem(RESULT_DESIGN_KEY) === 'A'; } catch (e) {}
+    try { flag = localStorage.getItem(ADMIN_SAMPLE_KEY) === 'A'; } catch (e) {}
     if (!flag) return;
     var tries = 0;
     function check() {

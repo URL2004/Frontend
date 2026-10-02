@@ -1,6 +1,6 @@
-/* 결과 화면 A안 — 관리자 미리보기(2026-10-02)
+/* 결과 화면 A안(2026-10-02, 같은 날 모든 사용자에게 적용)
    운영 작업 화면의 결과 카드에 원문·다듬은 글을 문단끼리 나란히 놓는다.
-   관리자 랩의 'A안 보기'를 켠 관리자 브라우저에서만 불러온다(일반 사용자에게는 내려가지 않는다).
+   작업 흐름에 들어오면 미리 불러 두고(evasion-flow), 아래 '예시 글' 띠는 관리자에게만 띄운다.
    글은 textContent로만 넣는다 — 사용자 글에 태그가 섞여도 그대로 글자로 보인다. */
 (function () {
   'use strict';
@@ -318,7 +318,7 @@
     render(host);
   }
 
-  // ── 관리자 띠: 운영 화면 하단에 A안 적용 상태와 예시 글 입력을 둔다 ──
+  // ── 관리자 띠: 운영 화면 하단에 예시 글 입력을 둔다(관리자 전용) ──
   var bar = null, panel = null;
   function button(label, cls, onClick) {
     var b = el('button', cls, label);
@@ -332,7 +332,7 @@
     bar = el('div', 'gp-rdp');
     bar.__opts = opts;
     bar.setAttribute('role', 'region');
-    bar.setAttribute('aria-label', '결과 화면 A안 미리보기');
+    bar.setAttribute('aria-label', '결과 화면 예시 글');
     panel = el('form', 'gp-rdp-panel');
     panel.hidden = true;
     var before = el('textarea', 'gp-rdp-text');
@@ -365,8 +365,8 @@
     var row = el('div', 'gp-rdp-row');
     row.append(
       el('span', 'gp-rdp-dot'),
-      el('span', 'gp-rdp-label', '결과 화면 A안 적용 중'),
-      el('span', 'gp-rdp-sub', '관리자 화면에만 보여요'),
+      el('span', 'gp-rdp-label', '결과 화면 예시 글'),
+      el('span', 'gp-rdp-sub', '관리자에게만 보여요'),
       button('예시 글로 열기', 'gp-rdp-btn', function () { panel.hidden = !panel.hidden; if (!panel.hidden) before.focus(); }),
       button('끄기', 'gp-rdp-btn is-quiet', function () { if (bar.__opts.onOff) bar.__opts.onOff(); })
     );

@@ -8176,8 +8176,9 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-admin-lab-chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;background:#eef0ff;color:var(--admin-blue);font-size:11px;font-weight:800;}
 .gp-admin-lab-json{flex:1;min-height:260px;max-height:520px;overflow:auto;margin:0;border:1px solid var(--admin-line);border-radius:8px;background:#111827;color:#e5e7eb;padding:12px;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-word;}
 @media(max-width:960px){.gp-admin-lab-toolbar,.gp-admin-lab-result-grid{grid-template-columns:1fr;}.gp-admin-lab-head-actions{justify-content:flex-start;}}
-/* 결과 화면 A안(관리자 미리보기, 2026-10-02): 운영 결과 카드를 원문·다듬은 글 문단 나란히로 바꿔 본다.
-   관리자 랩에서 켠 관리자에게만 .is-result-a가 붙는다. 기존 본문(#lavDoneBody)은 숨기기만 해 복사·다운로드가 그대로다. */
+/* 결과 화면 A안(2026-10-02, 모든 사용자): 결과 카드를 원문·다듬은 글 문단 나란히로 보여 준다.
+   비교 화면이 준비되면 .is-result-a가 붙고, 못 불러오면 붙지 않아 기존 카드가 그대로 보인다.
+   기존 본문(#lavDoneBody)은 숨기기만 해 복사·다운로드가 그대로다. */
 .lav-done-compare{display:none;}
 .gp-lav-flow.is-result-a{width:min(1180px,100%);}
 .gp-lav-flow.is-result-a .lav-done-compare{display:flex;flex-direction:column;gap:8px;margin:0 0 4px;}
@@ -8210,7 +8211,7 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-lav-flow.is-result-a .lav-done-compare{gap:var(--rp-sp-3);}
 
 /* A안 결과 카드: 상태 배지·효과/품질 경고·차감 안내는 숨기고(크레딧 한 줄이 대신), 보강 카드는 대상 문단 옆에서만 */
-.gp-lav-flow.is-result-a #lavTrust,.gp-lav-flow.is-result-a #lavResultEffectNotice,.gp-lav-flow.is-result-a #lavResultQualityNotice,.gp-lav-flow.is-result-a #lavBillingNotice,.gp-lav-flow.is-result-a #lavDoneRefine:not(.is-docked){display:none!important;}
+.gp-lav-flow.is-result-a #lavTrust,.gp-lav-flow.is-result-a #lavResultEffectNotice,.gp-lav-flow.is-result-a #lavResultQualityNotice,.gp-lav-flow.is-result-a #lavBillingNotice,.gp-lav-flow.is-result-a #lavDoneRefine.has-pill:not(.is-docked){display:none!important;}
 
 /* 행동 버튼: 세 버튼 같은 높이·반경·글자. 위계 = 복사(주) > 새 글 시작(강조) > 다운로드(보조) */
 .gp-lav-flow.is-result-a .lav-done-actions{align-items:center;gap:var(--rp-sp-2);margin-top:var(--rp-sp-4);}

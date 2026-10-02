@@ -438,6 +438,8 @@ function updateCreditUI() {
  if (badge) badge.textContent = plans[p] || 'Free';
  // 잔액이 바뀌면 컴포저 예상 비용과 상태별 오퍼도 같이 최신화한다.
  if (typeof window.lavUpdateEstimate === 'function') window.lavUpdateEstimate();
+ // 결과 화면 크레딧 줄(현재 잔액)도 같은 값으로 맞춘다.
+ if (typeof window.lavRefreshDoneCredit === 'function') window.lavRefreshDoneCredit();
  if (typeof window.gpRefreshHeroOffer === 'function') window.gpRefreshHeroOffer(false);
 }
 
@@ -6037,8 +6039,8 @@ async function adminLabPoll(jobId, tokenId) {
  throw new Error('작업이 예상보다 오래 걸립니다. 잠시 후 다시 확인해 주세요.');
 }
 
-// 결과 화면 A안을 운영 작업 화면에 적용해 보는 관리자 전용 스위치(2026-10-02).
-//   이 브라우저에만 저장되고, 관리자에게만 적용된다. 실제 렌더는 evasion-flow의 lavResultDesignBoot가 맡는다.
+// 결과 화면 예시 글 띠(관리자 전용, 2026-10-02): 원문·결과를 직접 넣어 실제 결과 카드로 열어 본다.
+//   결과 화면 A안 자체는 모든 사용자에게 적용돼 있고, 이 스위치는 관리자 브라우저의 예시 글 띠만 켜고 끈다.
 window.adminResultDesignOpen = function() {
  if (!window.CU || !window.isAdmin()) return;
  try { localStorage.setItem('gp_admin_result_design', 'A'); } catch (e) {}
@@ -6048,7 +6050,7 @@ window.adminResultDesignOpen = function() {
 window.adminResultDesignOff = function() {
  try { localStorage.removeItem('gp_admin_result_design'); } catch (e) {}
  if (typeof window.lavResultDesignBoot === 'function') window.lavResultDesignBoot();
- if (window.gpToast) window.gpToast('결과 화면 A안을 껐어요.', { type: 'success' });
+ if (window.gpToast) window.gpToast('예시 글 띠를 껐어요.', { type: 'success' });
 };
 
 window.adminHumanizeLabCount = function() {
