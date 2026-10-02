@@ -621,9 +621,15 @@
            <div class="lav-done-body lav-collapse" id="lavDoneBody"></div>
            <button type="button" class="lav-collapse-toggle" id="lavDoneToggle" onclick="lavToggleCollapse('lavDoneBody',this)" aria-expanded="false" hidden><span>펼쳐보기</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
            <div class="lav-done-actions">
-             <button type="button" class="ghost" onclick="lavNewSentence()">새 글 시작</button>
-             <button type="button" class="ghost" onclick="lavDoneCopy(this)">복사</button>
-             <button type="button" onclick="lavDoneDownload()">다운로드 (.md)</button>
+             <button type="button" class="ghost lav-done-new" onclick="lavNewSentence()">새 글 시작</button>
+             <div class="lav-dl">
+               <button type="button" class="ghost" id="lavDlBtn" onclick="lavDoneDownload()" aria-haspopup="true" aria-expanded="false" aria-controls="lavDlMenu">다운로드</button>
+               <div class="lav-dl-menu" id="lavDlMenu" hidden>
+                 <a href="#" onclick="lavDoneDownload('txt'); return false;">텍스트 (.txt)</a>
+                 <a href="#" onclick="lavDoneDownload('md'); return false;">마크다운 (.md)</a>
+               </div>
+             </div>
+             <button type="button" onclick="lavDoneCopy(this)">복사</button>
            </div>
            <!-- 사후 문단 보강(코칭 프레이밍): 결과 품질 경고가 아니라 "원문에 없던 구체성"을 사용자 한 줄로 여는 섹션 -->
            <div class="lav-done-refine" id="lavDoneRefine" hidden>

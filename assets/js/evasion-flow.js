@@ -8,6 +8,7 @@
   var RESULT_DESIGN_KEY = 'gp_admin_result_design';
   var resultCompareLoad = null;
   var resultPreviewSource = null;   // 예시 글로 연 결과의 원문(실제 작업은 입력칸 원문을 쓴다)
+  var refineForCompare = null;      // A안 비교 화면에서 대상 문단 옆에 붙일 문단 보강(renderRefineTargets가 채운다)
   function resultDesignOn() {
     try { return localStorage.getItem(RESULT_DESIGN_KEY) === 'A' && !!(window.isAdmin && window.isAdmin()); } catch (e) { return false; }
   }
@@ -37,7 +38,8 @@
     }
     var source = resultPreviewSource != null ? resultPreviewSource : (($('lavInput') || {}).value || '');
     var output = body.textContent || '';
-    loadResultCompare().then(function (c) { if (c && resultDesignOn()) c.mount(host, source, output); }).catch(function () {});
+    var refine = refineForCompare ? Object.assign({ el: $('lavDoneRefine') }, refineForCompare) : null;
+    loadResultCompare().then(function (c) { if (c && resultDesignOn()) c.mount(host, source, output, { refine: refine }); }).catch(function () {});
   }
 
   var SIGNUP_GRANT_CREDITS = 20;
@@ -4282,10 +4284,14 @@
         : (st.mode === 'formal'
           ? '고급 휴머나이징과 정밀 검증이 완료됐어요. 제출 전 핵심 수치와 인용은 원문과 한 번 대조해 주세요.'
           : '기본 휴머나이징이 완료됐어요. 외부 검사 결과는 글과 도구에 따라 달라지며 점수를 보장하지 않아요.');
+      // A안: 모든 결과에 같은 최종 확인 안내(고급 모드 문구에는 이미 들어 있다).
+      if (resultDesignOn() && st.mode !== 'formal') doneNote.textContent += ' 제출 전 수치·인용·고유명사를 원문과 대조해 주세요.';
     }
     renderBillingDisposition(st);
     renderResultNotices(st);
-    renderDoneNextStep(st);
+    renderDoneCredit(st);
+    // 잔액은 renderDoneNextStep이 서버 값으로 맞춘 뒤 한 번 더 그린다.
+    Promise.resolve(renderDoneNextStep(st)).then(function () { renderDoneCredit(st); }, function () {});
     renderDoneBody((st.result && st.result.outputText) || '', st.result && st.result.refineTargets);
     lavRefineJobId = (st && st.jobId) || null;
     lavRefineBusy = false; refinePollGen++;   // 이전 보강 폴링 자연 종료
@@ -4400,6 +4406,31 @@
       heroCost.classList.toggle('is-short', balance < cost);
       heroCost.hidden = !!(heroBtn && heroBtn.hidden);
     }
+  }
+
+  // A안: 이번 작업의 확정 차감과 현재 잔액을 버튼 아래 한 줄로(예상 금액은 쓰지 않는다).
+  function renderDoneCredit(st) {
+    var actions = document.querySelector('.lav-done .lav-done-actions');
+    if (!actions || !actions.parentNode) return;
+    var line = $('lavDoneCredit');
+    if (!line) {
+      line = document.createElement('p');
+      line.id = 'lavDoneCredit';
+      line.className = 'lav-done-credit';
+      actions.parentNode.insertBefore(line, actions.nextSibling);
+    }
+    var result = (st && st.result) || {};
+    var disposition = (st && st.billingDisposition) || result.billingDisposition || '';
+    var cb = result.creditBreakdown || {};
+    var charged = cb.charged != null ? Number(cb.charged)
+      : (disposition === 'charged' && !(st && st.deducted === false) ? Number(cb.total) : NaN);
+    var parts = [];
+    if (disposition === 'charged' && isFinite(charged)) parts.push('이번 변환 ' + charged.toLocaleString('ko-KR') + '크레딧');
+    else if (disposition && disposition !== 'charged') parts.push('이번 작업은 크레딧이 차감되지 않았어요');
+    var balance = Number(window.UC);
+    if (parts.length && window.CU && window.UP !== 'unlimited' && isFinite(balance)) parts.push('현재 잔액 ' + Math.max(0, balance).toLocaleString('ko-KR') + '크레딧');
+    line.textContent = parts.join(' · ');
+    line.hidden = !parts.length;
   }
 
   function renderBillingDisposition(st) {
@@ -4716,17 +4747,37 @@
   };
 
   // ── 결과 .md 파일 다운로드 ──────────
-  window.lavDoneDownload = function () {
+  //   인자 없이 부르면 형식(텍스트·마크다운) 메뉴를 열고, 'txt'·'md'를 받으면 그 형식으로 저장한다.
+  function closeDownloadMenu() {
+    var menu = $('lavDlMenu'), btn = $('lavDlBtn');
+    if (menu) menu.hidden = true;
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+  document.addEventListener('click', function (e) {
+    var menu = $('lavDlMenu');
+    if (menu && !menu.hidden && !(e.target.closest && e.target.closest('.lav-dl'))) closeDownloadMenu();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDownloadMenu(); });
+  window.lavDoneDownload = function (format) {
+    if (format !== 'txt' && format !== 'md') {
+      var menu = $('lavDlMenu'), btn = $('lavDlBtn');
+      if (!menu) { window.lavDoneDownload('md'); return; }
+      menu.hidden = !menu.hidden;
+      if (btn) btn.setAttribute('aria-expanded', String(!menu.hidden));
+      if (!menu.hidden) { var first = menu.querySelector('a'); if (first) first.focus(); }
+      return;
+    }
+    closeDownloadMenu();
     var body = $('lavDoneBody');
     var text = body ? body.textContent : '';
     if (!text.trim()) return;
     var firstLine = (text.split('\n').find(function (l) { return l.trim(); }) || '결과').trim().slice(0, 40).replace(/[\\/:*?"<>|]/g, '');
-    var md = text;   // 결과 본문은 이미 줄글(첫 줄=제목). md로 저장.
-    var blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    // 결과 본문은 이미 줄글(첫 줄=제목)이라 두 형식 모두 같은 글을 담는다.
+    var blob = new Blob([text], { type: format === 'txt' ? 'text/plain;charset=utf-8' : 'text/markdown;charset=utf-8' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = (firstLine || '변환결과') + '.md';
+    a.download = (firstLine || '변환결과') + '.' + format;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -4778,10 +4829,16 @@
 
   // 관리자 미리보기: 원문·결과를 넣으면 실제 완료 화면과 같은 경로로 결과 카드를 연다.
   //   작업 ID가 없으므로 기록·알림·과금 안내·이용 지표는 남지 않는다.
-  window.lavAdminPreviewDone = function (before, after, mode) {
+  window.lavAdminPreviewDone = function (before, after, mode, extra) {
     if (!resultDesignOn() || !String(after || '').trim()) return false;
     var m = mode === 'polish' || mode === 'formal' ? mode : 'blog';
-    renderJobDone({ status: 'done', mode: m, result: { outputText: String(after) }, __adminPreview: { source: String(before || '') } });
+    extra = extra || {};
+    renderJobDone({
+      status: 'done', mode: m,
+      result: Object.assign({}, extra.result || {}, { outputText: String(after) }),
+      billingDisposition: extra.billingDisposition || '',
+      __adminPreview: { source: String(before || '') }
+    });
     show('done');
     lavInitCollapse('lavDoneBody', 'lavDoneToggle');
     // 입력칸은 건드리지 않으므로, 흐름 머리의 원문 글자 수는 예시 원문 기준으로 다시 쓴다.
@@ -4823,6 +4880,13 @@
       return Number.isInteger(t.index) && t.coaching && t.coaching.version === 1 && t.coaching.question;
     }).slice(0, 1);
     if (refineView.jobId !== lavRefineJobId) refineView = { jobId: lavRefineJobId, skipped: false, drafts: {} };
+    var freeForCompare = Math.max(0, Number((result.refine || {}).freeLeft) || 0);
+    refineForCompare = targets.length && !refineView.skipped ? {
+      snippet: targets[0].snippet || '',
+      index: targets[0].index,
+      label: '내 경험 보태기 · ' + (freeForCompare > 0 ? '무료 ' + freeForCompare + '회 남음' : (Number(targets[0].credit) || 0) + '크레딧')
+    } : null;
+    if (typeof syncResultDesign === 'function') syncResultDesign();
     list.innerHTML = '';
     wrap.hidden = !targets.length;
     if (okLine) okLine.hidden = true;

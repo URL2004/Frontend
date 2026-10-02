@@ -8182,17 +8182,114 @@ body[data-main-design="lavender"] .gp-toast-error .gp-toast-mark{background:line
 .gp-lav-flow.is-result-a{width:min(1180px,100%);}
 .gp-lav-flow.is-result-a .lav-done-compare{display:flex;flex-direction:column;gap:8px;margin:0 0 4px;}
 .gp-lav-flow.is-result-a #lavDoneBody,.gp-lav-flow.is-result-a #lavDoneToggle,.gp-lav-flow.is-result-a #lavDoneScoreWrap{display:none!important;}
-.gp-lav-flow.is-result-a .gp-rp-tools{justify-content:flex-end;}
-.gp-lav-flow.is-result-a .gp-rp-view{max-height:max(380px,calc(100vh - 460px));}
-.gp-rp-tools{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+/* ── 결과 카드 디자인 토큰 ──
+   색: ink(본문)·ink2(보조)·mute(설명)·border(테두리)·accent(보라 강조)
+   높이: btn 44(행동 버튼)·chip 34(도구·스위치·보강)·tag 24(글자 수 기준) / card-x: 카드 좌우 여백(모바일 16)
+   반경: btn·menu 12, card 16, pill 999 / 글자: btn 14·chip 13·meta 12.5·tag 11.5 / 간격: 4의 배수 */
+.lav-done,.gp-rp-view{
+ --rp-ink:#1c1b2e;--rp-ink2:#4f5468;--rp-mute:#6b7086;
+ --rp-line:rgba(28,27,46,.06);--rp-border:#e4e2ee;--rp-border-soft:#ecebf3;
+ --rp-paper:#fffdfa;--rp-surface:#fff;--rp-hover:#f5f4fb;
+ --rp-accent:#6d4aff;--rp-accent-ink:#4b34cc;--rp-accent-soft:#f3f0ff;--rp-accent-hover:#e9e3ff;--rp-accent-line:#d6ccff;--rp-accent-wash:#faf8ff;
+ --rp-flash:rgba(245,180,37,.16);--rp-ok:#1e8e3e;
+ --rp-h-btn:44px;--rp-h-chip:34px;--rp-h-tag:24px;--rp-card-x:28px;
+ --rp-r-btn:12px;--rp-r-menu:12px;--rp-r-card:16px;--rp-r-pill:999px;
+ --rp-fs-btn:14px;--rp-fs-chip:13px;--rp-fs-meta:12.5px;--rp-fs-tag:11.5px;
+ --rp-sp-1:4px;--rp-sp-2:8px;--rp-sp-3:12px;--rp-sp-4:16px;--rp-sp-5:20px;--rp-sp-6:24px;
+ --rp-shadow-pop:0 18px 40px -20px rgba(28,27,46,.45);
+ --rp-icon-plus:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 2.5v11M2.5 8h11' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+ --rp-icon-down:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* 머리: 위 흐름 줄('완료 · 원문 N자')은 카드의 '완료'와 겹치고 글자 수는 비교 머리에 있으니 숨긴다(완료 화면에선 뒤로·원문 수정도 이미 숨김) */
+.gp-lav-flow.is-result-a .lav-flow-bar{display:none;}
+.gp-lav-flow.is-result-a .lav-done-kicker{color:var(--rp-ok);font-size:var(--rp-fs-meta);font-weight:700;}
+.gp-lav-flow.is-result-a .lav-done-head h3{margin:2px 0 0;font-size:18px;font-weight:800;letter-spacing:-.02em;color:var(--rp-ink);}
+.gp-lav-flow.is-result-a #lavDoneNote{margin:var(--rp-sp-1) 0 var(--rp-sp-4)!important;font-size:var(--rp-fs-meta)!important;line-height:1.6!important;color:var(--rp-mute)!important;}
+.gp-lav-flow.is-result-a .lav-done{padding-left:var(--rp-card-x);padding-right:var(--rp-card-x);}
+.gp-lav-flow.is-result-a .lav-done-compare{gap:var(--rp-sp-3);}
+
+/* A안 결과 카드: 상태 배지·효과/품질 경고·차감 안내는 숨기고(크레딧 한 줄이 대신), 보강 카드는 대상 문단 옆에서만 */
+.gp-lav-flow.is-result-a #lavTrust,.gp-lav-flow.is-result-a #lavResultEffectNotice,.gp-lav-flow.is-result-a #lavResultQualityNotice,.gp-lav-flow.is-result-a #lavBillingNotice,.gp-lav-flow.is-result-a #lavDoneRefine:not(.is-docked){display:none!important;}
+
+/* 행동 버튼: 세 버튼 같은 높이·반경·글자. 위계 = 복사(주) > 새 글 시작(강조) > 다운로드(보조) */
+.gp-lav-flow.is-result-a .lav-done-actions{align-items:center;gap:var(--rp-sp-2);margin-top:var(--rp-sp-4);}
+.gp-lav-flow.is-result-a .lav-done-actions button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:var(--rp-h-btn);min-height:var(--rp-h-btn);padding:0 var(--rp-sp-5);border-radius:var(--rp-r-btn);font-size:var(--rp-fs-btn);font-weight:700;letter-spacing:-.01em;white-space:nowrap;}
+.gp-lav-flow.is-result-a .lav-done-actions button:last-child{min-width:96px;}
+.gp-lav-flow.is-result-a .lav-done-actions .lav-done-new{margin-right:auto;padding-left:var(--rp-sp-4);border:1px solid var(--rp-accent-line);background:var(--rp-accent-soft);color:var(--rp-accent-ink);}
+.gp-lav-flow.is-result-a .lav-done-actions .lav-done-new:hover{border-color:var(--rp-accent);background:var(--rp-accent-hover);}
+.gp-lav-flow.is-result-a .lav-done-actions .lav-done-new::before{content:"";width:16px;height:16px;background:currentColor;-webkit-mask:var(--rp-icon-plus) center/16px no-repeat;mask:var(--rp-icon-plus) center/16px no-repeat;}
+.gp-lav-flow.is-result-a .lav-done-actions .ghost:not(.lav-done-new){border:1px solid var(--rp-border);background:var(--rp-surface);color:var(--rp-ink);}
+.gp-lav-flow.is-result-a .lav-done-actions .ghost:not(.lav-done-new):hover{background:var(--rp-hover);}
+.gp-lav-flow.is-result-a #lavDlBtn{padding-right:var(--rp-sp-4);}
+.gp-lav-flow.is-result-a #lavDlBtn::after{content:"";width:14px;height:14px;background:currentColor;opacity:.6;-webkit-mask:var(--rp-icon-down) center/14px no-repeat;mask:var(--rp-icon-down) center/14px no-repeat;transition:transform .15s;}
+.gp-lav-flow.is-result-a #lavDlBtn[aria-expanded="true"]::after{transform:rotate(180deg);}
+.gp-lav-flow.is-result-a .lav-done-actions button:focus-visible{outline:2px solid var(--rp-accent);outline-offset:2px;}
+
+/* 크레딧 한 줄 */
+.lav-done-credit{display:none;}
+.gp-lav-flow.is-result-a .lav-done-credit{display:block;margin:var(--rp-sp-2) 0 0;text-align:right;font-size:var(--rp-fs-meta);color:var(--rp-mute);font-variant-numeric:tabular-nums;}
+.lav-done-credit[hidden]{display:none!important;}
+
+/* 비교 도구줄: 왼쪽 목차, 오른쪽 스위치 */
+.gp-rp-tools{display:flex;align-items:center;justify-content:space-between;gap:var(--rp-sp-3) var(--rp-sp-4);flex-wrap:wrap;}
+.gp-rp-tools-l,.gp-rp-tools-r{display:flex;align-items:center;gap:var(--rp-sp-2) var(--rp-sp-5);flex-wrap:wrap;}
+.gp-rp-tool{box-sizing:border-box;display:inline-flex;align-items:center;gap:6px;height:var(--rp-h-chip);padding:0 var(--rp-sp-3) 0 var(--rp-sp-4);border:1px solid var(--rp-border);border-radius:var(--rp-r-pill);background:var(--rp-surface);color:var(--rp-ink);font-size:var(--rp-fs-chip);font-weight:700;white-space:nowrap;cursor:pointer;}
+.gp-rp-tool:hover{background:var(--rp-hover);}
+.gp-rp-tool::after{content:"";width:14px;height:14px;background:currentColor;opacity:.55;-webkit-mask:var(--rp-icon-down) center/14px no-repeat;mask:var(--rp-icon-down) center/14px no-repeat;transition:transform .15s;}
+.gp-rp-tool[aria-expanded="true"]{border-color:var(--rp-accent-line);background:var(--rp-accent-soft);color:var(--rp-accent-ink);}
+.gp-rp-tool[aria-expanded="true"]::after{transform:rotate(180deg);}
+.gp-rp-tool:focus-visible,.gp-rp-basis:focus-visible,.gp-rp-refine:focus-visible,.gp-rp-toc-item:focus-visible{outline:2px solid var(--rp-accent);outline-offset:2px;}
+.gp-rp-toc{position:relative;}
+.gp-rp-toc-menu{position:absolute;top:calc(100% + var(--rp-sp-2));left:0;z-index:20;box-sizing:border-box;min-width:280px;max-width:min(460px,calc(100vw - 48px));max-height:340px;overflow-y:auto;padding:6px;border:1px solid var(--rp-border);border-radius:var(--rp-r-menu);background:var(--rp-surface);box-shadow:var(--rp-shadow-pop);}
+.gp-rp-toc-menu[hidden]{display:none!important;}
+.gp-rp-toc-item{display:block;width:100%;padding:9px var(--rp-sp-3);border:0;border-radius:8px;background:none;color:var(--rp-ink);font-size:var(--rp-fs-chip);font-weight:600;line-height:1.4;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
+.gp-rp-toc-item:hover{background:var(--rp-hover);}
 .gp-rp-switch.is-off{opacity:.45;cursor:not-allowed;}
-.gp-rp-switch{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:36px;font-size:13px;font-weight:700;color:#3d4458;cursor:pointer;user-select:none;}
+.gp-rp-switch{position:relative;display:inline-flex;align-items:center;gap:var(--rp-sp-2);min-height:var(--rp-h-chip);font-size:var(--rp-fs-chip);font-weight:700;color:var(--rp-ink);cursor:pointer;user-select:none;}
 .gp-rp-switch input{position:absolute;opacity:0;width:1px;height:1px;margin:0;}
-.gp-rp-switch i{position:relative;flex-shrink:0;width:34px;height:20px;border-radius:999px;background:#c9ccd9;transition:background .15s;}
-.gp-rp-switch i::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;}
-.gp-rp-switch input:checked+i{background:#6d4aff;}
+.gp-rp-switch i{position:relative;flex-shrink:0;width:34px;height:20px;border-radius:var(--rp-r-pill);background:#c9ccd9;transition:background .15s;}
+.gp-rp-switch i::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(28,27,46,.2);transition:transform .15s;}
+.gp-rp-switch input:checked+i{background:var(--rp-accent);}
 .gp-rp-switch input:checked+i::after{transform:translateX(14px);}
-.gp-rp-switch input:focus-visible+i{outline:2px solid #4b34cc;outline-offset:2px;}
+.gp-rp-switch input:focus-visible+i{outline:2px solid var(--rp-accent-ink);outline-offset:2px;}
+
+/* 글자 수 기준(공백 포함·제외) */
+.gp-rp-basis{box-sizing:border-box;height:var(--rp-h-tag);margin-left:2px;padding:0 10px;border:1px solid var(--rp-border);border-radius:var(--rp-r-pill);background:var(--rp-surface);color:var(--rp-ink2);font-size:var(--rp-fs-tag);font-weight:700;cursor:pointer;}
+.gp-rp-basis:hover{background:var(--rp-hover);}
+
+/* 목차로 이동한 행 잠깐 표시 */
+.gp-rp-body{position:relative;}
+.gp-rp-row>.gp-rp-cell{transition:box-shadow .3s;}
+.gp-rp-row.is-flash>.gp-rp-cell{box-shadow:inset 0 0 0 100vmax var(--rp-flash);}
+
+/* 대상 문단 옆 문단 보강 */
+.gp-rp-refine{box-sizing:border-box;display:inline-flex;align-items:center;gap:6px;height:var(--rp-h-chip);margin-top:var(--rp-sp-3);padding:0 var(--rp-sp-4) 0 var(--rp-sp-3);border:1px solid var(--rp-accent-line);border-radius:var(--rp-r-pill);background:var(--rp-accent-soft);color:var(--rp-accent-ink);font-size:var(--rp-fs-chip);font-weight:700;cursor:pointer;}
+.gp-rp-refine::before{content:"";width:14px;height:14px;background:currentColor;-webkit-mask:var(--rp-icon-plus) center/14px no-repeat;mask:var(--rp-icon-plus) center/14px no-repeat;transition:transform .15s;}
+.gp-rp-refine[aria-expanded="true"]::before{transform:rotate(45deg);}
+.gp-rp-refine:hover{border-color:var(--rp-accent);background:var(--rp-accent-hover);}
+.gp-rp-refine-slot:empty{display:none;}
+.gp-rp-refine-slot{margin-top:var(--rp-sp-3);}
+#lavDoneRefine.is-docked{margin:0;padding:var(--rp-sp-4);border:1px solid var(--rp-accent-line);border-radius:var(--rp-r-btn);background:var(--rp-accent-wash);font-family:inherit;}
+#lavDoneRefine.is-docked .lav-refine-title,#lavDoneRefine.is-docked .lav-refine-lead,#lavDoneRefine.is-docked .lav-refine-quote{display:none;}
+#lavDoneRefine.is-docked .lav-refine-card{padding-top:0;border-top:0;}
+#lavDoneRefine.is-docked .lav-refine-question-title{margin:0 0 var(--rp-sp-2);font-size:15px;line-height:1.5;color:var(--rp-ink);}
+#lavDoneRefine.is-docked .lav-refine-question{margin:0 0 var(--rp-sp-1);font-size:14px;line-height:1.6;color:var(--rp-ink);}
+#lavDoneRefine.is-docked .lav-refine-hint{margin:0 0 var(--rp-sp-3);font-size:var(--rp-fs-meta);color:var(--rp-mute);}
+#lavDoneRefine.is-docked .lav-refine-row{gap:var(--rp-sp-2);}
+#lavDoneRefine.is-docked .lav-refine-input{min-height:72px;padding:var(--rp-sp-3) 14px;border:1px solid var(--rp-border);border-radius:var(--rp-r-btn);font-size:14.5px;}
+#lavDoneRefine.is-docked .lav-refine-input:focus{border-color:var(--rp-accent);box-shadow:0 0 0 3px rgba(109,74,255,.15);}
+#lavDoneRefine.is-docked .lav-refine-btn{height:var(--rp-h-btn);padding:0 var(--rp-sp-4);border-radius:var(--rp-r-btn);background:var(--rp-accent);font-size:var(--rp-fs-btn);}
+#lavDoneRefine.is-docked .lav-refine-btn:hover{background:var(--rp-accent-ink);}
+#lavDoneRefine.is-docked .lav-refine-skip{align-self:center;min-height:var(--rp-h-chip);padding:0 var(--rp-sp-2);color:var(--rp-mute);font-size:var(--rp-fs-chip);}
+
+/* 결과 다운로드 형식 메뉴(텍스트·마크다운) */
+.lav-dl{position:relative;display:flex;}
+.lav-dl-menu{position:absolute;right:0;bottom:calc(100% + var(--rp-sp-2));z-index:30;display:flex;flex-direction:column;min-width:180px;padding:6px;border:1px solid var(--rp-border);border-radius:var(--rp-r-menu);background:var(--rp-surface);box-shadow:var(--rp-shadow-pop);}
+.lav-dl-menu[hidden]{display:none!important;}
+.lav-dl-menu a{display:block;padding:10px var(--rp-sp-3);border-radius:8px;color:var(--rp-ink);font-size:var(--rp-fs-chip);font-weight:600;text-decoration:none;white-space:nowrap;}
+.lav-dl-menu a:hover,.lav-dl-menu a:focus-visible{background:var(--rp-hover);outline:none;}
+.gp-lav-flow.is-result-a .gp-rp-view{max-height:max(380px,calc(100vh - 400px));}
 /* 관리자 띠: 운영 화면 하단에 A안 적용 상태·예시 글 입력 */
 .gp-rdp{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:1200;width:auto;max-width:calc(100vw - 32px);display:flex;flex-direction:column;gap:8px;font-family:Pretendard,"Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;}
 .gp-rdp[hidden]{display:none!important;}
@@ -8215,18 +8312,18 @@ body.gp-rdp-on .gp-lav-main{padding-bottom:96px;}
 @media(max-width:760px){.gp-rdp{width:calc(100vw - 24px);}.gp-rdp-sub{display:none;}.gp-rdp-texts{grid-template-columns:minmax(0,1fr);}.gp-rdp-text{min-height:110px;}}
 /* 긴 글 기준 조판: 다듬은 글=따뜻한 흰 종이(아주 옅은 결), 원문=한 톤 가라앉은 초안 종이.
    본문 Pretendard 16/1.85(원문 15/1.85), 한 칸 보기 17/1.9·약 40자 폭. 바뀐 곳은 글자 아래 절반에만 형광펜 띠. */
-.gp-rp-view{--rp-ink:#1c1b2e;--rp-ink2:#4f5468;--rp-mute:#6b7086;--rp-line:rgba(28,27,46,.06);--rp-paper:#fffdfa;
- display:flex;flex-direction:column;max-height:min(82vh,940px);border:1px solid #e4e2ee;border-radius:16px;overflow:hidden;background:var(--rp-paper);
+.gp-rp-view{
+ display:flex;flex-direction:column;max-height:min(82vh,940px);border:1px solid var(--rp-border);border-radius:var(--rp-r-card);overflow:hidden;background:var(--rp-paper);
  box-shadow:0 1px 2px rgba(28,27,46,.04);font-family:Pretendard,"Noto Sans KR",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
  font-kerning:normal;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
 .gp-rp-view ::selection{background:rgba(109,74,255,.2);}
 .gp-rp-empty{margin:0;padding:56px 20px;text-align:center;color:var(--rp-mute);font-size:14px;line-height:1.6;}
 .gp-rp-head,.gp-rp-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
-.gp-rp-head{flex-shrink:0;background:#fff;border-bottom:1px solid #ecebf3;}
-.gp-rp-col{display:flex;align-items:center;gap:8px;min-height:50px;padding:0 28px;font-size:12.5px;color:var(--rp-mute);font-variant-numeric:tabular-nums;}
+.gp-rp-head{flex-shrink:0;background:var(--rp-surface);border-bottom:1px solid var(--rp-border-soft);}
+.gp-rp-col{display:flex;align-items:center;gap:var(--rp-sp-2);min-height:52px;padding:0 28px;font-size:var(--rp-fs-meta);color:var(--rp-mute);font-variant-numeric:tabular-nums;}
 .gp-rp-col b{font-size:13px;font-weight:700;letter-spacing:-.01em;color:var(--rp-ink2);}
 .gp-rp-col--a b{font-weight:800;color:var(--rp-ink);}
-.gp-rp-col--b{border-right:1px solid #ecebf3;}
+.gp-rp-col--b{border-right:1px solid var(--rp-border-soft);}
 .gp-rp-copy{margin-left:auto;height:32px;padding:0 16px;border:0;border-radius:999px;background:#1c1b2e;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;}
 .gp-rp-copy:hover{background:#34306a;}
 .gp-rp-copy:focus-visible{outline:2px solid #6d4aff;outline-offset:2px;}
@@ -8240,7 +8337,7 @@ body.gp-rdp-on .gp-lav-main{padding-bottom:96px;}
 .gp-rp-row.is-h+.gp-rp-row{border-top:0;}
 .gp-rp-cell{min-width:0;padding:20px 28px 22px;word-break:keep-all;overflow-wrap:break-word;}
 .gp-rp-cell p{margin:0;white-space:pre-wrap;text-wrap:pretty;}
-.gp-rp-cell--b{background:rgba(226,227,238,.36);border-right:1px solid #e9e8f1;}
+.gp-rp-cell--b{background:rgba(226,227,238,.36);border-right:1px solid var(--rp-border-soft);}
 .gp-rp-cell--b p{font-size:15px;line-height:1.85;letter-spacing:-.005em;color:var(--rp-ink2);}
 .gp-rp-cell--a p{font-size:16px;line-height:1.85;letter-spacing:-.01em;color:var(--rp-ink);}
 .gp-rp-row:hover>.gp-rp-cell{box-shadow:inset 0 0 0 100vmax rgba(109,74,255,.035);}
@@ -8252,7 +8349,6 @@ body.gp-rdp-on .gp-lav-main{padding-bottom:96px;}
 .gp-rp-cell mark{color:inherit;border-radius:2px;-webkit-box-decoration-break:clone;box-decoration-break:clone;}
 .gp-rp-cell--a mark{background:linear-gradient(transparent 56%,rgba(124,94,255,.24) 56%);}
 .gp-rp-cell--b mark{background:linear-gradient(transparent 56%,rgba(226,104,82,.22) 56%);}
-.gp-rp-warn{display:inline-block;margin-top:10px;padding:3px 10px;border-radius:999px;background:#fff4e2;color:#7a5510;font-size:12px;font-weight:700;}
 .gp-rp-view.is-single .gp-rp-head,.gp-rp-view.is-single .gp-rp-row{grid-template-columns:minmax(0,1fr);}
 .gp-rp-view.is-single .gp-rp-col--b,.gp-rp-view.is-single .gp-rp-cell--b{display:none;}
 .gp-rp-view.is-single .gp-rp-col--a,.gp-rp-view.is-single .gp-rp-cell--a{box-sizing:border-box;width:100%;max-width:740px;margin:0 auto;padding-left:30px;padding-right:30px;}
@@ -8278,6 +8374,51 @@ body.gp-rdp-on .gp-lav-main{padding-bottom:96px;}
 .gp-rp-row:hover>.gp-rp-cell{box-shadow:none;}
 .gp-rp-view.is-single .gp-rp-col--a,.gp-rp-view.is-single .gp-rp-cell--a{padding-left:18px;padding-right:18px;}
 .gp-rp-view.is-single .gp-rp-cell--a p{font-size:16.5px;line-height:1.85;}
+}
+/* ── A안 모바일(≤760px) ──
+   본문은 페이지와 함께 스크롤한다(스크롤 속 스크롤 없음). 도구줄은 화면 위, 행동 버튼은 화면 아래에 붙어 늘 손이 닿는다.
+   카드 좌우 여백 16, 본문 종이는 카드 폭 끝까지 → 390폭 글줄 266→330px(한 줄 약 20자).
+   눌리는 요소는 토큰으로 키운다: chip 34→38, tag 24→28. */
+@media(max-width:760px){
+ .lav-done,.gp-rp-view{--rp-card-x:16px;--rp-h-chip:38px;--rp-h-tag:28px;}
+ .gp-lav-flow.is-result-a .lav-done{padding-top:20px;padding-bottom:var(--rp-sp-4);}
+ .gp-lav-flow.is-result-a #lavDoneNote{margin:var(--rp-sp-1) 0 var(--rp-sp-3)!important;}
+ .gp-lav-flow.is-result-a .lav-done-compare{gap:0;margin-bottom:0;}
+ /* 위에 붙는 도구줄(카드 폭) */
+ .gp-lav-flow.is-result-a .gp-rp-tools{position:sticky;top:0;z-index:6;flex-wrap:nowrap;gap:var(--rp-sp-2);margin:0 calc(var(--rp-card-x) * -1);padding:var(--rp-sp-2) var(--rp-card-x);background:var(--rp-surface);border-bottom:1px solid var(--rp-border-soft);}
+ .gp-lav-flow.is-result-a .gp-rp-tools-r{flex-wrap:nowrap;gap:var(--rp-sp-4);margin-left:auto;}
+ .gp-lav-flow.is-result-a .gp-rp-tool{padding:0 10px 0 14px;}
+ /* 목차는 도구줄 폭 전체로 펼친다 */
+ .gp-lav-flow.is-result-a .gp-rp-toc{position:static;}
+ .gp-lav-flow.is-result-a .gp-rp-toc-menu{top:calc(100% + var(--rp-sp-1));left:var(--rp-sp-2);right:var(--rp-sp-2);min-width:0;max-width:none;max-height:min(60vh,420px);}
+ .gp-lav-flow.is-result-a .gp-rp-toc-item{padding:12px var(--rp-sp-3);font-size:14px;}
+ /* 본문 종이: 카드 폭 끝까지, 페이지와 함께 스크롤 */
+ .gp-lav-flow.is-result-a .gp-rp-view{max-height:none;overflow:visible;margin:0 calc(var(--rp-card-x) * -1);border-width:0;border-radius:0;box-shadow:none;}
+ .gp-lav-flow.is-result-a .gp-rp-body{flex:none;overflow:visible;}
+ .gp-lav-flow.is-result-a .gp-rp-col{min-height:46px;padding-left:var(--rp-card-x);padding-right:var(--rp-card-x);}
+ .gp-lav-flow.is-result-a .gp-rp-cell{padding-left:var(--rp-card-x);padding-right:var(--rp-card-x);}
+ .gp-lav-flow.is-result-a .gp-rp-row{scroll-margin-top:66px;}
+ /* 결과 아래 회색 상자가 원문임을 밝힌다 */
+ .gp-lav-flow.is-result-a .gp-rp-cell--b p::before{content:"원문";display:block;margin-bottom:2px;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--rp-mute);}
+ .gp-lav-flow.is-result-a .gp-rp-cell--b p:empty{display:none;}
+ /* 아래에 붙는 행동 버튼: 새 글 시작·다운로드는 제 폭, 복사가 남은 폭 */
+ .gp-lav-flow.is-result-a .lav-done-actions{position:sticky;bottom:0;z-index:7;display:grid;grid-template-columns:auto auto minmax(0,1fr);margin:0 calc(var(--rp-card-x) * -1);padding:10px var(--rp-card-x) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rp-border-soft);background:rgba(255,255,255,.94);-webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);}
+ .gp-lav-flow.is-result-a .lav-done-actions .lav-done-new{margin-right:0;}
+ .gp-lav-flow.is-result-a .lav-done-actions button,.gp-lav-flow.is-result-a .lav-done-actions .lav-done-new,.gp-lav-flow.is-result-a #lavDlBtn{padding:0 14px;}
+ .gp-lav-flow.is-result-a .lav-done-actions button:last-child{width:100%;min-width:0;}
+ .gp-lav-flow.is-result-a .lav-done-credit{text-align:center;}
+ /* 관리자 미리보기 띠(화면 아래 고정)와 겹치지 않게 */
+ body.gp-rdp-on .gp-lav-flow.is-result-a .lav-done-actions{bottom:76px;}
+}
+/* 좁은 폰: 복사(주 버튼)가 가장 좁아지지 않게 다운로드 화살표, 더 좁으면 + 아이콘까지 뺀다 */
+@media(max-width:380px){
+ .gp-lav-flow.is-result-a #lavDlBtn::after{display:none;}
+}
+@media(max-width:340px){
+ .gp-lav-flow.is-result-a .gp-rp-tools-r{gap:var(--rp-sp-3);}
+ .gp-lav-flow.is-result-a .lav-done-actions{gap:6px;}
+ .gp-lav-flow.is-result-a .lav-done-actions button,.gp-lav-flow.is-result-a .lav-done-actions .lav-done-new,.gp-lav-flow.is-result-a #lavDlBtn{padding:0 10px;}
+ .gp-lav-flow.is-result-a .lav-done-actions .lav-done-new::before{display:none;}
 }
 
 

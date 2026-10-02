@@ -93,22 +93,26 @@
     }
     return { b: segs(ta, keepA), a: segs(tb, keepB) };
   }
-  function nums(s) { return (String(s).match(/\d+/g) || []).sort().join(','); }
 
   function build(before, after) {
     if (!before.trim()) {
-      return { noOrig: true, la: after.trim().length, lb: 0, rows: lines(after).map(function (l) { return { h: isHeading(l), b: [], a: [[l, 0]], warn: false }; }) };
+      return finish({ noOrig: true, before: '', after: after, rows: lines(after).map(function (l) { return { h: isHeading(l), b: [], a: [[l, 0]], text: l }; }) });
     }
     var rows = align(lines(before), lines(after)).map(function (pair) {
       var a = pair[0], b = pair[1], d = diff(a, b);
-      return {
-        h: isHeading(a || b) && !/\n/.test(a + b),
-        same: a.replace(/\s+/g, ' ') === b.replace(/\s+/g, ' '),
-        b: d.b, a: d.a,
-        warn: !!a && !!b && nums(a) !== nums(b)
-      };
+      return { h: isHeading(a || b) && !/\n/.test(a + b), same: a.replace(/\s+/g, ' ') === b.replace(/\s+/g, ' '), b: d.b, a: d.a, text: b };
     });
-    return { noOrig: false, rows: rows, lb: before.trim().length, la: after.trim().length };
+    return finish({ noOrig: false, before: before, after: after, rows: rows });
+  }
+  // 글자 수(공백 포함·제외)와 목차에 쓸 제목 행을 미리 센다.
+  function finish(M) {
+    M.count = {
+      with: { b: M.before.trim().length, a: M.after.trim().length },
+      without: { b: M.before.replace(/\s/g, '').length, a: M.after.replace(/\s/g, '').length }
+    };
+    M.heads = [];
+    M.rows.forEach(function (r, i) { if (r.h) M.heads.push(i); });
+    return M;
   }
 
   function el(tag, cls, text) {
@@ -136,55 +140,181 @@
     return wrap;
   }
 
+  function smallButton(label, cls, onClick) {
+    var b = el('button', cls, label);
+    b.type = 'button';
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  // 데스크톱은 비교 본문이 따로 스크롤하고, 모바일은 본문이 페이지와 함께 스크롤한다(CSS가 정한다).
+  function innerScroll(body) { return !!body && getComputedStyle(body).overflowY !== 'visible'; }
+  function scrollToRow(body, row) {
+    if (!body || !row) return;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var behavior = reduce ? 'auto' : 'smooth';
+    if (innerScroll(body)) body.scrollTo({ top: Math.max(0, row.offsetTop - 8), behavior: behavior });
+    else row.scrollIntoView({ block: 'start', behavior: behavior });   // 위에 붙은 도구줄 높이는 CSS scroll-margin-top
+    row.classList.remove('is-flash');
+    void row.offsetWidth;
+    row.classList.add('is-flash');
+    setTimeout(function () { row.classList.remove('is-flash'); }, 1600);
+  }
+  // 스위치·글자 수 기준을 바꿔 다시 그려도 읽던 문단이 같은 자리에 오게 한다(보이는 첫 행 기준).
+  function readAnchor(host) {
+    var body = host.querySelector('.gp-rp-body');
+    if (!body || !body.children.length) return null;
+    var tools = host.querySelector('.gp-rp-tools');
+    var line = innerScroll(body) ? body.getBoundingClientRect().top : Math.max(0, tools ? tools.getBoundingClientRect().bottom : 0);
+    for (var i = 0; i < body.children.length; i++) {
+      var r = body.children[i].getBoundingClientRect();
+      if (r.bottom > line + 1) return { index: i, top: r.top };
+    }
+    return null;
+  }
+  function keepAnchor(host, a) {
+    var body = host.querySelector('.gp-rp-body');
+    var row = a && body && body.children[a.index];
+    if (!row) return;
+    var delta = row.getBoundingClientRect().top - a.top;
+    if (Math.abs(delta) < 1) return;
+    if (innerScroll(body)) body.scrollTop += delta;
+    else window.scrollBy(0, delta);
+  }
+  // 목차 메뉴는 바깥을 누르거나 Esc를 누르면 닫는다.
+  function closeTocMenus() {
+    document.querySelectorAll('.gp-rp-toc-menu').forEach(function (m) {
+      if (m.hidden) return;
+      m.hidden = true;
+      var b = m.parentNode && m.parentNode.querySelector('.gp-rp-tool');
+      if (b) b.setAttribute('aria-expanded', 'false');
+    });
+  }
+  document.addEventListener('click', function (e) { if (!(e.target.closest && e.target.closest('.gp-rp-toc'))) closeTocMenus(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeTocMenus(); });
+
+  // 문단 보강 대상(결과 문단 index·인용 문장)을 비교 행에 잇는다.
+  function refineRow(M, refine) {
+    if (!refine) return -1;
+    var key = String(refine.snippet || '').replace(/\s+/g, '').slice(0, 24);
+    if (key) {
+      for (var i = 0; i < M.rows.length; i++) if (String(M.rows[i].text || '').replace(/\s+/g, '').indexOf(key) >= 0) return i;
+    }
+    var paras = M.after.split(/\n[ \t]*\n+/).filter(function (p) { return p.trim(); });
+    var target = paras[refine.index];
+    if (!target) return -1;
+    var head = target.trim().split('\n')[0].replace(/\s+/g, '').slice(0, 24);
+    for (var j = 0; j < M.rows.length; j++) if (String(M.rows[j].text || '').replace(/\s+/g, '').indexOf(head) >= 0) return j;
+    return -1;
+  }
+  // 보강 카드(운영 #lavDoneRefine)를 대상 문단 아래로 옮긴다. 다시 그리기 전에는 제자리로 돌려놓는다.
+  function undock(st) {
+    var card = st.opts.refine && st.opts.refine.el;
+    if (card && st.refineHome && card.parentNode !== st.refineHome) st.refineHome.insertBefore(card, st.refineNext || null);
+    if (card) card.classList.remove('is-docked');
+  }
+  function dock(st, slot) {
+    var card = st.opts.refine && st.opts.refine.el;
+    if (!card || !slot) return;
+    if (!st.refineHome) { st.refineHome = card.parentNode; st.refineNext = card.nextSibling; }
+    slot.appendChild(card);
+    card.classList.add('is-docked');
+    st.refineOpen = true;
+  }
+
   function render(host) {
     var st = host.__gpRp, M = st && st.model;
-    var prevBody = host.querySelector('.gp-rp-body');
-    var keepTop = prevBody ? prevBody.scrollTop : 0;
+    var anchor = readAnchor(host);
+    undock(st || { opts: {} });
     host.textContent = '';
     if (!M) return;
     var single = M.noOrig || !st.orig;
+    var basis = st.count === 'without' ? 'without' : 'with';
+    var body = el('div', 'gp-rp-body');
+
     var tools = el('div', 'gp-rp-tools');
-    tools.append(
+    var left = el('div', 'gp-rp-tools-l'), right = el('div', 'gp-rp-tools-r');
+    if (M.heads.length >= 2) {
+      var tocWrap = el('div', 'gp-rp-toc');
+      var tocBtn = smallButton('목차 보기', 'gp-rp-tool', function () { menu.hidden = !menu.hidden; tocBtn.setAttribute('aria-expanded', String(!menu.hidden)); });
+      tocBtn.setAttribute('aria-expanded', 'false');
+      var menu = el('div', 'gp-rp-toc-menu');
+      menu.hidden = true;
+      M.heads.forEach(function (i) {
+        var item = smallButton(String(M.rows[i].text || '').replace(/\s+/g, ' ').slice(0, 60), 'gp-rp-toc-item', function () {
+          menu.hidden = true;
+          tocBtn.setAttribute('aria-expanded', 'false');
+          scrollToRow(body, body.children[i]);
+        });
+        menu.appendChild(item);
+      });
+      tocWrap.append(tocBtn, menu);
+      left.appendChild(tocWrap);
+    }
+    right.append(
       toggle('바뀐 곳', st.hl && !M.noOrig, M.noOrig, function (v) { st.hl = v; render(host); }),
       toggle('원문', !single, M.noOrig, function (v) { st.orig = v; render(host); })
     );
+    tools.append(left, right);
+
     var view = el('div', 'gp-rp-view' + (single ? ' is-single' : ''));
     var head = el('div', 'gp-rp-head');
     var hb = el('div', 'gp-rp-col gp-rp-col--b');
-    hb.append(el('b', '', '원문'), el('span', '', fmt(M.lb)));
+    hb.append(el('b', '', '원문'), el('span', '', fmt(M.count[basis].b)));
     var ha = el('div', 'gp-rp-col gp-rp-col--a');
-    ha.append(el('b', '', '다듬은 글'), el('span', '', fmt(M.la)));
+    var basisBtn = smallButton(basis === 'with' ? '공백 포함' : '공백 제외', 'gp-rp-basis', function () { st.count = basis === 'with' ? 'without' : 'with'; render(host); });
+    basisBtn.title = '글자 수 기준 바꾸기';
+    ha.append(el('b', '', '다듬은 글'), el('span', '', fmt(M.count[basis].a)), basisBtn);
     head.append(hb, ha);
-    var body = el('div', 'gp-rp-body');
-    var frag = document.createDocumentFragment();
+
     var hl = st.hl && !M.noOrig;
-    M.rows.forEach(function (r) {
+    var refine = st.opts.refine;
+    var refineAt = refineRow(M, refine);
+    var slot = null;
+    var frag = document.createDocumentFragment();
+    M.rows.forEach(function (r, i) {
       var row = el('div', 'gp-rp-row' + (r.h ? ' is-h' : '') + (r.same ? ' is-same' : ''));
       var cb = el('div', 'gp-rp-cell gp-rp-cell--b');
       cb.appendChild(para(r.b, hl));
       var ca = el('div', 'gp-rp-cell gp-rp-cell--a');
       ca.appendChild(para(r.a, hl));
-      if (r.warn) ca.appendChild(el('span', 'gp-rp-warn', '숫자가 원문과 달라요'));
+      if (i === refineAt) {
+        slot = el('div', 'gp-rp-refine-slot');
+        var pill = smallButton(refine.label || '내 경험 보태기', 'gp-rp-refine', function () {
+          if (st.refineOpen) { undock(st); st.refineOpen = false; pill.setAttribute('aria-expanded', 'false'); return; }
+          dock(st, slot);
+          pill.setAttribute('aria-expanded', 'true');
+          var field = slot.querySelector('textarea');
+          if (field) field.focus({ preventScroll: true });
+        });
+        pill.setAttribute('aria-expanded', 'false');
+        ca.append(pill, slot);
+      }
       row.append(cb, ca);
       frag.appendChild(row);
     });
     body.appendChild(frag);
     view.append(head, body);
     host.append(tools, view);
-    if (keepTop) body.scrollTop = keepTop;
+    if (st.refineOpen && slot) dock(st, slot);
+    else st.refineOpen = false;
+    keepAnchor(host, anchor);
   }
 
   // host 하나에 비교 화면을 그린다. 같은 글이면 계산을 다시 하지 않는다.
-  function mount(host, before, after) {
+  //   opts.refine = { snippet, index, label, el }: 문단 보강 대상(있을 때만).
+  function mount(host, before, after, opts) {
     if (!host) return;
     before = String(before || '');
     after = String(after || '');
-    var st = host.__gpRp || (host.__gpRp = { hl: true, orig: true });
+    var st = host.__gpRp || (host.__gpRp = { hl: true, orig: true, opts: {} });
     if (st.before !== before || st.after !== after || !st.model) {
+      undock(st);
       st.before = before;
       st.after = after;
       st.model = after.trim() ? build(before, after) : null;
+      st.refineOpen = false;
     }
+    st.opts = opts || {};
     render(host);
   }
 
