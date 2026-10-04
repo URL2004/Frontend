@@ -125,7 +125,9 @@ test('완료 화면은 잔액이 다음 작업 최소치 미만일 때만 사실
   assert.match(evasion, /if \(balance >= SHORT_HUMANIZE_MIN_CREDITS\) return;/u);
   // 무제한 플랜·차단 화면에는 없다: 함수는 unlimited에서 빠지고, blocked 마크업엔 결제 유도가 없다.
   assert.match(evasion, /window\.UP === 'unlimited'\) return;/u);
-  assert.doesNotMatch(main, /lav-blocked[\s\S]{0,1500}?충전/u);
+  const blockedSection = main.match(/<section[^>]*data-flow="blocked"[\s\S]*?<\/section>/u)?.[0];
+  assert.ok(blockedSection);
+  assert.doesNotMatch(blockedSection, /충전/u);
   // 완료 시점에 서버 잔액으로 최신화한다(비동기 작업 뒤 낡은 잔액 방지).
   assert.match(evasion, /gpConversionContext\(true\)/u);
 });

@@ -286,7 +286,7 @@
 
   var STEP_LABEL = {
     analyzing: '분석', report: 'AI 감지 · 교수님 레이더', select: '방법 선택',
-    detectError: 'AI 감지 다시 시도', job: '휴머나이징 중', blocked: '다시 시도', done: '완료'
+    detectError: 'AI 감지 다시 시도', job: '휴머나이징 중', payment: '결과 받기', blocked: '다시 시도', done: '완료'
   };
 
   // 입력 화면 → 워크스페이스 화면 전환(페이지 전환)
@@ -326,7 +326,7 @@
     var back = document.querySelector('.lav-flow-back');
     if (back) back.style.visibility = (name === 'select' || name === 'report' || name === 'detectError') ? 'visible' : 'hidden';
     var edit = document.querySelector('.lav-flow-edit');
-    if (edit) edit.hidden = name === 'analyzing' || name === 'job' || name === 'blocked' || name === 'done' || name === 'detectError';
+    if (edit) edit.hidden = name === 'analyzing' || name === 'job' || name === 'payment' || name === 'blocked' || name === 'done' || name === 'detectError';
     if (name === 'report') {
       requestAnimationFrame(function () {
         var report = flow.querySelector('[data-flow="report"]');
@@ -3225,15 +3225,14 @@
   });
   async function prepareStructurePreview() {
     if (structureLoading) return;
-    var key = structureInputKey(), area = $('lavStructurePreview');
+    var key = structureInputKey(), area = $('lavStructurePreview'), requestGen = pollGen;
     structureLoading = true; updateConfirmStartState();
     if (area) { area.hidden = false; area.textContent = '목차와 문단 변경안을 준비하고 있어요. 이 단계에서는 크레딧을 차감하지 않아요.'; }
     try {
       var token = await evGetIdToken(true);
       if (!token) throw new Error('로그인 후 구조 변경안을 확인해 주세요.');
       var response = await fetch(window.apiUrl('/transform/structure-plan'), { method: 'POST', headers: evAuthHeaders(token, {'Content-Type':'application/json'}), body: JSON.stringify({text: (($('lavInput') && $('lavInput').value)||'').trim(), mode:'formal', documentProfile:currentDocumentProfile() || undefined}) });
-      var started = await response.json();
-      if (!response.ok) throw new Error(started.error || '변경안을 준비하지 못했습니다.');
+      var started = await parseTransformStart(response);
       var id = started.jobId || (started.job && started.job.id);
       var plan = null;
       for (var attempt=0;attempt<180;attempt++) {
@@ -3267,6 +3266,11 @@
       }
     } catch (error) {
       structurePlan = null; structurePlanKey = '';
+      if (error.httpStatus === 409 && error.activeJobId && requestGen === pollGen) {
+        window.lavCloseConfirm();
+        await handleTransformStartError(error, 'select', requestGen);
+        return;
+      }
       if (area) area.textContent = error.message || '변경안을 준비하지 못했습니다. 옵션을 해제하면 원문 구조로 진행할 수 있어요.';
     } finally { structureLoading=false;renderConfirmCost();renderSelectCosts();updateConfirmStartState(); }
   }
@@ -3727,7 +3731,7 @@
         }).then(parseTransformStart);
         if (window.gpTrackFeature && r && r.jobId) window.gpTrackFeature('start', { feature: 'humanize', run_id: r.jobId, mode: mode, chars: text.length });
         if (gen !== pollGen) {
-          if (r && r.jobId) makeJobCanceller(r.jobId)();
+          if (r && r.jobId) makeJobCanceller(r.jobId)().catch(function () {});
           return;
         }
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();
@@ -3785,9 +3789,10 @@
   var activeJobUi = { jobId: '', status: 'idle', label: '' };
   var lavBlockedJobId = null;   // 차단 화면이 띄운 job — '보존형으로 받기'(accept-fallback)에 필요
   var lavBlockedFallbackCredit = 0;   // 보존형 받기 단가 — 클릭 전 잔액(window.UC) 사전확인용
+  var paymentJob = null;
 
   function isBlockingJobStatus(status) {
-    return ['starting', 'checking', 'queued', 'running', 'awaiting_approval', 'blocked'].indexOf(status) >= 0;
+    return ['starting', 'checking', 'queued', 'running', 'awaiting_approval', 'awaiting_payment', 'blocked'].indexOf(status) >= 0;
   }
 
   function readJobRef() {
@@ -3813,6 +3818,7 @@
     if (status === 'checking') return { title: '작업 상태 확인 중', meta: meta };
     if (status === 'queued') return { title: '휴머나이징 대기 중', meta: meta };
     if (status === 'awaiting_approval') return { title: '근거 승인을 기다려요', meta: meta };
+    if (status === 'awaiting_payment') return { title: '결제 확인 후 결과를 받을 수 있어요', meta: meta };
     if (status === 'blocked') return { title: '작업 확인이 필요해요', meta: '진행 화면에서 선택해 주세요' };
     if (status === 'done') return { title: '휴머나이징 완료', meta: '결과 보기' };
     return { title: title, meta: meta };
@@ -3870,6 +3876,8 @@
     if (typeof window.switchTab === 'function') window.switchTab('main');
     if (activeJobUi.status === 'done') {
       show('done');
+    } else if (activeJobUi.status === 'awaiting_payment') {
+      show('payment');
     } else if (activeJobUi.status === 'blocked') {
       show('blocked');
     } else if (isBlockingJobStatus(activeJobUi.status)) {
@@ -3947,6 +3955,7 @@
 
   // 작업 중단(확인 모달 → 서버 취소/abort → 설정 화면 복귀). 차감은 완료 시에만 일어나므로 취소=항상 무과금.
   window.lavCancelJob = async function () {
+    var cancelGen = pollGen, cancelAction = activeCancel;
     var ok = window.gpConfirm
       ? await window.gpConfirm({
         title: '작업을 중단할까요?',
@@ -3955,9 +3964,19 @@
         danger: true
       })
       : confirm('진행 중인 작업을 중단할까요? 크레딧은 차감되지 않아요.');
-    if (!ok) return;
+    if (!ok || cancelGen !== pollGen || cancelAction !== activeCancel) return;
+    // Keep the job visible until the server confirms cancellation.
+    try {
+      if (!cancelAction) throw new Error('작업 상태를 다시 확인해 주세요.');
+      await cancelAction();
+    } catch (error) {
+      if (window.gpToast) window.gpToast(error.message || '중단하지 못했어요. 다시 시도해 주세요.', { type: 'error' });
+      return;
+    }
+    if (cancelGen !== pollGen || cancelAction !== activeCancel) return;
     pollGen++;
-    if (activeCancel) { try { activeCancel(); } catch (e) { } activeCancel = null; }
+    activeCancel = null;
+    paymentJob = null;
     stopFormalTicker();
     clearJobRef();
     clearActiveJobUi();
@@ -3974,8 +3993,11 @@
   function clearJobRef() { try { localStorage.removeItem('lavJobRef'); } catch (e) { } }
   function initJobResume() {
     var ref = readJobRef();
-    if (!ref) return;
     var resumeGen = ++pollGen;
+    if (!ref) {
+      recoverActiveTransformJob(resumeGen).catch(function () { /* 로그인·연결 회복 후 다시 확인 */ });
+      return;
+    }
     setActiveJobUi(ref.jobId, ref.status || 'checking');
     evGetIdToken().then(function (idToken) {
       return fetch(window.apiUrl('/transform/' + ref.jobId), { headers: evAuthHeaders(idToken) });
@@ -4021,6 +4043,10 @@
   function resumeTransformState(jobId, st) {
     if (!jobId || !st || !st.ok && !st.status) return false;
     st.jobId = jobId;
+    if (st.status === 'awaiting_payment') {
+      renderPaymentRequired(jobId, st);
+      return true;
+    }
     if (['queued', 'running', 'awaiting_approval'].indexOf(st.status) >= 0 && window.gpTrackFeature) window.gpTrackFeature('start', { feature: 'humanize', run_id: jobId, mode: st.mode, chars: st.inputChars });
     if (st.status === 'done') {
       renderJobDone(st);   // blog/formal 모드별 점수·배지·보관함 — 폴링 완료와 동일 렌더
@@ -4051,6 +4077,9 @@
     }
     if (st.status === 'awaiting_approval') {
       stopFormalTicker();
+      clearCancelWindow();
+      if ($('lavJobCancel')) $('lavJobCancel').hidden = false;
+      if ($('lavJobTitle')) $('lavJobTitle').textContent = '사용할 근거 자료를 승인해 주세요';
       setJobSteps(2);
       if ($('lavStepSlot')) $('lavStepSlot').textContent = '근거 검수 대기 — 승인한 자료만 인용돼요';
       renderApprovalList(st.candidates || [], jobId);
@@ -4070,6 +4099,7 @@
   async function recoverActiveTransformJob(recoverGen) {
     if (recoverGen !== pollGen) return false;
     var idToken = await evGetIdToken(true);
+    if (!idToken || recoverGen !== pollGen) return false;
     var res = await fetch(window.apiUrl('/transform/active'), { headers: evAuthHeaders(idToken) });
     if (!res.ok) return false;
     var data = await res.json().catch(function () { return null; });
@@ -4080,6 +4110,45 @@
     if (window.gpToast) window.gpToast('진행 중이던 작업으로 다시 들어갑니다.', { type: 'info' });
     return resumeTransformState(job.id, job);
   }
+
+  function renderPaymentRequired(jobId, st) {
+    stopFormalTicker();
+    paymentJob = { id: jobId, needed: Number(st.needed) || 0, billingMode: st.billingMode || 'credit' };
+    setActiveJobUi(jobId, 'awaiting_payment', '결과 보관 중 · 결제 확인 필요');
+    activeCancel = makeJobCanceller(jobId);
+    if ($('lavPaymentReason')) $('lavPaymentReason').textContent = st.error || '잔액을 확인한 뒤 결과 받기를 눌러 주세요.';
+    if ($('lavPaymentAmount')) $('lavPaymentAmount').textContent = paymentJob.billingMode === 'coupon'
+      ? '필요한 쿠폰: 1장' : '결과 받기에 필요한 크레딧: ' + paymentJob.needed;
+    if ($('lavPaymentCharge')) $('lavPaymentCharge').hidden = paymentJob.billingMode === 'coupon';
+    show('payment');
+  }
+
+  window.lavPaymentCharge = function () {
+    if (!paymentJob) return;
+    if (typeof window.gpOpenCreditCheckout === 'function') {
+      window.gpOpenCreditCheckout({ action: 'pricing_purchase', source: 'humanize_payment_wait', neededCredits: paymentJob.needed });
+    } else if (typeof window.switchTab === 'function') window.switchTab('pricing');
+  };
+
+  window.lavResumePayment = async function () {
+    if (!paymentJob) return;
+    var jobId = paymentJob.id, gen = pollGen, button = $('lavPaymentResume');
+    if (button && button.disabled) return;
+    if (button) button.disabled = true;
+    try {
+      var token = await evGetIdToken(true);
+      var response = await fetch(window.apiUrl('/transform/' + jobId + '/resume-payment'), {
+        method: 'POST', headers: evAuthHeaders(token, { 'Content-Type': 'application/json' }), body: '{}'
+      });
+      var data = await response.json();
+      if (gen !== pollGen) return;
+      if (!response.ok) throw new Error(data.error || '결제 상태를 확인하지 못했어요. 다시 시도해 주세요.');
+      paymentJob = null;
+      resumeTransformState(jobId, data.job);
+    } catch (error) {
+      if (gen === pollGen && $('lavPaymentReason')) $('lavPaymentReason').textContent = error.message;
+    } finally { if (button) button.disabled = false; }
+  };
 
   async function handleTransformStartError(err, fallbackStep, expectedGen) {
     if (expectedGen !== pollGen) return;
@@ -4234,12 +4303,19 @@
       }
       if (st.status === 'awaiting_approval') {
         stopFormalTicker();
+        clearCancelWindow();
+        if ($('lavJobCancel')) $('lavJobCancel').hidden = false;
+        if ($('lavJobTitle')) $('lavJobTitle').textContent = '사용할 근거 자료를 승인해 주세요';
         setActiveJobUi(jobId, 'awaiting_approval', '근거 승인을 기다려요');
         setJobSteps(2);
         if ($('lavStepSlot')) $('lavStepSlot').textContent = '근거 검수 대기 — 승인한 자료만 인용돼요';
         renderApprovalList(st.candidates || [], jobId);
         var ap = $('lavApprove'); if (ap) ap.hidden = false;
         return;   // 사용자 승인 대기 — submitApproval이 폴링 재개
+      }
+      if (st.status === 'awaiting_payment') {
+        renderPaymentRequired(jobId, st);
+        return;
       }
       if (st.status === 'done') {
         stopFormalTicker();
@@ -4678,13 +4754,17 @@
 
   function makeJobCanceller(jobId) {
     return function () {
-      evGetIdToken().then(function (idToken) {
+      return evGetIdToken().then(function (idToken) {
         return fetch(window.apiUrl('/transform/' + jobId + '/cancel'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),
           body: JSON.stringify({})
         });
-      }).catch(function () { });
+      }).then(async function (response) {
+        var data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || '작업을 중단하지 못했어요.');
+        return data;
+      });
     };
   }
 
@@ -4718,7 +4798,7 @@
         }).then(parseTransformStart);
         if (window.gpTrackFeature && r && r.jobId) window.gpTrackFeature('start', { feature: 'humanize', run_id: r.jobId, mode: 'formal', chars: text.length });
         if (gen !== pollGen) {
-          if (r && r.jobId) makeJobCanceller(r.jobId)();
+          if (r && r.jobId) makeJobCanceller(r.jobId)().catch(function () {});
           return;
         }
         if ($('lavJobId')) $('lavJobId').textContent = '#' + r.jobId.slice(0, 6).toUpperCase();

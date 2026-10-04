@@ -587,6 +587,18 @@
          </section>
 
          <!-- 4.5) 차단 → 동의 기반 재시도/보존형 받기 -->
+         <section class="lav-flow-card" data-flow="payment" aria-live="polite" hidden>
+           <h3>결제 확인 후 결과를 받을 수 있어요</h3>
+           <p id="lavPaymentReason"></p>
+           <p id="lavPaymentAmount"></p>
+           <p>생성한 결과는 보관되어 있어요. 크레딧 또는 쿠폰을 준비한 뒤 ‘결제 확인하고 결과 받기’를 눌러 주세요.</p>
+           <div class="lav-blocked-actions">
+             <button type="button" class="lav-flow-cta" id="lavPaymentResume" onclick="lavResumePayment()">결제 확인하고 결과 받기</button>
+             <button type="button" class="lav-blocked-2nd" id="lavPaymentCharge" onclick="lavPaymentCharge()">크레딧 충전</button>
+             <button type="button" class="lav-blocked-cancel" onclick="lavCancelJob()">작업 취소</button>
+           </div>
+         </section>
+
          <section class="lav-flow-card lav-blocked" data-flow="blocked" hidden>
            <div class="lav-blocked-head">
              <strong>전달 가능한 결과를 만들지 못했어요</strong>
