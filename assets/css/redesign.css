@@ -8847,20 +8847,31 @@ body.gp-rdp-on .gp-lav-main{padding-bottom:96px;}
 .gp-admin-attribution-table{table-layout:fixed;min-width:540px;}
 .gp-admin-attribution-table th:last-child{width:100px;}
 .gp-admin-attribution-table td{overflow-wrap:anywhere;}
+.gp-admin-utm-form{margin-top:18px;}
+.gp-admin-utm-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+.gp-admin-utm-fields .gp-admin-filter-field{min-width:0;}
+.gp-admin-utm-options{margin:16px 0;color:var(--admin-text2);font-size:12px;}
+.gp-admin-utm-options summary{cursor:pointer;padding:8px 0;}
+.gp-admin-utm-options-fields{grid-template-columns:minmax(0,2fr) minmax(0,1fr);margin-top:8px;}
+.gp-admin-utm-result{margin-top:20px;padding-top:18px;border-top:1px solid var(--admin-line);}
+.gp-admin-utm-output{width:100%;resize:vertical;overflow-wrap:anywhere;font-size:12px;line-height:1.6;}
+.gp-admin-utm-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.gp-admin-utm-options summary:focus-visible{outline:2px solid var(--admin-blue);outline-offset:3px;}
+.gp-admin-utm-form .gp-admin-input:focus-visible,.gp-admin-utm-output:focus-visible{outline:2px solid var(--admin-blue);outline-offset:2px;}
 @media(max-width:600px){
+ .gp-admin-utm-fields{grid-template-columns:1fr;}
+ .gp-admin-utm-form .gp-admin-input,.gp-admin-utm-actions button,.gp-admin-utm-form button{min-height:44px;}
  .gp-admin-attribution-table{min-width:0;}
  .gp-admin-attribution-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
  .gp-admin-attribution-table tbody{display:block;}
  .gp-admin-attribution-table tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:13px 0;border-bottom:1px solid var(--admin-line);}
  .gp-admin-attribution-table tbody td{padding:0;border-bottom:0;font-size:12px;}
- .gp-admin-attribution-table tbody td:first-child{grid-column:1;grid-row:1;font-weight:750;}
+ .gp-admin-attribution-table tbody td:first-child{grid-column:1 / -1;grid-row:3;color:var(--admin-text2);}
+ .gp-admin-attribution-table tbody td:first-child::before{content:'플랫폼 · ';color:var(--admin-text3);}
  .gp-admin-attribution-table tbody td:nth-child(4){grid-column:2;grid-row:1;}
  .gp-admin-attribution-table tbody td:nth-child(2){grid-column:1 / -1;grid-row:2;color:var(--admin-text2);}
- .gp-admin-attribution-table tbody td:nth-child(2)::before{content:'캠페인 · ';color:var(--admin-text3);}
- .gp-admin-attribution-table tbody td:nth-child(3){grid-column:1 / -1;grid-row:3;color:var(--admin-text2);}
- .gp-admin-attribution-table tbody td:nth-child(3)::before{content:'채널 · ';color:var(--admin-text3);}
- .gp-admin-attribution-table tbody td:nth-child(3) br{display:none;}
- .gp-admin-attribution-table tbody td:nth-child(3) .muted::before{content:' / ';}
+ .gp-admin-attribution-table tbody td:nth-child(2)::before{content:'채널 · ';color:var(--admin-text3);}
+ .gp-admin-attribution-table tbody td:nth-child(3){grid-column:1;grid-row:1;font-weight:750;}
 }
 .gp-admin-filter-row{align-items:flex-end;gap:9px;}
 .gp-admin-filter-field{display:flex;min-width:112px;flex-direction:column;gap:4px;color:var(--admin-text3);font-size:10.5px;font-weight:800;}
