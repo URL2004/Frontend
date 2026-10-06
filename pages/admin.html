@@ -1559,6 +1559,23 @@
     </section>
 
     <!-- 사용자 워크스페이스: 검색 → 요약 + 크레딧 조정 + 환불을 한 화면에 -->
+    <section id="adminSignupAttributionPanel" class="gp-admin-panel" data-admin-tab="users">
+      <div class="gp-admin-section-head">
+        <div><h3>영상별 신규 가입</h3><p>가입자에게 저장된 유입 링크를 기준으로 영상과 캠페인의 가입 성과를 확인해요.</p></div>
+        <button type="button" class="gp-admin-mini-btn" onclick="loadAdminSignupAttribution()">다시 조회</button>
+      </div>
+      <div class="gp-admin-filter-row">
+        <label class="gp-admin-filter-field" for="adminAttributionDays"><span>가입 기간</span><select id="adminAttributionDays" class="gp-admin-input gp-admin-select" onchange="loadAdminSignupAttribution()"><option value="7">최근 7일</option><option value="30" selected>최근 30일</option><option value="90">최근 90일</option></select></label>
+        <label class="gp-admin-filter-field" for="adminAttributionTouch"><span>유입 기준</span><select id="adminAttributionTouch" class="gp-admin-input gp-admin-select" onchange="loadAdminSignupAttribution()"><option value="last_touch">가입 직전 유입</option><option value="first_touch">최초 유입</option></select></label>
+        <label class="gp-admin-filter-field" for="adminAttributionSource"><span>유입 채널</span><select id="adminAttributionSource" class="gp-admin-input gp-admin-select" onchange="adminRenderSignupAttribution()"><option value="">전체 채널</option></select></label>
+        <label class="gp-admin-filter-field gp-admin-filter-grow" for="adminAttributionQuery"><span>영상·캠페인 검색</span><input id="adminAttributionQuery" class="gp-admin-input" type="search" placeholder="예: video_01 또는 signup_test" oninput="adminRenderSignupAttribution()"></label>
+      </div>
+      <p class="gp-admin-filter-scope">최초 유입은 처음 방문한 링크, 가입 직전 유입은 가입 전 마지막으로 기록된 유입 링크예요. 기간은 한국 시간의 가입일 기준이에요.</p>
+      <div id="adminSignupAttributionStatus" class="gp-admin-attribution-status" role="status" aria-live="polite"></div>
+      <div id="adminSignupAttributionSummary" aria-busy="true"><div class="gp-admin-empty">가입 유입 통계를 불러오는 중이에요.</div></div>
+      <p class="gp-admin-signup-foot">영상마다 다른 utm_content 값을 사용해 주세요. 관리자 계정은 제외하고 현재 보관된 가입자 기록을 집계해요. 탈퇴해 삭제된 계정은 포함되지 않아요. 출처가 없는 과거 가입자는 미기록으로 구분해요.</p>
+    </section>
+
     <section id="adminPanelUsers" class="gp-admin-panel gp-admin-ws" data-admin-tab="users">
       <div class="gp-admin-section-head">
         <h3>사용자 관리</h3>

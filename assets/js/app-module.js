@@ -6227,7 +6227,7 @@ function adminTabLoaders(tab) {
   overview: [window.loadAdminOverview, window.loadAdminOverviewHealth, window.loadAdminSignupCreditSummary, window.loadAdminRefundSummary, window.loadAdminCreditUsageSummary],
   incidents: [window.loadAdminOpsLogs, window.loadAdminJobs],
   billing: [window.loadAdminOverview, window.loadAdminRefundList],
-  users: [],
+  users: [window.loadAdminSignupAttribution],
   quality: [window.loadAdminHumanizeQuality],
   ledger: [window.loadAllCreditHistory],
   coupons: [window.loadCouponBatches],
@@ -6935,6 +6935,74 @@ window.loadAdminSignupCreditSummary = async function(force) {
   root.removeAttribute('aria-busy');
   root.innerHTML = `<div class="gp-admin-signup-error"><strong>무료 크레딧 지표를 불러오지 못했습니다.</strong><p>${escapeHtml(error.message || '잠시 후 다시 시도해 주세요.')}</p><button type="button" class="gp-admin-mini-btn" onclick="loadAdminSignupCreditSummary(true)">다시 시도</button></div>`;
   adminSignupCreditAnnounce('무료 크레딧 지표를 불러오지 못했습니다.');
+ }
+};
+
+// 영상·캠페인별 가입: 외부 분석 도구 없이 서버의 가입자 기록을 조회한다.
+let adminAttributionGeneration = 0;
+let adminAttributionController = null;
+
+window.adminRenderSignupAttribution = function() {
+ const root = document.getElementById('adminSignupAttributionSummary');
+ const status = document.getElementById('adminSignupAttributionStatus');
+ const data = window._adminSignupAttribution;
+ if (!root || !data || !window.isAdmin()) return;
+ const source = document.getElementById('adminAttributionSource')?.value || '';
+ const query = (document.getElementById('adminAttributionQuery')?.value || '').trim().toLocaleLowerCase('ko-KR');
+ const groups = (data.groups || []).filter(row => (!source || row.source === source) &&
+  (!query || [row.source, row.medium, row.campaign, row.content].join(' ').toLocaleLowerCase('ko-KR').includes(query)));
+ const signups = groups.reduce((sum, row) => sum + adminNumber(row.signups), 0);
+ const number = value => adminNumber(value).toLocaleString('ko-KR');
+ const cell = value => value ? escapeHtml(value) : '<span class="muted">미지정</span>';
+ const since = new Date(data.since).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
+ const until = new Date(data.until).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
+ const basis = data.touch === 'first_touch' ? '최초 유입' : '가입 직전 유입';
+ root.dataset.loadState = data.truncated ? 'partial' : 'ok';
+ root.removeAttribute('aria-busy');
+ root.innerHTML = `<div class="gp-admin-attribution-total"><strong>선택한 링크의 신규 가입 ${number(signups)}명</strong><span>${escapeHtml(since)} ~ ${escapeHtml(until)} · ${basis} · ${number(groups.length)}개 링크</span></div>
+  <p class="gp-admin-attribution-coverage">기간 내 가입 ${number(data.total)}명 · 출처 기록 ${number(data.recorded)}명 · 미기록 ${number(data.unrecorded)}명</p>
+  ${groups.length ? `<div class="gp-admin-table-wrap" tabindex="0" role="region" aria-label="영상별 가입자 표"><table class="gp-admin-table gp-admin-attribution-table"><caption>선택한 기간과 유입 기준의 영상·캠페인별 신규 가입자 수</caption><thead><tr><th scope="col">영상 구분값</th><th scope="col">캠페인</th><th scope="col">채널 / 매체</th><th scope="col" class="num">신규 가입</th></tr></thead><tbody>${groups.map(row => `<tr><td>${cell(row.content)}</td><td>${cell(row.campaign)}</td><td>${cell(row.source)}<br><span class="muted">${escapeHtml(row.medium || '미지정')}</span></td><td class="num"><strong>${number(row.signups)}명</strong></td></tr>`).join('')}</tbody></table></div>` : '<div class="gp-admin-empty">조건에 맞는 유입 기록이 없어요. 기간과 검색 조건을 확인해 주세요.</div>'}`;
+ if (status) {
+  status.dataset.state = data.truncated ? 'partial' : 'ok';
+  status.textContent = data.truncated
+   ? '조회 한도를 넘어 최신 가입 기록 20,000건만 집계했어요. 아래 숫자는 전체 합계가 아니에요. 기간을 줄여 다시 조회해 주세요.'
+   : `${basis} 기준으로 선택한 링크의 신규 가입 ${number(signups)}명을 확인했어요.`;
+ }
+};
+
+window.loadAdminSignupAttribution = async function() {
+ const root = document.getElementById('adminSignupAttributionSummary');
+ const status = document.getElementById('adminSignupAttributionStatus');
+ if (!root || !window.isAdmin()) return;
+ const generation = ++adminAttributionGeneration;
+ if (adminAttributionController) adminAttributionController.abort();
+ adminAttributionController = new AbortController();
+ window._adminSignupAttribution = null;
+ root.setAttribute('aria-busy', 'true');
+ delete root.dataset.loadState;
+ root.innerHTML = '<div class="gp-admin-empty">가입 유입 통계를 불러오는 중이에요.</div>';
+ if (status) { status.dataset.state = 'loading'; status.textContent = '가입 유입 통계를 조회하고 있어요.'; }
+ try {
+  const data = await adminPost('/admin/signup-attribution-summary', {
+   days: Number(document.getElementById('adminAttributionDays')?.value || 30),
+   touch: document.getElementById('adminAttributionTouch')?.value || 'last_touch'
+  }, { signal: adminAttributionController.signal });
+  if (generation !== adminAttributionGeneration) return;
+  window._adminSignupAttribution = data;
+  const select = document.getElementById('adminAttributionSource');
+  if (select) {
+   const current = select.value;
+   const sources = [...new Set((data.groups || []).map(row => row.source))].sort();
+   select.innerHTML = '<option value="">전체 채널</option>' + sources.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+   select.value = sources.includes(current) ? current : '';
+  }
+  window.adminRenderSignupAttribution();
+ } catch (error) {
+  if (error?.name === 'AbortError' || generation !== adminAttributionGeneration) return;
+  root.dataset.loadState = 'error';
+  root.removeAttribute('aria-busy');
+  root.innerHTML = `<div class="gp-admin-signup-error"><strong>가입 유입 통계를 불러오지 못했어요.</strong><p>${escapeHtml(error.message || '잠시 후 다시 시도해 주세요.')}</p><button type="button" class="gp-admin-mini-btn" onclick="loadAdminSignupAttribution()">다시 시도</button></div>`;
+  if (status) { status.dataset.state = 'error'; status.textContent = '조회에 실패했어요. 다시 시도해 주세요.'; }
  }
 };
 
