@@ -54,6 +54,7 @@
       <button id="adminTabIncidents" type="button" role="tab" aria-selected="false" aria-controls="adminPanelIncidents" tabindex="-1" class="gp-admin-tab" data-tab="incidents" onclick="adminSwitchTab('incidents')">장애·작업 <span id="adminOpsTabBadge" class="gp-ops-tab-badge" hidden>0</span></button>
       <button id="adminTabBilling" type="button" role="tab" aria-selected="false" aria-controls="adminPanelBilling" tabindex="-1" class="gp-admin-tab" data-tab="billing" onclick="adminSwitchTab('billing')">결제·환불 <span id="adminBillingTabBadge" class="gp-ops-tab-badge" hidden>0</span></button>
       <button id="adminTabUsers" type="button" role="tab" aria-selected="false" aria-controls="adminPanelUsers" tabindex="-1" class="gp-admin-tab" data-tab="users" onclick="adminSwitchTab('users')">사용자</button>
+      <button id="adminTabAttribution" type="button" role="tab" aria-selected="false" aria-controls="adminUtmGeneratorPanel adminSignupAttributionPanel" tabindex="-1" class="gp-admin-tab" data-tab="attribution" onclick="adminSwitchTab('attribution')">유입·UTM</button>
       <button id="adminTabQuality" type="button" role="tab" aria-selected="false" aria-controls="adminPanelQuality" tabindex="-1" class="gp-admin-tab" data-tab="quality" onclick="adminSwitchTab('quality')">품질</button>
       <button id="adminTabLedger" type="button" role="tab" aria-selected="false" aria-controls="adminPanelLedger" tabindex="-1" class="gp-admin-tab" data-tab="ledger" onclick="adminSwitchTab('ledger')">원장</button>
       <button id="adminTabCoupons" type="button" role="tab" aria-selected="false" aria-controls="adminPanelCoupons" tabindex="-1" class="gp-admin-tab" data-tab="coupons" onclick="adminSwitchTab('coupons')">쿠폰</button>
@@ -1558,24 +1559,49 @@
       </div>
     </section>
 
-    <!-- 사용자 워크스페이스: 검색 → 요약 + 크레딧 조정 + 환불을 한 화면에 -->
-    <section id="adminSignupAttributionPanel" class="gp-admin-panel" data-admin-tab="users">
+    <section id="adminUtmGeneratorPanel" class="gp-admin-panel" data-admin-tab="attribution">
+      <div class="gp-admin-section-head"><div><h3>UTM 링크 만들기</h3><p>플랫폼, 홍보 채널, 영상 이름을 입력하고 게시할 링크를 복사하세요.</p></div></div>
+      <form id="adminUtmForm" class="gp-admin-utm-form" onsubmit="event.preventDefault(); adminGenerateUtmLink()" oninput="adminInvalidateUtmLink()">
+        <div class="gp-admin-utm-fields">
+          <label class="gp-admin-filter-field" for="adminUtmPlatform"><span>플랫폼</span><input id="adminUtmPlatform" class="gp-admin-input" list="adminUtmPlatforms" value="instagram" required maxlength="100" autocomplete="off" aria-describedby="adminUtmNamingHelp"><datalist id="adminUtmPlatforms"><option value="instagram"><option value="youtube"><option value="tiktok"><option value="naver"><option value="facebook"><option value="kakao"></datalist></label>
+          <label class="gp-admin-filter-field" for="adminUtmChannel"><span>채널 · 계정명</span><input id="adminUtmChannel" class="gp-admin-input" placeholder="예: gyopi_official" required maxlength="100" autocomplete="off" aria-describedby="adminUtmNamingHelp"></label>
+          <label class="gp-admin-filter-field" for="adminUtmVideo"><span>영상 이름</span><input id="adminUtmVideo" class="gp-admin-input" placeholder="예: video_01" required maxlength="100" autocomplete="off" aria-describedby="adminUtmNamingHelp"></label>
+        </div>
+        <p id="adminUtmNamingHelp" class="gp-admin-filter-scope">같은 계정은 같은 채널 이름을, 영상마다 다른 영상 이름을 사용하세요. 영문은 소문자, 공백은 밑줄로 정리돼요.</p>
+        <details class="gp-admin-utm-options"><summary>도착 주소·홍보 방식 변경</summary><div class="gp-admin-utm-fields gp-admin-utm-options-fields">
+          <label class="gp-admin-filter-field" for="adminUtmDestination"><span>도착 주소</span><input id="adminUtmDestination" class="gp-admin-input" type="url" value="https://gpkorea.ai.kr/" required aria-describedby="adminUtmDestinationHelp"><span id="adminUtmDestinationHelp">교피 사이트 주소를 입력하세요. 기본 주소를 그대로 써도 돼요.</span></label>
+          <label class="gp-admin-filter-field" for="adminUtmMedium"><span>홍보 방식</span><select id="adminUtmMedium" class="gp-admin-input gp-admin-select"><option value="social">SNS 게시물</option><option value="paid_social">SNS 유료 광고</option><option value="video">동영상</option><option value="referral">외부 링크</option><option value="email">이메일</option></select></label>
+        </div></details>
+        <button type="submit" class="gp-admin-primary">링크 생성</button>
+      </form>
+      <div id="adminUtmResult" class="gp-admin-utm-result" hidden>
+        <label class="gp-admin-filter-field" for="adminUtmOutput"><span>게시할 링크</span><textarea id="adminUtmOutput" class="gp-admin-input gp-admin-utm-output" rows="3" readonly></textarea></label>
+        <div class="gp-admin-utm-actions"><button id="adminUtmCopyButton" type="button" class="gp-admin-primary" onclick="adminCopyUtmLink()">링크 복사</button><button type="button" class="gp-admin-mini-btn" onclick="adminViewUtmSignups()">이 영상 가입 실적 보기</button></div>
+      </div>
+      <p id="adminUtmStatus" class="gp-admin-attribution-status" role="status" aria-live="polite"></p>
+      <p class="gp-admin-signup-foot">플랫폼은 utm_source, 채널은 utm_campaign, 영상은 utm_content에 저장돼요. 링크를 만든 뒤 실제 가입이 발생하면 아래 집계에 표시돼요.</p>
+    </section>
+
+    <section id="adminSignupAttributionPanel" class="gp-admin-panel" data-admin-tab="attribution">
       <div class="gp-admin-section-head">
-        <div><h3>영상별 신규 가입</h3><p>가입자에게 저장된 유입 링크를 기준으로 영상과 캠페인의 가입 성과를 확인해요.</p></div>
+        <div><h3>유입별 신규 가입</h3><p>가입자에게 저장된 링크로 플랫폼·채널·영상의 가입 성과를 확인해요.</p></div>
         <button type="button" class="gp-admin-mini-btn" onclick="loadAdminSignupAttribution()">다시 조회</button>
       </div>
       <div class="gp-admin-filter-row">
         <label class="gp-admin-filter-field" for="adminAttributionDays"><span>가입 기간</span><select id="adminAttributionDays" class="gp-admin-input gp-admin-select" onchange="loadAdminSignupAttribution()"><option value="7">최근 7일</option><option value="30" selected>최근 30일</option><option value="90">최근 90일</option></select></label>
         <label class="gp-admin-filter-field" for="adminAttributionTouch"><span>유입 기준</span><select id="adminAttributionTouch" class="gp-admin-input gp-admin-select" onchange="loadAdminSignupAttribution()"><option value="last_touch">가입 직전 유입</option><option value="first_touch">최초 유입</option></select></label>
-        <label class="gp-admin-filter-field" for="adminAttributionSource"><span>유입 채널</span><select id="adminAttributionSource" class="gp-admin-input gp-admin-select" onchange="adminRenderSignupAttribution()"><option value="">전체 채널</option></select></label>
-        <label class="gp-admin-filter-field gp-admin-filter-grow" for="adminAttributionQuery"><span>영상·캠페인 검색</span><input id="adminAttributionQuery" class="gp-admin-input" type="search" placeholder="예: video_01 또는 signup_test" oninput="adminRenderSignupAttribution()"></label>
+        <label class="gp-admin-filter-field" for="adminAttributionGroup"><span>집계 단위</span><select id="adminAttributionGroup" class="gp-admin-input gp-admin-select" onchange="adminRenderSignupAttribution()"><option value="video">영상별</option><option value="channel">채널별</option><option value="platform">플랫폼별</option></select></label>
+        <label class="gp-admin-filter-field" for="adminAttributionSource"><span>플랫폼</span><select id="adminAttributionSource" class="gp-admin-input gp-admin-select" onchange="adminAttributionPlatformChanged()"><option value="">전체 플랫폼</option></select></label>
+        <label class="gp-admin-filter-field" for="adminAttributionChannel"><span>채널 · 계정명</span><select id="adminAttributionChannel" class="gp-admin-input gp-admin-select" onchange="adminRenderSignupAttribution()"><option value="">전체 채널</option></select></label>
+        <label class="gp-admin-filter-field gp-admin-filter-grow" for="adminAttributionQuery"><span>영상 검색</span><input id="adminAttributionQuery" class="gp-admin-input" type="search" placeholder="예: video_01" oninput="delete this.dataset.exactVideo; adminRenderSignupAttribution()"></label>
       </div>
       <p class="gp-admin-filter-scope">최초 유입은 처음 방문한 링크, 가입 직전 유입은 가입 전 마지막으로 기록된 유입 링크예요. 기간은 한국 시간의 가입일 기준이에요.</p>
       <div id="adminSignupAttributionStatus" class="gp-admin-attribution-status" role="status" aria-live="polite"></div>
       <div id="adminSignupAttributionSummary" aria-busy="true"><div class="gp-admin-empty">가입 유입 통계를 불러오는 중이에요.</div></div>
-      <p class="gp-admin-signup-foot">영상마다 다른 utm_content 값을 사용해 주세요. 관리자 계정은 제외하고 현재 보관된 가입자 기록을 집계해요. 탈퇴해 삭제된 계정은 포함되지 않아요. 출처가 없는 과거 가입자는 미기록으로 구분해요.</p>
+      <p class="gp-admin-signup-foot">기존 링크의 캠페인 값은 채널 칸에 표시돼요. 관리자 계정은 제외하고 현재 보관된 가입자 기록을 집계해요. 탈퇴해 삭제된 계정은 포함되지 않아요. 출처가 없는 과거 가입자는 미기록으로 구분해요.</p>
     </section>
 
+    <!-- 사용자 워크스페이스: 검색 → 요약 + 크레딧 조정 + 환불을 한 화면에 -->
     <section id="adminPanelUsers" class="gp-admin-panel gp-admin-ws" data-admin-tab="users">
       <div class="gp-admin-section-head">
         <h3>사용자 관리</h3>

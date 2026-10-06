@@ -21,7 +21,7 @@ test('관리자 정보 구조는 업무 흐름과 접근 가능한 탭 계약을
   assert.match(html, /<nav[^>]+role="tablist"[^>]+aria-label="관리자 영역"/u);
   for (const [tab, label] of [
     ['overview', '개요'], ['incidents', '장애·작업'], ['billing', '결제·환불'],
-    ['users', '사용자'], ['quality', '품질'], ['ledger', '원장'],
+    ['users', '사용자'], ['attribution', '유입·UTM'], ['quality', '품질'], ['ledger', '원장'],
     ['coupons', '쿠폰'], ['settings', '운영 설정'], ['labs', '랩·도구'], ['patches', '변경 이력']
   ]) {
     assert.match(html, new RegExp(`role="tab"[^>]+aria-selected="(?:true|false)"[^>]+data-tab="${tab}"[^>]*>${label}`, 'u'));
@@ -44,6 +44,8 @@ test('관리자 진입은 권한 확인 뒤 선택 탭만 지연 로딩한다', 
   assert.doesNotMatch(loadPage, /loadAdminHumanizeQuality\(\)|loadAllCreditHistory\(\)|loadCouponBatches\(\)/u);
   assert.match(source, /const ADMIN_TAB_CACHE_MS = 45000/u);
   assert.match(source, /quality: \[window\.loadAdminHumanizeQuality\]/u);
+  assert.match(source, /users: \[\]/u);
+  assert.match(source, /attribution: \[window\.loadAdminSignupAttribution\]/u);
   assert.match(source, /ledger: \[window\.loadAllCreditHistory\]/u);
   assert.match(source, /settings: \[window\.loadAdminGptRuntimeConfig, window\.loadAdminDetectCalibration\]/u);
   const loader = section('window.adminLoadTab = async function', 'function adminSyncTabPanels');

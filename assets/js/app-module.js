@@ -6190,7 +6190,7 @@ window.loadAdminHumanizeLab = async function() {
 
 // 관리자 탭: 선택한 영역만 조회한다. 숨겨진 품질 2,000건·원장 1,000건을
 // 관리자 진입 때마다 모두 요청하던 구조를 탭별 지연 로딩으로 바꾼다.
-const ADMIN_TABS = ['overview', 'incidents', 'billing', 'users', 'quality', 'ledger', 'coupons', 'settings', 'labs', 'patches'];
+const ADMIN_TABS = ['overview', 'incidents', 'billing', 'users', 'attribution', 'quality', 'ledger', 'coupons', 'settings', 'labs', 'patches'];
 const ADMIN_TAB_CACHE_MS = 45000;
 const ADMIN_FILTER_IDS = ['adminSignupCreditWindow','adminOpsHours','adminOpsSeverity','adminOpsDomain','adminOpsQuery','adminOpsOnlyOpen','adminJobsFilter','adminJobsHours','adminQualityHours','adminQualityMode','adminQualityStatus','adminDateFrom','adminDateTo','adminEmailFilter','adminHistoryType','adminHistoryPageSize'];
 window._adminTabLoadState = window._adminTabLoadState || {};
@@ -6227,7 +6227,8 @@ function adminTabLoaders(tab) {
   overview: [window.loadAdminOverview, window.loadAdminOverviewHealth, window.loadAdminSignupCreditSummary, window.loadAdminRefundSummary, window.loadAdminCreditUsageSummary],
   incidents: [window.loadAdminOpsLogs, window.loadAdminJobs],
   billing: [window.loadAdminOverview, window.loadAdminRefundList],
-  users: [window.loadAdminSignupAttribution],
+  users: [],
+  attribution: [window.loadAdminSignupAttribution],
   quality: [window.loadAdminHumanizeQuality],
   ledger: [window.loadAllCreditHistory],
   coupons: [window.loadCouponBatches],
@@ -6941,6 +6942,106 @@ window.loadAdminSignupCreditSummary = async function(force) {
 // 영상·캠페인별 가입: 외부 분석 도구 없이 서버의 가입자 기록을 조회한다.
 let adminAttributionGeneration = 0;
 let adminAttributionController = null;
+let adminGeneratedUtm = null;
+
+function adminBuildUtmLink(values) {
+ const normalize = value => String(value || '').trim().toLocaleLowerCase('ko-KR').replace(/\s+/g, '_');
+ const platform = normalize(values.platform);
+ const channel = normalize(values.channel).replace(/^@/, '');
+ const video = normalize(values.video);
+ for (const [label, value] of [['플랫폼', platform], ['채널', channel], ['영상 이름', video]]) {
+  if (!value || value.length > 100 || !/^[\p{L}\p{N}_-]+$/u.test(value)) throw new Error(`${label}에는 글자, 숫자, 밑줄, 하이픈을 사용해 주세요. 최대 100자까지 입력할 수 있어요.`);
+ }
+ let url;
+ try { url = new URL(String(values.destination || '').trim()); } catch (_) { throw new Error('도착 주소를 https://로 시작하는 교피 사이트 주소로 입력해 주세요.'); }
+ if (url.protocol !== 'https:' || !['gpkorea.ai.kr', 'www.gpkorea.ai.kr'].includes(url.hostname) || url.username || url.password || url.port) throw new Error('도착 주소는 https://gpkorea.ai.kr/ 안의 페이지를 사용해 주세요.');
+ const medium = String(values.medium || 'social');
+ if (!['social', 'paid_social', 'video', 'referral', 'email'].includes(medium)) throw new Error('홍보 방식을 다시 선택해 주세요.');
+ // 기존 UTM은 덮어쓰고, 도착 페이지의 다른 쿼리와 해시는 보존한다.
+ for (const key of [...url.searchParams.keys()]) if (/^utm_/i.test(key)) url.searchParams.delete(key);
+ url.searchParams.set('utm_source', platform);
+ url.searchParams.set('utm_medium', medium);
+ url.searchParams.set('utm_campaign', channel);
+ url.searchParams.set('utm_content', video);
+ return { url: url.toString(), platform, channel, video, medium };
+}
+
+window.adminInvalidateUtmLink = function() {
+ adminGeneratedUtm = null;
+ const result = document.getElementById('adminUtmResult');
+ const status = document.getElementById('adminUtmStatus');
+ if (result) result.hidden = true;
+ const output = document.getElementById('adminUtmOutput');
+ if (output) output.value = '';
+ if (status) { status.dataset.state = ''; status.textContent = '입력값을 바꿨어요. 링크를 다시 생성해 주세요.'; }
+};
+
+window.adminGenerateUtmLink = function() {
+ if (!window.isAdmin()) return;
+ const status = document.getElementById('adminUtmStatus');
+ try {
+  const values = Object.fromEntries(['Platform', 'Channel', 'Video', 'Destination', 'Medium'].map(name => [name.toLowerCase(), document.getElementById(`adminUtm${name}`)?.value]));
+  adminGeneratedUtm = adminBuildUtmLink(values);
+  document.getElementById('adminUtmOutput').value = adminGeneratedUtm.url;
+  document.getElementById('adminUtmResult').hidden = false;
+  for (const name of ['Platform', 'Channel', 'Video']) document.getElementById(`adminUtm${name}`).value = adminGeneratedUtm[name.toLowerCase()];
+  if (status) { status.dataset.state = 'ok'; status.textContent = '링크를 만들었어요. 복사해서 이 영상의 홍보 링크로 사용하세요.'; }
+ } catch (error) {
+  window.adminInvalidateUtmLink();
+  if (status) { status.dataset.state = 'error'; status.textContent = error.message; }
+ }
+};
+
+window.adminCopyUtmLink = async function() {
+ if (!adminGeneratedUtm || !window.isAdmin()) return;
+ const generated = adminGeneratedUtm;
+ const button = document.getElementById('adminUtmCopyButton');
+ const status = document.getElementById('adminUtmStatus');
+ if (button?.disabled) return;
+ if (button) button.disabled = true;
+ try {
+  await adminWriteClipboardText(generated.url);
+  if (generated === adminGeneratedUtm && status) { status.dataset.state = 'ok'; status.textContent = '링크를 복사했어요.'; }
+ } catch (_) {
+  if (generated === adminGeneratedUtm && status) {
+   status.dataset.state = 'error'; status.textContent = '자동 복사에 실패했어요. 위 링크를 직접 선택해서 복사해 주세요.';
+   document.getElementById('adminUtmOutput')?.select();
+  }
+ } finally { if (button) button.disabled = false; }
+};
+
+function adminAttributionOptions(id, values, label, selected) {
+ const select = document.getElementById(id);
+ if (!select) return;
+ const current = selected === undefined ? select.value : selected;
+ const options = [...new Set(values.filter(Boolean))].sort();
+ if (current && !options.includes(current)) options.push(current);
+ select.innerHTML = `<option value="">${label}</option>` + options.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}${values.includes(value) ? '' : ' (가입 기록 없음)'}</option>`).join('');
+ select.value = current || '';
+}
+
+function adminAttributionChannels(selected) {
+ const platform = document.getElementById('adminAttributionSource')?.value || '';
+ const groups = window._adminSignupAttribution?.groups || [];
+ adminAttributionOptions('adminAttributionChannel', groups.filter(row => !platform || row.source === platform).map(row => row.campaign), '전체 채널', selected);
+}
+
+window.adminAttributionPlatformChanged = function() {
+ adminAttributionChannels('');
+ window.adminRenderSignupAttribution();
+};
+
+window.adminViewUtmSignups = function() {
+ if (!adminGeneratedUtm || !window.isAdmin()) return;
+ const generated = adminGeneratedUtm;
+ adminAttributionOptions('adminAttributionSource', (window._adminSignupAttribution?.groups || []).map(row => row.source), '전체 플랫폼', generated.platform);
+ adminAttributionChannels(generated.channel);
+ const query = document.getElementById('adminAttributionQuery');
+ query.value = generated.video; query.dataset.exactVideo = generated.video;
+ document.getElementById('adminAttributionGroup').value = 'video';
+ window.adminRenderSignupAttribution();
+ document.getElementById('adminSignupAttributionPanel')?.scrollIntoView({ block: 'start', behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+};
 
 window.adminRenderSignupAttribution = function() {
  const root = document.getElementById('adminSignupAttributionSummary');
@@ -6948,25 +7049,37 @@ window.adminRenderSignupAttribution = function() {
  const data = window._adminSignupAttribution;
  if (!root || !data || !window.isAdmin()) return;
  const source = document.getElementById('adminAttributionSource')?.value || '';
- const query = (document.getElementById('adminAttributionQuery')?.value || '').trim().toLocaleLowerCase('ko-KR');
- const groups = (data.groups || []).filter(row => (!source || row.source === source) &&
-  (!query || [row.source, row.medium, row.campaign, row.content].join(' ').toLocaleLowerCase('ko-KR').includes(query)));
+ const channel = document.getElementById('adminAttributionChannel')?.value || '';
+ const queryElement = document.getElementById('adminAttributionQuery');
+ const query = (queryElement?.value || '').trim().toLocaleLowerCase('ko-KR');
+ const exactVideo = queryElement?.dataset.exactVideo;
+ const level = document.getElementById('adminAttributionGroup')?.value || 'video';
+ const grouped = new Map();
+ (data.groups || []).filter(row => (!source || row.source === source) && (!channel || row.campaign === channel) &&
+  (!query || (exactVideo ? row.content === exactVideo : String(row.content || '').toLocaleLowerCase('ko-KR').includes(query)))).forEach(row => {
+   const fields = [row.source, level === 'platform' ? null : row.campaign, level === 'video' ? row.content : null];
+   const key = JSON.stringify(fields);
+   const group = grouped.get(key) || { source: fields[0], campaign: fields[1], content: fields[2], signups: 0 };
+   group.signups += adminNumber(row.signups); grouped.set(key, group);
+  });
+ const groups = [...grouped.values()].sort((a, b) => b.signups - a.signups || JSON.stringify(a).localeCompare(JSON.stringify(b)));
  const signups = groups.reduce((sum, row) => sum + adminNumber(row.signups), 0);
  const number = value => adminNumber(value).toLocaleString('ko-KR');
  const cell = value => value ? escapeHtml(value) : '<span class="muted">미지정</span>';
  const since = new Date(data.since).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
  const until = new Date(data.until).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
  const basis = data.touch === 'first_touch' ? '최초 유입' : '가입 직전 유입';
+ const grouping = level === 'platform' ? '플랫폼별' : level === 'channel' ? '채널별' : '영상별';
  root.dataset.loadState = data.truncated ? 'partial' : 'ok';
  root.removeAttribute('aria-busy');
- root.innerHTML = `<div class="gp-admin-attribution-total"><strong>선택한 링크의 신규 가입 ${number(signups)}명</strong><span>${escapeHtml(since)} ~ ${escapeHtml(until)} · ${basis} · ${number(groups.length)}개 링크</span></div>
+ root.innerHTML = `<div class="gp-admin-attribution-total"><strong>선택한 유입의 신규 가입 ${number(signups)}명</strong><span>${escapeHtml(since)} ~ ${escapeHtml(until)} · ${basis} · ${grouping} ${number(groups.length)}개 항목</span></div>
   <p class="gp-admin-attribution-coverage">기간 내 가입 ${number(data.total)}명 · 출처 기록 ${number(data.recorded)}명 · 미기록 ${number(data.unrecorded)}명</p>
-  ${groups.length ? `<div class="gp-admin-table-wrap" tabindex="0" role="region" aria-label="영상별 가입자 표"><table class="gp-admin-table gp-admin-attribution-table"><caption>선택한 기간과 유입 기준의 영상·캠페인별 신규 가입자 수</caption><thead><tr><th scope="col">영상 구분값</th><th scope="col">캠페인</th><th scope="col">채널 / 매체</th><th scope="col" class="num">신규 가입</th></tr></thead><tbody>${groups.map(row => `<tr><td>${cell(row.content)}</td><td>${cell(row.campaign)}</td><td>${cell(row.source)}<br><span class="muted">${escapeHtml(row.medium || '미지정')}</span></td><td class="num"><strong>${number(row.signups)}명</strong></td></tr>`).join('')}</tbody></table></div>` : '<div class="gp-admin-empty">조건에 맞는 유입 기록이 없어요. 기간과 검색 조건을 확인해 주세요.</div>'}`;
+  ${groups.length ? `<div class="gp-admin-table-wrap" tabindex="0" role="region" aria-label="유입별 가입자 표"><table class="gp-admin-table gp-admin-attribution-table"><caption>선택한 기간과 유입 기준의 ${grouping} 신규 가입자 수</caption><thead><tr><th scope="col">플랫폼</th><th scope="col">채널 · 계정명</th><th scope="col">영상</th><th scope="col" class="num">신규 가입</th></tr></thead><tbody>${groups.map(row => `<tr><td>${cell(row.source)}</td><td>${row.campaign === null ? '전체 채널' : cell(row.campaign)}</td><td>${row.content === null ? '전체 영상' : cell(row.content)}</td><td class="num"><strong>${number(row.signups)}명</strong></td></tr>`).join('')}</tbody></table></div>` : '<div class="gp-admin-empty">조건에 맞는 유입 기록이 없어요. 링크로 가입이 발생하면 여기에 표시돼요. 기간과 검색 조건도 확인해 주세요.</div>'}`;
  if (status) {
   status.dataset.state = data.truncated ? 'partial' : 'ok';
   status.textContent = data.truncated
    ? '조회 한도를 넘어 최신 가입 기록 20,000건만 집계했어요. 아래 숫자는 전체 합계가 아니에요. 기간을 줄여 다시 조회해 주세요.'
-   : `${basis} 기준으로 선택한 링크의 신규 가입 ${number(signups)}명을 확인했어요.`;
+   : `${basis} 기준으로 선택한 유입의 신규 가입 ${number(signups)}명을 확인했어요.`;
  }
 };
 
@@ -6989,13 +7102,8 @@ window.loadAdminSignupAttribution = async function() {
   }, { signal: adminAttributionController.signal });
   if (generation !== adminAttributionGeneration) return;
   window._adminSignupAttribution = data;
-  const select = document.getElementById('adminAttributionSource');
-  if (select) {
-   const current = select.value;
-   const sources = [...new Set((data.groups || []).map(row => row.source))].sort();
-   select.innerHTML = '<option value="">전체 채널</option>' + sources.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
-   select.value = sources.includes(current) ? current : '';
-  }
+  adminAttributionOptions('adminAttributionSource', (data.groups || []).map(row => row.source), '전체 플랫폼');
+  adminAttributionChannels();
   window.adminRenderSignupAttribution();
  } catch (error) {
   if (error?.name === 'AbortError' || generation !== adminAttributionGeneration) return;
