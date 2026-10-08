@@ -106,7 +106,7 @@ test('진단 선택 섹션은 상태 라벨과 중복 유도 없이 핵심 정�
   assert.doesNotMatch(evasion, /window\.lavEditForAnchor = function|humanize_anchor_action|renderAnchorGuide/u);
   assert.match(evasion, /humanize_diagnosis_view/u);
   assert.match(evasion, /humanize_mode_select/u);
-  assert.match(evasion, /needsUserAnchor: Number\(d\.abstractRiskRatio\) >= 0\.5/u);
+  assert.match(evasion, /needsUserAnchor: reportNeedsUserAnchor\(reportModel\)/u);
 });
 
 test('고급 예상 시간은 서버 청크 범위를 시작·확인·진행 화면에 일관되게 사용한다', async () => {

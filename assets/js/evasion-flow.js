@@ -1583,6 +1583,8 @@
       conversionRecommend: conversionRecommend,
       candidateSentences: candidateSentences,
       conversionReasons: conversionReasons,
+      inputReview: conversion && conversion.inputReview && typeof conversion.inputReview.message === 'string'
+        ? conversion.inputReview : null,
       // 퍼널 계측용 — 화면에는 쓰지 않는다.
       detectorVersion: typeof d.detectorVersion === 'string' && /^[A-Za-z0-9._-]{1,40}$/.test(d.detectorVersion) ? d.detectorVersion : null
     };
@@ -2040,6 +2042,10 @@
   function repAxisPolicy(model) {
     var m = model.measured || {};
     return (m.axisPolicy && m.axisPolicy.axes) || {};
+  }
+  function reportNeedsUserAnchor(model) {
+    var anchor = repAxisPolicy(model).anchor || {};
+    return anchor.status === 'on' && model.content && model.content.status === 'weak';
   }
   function repRadarAxes(model) {
     var m = model.measured || {};
@@ -2643,9 +2649,11 @@
   // 측정된 것만 말한다. 값이 기준을 넘은 축에서만 문장을 만들고, 없으면 유지 안내로 닫는다.
   function repBuildTips(model) {
     var copy = typeof window.gpDetectScoreCopy === 'function' ? window.gpDetectScoreCopy(model.interpretation) : null;
-    if (copy && copy.nextSteps.length) return copy.nextSteps.slice(0, 3);
-    var m = model.measured || {};
     var tips = [];
+    if (model.inputReview && model.inputReview.message) tips.push(model.inputReview.message);
+    if (copy && copy.nextSteps.length) return tips.concat(copy.nextSteps)
+      .filter(function (tip, index, all) { return all.indexOf(tip) === index; }).slice(0, 3);
+    var m = model.measured || {};
     if (Number(m.maxEndingRun) >= 4) {
       tips.push('같은 활용(예: ~했습니다)이 ' + m.maxEndingRun + '문장 이어져요. 몇 문장만 다른 어미로 끊어 보세요.');
     }
@@ -2720,11 +2728,12 @@
     if (eligible) {
       // 권하지 않는다 — 개선점을 찾지 못한 글에 수정을 권하면 안 된다. 다만 기능으로 가는 길은 막지 않는다.
       if (title) {
-        title.textContent = model.radar.band === 'low'
+        title.textContent = model.inputReview ? '문장 조각의 연결을 먼저 확인해 주세요' : model.radar.band === 'low'
           ? '이 글의 AI식 문체 점수가 낮은 구간이에요'
           : '지목할 문장이 적어 적극 권하지는 않아요';
       }
-      if (desc) desc.textContent = '원문 위치와 연결된 정형 패턴이 확인되지 않아 수정을 권하지는 않아요. 원하시면 문체를 다듬는 방법과 비용을 확인할 수 있어요.';
+      if (desc) desc.textContent = model.inputReview ? model.inputReview.message
+        : '원문 위치와 연결된 정형 패턴이 확인되지 않아 수정을 권하지는 않아요. 원하시면 문체를 다듬는 방법과 비용을 확인할 수 있어요.';
       if (btn) { btn.hidden = false; btn.textContent = '다듬기 방법·비용 보기'; }
       if (help) help.hidden = false;
       return;
@@ -3045,7 +3054,7 @@
         reportMeta: 'AI식 문체 점수 ' + (reportModel.score == null ? '확인 필요' : reportModel.score + '/100')
           + ' · 교수님 레이더 ' + reportModel.radar.label + ' · 내용 근거 ' + reportModel.content.label,
         abstractRiskRatio: Number(d.abstractRiskRatio) || 0,
-        needsUserAnchor: Number(d.abstractRiskRatio) >= 0.5 || d.grade === 'C',
+        needsUserAnchor: reportNeedsUserAnchor(reportModel),
         diagnosisSource: 'paid_report',
         restructureUnfit: d.restructureUnfit === true,
         restructureUnfitReason: d.restructureUnfitReason || '',
