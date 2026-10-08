@@ -13584,3 +13584,11 @@ html.gp-rep-modal-open{overflow:hidden;}
   #mainContent[data-main-design="lavender"] .gp-rep-cause-match li{grid-template-columns:minmax(0,1fr);grid-template-areas:"name" "desc" "go";}
   #mainContent[data-main-design="lavender"] .gp-rep-cause-go{justify-self:start;}
 }
+
+/* Persistent task feedback. */
+.gp-import-help{margin:8px 16px;color:var(--text3,#64748b);font-size:.875rem;line-height:1.6}
+.gp-import-status{margin:10px 16px;padding:12px;border:1px solid var(--border,#cbd5e1);border-radius:12px;background:var(--surface,#fff);font-size:1rem;line-height:1.65;overflow-wrap:anywhere}
+.gp-import-cancel,#lavStepSlot button,#lavStructurePreview button,#wlStatus5 button{min-height:44px;margin:8px;padding:8px 14px;border:1px solid var(--border,#cbd5e1);border-radius:10px;background:var(--surface,#fff);color:inherit;font:inherit;cursor:pointer}
+.gp-toast-root{max-height:60dvh;overflow-y:auto;overscroll-behavior:contain}
+#gpNotificationStatus{margin:12px 16px;font-size:1rem;line-height:1.6;overflow-wrap:anywhere}
+.gp-import-cancel:focus-visible,#lavStepSlot button:focus-visible,#wlStatus5 button:focus-visible{outline:2px solid var(--blue,#4759be);outline-offset:3px}

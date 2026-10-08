@@ -133,8 +133,11 @@
        </div>
 
        <div class="gp-lav-composer">
-         <textarea id="lavInput" rows="5" aria-label="분석하거나 다듬을 한국어 원문" placeholder="다듬을 초안이나 문단을 붙여넣어 보세요..." aria-describedby="lavInputError lavRateNote" onkeydown="lavComposerKey(event)" oninput="lavSyncCount(this)"></textarea>
+         <textarea id="lavInput" rows="5" aria-label="분석하거나 다듬을 한국어 원문" placeholder="다듬을 초안이나 문단을 붙여넣어 보세요..." aria-describedby="lavInputError lavRateNote pdfImportStatus" onkeydown="lavComposerKey(event)" oninput="lavSyncCount(this)"></textarea>
          <p class="gp-lav-input-error" id="lavInputError" role="alert" hidden></p>
+         <p class="gp-import-help">한 번에 30,000자까지 · PDF 10MB·100쪽 이하 · 스캔 페이지는 글자 인식(OCR)이 필요해요.</p>
+         <p id="pdfImportStatus" class="gp-import-status" role="status" aria-live="polite" hidden></p>
+         <button id="pdfImportCancel" class="gp-import-cancel" type="button" onclick="gpCancelPdfImport()" hidden>PDF 읽기 취소</button>
          <div class="gp-lav-composer-bar">
            <button class="gp-lav-add gp-upload-uiverse" type="button" title="PDF 파일 업로드" aria-label="PDF 파일 업로드" onclick="document.getElementById('pdfInput').click()">
              <span class="gp-upload-plus" aria-hidden="true"></span>

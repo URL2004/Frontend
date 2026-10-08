@@ -1,5 +1,7 @@
 /* 회피 모드 워크스페이스 — P0 정적 목업 (더미 데이터, 백엔드 미연결) */
 (function () {
+  var fetch = window.gpFetch || window.fetch || globalThis.fetch;
+
   function $(id) { return document.getElementById(id); }
 
   // ── 결과 화면 A안(2026-10-02 관리자 미리보기 → 같은 날 전체 적용) ──
@@ -503,7 +505,10 @@
       return r.json().catch(function () { return null; }).then(function (body) {
         return { ok: r.ok, status: r.status, body: body };
       });
-    }).catch(function (e) { console.warn('[evasion] /diagnose 실패 — 폴백 진단 사용:', e && e.message); return null; });
+    }).catch(function (e) {
+      if (window.gpToast) window.gpToast('진단 서버 연결이 지연되어 기본 선택 안내를 보여드려요. 아직 변환이나 과금은 시작되지 않았어요.', {type:'error',sticky:true});
+      return null;
+    });
     Promise.all([req, minWait]).then(function (out) {
       var response = out[0];
       var d = response && response.body;
@@ -513,7 +518,7 @@
         return;
       }
       var backendOk = !!(response && response.ok && d && d.ok);
-      if (!backendOk) console.warn('[evasion] 진단 폴백 동작 중 — 백엔드 미연결 상태(블로그 변환은 실패함)');
+      if (!backendOk && response && window.gpToast) window.gpToast('진단 응답을 확인하지 못해 기본 선택 안내를 보여드려요. 아직 변환이나 과금은 시작되지 않았어요.', {type:'error',sticky:true});
       var diag = backendOk ? d : fakeDiagnose();
       diag.diagnosisSource = backendOk ? 'backend' : 'fallback';
       applyDiag(diag);
@@ -812,6 +817,7 @@
     if (window.gpTrackFeature) window.gpTrackFeature('start', { feature: 'detect', run_id: reqId, chars: text.length });
 
     async function runDetect() {
+      var detectStage = 'request';
       var retry = $('lavDetectRetry');
       if (retry) retry.disabled = true;
       show('analyzing');
@@ -900,6 +906,7 @@
           length_bucket: detectLengthBucket(text.length),
           latency_bucket: detectLatencyBucket(Date.now() - startedAt)
         });
+        detectStage = 'render';
         renderReport(d);
         if (window.gpTrackFeature) window.gpTrackFeature('complete', { feature: 'detect', run_id: reqId, chars: text.length, duration_ms: Date.now() - startedAt, activation: d.activation });
         cameFromReport = true;
@@ -912,7 +919,8 @@
       } catch (e) {
         console.warn('[evasion] /detect-report 실패:', e && e.message);
         window.lavFlowReset();
-        alert('AI 감지에 실패했어요. 네트워크 상태를 확인해 주세요.');
+        if (window.gpReportWorkflowIssue) window.gpReportWorkflowIssue({feature:'detect',code:detectStage === 'render' ? 'DETECT_RENDER_FAILED' : (e.code || 'DETECT_REQUEST_FAILED'),stage:detectStage});
+        alert(detectStage === 'render' ? '분석 응답을 받았지만 결과 화면을 표시하지 못했어요. 작업 기록을 확인하거나 같은 글로 다시 시도해 주세요.' : (e.code === 'REQUEST_TIMEOUT' ? e.message : '분석 응답을 확인하지 못했어요. 연결을 확인하고 같은 글로 다시 시도해 주세요.'));
       }
     }
 
@@ -3282,7 +3290,15 @@
         await handleTransformStartError(error, 'select', requestGen);
         return;
       }
-      if (area) area.textContent = error.message || '변경안을 준비하지 못했습니다. 옵션을 해제하면 원문 구조로 진행할 수 있어요.';
+      if (area) {
+        area.textContent = error.httpStatus === 402 ? '구조 변경안을 준비하려면 ' + (error.needed || '추가') + '크레딧이 필요해요. 이 요청에서는 차감하지 않았어요. 충전하거나 구조 개선 옵션을 해제해 주세요.' : (error.message || '변경안을 준비하지 못했어요. 구조 개선 옵션을 해제하면 원문 구조로 진행할 수 있어요.');
+        if (error.httpStatus === 402) {
+          var charge = document.createElement('button'); charge.type='button'; charge.textContent='충전하기';
+          charge.onclick=function(){ if (window.gpOpenCreditCheckout) window.gpOpenCreditCheckout({action:'pricing_purchase',source:'structure_plan_402',neededCredits:error.needed}); }; area.appendChild(charge);
+        }
+        var skip = document.createElement('button'); skip.type='button'; skip.textContent='구조 개선 옵션 해제';
+        skip.onclick=function(){ if ($('lavStructure')) $('lavStructure').checked=false; structurePlan=null; structurePlanKey=''; renderConfirmCost(); updateConfirmStartState(); area.textContent='구조 개선 옵션을 해제했어요. 원문 구조로 진행할 수 있어요.'; }; area.appendChild(skip);
+      }
     } finally { structureLoading=false;renderConfirmCost();renderSelectCosts();updateConfirmStartState(); }
   }
 
@@ -3944,24 +3960,33 @@
     return formalStop;
   }
   function notifyJobDone(st, label) {
-    if (!window.gpNotify || !st || !st.jobId) return;
-    window.gpNotify({
-      clientId: 'job_done_' + st.jobId,
-      type: 'job_done',
-      title: '작업 완료',
-      message: label + ' 결과가 준비됐어요. 작업 기록에서 확인할 수 있어요.',
-      action: { tab: 'history' }
-    }, { persist: true });
+    if (!st || !st.jobId) return;
+    if (window.loadNotifications) window.loadNotifications();
   }
   function notifyJobIssue(jobId, message) {
-    if (!window.gpNotify || !jobId) return;
-    window.gpNotify({
-      clientId: 'job_failed_' + jobId,
-      type: 'job_failed',
-      title: '작업 확인 필요',
-      message: message || '처리 중 오류가 발생했어요. 크레딧은 차감되지 않았어요.',
-      action: { tab: 'main' }
-    }, { persist: true });
+    if (window.gpToast) window.gpToast(message || '작업 상태를 확인해 주세요.', {type:'error',sticky:true,title:'작업 상태 확인'});
+    if (window.loadNotifications) window.loadNotifications();
+  }
+  window.gpOpenServerJob = async function (jobId) {
+    if (!jobId) return;
+    var gen = ++pollGen;
+    try {
+      var response = await fetch(window.apiUrl('/transform/' + encodeURIComponent(jobId)), {headers:evAuthHeaders(await evGetIdToken(true))});
+      var state = await response.json();
+      if (gen !== pollGen) return;
+      if (!response.ok) throw new Error(state.error || '작업 상태를 확인하지 못했어요.');
+      if (window.switchTab) window.switchTab('main');
+      resumeTransformState(jobId, state);
+    } catch (error) { if (gen === pollGen) notifyJobIssue(jobId,error.message); }
+  };
+  function showPollIssue(jobId, message, retry) {
+    if ($('lavStepSlot')) $('lavStepSlot').textContent = message;
+    var host = $('lavStepSlot');
+    if (host && retry) {
+      var button=document.createElement('button'); button.type='button'; button.textContent='작업 상태 다시 확인';
+      button.onclick=function(){ button.disabled=true; pollTransform(jobId,++pollGen); };
+      host.appendChild(button);
+    }
   }
 
   // 작업 중단(확인 모달 → 서버 취소/abort → 설정 화면 복귀). 차감은 완료 시에만 일어나므로 취소=항상 무과금.
@@ -4251,7 +4276,9 @@
   // gen 토큰: 사용자가 중단하거나 새 작업을 시작하면 pollGen이 올라가 이전 루프가 조용히 끝남.
   async function pollTransform(jobId, gen) {
     var deadline = Date.now() + 6 * 3600 * 1000;   // 큐 대기 + 3만자 재구성 대비. 창 닫아도 서버 작업은 계속.
-    var idToken = await evGetIdToken();
+    var idToken;
+    try { idToken = await evGetIdToken(); } catch (_) { stopFormalTicker(); showPollIssue(jobId, '로그인 상태를 확인하지 못했어요. 다시 로그인한 뒤 작업 상태를 확인해 주세요.', true); return; }
+    var connectionFailures = 0;
     var authRetries = 0;   // 폴링 중 401(토큰 만료) 연속 횟수
     while (Date.now() < deadline) {
       await new Promise(function (ok) { setTimeout(ok, 6000); });
@@ -4261,7 +4288,13 @@
         var pollRes = await fetch(window.apiUrl('/transform/' + jobId), { headers: evAuthHeaders(idToken) });
         httpStatus = pollRes.status;
         st = await pollRes.json().catch(function () { return null; });
-      } catch (e) { continue; }   // 일시 네트워크 오류 — 다음 폴링
+      } catch (e) {
+        if (gen !== pollGen) return;
+        connectionFailures++;
+        showPollIssue(jobId, '연결이 끊겨 작업 상태를 확인하지 못했어요. 작업 정보는 유지하며 다시 연결하고 있어요.', false);
+        if (connectionFailures >= 3) { stopFormalTicker(); showPollIssue(jobId, '서버 상태 확인이 지연돼요. 작업은 서버에서 계속 진행될 수 있어요.', true); return; }
+        continue;
+      }
       // fetch가 진행되는 사이 새 작업·복구가 시작됐으면 이 응답은 이전 작업의 낡은 화면 갱신이다.
       if (gen !== pollGen) return;
 
@@ -4270,7 +4303,7 @@
       //   (2026-06-14 실사고: 401을 fatal로 보고 복귀 → 6초 뒤 완료된 결과가 사용자 화면에서 유실.)
       if (httpStatus === 401) {
         authRetries++;
-        if (authRetries <= 6) { idToken = await evGetIdToken(true); continue; }
+        if (authRetries <= 6) { try { idToken = await evGetIdToken(true); } catch (_) {} continue; }
         stopFormalTicker();
         notifyJobIssue(jobId, '로그인이 만료됐어요. 다시 로그인하면 진행 중이던 작업으로 들어갈 수 있어요. (작업·결과는 사라지지 않아요)');
         if (!window.gpNotify) alert('로그인이 만료됐어요. 다시 로그인하면 진행 중이던 작업으로 들어갈 수 있어요.');
@@ -4278,7 +4311,13 @@
       }
       authRetries = 0;
 
-      if (!st) continue;
+      if (!st || httpStatus === 429 || httpStatus >= 500) {
+        connectionFailures++;
+        showPollIssue(jobId, '서버 상태를 확인하지 못했어요. 작업 정보는 유지했어요.', false);
+        if (connectionFailures >= 3) { stopFormalTicker(); showPollIssue(jobId, '잠시 후 같은 작업의 상태를 다시 확인해 주세요.', true); return; }
+        continue;
+      }
+      connectionFailures = 0;
       // 404(서버 재시작·만료) 등 진짜 "작업 없음" — 무한 폴링 방지(2026-06-13 실사고:
       // 서버 재시작으로 job이 사라졌는데 화면은 진행률만 계속 올라감).
       if (httpStatus === 404 || st.ok === false || (st.error && !st.status)) {
@@ -4361,6 +4400,8 @@
       }
     }
     stopFormalTicker();
+    if (gen !== pollGen) return;
+    showPollIssue(jobId, '상태 확인 시간이 길어졌어요. 서버 작업은 계속 진행될 수 있어요. 같은 작업을 다시 확인해 주세요.', true);
     notifyJobIssue(jobId, '작업이 예상보다 오래 걸리고 있어요. 새로고침하면 진행 중인 작업으로 다시 들어갈 수 있어요.');
     if (!window.gpNotify) alert('작업이 예상보다 오래 걸리고 있어요. 새로고침하면 진행 중인 작업으로 다시 들어갈 수 있어요.');
   }

@@ -1,5 +1,7 @@
 // 글쓰기 랩 v2 — 확인 사실 원장 → 작성 가능성 → 구조화 생성 → 기존 휴머나이징 → 제출 전 최종 점검
 (function () {
+  var fetch = window.gpFetch || window.fetch || globalThis.fetch;
+
  'use strict';
 
  var STORAGE_KEY = 'gp_writing_lab_v2_draft';
@@ -847,12 +849,35 @@ async function startHumanize(generation, headers, runToken) {
   }
  }
 
+ function showHumanizeAction(jobId, job, runToken, generation) {
+  var payment = job.status === 'awaiting_payment';
+  var approval = job.status === 'awaiting_approval';
+  setStatus('wlStatus5', payment ? '결과를 보관하고 있어요. 잔액 확인 후 결과 받기를 눌러 주세요.' : approval ? '사용할 근거 자료의 승인이 필요해요. 작업 화면에서 확인해 주세요.' : '작업 상태를 확인하지 못했어요. 작업 정보와 초안은 유지했어요.', 'warn');
+  var host=el('wlStatus5'); if (!host) return;
+  var button=document.createElement('button');button.type='button';button.textContent=payment?'결제 상태 확인·결과 받기':approval?'근거 승인 화면 열기':'작업 상태 다시 확인';
+  button.onclick=async function(){
+   if (runToken !== state.pollToken) return;
+   button.disabled=true;
+   try {
+    if (approval) { if (window.gpOpenServerJob) await window.gpOpenServerJob(jobId); return; }
+    if (payment) await request('/transform/'+encodeURIComponent(jobId)+'/resume-payment',{method:'POST',headers:await authHeaders(true),body:'{}'});
+    await pollHumanize(jobId,runToken,generation);
+   } catch(error) { showHumanizeAction(jobId,job,runToken,generation); toast(error.message,'error','작업 확인 필요'); }
+   finally { button.disabled=false; }
+  };host.appendChild(button);
+  if (payment) {var charge=document.createElement('button');charge.type='button';charge.textContent='충전하기';charge.onclick=function(){if(window.gpOpenCreditCheckout)window.gpOpenCreditCheckout({action:'pricing_purchase',source:'writing_payment_wait',neededCredits:job.needed});};host.appendChild(charge);}
+ }
  async function pollHumanize(jobId, runToken, generation) {
   var deadline = Date.now() + 2 * 60 * 60 * 1000;
+  try {
   var headers = await authHeaders(false);
   while (Date.now() < deadline && runToken === state.pollToken) {
    await sleep(3000);
-   var response = await fetch(api('/transform/' + encodeURIComponent(jobId)), { headers: headers });
+   var response;
+   try { response = await fetch(api('/transform/' + encodeURIComponent(jobId)), { headers: headers }); }
+   catch (error) { if (runToken === state.pollToken) { saveActive(generation, jobId, 'checking'); showHumanizeAction(jobId,{status:'checking'},runToken,generation); } return; }
+   if (runToken !== state.pollToken) return;
+   if (response.status >= 500 || response.status === 429) { showHumanizeAction(jobId,{status:'checking'},runToken,generation); return; }
    if (response.status === 401) {
     headers = await authHeaders(true);
     response = await fetch(api('/transform/' + encodeURIComponent(jobId)), { headers: headers });
@@ -867,6 +892,11 @@ async function startHumanize(generation, headers, runToken) {
     setStatus('wlStatus5', job.stage || '문체를 자연스럽게 다듬고 있어요.', 'info');
     continue;
    }
+   if (['awaiting_payment','awaiting_approval'].indexOf(job.status) >= 0) {
+    saveActive(generation, jobId, job.status);
+    showHumanizeAction(jobId, job, runToken, generation);
+    return;
+   }
    if (job.status === 'done') {
     var finalText = job.result && job.result.outputText ? job.result.outputText : '';
     if (!finalText.trim()) throw new Error('휴머나이징 결과가 비어 있어요.');
@@ -875,12 +905,20 @@ async function startHumanize(generation, headers, runToken) {
     await finalCheck(finalText, generation, runToken);
     return;
    }
+   if (['queued','running','done','blocked','error','cancelled'].indexOf(job.status) === -1) {
+    saveActive(generation, jobId, 'checking');
+    showHumanizeAction(jobId, {status:'checking'}, runToken, generation);
+    return;
+   }
    if (['blocked', 'error', 'cancelled'].indexOf(job.status) !== -1) {
     useSafeDraft(generation, (job.reason || job.error || '휴머나이징이 중단됐어요.') + ' 검증된 초안을 대신 보여드려요.', 3);
     return;
    }
   }
-  if (runToken === state.pollToken) useSafeDraft(generation, '휴머나이징 시간이 초과돼 검증된 초안을 대신 보여드려요.', 3);
+  if (runToken === state.pollToken) { saveActive(generation, jobId, 'checking'); showHumanizeAction(jobId,{status:'checking'},runToken,generation); }
+  } catch (error) {
+   if (runToken === state.pollToken) { saveActive(generation, jobId, 'checking'); showHumanizeAction(jobId,{status:'checking'},runToken,generation); }
+  }
  }
 
 async function finalCheck(finalText, generation, runToken) {

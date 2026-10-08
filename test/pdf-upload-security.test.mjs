@@ -21,8 +21,8 @@ test('PDF 텍스트 추출은 페이지·문자·처리시간 자원 상한을 �
   assert.match(appMain, /PDF_EXTRACT_TIMEOUT_MS = 20000/u);
   assert.match(appMain, /pdf\.numPages > PDF_MAX_PAGES/u);
   assert.match(appMain, /out\.length > PDF_MAX_EXTRACTED_CHARS/u);
-  assert.match(appMain, /withPdfDeadline\(loadingTask\.promise, deadline\)/u);
-  assert.match(appMain, /withPdfDeadline\(pdf\.getPage\(i\), deadline\)/u);
-  assert.match(appMain, /withPdfDeadline\(page\.getTextContent\(\), deadline\)/u);
+  assert.match(appMain, /withPdfDeadline\(loadingTask\.promise, deadline, signal\)/u);
+  assert.match(appMain, /withPdfDeadline\(pdf\.getPage\(i\), deadline, signal\)/u);
+  assert.match(appMain, /withPdfDeadline\(page\.getTextContent\(\), deadline, signal\)/u);
   assert.match(appMain, /loadingTask\.destroy/u);
 });

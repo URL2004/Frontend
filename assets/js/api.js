@@ -203,3 +203,41 @@
     };
   }
 })();
+
+// A transport deadline includes reading the response body. It is not a verdict
+// on the remote job or its billing; callers keep their request/job identifiers.
+(function () {
+  window.gpFetch = async function (url, options) {
+    options = options || {};
+    var controller = new AbortController();
+    var external = options.signal;
+    var abort = function () { controller.abort(); };
+    if (external) { if (external.aborted) controller.abort(); else external.addEventListener('abort', abort, { once: true }); }
+    var timeoutMs = options.timeoutMs || (/\/(?:detect-report|analyze)(?:\?|$)|\/writing-lab\/.*(?:generate|finalize|verify)/.test(String(url)) ? 300000 : 45000);
+    var timer;
+    try {
+      return await Promise.race([
+        (async function () {
+          var request = Object.assign({}, options, { signal: controller.signal }); delete request.timeoutMs;
+          var response = await window.fetch(url, request);
+          var bytes = await response.arrayBuffer();
+          return new Response([204, 205, 304].indexOf(response.status) >= 0 ? null : bytes, { status: response.status, statusText: response.statusText, headers: response.headers });
+        })(),
+        new Promise(function (_, reject) { timer = setTimeout(function () {
+          controller.abort();
+          var error = new Error('서버 응답을 기다리는 시간이 길어졌어요. 연결을 확인하고 다시 시도해 주세요. 이미 시작한 작업의 결과는 작업 기록에서 확인할 수 있어요.');
+          error.code = 'REQUEST_TIMEOUT'; error.retryable = true; reject(error);
+        }, timeoutMs); })
+      ]);
+    } finally { clearTimeout(timer); if (external) external.removeEventListener('abort', abort); }
+  };
+  window.gpReportWorkflowIssue = function (detail) {
+    detail = detail || {};
+    var payload = { type: 'workflow_issue', feature: detail.feature, code: detail.code, stage: detail.stage,
+      pages: Number(detail.pages) || 0, emptyPages: Number(detail.emptyPages) || 0,
+      durationMs: Number(detail.durationMs) || 0 };
+    // Never include document text, file names, parser messages or credentials.
+    window.gpFetch(window.apiUrl('/events'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload), timeoutMs: 8000, keepalive: true }).catch(function () {});
+  };
+})();

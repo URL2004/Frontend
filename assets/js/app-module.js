@@ -1,3 +1,4 @@
+const fetch = (...args) => (window.gpFetch || window.fetch.bind(window))(...args);
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCustomToken, signOut, onAuthStateChanged, reauthenticateWithPopup, updateProfile, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, increment, collection, addDoc, getDocs, onSnapshot, orderBy, query, where, limit, startAfter, serverTimestamp, deleteDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -278,6 +279,7 @@ function retryPendingPaymentCallback(reason) {
 }
 
 onAuthStateChanged(auth, async u =>{
+ if (window.gpSetNotificationOwner) window.gpSetNotificationOwner(u && u.uid);
  try {
   window.gpAuthResolved = true;
   if (window.gpSetAnalyticsInternal) window.gpSetAnalyticsInternal(!!(u && ADMIN_ROLES[u.uid]));
@@ -3505,12 +3507,15 @@ function notifFromDoc(d) {
   read: !!n.read,
   createdAt: notifCreatedMs(n),
   action: n.action || null,
+  jobId: n.jobId || null,
+  jobStatus: n.jobStatus || null,
   postId: n.postId || null
  };
 }
 
-window.persistUserNotification = async (n) =>{
- if (!CU || !n) return;
+window.persistUserNotification = async (n, ownerUid) =>{
+ if (!CU || !n || (ownerUid && CU.uid !== ownerUid)) return false;
+ const owner = CU.uid;
  try {
   await postAuthedJson('/notifications/create-self', {
    clientId: String(n.clientId || n.id || ''),
@@ -3518,8 +3523,13 @@ window.persistUserNotification = async (n) =>{
    message: String(n.message || ''),
    action: n.action && n.action.tab ? { tab: String(n.action.tab) } : null
   });
-  if (typeof window.updateNotifBadge === 'function') await window.updateNotifBadge(CU.uid);
- } catch(e) { console.log('알림 저장 오류:', e); }
+  if (!CU || CU.uid !== owner) return false;
+  if (typeof window.updateNotifBadge === 'function') await window.updateNotifBadge(owner);
+  return true;
+ } catch(e) {
+  if (window.gpReportWorkflowIssue) window.gpReportWorkflowIssue({feature:'notification',code:'NOTIFICATION_PERSIST_FAILED',stage:'persist'});
+  return false;
+ }
 };
 
 window.loadNotifications = async () =>{
@@ -3533,6 +3543,7 @@ window.loadNotifications = async () =>{
  const snap = await getDocs(query(collection(db,'users',ownerUid,'notifications'),orderBy('createdAt','desc')));
  if (!CU || CU.uid !== ownerUid) return;
  const items = snap.docs.map(notifFromDoc);
+ if (window.gpNotificationConnection) window.gpNotificationConnection('');
  if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications(items);
  if (!el) return;
  if (!items.length) { el.innerHTML='<div style="text-align:center;padding:24px;color:var(--text3)">새 알림이 없어요</div>'; return; }
@@ -3558,6 +3569,7 @@ window.loadNotifications = async () =>{
  }
  el.innerHTML = html;
  } catch(e) {
+  if (window.gpNotificationConnection) window.gpNotificationConnection('알림을 불러오지 못했어요. 연결을 확인한 뒤 알림함을 다시 열어 주세요.');
   if (el) el.innerHTML='<div style="color:var(--red)">작업 내용을 불러오지 못했어요.</div>';
  }
 };
@@ -3589,6 +3601,7 @@ window.updateNotifBadge = async (uid) =>{
  const snap = await getDocs(query(collection(db,'users',CU.uid,'notifications')));
  if (!CU || CU.uid !== uid) return;
  const items = snap.docs.map(notifFromDoc);
+ if (window.gpNotificationConnection) window.gpNotificationConnection('');
  if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications(items);
  else {
   let unread = 0;
@@ -3596,13 +3609,15 @@ window.updateNotifBadge = async (uid) =>{
   const badge = document.getElementById('notifBadge');
   if (badge) { badge.textContent = unread >0 ? unread : ''; badge.style.display = unread >0 ? 'inline-flex' : 'none'; }
  }
- } catch(e) {}
+ } catch(e) { if (CU && CU.uid === uid && window.gpNotificationConnection) window.gpNotificationConnection('알림 연결을 확인하지 못했어요. 알림함을 다시 열어 주세요.'); }
 };
 
 // 운영팀이 보낸 알림이 로그인 중인 화면에 바로 뜨도록 안 읽은 알림만 실시간 구독한다.
 // 들어온 문서만 알림 센터에 합치고(목록 전체를 다시 읽지 않음), 플로팅 여부는 ui-feedback.js가 정한다.
 let notifWatchUnsub = null;
+let notifReconnectTimer = null;
 function stopNotificationWatch() {
+ clearTimeout(notifReconnectTimer);
  if (!notifWatchUnsub) return;
  try { notifWatchUnsub(); } catch (_) {}
  notifWatchUnsub = null;
@@ -3614,6 +3629,7 @@ function startNotificationWatch(uid) {
   query(collection(db,'users',uid,'notifications'), where('read','==',false)),
   snap => {
    if (!CU || CU.uid !== uid) return;
+   if (window.gpNotificationConnection) window.gpNotificationConnection('');
    const changed = snap.docChanges()
     .filter(c => c.type === 'added' || c.type === 'modified')
     .map(c => notifFromDoc(c.doc));
@@ -3621,7 +3637,11 @@ function startNotificationWatch(uid) {
    if (removed.length && window.gpRemoveRemoteNotifications) window.gpRemoveRemoteNotifications(removed);
    if (changed.length && window.gpUpsertRemoteNotifications) window.gpUpsertRemoteNotifications(changed);
   },
-  e => { console.log('알림 실시간 구독 오류:', e); }
+  e => {
+  if (!CU || CU.uid !== uid) return;
+  if (window.gpNotificationConnection) window.gpNotificationConnection('새 알림 연결이 끊겼어요. 다시 연결하고 있어요.');
+  notifReconnectTimer = setTimeout(() => { if (CU && CU.uid === uid) startNotificationWatch(uid); }, 30000);
+ }
  );
 }
 
@@ -3701,7 +3721,8 @@ function backupHistoryLocal(uid, data, requestId) {
   q.push({ uid, data, requestId, ts: Date.now() });
   while (q.length > 50) q.shift();        // 적체 상한
   localStorage.setItem(PENDING_HISTORY_KEY, JSON.stringify(q));
- } catch (e) { /* localStorage 불가·용량 초과 — 백업 생략(토스트는 이미 안내) */ }
+  return true;
+ } catch (e) { return false; }
 }
 window.flushPendingHistory = async function flushPendingHistory() {
  if (!CU || !db) return;
@@ -3766,8 +3787,8 @@ window.saveHistory = async (type, inputText, detectResult, humanResult, credits)
   return true;
  } catch(e) {
   console.error('[saveHistory] 실패', { code: e?.code, message: e?.message, name: e?.name });
-  backupHistoryLocal(CU.uid, data, requestId);   // 결과 유실 방지 — 같은 requestId로 멱등 재시도
-  if (window.gpToast) window.gpToast('결과를 기록에 저장하지 못했어요. 결과는 안전하게 백업해뒀고, 잠시 후 자동으로 다시 저장할게요.', { type: 'warning', title: '기록 저장 지연' });
+  const backedUp = backupHistoryLocal(CU.uid, data, requestId);   // 결과 유실 방지 — 같은 requestId로 멱등 재시도
+  if (window.gpToast) window.gpToast(backedUp ? '결과를 기록에 저장하지 못했어요. 이 기기에 백업했으며 연결이 복구되면 다시 저장할게요.' : '기록과 기기 백업을 확인하지 못했어요. 창을 닫기 전에 결과를 복사하거나 파일로 저장해 주세요.', { type: 'error', title: '결과 저장 확인 필요', sticky: true });
   return false;
  }
 };

@@ -305,10 +305,13 @@
     if (!count || !textarea) return;
     window.lavClearInputError();
     var len = (textarea.value || '').length;
+    window.gpInputOverLimit = len > window.LAV_MAX_CHARS;
+    if (window.gpInputOverLimit) lavInputError('한 번에 30,000자까지 처리할 수 있어요. 현재 ' + len.toLocaleString('ko-KR') + '자로 ' + (len - 30000).toLocaleString('ko-KR') + '자를 줄여야 해요. 분석은 시작되지 않았고 크레딧도 차감되지 않았어요.');
     count.textContent = len ? len.toLocaleString() + ' / 30,000자' : '';
     count.classList.toggle('over', len > window.LAV_MAX_CHARS);
     var run = document.getElementById('lavRunButton');
     if (run) {
+      run.disabled = !!window.gpPdfBusy || window.gpInputOverLimit;
       var detect = window.lavMode === 'detect';
       var credits = len ? (detect ? Math.ceil(len / 100) : Math.max(10, Math.ceil(len / 100) * 2)) : 0;
       run.setAttribute('aria-label', (detect ? 'AI 감지' : '휴머나이징') + ' 시작 · ' + (credits ? '예상 ' + credits + '크레딧' : '예상 크레딧 계산 전'));
@@ -326,11 +329,12 @@
   // 전송 버튼: 회피 모드 인라인 스테퍼 진입(진단 배너부터).
   // 실제 "원문 보존 다듬기"는 lavRunHumanize가 기존 분석 파이프라인으로 연결.
   window.lavRun = function () {
+    if (window.gpPdfBusy) return;
     var src = document.getElementById('lavInput');
     var text = src && src.value.trim() ? src.value : '';
     if (!text.trim()) { if (src) src.focus(); return; }
     if (text.length > (window.LAV_MAX_CHARS || 30000)) {
-      alert('한 번에 최대 30,000자까지 입력할 수 있어요. 글을 나눠 다시 시도해 주세요.');
+      window.lavSyncCount(src);
       if (src) src.focus();
       return;
     }

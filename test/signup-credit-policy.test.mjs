@@ -74,7 +74,7 @@ test('정밀 감지 실패는 다른 점수를 표시하지 않고 무차감 재
   assert.match(resumeBranch, /if \(hasRequestId && !resumeRequestId\) return false/u);
   assert.match(resumeBranch, /lavDetect\(\{ resumeAfterPayment: true, requestId: resumeRequestId \|\| undefined \}\)/u);
   assert.match(evasion, /renderReport\(d\)[\s\S]+lavInitCollapse\('lavRepParaList', 'lavRepParaToggle'\);[\s\S]+clearPendingDetectRequest\(reqId\)/u);
-  assert.match(evasion, /catch \(e\) \{[\s\S]+네트워크 상태를 확인해 주세요/u);
+  assert.match(evasion, /catch \(e\) \{[\s\S]+DETECT_RENDER_FAILED[\s\S]+연결을 확인하고 같은 글로 다시 시도해 주세요/u);
   assert.doesNotMatch(evasion, /catch \(e\) \{[\s\S]{0,300}clearPendingDetectRequest/u);
   assert.match(evasion, /'X-Request-Id': reqId/u);
   assert.doesNotMatch(evasion, /서버가 LLM 실패 시에도 엔진 추정 숫자를 보내므로/u);

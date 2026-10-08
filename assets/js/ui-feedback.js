@@ -2,7 +2,12 @@
   var nativeAlert = window.alert ? window.alert.bind(window) : null;
   var nativeConfirm = window.confirm ? window.confirm.bind(window) : null;
   var nativePrompt = window.prompt ? window.prompt.bind(window) : null;
-  var localKey = 'gpLocalNotifications';
+  var localKey = '';
+  var notificationOwner = '';
+  var notificationSyncing = false;
+  var notificationRetryTimer = null;
+  var notificationMemory = [];
+  var notificationStorageUnavailable = false;
   var remoteItems = [];
   var activeDialog = null;
   // 운영팀 메시지 플로팅: 기기마다 한 번만 띄운다. 오래된 미확인 메시지가 배포 직후
@@ -32,8 +37,8 @@
   }
   function inferType(message) {
     var m = String(message || '');
+    if (/실패|오류|에러|부족|초과|없습니다|없어요|못했|못하|필요|불가|취소/.test(m)) return 'error';
     if (/완료|성공|지급|변경됐|복사됐|접수/.test(m)) return 'success';
-    if (/실패|오류|에러|부족|초과|없습니다|필요|불가|취소/.test(m)) return 'error';
     return 'info';
   }
   function ensureShell() {
@@ -140,7 +145,7 @@
     item.querySelector('button').onclick = function () { dismissToast(item); };
     root.appendChild(item);
     requestAnimationFrame(function () { item.classList.add('show'); });
-    setTimeout(function () { dismissToast(item); }, opts.duration || (type === 'error' ? 5600 : 3600));
+    if (!opts.sticky && type !== 'error') setTimeout(function () { dismissToast(item); }, opts.duration || 5000);
   }
   function dismissToast(el) {
     if (!el || el.classList.contains('hide')) return;
@@ -179,6 +184,7 @@
     if (activeDialog) {
       var state = activeDialog;
       activeDialog = null;
+      if (state.cleanup) state.cleanup();
       state.resolve(value);
       if (restoreFocus !== false && state.previousFocus && state.previousFocus.isConnected && typeof state.previousFocus.focus === 'function') {
         setTimeout(function () { state.previousFocus.focus(); }, 0);
@@ -295,14 +301,30 @@
     document.documentElement.classList.add('gp-dialog-open');
     document.body.classList.add('gp-dialog-open');
     setTimeout(function () { (promptMode ? promptInput : confirmBtn).focus(); }, 30);
-    return new Promise(function (resolve) { activeDialog = { resolve: resolve, previousFocus: previousFocus }; });
+    return new Promise(function (resolve) {
+      var state = { resolve: resolve, previousFocus: previousFocus };
+      activeDialog = state;
+      if (opts.signal) {
+        var cancel = function () { if (activeDialog === state) closeDialog(false); };
+        state.cleanup = function () { opts.signal.removeEventListener('abort', cancel); };
+        opts.signal.addEventListener('abort', cancel, { once: true });
+        if (opts.signal.aborted) cancel();
+      }
+    });
   }
 
   function getLocalItems() {
-    try { return JSON.parse(localStorage.getItem(localKey) || '[]'); } catch (e) { return []; }
+    if (!localKey) return [];
+    if (notificationStorageUnavailable) return notificationMemory;
+    try { var saved = JSON.parse(localStorage.getItem(localKey) || '[]'); return Array.isArray(saved) ? saved : notificationMemory; } catch (e) { return notificationMemory; }
   }
   function setLocalItems(items) {
-    try { localStorage.setItem(localKey, JSON.stringify(items.slice(0, 80))); } catch (e) {}
+    if (!localKey) return;
+    notificationMemory = items.slice(0, 80);
+    try { localStorage.setItem(localKey, JSON.stringify(notificationMemory)); } catch (e) {
+      notificationStorageUnavailable = true;
+      window.gpNotificationConnection('기기 저장 공간을 사용할 수 없어요. 서버 저장이 끝날 때까지 이 화면을 유지해 주세요.');
+    }
   }
   function normalizeNotification(n, source) {
     n = n || {};
@@ -320,7 +342,11 @@
       read: !!n.read,
       createdAt: Number(created) || now(),
       action: n.action || null,
-      postId: n.postId || null
+      postId: n.postId || null,
+      jobId: n.jobId || null,
+      jobStatus: n.jobStatus || null,
+      syncState: n.syncState || '',
+      ownerUid: n.ownerUid || notificationOwner
     };
   }
   function titleForType(type) {
@@ -591,7 +617,7 @@
   async function openNotificationDetail(n) {
     window.gpCloseNotificationCenter();
     var action = n.action || {};
-    var canFollow = !!action.tab && !['community', 'mypage', 'main'].includes(action.tab) && !n.postId;
+    var canFollow = !!n.jobId || (!!action.tab && !['community', 'mypage', 'main'].includes(action.tab) && !n.postId);
     var result = openDialog({
       variant: 'notification-detail', title: n.title || '알림', message: n.message,
       note: timeLabel(n.createdAt), confirmText: canFollow ? '관련 화면 보기' : '닫기',
@@ -627,6 +653,10 @@
   }
   function followNotification(n) {
     window.gpCloseNotificationCenter();
+    if (n.jobId && typeof window.gpOpenServerJob === 'function') {
+      window.gpOpenServerJob(n.jobId);
+      return;
+    }
     var a = n.action || {};
     if (a.tab === 'community' || n.postId) {
       toast('커뮤니티 운영을 종료했어요.', { type: 'info' });
@@ -641,12 +671,67 @@
   window.gpToast = toast;
   window.gpConfirm = function (opts) { return openDialog(opts, false); };
   window.gpPrompt = function (opts) { return openDialog(opts, true); };
-  window.alert = function (message) { toast(String(message || ''), { type: inferType(message) }); };
+  window.alert = function (message) {
+    var type = inferType(message);
+    toast(String(message || ''), { type: type, sticky: type !== 'success' });
+    if (notificationOwner && type !== 'success') window.gpNotify({ type: 'notice', title: '확인할 안내', message: String(message || ''), syncState: 'local' }, { toast: false, persist: false });
+  };
+
+  window.gpSetNotificationOwner = function (uid) {
+    uid = String(uid || '');
+    if (uid === notificationOwner) return;
+    notificationOwner = uid; localKey = uid ? 'gpLocalNotifications:' + uid : '';
+    notificationMemory = []; notificationStorageUnavailable = false; floatQueue = []; floatShownIds = {}; floatOwner = uid;
+    if ($('gpOperatorFloat')) $('gpOperatorFloat').hidden = true;
+    if ($('gpToastRoot')) $('gpToastRoot').textContent = '';
+    if ($('gpNotificationStatus')) { $('gpNotificationStatus').textContent = ''; $('gpNotificationStatus').hidden = true; }
+    remoteItems = []; notificationSyncing = false;
+    clearTimeout(notificationRetryTimer);
+    renderNotifications();
+    if (uid) window.gpFlushNotifications();
+  };
+  window.gpNotificationConnection = function (message) {
+    ensureShell();
+    var status = $('gpNotificationStatus');
+    if (!status) {
+      status = document.createElement('p'); status.id = 'gpNotificationStatus'; status.setAttribute('role', 'status');
+      $('gpNotificationPanel').insertBefore(status, $('gpNotificationList'));
+    }
+    status.textContent = message || ''; status.hidden = !message;
+  };
+  window.gpFlushNotifications = async function () {
+    var owner = notificationOwner;
+    if (!owner || notificationSyncing || typeof window.persistUserNotification !== 'function') return;
+    notificationSyncing = true;
+    var failed = false;
+    try {
+      var items = getLocalItems().filter(function (n) { return n.syncState === 'pending'; });
+      for (var i = 0; i < items.length; i++) {
+        if (owner !== notificationOwner) return;
+        try {
+          var saved = await window.persistUserNotification(items[i], owner);
+          if (owner !== notificationOwner) return;
+          if (!saved) throw new Error('notification pending');
+          var local = getLocalItems();
+          local.forEach(function (n) { if (n.clientId === items[i].clientId) n.syncState = 'synced'; });
+          setLocalItems(local);
+        } catch (_) { failed = true; break; }
+      }
+      if (failed) {
+        window.gpNotificationConnection(notificationStorageUnavailable
+          ? '기기와 서버에 알림을 저장하지 못했어요. 재시도 중이니 이 화면을 유지해 주세요.'
+          : '알림을 기기에 보관했어요. 서버 저장을 다시 시도하고 있어요.');
+        clearTimeout(notificationRetryTimer); notificationRetryTimer = setTimeout(window.gpFlushNotifications, 30000);
+      } else if (owner === notificationOwner) window.gpNotificationConnection('');
+    } finally { if (owner === notificationOwner) notificationSyncing = false; }
+  };
+  window.addEventListener('online', function () { window.gpFlushNotifications(); if (window.loadNotifications) window.loadNotifications(); });
 
   window.gpNotify = function (payload, opts) {
     ensureShell();
     opts = opts || {};
     var n = normalizeNotification(Object.assign({ id: id(), clientId: id(), read: false, createdAt: now() }, payload || {}), 'local');
+    n.syncState = opts.persist === false ? 'local' : 'pending';
     var local = getLocalItems();
     var key = n.clientId || n.id;
     var inserted = false;
@@ -656,10 +741,8 @@
       inserted = true;
     }
     renderNotifications();
-    if (opts.toast !== false) toast(n.message || n.title, { type: n.type === 'job_failed' ? 'error' : 'success', title: n.title });
-    if (inserted && opts.persist !== false && typeof window.persistUserNotification === 'function') {
-      try { window.persistUserNotification(n); } catch (e) {}
-    }
+    if (opts.toast !== false) toast(n.message || n.title, { type: n.type === 'job_failed' ? 'error' : n.type === 'job_done' ? 'success' : inferType(n.message), title: n.title });
+    if (opts.persist !== false) window.gpFlushNotifications();
     return n;
   };
   window.gpSetRemoteNotifications = function (items) {

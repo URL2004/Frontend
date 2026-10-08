@@ -918,21 +918,20 @@ let pdfJsPromise = null;
 const PDF_MAX_PAGES = 100;
 const PDF_MAX_EXTRACTED_CHARS = 30000;
 const PDF_EXTRACT_TIMEOUT_MS = 20000;
-function pdfDeadlineError() {
- return new Error('PDF 처리 시간이 20초를 넘었어요. 더 짧은 문서로 나눠 주세요.');
-}
-async function withPdfDeadline(promise, deadlineMs) {
- const remaining = deadlineMs - Date.now();
- if (remaining <= 0) throw pdfDeadlineError();
- let timer = null;
+let pdfImportJob = null;
+let pdfImportSequence = 0;
+function pdfError(code, message) { return Object.assign(new Error(message), { code }); }
+function pdfDeadlineError() { return pdfError('PDF_TIMEOUT', 'PDF 읽기가 20초를 넘었어요. 필요한 페이지를 나눠서 다시 선택해 주세요.'); }
+async function withPdfDeadline(promise, deadlineMs, signal) {
+ let timer, abort;
  try {
-  return await Promise.race([
-   promise,
-   new Promise((_, reject) => { timer = setTimeout(() => reject(pdfDeadlineError()), remaining); })
-  ]);
- } finally {
-  if (timer) clearTimeout(timer);
- }
+  if (signal && signal.aborted) throw pdfError('PDF_CANCELLED', 'PDF 읽기를 취소했어요.');
+  if (Date.now() >= deadlineMs) throw pdfDeadlineError();
+  return await Promise.race([promise, new Promise((_, reject) => {
+   timer = setTimeout(() => reject(pdfDeadlineError()), Math.max(1, deadlineMs - Date.now()));
+   if (signal) { abort = () => reject(pdfError('PDF_CANCELLED', 'PDF 읽기를 취소했어요.')); signal.addEventListener('abort', abort, { once: true }); }
+  })]);
+ } finally { clearTimeout(timer); if (signal && abort) signal.removeEventListener('abort', abort); }
 }
 function loadPdfJs() {
  if (pdfJsPromise) return pdfJsPromise;
@@ -940,133 +939,153 @@ function loadPdfJs() {
   const s = document.createElement('script');
   s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
   s.onload = () => {
-   if (window.pdfjsLib) {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    resolve(window.pdfjsLib);
-   } else {
-    pdfJsPromise = null;
-    reject(new Error('pdfjsLib not found'));
-   }
+   if (!window.pdfjsLib) { pdfJsPromise = null; reject(pdfError('PDF_LIBRARY_FAILED', 'PDF 읽기 도구를 불러오지 못했어요. 연결을 확인하고 다시 선택해 주세요.')); return; }
+   window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+   resolve(window.pdfjsLib);
   };
-  s.onerror = () => { pdfJsPromise = null; reject(new Error('pdf.js 스크립트 로드 실패')); };
+  s.onerror = () => { pdfJsPromise = null; s.remove(); reject(pdfError('PDF_LIBRARY_FAILED', 'PDF 읽기 도구를 불러오지 못했어요. 연결을 확인하고 다시 선택해 주세요.')); };
   document.head.appendChild(s);
  });
  return pdfJsPromise;
 }
-
 async function extractPdfText(file, diagnostics = {}) {
- const pdfjsLib = await loadPdfJs();
- const buf = await file.arrayBuffer();
- // PDF.js 3.x의 CVE-2024-4367 공식 완화책. 업로드된 PDF의 eval 및
- // 문서 내 스크립트가 호스팅 도메인 문맥에서 실행되지 않게 고정한다.
- const loadingTask = pdfjsLib.getDocument({
-  data: buf,
-  isEvalSupported: false,
-  enableScripting: false
- });
  const deadline = Date.now() + PDF_EXTRACT_TIMEOUT_MS;
- let pdf = null;
+ const signal = diagnostics.signal;
+ let loadingTask, pdf;
  try {
-  pdf = await withPdfDeadline(loadingTask.promise, deadline);
-  if (pdf.numPages > PDF_MAX_PAGES) {
-   throw new Error('PDF는 한 번에 100쪽까지만 불러올 수 있어요. 문서를 나눠 주세요.');
-  }
+  const pdfjsLib = await withPdfDeadline(loadPdfJs(), deadline, signal);
+  const buf = await withPdfDeadline(file.arrayBuffer(), deadline, signal);
+  loadingTask = pdfjsLib.getDocument({ data: buf, isEvalSupported: false, enableScripting: false });
+  pdf = await withPdfDeadline(loadingTask.promise, deadline, signal);
+  diagnostics.pages = pdf.numPages;
+  diagnostics.emptyPages = [];
+  if (pdf.numPages > PDF_MAX_PAGES) throw pdfError('PDF_PAGE_LIMIT', 'PDF는 한 번에 100쪽까지만 불러올 수 있어요. 필요한 페이지를 나눠 주세요.');
   let out = '';
   const reviewCodes = new Set();
   for (let i = 1; i <= pdf.numPages; i++) {
-   const page = await withPdfDeadline(pdf.getPage(i), deadline);
-   const content = await withPdfDeadline(page.getTextContent(), deadline);
+   if (diagnostics.onProgress) diagnostics.onProgress(i, pdf.numPages);
+   const page = await withPdfDeadline(pdf.getPage(i), deadline, signal);
+   const content = await withPdfDeadline(page.getTextContent(), deadline, signal);
    const layout = window.GPPdfTextLayout.extractPage(content);
+   if (!layout.text.trim()) diagnostics.emptyPages.push(i);
    for (const code of layout.reviewCodes) reviewCodes.add(code);
-   out += layout.text + '\n\n';
-   if (out.length > PDF_MAX_EXTRACTED_CHARS) {
-    throw new Error('PDF에서 읽은 글이 30,000자를 넘어요. 필요한 부분만 나눠서 올려 주세요.');
-   }
+   out += (out ? '\n\n' : '') + layout.text;
+   if (out.length > PDF_MAX_EXTRACTED_CHARS) throw pdfError('PDF_CHAR_LIMIT', 'PDF 추출 중 30,000자를 초과했어요. 필요한 페이지를 나눠 다시 선택해 주세요. 분석은 시작되지 않았고 크레딧도 차감되지 않았어요.');
+   if (page.cleanup) page.cleanup();
   }
   diagnostics.reviewCodes = [...reviewCodes];
   return out.trim();
+ } catch (error) {
+  if (error.code === 'PDF_TIMEOUT') pdfJsPromise = null;
+  throw error;
  } finally {
+  // Cleanup must never hold the error message or editor hostage.
   try {
-   if (pdf && typeof pdf.destroy === 'function') await pdf.destroy();
-   else if (typeof loadingTask.destroy === 'function') await loadingTask.destroy();
+   const cleanup = pdf && typeof pdf.destroy === 'function' ? pdf.destroy() : loadingTask && typeof loadingTask.destroy === 'function' ? loadingTask.destroy() : null;
+   if (cleanup) Promise.resolve(cleanup).catch(() => {});
   } catch (_) {}
  }
 }
-
+function pdfImportStatus(message, busy) {
+ const status = document.getElementById('pdfImportStatus');
+ const cancel = document.getElementById('pdfImportCancel');
+ if (status) { status.textContent = message || ''; status.hidden = !message; }
+ if (cancel) cancel.hidden = !busy;
+ window.gpPdfBusy = !!busy;
+ const run = document.getElementById('lavRunButton');
+ if (run) run.disabled = !!busy || !!window.gpInputOverLimit;
+}
+function reportPdfEvent(code, diagnostics, started) {
+ if (window.gpReportWorkflowIssue) window.gpReportWorkflowIssue({ feature: 'pdf', code, stage: 'import', pages: diagnostics.pages || 0, emptyPages: (diagnostics.emptyPages || []).length, durationMs: Date.now() - started });
+}
+function pdfImportMessage(error) {
+ if (error.code && /^PDF_/.test(error.code)) return error.message;
+ if (error.name === 'PasswordException') return '암호가 필요한 PDF예요. 암호 보호를 해제한 파일을 선택하거나 본문을 직접 붙여넣어 주세요.';
+ if (error.name === 'InvalidPDFException') return 'PDF 파일이 손상되었거나 형식을 읽을 수 없어요. 원본에서 PDF로 다시 저장해 주세요.';
+ if (/30,000/.test(error.message || '')) return 'PDF 추출 중 30,000자를 초과했어요. 필요한 페이지를 나눠 주세요.';
+ if (/조각|열 구성/.test(error.message || '')) return error.message;
+ return 'PDF를 읽지 못했어요. 파일을 다시 저장하거나 본문을 복사해 붙여넣어 주세요.';
+}
 function handlePDF(input) {
  const file = input.files[0];
  if (!file) return;
- // 파일 형식 검증 — accept 속성은 힌트일 뿐, 드래그/모바일에서 우회 가능
- const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
- if (!isPdf) {
-  alert('PDF 파일만 첨부할 수 있어요. 선택한 파일: ' + (file.name || '파일 이름 없음'));
-  input.value = '';
+ input.value = '';
+ if (pdfImportJob) pdfImportJob.controller.abort();
+ let error;
+ if (!(file.type === 'application/pdf' || /\.pdf$/i.test(file.name))) error = pdfError('PDF_TYPE', 'PDF 파일만 선택할 수 있어요.');
+ else if (!file.size) error = pdfError('PDF_EMPTY_FILE', '내용이 없는 파일이에요. 다른 PDF를 선택해 주세요.');
+ else if (file.size > 10 * 1024 * 1024) error = pdfError('PDF_SIZE_LIMIT', 'PDF는 10MB 이하만 가능해요. 선택한 파일은 ' + (file.size / 1024 / 1024).toFixed(1) + 'MB예요. 파일을 나눠 주세요.');
+ if (error) {
+  pdfImportSequence++; pdfImportJob = null;
+  const editor = document.getElementById('lavInput') || document.getElementById('inputText');
+  if (editor) editor.disabled = false;
+  pdfImportStatus(error.message + ' 기존 입력은 유지했어요.', false);
+  reportPdfEvent(error.code, {}, Date.now());
   return;
  }
- if (file.size === 0) {
-  alert('내용이 없는 파일이에요. 다른 PDF를 선택해 주세요.');
-  input.value = '';
-  return;
- }
- if (file.size > 10 * 1024 * 1024) {
-  const mb = (file.size / 1024 / 1024).toFixed(1);
-  alert('PDF 파일은 10MB 이하만 가능해요.\n선택한 파일: ' + mb + 'MB');
-  input.value = '';
-  return;
- }
- extractAndFillFromPdf(file);
+ return extractAndFillFromPdf(file);
 }
-
 async function extractAndFillFromPdf(file) {
  const inputText = document.getElementById('lavInput') || document.getElementById('inputText');
  if (!inputText) return;
- const prevPlaceholder = inputText.placeholder;
-
+ if (pdfImportJob) pdfImportJob.controller.abort();
+ const job = { id: ++pdfImportSequence, controller: new AbortController() };
+ pdfImportJob = job;
+ const started = Date.now();
+ const previous = inputText.value;
+ const diagnostics = { signal: job.controller.signal, onProgress: (page, total) => {
+  if (job.id === pdfImportSequence) pdfImportStatus('PDF ' + page + ' / ' + total + '쪽을 읽고 있어요. 아직 분석은 시작하지 않았어요.', true);
+ }};
  inputText.disabled = true;
- inputText.placeholder = 'PDF에서 텍스트를 추출하고 있어요...';
- if (window.gpToast) window.gpToast(file.name + '에서 텍스트를 읽고 있어요.', { type: 'info', title: 'PDF 처리 중' });
-
+ pdfImportStatus('PDF를 읽을 준비를 하고 있어요. 기존 입력은 유지됩니다.', true);
  try {
-  const diagnostics = {};
   const text = await extractPdfText(file, diagnostics);
-  if (!text || text.length < 5) {
-   alert('이 PDF에서는 글자를 읽어올 수 없어요.\n스캔 이미지나 보호된 파일일 수 있으니, 텍스트를 직접 복사해 붙여넣어 주세요.');
-   clearPDF();
-   return;
+  if (job.id !== pdfImportSequence) return;
+  if (!text || text.length < 5) throw pdfError('PDF_NO_TEXT', 'PDF에서 글자를 읽을 수 없어요. 스캔 문서는 글자 인식(OCR) 후 선택하거나 본문을 직접 붙여넣어 주세요.');
+  const notices = [];
+  if (diagnostics.emptyPages.length) {
+   const pages = diagnostics.emptyPages.slice(0, 20).join(', ') + (diagnostics.emptyPages.length > 20 ? ' 외' : '');
+   const message = diagnostics.pages + '쪽 중 ' + diagnostics.emptyPages.length + '쪽(' + pages + '쪽)에서 글자를 읽지 못했어요. 빈 페이지 또는 스캔 이미지일 수 있어요. 읽힌 ' + text.length.toLocaleString() + '자만 입력할까요?';
+   pdfImportStatus(message, true);
+   const accepted = window.gpConfirm ? await window.gpConfirm({ title: '읽지 못한 페이지 확인', message, signal: job.controller.signal, confirmText: '읽힌 부분만 입력', cancelText: '기존 입력 유지' }) : window.confirm(message);
+   if (job.id !== pdfImportSequence || job.controller.signal.aborted) return;
+   if (!accepted) { pdfImportStatus('PDF 적용을 취소했어요. 기존 입력은 유지했어요.', false); return; }
+   notices.push('글자를 읽지 못한 페이지: ' + pages + '쪽.');
   }
+  if (job.controller.signal.aborted) throw pdfError('PDF_CANCELLED', 'PDF 읽기를 취소했어요.');
+  // Preserve a draft changed by another UI action while extraction was running.
+  if (inputText.value !== previous) throw pdfError('PDF_INPUT_CHANGED', '입력 내용이 바뀌어 PDF를 적용하지 않았어요. 필요한 파일을 다시 선택해 주세요.');
   inputText.value = text;
   if (inputText.id === 'lavInput' && typeof window.lavSyncCount === 'function') window.lavSyncCount(inputText);
   else updateCount(inputText);
-  if (window.gpToast) window.gpToast(text.length.toLocaleString() + '자를 입력창에 넣었어요.', { type: 'success', title: 'PDF 불러오기 완료' });
-  if (diagnostics.reviewCodes?.length) {
-   alert('PDF에 여러 열이나 읽는 순서가 불확실한 부분이 있어요.\n변환 전에 입력창에서 표의 좌우 내용과 페이지 사이 문장이 올바르게 이어지는지 확인해 주세요. 원본 PDF의 표 모양은 자동으로 복원되지 않아요.');
-  }
-  if (text.length < 100) {
-   alert('읽어 온 텍스트가 ' + text.length + '자로 너무 짧아요. 스캔 PDF인지 확인해 주세요.');
-  }
- } catch (e) {
-  console.error('PDF 추출 오류:', e);
-  alert('PDF를 처리하지 못했어요. ' + (e.message || '파일을 확인한 뒤 다시 시도해 주세요.'));
-  clearPDF();
+  if (diagnostics.reviewCodes.length) notices.push('변환 전에 입력창에서 표의 좌우 내용과 페이지 사이 문장 순서를 확인해 주세요. 원본 표 모양은 자동 복원되지 않아요.');
+  if (text.length < 100) notices.push('읽힌 글이 짧아요. 사용할 기능의 최소 글자 수를 확인해 주세요.');
+  pdfImportStatus(text.length.toLocaleString() + '자를 입력했어요. ' + notices.join(' '), false);
+  reportPdfEvent('PDF_IMPORTED', diagnostics, started);
+ } catch (error) {
+  if (job.id !== pdfImportSequence) return;
+  pdfImportStatus(pdfImportMessage(error) + ' 기존 입력은 유지했어요.', false);
+  reportPdfEvent(error.code || (error.name === 'PasswordException' ? 'PDF_PASSWORD' : 'PDF_READ_FAILED'), diagnostics, started);
  } finally {
-  inputText.disabled = false;
-  inputText.placeholder = prevPlaceholder;
-  const picker = document.getElementById('pdfInput');
-  if (picker) picker.value = '';
+  if (job.id === pdfImportSequence) {
+   inputText.disabled = false; pdfImportJob = null;
+   window.gpPdfBusy = false;
+   const run = document.getElementById('lavRunButton');
+   if (run) run.disabled = !!window.gpInputOverLimit;
+   const cancel = document.getElementById('pdfImportCancel'); if (cancel) cancel.hidden = true;
+  }
  }
 }
-
 function clearPDF() {
- const inputText = document.getElementById('lavInput') || document.getElementById('inputText');
- const picker = document.getElementById('pdfInput');
- if (picker) picker.value = '';
- if (!inputText) return;
- inputText.value = '';
- inputText.disabled = false;
- inputText.placeholder = '다듬을 초안이나 문단을 붙여넣어 보세요...';
- if (inputText.id === 'lavInput' && typeof window.lavSyncCount === 'function') window.lavSyncCount(inputText);
- else updateCount(inputText);
+ if (pdfImportJob) pdfImportJob.controller.abort();
+ pdfImportSequence++; pdfImportJob = null;
+ const editor = document.getElementById('lavInput') || document.getElementById('inputText');
+ if (editor) editor.disabled = false;
+ const picker = document.getElementById('pdfInput'); if (picker) picker.value = '';
+ pdfImportStatus('PDF 읽기를 취소했어요. 기존 입력은 유지했어요.', false);
 }
+window.gpCancelPdfImport = clearPDF;
+
 
 /* ══════════════════════════════════════════════════════════════
    자동 청크 분할 · 순차 실행 (5,000자 초과 시)
@@ -1173,7 +1192,7 @@ async function callAnalyzeApi(payload, opts) {
   var timer = setTimeout(function(){ timedOut = true; ctrl.abort(); }, timeoutMs);
   var res = null, body = null, netErr = null;
   try {
-   res = await fetch(window.apiUrl('/analyze'), {
+   res = await (window.gpFetch || window.fetch || globalThis.fetch)(window.apiUrl('/analyze'), {
     method: 'POST',
     headers: Object.assign(
      { 'Content-Type': 'application/json' },
@@ -1189,7 +1208,8 @@ async function callAnalyzeApi(payload, opts) {
      requestId: payload.requestId || undefined,
      useWebSearch: false
     }),
-    signal: ctrl.signal
+    signal: ctrl.signal,
+    timeoutMs: timeoutMs
    });
   } catch (err) {
    netErr = err;
@@ -1270,7 +1290,7 @@ async function transformFetchJson(authUser, path, init, forceRefresh) {
  var token = await authUser.getIdToken(forceRefresh === true);
  var options = Object.assign({}, init || {});
  options.headers = Object.assign({}, options.headers || {}, { Authorization: 'Bearer ' + token });
- var response = await fetch(window.apiUrl(path), options);
+ var response = await (window.gpFetch || window.fetch || globalThis.fetch)(window.apiUrl(path), options);
  var body = null;
  try { body = await response.json(); } catch (_) {}
  if (response.status === 401 && forceRefresh !== true) {
@@ -2069,7 +2089,7 @@ async function payToss(amount, credits, name, plan, checkoutOptions) {
   // 바꿀 수 없도록 하는 선점 단계다.
   try {
    const idToken = await window.CU.getIdToken();
-   const prepareResponse = await fetch(window.apiUrl('/prepare-payment'), {
+   const prepareResponse = await (window.gpFetch || window.fetch || globalThis.fetch)(window.apiUrl('/prepare-payment'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + idToken },
     credentials: 'omit',
