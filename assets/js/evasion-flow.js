@@ -1563,6 +1563,7 @@
       radar: radar,
       content: {
         status: contentStatus,
+        findingStatus: content.findingStatus || '',
         label: contentLabel,
         generic: generic,
         lived: lived,
@@ -2045,7 +2046,8 @@
   }
   function reportNeedsUserAnchor(model) {
     var anchor = repAxisPolicy(model).anchor || {};
-    return anchor.status === 'on' && model.content && model.content.status === 'weak';
+    return anchor.status === 'on' && model.content && model.content.status === 'weak'
+      && (!model.content.findingStatus || model.content.findingStatus === 'deficient');
   }
   function repRadarAxes(model) {
     var m = model.measured || {};
@@ -4425,6 +4427,14 @@
 
   function renderResultNotices(st) {
     var result = st && st.result || {};
+    var inputWrap = $('lavResultInputNotice');
+    var inputStatus = result.inputStatus || result.engineMeta && result.engineMeta.inputStatus || {};
+    var inputReview = inputStatus.completeness === 'review_required' || inputStatus.structure === 'review_required';
+    if (inputWrap) {
+      inputWrap.hidden = !inputReview;
+      inputWrap.textContent = inputReview
+        ? '입력 원문에 잘림·누락 또는 구조 확인이 필요한 흔적이 있어요. 변환 품질과 별도로, 붙여 넣은 글과 원본 자료를 대조해 주세요.' : '';
+    }
     var effectWrap = $('lavResultEffectNotice');
     var qualityWrap = $('lavResultQualityNotice');
     var effectNotices = Array.isArray(result.effectNotices)

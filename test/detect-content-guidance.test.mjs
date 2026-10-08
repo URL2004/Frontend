@@ -32,7 +32,26 @@ test('report handoff requests source evidence only for an assessed weak axis', (
    status==='on' && content==='weak');
  }
  assert.equal(context.reportNeedsUserAnchor({content:{status:'weak'}}),false);
+ for (const findingStatus of ['not_assessed','not_found','present','deficient']) {
+  assert.equal(context.reportNeedsUserAnchor({measured:{axisPolicy:{axes:{anchor:{status:'on'}}}},
+   content:{status:'weak',findingStatus}}),findingStatus==='deficient');
+ }
  assert.match(flow,/needsUserAnchor: reportNeedsUserAnchor\(reportModel\)/);
+});
+
+test('source input review is visible independently of semantic quality and style notices', () => {
+ const elements=Object.fromEntries(['lavResultInputNotice','lavResultEffectNotice','lavResultQualityNotice']
+  .map(id=>[id,{hidden:true,textContent:''}]));
+ const context=vm.createContext({$:id=>elements[id]});
+ vm.runInContext(flow.slice(flow.indexOf('  function renderResultNotices'),flow.indexOf('  // ── 완료 화면의 다음 작업 안내')),context);
+ context.renderResultNotices({result:{inputStatus:{completeness:'review_required',semantic:'pass'},qualityStatus:'clean',effectStatus:'normal'}});
+ assert.equal(elements.lavResultInputNotice.hidden,false);
+ assert.match(elements.lavResultInputNotice.textContent,/입력 원문/);
+ assert.equal(elements.lavResultQualityNotice.hidden,true);
+ assert.equal(elements.lavResultEffectNotice.hidden,true);
+ context.renderResultNotices({result:{}});
+ assert.equal(elements.lavResultInputNotice.hidden,true);
+ assert.equal(elements.lavResultInputNotice.textContent,'');
 });
 
 test('input fragment advice remains visible when score copy supplies its own tips', () => {
