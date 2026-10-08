@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-08",
+  "tool": "Built-in image_gen",
+  "format": "WebP, 1200px width, libwebp quality 82",
+  "images": [
+    {
+      "slug": "interview-question-guide",
+      "prompt": "Use case: stylized-concept. Asset: editorial cover for a Korean university guide to planning qualitative interview questions and neutral follow-up questions. Wide landscape 16:9. Two small sculptural chairs face each other across an oval ivory table, one muted teal chair and one terracotta chair. Above the table three suspended abstract ceramic speech forms progress from a large open oval to two small rounded forms, conveying listening and follow-up. A single blank folded note rests on the table. Refined matte ceramic and paper textures, warm ivory studio background, soft daylight, restrained lavender accent shadows. Elegant spacious centered composition, all key subjects within middle 65% width and middle 55% height to crop to square and 2.4:1. No people, text, letters, numbers, logos, watermark, magnifying glass, flowers or checkmarks. Distinct editorial illustration, not a diagram or UI.",
+      "asset": "assets/img/blog/interview-question-guide.webp"
+    },
+    {
+      "slug": "mean-vs-median-report-guide",
+      "prompt": "Use case: stylized-concept. Asset: editorial cover for a Korean university report-writing guide on mean versus median and large extreme values. Wide 16:9 landscape. A low lavender balance beam on an ivory triangular fulcrum, with a compact cluster of five small muted teal ceramic pebbles near the center and one oversized coral sphere toward the far right of the beam; delicate visual tension suggests how one extreme observation affects balance. Another thin ivory upright marker sits near the cluster. Matte tactile ceramic, subtle paper texture on base, pale lilac background, soft warm daylight, sophisticated minimal editorial still life. Decorative conceptual artwork, not a precise statistical diagram. Center the entire main arrangement within central 65% width and middle 55% height for 2.4:1 and square crops. No text, numerals, percentage symbols, logos, watermarks, bar charts, pie charts, documents, flowers, checkmarks or magnifying glasses.",
+      "asset": "assets/img/blog/mean-vs-median-report-guide.webp"
+    }
+  ]
+}
