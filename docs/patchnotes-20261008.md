@@ -62,3 +62,11 @@
 | 2026-09-29 | Backend | 6a70e9e | fix(engine): keep paragraphs that end without a period v2.5.93 |
 | 2026-09-29 | Backend | 1b5eee7 | feat(engine): restore the missing final period of a paragraph v2.5.94 |
 | 2026-09-29 | Backend | 0cf6af6 | fix(notifications): preserve long admin messages and reject overflow |
+
+## 배포 작성자 확인 — 2026-10-08
+
+프런트엔드 배포에서 테스트용 작성자 이메일 `test@example.com`을 GitHub 계정과 연결할 수 없어 Vercel이 배포를 차단했다. 사용자에게 Vercel 연결 계정이 `URL2004`임을 확인하고, GitHub CLI 재인증 후 같은 계정의 저장소 관리자 권한을 확인했다. 저장소 로컬 Git 작성자를 확인된 계정의 GitHub noreply 주소로 수정했다.
+
+배포 전에는 `gh api user`, `git config --local user.email`, `git log -1 --format="%an <%ae>"`로 인증 계정과 실제 커밋 작성자를 확인한다. 테스트용 작성자가 남아 있으면 실제 계정을 확인한 뒤 설정을 수정한다. Git 출처를 제거하거나 권한 검사를 해제하지 않는다. 이미 공유된 커밋은 다시 쓰지 않는다.
+
+이 후속 변경은 배포 절차 기록이며 사용자 기능과 패치노트 101개 항목은 변경하지 않는다. 실제 배포 완료 여부는 Vercel 상태와 운영 사이트 응답을 확인한 뒤 판단한다.
