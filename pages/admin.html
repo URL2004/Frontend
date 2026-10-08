@@ -106,10 +106,10 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">101개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">104개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 10.08</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 10.09</span>
       </div>
 
       <div class="gp-admin-filter-row gp-admin-patch-filters">
@@ -123,8 +123,8 @@
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
           <strong>휴머나이징 v2.5.105 · AI 감지 v1.52</strong>
-          <code>2026.10.08 · Backend 143a61b</code>
-        <span>입력·의미·장르 보존 · 코칭·추천 정합성 · 실행·비용 추적</span>
+          <code>2026.10.08 · Backend 1b95bdc</code>
+        <span>입력·의미·장르 보존 · PDF 예외 안내 · 작업 알림 저장</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="2026년 9월 3일까지의 기존 감사 범위">
@@ -136,6 +136,27 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.106 준비</span><span class="gp-admin-patch-title"><b>인용 보존·확정 누락 차단·검사 범위 안내</b><small>2026.10.09 · 운영 반영 전 검증 변경</small></span><span class="gp-admin-patch-state is-foundation">배포 준비</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">인용·구조</span><span>페이지 표기 안의 줄바꿈과 앞 문장에 붙은 숫자 각주를 원문 근거로 복구합니다. 반복 실행해도 결과가 바뀌지 않도록 하고 실제 번호 목록과 코드는 보호합니다. ‘첫째는 … 여부다’ 형식의 목록을 놓치는 구조 오경고도 보완합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">의미·전달</span><span>최종본과 일치하는 검증에서 원문 누락이 재확인되고 앞선 검사 근거도 남아 있는 경우, 해결되지 않은 결과를 전달·차감 경로로 넘기지 않습니다. 검사 불확실·생략·첨가 의심을 일괄 차단하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">사용자 안내</span><span>최종본 의미 검사 통과, 검사 생략, 보강 문단만 검사한 경우를 구분합니다. 검토 필요인데 경고 문구가 비어 있어도 안내하며, 짧은 글의 예상 변화와 통계 반영 전후 점수를 설명합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">호출·추적</span><span>이미 의미 검사를 통과한 짧은 결과에서 첫 추가 시도가 개선되지 않으면 상위 모델 반복 호출을 생략합니다. 필수 복구와 최종 검증은 유지합니다. 차단 작업의 알려진 원가·미확인 원가와 문단 보강 후 엔진 계보를 구분해 저장합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증 범위</span><span>저장된 휴머나이징 143건을 로컬 대조하고 인용 이상 7건의 최종 레이아웃을 재생합니다. 실제 원문은 Git에 포함하지 않습니다. 감지 점수 계산과 휴머나이징 이력 보정은 유지하며 신규 실모델 전량 평가나 무결함 보장을 뜻하지 않습니다.</span></li>
+          </ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">연구노트</span><span class="gp-admin-patch-title"><b>인터뷰 설계와 평균·중앙값 해석 가이드</b><small>2026.10.08 · Frontend 923e361</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area frontend">콘텐츠</span><span>인터뷰 질문·진행 계획과 평균·중앙값을 구분하는 글쓰기 가이드를 추가했습니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">입력·알림 예외</span><span class="gp-admin-patch-title"><b>PDF 원문 보존과 실패 안내·작업 알림 저장</b><small>2026.10.08 · Backend 1b95bdc · Frontend e5b6218 · b56df06</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area safety">입력 예외</span><span>PDF 추출 실패·취소·제한 초과에서 기존 입력을 보존하고 3만자 제한을 안내합니다. 24페이지라는 이유만으로 차단하지 않으며 일부 페이지만 읽힌 문서는 확인 후 반영합니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">알림·복구</span><span>작업 결과 알림을 저장하고 재시도·다른 계정 전환·요청 시간 초과를 구분합니다. 종료된 보상 공지는 메인에서 내리고 PDF 도움말을 간결하게 정리했습니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.104–105 · 감지 v1.52</span><span class="gp-admin-patch-title"><b>전수 감사 후 입력·의미·장르·코칭·운영 추적 보완</b><small>2026.10.08 · Backend b7cb695 · 143a61b · Frontend d3b1a5d · 5f5f14d</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>

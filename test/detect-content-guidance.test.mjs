@@ -43,8 +43,9 @@ test('source input review is visible independently of semantic quality and style
  const elements=Object.fromEntries(['lavResultInputNotice','lavResultEffectNotice','lavResultQualityNotice']
   .map(id=>[id,{hidden:true,textContent:''}]));
  const context=vm.createContext({$:id=>elements[id]});
+ vm.runInContext(flow.slice(flow.indexOf('  function semanticReviewInfo('),flow.indexOf('  function renderBadges(')),context);
  vm.runInContext(flow.slice(flow.indexOf('  function renderResultNotices'),flow.indexOf('  // ── 완료 화면의 다음 작업 안내')),context);
- context.renderResultNotices({result:{inputStatus:{completeness:'review_required',semantic:'pass'},qualityStatus:'clean',effectStatus:'normal'}});
+ context.renderResultNotices({result:{inputStatus:{completeness:'review_required',semantic:'pass'},qualityStatus:'clean',effectStatus:'normal',engineMeta:{semanticValidationStatus:'pass'}}});
  assert.equal(elements.lavResultInputNotice.hidden,false);
  assert.match(elements.lavResultInputNotice.textContent,/입력 원문/);
  assert.equal(elements.lavResultQualityNotice.hidden,true);
@@ -52,6 +53,8 @@ test('source input review is visible independently of semantic quality and style
  context.renderResultNotices({result:{}});
  assert.equal(elements.lavResultInputNotice.hidden,true);
  assert.equal(elements.lavResultInputNotice.textContent,'');
+ assert.equal(elements.lavResultQualityNotice.hidden,false);
+ assert.match(elements.lavResultQualityNotice.textContent,/확인할 수 없어요/u);
 });
 
 test('input fragment advice remains visible when score copy supplies its own tips', () => {

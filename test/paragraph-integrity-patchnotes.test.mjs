@@ -35,9 +35,9 @@ test('paragraph integrity notes disclose detector limitations and preserve earli
   assert.match(html, /해결 완료로 표시하지 않습니다/);
   assert.match(html, /Backend 23a3624/);
   const count = [...html.matchAll(/<details class="gp-admin-patch-release"/g)].length;
-  assert.equal(count, 101);
-  assert.match(html, /101개 변경 묶음/);
-  assert.match(html, /2026\.06\.04 — 10\.08/);
+  assert.equal(count, 104);
+  assert.match(html, /104개 변경 묶음/);
+  assert.match(html, /2026\.06\.04 — 10\.09/);
   assert.match(html, /Backend 80e7543/);
   assert.match(html, /원본 PDF 대조가 없는 상태/);
   assert.match(html, /페이지 간 논리적 행 복원/);

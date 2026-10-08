@@ -184,6 +184,7 @@
     if (tooLong) messages.push('한 번에 최대 ' + (window.LAV_MAX_CHARS || 30000).toLocaleString('ko-KR') + '자까지 처리할 수 있어요.');
     else if (tooShort) messages.push('AI 감지는 ' + DETECT_MIN_CHARS + '자 이상부터 이용할 수 있어요.');
     else if (!st.detect && st.len >= 3000) messages.push('고급 휴머나이징은 입력 길이에 따라 ' + advancedCredit(st.len, false).toLocaleString('ko-KR') + '크레딧이에요.');
+    else if (!st.detect && st.len < 300) messages.push('짧은 글은 바뀌는 표현이 적을 수 있어요. 어휘·맞춤법 위주로 고치려면 다듬기를 선택해 주세요.');
 
     if (!window.CU && !window.GP_HERO_PREVIEW) {
       setEstimateText('lavEstimateBalance', '');
@@ -3700,6 +3701,21 @@
     wrap.appendChild(s);
   }
 
+  function semanticReviewInfo(result) {
+    result = result || {};
+    if (result.auditScope === 'refined_paragraph') return { status: 'partial', label: '보강 문단만 검사',
+      message: '문단 보강 후 글 전체의 의미는 다시 검사하지 않았어요. 앞뒤 문단과의 연결을 확인해 주세요.' };
+    var meta = result.engineMeta || {};
+    var status = result.semanticValidation && result.semanticValidation.status || meta.semanticValidationStatus || '';
+    if (status === 'pass') return { status: 'pass', label: '최종본 의미 검사 통과', message: '' };
+    if (status === 'skipped' || meta.finalSemanticState === 'not_run') return { status: 'skipped', label: '의미 검사 생략',
+      message: '이 결과는 전체 의미 검사를 생략했어요. 사용하기 전에 원문의 주장·수치·인용과 대조해 주세요.' };
+    if (status === 'fail') return { status: 'fail', label: '의미 확인 필요',
+      message: '의미 검사에서 확인할 부분이 남았어요. 원문과 결과를 대조해 주세요.' };
+    return { status: 'unconfirmed', label: '의미 검사 확인 필요',
+      message: '최종본의 전체 의미 검사 통과를 확인할 수 없어요. 원문과 결과를 대조해 주세요.' };
+  }
+
   function renderBadges(fr, result) {
     var wrap = $('lavTrust');
     if (!wrap) return;
@@ -3714,7 +3730,8 @@
     if (m.novelty === 0) badge(true, '새 사실 없음');
     if (m.lostFacts === 0) badge(true, '보호 사실 유지');
     if (m.repetition === 0) badge(true, '신규 반복 없음');
-    if (m.judge === 'pass') badge(true, '의미 검증 완료');
+    var semantic = semanticReviewInfo(result);
+    badge(semantic.status === 'pass' ? true : null, semantic.label);
     if (result && result.structureImprovement && result.structureImprovement.requested) badge(result.structureImprovement.applied, result.structureImprovement.applied ? '확인한 구조 변경안 적용' : '구조 변경 미적용 · 추가요금 없음 · ' + (result.structureImprovement.reason || '확인한 변경안을 최종 결과에 적용하지 못했습니다.'));
     if (result && result.creditBreakdown && result.structureImprovement && result.structureImprovement.requested) badge(null, '실제 차감 ' + (result.creditBreakdown.charged ?? result.creditBreakdown.total) + '크레딧');
     var korean = result && result.koreanRefinement;
@@ -4481,7 +4498,8 @@
     var effectNotices = Array.isArray(result.effectNotices)
       ? result.effectNotices
       : (Array.isArray(st && st.effectNotices) ? st.effectNotices : []);
-    var effectLimited = (result.effectStatus || st && st.effectStatus) === 'limited';
+    var effectLimited = (result.effectStatus || st && st.effectStatus) === 'limited'
+      || !!(result.engineMeta && result.engineMeta.humanizationNoBenefitDelivered);
     if (effectWrap) {
       effectWrap.hidden = !effectLimited;
       effectWrap.textContent = effectLimited
@@ -4491,12 +4509,15 @@
     var qualityWarnings = Array.isArray(result.qualityWarnings)
       ? result.qualityWarnings
       : (Array.isArray(st && st.qualityWarnings) ? st.qualityWarnings : []);
-    var needsReview = (result.qualityStatus || st && st.qualityStatus) === 'needs_review' && qualityWarnings.length > 0;
+    var needsReview = (result.qualityStatus || st && st.qualityStatus) === 'needs_review';
+    var semanticInfo = semanticReviewInfo(result);
     if (qualityWrap) {
-      qualityWrap.hidden = !needsReview;
-      qualityWrap.textContent = needsReview
-        ? (qualityWarnings[0].message || '의미·수치·인용·구조 중 원문과 대조할 부분이 있어요.')
-        : '';
+      qualityWrap.hidden = !needsReview && !semanticInfo.message;
+      var reviewMessage = needsReview
+        ? (qualityWarnings[0] && qualityWarnings[0].message || '의미·수치·인용·구조 중 원문과 대조할 부분이 있어요.') : '';
+      qualityWrap.textContent = reviewMessage || semanticInfo.message;
+      if (reviewMessage && ['skipped', 'partial'].indexOf(semanticInfo.status) >= 0)
+        qualityWrap.textContent += ' ' + semanticInfo.message;
     }
   }
 
