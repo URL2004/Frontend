@@ -298,7 +298,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>변경 이력</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'labs', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 92);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 101);
   assert.match(admin, /AI 감지 v1\.25/u);
   assert.match(admin, /점수·원인 정합성·장르별 근거 축·전후 예시 보강/u);
   assert.match(admin, /AI 감지 이력 1,077건/u);
@@ -308,8 +308,8 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /원장 작업 상세·108건 전수평가·최종 문장 무결성/u);
   assert.match(admin, /결과 평균은 96\.0점, 원문 대비 평균은 \+12\.7점/u);
   assert.match(admin, /근거 없는 구체화/u);
-  assert.match(admin, /휴머나이징 v2\.5\.90 · AI 감지 v1\.51/u);
-  assert.match(admin, /2026\.06\.04 — 09\.29/u);
+  assert.match(admin, /휴머나이징 v2\.5\.105 · AI 감지 v1\.52/u);
+  assert.match(admin, /2026\.06\.04 — 10\.08/u);
   assert.match(admin, /중요 공지를 정렬 방향과 관계없이 최상단 고정/u);
   assert.match(admin, /휴머나이징 357쌍과 AI 감지 300건/u);
   assert.match(admin, /신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다/u);
@@ -380,8 +380,8 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.ok(timeline.indexOf('전문 문서 언어 무결성·GPT 캐시 효율화') < timeline.indexOf('원문 문단 역할·사례 결론 귀속 보존'));
   assert.ok(timeline.indexOf('v2.5.2') < timeline.indexOf('관리자 Hotfix'));
   assert.ok(timeline.indexOf('관리자 Hotfix') < timeline.indexOf('감지 Hotfix'));
-  assert.ok(timeline.indexOf('감지 Hotfix') < timeline.indexOf('v2.5.1'));
-  assert.ok(timeline.indexOf('v2.5.1') < timeline.indexOf('v2.5.0'));
+  assert.ok(timeline.indexOf('감지 Hotfix') < timeline.indexOf('v2.5.1</span>'));
+  assert.ok(timeline.indexOf('v2.5.1</span>') < timeline.indexOf('v2.5.0</span>'));
   assert.ok(timeline.indexOf('v2.5.0') < timeline.indexOf('v2.4.18'));
   assert.match(admin, /Frontend active-job-recovery/u);
   assert.match(admin, /Backend [^<]*1f6e010/u);
@@ -400,10 +400,10 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
-  assert.equal(releases.length, 92);
-  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 35);
+  assert.equal(releases.length, 101);
+  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 36);
   assert.match(releases[0][1], /\bopen\b/u);
-  assert.match(releases[0][2], /장문 문단 경계와 의미 관계 복구 개선/u);
+  assert.match(releases[0][2], /전수 감사 후 입력·의미·장르·코칭·운영 추적 보완/u);
   for (const [, attrs, body] of releases) {
     if (/gp-admin-patch-state is-superseded/u.test(body)) assert.doesNotMatch(attrs, /\bopen\b/u);
   }

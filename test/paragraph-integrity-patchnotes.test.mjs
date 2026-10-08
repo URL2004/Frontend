@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 test('paragraph integrity notes disclose detector limitations and preserve earlier releases', () => {
   const html = readFileSync(new URL('../pages/admin.html', import.meta.url), 'utf8');
-  assert.match(html, /휴머나이징 v2\.5\.90 · AI 감지 v1\.51/);
+  assert.match(html, /휴머나이징 v2\.5\.105 · AI 감지 v1\.52/);
   assert.match(html, /v2\.5\.74 · 감지 v1\.43/);
   assert.match(html, /113건은 개발·회귀 자료/);
   const timeline = html.split('<div class="gp-admin-patch-timeline">')[1];
-  const current = timeline.split('</details>')[0];
+  const current = timeline.split('<span class="gp-admin-patch-version">v2.5.90</span>')[1].split('</details>')[0];
   assert.match(current, /v2\.5\.90/);
   assert.match(current, /Backend 159878b/);
   assert.match(current, /2,776개/);
@@ -35,9 +35,9 @@ test('paragraph integrity notes disclose detector limitations and preserve earli
   assert.match(html, /해결 완료로 표시하지 않습니다/);
   assert.match(html, /Backend 23a3624/);
   const count = [...html.matchAll(/<details class="gp-admin-patch-release"/g)].length;
-  assert.equal(count, 92);
-  assert.match(html, /92개 변경 묶음/);
-  assert.match(html, /2026\.06\.04 — 09\.29/);
+  assert.equal(count, 101);
+  assert.match(html, /101개 변경 묶음/);
+  assert.match(html, /2026\.06\.04 — 10\.08/);
   assert.match(html, /Backend 80e7543/);
   assert.match(html, /원본 PDF 대조가 없는 상태/);
   assert.match(html, /페이지 간 논리적 행 복원/);
