@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 test('paragraph integrity notes disclose detector limitations and preserve earlier releases', () => {
   const html = readFileSync(new URL('../pages/admin.html', import.meta.url), 'utf8');
-  assert.match(html, /휴머나이징 v2\.5\.105 · AI 감지 v1\.52/);
+  assert.match(html, /휴머나이징 v2\.5\.106 · AI 감지 v1\.52/);
   assert.match(html, /v2\.5\.74 · 감지 v1\.43/);
   assert.match(html, /113건은 개발·회귀 자료/);
   const timeline = html.split('<div class="gp-admin-patch-timeline">')[1];
