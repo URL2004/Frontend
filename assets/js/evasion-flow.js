@@ -4501,10 +4501,10 @@
     var effectLimited = (result.effectStatus || st && st.effectStatus) === 'limited'
       || !!(result.engineMeta && result.engineMeta.humanizationNoBenefitDelivered);
     if (effectWrap) {
-      effectWrap.hidden = !effectLimited;
-      effectWrap.textContent = effectLimited
-        ? (effectNotices[0] && effectNotices[0].message || '원문을 안전하게 지키느라 바꿀 수 있는 범위가 제한적이었어요.')
-        : '';
+      var effectMessages = effectNotices.map(function (notice) { return notice && notice.message; }).filter(Boolean);
+      effectWrap.hidden = !effectLimited && effectMessages.length === 0;
+      effectWrap.textContent = effectMessages.join(' ') || (effectLimited
+        ? '원문을 안전하게 지키느라 바꿀 수 있는 범위가 제한적이었어요.' : '');
     }
     var qualityWarnings = Array.isArray(result.qualityWarnings)
       ? result.qualityWarnings

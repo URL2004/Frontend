@@ -13592,3 +13592,9 @@ html.gp-rep-modal-open{overflow:hidden;}
 .gp-toast-root{max-height:60dvh;overflow-y:auto;overscroll-behavior:contain}
 #gpNotificationStatus{margin:12px 16px;font-size:1rem;line-height:1.6;overflow-wrap:anywhere}
 .gp-import-cancel:focus-visible,#lavStepSlot button:focus-visible,#wlStatus5 button:focus-visible{outline:2px solid var(--blue,#4759be);outline-offset:3px}
+
+/* Comparison alignment must retain the returned line/paragraph distinction. */
+.gp-rp-body .gp-rp-row>.gp-rp-cell[data-break]{padding-bottom:0}
+.gp-rp-body .gp-rp-row>.gp-rp-cell[data-break="line"]{padding-top:0}
+.gp-rp-body .gp-rp-row>.gp-rp-cell[data-break="paragraph"]{padding-top:1.85em}
+.gp-rp-body .gp-rp-row:last-child>.gp-rp-cell[data-break]{padding-bottom:28px}

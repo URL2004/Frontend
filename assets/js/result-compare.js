@@ -11,7 +11,23 @@
   // 한 문단을 결과가 최대 4개로 나누거나(1:k) 여러 문단을 합친 경우(k:1)까지 짝짓는다.
   var MOVES = [[1, 1], [1, 2], [1, 3], [1, 4], [2, 1], [3, 1], [4, 1], [1, 0], [0, 1]];
 
-  function lines(s) { return String(s || '').replace(/\r/g, '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean); }
+  function lines(s) {
+    var text = String(s || '').replace(/\r\n?/g, '\n'), list = [], spans = [], gaps = [], end = 0;
+    var pattern = /[^\n]+/g, match;
+    while ((match = pattern.exec(text))) {
+      if (!match[0].trim()) continue;
+      list.push(match[0]);
+      spans.push([match.index, match.index + match[0].length]);
+      gaps.push(text.slice(end, match.index));
+      end = match.index + match[0].length;
+    }
+    list.source = text; list.spans = spans; list.gaps = gaps;
+    return list;
+  }
+  function joinedLines(list, start, end) {
+    return start < end ? list.source.slice(list.spans[start][0], list.spans[end - 1][1]) : '';
+  }
+  function boundary(gap) { return /\n[ \t]*\n/.test(gap || '') ? 'paragraph' : /\n/.test(gap || '') ? 'line' : 'start'; }
   function grams(s) { var t = s.replace(/\s+/g, ''), set = new Set(); for (var i = 0; i < t.length - 1; i++) set.add(t.slice(i, i + 2)); return set; }
   function sim(A, B) {
     if (!A.size || !B.size) return 0;
@@ -61,10 +77,12 @@
     var out = [], x = n, y = m;
     while (x > 0 || y > 0) {
       var mv = P[x][y];
-      if (!mv) { out.push([A.slice(0, x).join('\n\n'), B.slice(0, y).join('\n\n')]); break; }
+      if (!mv) { out.push([joinedLines(A, 0, x), joinedLines(B, 0, y), A.gaps[0] || '', B.gaps[0] || '']); break; }
       var d = MOVES[mv - 1];
-      // 한 칸에 묶인 여러 문단은 빈 줄로 이어 실제 문단 나눔이 보이게 한다.
-      out.push([A.slice(x - d[0], x).join('\n\n'), B.slice(y - d[1], y).join('\n\n')]);
+      // Alignment groups own their original separators. Never manufacture a
+      // paragraph break from an ordinary line wrap or erase an existing one.
+      out.push([joinedLines(A, x - d[0], x), joinedLines(B, y - d[1], y),
+        d[0] ? A.gaps[x - d[0]] : '', d[1] ? B.gaps[y - d[1]] : '']);
       x -= d[0]; y -= d[1];
     }
     return out.reverse();
@@ -96,11 +114,13 @@
 
   function build(before, after) {
     if (!before.trim()) {
-      return finish({ noOrig: true, before: '', after: after, rows: lines(after).map(function (l) { return { h: isHeading(l), b: [], a: [[l, 0]], text: l }; }) });
+      var afterLines = lines(after);
+      return finish({ noOrig: true, before: '', after: after, rows: afterLines.map(function (l, i) { return { h: isHeading(l), b: [], a: [[l, 0]], text: l, beforeGap: '', afterGap: afterLines.gaps[i] }; }) });
     }
     var rows = align(lines(before), lines(after)).map(function (pair) {
       var a = pair[0], b = pair[1], d = diff(a, b);
-      return { h: isHeading(a || b) && !/\n/.test(a + b), same: a.replace(/\s+/g, ' ') === b.replace(/\s+/g, ' '), b: d.b, a: d.a, text: b };
+      return { h: isHeading(a || b) && !/\n/.test(a + b), same: a.replace(/\s+/g, ' ') === b.replace(/\s+/g, ' ') && pair[2] === pair[3],
+        b: d.b, a: d.a, text: b, beforeGap: pair[2], afterGap: pair[3] };
     });
     return finish({ noOrig: false, before: before, after: after, rows: rows });
   }
@@ -274,8 +294,10 @@
     M.rows.forEach(function (r, i) {
       var row = el('div', 'gp-rp-row' + (r.h ? ' is-h' : '') + (r.same ? ' is-same' : ''));
       var cb = el('div', 'gp-rp-cell gp-rp-cell--b');
+      cb.setAttribute('data-break', boundary(r.beforeGap));
       cb.appendChild(para(r.b, hl));
       var ca = el('div', 'gp-rp-cell gp-rp-cell--a');
+      ca.setAttribute('data-break', boundary(r.afterGap));
       ca.appendChild(para(r.a, hl));
       if (i === refineAt) {
         slot = el('div', 'gp-rp-refine-slot');
