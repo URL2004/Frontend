@@ -80,7 +80,7 @@
 
   var appAssetsPromise = null;
   function preloadAppScripts() {
-    var scripts = ['head-tracking', 'vendor-init', 'api', 'session-security', 'ui-feedback',
+    var scripts = ['head-tracking', 'login-continuity', 'vendor-init', 'api', 'session-security', 'ui-feedback',
       'modal-manager', 'humanize-pricing', 'conversion-flow', 'refund-accounting', 'detect-interpretation', 'detect-presentation',
       'app-main', 'input-quality', 'main-designs', 'evasion-flow', 'app-module', 'payment-callbacks'];
     scripts.forEach(function (name) {
@@ -111,6 +111,7 @@
       // 가입·결제 콜백보다 전환 추적을 먼저 준비한다. 외부 SDK는 각 추적기가
       // 비동기로 불러오므로 앱 부팅을 막지 않는다.
       await loadScript('/assets/js/head-tracking.js');
+      await loadScript('/assets/js/login-continuity.js');
       await loadScript('/assets/js/vendor-init.js');
       await loadScript('/assets/js/api.js');
       await loadScript('/assets/js/auth-diagnostics.js');
@@ -169,6 +170,13 @@
         var neededAssets = typeof window[handlerName] !== 'function';
         if (neededAssets) await loadAppAssets();
         if (typeof window[handlerName] !== 'function') throw new Error('로그인 기능을 불러오지 못했어요.');
+        if (window.gpLoginContinuity?.[provider === 'google' ? 'googleExternal' : 'kakaoExternal']) {
+          buttons.forEach(function (button) {
+            if (button) { button.disabled = false; button.removeAttribute('aria-busy'); }
+          });
+          if (status) status.hidden = true;
+          return await window.gpLoginContinuity.openExternal();
+        }
         var waitedForKakao = provider === 'kakao' && !window.Kakao?.Auth && typeof window.gpPrepareKakaoLogin === 'function';
         if (waitedForKakao) await window.gpPrepareKakaoLogin();
         // A network wait can consume the click's popup permission. Let the next
@@ -214,6 +222,7 @@
     options = options || {};
     window.GP_REQUESTED_APP_SCREEN = options.screen === 'login' ? 'login' : 'app';
     await Promise.all([window.GPPageLoader.loadApp(options), loadAppAssets()]);
+    window.gpLoginContinuity?.apply();
     if (options.screen === 'login' && !window.CU && typeof window.showScreen === 'function') window.showScreen('login');
     else if (typeof window.showScreen === 'function') window.showScreen('app');
     if (options.tab && typeof window.switchTab === 'function') window.switchTab(options.tab);
@@ -247,6 +256,7 @@
       return;
     }
     await loadAppAssets();
+    window.gpLoginContinuity?.apply();
     document.documentElement.classList.add('design-ready');
   }
 

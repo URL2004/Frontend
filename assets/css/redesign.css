@@ -1791,6 +1791,9 @@ body[data-main-design="lavender"] #loginScreen :is(.btn-google,.btn-kakao){
 body[data-main-design="lavender"] #loginScreen .btn-google{
  margin-bottom:10px;
 }
+body[data-main-design="lavender"] #loginScreen .social-login-actions :is(.btn-google,.btn-kakao){
+ margin:0;
+}
 body[data-main-design="lavender"] #loginScreen .lfeatures{
  display:flex;
  flex-wrap:wrap;
