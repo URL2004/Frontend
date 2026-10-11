@@ -42,6 +42,18 @@ test('ready Google handler runs immediately on the original click', async () => 
   assert.equal(f.calls(), 1);
   await pending;
 });
+test('external-browser guidance releases the request so a subsequent provider click works', async () => {
+  const f = bootFixture({ loaded: true, active: true });
+  let opened = 0;
+  f.window.gpLoginContinuity = { googleExternal: true, openExternal() { opened++; } };
+  await f.window.gpRequestSocialLogin('google');
+  assert.equal(opened, 1);
+  assert.equal(f.calls(), 0);
+  assert.equal(f.buttons[0].disabled, false);
+  f.window.kakaoLogin = async () => { opened++; };
+  await f.window.gpRequestSocialLogin('kakao');
+  assert.equal(opened, 2);
+});
 test('direct app routes provide home navigation without landing.js', () => {
   const f = bootFixture({ loaded: true });
   const calls = [];

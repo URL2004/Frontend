@@ -8,6 +8,9 @@
  var naverPendingConversions = [];
  var NAVER_PENDING_LIMIT = 50;
  var lastPageViewKey = '';
+ var attributionMemory = {};
+ var HANDOFF_KEY = 'gp_attribution';
+ var HANDOFF_TTL = 10 * 60 * 1000;
 
  function internalTraffic() {
   return /^\/admin(?:[\/-]|$)/.test(window.location.pathname || '')
@@ -268,17 +271,36 @@
  }
 
  function readJson(key) {
+  var acquisition = key === STORAGE_KEYS.first || key === STORAGE_KEYS.last;
+  var raw;
+  try { raw = localStorage.getItem(key); } catch (_) {}
+  if (acquisition) {
+   var backup;
+   try { backup = sessionStorage.getItem(key); } catch (_) {}
+   var values = [raw, backup].map(function (item) {
+    try { return JSON.parse(item || 'null'); } catch (_) { return null; }
+   }).concat(attributionMemory[key] || []).filter(function (item) {
+    var age = item ? Date.now() - Date.parse(item.captured_at || '') : NaN;
+    return Number.isFinite(age) && age >= 0 && age < (key === STORAGE_KEYS.first ? 90 : 30) * 86400000;
+   });
+   values.sort(function (a, b) {
+    var delta = Date.parse(a.captured_at) - Date.parse(b.captured_at);
+    return key === STORAGE_KEYS.first ? delta : -delta;
+   });
+   return values[0] || null;
+  }
   try {
-   var raw = localStorage.getItem(key);
-   if (!raw) return null;
-   var parsed = JSON.parse(raw);
+   var parsed = JSON.parse(raw || 'null');
    return parsed && typeof parsed === 'object' ? parsed : null;
   } catch (_) { return null; }
  }
 
  function writeJson(key, value) {
+  var acquisition = key === STORAGE_KEYS.first || key === STORAGE_KEYS.last;
+  if (acquisition) attributionMemory[key] = value;
   try { localStorage.setItem(key, JSON.stringify(value)); }
-  catch (_) { /* 스토리지 차단 시 분석 기능만 건너뜀 */ }
+  catch (_) { /* sessionStorage와 페이지 메모리로 가입까지 이어 간다. */ }
+  if (acquisition) { try { sessionStorage.setItem(key, JSON.stringify(value)); } catch (_) {} }
  }
 
  function externalReferrerHost() {
@@ -358,7 +380,7 @@
   };
  }
 
- function captureAttribution() {
+ function captureAttribution(continuedVisit) {
   var current = currentTouch();
   var first = freshTouch(STORAGE_KEYS.first, 90);
   var last = freshTouch(STORAGE_KEYS.last, 30);
@@ -367,7 +389,7 @@
    writeJson(STORAGE_KEYS.first, first);
   }
   // 내부 이동이나 결제 콜백의 direct 방문이 마지막 유료 유입을 덮지 않게 한다.
-  if (!last || current.qualified) {
+  if (!last || (current.qualified && !continuedVisit)) {
    last = current.touch;
    writeJson(STORAGE_KEYS.last, last);
   }
@@ -380,6 +402,80 @@
   var touch = readJson(key);
   var age = touch ? Date.now() - Date.parse(touch.captured_at || '') : NaN;
   return Number.isFinite(age) && age >= 0 && age < days * 86400000 ? touch : null;
+ }
+
+ // Browser handoff is acquisition metadata only, never an authentication token.
+ // Keep original capture times and allowlisted fields; reject expired/unbounded data.
+ function handoffTouch(value, days) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || value.version !== 1) return null;
+  var age = Date.now() - Date.parse(value.captured_at || '');
+  if (!Number.isFinite(age) || age < 0 || age >= days * 86400000) return null;
+  var limits = { captured_at: 40, source: 100, medium: 100, campaign: 250, content: 250,
+   term: 250, napm: 500, gclid: 250, fbclid: 250, use_case: 40, landing_path: 250,
+   landing_url: 500, referrer_host: 250 };
+  var result = { version: 1 };
+  Object.keys(limits).forEach(function (key) {
+   result[key] = typeof value[key] === 'string' ? clean(value[key], limits[key]).replace(/[\u0000-\u001f\u007f]/g, '') : '';
+  });
+  if (!result.source) return null;
+  // URLs are recorded without queries so OAuth/payment data cannot enter a handoff.
+  try {
+   var landing = new URL(result.landing_url);
+   if (landing.protocol !== 'https:' || !/^(www\.)?gpkorea\.ai\.kr$/.test(landing.hostname)) return null;
+   result.landing_url = landing.origin + landing.pathname;
+   result.landing_path = clean(landing.pathname, 250);
+  } catch (_) { return null; }
+  return result;
+ }
+
+ function consumeHandoff() {
+  try {
+   var url = new URL(window.location.href);
+   var hash = new URLSearchParams(url.hash.slice(1));
+   var raw = hash.get(HANDOFF_KEY) || url.searchParams.get(HANDOFF_KEY);
+   if (!raw) return false;
+   hash.delete(HANDOFF_KEY);
+   url.searchParams.delete(HANDOFF_KEY);
+   url.hash = hash.toString();
+   if (window.history && window.history.replaceState) window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+   if (raw.length > 10000) return false;
+   var data = JSON.parse(raw);
+   var age = Date.now() - data.issued_at;
+   if (data.version !== 1 || !Number.isFinite(age) || age < 0 || age > HANDOFF_TTL) return false;
+   var first = handoffTouch(data.first_touch, 90);
+   var last = handoffTouch(data.last_touch, 30);
+   if (!first || !last) return false;
+   // A genuinely different tagged link wins over stale continuation metadata.
+   if (Object.keys(PARAMS).some(function (key) {
+    var present = url.searchParams.get(PARAMS[key]);
+    return present && present !== last[key];
+   })) return false;
+   var savedFirst = freshTouch(STORAGE_KEYS.first, 90);
+   var savedLast = freshTouch(STORAGE_KEYS.last, 30);
+   if (!savedFirst || Date.parse(first.captured_at) < Date.parse(savedFirst.captured_at)) writeJson(STORAGE_KEYS.first, first);
+   if (!savedLast || savedLast.source === 'direct' || Date.parse(last.captured_at) > Date.parse(savedLast.captured_at)) writeJson(STORAGE_KEYS.last, last);
+   return true;
+  } catch (_) { return false; }
+ }
+
+ function continuationUrl() {
+  var source = new URL(window.location.href);
+  var url = new URL(source.pathname, /^(www\.)?gpkorea\.ai\.kr$/.test(source.hostname) ? 'https://gpkorea.ai.kr' : source.origin);
+  // Copy only public navigation and acquisition parameters, never callback secrets.
+  ['mode', 'lp', 'ref'].forEach(function (key) {
+   var value = clean(source.searchParams.get(key), 100);
+   if (value) url.searchParams.set(key, value);
+  });
+  var snapshot = attributionSnapshot();
+  var first = handoffTouch(snapshot.first_touch, 90);
+  var last = handoffTouch(snapshot.last_touch, 30);
+  if (last) Object.keys(PARAMS).forEach(function (key) {
+   if (last[key]) url.searchParams.set(PARAMS[key], last[key]);
+  });
+  if (first && last) url.hash = new URLSearchParams({ gp_attribution: JSON.stringify({
+   version: 1, issued_at: Date.now(), first_touch: first, last_touch: last
+  }) }).toString();
+  return url.toString();
  }
 
  function attributionSnapshot() {
@@ -456,13 +552,14 @@
   };
  }
 
- captureAttribution();
+ captureAttribution(consumeHandoff());
  window.gpAttribution = {
   capture: captureAttribution,
   snapshot: attributionSnapshot,
   getFirstTouch: function () { return attributionSnapshot().first_touch; },
   getLastTouch: function () { return attributionSnapshot().last_touch; },
-  getContext: attributionContext
+  getContext: attributionContext,
+  continuationUrl: continuationUrl
  };
  window.gpMetaContext = metaContext;
 

@@ -4,6 +4,12 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.gpkorea.ai.kr" }],
+      "destination": "https://gpkorea.ai.kr/:path*",
+      "permanent": true
+    },
+    {
       "source": "/community",
       "destination": "/?mode=humanize&community=closed",
       "permanent": true

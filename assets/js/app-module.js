@@ -373,7 +373,7 @@ async function loadUser(u) {
  else if (subValid) window.UP = 'pro';
  if (!d.refCode) await updateDoc(uRef, { refCode: u.uid.substring(0,8) });
  if (createdNow) {
-  const trafficSource = localStorage.getItem('traffic_source') || 'direct';
+  const trafficSource = window.gpAttribution?.getLastTouch()?.source || 'direct';
   const signMethod = (u.providerData[0]?.providerId === 'google.com') ? 'google' : (u.email?.includes('@kakao.com')) ? 'kakao' : 'email';
   if (window.gpTrack) window.gpTrack('sign_up', { method: signMethod, traffic_source: trafficSource, meta_event_id: signupMetaEventId });
   gpNotifyEvent('signup', { via: signMethod, metaEventId: signupMetaEventId });
@@ -383,7 +383,8 @@ async function loadUser(u) {
  const isPro = window.UP === 'pro' || window.UP === 'unlimited';
  if (lock) lock.style.display = isPro ? 'none' : 'inline';
  // 추천 코드가 있으면 백엔드에 요청 (신규/기존 유저 모두)
- const pendingRef = localStorage.getItem('pendingRef');
+ let pendingRef = null;
+ try { pendingRef = localStorage.getItem('pendingRef'); } catch (_) {}
  const myRefCode = d.refCode || u.uid.substring(0,8);
  if (pendingRef && pendingRef !== myRefCode) {
   try {
@@ -1192,6 +1193,7 @@ window.handleKakaoCallback = async () =>{
 };
 
 window.kakaoLogin = async () =>{
+ if (window.gpLoginContinuity?.kakaoExternal) return window.gpLoginContinuity.openExternal();
  const attempt = window.gpAuthDiagnostics?.start('kakao', 'popup');
  if (/KAKAOTALK/i.test(navigator.userAgent)) {
   const help = document.querySelector('.kakao-warn');
@@ -1238,6 +1240,7 @@ if (isKakaoOAuthCallback(new URLSearchParams(location.search))) {
 }
 
 window.googleLogin = async () =>{
+ if (window.gpLoginContinuity?.googleExternal) return window.gpLoginContinuity.openExternal();
  const attempt = window.gpAuthDiagnostics?.start('google', 'popup');
  if (/KAKAOTALK|Instagram|FBAN|FBAV/i.test(navigator.userAgent)) {
   const help = document.querySelector('.kakao-warn');
@@ -1274,14 +1277,7 @@ window.googleLogin = async () =>{
  }
 };
 window.openExternal = () =>{
- const safe = new URL(location.href);
- ['code', 'state', 'error', 'error_description', 'paymentKey', 'orderId', 'token', 'access_token'].forEach(key => safe.searchParams.delete(key));
- safe.hash = '';
- const url = safe.toString();
- const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (/Macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
- if (ios && /KAKAOTALK/i.test(navigator.userAgent)) location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(url);
- else if (!ios && /Android/i.test(navigator.userAgent)) location.href='intent://'+url.replace(/https?:\/\//,'')+'#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='+encodeURIComponent(url)+';end';
- else if (window.gpToast) window.gpToast('앱 메뉴에서 Safari 또는 기본 브라우저로 열기를 선택해 주세요.');
+ return window.gpLoginContinuity.openExternal();
 };
 window.gpCopyLoginDraft = async () => {
  const input = document.getElementById('lavInput');
