@@ -10328,6 +10328,21 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
 }
 #historyContent .gp-history-text-block.featured .gp-history-text{border-color:#dddff2;background:#f6f6fe;color:#262c40;font-size:14px;}
 #historyContent .gp-history-no-detail{margin:22px 0 0;color:#6d7589;font-size:13px;}
+/* 감지 기록 — 저장된 응답으로 결과 화면을 다시 여는 자리. 원문보다 위에 둬서 긴 글에서도 바로 보인다. */
+#historyContent .gp-history-reopen{
+ display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 22px;padding:14px 16px;
+ border:1px solid #dddff2;border-radius:11px;background:#f6f6fe;
+}
+#historyContent .gp-history-reopen[hidden]{display:none!important;}
+#historyContent .gp-history-reopen p{margin:0;min-width:0;}
+#historyContent .gp-history-reopen strong{display:block;color:#262c40;font-size:13.5px;font-weight:800;line-height:1.45;}
+#historyContent .gp-history-reopen span{display:block;margin-top:3px;color:#5d6478;font-size:12px;font-weight:500;line-height:1.55;}
+#historyContent .gp-history-reopen button{
+ flex:0 0 auto;min-height:42px;padding:0 16px;border:1px solid #5557ce;border-radius:10px;background:#fff;color:#4648bd;
+ font:800 12.5px/1 var(--font,Pretendard,sans-serif);cursor:pointer;transition:border-color .15s,background .15s;
+}
+#historyContent .gp-history-reopen button:hover{background:#eeeefc;}
+#historyContent .gp-history-reopen button:focus-visible{outline:2px solid #5557ce;outline-offset:2px;}
 #historyContent .gp-history-actions{
  position:sticky;bottom:0;z-index:3;display:flex;gap:8px;padding:14px 20px;border-top:1px solid #e7e9f0;
  background:rgba(255,255,255,.96);backdrop-filter:blur(12px);
@@ -10401,6 +10416,8 @@ body[data-main-design="lavender"] .gp-dialog-x:focus-visible{outline-color:#5658
  #historyContent .gp-history-detail-meta > span{padding:10px 11px;}
  #historyContent .gp-history-detail-body{padding:20px 17px 28px;}
  #historyContent .gp-history-text{padding:14px 13px;font-size:13px;line-height:1.7;}
+ #historyContent .gp-history-reopen{flex-direction:column;align-items:stretch;gap:11px;margin-bottom:20px;padding:13px;}
+ #historyContent .gp-history-reopen button{min-height:44px;}
  #historyContent .gp-history-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:11px 12px calc(11px + env(safe-area-inset-bottom));}
  #historyContent .gp-history-actions button{min-height:44px;padding:0 10px;}
  #historyContent .gp-history-actions button.primary{grid-column:1/-1;grid-row:1;margin-left:0;}
@@ -12708,6 +12725,11 @@ html.gp-rep-modal-open{overflow:hidden;}
  margin:6px auto 0;max-width:72ch;text-align:center;font-size:var(--rep-fs-1);line-height:1.65;color:var(--rep-muted);word-break:keep-all;
 }
 #mainContent[data-main-design="lavender"] .gp-rep-note{margin:0 auto;text-align:center;font-size:var(--rep-fs-1);color:var(--rep-muted);}
+/* 작업 기록에서 다시 연 보고서 — 새로 감지한 결과가 아님을 맨 위에서 알린다 */
+#mainContent[data-main-design="lavender"] .gp-rep-saved{
+ align-self:center;max-width:100%;margin:0;padding:7px 14px;border-radius:999px;background:#e9e6fb;
+ color:var(--rep-brand-strong);font-size:var(--rep-fs-2);font-weight:750;line-height:1.5;text-align:center;word-break:keep-all;
+}
 
 /* ── 반응형 ─────────────────────────────────────────────────────────────── */
 @media (max-width:1080px){

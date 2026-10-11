@@ -219,16 +219,25 @@
 
   // Read-only history adapter. Never re-score or re-run a saved analysis.
   // Only a matching response snapshot may supply missing presentation fields.
-  function historySource(record) {
-    var row = record || {}, cache = row.detectResponseCache;
-    var snapshot = cache && typeof cache === 'object' && !Array.isArray(cache)
+  function historySnapshot(row) {
+    var cache = row.detectResponseCache;
+    return cache && typeof cache === 'object' && !Array.isArray(cache)
       && probability(row.probability) !== null && probability(cache.probability) === probability(row.probability)
       && (!row.detectorVersion || cache.detectorVersion === row.detectorVersion)
-      && (!cache.inputText || cache.inputText === row.inputText) ? cache : {};
+      && (!cache.inputText || cache.inputText === row.inputText) ? cache : null;
+  }
+
+  function historySource(record) {
+    var row = record || {}, snapshot = historySnapshot(row) || {};
     var result = Object.assign({}, row);
     ['reportView', 'measuredEvidence', 'sentenceMap', 'paragraphs', 'signalEvidence'].forEach(function (key) {
       if (result[key] == null && snapshot[key] != null) result[key] = snapshot[key];
     });
+    // Records saved before 2026-09-01 carry a score but no source field. A saved
+    // score with no recorded source is not a failed analysis; only an explicit
+    // non-model source keeps the "unavailable" reading. Display only, never stored.
+    if (row.probSource == null && !((result.reportView || {}).styleSignal || {}).source
+      && probability(row.probability) !== null) result.probSource = 'llm';
     // History locations use the original UTF-16 coordinates, not projected UI IDs.
     var evidence = Array.isArray(row.detectCauseEvidence) ? row.detectCauseEvidence
       : Array.isArray(result.signalEvidence) ? result.signalEvidence : ((result.reportView || {}).causeAnalysis || {}).items || [];
@@ -249,6 +258,24 @@
       return Object.assign({}, item, { locations: locations, locationStatus: locations.length ? 'source_range_verified' : 'unlocated' });
     });
     return result;
+  }
+
+  // Full result-screen restore. Only the response the server sent for this exact
+  // record qualifies; a record without a matching snapshot keeps the text summary.
+  function historyRestorable(record) {
+    var row = record || {}, snapshot = row.type === 'detect' ? historySnapshot(row) : null;
+    return snapshot && snapshot.ok === true && snapshot.reportView && typeof snapshot.reportView === 'object'
+      && !Array.isArray(snapshot.reportView) && typeof row.inputText === 'string' && row.inputText.trim() ? snapshot : null;
+  }
+
+  function historyReport(record) {
+    var snapshot = historyRestorable(record);
+    if (!snapshot) return null;
+    var report;
+    try { report = JSON.parse(JSON.stringify(snapshot)); } catch (e) { return null; }
+    // Billing, balance and first-use receipts belong to the original request only.
+    ['charged', 'remainingCredits', 'activation', 'idempotentReplay'].forEach(function (key) { delete report[key]; });
+    return report;
   }
 
   function historySections(record) {
@@ -277,9 +304,22 @@
     var labels = global.GPDetectInterpretation && global.GPDetectInterpretation.PATTERN_LABELS || {};
     var scopes = { isolated: '일부 문장', recurring: '여러 문장', pervasive: '글 전반' };
     var strengths = { weak: '약함', moderate: '뚜렷함', strong: '강함' };
-    var causes = source.signalEvidence.filter(function (item) { return item.locations.length && labels[item.category]; }).map(function (item) {
-      var label = labels[item.category];
-      var title = (typeof label === 'string' ? label : label.label) || item.categoryLabel;
+    // Same names and order as the result screen's list of the same title, so a
+    // saved record and its restored screen do not call one feature two things.
+    var screenItems = ((source.reportView || {}).causeAnalysis || {}).items, screenLabels = {};
+    (Array.isArray(screenItems) ? screenItems : []).forEach(function (item) {
+      if (item && typeof item.category === 'string' && typeof item.categoryLabel === 'string' && item.categoryLabel.trim()) screenLabels[item.category] = item.categoryLabel.trim();
+    });
+    var scopeRank = { pervasive: 3, recurring: 2, isolated: 1 }, strengthRank = { strong: 2, moderate: 1, weak: 0 };
+    var broad = function (item) { return item.scope === 'pervasive' || item.scope === 'recurring' ? 1 : 0; };
+    var causes = source.signalEvidence.map(function (item, index) { return { item: item, index: index }; }).filter(function (row) {
+      return row.item.locations.length && labels[row.item.category];
+    }).sort(function (a, b) {
+      return broad(b.item) - broad(a.item) || (strengthRank[b.item.strength] || 0) - (strengthRank[a.item.strength] || 0)
+        || (scopeRank[b.item.scope] || 0) - (scopeRank[a.item.scope] || 0) || a.index - b.index;
+    }).map(function (row) {
+      var item = row.item, label = labels[item.category];
+      var title = screenLabels[item.category] || (typeof label === 'string' ? label : label.label) || item.categoryLabel;
       return [title, [scopes[item.scope], strengths[item.strength]].filter(Boolean).join(' · '),
         item.locations.map(function (loc) { return '“' + source.inputText.slice(loc.start, loc.end) + '”'; }).join('\n')].filter(Boolean).join('\n');
     });
@@ -288,6 +328,8 @@
   }
 
   global.gpDetectHistorySource = historySource;
+  global.gpDetectHistoryCanRestore = function (record) { return !!historyRestorable(record); };
+  global.gpDetectHistoryReport = historyReport;
   global.gpDetectHistorySections = historySections;
   global.gpDetectHistoryComparisonText = historyComparisonText;
   global.gpDetectScoreCopy = scoreCopy;

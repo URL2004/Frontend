@@ -4072,6 +4072,16 @@ function historyRenderDetail() {
  const contentBlocks = isDetect
   ? `${originalBlock}${details || noDetail}`
   : `${details || noDetail}${originalBlock}`;
+ // 감지 당시 서버 응답이 기록에 함께 저장돼 있으면 결과 화면을 그대로 다시 연다(재감지·차감 없음).
+ // 원문보다 위에 둬서 긴 글·모바일에서도 바로 보인다. 보관본이 없는 옛 기록은 아래 요약만 보여 준다.
+ const canReopen = isDetect && typeof window.lavOpenSavedDetectReport === 'function'
+  && typeof window.gpDetectHistoryCanRestore === 'function' && window.gpDetectHistoryCanRestore(item);
+ const reopenBlock = canReopen
+  ? `<div class="gp-history-reopen">
+      <p><strong>감지했을 때 본 결과 화면을 그대로 다시 볼 수 있어요</strong><span>점수 게이지와 문장별 표시까지 그대로 열어요. 크레딧은 차감되지 않아요.</span></p>
+      <button type="button" onclick="historyOpenDetectReport()">결과 화면 다시 보기</button>
+     </div>`
+  : '';
  const actions = isDetect
   ? `<button type="button" class="primary" onclick="historyContinueHumanize()">휴머나이징으로 이어서</button>
      <button type="button" onclick="historyRunAgain('detect')">다시 감지</button>
@@ -4090,7 +4100,7 @@ function historyRenderDetail() {
    </div>
   </header>
   <div class="gp-history-detail-body">
-   ${contentBlocks}
+   ${reopenBlock}${contentBlocks}
   </div>
   <footer class="gp-history-actions" aria-label="이 기록으로 할 수 있는 작업">${actions}</footer>
  </article>`;
@@ -4307,6 +4317,24 @@ window.historyContinueHumanize = function () {
 window.historyRunAgain = function (mode) {
  const text = historyComposerText(mode);
  if (text && historyOpenComposer(mode, text) && window.gpTrack) window.gpTrack('history_reuse', { action: mode === 'detect' ? 'detect_again' : 'edit_output', source_type: mode });
+};
+// 저장된 감지 응답으로 결과 화면을 다시 연다. 서버를 부르지 않으므로 크레딧이 들지 않는다.
+window.historyOpenDetectReport = function () {
+ const item = historyState.items.find(entry => entry.id === historyState.selectedId);
+ const report = item && item.type === 'detect' && typeof window.gpDetectHistoryReport === 'function'
+  ? window.gpDetectHistoryReport(item) : null;
+ if (!report || typeof window.lavOpenSavedDetectReport !== 'function') {
+  if (window.gpToast) window.gpToast('이 기록은 결과 화면으로 다시 열 수 없어요. 아래 요약을 확인해 주세요.', { type: 'info' });
+  return;
+ }
+ const text = String(item.inputText || '');
+ if (!historyOpenComposer('detect', text)) return;
+ if (!window.lavOpenSavedDetectReport(report, { inputText: text, savedAtMs: item.createdAtMs })) {
+  if (window.gpToast) window.gpToast('결과 화면을 열지 못했어요. 작업 기록의 요약은 그대로 볼 수 있어요.', { type: 'error' });
+  window.openHistoryRecord(item.id);
+  return;
+ }
+ if (window.gpTrack) window.gpTrack('history_reuse', { action: 'reopen_report', source_type: 'detect' });
 };
 
 async function historyWriteClipboard(text) {

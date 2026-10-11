@@ -951,6 +951,40 @@
     return true;
   };
 
+  // 작업 기록의 감지 결과를 결과 화면으로 다시 연다. 서버가 그때 내보낸 응답을 그대로 그리므로
+  // 모델을 다시 부르지 않고 크레딧도 쓰지 않는다. 입력칸에는 그때의 원문이 들어가 휴머나이징으로 바로 이어진다.
+  function repSavedDateText(ms) {
+    if (!(Number(ms) > 0)) return '';
+    var date = new Date(Number(ms));
+    var options = { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+    if (date.getFullYear() !== new Date().getFullYear()) options.year = 'numeric';
+    return date.toLocaleString('ko-KR', options);
+  }
+  window.lavOpenSavedDetectReport = function (report, meta) {
+    meta = meta || {};
+    var input = $('lavInput');
+    if (detectPending || !report || typeof report !== 'object' || !$('lavFlow') || !input) return false;
+    if (isBlockingJobStatus(activeJobUi.status) || readJobRef()) return false;
+    if (typeof meta.inputText === 'string' && input.value !== meta.inputText) {
+      input.value = meta.inputText;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    reportRestore = { savedAtMs: Number(meta.savedAtMs) > 0 ? Number(meta.savedAtMs) : 0 };
+    try {
+      renderReport(report);
+    } catch (e) {
+      console.warn('[evasion] 저장된 감지 결과 표시 실패:', e && e.message);
+      return false;
+    } finally {
+      reportRestore = null;
+    }
+    cameFromReport = true;
+    show('report');
+    playReportIntro();
+    lavInitCollapse('lavRepParaList', 'lavRepParaToggle');
+    return true;
+  };
+
   // ── 교수님 레이더 인트로: 스코프 한 바퀴 스윕 → 학생 블립 점등 → 숫자 카운트업 ──
   //   중심에 교수님, 점수만큼 중심 가까이 잡힌 학생. 스윕이 지나가며 찾아내는 순간이 "판정"이다.
   var repProbTarget = null;
@@ -1427,6 +1461,7 @@
 
   var lastReport = null;   // 보고서 → 휴머나이저 핸드오프용(진단 배너 채움)
   var lastReportModel = null;
+  var reportRestore = null;   // 작업 기록에서 다시 여는 동안만 { savedAtMs } — 계측 이름과 차감 문구를 새 감지와 가른다
 
   function reportNumber(value) {
     if ((typeof value !== 'number' && typeof value !== 'string') || (typeof value === 'string' && !value.trim())) return null;
@@ -2841,6 +2876,13 @@
     lastReportModel = model;
     var score = model.score;
     repProbTarget = score;
+    var restore = reportRestore;
+    var savedNote = $('gpRepSaved');
+    if (savedNote) {
+      var savedWhen = restore ? repSavedDateText(restore.savedAtMs) : '';
+      savedNote.textContent = restore ? '작업 기록에서 다시 연 결과예요' + (savedWhen ? ' · ' + savedWhen + ' 감지' : '') : '';
+      savedNote.hidden = !restore;
+    }
 
     // ① 히어로 — 종합 한 문장과 유지될 내용
     if ($('gpRepHeroTitle')) $('gpRepHeroTitle').textContent = model.synthesis.headline || '';
@@ -3006,14 +3048,17 @@
     var detectCtx = repDetectContext(model);
     if (typeof window.gpSetDetectContext === 'function') window.gpSetDetectContext(detectCtx);
     if (window.gpTrack) {
-      window.gpTrack('detect_report_view', detectCtx);
+      // 작업 기록에서 다시 연 보고서는 새 감지의 노출 수에 섞이지 않게 이름을 가른다.
+      if (restore) window.gpTrack('detect_report_reopen', detectCtx);
+      else window.gpTrack('detect_report_view', detectCtx);
       window.gpTrack('detect_cta_exposed', Object.assign({}, detectCtx, {
         cta_surfaces: [
           $('gpRepVerdictBtn') && !$('gpRepVerdictBtn').hidden ? 'hero' : '',
           $('gpRepCtaBtn') && !$('gpRepCtaBtn').hidden ? 'band' : '',
           $('gpRepTipsCta') && !$('gpRepTipsCta').hidden ? 'tips' : '',
           model.conversionAccess !== false ? 'sticky' : ''
-        ].filter(Boolean).join(',')
+        ].filter(Boolean).join(','),
+        report_source: restore ? 'history' : 'detect'
       }));
     }
     if ($('gpRepLimit')) {
@@ -3024,9 +3069,11 @@
       $('gpRepLimit').textContent = limit;
     }
     if ($('gpRepRemain')) {
-      $('gpRepRemain').textContent = d.charged
-        ? '이번 감지에 ' + d.charged + '크레딧을 사용했어요. (100자당 1크레딧)'
-        : '';
+      $('gpRepRemain').textContent = restore
+        ? '지난 감지 결과를 다시 연 화면이에요. 크레딧은 차감되지 않았어요.'
+        : d.charged
+          ? '이번 감지에 ' + d.charged + '크레딧을 사용했어요. (100자당 1크레딧)'
+          : '';
       renderReportGoCost();
     }
 

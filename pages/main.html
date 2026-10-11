@@ -214,6 +214,8 @@
          <section class="lav-flow-card gp-rep" data-flow="report" aria-labelledby="gpRepHeading" tabindex="-1" hidden>
            <p class="sr-only" id="gpRepLive" aria-live="polite" aria-atomic="true"></p>
            <h2 class="sr-only" id="gpRepHeading" tabindex="-1">AI 감지 보고서</h2>
+           <!-- 작업 기록에서 다시 연 보고서일 때만 보인다(새 감지 결과와 구분) -->
+           <p class="gp-rep-saved" id="gpRepSaved" hidden></p>
 
            <!-- ① 히어로 카드: Before · 게이지 · After -->
            <section class="gp-rep-hero" aria-labelledby="gpRepHeroTitle">
