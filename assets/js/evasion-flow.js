@@ -3707,6 +3707,10 @@
     var size = st && st.queueSize ? st.queueSize : pos;
     var wait = lavQueueWaitText(st && st.queueEtaSec);
     if ($('lavStepSlot')) $('lavStepSlot').textContent = '대기 ' + pos + '번째' + (size > 1 ? ' / ' + size + '명' : '') + ' · 예상 ' + wait;
+    if (st && st.queueWaitSec >= 120 && $('lavStepSlot')) {
+      $('lavStepSlot').textContent = '대기 ' + pos + '번째 · ' + Math.floor(st.queueWaitSec / 60) + '분째 기다리고 있어요. 아직 변환을 시작하지 않았으며, 완료 전에는 차감되지 않아요. 원하면 작업을 취소할 수 있어요.';
+    }
+    if (st && st.queueWaitReason === 'connection_retry' && $('lavJobTitle')) $('lavJobTitle').textContent = '처리 연결을 다시 확인하고 있어요';
   }
 
   // 보고서에서 넘어온 글이면 원글의 감지 점수·근거 수를 작업에 같이 보낸다.

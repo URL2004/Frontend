@@ -686,6 +686,7 @@
     if ($('gpToastRoot')) $('gpToastRoot').textContent = '';
     if ($('gpNotificationStatus')) { $('gpNotificationStatus').textContent = ''; $('gpNotificationStatus').hidden = true; }
     remoteItems = []; notificationSyncing = false;
+    window.gpNotificationRetryAt = null;
     clearTimeout(notificationRetryTimer);
     renderNotifications();
     if (uid) window.gpFlushNotifications();
@@ -702,11 +703,19 @@
   window.gpFlushNotifications = async function () {
     var owner = notificationOwner;
     if (!owner || notificationSyncing || typeof window.persistUserNotification !== 'function') return;
+    var retry = window.gpNotificationRetryAt;
+    if (retry && retry.owner === owner && retry.at > now()) {
+      window.gpNotificationConnection('알림은 기기에 보관했어요. 서버 저장 제한이 풀리면 자동으로 다시 저장해요.');
+      clearTimeout(notificationRetryTimer); notificationRetryTimer = setTimeout(window.gpFlushNotifications, retry.at - now());
+      return;
+    }
     notificationSyncing = true;
     var failed = false;
     try {
       var items = getLocalItems().filter(function (n) { return n.syncState === 'pending'; });
       for (var i = 0; i < items.length; i++) {
+        // Pace a backlog; a reconnect must not flood the notification endpoint.
+        if (i > 0) await new Promise(function (resolve) { setTimeout(resolve, 1200); });
         if (owner !== notificationOwner) return;
         try {
           var saved = await window.persistUserNotification(items[i], owner);
@@ -715,13 +724,15 @@
           var local = getLocalItems();
           local.forEach(function (n) { if (n.clientId === items[i].clientId) n.syncState = 'synced'; });
           setLocalItems(local);
-        } catch (_) { failed = true; break; }
+        } catch (_) { if (owner !== notificationOwner) return; failed = true; break; }
       }
       if (failed) {
         window.gpNotificationConnection(notificationStorageUnavailable
           ? '기기와 서버에 알림을 저장하지 못했어요. 재시도 중이니 이 화면을 유지해 주세요.'
           : '알림을 기기에 보관했어요. 서버 저장을 다시 시도하고 있어요.');
-        clearTimeout(notificationRetryTimer); notificationRetryTimer = setTimeout(window.gpFlushNotifications, 30000);
+        var deferred = window.gpNotificationRetryAt;
+        var retryMs = deferred && deferred.owner === owner ? Math.max(30000, deferred.at - now()) : 30000;
+        clearTimeout(notificationRetryTimer); notificationRetryTimer = setTimeout(window.gpFlushNotifications, retryMs);
       } else if (owner === notificationOwner) window.gpNotificationConnection('');
     } finally { if (owner === notificationOwner) notificationSyncing = false; }
   };
@@ -742,6 +753,7 @@
     }
     renderNotifications();
     if (opts.toast !== false) toast(n.message || n.title, { type: n.type === 'job_failed' ? 'error' : n.type === 'job_done' ? 'success' : inferType(n.message), title: n.title });
+    if (inserted && opts.toast !== false && window.gpReportWorkflowIssue) window.gpReportWorkflowIssue({feature:'notification',code:'NOTIFICATION_DISPLAYED',stage:'render'});
     if (opts.persist !== false) window.gpFlushNotifications();
     return n;
   };
@@ -780,6 +792,7 @@
     var panel = $('gpNotificationPanel');
     if (!panel) return;
     panel.hidden = forceOpen ? false : !panel.hidden;
+    if (!panel.hidden && window.gpReportWorkflowIssue) window.gpReportWorkflowIssue({feature:'notification',code:'NOTIFICATION_OPENED',stage:'render'});
     setBellExpanded(!panel.hidden);
     if (!panel.hidden && floatQueue.length) {
       // 알림함에서 같은 메시지를 보게 되므로 플로팅은 접는다.

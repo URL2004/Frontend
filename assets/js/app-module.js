@@ -505,7 +505,7 @@ async function postAuthedJson(path, body, user) {
   const error = new Error(String(data?.error || '요청을 처리하지 못했어요.'));
   error.status = response.status;
   error.code = String(data?.code || 'REQUEST_FAILED');
-  error.retryAfter = response.headers.get('Retry-After') || '';
+  error.retryAfter = response.headers.get('Retry-After') || data?.retryAfterSec || '';
   throw error;
  }
  return data;
@@ -3520,10 +3520,13 @@ window.persistUserNotification = async (n, ownerUid) =>{
    action: n.action && n.action.tab ? { tab: String(n.action.tab) } : null
   });
   if (!CU || CU.uid !== owner) return false;
+  if (window.gpReportWorkflowIssue) window.gpReportWorkflowIssue({feature:'notification',code:'NOTIFICATION_SAVED',stage:'persist'});
   if (typeof window.updateNotifBadge === 'function') await window.updateNotifBadge(owner);
   return true;
  } catch(e) {
   if (window.gpReportWorkflowIssue) window.gpReportWorkflowIssue({feature:'notification',code:'NOTIFICATION_PERSIST_FAILED',stage:'persist'});
+  if (CU && CU.uid === owner && e.status === 429) window.gpNotificationRetryAt = { owner: owner,
+    at: Date.now() + Math.max(30000, Math.min(86400000, (Number(e.retryAfter) || 60) * 1000)) };
   return false;
  }
 };
@@ -6279,9 +6282,22 @@ function adminTabLoaders(tab) {
   coupons: [window.loadCouponBatches],
   settings: [window.loadAdminGptRuntimeConfig, window.loadAdminDetectCalibration],
   labs: [window.loadAdminWritingPolicies, window.loadAdminWritingMetrics],
-  patches: [window.adminFilterPatches]
+  patches: [window.adminFilterPatches, window.loadAdminEngineRelease]
  })[tab] || [];
 }
+
+window.loadAdminEngineRelease = async function () {
+ const box = document.querySelector('.gp-admin-patch-current');
+ if (!box || !window.isAdmin()) return;
+ try {
+  const data = await postAuthedJson('/admin/engine-release', {});
+  if (typeof data.humanizeVersion !== 'string' || typeof data.detectVersion !== 'string') return;
+  box.querySelector('strong').textContent = '휴머나이징 ' + data.humanizeVersion.replace('gpt-prod-', '') + ' · AI 감지 ' + data.detectVersion.replace('gpt-detect-', '');
+  box.querySelector('code').textContent = '운영 서버 확인 · Backend ' + (data.commit ? data.commit.slice(0, 7) : '버전 확인됨');
+ } catch (_) {
+  box.querySelector('code').textContent = '기록된 배포 버전 · 운영 서버 연결 확인 필요';
+ }
+};
 
 window.adminLoadTab = async function(tab, options) {
  const force = !!(options && options.force);

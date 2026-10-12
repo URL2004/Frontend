@@ -111,6 +111,7 @@ window.APP_RUNTIME_CONFIG = {
   MAINTENANCE_MODE: ${literal(process.env.VITE_MAINTENANCE_MODE || '')},
   MAINTENANCE_MESSAGE: ${literal(process.env.VITE_MAINTENANCE_MESSAGE || '')}${firebaseLine}
 };
+window.GP_BUILD_VERSION = ${literal(String(process.env.VITE_BUILD_VERSION || process.env.VERCEL_GIT_COMMIT_SHA || 'web-20261012-engine-audit').replace(/[^a-zA-Z0-9._-]/g, '').slice(0, 80))};
 `;
   await fs.writeFile(path.join(dist, 'runtime-config.js'), body, 'utf8');
 }

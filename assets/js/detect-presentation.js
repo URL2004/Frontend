@@ -82,6 +82,7 @@
       probability: score,
       probSource: modelSource,
       confidence: source.confidence || source.detectConfidence || null,
+      finalCandidateConsistency: (source.detectDiagnostics || {}).finalCandidateConsistency || null,
       textLength: input !== null ? input.length : source.inputChars == null ? null : source.inputChars,
       sentenceTotal: sentences == null ? null : sentences,
       signalEvidence: Array.isArray(source.signalEvidence) ? source.signalEvidence : Array.isArray(source.detectCauseEvidence) ? source.detectCauseEvidence : ((report.causeAnalysis || {}).items || []),
@@ -108,7 +109,10 @@
       label: info.label || band.label,
       headline: observed ? (band.level === 'low' ? '전체 신호는 낮아요. 확인할 부분: ' : '') + pattern.label + (band.level === 'low' ? '' : '부터 살펴보세요') : band.summary,
       description: '글에 나타난 AI식 표현과 전개를 종합한 점수예요.',
-      evidenceDescription: observed ? pattern.locationCount + '개 문장에서 확인한 특징: ' + pattern.description + '.' : '',
+      evidenceDescription: [observed ? pattern.locationCount + '개 문장에서 확인한 특징: ' + pattern.description + '.' : '',
+        info.status === 'partial' && info.evidence ? info.evidence.reason : '',
+        info.evidenceDetails && info.evidenceDetails.statisticalContribution
+          ? (info.limitations || []).filter(function (line) { return line.indexOf('문체 통계 반영 전') === 0; }).join(' ') : ''].filter(Boolean).join(' '),
       nextSteps: observed ? (info.status === 'ready' && Array.isArray(info.nextSteps) && info.nextSteps.length
         ? info.nextSteps.slice(0, 3) : ['표시된 ' + pattern.label + ' 항목의 문장을 앞뒤 문맥과 함께 확인해 주세요.']) : []
     };

@@ -106,10 +106,10 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">104개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">106개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 10.09</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 10.12</span>
       </div>
 
       <div class="gp-admin-filter-row gp-admin-patch-filters">
@@ -122,9 +122,9 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.106 · AI 감지 v1.52</strong>
-          <code>2026.10.09 · Backend 664764f</code>
-        <span>인용·문단 경계 보존 · 확정 누락 차단 · 검사 범위·가독성 안내</span>
+          <strong>휴머나이징 v2.5.111 · AI 감지 v1.54</strong>
+          <code>2026.10.12 · 운영 서버 버전 확인 중</code>
+        <span>원문 손실 방지 · 실행 대기·알림 복구 · 최종 검사 상태와 근거 설명</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="2026년 9월 3일까지의 기존 감사 범위">
@@ -136,6 +136,23 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.111 · 감지 v1.54</span><span class="gp-admin-patch-title"><b>운영 전수조사 후 문장 보존·대기·알림 보완</b><small>2026.10.12 · 휴머나이징 416건·AI 감지 318건 대조</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area safety">의미·보존</span><span>서로 다른 길이로 인용된 동일 누락 주장의 검사 근거를 연결합니다. 최종 누락 판정과 원문에서 잘린 문장 조각이 함께 확인되거나 한국어 단어에 다른 문자가 잘못 섞인 결과는 전달하지 않습니다. 의미 경고만으로 일괄 차단하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">표·구조</span><span>질문 항목과 본문이 섞인 학습표 입력은 변환 전에 정리를 안내합니다. ‘첫째로·둘째로’ 열거와 인용 안의 번호를 구분해 구조 경고를 보완합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">대기·검사</span><span>실행권을 얻은 뒤에 실제 시작을 기록하고, 자리가 반환되면 다음 작업을 다시 시도합니다. 장기 대기와 아직 차감 전임을 안내하며, 의미 확인 실패가 정상 전달로만 표시되지 않도록 합니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">감지·알림</span><span>모델 단계와 최종 점수 단계의 근거 일관성을 구분하고 통계 반영·확인 한계를 결과에 표시합니다. 알림 저장 제한 시 서버가 지정한 시간에 재시도하며 표시·저장·열기를 구분해 추적합니다. 이력 기반 감지 점수 보정 정책은 유지합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">검증 범위</span><span>저장 원문·결과 전수 대조와 위험 사례 검토, 오프라인 구조 재검증 및 회귀 시험을 진행했습니다. 원본 PDF 대조·전체 문서 사람 블라인드 평가·실제 대기 시간 개선율 측정과는 구분합니다. 현재 운영 버전은 서버에서 다시 확인합니다.</span></li>
+          </ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">v2.5.107–110 · 감지 v1.53</span><span class="gp-admin-patch-title"><b>호출·입력·형태 보존과 감지 이력 연결</b><small>2026.10.11 · 이후 배포 작업 취합</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">엔진</span><span>호출 시간과 캐시 경계, 확인 판정 강도의 운영 기본값을 정비했습니다. 짧은 글의 초안 보강·수리 강도를 조정하고, 숨은 문자·넓은 공백 문단 및 형태 보존 모드의 실행 오류를 보완했습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">이력·연결</span><span>효과 제한 결과도 동일한 글이면 기존 정책에 따라 재감지 이력 보정을 적용합니다. 저장된 감지 보고서를 다시 열 수 있도록 하고 9월 이전 기록 표시를 보완했습니다. 앱 내 브라우저 전환과 로그인 이후에도 가입 유입 정보가 이어지도록 했습니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.106</span><span class="gp-admin-patch-title"><b>인용 보존·확정 누락 차단·검사 범위 안내</b><small>2026.10.09 · 전수조사 개선 및 문단 경계 후속 보완</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>

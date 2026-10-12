@@ -126,7 +126,7 @@
         errorName: cleanText(detail.errorName, 80),
         stack: cleanText(detail.stack, 600),
         page: window.location.pathname,
-        release: (window.GP_BUILD_VERSION || '')
+        release: (window.GP_BUILD_VERSION || 'web-20261012-engine-audit')
       };
       Promise.resolve().then(async function () {
         var idToken = '';
@@ -234,6 +234,7 @@
   window.gpReportWorkflowIssue = function (detail) {
     detail = detail || {};
     var payload = { type: 'workflow_issue', feature: detail.feature, code: detail.code, stage: detail.stage,
+      release: window.GP_BUILD_VERSION || 'web-20261012-engine-audit',
       pages: Number(detail.pages) || 0, emptyPages: Number(detail.emptyPages) || 0,
       durationMs: Number(detail.durationMs) || 0 };
     // Never include document text, file names, parser messages or credentials.

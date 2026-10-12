@@ -71,3 +71,18 @@ test('pending notifications retry idempotently and account changes isolate local
  c.window.gpSetNotificationOwner('A');c.window.gpNotify({clientId:'job_failed_1',type:'job_failed',message:'문제 확인'});await new Promise(r=>setImmediate(r));assert.equal(c.getLocalItems()[0].syncState,'pending');allow=true;await c.window.gpFlushNotifications();assert.equal(c.getLocalItems()[0].syncState,'synced');assert.equal(calls,2);
  c.window.gpSetNotificationOwner('B');assert.equal(c.getLocalItems().length,0);c.window.gpSetNotificationOwner('');assert.equal(c.getLocalItems().length,0);c.window.gpSetNotificationOwner('A');assert.equal(c.getLocalItems().length,1);
 });
+
+test('server retry deadline defers persistence without losing local notifications or delaying a different account',async()=>{
+ const src=read('ui-feedback.js');const storage=new Map();let calls=0,allow=false;
+ const c={window:{addEventListener(){},persistUserNotification:async()=>{calls++;return allow}},document:{},notificationOwner:'',localKey:'',notificationMemory:[],notificationStorageUnavailable:false,notificationSyncing:false,notificationRetryTimer:null,floatQueue:[],floatShownIds:{},floatOwner:'',remoteItems:[],localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},clearTimeout,setTimeout:()=>1,$:()=>null,ensureShell(){},renderNotifications(){},normalizeNotification:x=>x,id:()=>String(Math.random()),now:Date.now,toast(){}};
+ vm.createContext(c);vm.runInContext(src.slice(src.indexOf('  function getLocalItems()'),src.indexOf('  function normalizeNotification(')),c);
+ vm.runInContext(src.slice(src.indexOf('  window.gpSetNotificationOwner ='),src.indexOf('  window.gpSetRemoteNotifications =')),c);c.window.gpNotificationConnection=()=>{};
+ c.window.gpSetNotificationOwner('A');
+ c.window.gpNotificationRetryAt={owner:'A',at:Date.now()+3600000};
+ c.window.gpNotify({clientId:'retry-1',type:'job_failed',message:'Retry notice'});
+ await c.window.gpFlushNotifications();assert.equal(calls,0);assert.equal(c.getLocalItems()[0].syncState,'pending');
+ c.window.gpSetNotificationOwner('B');assert.equal(c.window.gpNotificationRetryAt,null);
+ allow=true;c.window.gpNotify({clientId:'other-1',type:'job_done',message:'Other account'});await new Promise(r=>setImmediate(r));
+ assert.equal(calls,1);assert.equal(c.getLocalItems()[0].syncState,'synced');
+ c.window.gpSetNotificationOwner('A');await new Promise(r=>setImmediate(r));assert.equal(calls,2);assert.equal(c.getLocalItems()[0].clientId,'retry-1');
+});
