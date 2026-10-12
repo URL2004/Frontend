@@ -311,6 +311,19 @@ test('상한이 걸린 목록은 모달 머리에서 표시 개수를 밝힌다'
   assert.match(flow, /다듬을 후보 ' \+ candidates\.toLocaleString/u, '후보·근거 개수도 함께 밝힌다');
 });
 
+test('후보 설명은 모델 문체 근거와 일반 글쓰기 계측을 구분한다', async () => {
+  const flow = await read('assets/js/evasion-flow.js');
+  const start = flow.indexOf('  function candidateSourceDescription(');
+  const end = flow.indexOf('  function repPaintExpect(', start);
+  const sandbox = {};
+  vm.runInNewContext(flow.slice(start, end), sandbox);
+  const describe = sandbox.candidateSourceDescription;
+  assert.match(describe({candidateSources:null}), /후보 수만으로.*근거가 충분하다고 판단하지/u);
+  assert.match(describe({candidateSources:{modelEvidence:0,writingMeasurementOnly:8}}), /일반 글쓰기 점검.*점수에 연결된 문장 근거로 해석하지/u);
+  assert.match(describe({candidateSources:{modelEvidence:2,writingMeasurementOnly:5}}), /근거가 확인된 2문장.*글쓰기 점검에서 찾은 5문장/u);
+  assert.match(describe({candidateSources:{modelEvidence:3,writingMeasurementOnly:0}}), /근거가 확인된 3문장/u);
+});
+
 test('CTA는 실제 후보 수로 말을 걸고 노랑 버튼으로 강조된다', async () => {
   const [flow, css] = await Promise.all([read('assets/js/evasion-flow.js'), read('assets/css/redesign.css')]);
   // "후보 N문장"은 서버가 원문 위치까지 확인한 문장 수(conversion.candidateSentences)다 — 계측 비율(content.generic)이 아니다.
@@ -340,8 +353,8 @@ test('유도는 접근과 추천 두 단계다 — 낮은 점수도 접근은 �
   assert.doesNotMatch(flow, /var eligible = model\.conversionEligible !== false;/u, '화면 분기에 구버전 이름을 쓰지 않는다');
   // 처방 아래 CTA는 v125 결정(밴드 하나로 닫는다)대로 계속 접어 둔다.
   assert.match(flow, /tipsCta\.hidden = true;/u);
-  // "유지해도 좋아요"는 지목할 문장이 없을 때만.
-  assert.match(flow, /model\.candidateSentences > 0[\s\S]{0,120}위치가 확인된 ' \+ model\.candidateSentences \+ '문장만 살펴보면 돼요/u);
+  // 추천 설명은 후보 출처를 구분한다. 출처를 모르면 모델 근거라고 단정하지 않는다.
+  assert.match(flow, /if \(recommend\)[\s\S]{0,400}candidateSourceDescription\(model\)/u);
   // 부차 버튼 스타일과 버튼별 진입 표면.
   assert.match(css, /\.gp-rep-cta-btn\.is-secondary\{background:transparent;color:#fff/u);
   assert.match(css, /\.gp-rep-verdict-btn\.is-secondary\{background:transparent;color:var\(--rep-brand-strong\)/u);

@@ -28,7 +28,10 @@
       var existing = document.querySelector('script[data-gp-src="' + src + '"]');
       if (existing) {
         if (existing.dataset.loaded === '1') resolve();
-        else existing.addEventListener('load', resolve, { once: true });
+        else {
+          existing.addEventListener('load', resolve, { once: true });
+          existing.addEventListener('error', function () { reject(new Error('Failed to load ' + src)); }, { once: true });
+        }
         return;
       }
       var script = document.createElement('script');
@@ -37,20 +40,34 @@
       if (options.module) script.type = 'module';
       if (options.async) script.async = true;
       script.addEventListener('load', function () { script.dataset.loaded = '1'; resolve(); }, { once: true });
-      script.addEventListener('error', function () { reject(new Error('Failed to load ' + src)); }, { once: true });
+      script.addEventListener('error', function () {
+        script.remove();
+        reject(new Error('Failed to load ' + src));
+      }, { once: true });
       document.head.appendChild(script);
     });
   }
 
   function loadStyle(href, id) {
-    if (id && document.getElementById(id)) return Promise.resolve();
     return new Promise(function (resolve, reject) {
+      var existing = id && document.getElementById(id);
+      if (existing) {
+        if (existing.dataset.loaded === '1' || existing.sheet) resolve();
+        else {
+          existing.addEventListener('load', resolve, { once: true });
+          existing.addEventListener('error', function () { reject(new Error('Failed to load ' + href)); }, { once: true });
+        }
+        return;
+      }
       var link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = assetPath(href);
       if (id) link.id = id;
-      link.addEventListener('load', resolve, { once: true });
-      link.addEventListener('error', function () { reject(new Error('Failed to load ' + href)); }, { once: true });
+      link.addEventListener('load', function () { link.dataset.loaded = '1'; resolve(); }, { once: true });
+      link.addEventListener('error', function () {
+        link.remove();
+        reject(new Error('Failed to load ' + href));
+      }, { once: true });
       document.head.appendChild(link);
     });
   }
@@ -139,7 +156,12 @@
       }, 2400);
       loadTrackingAfterFirstRender();
       return true;
-    })();
+    })().catch(function (error) {
+      // An earlier failed module must not leave every later login attempt
+      // attached to a permanently rejected promise or a dead script element.
+      appAssetsPromise = null;
+      throw error;
+    });
     return appAssetsPromise;
   }
 
@@ -264,6 +286,18 @@
     console.error('Application boot failed.', error);
     document.documentElement.classList.add('design-ready');
     var root = document.getElementById('page-root');
-    if (root && !root.textContent.trim()) root.innerHTML = '<main class="gp-boot-error"><h1>화면을 불러오지 못했어요</h1><p>잠시 후 새로고침해 주세요.</p></main>';
+    // The shell can already contain text when an authentication module fails.
+    // Keep that shell/input intact while making the failure visible.
+    if (!document.getElementById('gpBootError')) {
+      var notice = document.createElement('div');
+      notice.id = 'gpBootError'; notice.className = 'gp-boot-error';
+      notice.setAttribute('role', 'alert');
+      var message = document.createElement('p');
+      message.textContent = '일부 화면 기능을 불러오지 못했어요. 네트워크 연결을 확인해 주세요. 입력한 글이 있다면 복사해 둔 뒤 새로고침해 주세요.';
+      var retry = document.createElement('button'); retry.type = 'button'; retry.textContent = '새로고침';
+      retry.addEventListener('click', function () { window.location.reload(); });
+      notice.appendChild(message); notice.appendChild(retry);
+      (root || document.body).prepend(notice);
+    }
   });
 })();

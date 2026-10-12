@@ -289,6 +289,25 @@
     return report;
   }
 
+  // A large saved response is stored compressed and is not decoded in the browser.
+  // Its owner fetches the decoded copy from the server; nothing here re-scores it.
+  function historyReportPending(record) {
+    var row = record || {}, cache = row.detectResponseCache, encoded = row.detectResponseCacheEncoded;
+    return row.type === 'detect' && !(cache && typeof cache === 'object')
+      && !!encoded && typeof encoded === 'object' && !Array.isArray(encoded)
+      && typeof row.id === 'string' && !!row.id && typeof row.inputText === 'string' && !!row.inputText.trim()
+      && probability(row.probability) !== null;
+  }
+
+  // A decoded copy qualifies only for the record it was requested for, and only
+  // under the same score / detector / input match as an inline snapshot.
+  function historyReportAccept(record, payload) {
+    var row = record || {}, body = payload || {}, report = body.report;
+    if (!historyReportPending(row) || body.ok !== true || body.id !== row.id
+      || !report || typeof report !== 'object' || Array.isArray(report)) return null;
+    return historyRestorable(Object.assign({}, row, { detectResponseCache: report })) ? report : null;
+  }
+
   function historySections(record) {
     var source = historySource(record), view = normalize(source), info = view.interpretation;
     var sections = [];
@@ -343,6 +362,8 @@
   global.gpDetectHistorySource = historySource;
   global.gpDetectHistoryCanRestore = function (record) { return !!historyRestorable(record); };
   global.gpDetectHistoryReport = historyReport;
+  global.gpDetectHistoryReportPending = historyReportPending;
+  global.gpDetectHistoryReportAccept = historyReportAccept;
   global.gpDetectHistorySections = historySections;
   global.gpDetectHistoryComparisonText = historyComparisonText;
   global.gpDetectLimitCopy = limitCopy;

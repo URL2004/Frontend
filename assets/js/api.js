@@ -231,14 +231,33 @@
       ]);
     } finally { clearTimeout(timer); if (external) external.removeEventListener('abort', abort); }
   };
+  var workflowRetryAt = 0;
+  var workflowInFlight = 0;
+  var workflowRecentFailures = new Map();
   window.gpReportWorkflowIssue = function (detail) {
     detail = detail || {};
+    var at = Date.now();
+    if (at < workflowRetryAt || workflowInFlight >= 4) return;
+    var key = [detail.feature, detail.code, detail.stage].join(':');
+    var repeatedFailure = /FAILED|ERROR|TIMEOUT|LIMIT/.test(String(detail.code || ''));
+    if (repeatedFailure && at - (workflowRecentFailures.get(key) || 0) < 60000) return;
+    if (repeatedFailure) {
+      if (workflowRecentFailures.size >= 64) workflowRecentFailures.delete(workflowRecentFailures.keys().next().value);
+      workflowRecentFailures.set(key, at);
+    }
     var payload = { type: 'workflow_issue', feature: detail.feature, code: detail.code, stage: detail.stage,
       release: window.GP_BUILD_VERSION || 'web-20261012-engine-audit',
       pages: Number(detail.pages) || 0, emptyPages: Number(detail.emptyPages) || 0,
       durationMs: Number(detail.durationMs) || 0 };
     // Never include document text, file names, parser messages or credentials.
+    workflowInFlight++;
     window.gpFetch(window.apiUrl('/events'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload), timeoutMs: 8000, keepalive: true }).catch(function () {});
+      body: JSON.stringify(payload), timeoutMs: 8000, keepalive: true }).then(function (response) {
+        if (response.status === 429) {
+          var retry = response.headers && response.headers.get('Retry-After');
+          var delay = /^\d+(?:\.\d+)?$/.test(retry || '') ? Number(retry) * 1000 : Date.parse(retry) - Date.now();
+          workflowRetryAt = Date.now() + Math.max(30000, Math.min(86400000, Number.isFinite(delay) ? delay : 60000));
+        }
+      }).catch(function () {}).finally(function () { workflowInFlight--; });
   };
 })();

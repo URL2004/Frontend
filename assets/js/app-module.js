@@ -3852,6 +3852,8 @@ function historyTimestampMs(value) {
 
 function historyNormalizeDoc(snapshot) {
  const data = snapshot.data() || {};
+ // 큰 감지 결과의 압축본은 브라우저에서 풀지 않는다. 바이트는 버리고 표식만 남겨, 기록을 열 때 서버에서 풀어 받는다.
+ if (data.detectResponseCacheEncoded) data.detectResponseCacheEncoded = { stored: true };
  return { id: snapshot.id, ...data, createdAtMs: historyTimestampMs(data.createdAt) || Number(data.backupAtMs) || 0 };
 }
 
@@ -4058,6 +4060,20 @@ function historyDetailBlock(title, text, featured) {
  </section>`;
 }
 
+// 압축 저장된 결과 화면을 불러오는 동안과 실패했을 때의 안내. 어느 상태에서도 다시 감지하거나 차감하지 않는다.
+function historyDetectReportStatusBlock(state) {
+ const copy = {
+  loading: ['저장된 결과 화면을 불러오는 중이에요', '감지했을 때의 결과를 그대로 가져와요. 크레딧은 차감되지 않아요.', ''],
+  retry: ['저장된 결과 화면을 불러오지 못했어요', '아래 요약은 그대로 볼 수 있어요. 다시 불러와도 크레딧은 차감되지 않아요.', '<button type="button" onclick="historyRetryDetectReport()">다시 불러오기</button>'],
+  unavailable: ['이 기록은 결과 화면으로 다시 열 수 없어요', '저장된 요약과 원문은 아래에서 그대로 볼 수 있어요.', '']
+ }[state];
+ return copy
+  ? `<div class="gp-history-reopen" role="status">
+      <p><strong>${copy[0]}</strong><span>${copy[1]}</span></p>${copy[2]}
+     </div>`
+  : '';
+}
+
 function historyRenderDetail() {
  const panel = document.getElementById('historyDetailPanel');
  const workspace = document.getElementById('historyWorkspace');
@@ -4102,7 +4118,7 @@ function historyRenderDetail() {
       <p><strong>감지했을 때 본 결과 화면을 그대로 다시 볼 수 있어요</strong><span>점수 게이지와 문장별 표시까지 그대로 열어요. 크레딧은 차감되지 않아요.</span></p>
       <button type="button" onclick="historyOpenDetectReport()">결과 화면 다시 보기</button>
      </div>`
-  : '';
+  : historyDetectReportStatusBlock(isDetect && typeof window.lavOpenSavedDetectReport === 'function' ? item.detectReportState : '');
  const actions = isDetect
   ? `<button type="button" class="primary" onclick="historyContinueHumanize()">휴머나이징으로 이어서</button>
      <button type="button" onclick="historyRunAgain('detect')">다시 감지</button>
@@ -4127,12 +4143,43 @@ function historyRenderDetail() {
  </article>`;
 }
 
+// 압축 저장된 감지 결과 화면을 서버에서 풀어 받아 이 기록의 보관본으로 둔다(메모리에만 두며 재감지·차감이 없다).
+// 받은 응답이 이 기록의 점수·감지기 버전·원문과 맞을 때만 쓰고, 실패하면 아래 요약을 그대로 보여 준다.
+async function historyHydrateDetectReport(item) {
+ if (!item || item.detectReportState || typeof window.gpDetectHistoryReportPending !== 'function'
+  || !window.gpDetectHistoryReportPending(item) || !CU) return;
+ const uid = CU.uid;
+ item.detectReportState = 'loading';
+ try {
+  const data = await postAuthedJson('/history/detect-report', { id: item.id });
+  if (!CU || CU.uid !== uid || !historyState.items.includes(item)) return;
+  const report = window.gpDetectHistoryReportAccept(item, data);
+  if (report) item.detectResponseCache = report;
+  item.detectReportState = report ? 'ready' : 'unavailable';
+ } catch (error) {
+  console.warn('[history] 저장된 결과 화면 불러오기 실패', error?.code || error?.status || 'error');
+  // 서버가 이 기록은 열 수 없다고 답한 경우만 확정한다. 그 밖(네트워크·일시 장애·경로 미배포)은 직접 다시 불러올 수 있게 둔다.
+  item.detectReportState = ['HISTORY_ID_INVALID', 'HISTORY_NOT_FOUND', 'DETECT_REPORT_NOT_SAVED', 'DETECT_REPORT_UNREADABLE',
+   'DETECT_REPORT_TOO_LARGE', 'DETECT_REPORT_MISMATCH'].includes(error?.code) ? 'unavailable' : 'retry';
+ }
+ if (historyState.selectedId === item.id && historyState.items.includes(item)) historyRenderDetail();
+}
+
+window.historyRetryDetectReport = function () {
+ const item = historyState.items.find(entry => entry.id === historyState.selectedId);
+ if (!item || item.detectReportState !== 'retry') return;
+ item.detectReportState = '';
+ historyHydrateDetectReport(item);
+ historyRenderDetail();
+};
+
 function historyRender() {
  const visible = historyVisibleItems();
  if (historyState.selectedId && !historyState.missingId && !visible.some(item => item.id === historyState.selectedId)) {
   historyState.selectedId = '';
  }
  if (!historyState.selectedId && !historyIsMobile() && visible.length) historyState.selectedId = visible[0].id;
+ historyHydrateDetectReport(historyState.items.find(entry => entry.id === historyState.selectedId));
  historyRenderList();
  historyRenderDetail();
 }

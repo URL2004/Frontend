@@ -1591,6 +1591,11 @@
       ? Math.max(0, Math.floor(Number(conversion.candidateSentences))) : 0;
     if (!candidateSentences) conversionRecommend = false;
     var conversionReasons = conversion && Array.isArray(conversion.reasons) ? conversion.reasons.filter(function (r) { return r && typeof r.label === 'string'; }) : [];
+    var candidateSources = conversion && conversion.candidateSources;
+    if (!candidateSources || !Number.isSafeInteger(candidateSources.modelEvidence)
+      || !Number.isSafeInteger(candidateSources.writingMeasurementOnly)
+      || candidateSources.modelEvidence < 0 || candidateSources.writingMeasurementOnly < 0
+      || candidateSources.modelEvidence + candidateSources.writingMeasurementOnly !== candidateSentences) candidateSources = null;
     return {
       status: status,
       score: score,
@@ -1630,6 +1635,7 @@
       conversionRecommend: conversionRecommend,
       candidateSentences: candidateSentences,
       conversionReasons: conversionReasons,
+      candidateSources: candidateSources,
       inputReview: conversion && conversion.inputReview && typeof conversion.inputReview.message === 'string'
         ? conversion.inputReview : null,
       // 퍼널 계측용 — 화면에는 쓰지 않는다.
@@ -2735,7 +2741,7 @@
     // 계측 축이 기준을 넘지 않아도 위치가 확인된 문장이 있으면 그 문장을 가리킨다. "유지해도 좋아요"는 지목할 문장이 없을 때만.
     if (!tips.length) {
       tips.push(model.candidateSentences > 0
-        ? '문체 통계 축은 기준을 넘지 않았어요. 위치가 확인된 ' + model.candidateSentences + '문장만 살펴보면 돼요.'
+        ? '문체 통계 축은 기준을 넘지 않았어요. 글쓰기 점검 후보 ' + model.candidateSentences + '문장의 표현과 맥락을 확인해 주세요. 후보 수가 AI식 문체 점수의 근거 수를 뜻하지는 않아요.'
         : '문장 사이의 연결과 사실·인용의 정확성을 확인해 주세요.');
     }
     return tips.slice(0, 3);
@@ -2764,9 +2770,7 @@
       // "후보 N문장"은 서버가 원문 위치까지 확인한 문장 수다 — 계측 비율이나 지어낸 숫자가 아니다.
       if (title) title.textContent = '후보 ' + model.candidateSentences + '문장, 지금 휴머나이징해 볼까요?';
       if (desc) {
-        desc.textContent = model.radar.band === 'low'
-          ? '점수는 낮지만 표시된 문장에서 정형 패턴이 확인됐어요. 뜻과 사실은 그대로, 그 문장의 문체만 다시 씁니다.'
-          : '뜻과 사실은 그대로, 문체만 다시 씁니다.';
+        desc.textContent = candidateSourceDescription(model);
       }
       if (btn) { btn.hidden = false; btn.textContent = '추천 방법·비용 확인하기 →'; }
       if (help) help.hidden = false;
@@ -2807,6 +2811,14 @@
     if (desc) desc.textContent = '내용 근거를 충분히 확인하지 못했어요. 관련된 앞뒤 문맥이 있다면 함께 살펴봐 주세요.';
     if (btn) btn.hidden = true;
     if (help) help.hidden = true;
+  }
+
+  function candidateSourceDescription(model) {
+    var sources = model.candidateSources;
+    if (!sources) return '표시된 후보는 글을 다듬기 위한 참고예요. 후보 수만으로 AI식 문체 점수의 근거가 충분하다고 판단하지 마세요.';
+    if (!sources.modelEvidence) return '일반 글쓰기 점검에서 찾은 후보예요. AI식 문체 점수에 연결된 문장 근거로 해석하지 마세요.';
+    if (sources.writingMeasurementOnly) return '문체 근거가 확인된 ' + sources.modelEvidence + '문장과 일반 글쓰기 점검에서 찾은 ' + sources.writingMeasurementOnly + '문장을 구분해 살펴보세요.';
+    return '문체 근거가 확인된 ' + sources.modelEvidence + '문장이에요. 원문의 뜻과 사실을 유지하며 표현을 다듬을 수 있어요.';
   }
 
   function repPaintExpect(model) {
