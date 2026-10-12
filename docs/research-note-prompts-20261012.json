@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-12",
+  "tool": "Built-in image_gen",
+  "format": "WebP, 1200px wide, libwebp quality 82",
+  "images": [
+    {
+      "slug": "ai-detection-writing-process-evidence",
+      "asset": "assets/img/blog/ai-detection-writing-process-evidence.webp",
+      "prompt": "Use case: stylized-concept. Asset: editorial cover for Korean university research note about explaining an authentic writing process when an AI detector flags an essay. Create one wide 16:9 landscape image. Three ivory manuscript sheets stand in successive layers along a low lavender stepped base; the first has sparse abstract embossed line marks, the second has additional muted teal annotation strips, and the last is a neatly arranged final sheet. A continuous thin terracotta thread gently connects all three sheets to a small closed source notebook on the left, suggesting traceable drafts and revision history. Premium tactile paper sculpture with matte ceramic base, warm cream background, soft daylight, calm reassuring scholarly mood. Composition centered, key objects within central 65% width and middle 55% height to survive square and 2.4:1 crops. No readable text, numbers, letters, logos, watermarks, checkmarks, verdict badges, robots, magnifying glasses, flowers, pie charts or scales. Standalone conceptual illustration, not a screenshot or proof-of-authorship certificate."
+    }
+  ]
+}
