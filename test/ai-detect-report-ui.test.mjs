@@ -69,7 +69,9 @@ test('보고서 문구는 측정 범위를 넘는 단정을 하지 않는다', a
   const report = await reportSection();
   assert.doesNotMatch(report, /사람이 쓴 글/u);
   assert.doesNotMatch(report, /통과를 보장|안전합니다|걸리지 않/u);
-  assert.match(report, /작성 주체나 외부 검사 결과를 확정하지 않아요/u);
+  // '확정'은 작성 주체에만 쓴다. 외부 검사는 우리가 확정할 대상이 아니라 결과가 다를 수 있는 다른 도구다.
+  assert.match(report, /작성 주체를 확정하지 않아요\. 외부 검사 결과와 다를 수 있어요\./u);
+  assert.doesNotMatch(report, /외부 검사 결과를 확정/u);
 });
 
 test('렌더러는 evidence-v2와 구형 응답을 함께 처리하고 판정 맥락을 넘긴다', async () => {

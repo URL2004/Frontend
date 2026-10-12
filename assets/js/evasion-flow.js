@@ -1565,7 +1565,9 @@
     }
     var description = synthesis.description || content.reason
       || '이 수치는 근거 문장의 비율이며 사실의 정확성이나 충분성을 판단하지 않아요. 확인하지 않은 내용은 추가하지 마세요.';
-    var limitation = synthesis.limitation || '문체 패턴을 바탕으로 한 참고 결과이며 작성 주체나 외부 검사 결과를 확정하지 않아요.';
+    var limitation = synthesis.limitation || '문체 패턴을 바탕으로 한 참고 결과이며 작성 주체를 확정하지 않아요. 외부 검사 결과와 다를 수 있어요.';
+    // 서버 응답과 저장된 기록에는 10/12 이전 문구가 남아 있다 — 화면에서만 현재 문구로 바꾼다.
+    if (typeof window.gpDetectLimitCopy === 'function') limitation = window.gpDetectLimitCopy(limitation);
     var causeAnalysis = reportView.causeAnalysis && typeof reportView.causeAnalysis === 'object'
       ? reportView.causeAnalysis
       : null;
@@ -4517,7 +4519,7 @@
       doneNote.textContent = st.mode === 'polish'
         ? '원문의 장르·사실·구조를 지키면서 맞춤법과 문장 연결을 정리했어요. 문장을 넓게 다시 쓰는 휴머나이징과는 다른 기능이에요.'
         : (st.mode === 'formal'
-          ? '고급 휴머나이징과 정밀 검증이 완료됐어요. 제출 전 핵심 수치와 인용은 원문과 한 번 대조해 주세요.'
+          ? '고급 휴머나이징과 정밀 검증이 완료됐어요. 외부 검사 결과는 글과 도구에 따라 달라지며 점수를 보장하지 않아요. 제출 전 핵심 수치와 인용은 원문과 한 번 대조해 주세요.'
           : '기본 휴머나이징이 완료됐어요. 외부 검사 결과는 글과 도구에 따라 달라지며 점수를 보장하지 않아요.');
       // A안: 모든 결과에 같은 최종 확인 안내(고급 모드 문구에는 이미 들어 있다).
       if (resultDesignOn() && st.mode !== 'formal') doneNote.textContent += ' 제출 전 수치·인용·고유명사를 원문과 대조해 주세요.';

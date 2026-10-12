@@ -1,7 +1,14 @@
 (function (global) {
   'use strict';
 
-  var DISCLAIMER = '문체 패턴을 바탕으로 한 참고 결과이며 작성 주체나 외부 검사 결과를 확정하지 않아요.';
+  var DISCLAIMER = '문체 패턴을 바탕으로 한 참고 결과이며 작성 주체를 확정하지 않아요. 외부 검사 결과와 다를 수 있어요.';
+  // Wording shipped until 2026-10-12. Server responses and saved records still
+  // carry it, so it is rewritten for display only and never stored back.
+  var LEGACY_LIMIT_TAIL = '작성 주체나 외부 검사 결과를 확정하지 않아요.';
+  var CURRENT_LIMIT_TAIL = '작성 주체를 확정하지 않아요. 외부 검사 결과와 다를 수 있어요.';
+  function limitCopy(value) {
+    return typeof value === 'string' ? value.split(LEGACY_LIMIT_TAIL).join(CURRENT_LIMIT_TAIL) : value;
+  }
   var BANDS = {
     low: {
       level: 'low',
@@ -190,7 +197,7 @@
     if (!band) return Object.assign({}, source, {
       probability: p, interpretation: interpretation,
       summary: interpretation ? scoreCopy(interpretation).headline : source.summary,
-      detail: interpretation ? publicNarrative(source.detail, interpretation) : source.detail
+      detail: limitCopy(interpretation ? publicNarrative(source.detail, interpretation) : source.detail)
     });
     var summary = narrative(source.summary);
     var detail = narrative(source.detail);
@@ -201,7 +208,7 @@
       riskLevel: band.level,
       riskLabel: band.label,
       summary: interpretation ? scoreCopy(interpretation).headline : summaryMismatch ? band.summary : summary,
-      detail: interpretation && detail ? publicNarrative(detail, interpretation) : detailMismatch ? (band.detail(p) + '\n\n' + DISCLAIMER) : detail,
+      detail: limitCopy(interpretation && detail ? publicNarrative(detail, interpretation) : detailMismatch ? (band.detail(p) + '\n\n' + DISCLAIMER) : detail),
       interpretation: interpretation,
       narrativeConsistencyAdjusted: !!source.narrativeConsistencyAdjusted || summaryMismatch || detailMismatch
     });
@@ -295,8 +302,10 @@
     // Never apply this filter to the user's original text or evidence quotes.
     var template = info ? [info.description, info.evidence && info.evidence.reason]
       .concat(info.nextSteps || [], info.limitations || [], [scoreCopy(info).description, DISCLAIMER]) : [];
-    var legacy = narrative(source.detail);
-    template.filter(Boolean).forEach(function (line) { legacy = legacy.split(line).join(''); });
+    // Compare in the current wording on both sides: a stored line and a freshly
+    // built one must still match when only one of them predates the rewording.
+    var legacy = limitCopy(narrative(source.detail));
+    template.filter(Boolean).map(limitCopy).forEach(function (line) { legacy = legacy.split(line).join(''); });
     legacy = publicNarrative(legacy, info).split(/\n+/).filter(function (line) {
       return line.trim() && !/짧은\s*글|문장\s*수가\s*적|문장이\s*(?:적어|충분하지)|분석\s*근거\s*제한|근거가\s*제한|해석에\s*주의|비교하기\s*어려|보정|작성\s*주체.*확정/.test(line)
         && !(info && line.includes(scoreCopy(info).description));
@@ -336,6 +345,7 @@
   global.gpDetectHistoryReport = historyReport;
   global.gpDetectHistorySections = historySections;
   global.gpDetectHistoryComparisonText = historyComparisonText;
+  global.gpDetectLimitCopy = limitCopy;
   global.gpDetectScoreCopy = scoreCopy;
   global.gpNormalizeDetectPresentation = normalize;
   global.gpDetectRiskBand = bandFor;
