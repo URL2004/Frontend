@@ -15,6 +15,8 @@ test('격식체 재작성은 공지별 수치와 적용 조건을 보존한다',
  const source = await read('assets/js/app-module.js');
  const context = noticeContext(source);
  const expectedNumbers = {
+ "work-history-update-20261012": [],
+ "humanize-result-screen-20261012": [],
  "autumn-credit-event-20261001": [
   "1",
   "10",
@@ -275,7 +277,7 @@ test('격식체 재작성은 공지별 수치와 적용 조건을 보존한다',
  "humanize-quality-20260326": [],
  "payment-open-20260401": []
 };
- assert.equal(context.items.length, 27);
+ assert.equal(context.items.length, 29);
  for (const item of context.items) {
   const actual = ( (item.title + '\n' + item.body).match(/\d[\d,]*(?:\.\d+)?/gu) || [] ).map(n => n.replaceAll(',', '')).sort();
   assert.deepEqual(actual, expectedNumbers[item.id], item.id + ': 날짜·시간·금액·크레딧 보존');
@@ -339,7 +341,7 @@ test('공지 문구는 2026-09-02 양식 표준을 지킨다', async () => {
   );
   const titles = [...baseItems.matchAll(/title: '([^']+)'/gu)].map(match => match[1]);
 
-  assert.equal(titles.length, 27);
+  assert.equal(titles.length, 29);
   // 대괄호 접두어·이모지 없이 격식체 서술형 제목만 쓴다
   assert.doesNotMatch(baseItems, /title: '\[/u);
   assert.doesNotMatch(baseItems, /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u);
@@ -371,7 +373,7 @@ test('최근 품질 안내와 요금·환불 기준을 중요 표시하고 재�
   const context = vm.createContext({});
   vm.runInContext(baseItems + ';globalThis.items = NOTICE_BASE_ITEMS;', context);
   const highlighted = Array.from(context.items).filter(item => item.highlightLabel);
-  assert.deepEqual(highlighted.map(item => item.id), ['humanize-paragraph-update-20260920', 'humanize-meaning-naturalness-20260920', 'advanced-credit-steps-20260902', 'refund-standard-20260830']);
+  assert.deepEqual(highlighted.map(item => item.id), ['work-history-update-20261012', 'humanize-result-screen-20261012', 'humanize-paragraph-update-20260920', 'humanize-meaning-naturalness-20260920', 'advanced-credit-steps-20260902', 'refund-standard-20260830']);
   assert.ok(highlighted.every(item => item.highlightLabel === '중요'));
   assert.doesNotMatch(baseItems, /pinned:/u);
 
@@ -402,10 +404,10 @@ test('중요 공지는 정렬 방향과 관계없이 최상단에 고정하고 �
   for (const direction of ['desc', 'asc']) {
     context.state.sort = direction;
     const items = vm.runInContext('noticeFilteredItems()', context);
-    assert.equal(items.length, 27);
-    assert.ok(items.slice(0, 4).every(item => item.highlightLabel === '중요'));
-    assert.ok(items.slice(4).every(item => item.highlightLabel !== '중요'));
-    for (const group of [items.slice(0, 4), items.slice(4)]) {
+    assert.equal(items.length, 29);
+    assert.ok(items.slice(0, 6).every(item => item.highlightLabel === '중요'));
+    assert.ok(items.slice(6).every(item => item.highlightLabel !== '중요'));
+    for (const group of [items.slice(0, 6), items.slice(6)]) {
       const dates = Array.from(group, item => Date.parse(item.date.replaceAll('.', '-')));
       assert.deepEqual(dates, [...dates].sort((a, b) => direction === 'desc' ? b - a : a - b));
     }
