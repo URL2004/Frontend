@@ -16,6 +16,15 @@ const base = { probability: 32, probSource: 'llm', confidence: 'high', textLengt
 const signal = (category, locations = 2) => ({ category, strength: 'strong', scope: 'recurring', locationStatus: 'source_range_verified',
   locations: Array.from({ length: locations }, (_, i) => ({ sentenceIndex: i, start: i * 50, end: i * 50 + 30 })) });
 
+test('a failed additional check stays visible when the primary result is consistent', () => {
+  const result = build({ ...base, signalEvidence: [signal('ending_repetition')],
+    finalCandidateConsistency: { status: 'consistent' },
+    detectDiagnostics: { attempts: [{ phase: 'primary', failed: false }, { phase: 'recheck', failed: true }], recheckFailed: true } });
+  assert.equal(result.score, base.probability);
+  assert.equal(result.status, 'partial');
+  assert.match(result.limitations.join(' '), /추가 검사를 완료하지 못해/);
+});
+
 test('public score copy omits sample warnings and calibration without changing scores or metadata',()=>{
   assert.equal(browser.gpDetectCalibrationDetails, undefined);
   for (let probability = 0; probability <= 100; probability++) {

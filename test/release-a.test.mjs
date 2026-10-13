@@ -298,7 +298,7 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /data-tab="patches"[^>]*>변경 이력</u);
   assert.match(admin, /data-admin-tab="patches"/u);
   assert.match(source, /'settings', 'labs', 'patches'/u);
-  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 111);
+  assert.equal(admin.match(/class="gp-admin-patch-release"/gu)?.length, 113);
   assert.match(admin, /AI 감지 v1\.25/u);
   assert.match(admin, /점수·원인 정합성·장르별 근거 축·전후 예시 보강/u);
   assert.match(admin, /AI 감지 이력 1,077건/u);
@@ -308,8 +308,8 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.match(admin, /원장 작업 상세·108건 전수평가·최종 문장 무결성/u);
   assert.match(admin, /결과 평균은 96\.0점, 원문 대비 평균은 \+12\.7점/u);
   assert.match(admin, /근거 없는 구체화/u);
-  assert.match(admin, /휴머나이징 v2\.5\.112 · AI 감지 v1\.55/u);
-  assert.match(admin, /2026\.06\.04 — 10\.13/u);
+  assert.match(admin, /휴머나이징 v2\.5\.113 · AI 감지 v1\.56/u);
+  assert.match(admin, /2026\.06\.04 — 10\.14/u);
   assert.match(admin, /중요 공지를 정렬 방향과 관계없이 최상단 고정/u);
   assert.match(admin, /휴머나이징 357쌍과 AI 감지 300건/u);
   assert.match(admin, /신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다/u);
@@ -400,10 +400,10 @@ test('관리자 패치노트 탭은 운영 반영 이력을 최신순으로 제�
   assert.ok(admin.indexOf('2026년 7월') < admin.indexOf('2026년 6월'));
   assert.match(admin, /실험·후속 대체/u);
   const releases = [...admin.matchAll(/<details class="gp-admin-patch-release"([^>]*)>([\s\S]*?)<\/details>/gu)];
-  assert.equal(releases.length, 111);
-  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 41);
+  assert.equal(releases.length, 113);
+  assert.equal(releases.filter(([, attrs]) => /\bopen\b/u.test(attrs)).length, 42);
   assert.match(releases[0][1], /\bopen\b/u);
-  assert.match(releases[6][2], /인용 보존·확정 누락 차단·검사 범위 안내/u);
+  assert.ok(releases.some(([, , body]) => /인용 보존·확정 누락 차단·검사 범위 안내/u.test(body)));
   assert.match(releases[0][2], /운영 반영/u);
   for (const [, attrs, body] of releases) {
     if (/gp-admin-patch-state is-superseded/u.test(body)) assert.doesNotMatch(attrs, /\bopen\b/u);
@@ -504,7 +504,8 @@ test('완료 화면·이용 기록·관리자 관측은 과금 처리와 v2.5 �
   assert.match(module, /structureSignatureFailureCount/u);
   assert.match(module, /substantiveCarryoverRatio/u);
   assert.match(module, /sectionRecoveryAppliedCount/u);
-  assert.match(module, /processingDurationMs/u);
+  assert.match(module, /executionDurationMs/u);
+  assert.match(module, /executionDurationCoverage/u);
   assert.match(module, /gates: Array\.isArray\(st\.gates\)/u);
   assert.match(module, /gateDetail: st\.gateDetail/u);
 });

@@ -7638,6 +7638,15 @@ function adminJobsPagerHtml(data) {
   </div>`;
 }
 
+function adminExecutionDurationRow(row) {
+ const known = row?.executionDurationCoverage === 'complete' && Number.isFinite(row.executionDurationMs);
+ if (known) return ['실제 실행 시간', adminQualityDuration(row.executionDurationMs)];
+ if (row?.executionDurationCoverage === 'partial' && Number.isFinite(row.observedExecutionDurationMs)) {
+  return ['확인된 실행 시간', adminQualityDuration(row.observedExecutionDurationMs) + ' 이상 · 일부 기록 없음'];
+ }
+ return ['실제 실행 시간', '기록 없음'];
+}
+
 function renderAdminJobs(data) {
  const el = document.getElementById('adminJobsBody');
  if (!el) return;
@@ -7656,7 +7665,7 @@ function renderAdminJobs(data) {
     ['엔진', r.engineVersion],
     ['요청/적용', [ADMIN_MODE_LABELS[r.requestedMode] || r.requestedMode, ADMIN_MODE_LABELS[r.effectiveMode] || r.effectiveMode].filter(Boolean).join(' → ')],
     ['글 종류', ADMIN_PROFILE_LABELS[r.documentProfile] || r.documentProfile],
-    ['처리 시간', r.processingDurationMs ? adminQualityDuration(r.processingDurationMs) : ''],
+    adminExecutionDurationRow(r),
     ['길이', r.sourceLength || r.inputLength ? `${adminNumber(r.sourceLength || r.inputLength)} → ${adminNumber(r.resultLength || r.outputLength)}자` : ''],
     ['실질 편집', r.substantiveEditRatio == null ? '' : adminQualityPercent(r.substantiveEditRatio)],
     ['청크', r.editableChunkCount == null ? '' : `${adminNumber(r.approvedModelChunkCount)}/${adminNumber(r.editableChunkCount)} 승인 · 실패 ${adminNumber(r.modelFailureChunkCount)}`],
@@ -7716,6 +7725,7 @@ function adminQualityPercent(value, signed) {
 }
 
 function adminQualityDuration(value) {
+ if (value === null || value === undefined || value === '' || typeof value === 'boolean') return '—';
  const ms = Number(value);
  if (!Number.isFinite(ms) || ms < 0) return '—';
  const seconds = Math.round(ms / 1000);
@@ -7837,7 +7847,7 @@ function renderAdminHumanizeQuality(data) {
    adminQualityStat('세특 문장 조각', `${adminNumber(summary.studentRecordFragmentDocumentCount)}건`, '불완전 명사형 문장 잔존'),
    adminQualityStat('기능문 중복 인사', `${adminNumber(summary.functionalGreetingDuplicationDocumentCount)}건`, '공지·메일 첫 인사 반복'),
    adminQualityStat('인접 의미 반복', `${adminNumber(summary.adjacentSemanticRepetitionDocumentCount)}건`, '연속 문장·문단의 같은 내용'),
-   adminQualityStat('p95 처리 시간', adminQualityDuration(report?.metrics?.processingDurationMs?.p95), '실제 실행 시작~완료'),
+   adminQualityStat('p95 실제 실행 시간', adminQualityDuration(report?.metrics?.executionDurationMs?.p95), '완결된 실행 기록만 · 대기·열람 시간 제외'),
   adminQualityStat('조회 전체 · 자연성 위험', adminQualityAverage(report, 'naturalnessOverallRiskDelta', true), 'shadow 지표 · 엔진 혼합', Number(report?.metrics?.naturalnessOverallRiskDelta?.average) > 0),
   adminQualityStat('조회 전체 · 리듬 균일화', adminQualityAverage(report, 'rhythmUniformityDelta', true), 'shadow 지표 · 엔진 혼합', Number(report?.metrics?.rhythmUniformityDelta?.average) > 0)
  ].join('');
@@ -8481,7 +8491,7 @@ function adminRenderLedgerDetail(data) {
     ['사용자 UID', ledger.uid], ['원장 ID', ledger.id || ledger.creditHistoryId], ['요청 ID', ledger.requestId], ['작업 ID', link.jobId], ['이력 ID', link.historyId], ['완료 시각', adminDateText(archive.updatedAtMs || archive.createdAtMs || history.createdAtMs)], ['사용 크레딧', ledger.used]
    ])}
    ${adminLedgerDetailPairs('엔진 감사', [
-    ['엔진 버전', engine.engineVersion || archive.engineVersion], ['요청 모드', engine.requestedMode || archive.requestedMode || history.mode], ['적용 모드', engine.effectiveMode || archive.effectiveMode], ['문서 프로필', engine.documentProfile || archive.documentProfile], ['전달 결정', engine.deliveryDecision || archive.deliveryDecision || history.deliveryDecision], ['승인 청크', engine.approvedModelChunkCount ?? archive.approvedModelChunkCount], ['모델 실패', engine.modelFailureChunkCount ?? archive.modelFailureChunkCount], ['입력 텍스트 구조', (engine.structureSignaturePass ?? archive.structureSignaturePass) === true ? '통과' : (engine.structureSignaturePass ?? archive.structureSignaturePass) === false ? '확인 필요' : ''], ['검사 범위', '서버에 입력된 텍스트 · 원본 PDF 대조 제외'], ['PDF 읽기 순서', (engine.sourceLayoutStatus || archive.sourceLayoutStatus) === 'reading_order_unverified' ? '미확인 · 표의 열·페이지 경계 대조 필요' : ''], ['처리 시간', archive.processingDurationMs ? `${Math.round(archive.processingDurationMs / 100) / 10}초` : ''], ['예상 API 비용', Number.isFinite(Number(engine.estimatedUsd ?? archive.estimatedUsd)) ? `$${Number(engine.estimatedUsd ?? archive.estimatedUsd).toFixed(4)}` : ''], ['품질 경고', qualityCodes], ['효과 알림', effectCodes], ['원문 확인', sourceReviewCodes], ['한국어 감사', koreanCodes], ['안전 복원', integrityRestoreCodes], ['구체 성과 감사', (engine.unsupportedSpecificityPass ?? archive.unsupportedSpecificityPass) === false ? `잔여 ${engine.unsupportedSpecificityResidualCount ?? archive.unsupportedSpecificityResidualCount ?? 0}건` : (engine.unsupportedSpecificityPass ?? archive.unsupportedSpecificityPass) === true ? '통과' : '']
+    ['엔진 버전', engine.engineVersion || archive.engineVersion], ['요청 모드', engine.requestedMode || archive.requestedMode || history.mode], ['적용 모드', engine.effectiveMode || archive.effectiveMode], ['문서 프로필', engine.documentProfile || archive.documentProfile], ['전달 결정', engine.deliveryDecision || archive.deliveryDecision || history.deliveryDecision], ['승인 청크', engine.approvedModelChunkCount ?? archive.approvedModelChunkCount], ['모델 실패', engine.modelFailureChunkCount ?? archive.modelFailureChunkCount], ['입력 텍스트 구조', (engine.structureSignaturePass ?? archive.structureSignaturePass) === true ? '통과' : (engine.structureSignaturePass ?? archive.structureSignaturePass) === false ? '확인 필요' : ''], ['검사 범위', '서버에 입력된 텍스트 · 원본 PDF 대조 제외'], ['PDF 읽기 순서', (engine.sourceLayoutStatus || archive.sourceLayoutStatus) === 'reading_order_unverified' ? '미확인 · 표의 열·페이지 경계 대조 필요' : ''], adminExecutionDurationRow(archive), ['예상 API 비용', Number.isFinite(Number(engine.estimatedUsd ?? archive.estimatedUsd)) ? `$${Number(engine.estimatedUsd ?? archive.estimatedUsd).toFixed(4)}` : ''], ['품질 경고', qualityCodes], ['효과 알림', effectCodes], ['원문 확인', sourceReviewCodes], ['한국어 감사', koreanCodes], ['안전 복원', integrityRestoreCodes], ['구체 성과 감사', (engine.unsupportedSpecificityPass ?? archive.unsupportedSpecificityPass) === false ? `잔여 ${engine.unsupportedSpecificityResidualCount ?? archive.unsupportedSpecificityResidualCount ?? 0}건` : (engine.unsupportedSpecificityPass ?? archive.unsupportedSpecificityPass) === true ? '통과' : '']
    ])}
   </div>
   ${adminLedgerTextBlock('원문', history.inputText)}
