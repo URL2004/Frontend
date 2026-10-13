@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-13",
+  "tool": "Built-in image_gen",
+  "format": "WebP, 1200px wide, libwebp quality 82",
+  "images": [
+    {
+      "slug": "correlation-vs-causation-report-guide",
+      "asset": "assets/img/blog/correlation-vs-causation-report-guide.webp",
+      "prompt": "Wide 16:9 editorial illustration for a university writing guide on correlation versus causation. A thoughtful abstract kinetic sculpture: two separate cobalt blue pendulum spheres hanging side by side from a single saffron yellow arch, with thin wires clearly attached to the shared arch, suggesting a shared upstream influence. Near the foreground, a separate short row of three terracotta domino tiles with generous space, one gently leaning onto the next, representing a directed physical cause. Muted pale blue studio background, matte painted wood and brushed metal textures, soft side light, refined contemporary magazine photography aesthetic. Clear sparse composition, main sculpture centered within middle 65 percent width and 60 percent height for cropping. No books, paper sheets, stairs, ribbons, text, letters, numbers, logos, arrows, graphs, robots or watermarks. Conceptual art only, not a scientific diagram."
+    }
+  ]
+}
