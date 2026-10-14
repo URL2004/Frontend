@@ -11663,10 +11663,17 @@ body[data-main-design="lavender"] .gp-dialog-root.variant-notify .gp-prompt-wrap
 #mypageContent .gp-mp-panels .gp-more-btn{margin:10px 0 6px;}
 @keyframes gpMpPanelIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
 
-/* 계정 관리 줄 — 되돌리기 어려운 동작은 조용한 텍스트 버튼으로 내려둔다 */
-#mypageContent .gp-mp-account{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:18px 0 0;padding:0 4px;font-size:12.5px;color:#6b7186;}
-#mypageContent .gp-mp-account span{margin-right:6px;font-weight:700;}
-#mypageContent .gp-mp-account button{min-height:32px;padding:0 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:#525a6e;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:background .15s,color .15s;}
+/* 계정 관리는 처음에 접어 두고, 제목을 누르면 기존 계정 동작을 펼친다. */
+#mypageContent .gp-mp-account{margin:18px 0 0;padding:0 4px;font-size:12.5px;color:#525a6e;}
+#mypageContent .gp-mp-account summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:0 10px;border-radius:8px;font-weight:700;list-style:none;cursor:pointer;}
+#mypageContent .gp-mp-account summary::-webkit-details-marker{display:none;}
+#mypageContent .gp-mp-account summary:hover{background:#fff;color:#1a1f2e;}
+#mypageContent .gp-mp-account summary svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;}
+#mypageContent .gp-mp-account[open] summary svg{transform:rotate(180deg);}
+#mypageContent .gp-mp-account-actions{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0 0;}
+#mypageContent .gp-mp-account:not([open]) .gp-mp-account-actions{display:none;}
+#mypageContent .gp-mp-account button{min-height:44px;padding:0 10px;border:1px solid transparent;border-radius:8px;background:transparent;color:#525a6e;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:background .15s,color .15s;}
+#mypageContent .gp-mp-account summary:focus-visible,#mypageContent .gp-mp-account button:focus-visible{outline:2px solid #5a5bd8;outline-offset:2px;}
 #mypageContent .gp-mp-account button:hover{background:#fff;border-color:#e4e7f1;color:#1a1f2e;}
 #mypageContent .gp-mp-account button.is-danger{color:#b8443a;}
 #mypageContent .gp-mp-account button.is-danger:hover{background:#fdf1ef;border-color:#f0c4c0;}

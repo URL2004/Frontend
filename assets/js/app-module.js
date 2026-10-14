@@ -3262,11 +3262,13 @@ window.gpRenderMyPageShell = function(view) {
   + panel('mpPanelOrders', 'mpTabOrders', 'orderHistoryList', true)
   + panel('mpPanelCredits', 'mpTabCredits', 'creditHistoryList', true)
   +'</div>'
-  +'<div class="gp-mp-account"><span>계정 관리</span>'
+  +'<details class="gp-mp-account">'
+  + '<summary>계정 관리<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4"/></svg></summary>'
+  + '<div class="gp-mp-account-actions">'
   + '<button type="button" onclick="changeNickname()">닉네임 변경</button>'
   + '<button type="button" onclick="showRefundModal()">환불하기</button>'
   + '<button type="button" class="is-danger" onclick="deleteAccount()">회원 탈퇴</button>'
-  +'</div>'
+  +'</div></details>'
   +'</section>';
 };
 
