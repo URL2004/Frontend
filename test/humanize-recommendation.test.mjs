@@ -9,7 +9,7 @@ function load(diag, length=499, touched=false) {
   element('lavInput').value = 'a'.repeat(length);
   const events=[];
   const context={lastDiag:diag,toneSelectionTouched:touched,MODE_RECOMMENDATION_ENABLED:true,$:element,document:{querySelector:q=>element(q.includes('formal')?'formalRadio':'blogRadio')},window:{gpTrack:(name,data)=>events.push({name,data})}};
-  for(const name of ['advancedUnavailable','recommendedMode','isRecommendedMode','applyAdvancedRouting','trackDiagnosisView','trackModeSelection']) {
+  for(const name of ['advancedUnavailable','editableBelowMinimum','littleEditableMessage','recommendedMode','isRecommendedMode','applyAdvancedRouting','trackDiagnosisView','trackModeSelection']) {
     const start=source.indexOf('  function '+name+'(');
     const end=source.indexOf('\n  }',start)+4;
     vm.runInNewContext(source.slice(start,end),context);
@@ -82,4 +82,43 @@ test('advanced eligibility lock and a user-selected basic mode are preserved',()
   elements.blogRadio.checked=true;elements.formalRadio.checked=false;
   context.applyAdvancedRouting();
   assert.equal(elements.blogRadio.checked,true);assert.equal(elements.formalRadio.checked,false);
+});
+
+// 2026-10-14 사장님 결정: 고칠 본문이 최소 길이 미만인 글은 방법 선택 화면에서 기본·고급을 잠그고 안내한다.
+test('a body below the minimum locks basic and advanced, keeps polish open, and replaces the reason line',()=>{
+  const message='고칠 수 있는 본문이 거의 없어요. 제목·목록·표는 그대로 두는 부분이라 바꿀 문장이 없어요. 문장으로 된 본문을 더 넣어 주세요.';
+  for(const diagnosisSource of ['backend','paid_report']) {
+    const {elements}=load({recommendedMode:null,recommendationCode:'editable_below_minimum',recommendationReason:message,advancedEligible:true,diagnosisSource,recommendationSignals:{editableLength:22,editableBelowMinimum:true}});
+    assert.equal(elements.lavEditableNotice.hidden,false);
+    assert.equal(elements.lavEditableNotice.textContent,message);
+    assert.equal(elements.lavRecommendationReason.hidden,true);
+    assert.equal(elements.blogRadio.disabled,true);
+    assert.equal(elements.formalRadio.disabled,true);
+    assert.equal(elements.lavCardBasic.disabled,true);
+    assert.equal(elements.lavCardBasic.classList['is-locked'],true);
+    assert.equal(elements.lavCardFormal.disabled,true);
+    assert.equal(elements.lavCardPolish,undefined);
+    assert.equal(elements.lavFormalLockNote.hidden,true);
+    assert.equal(elements.lavBasicRecommended.hidden,true);
+  }
+  // 서버 문구가 없을 때도 같은 안내를 보여 준다.
+  assert.equal(load({recommendationSignals:{editableBelowMinimum:true}}).elements.lavEditableNotice.textContent,message);
+  // 본문이 충분하면 아무것도 잠그지 않는다.
+  const open=load({recommendedMode:'blog',recommendationCode:'little_editable_content',recommendationReason:'바꿀 수 있는 본문이 적어 기본을 권해요.',recommendationSignals:{editableLength:84,editableBelowMinimum:false}}).elements;
+  assert.equal(open.lavEditableNotice.hidden,true);
+  assert.equal(open.blogRadio.disabled,false);
+  assert.equal(open.lavCardBasic.disabled,false);
+  assert.equal(open.formalRadio.disabled,false);
+  assert.equal(open.lavRecommendationReason.hidden,false);
+});
+
+test('the confirm, start and server-refusal paths share the same minimum-body guard',()=>{
+  const confirm=source.slice(source.indexOf('  window.lavOpenConfirm = function'),source.indexOf('pendingPolish = false;',source.indexOf('  window.lavOpenConfirm = function')));
+  assert.match(confirm,/if \(editableBelowMinimum\(lastDiag\)\) \{ notifyLittleEditable\(\); return; \}/);
+  const start=source.slice(source.indexOf('  window.lavStartJob = function'),source.indexOf('var s = currentSettings();',source.indexOf('  window.lavStartJob = function')));
+  assert.ok(start.indexOf("runShortJob('polish', null)")<start.indexOf('editableBelowMinimum(lastDiag)'),'다듬기는 잠그지 않는다');
+  const refusal=source.slice(source.indexOf("err.code === 'NO_EDITABLE_CONTENT'"),source.indexOf("err.code === 'LIMITED_EFFECT_CONFIRMATION_REQUIRED'"));
+  assert.match(refusal,/err\.reason === 'editable_below_minimum'/);
+  assert.match(refusal,/editableBelowMinimum: true/);
+  assert.match(refusal,/applyAdvancedRouting\(\)/);
 });

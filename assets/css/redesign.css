@@ -10063,6 +10063,9 @@ a.snav-btn{display:flex;}
 .lav-choice-heading > p{margin:0;color:#858b9a;font-size:12px;line-height:1.5;text-align:right;}
 .lav-recommendation-reason{margin:0 0 16px;color:#626979;font-size:13px;line-height:1.65;overflow-wrap:anywhere;}
 .lav-recommendation-reason[hidden]{display:none;}
+/* 고칠 본문이 거의 없는 글 — 기본·고급 카드를 잠근 이유를 카드 위에서 먼저 알린다 */
+.lav-editable-notice{margin:0 0 16px;padding:12px 14px;border:1px solid #f0d9a8;border-radius:12px;background:#fff8ea;color:#7a5313;font-size:13.5px;font-weight:600;line-height:1.6;word-break:keep-all;overflow-wrap:anywhere;}
+.lav-editable-notice[hidden]{display:none!important;}
 
 .lav-select-grid{gap:11px;margin:0 0 11px;}
 .lav-sel-card{gap:0;padding:17px 16px 15px;border-width:1px;border-color:#e1e3eb;border-radius:14px;box-shadow:none;}

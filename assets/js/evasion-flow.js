@@ -379,6 +379,24 @@
     return d.advancedEligible == null && d.restructureUnfit === true;
   }
 
+  // 고칠 본문이 최소 길이에 못 미치는 글(서버 진단이 판정)은 기본·고급이 바꿀 문장이 없어 끝까지 돌다
+  // '변화 없음'으로 막힌다. 방법 선택 화면에서 두 카드를 잠그고 안내한다(사장님 결정 2026-10-14).
+  // 다듬기는 열어 둔다. 서버도 시작 요청을 같은 기준으로 한 번 더 거절한다.
+  function editableBelowMinimum(d) {
+    return !!(d && d.recommendationSignals && d.recommendationSignals.editableBelowMinimum === true);
+  }
+
+  function littleEditableMessage(d) {
+    return d && d.recommendationCode === 'editable_below_minimum' && d.recommendationReason
+      || '고칠 수 있는 본문이 거의 없어요. 제목·목록·표는 그대로 두는 부분이라 바꿀 문장이 없어요. 문장으로 된 본문을 더 넣어 주세요.';
+  }
+
+  function notifyLittleEditable() {
+    var message = littleEditableMessage(lastDiag);
+    if (window.gpToast) window.gpToast(message, { type: 'warning', title: '입력 내용을 확인해 주세요' });
+    else alert(message);
+  }
+
   function resetToneChoice() {
     toneSelectionTouched = false;
     lavMemoOverride = '';   // 새 진단 = 새 흐름 — 차단 재도전 메모 초기화
@@ -558,11 +576,18 @@
   // 플래그가 닫힌 동안 세 카드를 중립적으로 유지하고 기본 라디오만 초기화한다.
   function applyAdvancedRouting() {
     var unfit = advancedUnavailable(lastDiag);
+    var littleBody = editableBelowMinimum(lastDiag);
     var recommendAdvanced = isRecommendedMode('formal');
     var recommendBasic = isRecommendedMode('blog');
+    var notice = $('lavEditableNotice');
+    if (notice) {
+      notice.textContent = littleBody ? littleEditableMessage(lastDiag) : '';
+      notice.hidden = !littleBody;
+    }
     var reason = $('lavRecommendationReason');
     if (reason) {
-      var reasonText = MODE_RECOMMENDATION_ENABLED && lastDiag && !lastDiag.diagnosisUnavailable
+      // 본문 부족 안내가 같은 말을 맨 위에서 하므로 추천 사유 줄은 접는다.
+      var reasonText = !littleBody && MODE_RECOMMENDATION_ENABLED && lastDiag && !lastDiag.diagnosisUnavailable
         && lastDiag.diagnosisSource !== 'fallback' && lastDiag.recommendationReason || '';
       reason.textContent = reasonText
         ? (recommendAdvanced ? '고급 추천 · ' : recommendBasic ? '기본 추천 · ' : '선택 안내 · ') + reasonText
@@ -572,14 +597,15 @@
     var formalRadio = document.querySelector('input[name="lavTone"][value="formal"]');
     var blogRadio = document.querySelector('input[name="lavTone"][value="blog"]');
     if (formalRadio) {
-      formalRadio.disabled = unfit;
+      formalRadio.disabled = unfit || littleBody;
       if (unfit && formalRadio.checked && blogRadio) blogRadio.checked = true;   // 고급 선택돼 있었으면 기본으로
       if (!unfit && !toneSelectionTouched) formalRadio.checked = recommendAdvanced;
     }
+    if (blogRadio) blogRadio.disabled = littleBody;
     if (!toneSelectionTouched && blogRadio) blogRadio.checked = !recommendAdvanced || unfit;
     // 고급 카드 잠금 표시 + 근거 체크박스 동반 잠금
     var formalCard = $('lavCardFormal');
-    if (formalCard) { formalCard.classList.toggle('is-locked', unfit); formalCard.disabled = unfit; }
+    if (formalCard) { formalCard.classList.toggle('is-locked', unfit || littleBody); formalCard.disabled = unfit || littleBody; }
     var lockNote = $('lavFormalLockNote');
     if (lockNote) {
       lockNote.hidden = !unfit;
@@ -592,7 +618,11 @@
     if (basicRecommended) basicRecommended.hidden = !recommendBasic;
     if (formalRecommended) formalRecommended.hidden = !recommendAdvanced;
     var basicCard = $('lavCardBasic');
-    if (basicCard) basicCard.classList.toggle('is-recommended', recommendBasic);
+    if (basicCard) {
+      basicCard.classList.toggle('is-recommended', recommendBasic);
+      basicCard.classList.toggle('is-locked', littleBody);
+      basicCard.disabled = littleBody;
+    }
     if (formalCard) formalCard.classList.toggle('is-recommended', recommendAdvanced);
   }
 
@@ -3507,6 +3537,7 @@
   }
 
   window.lavOpenConfirm = function () {
+    if (editableBelowMinimum(lastDiag)) { notifyLittleEditable(); return; }   // 기본·고급을 시작할 수 없는 글
     pendingPolish = false;   // 휴머나이징 확인 — 다듬기 플래그 정리
     var ttl = document.querySelector('#lavConfirmModal .lav-confirm-title');
     if (ttl) ttl.textContent = '이 설정으로 시작할까요?';
@@ -4282,6 +4313,17 @@
     if (err && err.httpStatus === 422 && err.code === 'NO_EDITABLE_CONTENT') {
       clearJobRef();
       clearActiveJobUi();
+      if (err.reason === 'editable_below_minimum') {
+        // 진단 뒤 글이 바뀌었거나 진단을 거치지 않은 경로 — 서버 판정으로 선택 화면도 같은 잠금 상태로 맞춘다.
+        var base = lastDiag || fakeDiagnose();
+        lastDiag = Object.assign({}, base, {
+          recommendedMode: null,
+          recommendationCode: 'editable_below_minimum',
+          recommendationReason: err.message || '',
+          recommendationSignals: Object.assign({}, base.recommendationSignals || {}, { editableBelowMinimum: true })
+        });
+        applyAdvancedRouting();
+      }
       show(fallbackStep || 'select');
       var inputNotice = err.message || '변환할 일반 본문을 찾지 못했어요.';
       if (window.gpToast) window.gpToast(inputNotice, { type: 'warning', title: '입력 내용을 확인해 주세요' });
@@ -4978,6 +5020,7 @@
     }
     window.lavCloseConfirm();
     if (polish) return runShortJob('polish', null);    // 원문 보존 다듬기 — 확인 후 시작
+    if (editableBelowMinimum(lastDiag)) { notifyLittleEditable(); return; }
     var s = currentSettings();
     s.effectNoticeAccepted = effectNoticeAccepted;
     s.structurePlanId = validStructurePlan() ? validStructurePlan().id : null;
