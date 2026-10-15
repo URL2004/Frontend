@@ -19,6 +19,7 @@
   var lastUnread = -1;
   var ringTimer = null;
   var floatOwner = '';
+  var jobToastState = { owner: '', since: 0, seen: {} };
 
   window.gpNativeAlert = nativeAlert;
   window.gpNativeConfirm = nativeConfirm;
@@ -681,6 +682,7 @@
     uid = String(uid || '');
     if (uid === notificationOwner) return;
     notificationOwner = uid; localKey = uid ? 'gpLocalNotifications:' + uid : '';
+    jobToastState = { owner: '', since: 0, seen: {} };
     notificationMemory = []; notificationStorageUnavailable = false; floatQueue = []; floatShownIds = {}; floatOwner = uid;
     if ($('gpOperatorFloat')) $('gpOperatorFloat').hidden = true;
     if ($('gpToastRoot')) $('gpToastRoot').textContent = '';
@@ -757,14 +759,48 @@
     if (opts.persist !== false) window.gpFlushNotifications();
     return n;
   };
+  function jobTransitionOwner() {
+    return String(window.CU && window.CU.uid || notificationOwner || '');
+  }
+  function notifyServerJobTransitions(items) {
+    var owner = jobTransitionOwner();
+    if (!owner) { jobToastState = { owner: '', since: 0, seen: {} }; return Promise.resolve(); }
+    var baseline = jobToastState.owner !== owner;
+    if (baseline) jobToastState = { owner: owner, since: now(), seen: {} };
+    var pending = [];
+    (items || []).forEach(function (item) {
+      var n = normalizeNotification(item, 'remote');
+      var key = String(n.clientId || n.id || '');
+      if (!/^job_event_/.test(key) || n.type !== 'job_done') return;
+      var seen = jobToastState.seen[key];
+      jobToastState.seen[key] = true;
+      if (baseline || seen || n.read || n.createdAt < jobToastState.since) return;
+      var claim = function () {
+        if (jobTransitionOwner() !== owner) return;
+        var storageKey = 'gpJobToastSeen:' + owner, ids = [];
+        try { ids = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch (_) {}
+        if (!Array.isArray(ids)) ids = [];
+        if (ids.indexOf(key) >= 0) return;
+        ids.unshift(key);
+        try { localStorage.setItem(storageKey, JSON.stringify(ids.slice(0, 512))); } catch (_) {}
+        toast(n.message || '결과가 준비됐어요. 작업 기록에서 확인해 주세요.', { type: 'success', title: n.title || '작업 완료' });
+      };
+      // A shared browser lock prevents two signed-in tabs from claiming one event.
+      var locks = window.navigator && window.navigator.locks;
+      pending.push(locks && locks.request ? locks.request('gp-job-toast:' + owner, claim).catch(function () {}) : Promise.resolve(claim()));
+    });
+    return Promise.all(pending);
+  }
   window.gpSetRemoteNotifications = function (items) {
     remoteItems = Array.isArray(items) ? items : [];
+    notifyServerJobTransitions(remoteItems);
     renderNotifications();
     queueOperatorMessages();
   };
   // 실시간 구독(app-module.js)이 새로 들어온 알림만 넘길 때 쓴다 — 목록 전체를 다시 읽지 않는다.
   window.gpUpsertRemoteNotifications = function (items) {
     if (!Array.isArray(items) || !items.length) return;
+    notifyServerJobTransitions(items);
     items.forEach(function (item) {
       var at = -1;
       remoteItems.forEach(function (x, i) { if (String(x.id) === String(item.id)) at = i; });

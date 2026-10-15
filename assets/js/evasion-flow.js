@@ -4140,11 +4140,34 @@
     } catch (e) { }
   }
   function clearJobRef() { try { localStorage.removeItem('lavJobRef'); } catch (e) { } }
+  window.gpInvalidateTransformSession = function () {
+    pollGen++;
+    activeCancel = null;
+    paymentJob = null;
+    stopFormalTicker();
+    clearCancelWindow();
+    clearActiveJobUi();
+  };
+  window.gpRememberTransformJob = function (jobId, status) {
+    if (!jobId) return;
+    setActiveJobUi(jobId, status || 'checking', '작업 상태 확인');
+    if (['done', 'error', 'cancelled'].indexOf(status) >= 0) clearJobRef();
+  };
+  window.gpResumeTransformState = function (jobId, state) {
+    if (typeof window.switchTab === 'function') window.switchTab('main');
+    return resumeTransformState(jobId, state);
+  };
   function initJobResume() {
     var ref = readJobRef();
     var resumeGen = ++pollGen;
     if (!ref) {
-      recoverActiveTransformJob(resumeGen).catch(function () { /* 로그인·연결 회복 후 다시 확인 */ });
+      var pending = null;
+      try { pending = JSON.parse(localStorage.getItem('lavStartPending') || 'null'); } catch (_) {}
+      var unknown = !!(pending && window.gpSessionSecurity && window.gpSessionSecurity.owns(pending) && Date.now() - pending.ts < 6 * 3600 * 1000);
+      if (unknown) { setActiveJobUi('', 'checking', '작업 접수 여부 확인 중'); show('job'); }
+      recoverActiveTransformJob(resumeGen).then(function (recovered) {
+        if (!recovered && unknown) showUnknownTransformStart(resumeGen);
+      }).catch(function () { if (unknown) showUnknownTransformStart(resumeGen); });
       return;
     }
     setActiveJobUi(ref.jobId, ref.status || 'checking');
@@ -4182,15 +4205,21 @@
         e.documentProfile = b.documentProfile || '';
         e.editableChunkCount = Number.isFinite(Number(b.editableChunkCount)) ? Number(b.editableChunkCount) : null;
         e.needed = Number.isFinite(Number(b.needed)) ? Number(b.needed) : null;
+        e.charged = b.charged;
         throw e;
       }
-      if (!res.ok || !b || !b.ok) throw new Error('시작하지 못했어요. 잠시 후 다시 눌러주세요. (크레딧은 차감되지 않았어요)');
+      if (!res.ok || !b || !b.ok) {
+        var invalid = new Error('작업 접수 응답을 확인하지 못했어요. 기존 작업의 상태를 먼저 확인해 주세요.');
+        invalid.httpStatus = res.status; invalid.code = 'TRANSFORM_START_UNKNOWN';
+        throw invalid;
+      }
       return b;
     });
   }
 
   function resumeTransformState(jobId, st) {
     if (!jobId || !st || !st.ok && !st.status) return false;
+    try { localStorage.removeItem('lavStartPending'); } catch (_) {}
     st.jobId = jobId;
     if (st.status === 'awaiting_payment') {
       renderPaymentRequired(jobId, st);
@@ -4247,12 +4276,14 @@
 
   async function recoverActiveTransformJob(recoverGen) {
     if (recoverGen !== pollGen) return false;
+    var owner = window.CU && window.CU.uid;
+    if (!owner) return false;
     var idToken = await evGetIdToken(true);
-    if (!idToken || recoverGen !== pollGen) return false;
+    if (!idToken || recoverGen !== pollGen || owner !== (window.CU && window.CU.uid)) return false;
     var res = await fetch(window.apiUrl('/transform/active'), { headers: evAuthHeaders(idToken) });
     if (!res.ok) return false;
     var data = await res.json().catch(function () { return null; });
-    if (recoverGen !== pollGen) return false;
+    if (recoverGen !== pollGen || owner !== (window.CU && window.CU.uid)) return false;
     var job = data && data.job;
     if (!data || !data.ok || !job || !job.id) return false;
     if (job.structurePreview) return false;
@@ -4388,12 +4419,54 @@
       if (window.gpTrack) window.gpTrack('credit_insufficient', { analysis_mode: resumeMode, needed_credits: resumeNeeded, current_credits: window.UC || 0 });
       return;
     }
+    if (!err || !err.httpStatus || err.httpStatus >= 500 || err.code === 'TRANSFORM_START_UNKNOWN') {
+      // A missing response is not a rejected admission. Never submit another job here.
+      var unknownGen = ++pollGen;
+      try { localStorage.setItem('lavStartPending', JSON.stringify(window.gpSessionSecurity.tag({ ts: Date.now() }))); } catch (_) {}
+      setActiveJobUi('', 'checking', '작업 접수 여부 확인 중');
+      activeCancel = null;
+      clearCancelWindow();
+      show('job');
+      try { if (await recoverActiveTransformJob(unknownGen)) return; } catch (_) { /* keep uncertainty visible */ }
+      if (unknownGen !== pollGen) return;
+      showUnknownTransformStart(unknownGen);
+      return;
+    }
     var msg = (err && err.message) ? err.message : '처리 중 오류가 발생했어요.';
-    // 작업 시작 실패는 차감 전 단계 — "차감 없음" 안심 문구로 결제·환불 문의 감소
-    if (!/차감/.test(msg)) msg += '\n\n크레딧은 차감되지 않았어요. (차감은 작업이 완료될 때만 일어나요)';
+    if (err && err.charged === 0 && !/차감/.test(msg)) msg += '\n\n이번 요청은 차감되지 않았어요.';
     alert(msg);
     clearActiveJobUi();
     show(fallbackStep || 'select');
+  }
+
+  function showUnknownTransformStart(gen) {
+    if (gen !== pollGen) return;
+    var message = '작업 접수·결제 여부를 아직 확인하지 못했어요. 서버에서 계속 처리되거나 이미 완료됐을 수 있어요. 새 요청 전에 작업 상태와 작업 기록을 확인해 주세요.';
+    if ($('lavJobTitle')) $('lavJobTitle').textContent = '작업 접수 여부 확인 필요';
+    var host = $('lavStepSlot');
+    if (!host) { if (window.gpToast) window.gpToast(message, { type: 'warning', sticky: true }); return; }
+    host.textContent = message;
+    var retry = document.createElement('button'); retry.type = 'button'; retry.textContent = '기존 작업 다시 확인';
+    retry.onclick = async function () {
+      if (gen !== pollGen) return;
+      retry.disabled = true;
+      try { if (await recoverActiveTransformJob(gen)) return; } catch (_) {}
+      if (gen === pollGen) showUnknownTransformStart(gen);
+    };
+    host.appendChild(retry);
+    var history = document.createElement('button'); history.type = 'button'; history.textContent = '작업 기록 확인';
+    history.onclick = function () { if (typeof window.switchTab === 'function') window.switchTab('history'); };
+    host.appendChild(history);
+    var back = document.createElement('button'); back.type = 'button'; back.textContent = '기록 확인 후 입력으로 돌아가기';
+    back.onclick = async function () {
+      var accepted = window.gpConfirm
+        ? await window.gpConfirm({ title: '기존 작업을 확인하셨나요?', message: '서버에서 이전 작업이 계속 처리될 수 있어요. 기록과 진행 상태를 확인한 뒤 새 요청을 시작해 주세요.', confirmText: '확인했어요' })
+        : confirm('이전 작업이 서버에서 계속 처리될 수 있어요. 기록과 진행 상태를 확인하셨나요?');
+      if (!accepted || gen !== pollGen) return;
+      try { localStorage.removeItem('lavStartPending'); } catch (_) {}
+      pollGen++; clearActiveJobUi(); show('select');
+    };
+    host.appendChild(back);
   }
 
   // 폴링: 6초 간격, 최대 45분(근거 검색+재구성). 창을 닫아도 서버 작업은 계속됨(job 방식).

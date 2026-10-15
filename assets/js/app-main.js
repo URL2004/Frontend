@@ -729,7 +729,7 @@ function selectProCoupon(tier) {
  if (sub.tier !== tier) return; // 본인 티어가 아니면 무시
  window.PRO_STATE.selectedTier = tier;
  const ta = document.getElementById('proInputText');
- const limit = (tier === 'unlimited') ? 50000 : parseInt(tier, 10);
+ const limit = Math.min(30000, (tier === 'unlimited') ? 30000 : parseInt(tier, 10));
  ta.maxLength = limit;
  const badge = document.getElementById('proSelectedBadge');
  if (badge) badge.textContent = TIER_LABELS[tier] + ' 쿠폰 선택됨 · 최대 ' + limit.toLocaleString() + '자';
@@ -742,6 +742,22 @@ function selectProCoupon(tier) {
  updateProCount(ta);
 }
 
+function pendingCouponDetectRecovery(text) {
+ const owner = window.CU || (window._fbAuth && window._fbAuth.currentUser);
+ const pending = window.gpLegacyDetectPending;
+ if (!owner || !owner.uid || !pending || !pending.requestId) return false;
+ const binding = JSON.stringify([owner.uid, 'detect', text, autoLangForText(text, selectedLang) || '', '', 'coupon']);
+ return pending.binding === binding;
+}
+
+function deliveredUsageCharge(response, fallback) {
+ // A staged result may be recovered before its first debit. Its explicit
+ // receipt wins; a completed replay without a receipt owns no second debit.
+ if (response && typeof response.charged === 'number' && Number.isFinite(response.charged) && response.charged >= 0) return response.charged;
+ if (response && response.idempotentReplay === true) return 0;
+ return fallback;
+}
+
 function updateProCount(el) {
  const cc = document.getElementById('proCcount');
  if (cc) cc.textContent = el.value.length.toLocaleString() + '자';
@@ -749,9 +765,11 @@ function updateProCount(el) {
  const btn = document.getElementById('proRunBtn');
  const proMode = window.PRO_STATE.mode;
  const minLen = proMode === 'detect' ? 5 : transformMinLength(publicTransformMode(proMode));
- const can = !!tier && el.value.trim().length >= minLen && (window.COUPON?.remaining > 0 || tier === 'unlimited');
+ const limit = Math.min(30000, tier === 'unlimited' ? 30000 : parseInt(tier, 10));
+ const recoverable = proMode === 'detect' && pendingCouponDetectRecovery(el.value.trim());
+ const can = !!tier && el.value.trim().length >= minLen && el.value.length <= limit && (window.COUPON?.remaining > 0 || tier === 'unlimited' || recoverable);
  const hint = document.getElementById('proHint');
- if (hint) hint.textContent = '쿠폰 1회 사용 · 최소 ' + minLen.toLocaleString() + '자';
+ if (hint) hint.textContent = el.value.length > limit ? '한 번에 ' + limit.toLocaleString() + '자까지 처리할 수 있어요. 글을 나눠 주세요.' : recoverable ? '같은 검사 요청의 결과와 결제 상태를 다시 확인해요.' : '쿠폰 1회 사용 · 최소 ' + minLen.toLocaleString() + '자 · 최대 ' + (limit || 30000).toLocaleString() + '자';
  if (btn) {
    btn.disabled = !can;
    btn.style.opacity = can ? '1' : '.5';
@@ -817,8 +835,8 @@ async function runProAnalysis() {
  if (!sub || !tier) { alert('사용할 쿠폰을 선택해 주세요.'); return; }
  const text = document.getElementById('proInputText').value.trim();
  if (text.length < 5) { alert('처리할 글을 5자 이상 입력해 주세요.'); return; }
- const charLimit = (tier === 'unlimited') ? 50000 : parseInt(tier, 10);
- if (text.length > charLimit) { alert(TIER_LABELS[tier] + ' 한도를 초과했어요.'); return; }
+ const charLimit = Math.min(30000, (tier === 'unlimited') ? 30000 : parseInt(tier, 10));
+ if (text.length > charLimit) { alert('한 번에 ' + charLimit.toLocaleString() + '자까지 처리할 수 있어요. 글을 나눠 다시 시도해 주세요.'); return; }
 
  const mode = window.PRO_STATE.mode;
  const apiMode = mode === 'detect' ? 'detect' : 'humanize';
@@ -853,10 +871,11 @@ async function runProAnalysis() {
    if (!res.ok) throw new Error('처리 실패');
    renderProResult(res.result, apiMode);
    // 쿠폰 사용량 갱신 — 환불 예상액도 새로고침 전 즉시 같은 사용량을 반영한다.
-   if (window.COUPON) {
-     window.COUPON.used = Math.max(0, Number(window.COUPON.used) || 0) + 1;
+   const couponUsed = deliveredUsageCharge(res, 1) > 0 ? 1 : 0;
+   if (window.COUPON && couponUsed) {
+     window.COUPON.used = Math.max(0, Number(window.COUPON.used) || 0) + couponUsed;
      if (tier !== 'unlimited') {
-       window.COUPON.remaining = Math.max(0, (window.COUPON.remaining || 0) - 1);
+       window.COUPON.remaining = Math.max(0, (window.COUPON.remaining || 0) - couponUsed);
      }
    }
    refreshProTab();
@@ -1182,11 +1201,30 @@ async function callAnalyzeApi(payload, opts) {
  if (payload.mode !== 'detect') {
   throw new Error('휴머나이징은 새 변환 작업 경로를 이용해야 합니다.');
  }
+ // Keep an unknown-outcome operation recoverable on the next same-input attempt.
+ // Text remains in this page's memory; account/input/price variants never share a key.
+ var retryUser = window.CU || (window._fbAuth && window._fbAuth.currentUser);
+ var sessionEpoch = window.gpSessionEpoch || 0;
+ function assertOwner() {
+  var current = window.CU || (window._fbAuth && window._fbAuth.currentUser);
+  if (sessionEpoch !== (window.gpSessionEpoch || 0) || retryUser && retryUser.uid && retryUser.uid !== (current && current.uid)) {
+   var changed = new Error('계정이 변경되어 이전 작업의 화면 갱신을 중단했어요.'); changed.code = 'ACCOUNT_CHANGED'; throw changed;
+  }
+ }
+ var retryBinding = JSON.stringify([retryUser && retryUser.uid || genReqId(), payload.mode, payload.text, payload.lang || '', payload.prevContext || '', payload.billingMode || 'credit']);
+ var pendingDetect = window.gpLegacyDetectPending;
+ payload = Object.assign({}, payload, { requestId: pendingDetect && pendingDetect.binding === retryBinding ? pendingDetect.requestId : payload.requestId || genReqId() });
+ if (String(payload.text || '').length > 30000) throw new Error('한 번에 30,000자까지 처리할 수 있어요. 글을 나눠 다시 시도해 주세요.');
+ window.gpLegacyDetectPending = { binding: retryBinding, requestId: payload.requestId };
+ var clearPending = function () {
+  if (window.gpLegacyDetectPending && window.gpLegacyDetectPending.requestId === payload.requestId) window.gpLegacyDetectPending = null;
+ };
  var maxRetries = (opts.maxRetries == null) ? 1 : opts.maxRetries;
  var timeoutMs = opts.timeoutMs || 300000;
  var delay = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
  var attempt = 0;
  while (true) {
+  assertOwner();
   var ctrl = new AbortController();
   var timedOut = false;
   var timer = setTimeout(function(){ timedOut = true; ctrl.abort(); }, timeoutMs);
@@ -1219,16 +1257,18 @@ async function callAnalyzeApi(payload, opts) {
 
   if (netErr) {
    if (timedOut) {
-    // 타임아웃은 무한정 다시 기다리기보다 즉시 안내 (서버는 abort로 차감 안 함)
-    var te = new Error('서버 응답이 지연돼 요청을 중단했어요. 크레딧은 차감하지 않았어요. 글을 더 짧게 나눠 다시 시도해 주세요.');
+    var te = new Error('서버 응답을 확인하지 못했어요. 처리·결제 여부는 아직 확인되지 않았으니 작업 기록을 먼저 확인해 주세요.');
     te.code = 'timeout';
+    te.requestId = payload.requestId;
     throw te;
    }
    if (attempt < maxRetries) { attempt++; await delay(1500 * attempt); continue; }
    throw new Error('네트워크 연결이 불안정해요. 잠시 후 다시 시도해 주세요.');
   }
 
+  assertOwner();
   try { body = await res.json(); } catch (e) { body = null; }
+  assertOwner();
 
   if (res.status === 429) {
    if (attempt < maxRetries) { attempt++; await delay(2000 * attempt); continue; }
@@ -1240,6 +1280,7 @@ async function callAnalyzeApi(payload, opts) {
   }
   // 400/402 등 — 재시도해도 결과가 안 바뀌는 오류
   if (body && body.error) {
+   if (res.status !== 202 && res.status !== 409 && body.retryable !== true) clearPending();
    var apiError = new Error(body.error);
    apiError.status = res.status;
    apiError.code = body.code || '';
@@ -1247,6 +1288,7 @@ async function callAnalyzeApi(payload, opts) {
    throw apiError;
   }
   if (!body || !body.ok) throw new Error('처리 중 오류가 발생했어요.');
+  clearPending();
   return body;
  }
 }
@@ -1309,10 +1351,19 @@ async function transformFetchJson(authUser, path, init, forceRefresh) {
 async function callTransformJob(payload) {
  var authUser = payload.authUser;
  if (!authUser || typeof authUser.getIdToken !== 'function') throw new Error('로그인이 필요해요.');
+ var sessionEpoch = window.gpSessionEpoch || 0;
+ function assertOwner() {
+  var current = window.CU || (window._fbAuth && window._fbAuth.currentUser);
+  if (sessionEpoch !== (window.gpSessionEpoch || 0) || authUser.uid && authUser.uid !== (current && current.uid)) {
+   var changed = new Error('계정이 변경되어 이전 작업의 화면 갱신을 중단했어요.'); changed.code = 'ACCOUNT_CHANGED'; throw changed;
+  }
+ }
+ assertOwner();
  var transformMode = publicTransformMode(payload.humanizeMode || payload.mode);
  var minLen = transformMinLength(transformMode);
  var text = String(payload.text || '').trim();
  if (text.length < minLen) throw new Error('이 모드는 최소 ' + minLen + '자부터 변환할 수 있어요.');
+ if (String(payload.text || '').length > 30000) throw new Error('한 번에 30,000자까지 처리할 수 있어요. 글을 나눠 다시 시도해 주세요.');
  var start;
  try {
   start = await transformFetchJson(authUser, '/transform', {
@@ -1342,15 +1393,28 @@ async function callTransformJob(payload) {
   }
   throw error;
  }
+ assertOwner();
  if (typeof payload.onEstimate === 'function') payload.onEstimate(start);
  var jobId = start.jobId;
  if (!jobId) throw new Error('작업 번호를 받지 못했어요.');
+ if (typeof window.gpRememberTransformJob === 'function') window.gpRememberTransformJob(jobId, start.job && start.job.status || 'checking');
  var deadline = Date.now() + 6 * 60 * 60 * 1000;
  while (Date.now() < deadline) {
   await new Promise(function(resolve){ setTimeout(resolve, 2500); });
-  var current = await transformFetchJson(authUser, '/transform/' + encodeURIComponent(jobId), { method: 'GET' }, false);
+  assertOwner();
+  var current;
+  try {
+   current = await transformFetchJson(authUser, '/transform/' + encodeURIComponent(jobId), { method: 'GET' }, false);
+  } catch (error) {
+   assertOwner();
+   error.jobId = jobId;
+   if (typeof window.gpRememberTransformJob === 'function') window.gpRememberTransformJob(jobId, 'checking');
+   throw error;
+  }
+  assertOwner();
   var progress = document.getElementById('progStatus');
   if (progress && current.stage) progress.textContent = current.stage;
+  if (current.status && typeof window.gpRememberTransformJob === 'function') window.gpRememberTransformJob(jobId, current.status);
   if (current.status === 'done') {
     var result = Object.assign({}, current.result || {});
     result.billingDisposition = current.billingDisposition || result.billingDisposition || '';
@@ -1375,10 +1439,22 @@ async function callTransformJob(payload) {
   if (current.status === 'error') throw new Error(current.error || '변환 중 오류가 발생했어요.');
   if (current.status === 'cancelled') throw new Error('변환 작업이 취소됐어요.');
   if (current.status === 'awaiting_approval') {
-   throw new Error('이 작업은 근거 승인이 필요해요. 새 변환 화면에서 계속해 주세요.');
+   if (typeof window.gpResumeTransformState === 'function') window.gpResumeTransformState(jobId, current);
+   var approval = new Error('이 작업은 근거 승인이 필요해요. 진행 화면에서 계속해 주세요.');
+   approval.code = 'TRANSFORM_APPROVAL_REQUIRED'; approval.jobId = jobId;
+   throw approval;
+  }
+  if (current.status === 'awaiting_payment') {
+   if (typeof window.gpRememberTransformJob === 'function') window.gpRememberTransformJob(jobId, 'awaiting_payment');
+   if (typeof window.gpResumeTransformState === 'function') window.gpResumeTransformState(jobId, current);
+   var payment = new Error(current.error || '결과를 보관하고 있어요. 진행 화면에서 잔액을 확인한 뒤 결과 받기를 눌러 주세요.');
+   payment.code = 'TRANSFORM_PAYMENT_REQUIRED'; payment.jobId = jobId; payment.body = current;
+   throw payment;
   }
  }
- throw new Error('처리 시간이 길어지고 있어요. 작업 결과는 작업 기록에서 확인해 주세요.');
+ var pending = new Error('처리 시간이 길어지고 있어요. 같은 작업의 진행 화면이나 작업 기록에서 확인해 주세요.');
+ pending.jobId = jobId; pending.code = 'TRANSFORM_STATUS_UNKNOWN';
+ throw pending;
 }
 
 function combineChunkResults(results, apiMode) {
@@ -1641,7 +1717,7 @@ async function runAnalysis() {
  // 서버가 전달한 최종 과금 처리값만 UI에 반영한다. 과거 무차감 기록도 차감처럼 보이지 않는다.
  const noChargeDisposition = /^(?:waived_|plan_unlimited|admin_no_charge)/u.test(String(data.billingDisposition || data.result?.billingDisposition || ''));
  const chargedNeeded = currentMode === 'detect'
-  ? (Number(data.needed) || needed)
+  ? deliveredUsageCharge(data, Number(data.needed) || needed)
   : (data.deducted === false || noChargeDisposition ? 0 : (Number(data.needed) || needed));
  if (window.UP !== 'unlimited') { window.UC = Math.max(0, (window.UC || 0) - chargedNeeded); updateCreditUI(); }
 

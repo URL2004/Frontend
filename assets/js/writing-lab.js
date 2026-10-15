@@ -7,6 +7,7 @@
  var STORAGE_KEY = 'gp_writing_lab_v2_draft';
  var ACTIVE_KEY = 'gp_writing_lab_v2_active';
  var PENDING_KEY = 'gp_writing_lab_v2_pending';
+ var headerOwners = new WeakMap();
  var SECTION_ORDER = ['essentials', 'details', 'reflection'];
  var STATUS_LABELS = {
   READY: '작성 가능', LIMITED: '짧게 작성 가능', NEEDS_FACTS: '정보 보완 필요',
@@ -36,6 +37,15 @@
  };
 
  function el(id) { return document.getElementById(id); }
+ window.gpInvalidateWritingSession = function () {
+  state.pollToken++;
+  state.answersByGenre = {}; state.subtypeByGenre = {};
+  state.assessment = null; state.assessmentToken = ''; state.policy = null;
+  state.form = null; state.candidates = []; state.verificationToken = '';
+  state.safeDraft = ''; state.lastFinal = ''; state.finalReport = null;
+  state.releasePass = false; state.edited = false;
+  setGenerationBusy(false);
+ };
  function esc(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
@@ -80,14 +90,24 @@
    loginError.code = 'LOGIN_REQUIRED';
    throw loginError;
   }
-  var token = await window.CU.getIdToken(!!fresh);
-  return { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token };
+  var user = window.CU, epoch = window.gpSessionEpoch || 0;
+  var token = await user.getIdToken(!!fresh);
+  if (epoch !== (window.gpSessionEpoch || 0) || user.uid !== (window.CU && window.CU.uid)) throw Object.assign(new Error('계정이 변경되어 이전 요청을 중단했어요.'), { code: 'ACCOUNT_CHANGED', status: 409 });
+  var headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token };
+  headerOwners.set(headers, { uid: user.uid, epoch: epoch });
+  return headers;
  }
 
  async function request(path, options) {
   options = options || {};
+  var owner = options.headers && headerOwners.get(options.headers);
+  function assertOwner() {
+   if (owner && (owner.epoch !== (window.gpSessionEpoch || 0) || owner.uid !== (window.CU && window.CU.uid))) throw Object.assign(new Error('계정이 변경되어 이전 응답을 표시하지 않았어요.'), { code: 'ACCOUNT_CHANGED', status: 409 });
+  }
+  assertOwner();
   var response = await fetch(api(path), options);
   var data = await response.json().catch(function () { return {}; });
+  assertOwner();
   if (!response.ok || data.ok === false) {
    var error = new Error(data.error || '요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.');
    error.status = response.status;
@@ -799,10 +819,23 @@
 
  async function pollWritingGeneration(jobId, runToken) {
   var deadline = Date.now() + 12 * 60 * 1000;
+  var resumed = false;
   while (Date.now() < deadline && runToken === state.pollToken) {
    await sleep(2500);
+   if (runToken !== state.pollToken) break;
    var headers = await authHeaders(false);
    var data = await request('/writing-lab/v2/jobs/' + encodeURIComponent(jobId), { headers: headers });
+   if (runToken !== state.pollToken) break;
+   if (data.resumable === true && !resumed) {
+    var pending = readPending();
+    if (pending && pending.requestId === jobId && pending.form) {
+     resumed = true;
+     setStatus('wlStatus5', '저장된 같은 글쓰기 작업의 완료 처리를 다시 연결하고 있어요.', 'info');
+     data = await request('/writing-lab/v2/generate', { method: 'POST', headers: headers, body: JSON.stringify(Object.assign({}, pending.form, { shortMode: pending.shortMode === true, assessmentToken: pending.assessmentToken, requestId: pending.requestId })) });
+     if (runToken !== state.pollToken) break;
+     if (data.draft) return data;
+    }
+   }
    if (data.status === 'READY' && data.draft) return data;
    setStatus('wlStatus5', '서버에서 진행 중인 글쓰기 작업을 이어서 기다리고 있어요.', 'info');
   }
@@ -922,30 +955,50 @@ async function startHumanize(generation, headers, runToken) {
  }
 
 async function finalCheck(finalText, generation, runToken) {
+  var owner = window.CU && window.CU.uid;
+  var editorValue = el('wlFinal') && el('wlFinal').value;
+  function stillCurrent() {
+   if (runToken !== state.pollToken || owner !== (window.CU && window.CU.uid)) return false;
+   if (state.edited || (el('wlFinal') && el('wlFinal').value) !== editorValue) {
+    setGenerationBusy(false);
+    setProgress(4, 'fail');
+    setStatus('wlStatus5', '검증 대기 중 수정한 글을 유지했어요. “수정본 다시 확인”으로 현재 글을 검수해 주세요.', 'warn');
+    return false;
+   }
+   return true;
+  }
   setProgress(4, 'run');
   setStatus('wlStatus5', '다듬어진 글을 같은 사실 원장과 별도 정책 기준으로 확인하고, 필요한 경우 안전하게 복구하고 있어요.', 'info');
   try {
    var headers = await authHeaders(false);
+   if (!stillCurrent()) return;
    var report = await request('/writing-lab/v2/finalize', {
     method: 'POST', headers: headers,
     body: JSON.stringify({ text: finalText, verificationToken: state.verificationToken })
    });
-   if (runToken !== state.pollToken) return;
+   if (!stillCurrent()) return;
+   var delivery = report.delivery || {};
+   var unavailable = delivery.fallbackReason === 'verification_unavailable' || report.fallbackReason === 'verification_unavailable' || report.release && report.release.verification === 'unavailable';
    if (!report.release || report.release.pass !== true) {
-    useSafeDraft(generation, '휴머나이징 결과가 제출 전 점검 기준을 통과하지 못해 검증된 초안을 대신 보여드려요.', 4, report);
+    useSafeDraft(generation, unavailable
+     ? '검증 서비스에 연결하지 못해 휴머나이징 결과의 검수를 완료하지 못했어요. 검증된 초안을 보여드리며, 원래 결과의 검증을 다시 시도할 수 있어요.'
+     : '휴머나이징 결과가 제출 전 점검 기준을 통과하지 못해 검증된 초안을 대신 보여드려요.', 4, report);
+    if (unavailable) offerFinalCheckRetry(finalText, generation, runToken);
     return;
    }
-   var delivery = report.delivery || {};
    var deliveredText = report.text || finalText;
    setProgress(4, 'done');
    if (delivery.source === 'verified_generation_fallback') {
     setProgress(3, 'fail');
     finishResult(deliveredText, report, {
-     message: '휴머나이징 결과는 검수 기준을 벗어나 사용하지 않았고, 검증된 초안을 안전하게 복구했어요.',
+     message: unavailable
+      ? '검증 서비스에 연결하지 못해 휴머나이징 결과의 검수를 완료하지 못했어요. 검증된 초안을 보여드리며, 원래 결과의 검증을 다시 시도할 수 있어요.'
+      : '휴머나이징 결과는 검수 기준을 벗어나 사용하지 않았고, 검증된 초안을 안전하게 복구했어요.',
      warning: true,
      failedReport: report.rejectedReport || report,
      clientEvent: 'HUMANIZE_FALLBACK'
     });
+    if (unavailable) offerFinalCheckRetry(finalText, generation, runToken);
     return;
    }
    finishResult(deliveredText, report, {
@@ -955,9 +1008,27 @@ async function finalCheck(finalText, generation, runToken) {
     clientEvent: 'HUMANIZE_READY'
    });
   } catch (error) {
-   if (runToken !== state.pollToken) return;
+   if (!stillCurrent()) return;
    useSafeDraft(generation, '최종 검사를 완료하지 못해 검증된 초안을 대신 보여드려요. ' + error.message, 4);
+   if (!error.status || error.status >= 500 || error.retryable) offerFinalCheckRetry(finalText, generation, runToken);
   }
+ }
+
+ function offerFinalCheckRetry(finalText, generation, runToken) {
+  var host = el('wlStatus5');
+  if (!host) return;
+  var token = state.verificationToken;
+  var owner = window.CU && window.CU.uid;
+  var button = document.createElement('button');
+  button.type = 'button'; button.className = 'gp-wl-secondary gp-wl-small'; button.textContent = '휴머나이징 결과 검증 다시 시도';
+  button.onclick = async function () {
+   if (button.disabled || runToken !== state.pollToken || token !== state.verificationToken || owner !== (window.CU && window.CU.uid)) return;
+   if (state.edited) { setStatus('wlStatus5', '수정한 글을 먼저 복사해 보관하거나 “수정본 다시 확인”으로 검수해 주세요.', 'warn'); return; }
+   button.disabled = true;
+   setGenerationBusy(true);
+   await finalCheck(finalText, generation, runToken);
+  };
+  host.appendChild(button);
  }
 
  function useSafeDraft(generation, message, failedStage, failedReport) {

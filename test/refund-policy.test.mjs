@@ -149,7 +149,9 @@ test('환불 버튼은 저장된 기산일을 우선하고 기간 경과 주문�
   assert.match(moduleSource, /switchTab\(\\'qna\\'\)/u);
   assert.match(moduleSource, /used: d\.coupon\.used \|\| 0/u);
   assert.match(moduleSource, /window\.requestRefund\('\$\{jsAttr\(item\.id\)\}','\$\{jsAttr\(item\.kind\)\}',\$\{refundAmount\},\$\{requiresEligibilityReview\}\)/u);
-  assert.match(mainSource, /window\.COUPON\.used = Math\.max\(0, Number\(window\.COUPON\.used\) \|\| 0\) \+ 1/u);
+  assert.match(mainSource, /const couponUsed = deliveredUsageCharge\(res, 1\) > 0 \? 1 : 0/u);
+  assert.match(mainSource, /if \(window\.COUPON && couponUsed\)/u);
+  assert.match(mainSource, /window\.COUPON\.used = Math\.max\(0, Number\(window\.COUPON\.used\) \|\| 0\) \+ couponUsed/u);
 });
 
 test('이용약관과 환불규정은 기산일·부분 제공·법정 예외와 처리 기한을 정확히 고지한다', () => {

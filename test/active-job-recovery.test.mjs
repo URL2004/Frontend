@@ -14,7 +14,7 @@ function load(context, name, assignment = false) {
 function fixture() {
   const elements = {}, shown = [], requests = [];
   const context = vm.createContext({
-    window: { apiUrl: path => path, gpToast: noop, lavCloseConfirm() { context.modalClosed = true; } },
+    window: { CU: { uid: 'A' }, apiUrl: path => path, gpToast: noop, lavCloseConfirm() { context.modalClosed = true; } },
     $: id => elements[id] ||= { hidden: true, textContent: '', value: '검증할 원문', disabled: false },
     pollGen: 4, structureLoading: false, structurePlan: null, structurePlanKey: '', paymentJob: null,
     activeJobUi: { status: 'idle' }, activeCancel: null, structureInputKey: () => 'input', currentDocumentProfile: () => '',
@@ -63,6 +63,7 @@ test('late recovery cannot replace a newer job and signed-out visits do not quer
   assert.equal(await c.recoverActiveTransformJob(4), false);
   assert.equal(requests.length, 0);
   c.evGetIdToken = async () => '';
+  c.window.CU = null;
   assert.equal(await c.recoverActiveTransformJob(c.pollGen), false);
   assert.equal(requests.length, 0);
 });

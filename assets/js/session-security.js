@@ -10,7 +10,7 @@
     'gp_writing_lab_v2_pending'
   ];
   var SESSION_PREFIXES = ['confirming_'];
-  var LOCAL_JSON_KEYS = ['lavJobRef'];
+  var LOCAL_JSON_KEYS = ['lavJobRef', 'lavStartPending'];
   var LOCAL_EXACT_KEYS = ['gp_pending_history'];
   var LOCAL_PREFIXES = ['gp_resumed_paid_job_', 'paid_', 'paid_order_'];
 
@@ -39,6 +39,10 @@
   }
 
   function clearSensitive() {
+    window.gpSessionEpoch = (window.gpSessionEpoch || 0) + 1;
+    window.gpLegacyDetectPending = null;
+    if (typeof window.gpInvalidateTransformSession === 'function') window.gpInvalidateTransformSession();
+    if (typeof window.gpInvalidateWritingSession === 'function') window.gpInvalidateWritingSession();
     try { SESSION_JSON_KEYS.forEach(function (key) { sessionStorage.removeItem(key); }); } catch (_) {}
     try { LOCAL_JSON_KEYS.concat(LOCAL_EXACT_KEYS).forEach(function (key) { localStorage.removeItem(key); }); } catch (_) {}
     removePrefixes(sessionStorage, SESSION_PREFIXES);
