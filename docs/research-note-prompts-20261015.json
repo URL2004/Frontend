@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-15",
+  "tool": "Built-in image_gen",
+  "format": "WebP, 1200px wide, libwebp quality 82",
+  "images": [
+    {
+      "slug": "how-to-read-research-paper-guide",
+      "asset": "assets/img/blog/how-to-read-research-paper-guide.webp",
+      "prompt": "Editorial cover illustration, wide 16:9. A luminous oversized emerald green optical prism stands on a dusty rose studio surface, with a warm narrow beam entering from the left and three distinct softly glowing translucent rectangular panels aligned on the right, representing reading a research paper by separating question, method, and evidence. One small matte graphite pencil rests diagonally in the foreground. Contemporary refined still-life photography mixed with tactile glass sculpture, beautiful believable refraction, gentle shadows, spacious gallery composition. Key objects inside central 65% width and middle 60% height, suitable for wide and square cropping. No readable text, letters, numbers, watermarks, logos, charts, paper stacks, books, pendulums, dominoes, stairs, robots or magnifying glasses. Pure conceptual editorial art, not a scientific optical diagram."
+    }
+  ]
+}
