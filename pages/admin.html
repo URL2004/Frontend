@@ -106,10 +106,10 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">113개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">116개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 10.14</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 10.15</span>
       </div>
 
       <div class="gp-admin-filter-row gp-admin-patch-filters">
@@ -122,8 +122,8 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.113 · AI 감지 v1.56</strong>
-          <code>2026.10.14 · 운영 브랜치 기준</code>
+          <strong>휴머나이징 v2.5.114 · AI 감지 v1.57</strong>
+          <code>2026.10.15 · 운영 브랜치 기준</code>
         <span>문장 누락·줄바꿈 재발 방지 · 큰 감지 결과 저장·재열람 · 예외 안내 복구</span>
       </div>
 
@@ -136,6 +136,32 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.114 · 감지 v1.57</span><span class="gp-admin-patch-title"><b>공유 대기열과 감지 근거의 문서 구조 구분 개선</b><small>2026.10.15 · 직전 엔진 휴머나이징 391건·AI 감지 273건 대조</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area observe">대기·실행</span><span>두 휴머나이징 모드의 실행 상한을 실제 엔진 처리 한도와 맞춰 처리 중 표시 뒤에 다시 대기하는 경로를 줄였습니다. 모드별 상한을 유지하면서 접수 순서에 따라 시작하며, 작업별 로그 식별자를 분리했습니다. 실제 처리 속도 개선율은 후속 운영 관측이 필요합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">운영 테스트</span><span>관리자 휴머나이징 테스트도 같은 실행 한도에 포함하고, 연결 종료·시간 초과·서버 종료 때 중단되도록 했습니다. 실행권 획득 중인 테스트와 정리 중인 테스트까지 배포 전 상태 점검에 포함합니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">문장·문단</span><span>번호형 콜론 라벨의 본문과 잘린 종결어미, 반복되는 물리적 줄바꿈을 문맥에 따라 연결하고 실제 제목·목록·인용·표 경계는 보호합니다. 정상적인 서수 표현 변경의 구조 경고를 줄이고, 글 앞에 붙은 명확한 챗봇 편집 서두를 구분합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">교정 안전성</span><span>나뉜 문장 일부를 원문 전체로 복원해 중복을 만드는 경로를 차단했습니다. 원문과 비교해 새로 생긴 부정형 문법 오류는 기존 교정 예산 안에서 재검토하고, 남은 오류는 검토 알림으로 안내합니다. 정상적인 반복·부정 표현을 일괄 삭제하거나 치환하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">의미 검토</span><span>일부 사례의 공통점이 더 많은 사례로 넓어지는 표현과, 동일한 앞뒤 문장 사이의 시차·격차 설명 누락 후보를 기존 의미 검토에 전달합니다. 다른 위치에 유지된 의역도 함께 확인하며, 검토가 완료되지 않으면 원문 대조 알림을 남깁니다. 후보만으로 문장을 복원하거나 결과를 일괄 차단하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">감지 근거</span><span>표 제목과 연속된 명사형 행으로 확인되는 표의 짧은 셀, 숫자 조각을 문장 근거에서 제외합니다. 번호형 명사 제목은 줄바꿈 개수와 관계없이 구분하며 실제 서술문·표 안의 본문 문장은 유지합니다. 모든 PDF 표를 복원하거나 원본 페이지를 대조하는 기능은 아닙니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">감지 설명</span><span>위치가 확인된 문장 근거 없이 점수가 나온 경우 분석 근거 제한을 명시하고 중복된 설명 문구를 수정했습니다. 최대 6개 안내가 함께 생성되는 경우도 저장 서명을 검증하도록 정렬했습니다. 점수 산식·구간 경계·기존 휴머나이징 이력 보정은 유지하며 이전 저장 결과의 서명도 검증합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">빌드</span><span>프런트 빌드 의존성 source-map-js를 1.2.2로 갱신했습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">검증 범위</span><span>현재 버전 보관 결과 664건과 수집 로그 95,594건을 취합하고 Claude Code Opus 5.5와 위험 후보 휴머나이징 33건·감지 24건을 독립 검토·대조했습니다. 자동 의미 경고를 확정 결함으로 집계하지 않으며 원본 PDF 대조·정답 라벨 기반 감지 정확도 평가는 포함하지 않습니다.</span></li>
+          </ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">논문 읽기 가이드</span><span class="gp-admin-patch-title"><b>과제에 활용할 연구 논문 읽기 순서 안내</b><small>2026.10.15 · Frontend e5f8192</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul><li><span class="gp-admin-patch-area frontend">연구노트</span><span>연구 논문을 읽고 과제에 활용할 때 확인할 항목과 읽기 순서를 안내하는 글을 추가했습니다.</span></li></ul>
+        </details>
+        <details class="gp-admin-patch-release">
+          <summary><span class="gp-admin-patch-version">입력·계정·안내</span><span class="gp-admin-patch-title"><b>수정 가능한 본문 사전 안내와 계정 관리 정리</b><small>2026.10.14 · Backend fdc3c11 · 21ba443 / Frontend 87729da · 1b847bc</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area safety">입력 예외</span><span>수정할 수 있는 본문이 40자 미만인 입력은 기본·고급 휴머나이징을 시작하기 전에 제한 이유를 안내합니다. 제목·인용 등 보존 영역을 제외한 본문을 기준으로 하며 다듬기 정책은 유지합니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">계정 관리</span><span>마이페이지의 계정 관련 작업을 계정 관리 메뉴 안으로 정리했습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">감지 안내</span><span>작성 주체를 확정하지 않으며 외부 검사 결과와 다를 수 있다는 설명을 정리했습니다. 같은 엔진 버전 안에서 배포 시점에 따라 기존 저장 문구가 다를 수 있습니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.113 · 감지 v1.56</span><span class="gp-admin-patch-title"><b>내부 표식·문장 경계 보호와 감지 설명 정합성 개선</b><small>2026.10.14 · 직전 엔진 휴머나이징 334건·AI 감지 191건 대조</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>

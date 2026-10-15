@@ -73,7 +73,7 @@ test('statistics explanation survives browser fallback without turning weak caus
     detectStatisticalSupport:statisticalSupport,detectCauseAlignment:{status:'aligned'},
     interpretation:{version:'detect-interpretation-v2',sample:{sentences:10}}});
   assert.match(historyResult.interpretation.description,/문체 통계/);
-  assert.equal(historyResult.interpretation.evidence.level,'some');
+  assert.equal(historyResult.interpretation.evidence.level,'limited');
 });
 
 test('six descriptive ranges retain the original low/middle/high score boundaries', () => {
@@ -152,7 +152,7 @@ test('short input, missing analysis data and partial evidence have separate reco
   assert.match(short.headline, /짧은 글/);
   const partial = build({ ...base, causeCoverageStatus: 'partial' });
   assert.equal(partial.status, 'partial');
-  assert.match(partial.evidence.reason, /연결하지 못/);
+  assert.match(partial.evidence.reason, /문장 근거는 확인되지/);
   const unknown = build({ probability: 0, probSource: 'unknown' });
   assert.equal(unknown.status, 'unavailable');
   assert.doesNotMatch(unknown.headline, /매우 낮/);
