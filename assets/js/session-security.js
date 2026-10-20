@@ -43,6 +43,7 @@
     window.gpLegacyDetectPending = null;
     if (typeof window.gpInvalidateTransformSession === 'function') window.gpInvalidateTransformSession();
     if (typeof window.gpInvalidateWritingSession === 'function') window.gpInvalidateWritingSession();
+    if (typeof window.gpInvalidateQnaSession === 'function') window.gpInvalidateQnaSession();
     try { SESSION_JSON_KEYS.forEach(function (key) { sessionStorage.removeItem(key); }); } catch (_) {}
     try { LOCAL_JSON_KEYS.concat(LOCAL_EXACT_KEYS).forEach(function (key) { localStorage.removeItem(key); }); } catch (_) {}
     removePrefixes(sessionStorage, SESSION_PREFIXES);

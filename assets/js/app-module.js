@@ -221,6 +221,7 @@ function clearSensitiveAuthDom() {
   const node = document.getElementById(id);
   if (node) node.textContent = '';
  });
+ if (typeof window.gpInvalidateQnaSession === 'function') window.gpInvalidateQnaSession();
 }
 
 function failAuthTransition() {
@@ -289,8 +290,10 @@ onAuthStateChanged(auth, async u =>{
   await loadUser(u);
   }
   else {
+  const hadUser = Boolean(CU);
   if (window.gpSessionSecurity) window.gpSessionSecurity.bindUser('');
   CU = null; window.CU = null;
+  if (hadUser && typeof window.gpInvalidateQnaSession === 'function') window.gpInvalidateQnaSession();
   window.gpUserDataReady = false;
   stopNotificationWatch();
   if (window.gpSetRemoteNotifications) window.gpSetRemoteNotifications([]);
@@ -476,7 +479,9 @@ function newClientRequestId(prefix) {
  return `${safePrefix}_${randomPart}`.slice(0, 120);
 }
 
-async function postAuthedJson(path, body, user) {
+// assertCurrent(선택): 토큰 발급 뒤와 응답 수신 뒤에 호출된다. 계정·세션이 바뀌었으면
+// 던져서 이전 계정의 요청 결과가 현재 화면에 반영되지 않게 한다.
+async function postAuthedJson(path, body, user, assertCurrent) {
  const authUser = user || CU || window.CU;
  if (!authUser?.getIdToken) {
   const error = new Error('로그인이 필요해요.');
@@ -484,7 +489,9 @@ async function postAuthedJson(path, body, user) {
   error.code = 'AUTH_REQUIRED';
   throw error;
  }
+ const check = typeof assertCurrent === 'function' ? assertCurrent : () => {};
  const idToken = await authUser.getIdToken();
+ check();
  let response;
  try {
   response = await fetch(window.apiUrl(path), {
@@ -494,6 +501,7 @@ async function postAuthedJson(path, body, user) {
    body: JSON.stringify(body || {})
   });
  } catch (cause) {
+  check();
   const error = new Error('네트워크 연결을 확인한 뒤 다시 시도해 주세요.');
   error.code = 'NETWORK_ERROR';
   error.cause = cause;
@@ -501,6 +509,7 @@ async function postAuthedJson(path, body, user) {
  }
  let data = null;
  try { data = await response.json(); } catch (_) { data = null; }
+ check();
  if (!response.ok || !data?.ok) {
   const error = new Error(String(data?.error || '요청을 처리하지 못했어요.'));
   error.status = response.status;
@@ -2196,6 +2205,175 @@ window.delComment = async (postId, commentId) =>{
 const QNA_PAGE_SIZE = 10;
 let qnaItems = [];
 let qnaContext = { isAdmin: false, uid: null };
+// 계정 전환·로그아웃 뒤 늦게 끝난 목록/상세/쓰기 요청이 현재 계정 화면을 덮지 않도록
+// 세션 세대와 요청 순번으로 결과를 버린다.
+let qnaSessionGen = 0;
+let qnaLoadSeq = 0;
+let qnaDetailSeq = 0;
+let qnaSubmitPending = null;
+let qnaDeletePending = null;
+let qnaAnswerPending = null;
+// 관리자 전용 삭제 문의 보관함. 서버 응답 필드(status·archived 등)와 충돌하지 않도록
+// 디코딩한 뒤 클라이언트만 아는 Symbol 마커를 읽기 전용으로 붙여 구분한다.
+const QNA_ARCHIVE_MARK = Symbol('qnaArchive');
+const QNA_ARCHIVE_PAGE_LIMIT = 100;
+const QNA_ARCHIVE_MAX_PAGES = 50;
+let qnaArchiveWarning = '';
+let qnaDetailArchivedId = '';
+
+function isArchivedQna(q) {
+ return Boolean(q) && q[QNA_ARCHIVE_MARK] === true;
+}
+
+function markQnaArchived(q) {
+ Object.defineProperty(q, QNA_ARCHIVE_MARK, { value: true, enumerable: false, writable: false, configurable: false });
+ return Object.freeze(q);
+}
+
+// Firestore Timestamp(활성 문의)와 ISO 문자열(보관함 API)을 모두 Date로 바꾼다.
+function qnaDate(value) {
+ if (!value) return null;
+ const date = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
+ return date instanceof Date && Number.isFinite(date.getTime()) ? date : null;
+}
+
+function qnaTime(value) {
+ const date = qnaDate(value);
+ return date ? date.getTime() : 0;
+}
+
+function qnaDateText(value, withTime = false) {
+ const date = qnaDate(value);
+ if (!date) return '';
+ return withTime ? date.toLocaleString('ko-KR') : date.toLocaleDateString('ko-KR');
+}
+
+function qnaText(value) {
+ return typeof value === 'string' ? value : '';
+}
+
+function decodeArchivedQna(raw, full = false) {
+ if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || !raw.id) return null;
+ const q = {
+  id: raw.id,
+  title: qnaText(raw.title),
+  authorId: qnaText(raw.authorId),
+  authorName: qnaText(raw.authorName),
+  isAnon: raw.isAnon === true,
+  status: 'deleted',
+  previousStatus: raw.previousStatus === 'answered' ? 'answered' : 'pending',
+  createdAt: qnaText(raw.createdAt) || null,
+  deletedAt: qnaText(raw.deletedAt) || null,
+  deletedBy: qnaText(raw.deletedBy),
+  deletedByRole: raw.deletedByRole === 'admin' || raw.deletedByRole === 'author' ? raw.deletedByRole : '',
+  originalContentComplete: raw.originalContentComplete === true
+ };
+ if (full) {
+  q.body = qnaText(raw.body);
+  const answer = raw.answer && typeof raw.answer === 'object' ? raw.answer : null;
+  q.answer = answer && qnaText(answer.body)
+   ? { body: answer.body, answeredBy: qnaText(answer.answeredBy), answeredAt: qnaText(answer.answeredAt) || null }
+   : null;
+ }
+ return markQnaArchived(q);
+}
+
+// 보관함 요약을 끝까지 페이지 단위로 받는다. 본문은 상세를 열 때만 받는다.
+async function fetchQnaArchiveSummaries(session, isLatest) {
+ const items = [];
+ const seen = new Set();
+ let cursor = null;
+ for (let page = 0; page < QNA_ARCHIVE_MAX_PAGES; page += 1) {
+  const body = cursor ? { cursor, limit: QNA_ARCHIVE_PAGE_LIMIT } : { limit: QNA_ARCHIVE_PAGE_LIMIT };
+  const data = await postAuthedJson('/admin/qna/deleted-list', body, null, qnaAssertCurrent(session));
+  if (!isLatest()) throw qnaAccountChangedError();
+  if (!Array.isArray(data.items)) throw new Error('보관함 응답 형식이 올바르지 않아요.');
+  data.items.forEach(raw => {
+   const q = decodeArchivedQna(raw);
+   if (q && !seen.has(q.id)) { seen.add(q.id); items.push(q); }
+  });
+  const nextCursor = typeof data.nextCursor === 'string' && data.nextCursor ? data.nextCursor : null;
+  if (!nextCursor) return items;
+  if (nextCursor === cursor) throw new Error('보관함 페이지가 진행되지 않아요.');
+  cursor = nextCursor;
+ }
+ throw new Error('보관함 문의가 너무 많아 모두 불러오지 못했어요.');
+}
+
+function qnaSortTime(q) {
+ return isArchivedQna(q) ? (qnaTime(q.deletedAt) || qnaTime(q.createdAt)) : qnaTime(q.createdAt);
+}
+
+// 답변 대기 먼저: 활성 대기 → 활성 답변 완료 → 삭제됨. 각 묶음은 최신순.
+function qnaPendingRank(q) {
+ if (isArchivedQna(q)) return 2;
+ return q.status === 'answered' ? 1 : 0;
+}
+
+function qnaShowingArchived() {
+ return Boolean(qnaDetailArchivedId);
+}
+
+function qnaSession() {
+ return { uid: CU ? CU.uid : null, gen: qnaSessionGen, epoch: window.gpSessionEpoch || 0 };
+}
+
+function qnaSessionIsCurrent(session) {
+ return session.gen === qnaSessionGen
+  && session.epoch === (window.gpSessionEpoch || 0)
+  && (CU ? CU.uid : null) === session.uid;
+}
+
+function qnaAccountChangedError() {
+ const error = new Error('계정이 변경되어 이전 요청을 중단했어요.');
+ error.code = 'ACCOUNT_CHANGED';
+ error.status = 409;
+ return error;
+}
+
+function qnaAssertCurrent(session) {
+ return () => { if (!qnaSessionIsCurrent(session)) throw qnaAccountChangedError(); };
+}
+
+function qnaStale(session, error) {
+ return error?.code === 'ACCOUNT_CHANGED' || !qnaSessionIsCurrent(session);
+}
+
+function resetQnaSession() {
+ qnaSessionGen += 1;
+ qnaLoadSeq += 1;
+ qnaDetailSeq += 1;
+ qnaSubmitPending = null;
+ qnaDeletePending = null;
+ qnaAnswerPending = null;
+ qnaItems = [];
+ qnaContext = { isAdmin: false, uid: null };
+ qnaArchiveWarning = '';
+ qnaDetailArchivedId = '';
+ const node = id => document.getElementById(id);
+ if (node('qnaDetailView')) node('qnaDetailView').style.display = 'none';
+ if (node('qnaListView')) node('qnaListView').style.display = 'block';
+ if (node('questionDetail')) node('questionDetail').innerHTML = '';
+ if (node('curQuestionId')) node('curQuestionId').value = '';
+ if (node('questionList')) {
+  node('questionList').innerHTML = '';
+  node('questionList').setAttribute('aria-busy', 'false');
+ }
+ if (node('questionResultStatus')) node('questionResultStatus').textContent = '';
+ if (node('questionPagination')) { node('questionPagination').hidden = true; node('questionPagination').innerHTML = ''; }
+ if (node('qtitle')) node('qtitle').value = '';
+ if (node('qbody')) node('qbody').value = '';
+ if (node('qAnon')) node('qAnon').checked = false;
+ if (node('qform')) node('qform').style.display = 'none';
+ const btn = node('qsubmit');
+ if (btn) {
+  delete btn.dataset.requestId;
+  delete btn.dataset.requestFingerprint;
+  btn.disabled = false;
+  btn.textContent = '문의 등록';
+ }
+}
+window.gpInvalidateQnaSession = resetQnaSession;
 
 function renderBoardPagination(container, { page, totalPages, totalItems, label, onChange }) {
  if (!container) return;
@@ -2237,28 +2415,36 @@ function renderQuestionListPage() {
  const { totalItems, totalPages, startIndex, endIndex, items: pageItems } = pageData;
  window.qnaPage = pageData.page;
  el.setAttribute('aria-busy', 'false');
+ const archivedCount = qnaItems.filter(isArchivedQna).length;
  if (statusEl) {
   const scope = qnaContext.isAdmin ? '전체 문의' : '내 문의';
-  statusEl.textContent = totalItems
-   ? scope + ' ' + totalItems.toLocaleString('ko-KR') + '건 · ' + (startIndex + 1).toLocaleString('ko-KR') + '–' + endIndex.toLocaleString('ko-KR') + '건 표시'
-   : scope + ' 0건';
+  const archivedNote = archivedCount ? ' (삭제됨 ' + archivedCount.toLocaleString('ko-KR') + '건 포함)' : '';
+  statusEl.textContent = (totalItems
+   ? scope + ' ' + totalItems.toLocaleString('ko-KR') + '건' + archivedNote + ' · ' + (startIndex + 1).toLocaleString('ko-KR') + '–' + endIndex.toLocaleString('ko-KR') + '건 표시'
+   : scope + ' 0건') + (qnaArchiveWarning ? ' · 삭제된 문의를 불러오지 못했어요.' : '');
  }
+ const warningHtml = qnaArchiveWarning
+  ? '<div class="qna-archive-warning" role="alert">삭제된 문의 보관함을 불러오지 못해 진행 중인 문의만 표시하고 있어요. ' + escapeHtml(qnaArchiveWarning) + '</div>'
+  : '';
  if (!totalItems) {
-  el.innerHTML = qnaContext.isAdmin
+  el.innerHTML = warningHtml + (qnaContext.isAdmin
    ? '<div class="qna-empty">접수된 문의가 없어요.</div>'
-   : '<div class="qna-empty">아직 남긴 문의가 없어요. 위에서 문의를 남겨보세요.</div>';
+   : '<div class="qna-empty">아직 남긴 문의가 없어요. 위에서 문의를 남겨보세요.</div>');
   renderBoardPagination(pager, { page: 1, totalPages: 1, totalItems: 0, label: '문의 목록', onChange: () => {} });
   return;
  }
  const lockIco = '<svg class="lock-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
- el.innerHTML = pageItems.map(q => {
-  const date = q.createdAt ? new Date(q.createdAt.toDate()).toLocaleDateString('ko-KR') : '';
-  const qnaStatus = q.status === 'answered' ? 'answered' : 'pending';
-  const statusText = qnaStatus === 'answered' ? '답변 완료' : '답변 대기';
+ el.innerHTML = warningHtml + pageItems.map(q => {
+  const archived = isArchivedQna(q);
+  const date = archived
+   ? '삭제 ' + (qnaDateText(q.deletedAt) || qnaDateText(q.createdAt))
+   : qnaDateText(q.createdAt);
+  const qnaStatus = archived ? 'deleted' : (q.status === 'answered' ? 'answered' : 'pending');
+  const statusText = archived ? '삭제됨' : (qnaStatus === 'answered' ? '답변 완료' : '답변 대기');
   const canView = qnaContext.isAdmin || (qnaContext.uid && q.authorId === qnaContext.uid);
   const displayTitle = canView ? escapeHtml(q.title || '') : '비공개 질문입니다.';
   const authorMeta = qnaContext.isAdmin ? '<span>' + escapeHtml(q.authorName || '') + '</span>' : '';
-  return '<button type="button" class="gp-board-row gp-board-row-button" data-qna-id="' + escapeHtml(q.id) + '" aria-label="' + displayTitle + ', ' + statusText + '">'
+  return '<button type="button" class="gp-board-row gp-board-row-button" data-qna-id="' + escapeHtml(q.id) + '"' + (archived ? ' data-qna-archived="1"' : '') + ' aria-label="' + displayTitle + ', ' + statusText + '">'
    + '<span class="gbr-main">'
    +  '<span class="gbr-ttl">' + (canView ? '' : lockIco) + '<span class="gbr-ttl-text">' + displayTitle + '</span></span>'
    +  '<span class="gbr-sub">' + authorMeta + '<span>' + date + '</span>' + (canView ? '' : '<span class="gbr-cat">비공개</span>') + '</span>'
@@ -2267,7 +2453,7 @@ function renderQuestionListPage() {
    + '</button>';
  }).join('');
  el.querySelectorAll('[data-qna-id]').forEach(row => {
-  row.addEventListener('click', () => window.viewQuestion(row.dataset.qnaId));
+  row.addEventListener('click', () => window.viewQuestion(row.dataset.qnaId, { archived: row.dataset.qnaArchived === '1' }));
  });
  renderBoardPagination(pager, {
   page: window.qnaPage,
@@ -2297,10 +2483,14 @@ window.loadQuestions = async (sort) =>{
  const statusEl = document.getElementById('questionResultStatus');
  const pager = document.getElementById('questionPagination');
  if (!el) return;
+ const seq = ++qnaLoadSeq;
+ const session = qnaSession();
+ const isLatest = () => seq === qnaLoadSeq && qnaSessionIsCurrent(session);
  if (!CU) {
   // 1:1 문의는 로그인 필요 — 공개 게시판이 아니므로 데모 목록 대신 로그인 유도
   qnaItems = [];
   qnaContext = { isAdmin: false, uid: null };
+  qnaArchiveWarning = '';
   if (statusEl) statusEl.textContent = '로그인이 필요해요.';
   if (pager) { pager.hidden = true; pager.innerHTML = ''; }
   el.innerHTML = '<div class="qna-empty">로그인하면 1:1 문의를 남기고 답변을 확인할 수 있어요.</div>';
@@ -2312,32 +2502,43 @@ window.loadQuestions = async (sort) =>{
  el.innerHTML = '<div class="qna-empty">불러오는 중...</div>';
  try {
   const isAdm = window.isAdmin && window.isAdmin();
-  const myUid = CU ? CU.uid : null;
+  const myUid = session.uid;
   // 1:1 문의: 관리자는 전체, 일반 사용자는 본인 문의만 조회.
   // Firestore Rules의 qna list 권한(admin 또는 authorId==uid)과 정확히 일치시켜야 권한 거부가 안 난다.
   const qref = isAdm
    ? collection(db,'qna')
    : query(collection(db,'qna'), where('authorId','==',myUid));
+  // 삭제 문의 보관함은 관리자만 서버 API로 받는다. 실패해도 활성 목록은 그대로 보여준다.
+  const archiveLoad = isAdm
+   ? fetchQnaArchiveSummaries(session, isLatest).then(items => ({ items }), error => ({ error }))
+   : null;
   const snap = await getDocs(qref);
+  if (!isLatest()) return;
   let questions = [];
   snap.forEach(d => questions.push({id:d.id, ...d.data()}));
+  let archiveWarning = '';
+  if (archiveLoad) {
+   const archive = await archiveLoad;
+   if (!isLatest()) return;
+   if (archive.error) archiveWarning = archive.error.message || '잠시 후 다시 시도해 주세요.';
+   else questions = questions.concat(archive.items);
+  }
   // 정렬
   if (window.qnaSort === 'pending') {
-   questions.sort((a,b) => {
-    const ans = (a.status === 'answered' ? 1 : 0) - (b.status === 'answered' ? 1 : 0);
-    if (ans !== 0) return ans;
-    return (b.createdAt?.toDate()||0) - (a.createdAt?.toDate()||0);
-   });
+   questions.sort((a,b) => (qnaPendingRank(a) - qnaPendingRank(b)) || (qnaSortTime(b) - qnaSortTime(a)));
   } else {
-   questions.sort((a,b) => (b.createdAt?.toDate()||0) - (a.createdAt?.toDate()||0));
+   questions.sort((a,b) => qnaSortTime(b) - qnaSortTime(a));
   }
 
   qnaItems = questions;
   qnaContext = { isAdmin: Boolean(isAdm), uid: myUid };
+  qnaArchiveWarning = archiveWarning;
   renderQuestionListPage();
  } catch(e) {
+  if (!isLatest()) return;
   el.setAttribute('aria-busy', 'false');
   qnaItems = [];
+  qnaArchiveWarning = '';
   if (statusEl) statusEl.textContent = '문의 내역을 불러오지 못했어요.';
   const isPerm = /permission|insufficient/i.test(e.message||'');
   el.innerHTML = isPerm
@@ -2348,11 +2549,18 @@ window.loadQuestions = async (sort) =>{
 
 window.submitQuestion = async () =>{
  if (!CU) { alert('로그인이 필요해요.'); return; }
- const title = document.getElementById('qtitle').value.trim();
- const body = document.getElementById('qbody').value.trim();
+ if (qnaSubmitPending) return;
+ const titleEl = document.getElementById('qtitle');
+ const bodyEl = document.getElementById('qbody');
+ const anonEl = document.getElementById('qAnon');
+ const title = titleEl.value.trim();
+ const body = bodyEl.value.trim();
  if (!title || !body) { alert('문의 제목과 내용을 모두 입력해 주세요.'); return; }
- const anon = document.getElementById('qAnon').checked;
+ const anon = anonEl.checked;
  const btn = document.getElementById('qsubmit');
+ const session = qnaSession();
+ const pending = {};
+ qnaSubmitPending = pending;
  btn.disabled = true;
  btn.textContent = '등록 중...';
  const fingerprint = JSON.stringify([title, body, anon]);
@@ -2360,43 +2568,120 @@ window.submitQuestion = async () =>{
   btn.dataset.requestId = newClientRequestId('qna');
   btn.dataset.requestFingerprint = fingerprint;
  }
+ const requestId = btn.dataset.requestId;
+ const forgetRequestId = () => {
+  if (btn.dataset.requestId !== requestId) return;
+  delete btn.dataset.requestId;
+  delete btn.dataset.requestFingerprint;
+ };
  try {
   const result = await postAuthedJson('/qna/create', {
-   requestId: btn.dataset.requestId,
+   requestId,
    title,
    body,
    isAnon: anon
-  });
+  }, null, qnaAssertCurrent(session));
   if (window.gpTrack) window.gpTrack('qna_submit', { qna_id: result.id, is_anon: anon });
-  document.getElementById('qtitle').value = '';
-  document.getElementById('qbody').value = '';
-  document.getElementById('qAnon').checked = false;
-  delete btn.dataset.requestId;
-  delete btn.dataset.requestFingerprint;
-  document.getElementById('qform').style.display = 'none';
+  forgetRequestId();
+  // 등록 중에 사용자가 고친 초안은 지우지 않고 그대로 둔다.
+  if (titleEl.value.trim() === title && bodyEl.value.trim() === body && anonEl.checked === anon) {
+   titleEl.value = '';
+   bodyEl.value = '';
+   anonEl.checked = false;
+   document.getElementById('qform').style.display = 'none';
+  }
   window.qnaPage = 1;
   await window.loadQuestions();
  } catch(e) {
+  if (qnaStale(session, e)) return;
   // 서버가 명시적으로 거절한 요청은 실제 저장이 없으므로 다음 제출에 새 ID를 쓴다.
   // 네트워크 단절·5xx는 응답만 유실됐을 수 있어 같은 ID를 유지해 멱등 재시도한다.
-  if (Number(e?.status) > 0 && Number(e.status) < 500) {
-   delete btn.dataset.requestId;
-   delete btn.dataset.requestFingerprint;
-  }
+  if (Number(e?.status) > 0 && Number(e.status) < 500) forgetRequestId();
   alert('등록 실패: '+e.message);
  } finally {
-  btn.disabled = false;
-  btn.textContent = '문의 등록';
+  if (qnaSubmitPending === pending) {
+   qnaSubmitPending = null;
+   btn.disabled = false;
+   btn.textContent = '문의 등록';
+  }
  }
 };
 
-window.viewQuestion = async (qid) =>{
+const QNA_PREVIOUS_STATUS_TEXT = { pending: '답변 대기', answered: '답변 완료' };
+const QNA_DELETED_ROLE_TEXT = { author: '작성자', admin: '관리자' };
+
+// 보관된 삭제 문의는 원문·답변·메타데이터만 보여주고 답변/수정/삭제 동작은 두지 않는다.
+function renderArchivedQuestion(q) {
+ const meta = [
+  ['문의 ID', q.id],
+  ['원래 상태', QNA_PREVIOUS_STATUS_TEXT[q.previousStatus] || q.previousStatus],
+  ['작성 시각', qnaDateText(q.createdAt, true) || '기록 없음'],
+  ['삭제 시각', qnaDateText(q.deletedAt, true) || '기록 없음'],
+  ['삭제한 계정', (q.deletedBy || '기록 없음') + (QNA_DELETED_ROLE_TEXT[q.deletedByRole] ? ' (' + QNA_DELETED_ROLE_TEXT[q.deletedByRole] + ')' : '')],
+  ['작성자', (q.authorName || '이름 없음') + (q.authorId ? ' · ' + q.authorId : '') + (q.isAnon ? ' · 익명 요청' : '')]
+ ];
+ let html = '<div class="pdhd">'
+  + '<div style="margin-bottom:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">'
+  +  '<span class="qna-status deleted">삭제됨</span>'
+  + '</div>'
+  + '<div class="pdtitle">'+escapeHtml(q.title||'')+'</div>'
+  + '<div class="qna-archive-notice">사용자 목록에서 삭제된 문의예요. 운영팀 확인을 위해 보관된 원문이며 답변·수정·삭제할 수 없어요.</div>'
+  + (q.originalContentComplete ? '' : '<div class="qna-archive-warning" role="alert">이 문의는 원문이 완전히 보관되지 않았을 수 있어요.</div>')
+  + '<dl class="qna-archive-meta">'
+  + meta.map(([label, value]) => '<dt>'+label+'</dt><dd>'+escapeHtml(value)+'</dd>').join('')
+  + '</dl>'
+  + '</div>'
+  + '<div class="pdbody">'+escapeHtml(q.body||'')+'</div>';
+ if (q.answer && q.answer.body) {
+  const aDate = qnaDateText(q.answer.answeredAt, true);
+  html += '<div class="qna-answer">'
+   + '<div class="qna-answer-hd">'
+   +  '<span class="qna-answer-tag">✓ 운영팀 답변 (보관됨)</span>'
+   +  '<span class="qna-answer-meta">'+escapeHtml(q.answer.answeredBy||'운영팀')+(aDate?' · '+aDate:'')+'</span>'
+   + '</div>'
+   + '<div class="qna-answer-body">'+escapeHtml(q.answer.body)+'</div>'
+   + '</div>';
+ } else {
+  html += '<div class="qna-pending-box">삭제 당시 등록된 답변이 없었어요.</div>';
+ }
+ return html;
+}
+
+async function viewArchivedQuestion(qid, session, isLatest, dv) {
+ if (!window.isAdmin || !window.isAdmin()) {
+  dv.innerHTML = '<div class="qna-empty">관리자만 볼 수 있어요.</div>';
+  return;
+ }
+ try {
+  const data = await postAuthedJson('/admin/qna/deleted-get', { id: qid }, null, qnaAssertCurrent(session));
+  if (!isLatest()) return;
+  const q = decodeArchivedQna(data.question, true);
+  if (!q || q.id !== qid) throw new Error('보관된 문의 응답이 올바르지 않아요.');
+  qnaDetailArchivedId = qid;
+  document.getElementById('curQuestionId').value = qid;
+  dv.innerHTML = renderArchivedQuestion(q);
+ } catch(e) {
+  if (qnaStale(session, e) || !isLatest()) return;
+  dv.innerHTML = e?.code === 'QNA_NOT_FOUND'
+   ? '<div class="qna-empty">보관된 문의를 찾을 수 없어요.</div>'
+   : '<div class="qna-empty" style="color:var(--red)">보관된 문의를 불러오지 못했어요. '+escapeHtml(e.message||'')+'</div>';
+ }
+}
+
+window.viewQuestion = async (qid, options = {}) =>{
+ const seq = ++qnaDetailSeq;
+ const session = qnaSession();
+ const isLatest = () => seq === qnaDetailSeq && qnaSessionIsCurrent(session);
  document.getElementById('qnaListView').style.display = 'none';
  document.getElementById('qnaDetailView').style.display = 'block';
+ document.getElementById('curQuestionId').value = '';
+ qnaDetailArchivedId = '';
  const dv = document.getElementById('questionDetail');
  dv.innerHTML = '<div class="qna-empty">불러오는 중...</div>';
+ if (options && options.archived === true) return viewArchivedQuestion(qid, session, isLatest, dv);
  try {
   const snap = await getDoc(doc(db,'qna',qid));
+  if (!isLatest()) return;
   if (!snap.exists()) { dv.innerHTML = '<div class="qna-empty">삭제되었거나 찾을 수 없는 문의예요.</div>'; return; }
   const q = snap.data();
   const isAdm = window.isAdmin && window.isAdmin();
@@ -2407,7 +2692,7 @@ window.viewQuestion = async (qid) =>{
    return;
   }
   document.getElementById('curQuestionId').value = qid;
-  const date = q.createdAt ? new Date(q.createdAt.toDate()).toLocaleDateString('ko-KR') : '';
+  const date = qnaDateText(q.createdAt);
   const status = q.status === 'answered' ? 'answered' : 'pending';
   const statusTxt = status === 'answered' ? '답변 완료' : '답변 대기';
   const canDel = isAdm || isOwner;
@@ -2422,7 +2707,7 @@ window.viewQuestion = async (qid) =>{
    + '<div class="pdbody">'+escapeHtml(q.body||'')+'</div>';
 
   if (q.answer && q.answer.body) {
-   const aDate = q.answer.answeredAt ? new Date(q.answer.answeredAt.toDate()).toLocaleDateString('ko-KR') : '';
+   const aDate = qnaDateText(q.answer.answeredAt);
    html += '<div class="qna-answer">'
     + '<div class="qna-answer-hd">'
     +  '<span class="qna-answer-tag">✓ 운영팀 답변</span>'
@@ -2444,6 +2729,7 @@ window.viewQuestion = async (qid) =>{
   }
   dv.innerHTML = html;
  } catch(e) {
+  if (!isLatest()) return;
   const isPerm = /permission|insufficient/i.test(e.message||'');
   dv.innerHTML = isPerm
    ? '<div class="qna-empty">작성자와 관리자만 볼 수 있어요.</div>'
@@ -2452,6 +2738,9 @@ window.viewQuestion = async (qid) =>{
 };
 
 window.backToQList = (refresh = false) =>{
+ // 아직 불러오는 상세가 목록으로 돌아온 뒤에 선택 상태를 되살리지 못하게 한다.
+ qnaDetailSeq += 1;
+ qnaDetailArchivedId = '';
  document.getElementById('qnaDetailView').style.display = 'none';
  document.getElementById('qnaListView').style.display = 'block';
  document.getElementById('curQuestionId').value = '';
@@ -2459,68 +2748,114 @@ window.backToQList = (refresh = false) =>{
  else renderQuestionListPage();
 };
 
+function qnaShowingQuestion(qid) {
+ const cur = document.getElementById('curQuestionId');
+ return Boolean(cur && cur.value === qid);
+}
+
+// 보관된 삭제 문의를 보고 있으면 답변·수정·삭제 요청을 보내지 않는다.
+function qnaArchivedSelected(qid) {
+ return qnaShowingArchived() && qnaDetailArchivedId === qid;
+}
+
+// 관리자 답변 쓰기 후 같은 상세를 보고 있을 때만 다시 그린다. 다른 문의로 이동했다면 목록 캐시만 비운다.
+async function refreshQnaAfterAnswerWrite(qid) {
+ qnaItems = [];
+ if (qnaShowingQuestion(qid)) await window.viewQuestion(qid);
+}
+
 window.submitAnswer = async (qid) =>{
  if (!window.isAdmin || !window.isAdmin()) { alert('관리자만 답변할 수 있어요.'); return; }
+ if (qnaAnswerPending || qnaArchivedSelected(qid)) return;
  const ta = document.getElementById('answerBody');
  const body = ta ? ta.value.trim() : '';
  if (!body) { alert('답변 내용을 입력해 주세요.'); return; }
+ const session = qnaSession();
+ const pending = {};
+ qnaAnswerPending = pending;
  try {
   const answeredBy = (window.getAdminName && window.getAdminName()) || '운영팀';
-  await postAuthedJson('/admin/qna/answer', { id: qid, body, answeredBy });
-  qnaItems = [];
-  await window.viewQuestion(qid);
+  await postAuthedJson('/admin/qna/answer', { id: qid, body, answeredBy }, null, qnaAssertCurrent(session));
+  await refreshQnaAfterAnswerWrite(qid);
  } catch(e) {
+  if (qnaStale(session, e)) return;
   alert('답변 등록 실패: '+e.message);
+ } finally {
+  if (qnaAnswerPending === pending) qnaAnswerPending = null;
  }
 };
 
 window.editAnswer = async (qid) =>{
  if (!window.isAdmin || !window.isAdmin()) return;
- const snap = await getDoc(doc(db,'qna',qid));
- const q = snap.data() || {};
- const cur = q.answer && q.answer.body ? q.answer.body : '';
- const next = window.gpPrompt
-  ? await window.gpPrompt({ title: '답변 수정', message: '사용자에게 보일 답변 내용을 수정합니다.', defaultValue: cur, placeholder: '답변 내용', confirmText: '수정하기', required: true })
-  : prompt('답변을 수정하세요:', cur);
- if (next == null) return;
- const trimmed = next.trim();
- if (!trimmed) { alert('빈 답변은 등록할 수 없어요.'); return; }
+ if (qnaAnswerPending || qnaArchivedSelected(qid)) return;
+ const session = qnaSession();
+ const pending = {};
+ qnaAnswerPending = pending;
  try {
+  const snap = await getDoc(doc(db,'qna',qid));
+  if (!qnaSessionIsCurrent(session) || !qnaShowingQuestion(qid)) return;
+  const q = snap.data() || {};
+  const cur = q.answer && q.answer.body ? q.answer.body : '';
+  const next = window.gpPrompt
+   ? await window.gpPrompt({ title: '답변 수정', message: '사용자에게 보일 답변 내용을 수정합니다.', defaultValue: cur, placeholder: '답변 내용', confirmText: '수정하기', required: true })
+   : prompt('답변을 수정하세요:', cur);
+  if (next == null || !qnaSessionIsCurrent(session)) return;
+  const trimmed = next.trim();
+  if (!trimmed) { alert('빈 답변은 등록할 수 없어요.'); return; }
   const answeredBy = (window.getAdminName && window.getAdminName()) || '운영팀';
-  await postAuthedJson('/admin/qna/answer', { id: qid, body: trimmed, answeredBy });
-  qnaItems = [];
-  await window.viewQuestion(qid);
+  await postAuthedJson('/admin/qna/answer', { id: qid, body: trimmed, answeredBy }, null, qnaAssertCurrent(session));
+  await refreshQnaAfterAnswerWrite(qid);
  } catch(e) {
+  if (qnaStale(session, e)) return;
   alert('수정 실패: '+e.message);
+ } finally {
+  if (qnaAnswerPending === pending) qnaAnswerPending = null;
  }
 };
 
 window.delAnswer = async (qid) =>{
  if (!window.isAdmin || !window.isAdmin()) return;
- const ok = window.gpConfirm
-  ? await window.gpConfirm({ title: '답변을 삭제할까요?', message: '질문 상태가 답변 대기로 돌아갑니다.', confirmText: '삭제하기', danger: true })
-  : confirm('답변을 삭제하시겠어요?');
- if (!ok) return;
+ if (qnaAnswerPending || qnaArchivedSelected(qid)) return;
+ const session = qnaSession();
+ const pending = {};
+ qnaAnswerPending = pending;
  try {
-  await postAuthedJson('/admin/qna/answer-delete', { id: qid });
-  qnaItems = [];
-  await window.viewQuestion(qid);
+  const ok = window.gpConfirm
+   ? await window.gpConfirm({ title: '답변을 삭제할까요?', message: '질문 상태가 답변 대기로 돌아갑니다.', confirmText: '삭제하기', danger: true })
+   : confirm('답변을 삭제하시겠어요?');
+  if (!ok || !qnaSessionIsCurrent(session)) return;
+  await postAuthedJson('/admin/qna/answer-delete', { id: qid }, null, qnaAssertCurrent(session));
+  await refreshQnaAfterAnswerWrite(qid);
  } catch(e) {
+  if (qnaStale(session, e)) return;
   alert('삭제 실패: '+e.message);
+ } finally {
+  if (qnaAnswerPending === pending) qnaAnswerPending = null;
  }
 };
 
 window.delQuestion = async (qid) =>{
- const ok = window.gpConfirm
-  ? await window.gpConfirm({ title: '질문을 삭제할까요?', message: '삭제한 문의는 복구할 수 없어요.', confirmText: '삭제하기', danger: true })
-  : confirm('질문을 삭제하시겠어요?');
- if (!ok) return;
+ if (qnaDeletePending || qnaArchivedSelected(qid)) return;
+ const session = qnaSession();
+ const pending = {};
+ qnaDeletePending = pending;
  try {
-  await postAuthedJson('/qna/delete', { id: qid });
+  const ok = window.gpConfirm
+   ? await window.gpConfirm({ title: '질문을 삭제할까요?', message: '사용자 목록에서 삭제되며 문의 원문과 답변은 운영팀 확인을 위해 보관됩니다.', confirmText: '삭제하기', danger: true })
+   : confirm('질문을 삭제하시겠어요? 사용자 목록에서 삭제되며 문의 원문과 답변은 운영팀 확인을 위해 보관됩니다.');
+  if (!ok || !qnaSessionIsCurrent(session)) return;
+  try {
+   await postAuthedJson('/qna/delete', { id: qid }, null, qnaAssertCurrent(session));
+  } catch(e) {
+   if (qnaStale(session, e)) return;
+   // 응답 유실 뒤 재시도 등으로 이미 지워진 문의는 삭제 성공과 같게 처리한다.
+   if (e?.code !== 'QNA_NOT_FOUND') { alert('삭제 실패: '+e.message); return; }
+  }
   qnaItems = [];
-  window.backToQList(true);
- } catch(e) {
-  alert('삭제 실패: '+e.message);
+  if (qnaShowingQuestion(qid)) window.backToQList(true);
+  else if (document.getElementById('qnaListView')?.style.display !== 'none') window.loadQuestions();
+ } finally {
+  if (qnaDeletePending === pending) qnaDeletePending = null;
  }
 };
 

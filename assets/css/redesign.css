@@ -2715,6 +2715,10 @@ body[data-main-design="lavender"] #loginScreen .ldesc{
  background:#e6f6ee !important;
  color:#177a4c !important;
 }
+#mainContent[data-main-design="lavender"] .qna-status.deleted{
+ background:#fdecec !important;
+ color:#b42318 !important;
+}
 
 /* ===== lavender v8: 여백 통일·충전 카드 가독성 ===== */
 /* 커뮤니티/Q&A 수직 리듬 동일화 */
