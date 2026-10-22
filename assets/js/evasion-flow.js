@@ -3742,6 +3742,7 @@
   }
 
   function renderQueuedState(jobId, st) {
+    syncCancelState(Object.assign({}, st, { status: 'queued' }));
     stopFormalTicker();
     setActiveJobUi(jobId, 'queued', '휴머나이징 대기 중');
     setJobSteps(0);
@@ -4053,6 +4054,32 @@
     if (cancelWindowTimer) { clearTimeout(cancelWindowTimer); cancelWindowTimer = null; }
     var btn = $('lavJobCancel');
     if (btn) btn.hidden = true;
+    var hint = $('lavJobCancelHint'); if (hint) hint.textContent = '';
+  }
+  function syncCancelState(st) {
+    clearCancelWindow();
+    var btn = $('lavJobCancel'), hint = $('lavJobCancelHint');
+    if (!btn || !st) return;
+    var queued = st.status === 'queued' || st.status === 'awaiting_approval' || st.status === 'awaiting_payment';
+    var allowed = typeof st.canCancel === 'boolean' ? st.canCancel : queued || (st.status === 'running' && (st.elapsedSec || 0) < CANCEL_WINDOW_SEC);
+    if (allowed && queued) {
+      btn.hidden = false;
+      if (hint) hint.textContent = '대기 중에는 크레딧 차감 없이 중단할 수 있어요.';
+      return;
+    }
+    var remaining = Number.isFinite(st.cancelRemainingSec) ? st.cancelRemainingSec : CANCEL_WINDOW_SEC - (Number(st.elapsedSec) || 0);
+    var closed = function () {
+      btn.hidden = true;
+      if (hint) hint.textContent = '변환이 진행되어 중단 가능 시간이 지났어요. 완료 알림과 작업 기록에서 결과를 확인할 수 있어요.';
+    };
+    if (st.status === 'running' && allowed && remaining > 0) {
+      btn.hidden = false;
+      if (hint) hint.textContent = '변환 시작 직후에만 중단할 수 있어요. 대기 시간은 포함하지 않아요.';
+      cancelWindowTimer = setTimeout(function () { closed(); cancelWindowTimer = null; }, remaining * 1000);
+    } else if (st.status === 'running') {
+      closed();
+      if (hint && st.cancelReason === 'TRANSFORM_COMPLETION_IN_PROGRESS') hint.textContent = '결과를 저장하고 있어 중단할 수 없어요. 완료 알림과 작업 기록을 확인해 주세요.';
+    }
   }
   function armCancelWindow(elapsedSec) {
     var btn = $('lavJobCancel');
@@ -4247,7 +4274,7 @@
     if ($('lavJobTitle')) $('lavJobTitle').textContent = isShort ? '문장을 다듬고 있어요' : '글을 다시 쓰고 있어요';
     if ($('lavJobId')) $('lavJobId').textContent = '#' + jobId.slice(0, 6).toUpperCase();
     show('job');
-    armCancelWindow(st.elapsedSec || 0);   // 재진입 — 시작 30초 이내일 때만 취소 버튼 노출
+    syncCancelState(st);
     if (st.status === 'queued') {
       renderQueuedState(jobId, st);
       pollTransform(jobId, ++pollGen);
@@ -4540,6 +4567,7 @@
         continue;
       }
       if (st.status === 'running') {
+        syncCancelState(st);
         setActiveJobUi(jobId, 'running', '휴머나이징 진행 중');
         var runningShort = st.mode === 'blog' || st.mode === 'polish';
         var runningEstimate = runningShort

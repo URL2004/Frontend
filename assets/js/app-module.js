@@ -332,6 +332,47 @@ async function gpNotifyEvent(type, data) {
 }
 window.gpNotifyEvent = gpNotifyEvent;
 
+async function applyPendingReferral(u, uRef, userData) {
+ let pendingRef;
+ try { pendingRef = localStorage.getItem('pendingRef'); } catch (_) { return; }
+ if (!pendingRef || !window.CU || window.CU.uid !== u.uid) return;
+ const sameSession = () => window.CU === u;
+ const removePending = () => { try { if (sameSession() && localStorage.getItem('pendingRef') === pendingRef) localStorage.removeItem('pendingRef'); } catch (_) {} };
+ const tell = (message, type) => { if (!sameSession()) return; if (window.gpToast) window.gpToast(message, { type }); else alert(message); };
+ if (pendingRef === (userData.refCode || u.uid.substring(0, 8))) {
+  removePending(); tell('본인의 초대 링크에는 추천 보상이 지급되지 않아요.', 'info'); return;
+ }
+ try {
+  const token = await u.getIdToken();
+  if (!sameSession()) return;
+  const res = await fetch(window.apiUrl('/apply-referral'), {
+   method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+   body: JSON.stringify({ refCode: pendingRef })
+  });
+  const data = await res.json();
+  if (!sameSession()) return;
+  if (res.ok && data.ok) {
+   removePending();
+   // An idempotent retry may return success after the award was already made.
+   // Read the authoritative balance; never add another 20 in the browser.
+   try {
+    const fresh = await getDoc(uRef);
+    if (!sameSession()) return;
+    if (fresh.exists()) { window.UC = Number(fresh.data().credits) || 0; updateCreditUI(); }
+   } catch (_) { tell('추천 처리가 완료됐어요. 잔액은 잠시 후 새로고침해 확인해 주세요.', 'info'); return; }
+   if (data.alreadyApplied) tell('이미 추천 보상이 적용된 계정이에요. 크레딧 사용 내역을 확인해 주세요.', 'info');
+   else {
+    if (window.gpTrack) window.gpTrack('referral_applied', { reward: 20 });
+    tell('추천 보상으로 20크레딧이 지급됐어요!', 'success');
+   }
+  } else {
+   const retryable = res.status === 401 || res.status === 408 || res.status === 429 || res.status >= 500;
+   if (!retryable) removePending();
+   tell((data.error || '추천 보상을 적용하지 못했어요.') + (retryable ? ' 초대 코드는 보관했어요. 다시 로그인하면 재시도해요.' : ' 초대 링크와 크레딧 내역을 확인해 주세요.'), 'warning');
+  }
+ } catch (_) { tell('추천 보상 처리 여부를 확인하지 못했어요. 초대 코드는 보관했으며 다시 로그인하면 재시도해요.', 'warning'); }
+}
+
 async function loadUser(u) {
  const uRef = doc(db,'users',u.uid);
  let snap = await getDoc(uRef);
@@ -385,28 +426,9 @@ async function loadUser(u) {
  const lock = document.getElementById('snavProLock');
  const isPro = window.UP === 'pro' || window.UP === 'unlimited';
  if (lock) lock.style.display = isPro ? 'none' : 'inline';
- // 추천 코드가 있으면 백엔드에 요청 (신규/기존 유저 모두)
- let pendingRef = null;
- try { pendingRef = localStorage.getItem('pendingRef'); } catch (_) {}
- const myRefCode = d.refCode || u.uid.substring(0,8);
- if (pendingRef && pendingRef !== myRefCode) {
-  try {
-   const token = await u.getIdToken();
-   const res = await fetch(window.apiUrl('/apply-referral'), {
-    method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+token},
-    body: JSON.stringify({ refCode:pendingRef })
-   });
-   const data = await res.json();
-   if (data.ok) {
-    window.UC += 20; updateCreditUI();
-    if (window.gpTrack) window.gpTrack('referral_applied', { reward: 20, traffic_source: localStorage.getItem('traffic_source') || 'direct' });
-    if (window.gpToast) window.gpToast('추천 보상으로 20크레딧이 지급됐어요!', { type: 'success' });
-    else alert('추천 보상으로 20크레딧이 지급됐어요!');
-    localStorage.removeItem('pendingRef');
-   }
-   else { console.log('추천 적용 실패:', data.error); localStorage.removeItem('pendingRef'); }
-  } catch(e) { console.log('추천 적용 네트워크 오류 (재시도 가능):', e); }
- }
+ // 추천 보상은 저장된 잔액으로 갱신하고, 일시 오류는 다음 로그인에서 재시도한다.
+ await applyPendingReferral(u, uRef, d);
+ if (!window.CU || window.CU.uid !== u.uid) return;
   window.gpUserDataReady = true;
   updateCreditUI();
  window.updateNotifBadge(u.uid);
@@ -5934,7 +5956,7 @@ function adminDetectCalibrationExample(cfg) {
  const factor = Number(cfg.factor) || 0;
  const maxReduction = Number(cfg.maxReduction) || 0;
  const floor = Number(cfg.floor) || 0;
- const adjusted = Math.max(floor, raw - Math.min(maxReduction, Math.round(raw * factor)));
+ const adjusted = Math.min(raw, Math.max(floor, raw - Math.min(maxReduction, Math.round(raw * factor))));
  return `예시: 원점수 ${raw}점 → 표시 ${Math.round(adjusted)}점`;
 }
 
@@ -5983,16 +6005,16 @@ window.adminSaveDetectCalibration = async function() {
  const button = document.getElementById('adminDetectSaveButton');
  if (button && button.disabled) return;
  const cfg = adminReadDetectCalibrationForm();
- if (!Number.isFinite(cfg.limit) || cfg.limit < 1 || cfg.limit > 100) {
-  adminSetMessage('adminDetectCalMsg', '최근 작업 조회 수는 1~100 사이여야 합니다.', 'error');
+ if (!Number.isFinite(cfg.limit) || cfg.limit < 1 || cfg.limit > 1000) {
+  adminSetMessage('adminDetectCalMsg', '최근 작업 조회 수는 1~1000 사이여야 합니다.', 'error');
   return;
  }
- if (!Number.isFinite(cfg.factor) || cfg.factor < 0 || cfg.factor > 0.4) {
-  adminSetMessage('adminDetectCalMsg', '보정 비율은 0~0.4 사이여야 합니다.', 'error');
+ if (!Number.isFinite(cfg.factor) || cfg.factor < 0 || cfg.factor > 0.5) {
+  adminSetMessage('adminDetectCalMsg', '보정 비율은 0~0.5 사이여야 합니다.', 'error');
   return;
  }
- if (!Number.isFinite(cfg.maxReduction) || cfg.maxReduction < 0 || cfg.maxReduction > 30) {
-  adminSetMessage('adminDetectCalMsg', '최대 감산은 0~30 사이여야 합니다.', 'error');
+ if (!Number.isFinite(cfg.maxReduction) || cfg.maxReduction < 0 || cfg.maxReduction > 40) {
+  adminSetMessage('adminDetectCalMsg', '최대 감산은 0~40 사이여야 합니다.', 'error');
   return;
  }
  if (!Number.isFinite(cfg.floor) || cfg.floor < 0 || cfg.floor > 100) {

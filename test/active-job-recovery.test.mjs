@@ -20,7 +20,7 @@ function fixture() {
     activeJobUi: { status: 'idle' }, activeCancel: null, structureInputKey: () => 'input', currentDocumentProfile: () => '',
     updateConfirmStartState: noop, renderConfirmCost: noop, renderSelectCosts: noop,
     evGetIdToken: async () => 'owner', evAuthHeaders: (token, more) => ({ Authorization: token, ...more }),
-    show: step => shown.push(step), stopFormalTicker: noop, clearCancelWindow: noop, armCancelWindow: noop,
+    show: step => shown.push(step), stopFormalTicker: noop, clearCancelWindow: noop, armCancelWindow: noop, syncCancelState: noop,
     setJobSteps: noop, renderApprovalList: (rows, id) => { context.approvalJob = id; },
     saveJobRef: (id, status) => { context.ref = { id, status }; },
     clearJobRef: () => { context.ref = null; }, clearActiveJobUi: () => { context.activeJobUi = { status: 'idle' }; },

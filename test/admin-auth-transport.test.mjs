@@ -100,10 +100,10 @@ test('admin transport never places a credential in a URL or strips business payl
 });
 
 test('user payment, referral, coupon, and analyze tokens stay out of JSON bodies', () => {
-  const referral = section("fetch(window.apiUrl('/apply-referral')", "localStorage.removeItem('pendingRef')");
+  const referral = section("fetch(window.apiUrl('/apply-referral')", "const data = await res.json()");
   const coupon = section('window.redeemCoupon', 'window.adminCreateCoupons');
-  assert.match(referral, /Authorization:'Bearer '\+token/u);
-  assert.match(referral, /JSON\.stringify\(\{ refCode:pendingRef \}\)/u);
+  assert.match(referral, /Authorization: 'Bearer ' \+ token/u);
+  assert.match(referral, /JSON\.stringify\(\{ refCode: pendingRef \}\)/u);
   assert.doesNotMatch(referral, /idToken/u);
   assert.match(coupon, /Authorization: 'Bearer ' \+ token/u);
   assert.match(coupon, /JSON\.stringify\(\{ code \}\)/u);

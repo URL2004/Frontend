@@ -106,10 +106,10 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">118개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">119개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 10.15</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 10.22</span>
       </div>
 
       <div class="gp-admin-filter-row gp-admin-patch-filters">
@@ -122,8 +122,8 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.116 · AI 감지 v1.58</strong>
-          <code>2026.10.21 · 운영 브랜치 기준</code>
+          <strong>휴머나이징 v2.5.117 · AI 감지 v1.59</strong>
+          <code>2026.10.22 · 운영 브랜치 기준</code>
         <span>원문·감지 전수 대조 · 삭제 문의 원문 보관 · 문의 화면 계정 격리</span>
       </div>
 
@@ -136,6 +136,16 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.117 · 감지 v1.59</span><span class="gp-admin-patch-title"><b>휴머나이징 이력 보정 확대·추천 보상 안내·대기 중 취소 복구</b><small>2026.10.22 · 운영 원문·결과 1,156건과 로그 158,729줄 전수 감사</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">이력 보정</span><span>사용자별 과거 휴머나이징 조회를 50건에서 500건으로 확대하고 감지·글쓰기 이력과 구분합니다. 색인된 동일 결과는 오래된 이력도 직접 찾습니다. 보정 비율은 40%에서 50%, 최대 감산은 30점에서 40점으로 조정하며 원점수와 적용 여부를 함께 보존합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">적용 조건</span><span>본인 소유·서버 서명·전달 적격성을 검증한 결과에만 적용하며, 내용이 바뀐 글을 유사도만으로 인정하지 않습니다. 원문 점수 상한 증명과 기존 정책 세부 옵션을 유지합니다. 외부 탐지 점수 개선을 뜻하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">추천·취소</span><span>친구 추천 적용 거절 사유를 화면에 알리고, 일시 오류에는 초대 코드를 보관합니다. 중복 재시도는 추가 지급 없이 실제 잔액을 읽습니다. 대기 중에는 중단 버튼을 유지하고 실행 후에는 서버의 중단 가능 시간과 제한 이유를 표시합니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">원문 구조</span><span>문항 번호가 붙은 제목을 별도 단락으로 잘못 분리하는 오류를 수정합니다. 정상 소제목과 실제로 붙어 있는 제목·본문 경계는 회귀 검증합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">검수 범위</span><span>휴머나이징 752건·감지 404건의 원문, 결과, 점수, 저장 원장과 문장 위치를 대조했습니다. 전체 신규 모델 재생성이나 외부 탐지기 정확도 검증은 포함하지 않습니다. 장문 다단계 검수와 혼잡 대기 시간은 별도 개선 과제로 기록합니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.116 · 감지 v1.58</span><span class="gp-admin-patch-title"><b>원문 누락·문단 경계 보완과 삭제 문의 원문 보관</b><small>2026.10.21 · 현행 엔진 전수 대조와 문의 이력 보존</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>
@@ -1614,7 +1624,7 @@
     <section class="gp-admin-panel" data-admin-tab="settings">
       <div class="gp-admin-section-head">
         <h3>AI 감지 보정 설정 <span id="adminDetectCalSource" class="gp-admin-count"></span></h3>
-        <p>같은 사용자의 최근 휴머나이징 결과와 감지 입력이 같거나, 장문에서 소폭 수정된 것으로 확인될 때만 적용됩니다. 체크와 숫자 변경은 저장 후 반영됩니다.</p>
+        <p>같은 사용자의 검증된 휴머나이징 결과와 감지 입력이 같거나 표기만 동등할 때 적용됩니다. 내용이 달라진 글에는 자동 보정하지 않습니다. 체크와 숫자 변경은 저장 후 반영됩니다.</p>
       </div>
       <div class="gp-admin-cal-grid">
         <div class="gp-admin-cal-toggle">
@@ -1629,13 +1639,13 @@
         </div>
         <label class="gp-admin-label">
           <span class="gp-admin-label-title">
-            최근 작업 조회 수
-            <span class="gp-admin-tip" tabindex="0" aria-label="감지 입력과 같거나 소폭 수정된 휴머나이징 결과를 최근 작업내역 몇 건 안에서 찾습니다. 짧은 글이나 크게 달라진 글에는 유사 일치를 적용하지 않습니다.">
+            사용자별 과거 휴머나이징 조회 수
+            <span class="gp-admin-tip" tabindex="0" aria-label="본인 휴머나이징 이력만 조회합니다. 색인된 동일 결과는 오래된 기록도 직접 찾고, 색인이 없는 과거 기록은 설정한 건수까지 찾습니다. 내용이 달라진 글에는 자동 보정하지 않습니다.">
               <span class="gp-admin-tip-icon">?</span>
-              <span class="gp-admin-tip-pop" role="tooltip">감지 입력과 같거나 소폭 수정된 휴머나이징 결과를 최근 작업내역 몇 건 안에서 찾습니다. 짧은 글이나 크게 달라진 글에는 유사 일치를 적용하지 않습니다.</span>
+              <span class="gp-admin-tip-pop" role="tooltip">본인 휴머나이징 이력만 조회합니다. 색인된 동일 결과는 오래된 기록도 직접 찾고, 색인이 없는 과거 기록은 설정한 건수까지 찾습니다. 내용이 달라진 글에는 자동 보정하지 않습니다.</span>
             </span>
           </span>
-          <input id="adminDetectCalLimit" class="gp-admin-input" type="number" min="1" max="100" step="1">
+          <input id="adminDetectCalLimit" class="gp-admin-input" type="number" min="1" max="1000" step="1">
         </label>
         <label class="gp-admin-label">
           <span class="gp-admin-label-title">
@@ -1645,7 +1655,7 @@
               <span class="gp-admin-tip-pop" role="tooltip">원점수에서 줄일 비율입니다. 예: 0.15는 80점 기준 최대 12점 감산 후보입니다.</span>
             </span>
           </span>
-          <input id="adminDetectCalFactor" class="gp-admin-input" type="number" min="0" max="0.4" step="0.01">
+          <input id="adminDetectCalFactor" class="gp-admin-input" type="number" min="0" max="0.5" step="0.01">
         </label>
         <label class="gp-admin-label">
           <span class="gp-admin-label-title">
@@ -1655,7 +1665,7 @@
               <span class="gp-admin-tip-pop" role="tooltip">한 번에 줄일 수 있는 최대 폭입니다. 비율 계산값이 커도 이 값보다 더 줄지 않습니다.</span>
             </span>
           </span>
-          <input id="adminDetectCalMaxReduction" class="gp-admin-input" type="number" min="0" max="30" step="1">
+          <input id="adminDetectCalMaxReduction" class="gp-admin-input" type="number" min="0" max="40" step="1">
         </label>
         <label class="gp-admin-label">
           <span class="gp-admin-label-title">
