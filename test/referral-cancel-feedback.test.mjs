@@ -46,3 +46,10 @@ test('queue cancellation survives long waits, running state uses server allowanc
  assert.match(nodes.lavJobCancelHint.textContent,/결과를 저장/);
  c.syncCancelState({status:'queued',canCancel:false});assert.equal(nodes.lavJobCancel.hidden,true);
 });
+test('an obsolete auth callback cannot claim a pending referral for its previous account', async () => {
+ const h = referral({ok:true,status:200,json:async()=>({ok:true})});
+ h.c.window.CU = {uid:'another'};
+ h.c.window.gpReferralContext = {claim(){assert.fail('stale account must not bind the code');}};
+ await h.run();
+ assert.equal(h.messages.length,0);
+});

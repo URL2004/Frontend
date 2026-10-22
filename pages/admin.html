@@ -106,7 +106,7 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">119개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">120개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
         <span class="gp-admin-patch-range">2026.06.04 — 10.22</span>
@@ -122,8 +122,8 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.117 · AI 감지 v1.59</strong>
-          <code>2026.10.22 · 운영 브랜치 기준</code>
+          <strong>휴머나이징 v2.5.118 · AI 감지 v1.60</strong>
+          <code>2026.10.23 · 운영 브랜치 기준</code>
         <span>원문·감지 전수 대조 · 삭제 문의 원문 보관 · 문의 화면 계정 격리</span>
       </div>
 
@@ -136,6 +136,16 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.118 · 감지 v1.60</span><span class="gp-admin-patch-title"><b>동일 발췌본 재검사·대기 예측·추천 코드 보존·감사 오탐 수정</b><small>2026.10.23 · 실제 문의 재현과 기존 원문·결과 대조</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">발췌본 재검사</span><span>본인의 서버 서명 결과에서 완전한 문장 3개 이상·공백 제외 500자 이상의 연속 부분을 그대로 검사하면 이력 일치를 인정합니다. 추가·수정·중간 삭제·순서 변경·타인 이력은 제외하며, 전체 원문의 점수 상한은 발췌본에 가져오지 않습니다. 과거 검사 점수는 변경하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">대기 시간</span><span>먼저 접수된 작업의 길이, 실행 경과 시간, 모드별·공유 처리 한도, 재시도 시각을 함께 계산합니다. 재개 시각이 불확실하면 곧 시작으로 표시하지 않습니다. 대기 중 취소 기능은 유지합니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">추천 코드</span><span>화면 이동과 로그인 초기화 전에 초대 코드를 저장하고 브라우저 저장소가 제한되면 세션·메모리로 보존합니다. 재시도는 최초 계정에 연결하고 늦은 응답이 새 초대 코드를 지우지 않게 합니다. 중복 보상은 서버에서 계속 차단합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">의미 감사</span><span>대조 문장이나 짧은 절이 이웃 문장에 합쳐진 경우를 문장 삭제의 확정 근거로 사용하지 않습니다. 일이 중요했다처럼 의미가 유지된 표현을 의무 강화로 잘못 판정하는 사례를 수정합니다. 실제 누락·의무 강화 검사와 필수 최종 의미 검증은 유지합니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">복구 한도</span><span>승인된 구조를 전달하지 못해 원문 구조로 재처리할 때 같은 작업의 복구 호출·시간·비용 한도를 이어 사용합니다. 재처리마다 선택적 복구 예산이 새로 생기는 중복 비용·지연을 막고 최종 검수 시간은 확보합니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.117 · 감지 v1.59</span><span class="gp-admin-patch-title"><b>휴머나이징 이력 보정 확대·추천 보상 안내·대기 중 취소 복구</b><small>2026.10.22 · 운영 원문·결과 1,156건과 로그 158,729줄 전수 감사</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>
@@ -1624,7 +1634,7 @@
     <section class="gp-admin-panel" data-admin-tab="settings">
       <div class="gp-admin-section-head">
         <h3>AI 감지 보정 설정 <span id="adminDetectCalSource" class="gp-admin-count"></span></h3>
-        <p>같은 사용자의 검증된 휴머나이징 결과와 감지 입력이 같거나 표기만 동등할 때 적용됩니다. 내용이 달라진 글에는 자동 보정하지 않습니다. 체크와 숫자 변경은 저장 후 반영됩니다.</p>
+        <p>같은 사용자의 검증된 휴머나이징 결과와 감지 입력이 같거나 표기만 동등할 때 적용됩니다. 완전한 문장으로 이어지는 동일 발췌본도 검증 후 적용하며, 내용이 달라진 글에는 자동 보정하지 않습니다. 체크와 숫자 변경은 저장 후 반영됩니다.</p>
       </div>
       <div class="gp-admin-cal-grid">
         <div class="gp-admin-cal-toggle">

@@ -3736,7 +3736,8 @@
   }
 
   function lavQueueWaitText(sec) {
-    var s = Math.max(0, Math.round(sec || 0));
+    if (sec == null || !Number.isFinite(Number(sec))) return '확인 중';
+    var s = Math.max(0, Math.round(sec));
     if (s < 60) return '곧 시작';
     return '약 ' + Math.max(1, Math.round(s / 60)) + '분';
   }

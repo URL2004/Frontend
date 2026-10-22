@@ -50,6 +50,7 @@ window.authPersistenceReady = authPersistenceReady;
 
 // 추천 링크: ?ref= 파라미터 저장
 (function() {
+ if (window.gpReferralContext) { window.gpReferralContext.capture(); return; }
  const urlParams = new URLSearchParams(window.location.search);
  const refCode = urlParams.get('ref');
  // 서버 추천 코드 계약과 같은 보수적인 문자 집합만 보관한다. URL에서 온 임의
@@ -333,11 +334,21 @@ async function gpNotifyEvent(type, data) {
 window.gpNotifyEvent = gpNotifyEvent;
 
 async function applyPendingReferral(u, uRef, userData) {
- let pendingRef;
- try { pendingRef = localStorage.getItem('pendingRef'); } catch (_) { return; }
- if (!pendingRef || !window.CU || window.CU.uid !== u.uid) return;
+ if (!window.CU || window.CU.uid !== u.uid) return;
+ let pendingRef, referralTicket;
+ if (window.gpReferralContext) {
+  referralTicket = window.gpReferralContext.claim(u.uid);
+  pendingRef = referralTicket && referralTicket.code;
+ } else {
+  try { pendingRef = localStorage.getItem('pendingRef'); } catch (_) { return; }
+ }
+ if (!pendingRef) return;
  const sameSession = () => window.CU === u;
- const removePending = () => { try { if (sameSession() && localStorage.getItem('pendingRef') === pendingRef) localStorage.removeItem('pendingRef'); } catch (_) {} };
+ const removePending = () => {
+  if (!sameSession()) return;
+  if (referralTicket) { window.gpReferralContext.complete(referralTicket); return; }
+  try { if (localStorage.getItem('pendingRef') === pendingRef) localStorage.removeItem('pendingRef'); } catch (_) {}
+ };
  const tell = (message, type) => { if (!sameSession()) return; if (window.gpToast) window.gpToast(message, { type }); else alert(message); };
  if (pendingRef === (userData.refCode || u.uid.substring(0, 8))) {
   removePending(); tell('본인의 초대 링크에는 추천 보상이 지급되지 않아요.', 'info'); return;

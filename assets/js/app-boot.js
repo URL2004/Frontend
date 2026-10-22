@@ -1,3 +1,74 @@
+// Capture before landing navigation or Firebase/CDN loading can remove ?ref.
+(function initReferralContext() {
+  'use strict';
+  var KEY = 'gp_pending_referral_v1', TTL = 30 * 24 * 60 * 60 * 1000;
+  var memory, capturedCode = '', unavailable = {};
+  function stores() {
+    return ['localStorage', 'sessionStorage'].filter(function (name) { return !unavailable[name]; });
+  }
+  function stamp(raw) {
+    try { var value = JSON.parse(raw); return Number(value && (value.updatedAt || value.at)) || 0; } catch (_) { return 0; }
+  }
+  function read(key) {
+    var latest = key === KEY ? memory : null;
+    for (var name of stores()) {
+      try {
+        var value = window[name].getItem(key);
+        if (value != null && key !== KEY) return value;
+        if (value != null && (latest == null || stamp(value) > stamp(latest))) latest = value;
+      } catch (_) { unavailable[name] = true; }
+    }
+    return latest;
+  }
+  function save(value) {
+    var updatedAt = Math.max(Date.now(), stamp(read(KEY)) + 1);
+    value = Object.assign({}, value || { code: '', at: Date.now(), uid: '' }, { updatedAt: updatedAt });
+    memory = JSON.stringify(value);
+    for (var name of stores()) {
+      try { window[name].setItem(KEY, memory); } catch (_) { unavailable[name] = true; }
+      try { window[name].removeItem('pendingRef'); } catch (_) {}
+    }
+  }
+  function validCode(code) { return typeof code === 'string' && /^[A-Za-z0-9_-]{8}$/.test(code); }
+  function current() {
+    var raw = read(KEY), value;
+    if (raw == null) {
+      var legacy = read('pendingRef');
+      if (validCode(legacy)) { value = { code: legacy, at: Date.now(), uid: '' }; save(value); return value; }
+      return null;
+    }
+    try { value = JSON.parse(raw); } catch (_) { return null; }
+    if (!value || !validCode(value.code) || !Number.isFinite(value.at)
+      || value.at > Date.now() + 60000 || Date.now() - value.at > TTL) return null;
+    return value;
+  }
+  function capture() {
+    var code;
+    try { code = new URLSearchParams(window.location.search).get('ref'); } catch (_) { return; }
+    if (!validCode(code) || code === capturedCode) return;
+    capturedCode = code;
+    var previous = current();
+    // Reloading the same link must not detach a retry from its original account.
+    if (previous && previous.code === code) return;
+    save({ code: code, at: Date.now(), uid: '' });
+  }
+  window.gpReferralContext = {
+    capture: capture,
+    claim: function (uid) {
+      if (typeof uid !== 'string' || !uid) return null;
+      var value = current();
+      if (!value || value.uid && value.uid !== uid) return null;
+      if (!value.uid) { value.uid = uid; save(value); }
+      return value;
+    },
+    complete: function (ticket) {
+      var value = current();
+      if (value && ticket && value.code === ticket.code && value.uid === ticket.uid && value.at === ticket.at) save(null);
+    }
+  };
+  capture();
+})();
+
 (function () {
   'use strict';
 
