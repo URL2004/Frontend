@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-22",
+  "tool": "Built-in image_gen",
+  "format": "WebP, 1200px wide, libwebp quality 82",
+  "images": [
+    {
+      "slug": "sample-population-survey-guide",
+      "asset": "assets/img/blog/sample-population-survey-guide.webp",
+      "prompt": "Wide 16:9 editorial still life for a university guide about sample and population. A large shallow oval seafoam ceramic tray filled with many small matte wooden beads in balanced coral, navy and cream colors; a smaller open brass scoop in front holds a modest mixed subset of the same beads. Intentional orderly studio composition, pale mint background, soft daylight, tactile ceramic and wood, contemporary museum photography. Objects in central 65% width and middle 60% height for cropping. No text, numbers, symbols, charts, logos, watermarks, books, prisms, pendulums, paper sheets or robots. Conceptual art not a statistical dataset."
+    },
+    {
+      "slug": "bar-vs-line-chart-report-guide",
+      "asset": "assets/img/blog/bar-vs-line-chart-report-guide.webp",
+      "prompt": "Wide 16:9 premium editorial still life for a guide about choosing charts. Four freestanding matte plum ceramic rectangular columns of different heights on a shared flat ivory plinth, beside a thin continuous sculptural copper wire that rises and falls gently across three supports. Warm apricot backdrop, cinematic side lighting and subtle grain, refined design magazine art. Bar comparison and time trend evoked as abstract sculptures, not literal data or scientific chart. Main objects centered within central 65% width and middle 60% height to survive wide and square crops. No text, numbers, axes, ticks, letters, logos, watermarks, beads, scoops, books, paper sheets, prisms, robots, pendulums or dominoes."
+    }
+  ]
+}
