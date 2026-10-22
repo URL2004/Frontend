@@ -8804,6 +8804,34 @@ function adminLedgerCodes(...sources) {
   .filter(Boolean))].slice(0, 30).join(', ');
 }
 
+function adminSemanticEvidence(audit) {
+ const empty = reason => `<section class="gp-admin-ledger-detail-section"><h3>의미 판정 근거</h3><p>${escapeHtml(reason)}</p></section>`;
+ if (!audit?.available) return empty(audit?.reason === 'output_changed'
+  ? '문단 보강 등으로 결과가 바뀌어 이전 판정을 현재 결과의 근거로 사용할 수 없습니다.'
+  : ['invalid_evidence', 'invalid_evidence_size'].includes(audit?.reason)
+  ? '저장된 판정 근거의 무결성을 확인하지 못했습니다. 통과 근거로 사용할 수 없습니다.'
+  : '이 작업에는 문장별 판정 근거가 저장되지 않았습니다. 통과를 뜻하지 않습니다.');
+ const status = {pass:'통과',fail:'문제 확인',uncertain:'판단 보류',skipped:'검사 미실시',incomplete:'검사 미완료',stale:'현재 결과와 불일치',unknown:'확인 불가'};
+ const stage = {initial:'수리 전 지적',remaining:'잔여 지적',source_issue:'원문 자체의 문제'};
+ const quote = (label, value) => value?.text ? adminLedgerTextBlock(label + (value.truncated ? ' · 앞부분 발췌' : ''), value.text) : '';
+ const windows = (Array.isArray(audit.windows) ? audit.windows : []).map(w => `<details class="gp-admin-ledger-detail-section"><summary>구간 ${Number(w.index) + 1} · ${escapeHtml(status[w.status] || w.status)}${w.receiptReused ? ' · 동일 구간 검증 재사용' : ''}</summary>
+  ${adminLedgerDetailPairs('검사 정보', [['모델', w.model || w.validation?.model], ['수리 거절 사유', (w.repairRejectReasons || []).join(', ')]])}
+  ${(w.findings || []).map(f => `<article>${adminLedgerDetailPairs(stage[f.stage] || '지적', [['유형', f.type], ['원인', f.origin], ['미확정 사유', (f.uncertaintyReasons || []).join(', ')]])}${quote('원문 구절', f.source)}${quote('결과 구절', f.candidate)}${quote('판정 근거', f.detail)}</article>`).join('')}
+  ${(w.reviews || []).map(r => `<details><summary>관계 검토 · ${escapeHtml(r.status)}</summary>${quote('원문 구절', r.source)}${quote('결과 구절', r.candidate)}${quote('비교 근거', r.detail)}
+   ${r.rejectedResponse ? `<p>인용·응답 검증을 통과하지 못한 답변입니다: ${escapeHtml((r.uncertaintyReasons || []).join(', '))}</p>${quote('검증되지 않은 원문 인용', r.rejectedResponse.source)}${quote('검증되지 않은 결과 인용', r.rejectedResponse.candidate)}${quote('검증되지 않은 설명', r.rejectedResponse.detail)}` : ''}</details>`).join('')}
+  ${!(w.findings || []).length && !(w.reviews || []).length ? '<p>저장된 문장별 지적이 없습니다. 위 구간의 검사 상태를 함께 확인하세요.</p>' : ''}</details>`).join('');
+ return `<section class="gp-admin-ledger-detail-section"><h3>의미 판정 근거</h3>
+  ${adminLedgerDetailPairs('최종 결과 연결', [['의미 판정', status[audit.status] || audit.status], ['검사 선택 사유', audit.decisionReason], ['결과 지문', audit.candidateDigest], ['판정 정책', audit.version], ['정책 지문', audit.policyFingerprint]])}
+  <p>최종 결과와 저장된 지문을 대조했습니다. 수리 전 지적은 과거 검사 대상에 대한 근거이며 현재 결과의 오류를 뜻하지 않습니다.</p>
+  ${audit.truncated ? `<p role="alert">저장 용량 상한으로 지적 ${Number(audit.omittedFindings) || 0}건, 검토 ${Number(audit.omittedReviews) || 0}건의 상세가 생략되었습니다.</p>` : ''}
+  ${windows}
+  <details><summary>복구 시도·검증 재사용</summary>
+   ${adminLedgerDetailPairs('검증 재사용', [['재사용', audit.receipts?.reused], ['새 검사 필요', audit.receipts?.misses], ['본문·문맥 변경', audit.receipts?.contextMisses], ['판정 모델 수준 변경', audit.receipts?.tierMisses], ['이전 지적 변경', audit.receipts?.obligationMisses]])}
+   ${(audit.recovery || []).map(r => adminLedgerDetailPairs(`구간 ${Number(r.index) + 1} · ${r.applied ? '채택' : '미채택'}`, [['단계', r.tier], ['사유', r.reason], ['이전 사유', r.previousReason], ['소요 시간', `${Math.max(0, Number(r.elapsedMs) || 0)}ms`], ['예상 API 비용', `$${Math.max(0, Number(r.estimatedUsd) || 0).toFixed(6)}`]])).join('')}
+   ${audit.omittedRecoveryAttempts ? `<p>복구 상세 ${Number(audit.omittedRecoveryAttempts) || 0}건은 저장 상한으로 생략되었습니다.</p>` : ''}
+  </details></section>`;
+}
+
 function adminRenderLedgerDetail(data) {
  if (data.available === false) {
   const reasonLabels = {
@@ -8866,6 +8894,7 @@ function adminRenderLedgerDetail(data) {
   </div>
   ${adminLedgerTextBlock('원문', history.inputText)}
   ${isDetect ? detectHtml : adminLedgerTextBlock('휴머나이징 결과', history.outputText)}
+  ${isDetect ? '' : adminSemanticEvidence(engineBundle.semanticAudit)}
   ${opsHtml}
   ${!history.inputText && !history.outputText && !detectView.summary && !detectView.detail ? '<div class="gp-admin-empty">이 원장 행에 연결된 작업 내용이 없습니다.</div>' : ''}`;
 }
