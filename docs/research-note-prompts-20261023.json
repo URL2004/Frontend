@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-23",
+  "tool": "Built-in image_gen",
+  "format": "WebP, 1200px wide, libwebp quality 82",
+  "images": [
+    {
+      "slug": "reverse-outline-revision-guide",
+      "asset": "assets/img/blog/reverse-outline-revision-guide.webp",
+      "prompt": "Wide 16:9 refined editorial photograph for an academic guide on reverse outlining. Five thick ivory index tiles arranged as a loose winding path on deep indigo felt, each tile contains one abstract embossed short line, one coral tile is gently lifted and being repositioned without any hands. Fine brass corner clips, subtle directional daylight, tactile paper and fabric, elegant calm composition. Main objects in central 65 percent width and middle 60 percent height for cropping. No readable text, letters, numbers, logos, watermarks, books, beads, charts, prisms, pendulums or robots. Conceptual arrangement not a diagram."
+    },
+    {
+      "slug": "group-report-integration-checklist",
+      "asset": "assets/img/blog/group-report-integration-checklist.webp",
+      "prompt": "Wide 16:9 editorial conceptual photograph about integrating a collaborative university report. Three curved matte ceramic segments in sage green, warm cream and muted mauve fit together into one elegant low circular vessel, a final small segment slightly separated to reveal the join. A small brass binder clip rests beside the vessel. Warm off-white gallery background, sculptural still life, soft daylight, high end tactile glaze, calm cohesive composition centered in middle 60 percent of image for cropping. No readable text, letters, numbers, logos, watermarks, puzzle-piece tabs, paper cards, beads, charts, prisms, pendulums, books, people or robots."
+    }
+  ]
+}
