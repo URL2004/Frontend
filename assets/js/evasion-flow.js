@@ -2992,6 +2992,8 @@
         // 우리 쪽 실패와 원문에 후보가 없는 경우를 구분해 말한다.
         baEmpty.textContent = exampleState.reason === 'no_meaningful_change' || exampleState.reason === 'unverified_change'
           ? '실제로 달라진 표현을 확인할 수 없어 이번 미리보기는 표시하지 않았어요. 아래 문체 지표는 그대로 확인할 수 있어요.'
+          : d.exampleUnavailableReason === 'deadline'
+            ? '예시 문장 준비가 지연돼 미리보기를 생략했어요. 아래 감지 결과는 정상적으로 완료됐어요.'
           : d.exampleStatus === 'unavailable'
             ? '예시 문장을 다듬는 중 오류가 생겨 이번에는 미리보기를 만들지 못했어요. 아래 분석은 그대로 확인할 수 있어요.'
             : '사실을 바꾸지 않고 보여줄 예시 문장을 원문에서 찾지 못했어요. 아래 분석에서 근거를 확인해 주세요.';

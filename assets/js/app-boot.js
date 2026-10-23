@@ -236,6 +236,30 @@
     return appAssetsPromise;
   }
 
+  var newSentenceRequestPromise = null;
+  window.gpRequestNewSentence = async function () {
+    if (newSentenceRequestPromise) return newSentenceRequestPromise;
+    newSentenceRequestPromise = (async function () {
+      try {
+        // Wait for both the handler and the running-job guard. Loading just
+        // main-designs.js can otherwise clear the editor before evasion-flow.
+        await loadAppAssets();
+        if (typeof window.lavNewSentence !== 'function' || typeof window.lavPrepareNewSentence !== 'function') {
+          throw new Error('NEW_SENTENCE_NOT_READY');
+        }
+        return window.lavNewSentence();
+      } catch (_) {
+        var message = '새 글 쓰기 기능을 준비하지 못했어요. 작성 중인 글은 유지돼요. 잠시 후 다시 눌러 주세요.';
+        if (window.gpToast) window.gpToast(message, { type: 'error' });
+        else window.alert(message);
+        return false;
+      } finally {
+        newSentenceRequestPromise = null;
+      }
+    })();
+    return newSentenceRequestPromise;
+  };
+
   var socialLoginRequestPromise = null;
   // Direct app routes do not load landing.js, but share its login-screen button.
   window.gpLandingBackHome = function () {

@@ -106,15 +106,15 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">123개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">124개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 10.23</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 10.24</span>
       </div>
 
       <div class="gp-admin-filter-row gp-admin-patch-filters">
         <label class="gp-admin-filter-field gp-admin-filter-grow" for="adminPatchQuery"><span>변경 검색</span><input id="adminPatchQuery" class="gp-admin-input gp-admin-input-sm" type="search" placeholder="버전·기능·커밋·검증 내용" oninput="adminFilterPatches()"></label>
-        <label class="gp-admin-filter-field" for="adminPatchStatus"><span>상태</span><select id="adminPatchStatus" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="adminFilterPatches()"><option value="">전체 상태</option><option value="is-live">운영 반영</option><option value="is-foundation">기반</option><option value="is-superseded">후속 대체</option><option value="is-experiment">실험</option></select></label>
+        <label class="gp-admin-filter-field" for="adminPatchStatus"><span>상태</span><select id="adminPatchStatus" class="gp-admin-input gp-admin-input-sm gp-admin-select" onchange="adminFilterPatches()"><option value="">전체 상태</option><option value="is-live">운영 반영</option><option value="is-pending">배포 대기</option><option value="is-foundation">기반</option><option value="is-superseded">후속 대체</option><option value="is-experiment">실험</option></select></label>
         <button type="button" class="gp-admin-mini-btn" onclick="adminTogglePatches(true)">모두 펼치기</button>
         <button type="button" class="gp-admin-mini-btn" onclick="adminTogglePatches(false)">모두 접기</button>
         <span id="adminPatchMatchCount" class="gp-admin-filter-result" aria-live="polite"></span>
@@ -136,6 +136,18 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.120 · 감지 v1.60</span><span class="gp-admin-patch-title"><b>확정 의미 변화 차단·원문 구조 복원·오류 안내와 운영 감시 보완</b><small>2026.10.24 · Backend f9d2e97 · 수정·오프라인 검증 · 운영 반영 전</small></span><span class="gp-admin-patch-state is-pending">배포 대기</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area safety">의미 보존</span><span>고유한 원문·결과 인용과 현재 결과 지문으로 확인된 행위·조건·부정 의미 변화가 남으면 결과 전달과 과금을 차단합니다. 원문 근거가 있는 부정 표현과 인용 앞 정의문은 제한적으로 복원하고 다시 의미 검증합니다. 근거가 불확실하거나 지문이 맞지 않는 개별 지적은 확정 오류로 사용하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">문단·목록</span><span>짧은 제목과 양적·질적 분석 같은 절 이름을 본문과 분리하고, 열거 개수와 문장 대응이 확인되는 목록의 빠진 순서 표현을 복원합니다. 항목명 뒤의 ‘이 경험은’을 잘못 끊긴 조사로 판정하는 문제와 인용 괄호 뒤 연결 문장에 삽입된 마침표를 보완했습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">처리 한도</span><span>의미 검증을 통과한 장문에서 선택적 재작성이 진전 없이 반복되는 승격을 막습니다. 최종 복원 뒤 재검사는 이미 확보된 검사 시간 안에서 한 번만 수행하며, 전체 작업 기한과 비용·호출 한도는 연장하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">사용자 안내</span><span>친구 초대 정보 조회 실패·계정 정보 누락을 알리고 재시도를 허용합니다. 계정 전환 뒤 이전 초대 링크가 나타나지 않으며, 화면 준비 중 새 글 시작을 누르면 작업 보호 기능까지 준비한 뒤 처리합니다. AI 감지의 점수와 근거가 충돌하거나 예시 준비 시간이 초과된 경우를 구분해 안내합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">운영 기록</span><span>AI 감지 점수와 이력 보정 계산은 유지하며, 이력이 일치했지만 점수가 이미 낮아 조정하지 않은 경우도 감사 기록에 보관합니다. 예시 준비 시간 초과를 모델 장애와 구분하고, 실행 시간과 전체 시간을 같은 완료 시점으로 계산합니다. 한 번도 실행되지 않은 주기 작업도 유예시간 이후 지연으로 감시하며 저장소 조회 실패를 정상으로 표시하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">검증 범위</span><span>v2.5.119 저장 결과 362건의 구조 검사를 재생해 362건이 통과했고, AI 감지 247건·문장 좌표 6,724개에서 점수 변화와 위치 불일치가 없었습니다. 실행 시간이 전체 시간보다 길던 260건은 같은 완료 시점 기준에서 0건이 됐습니다. 확정 의미 변화 차단과 재검사 실패 차단은 모의 응답을 사용하는 전체 처리 흐름으로 검증했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증 한계</span><span>유료 모델 신규 생성·재심사는 하지 않았습니다. 복원 후보를 의미 검증 통과로 간주하지 않으며, 운영 지연·비용 개선율과 모델 의미 판정의 무오류는 확인되지 않았습니다. 과거 결과와 과금 내역은 자동 변경하지 않습니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">연구노트</span><span class="gp-admin-patch-title"><b>역개요 퇴고와 팀플 보고서 통합 가이드 추가</b><small>2026.10.23 · Frontend fc13d5a</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>

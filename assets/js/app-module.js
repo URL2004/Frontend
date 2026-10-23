@@ -281,6 +281,7 @@ function retryPendingPaymentCallback(reason) {
 }
 
 onAuthStateChanged(auth, async u =>{
+ if (CU?.uid !== u?.uid) document.getElementById('refOverlay')?.remove();
  if (window.gpSetNotificationOwner) window.gpSetNotificationOwner(u && u.uid);
  try {
   window.gpAuthResolved = true;
@@ -1477,10 +1478,21 @@ window.deleteAccount = async () =>{
   }
 };
 
+let referralPopupPending = null;
 window.showReferralPopup = async () => {
- if (!CU) return;
- const snap = await getDoc(doc(db,'users',CU.uid));
- const refCode = snap.data().refCode || CU.uid.substring(0,8);
+ const session = CU;
+ const notify = message => window.gpToast ? window.gpToast(message, { type: 'error' }) : window.alert(message);
+ if (!session) { notify('로그인한 뒤 친구 초대 링크를 확인해 주세요.'); return; }
+ if (document.getElementById('refOverlay') || referralPopupPending === session) return;
+ referralPopupPending = session;
+ try {
+ const snap = await getDoc(doc(db,'users',session.uid));
+ // An old request must never display another account's invitation after logout.
+ if (CU !== session) return;
+ const data = snap.exists() ? snap.data() : null;
+ if (!data) { notify('계정 정보를 아직 확인할 수 없어요. 잠시 후 다시 시도해 주세요.'); return; }
+ const refCode = data.refCode || session.uid.substring(0,8);
+ if (document.getElementById('refOverlay')) return;
  const linkUrl = new URL(window.APP_CONFIG.SITE_URL, window.location.origin);
  linkUrl.searchParams.set('ref', String(refCode));
  const link = linkUrl.toString();
@@ -1518,6 +1530,7 @@ window.showReferralPopup = async () => {
  const copyBtn = overlay.querySelector('#refShareCopy');
  if (linkEl) linkEl.textContent = link;
  if (copyBtn) copyBtn.addEventListener('click', async () => {
+  if (CU !== session) { overlay.remove(); return; }
   try {
    await navigator.clipboard.writeText(link);
    copyBtn.textContent = '복사했어요';
@@ -1526,6 +1539,11 @@ window.showReferralPopup = async () => {
    if (window.gpToast) window.gpToast('링크를 복사하지 못했어요.', { type: 'error' });
   }
  });
+ } catch (_) {
+  if (CU === session) notify('초대 링크를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+ } finally {
+  if (referralPopupPending === session) referralPopupPending = null;
+ }
 };
 
 // 보안: credits/plan 직접 수정은 전부 백엔드(Admin SDK)에서만 처리.

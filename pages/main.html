@@ -5,7 +5,7 @@
        <img class="gp-lav-brand-logo" src="/assets/img/brand-logo-menu.webp" alt="교수님 피하기">
        <button type="button" class="gp-lav-collapse" onclick="lavToggleSidebar()" aria-label="사이드바 접기" aria-controls="lavSidebar" aria-expanded="true">«</button>
      </div>
-     <button type="button" class="gp-lav-new" onclick="lavNewSentence()">
+     <button type="button" class="gp-lav-new" onclick="gpRequestNewSentence()">
        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
        <span>새 글 시작</span>
        <kbd id="lavNewKbd">⌘ N</kbd>
@@ -643,7 +643,7 @@
            <div class="lav-done-body lav-collapse" id="lavDoneBody"></div>
            <button type="button" class="lav-collapse-toggle" id="lavDoneToggle" onclick="lavToggleCollapse('lavDoneBody',this)" aria-expanded="false" hidden><span>펼쳐보기</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
            <div class="lav-done-actions">
-             <button type="button" class="ghost lav-done-new" onclick="lavNewSentence()">새 글 시작</button>
+             <button type="button" class="ghost lav-done-new" onclick="gpRequestNewSentence()">새 글 시작</button>
              <div class="lav-dl">
                <button type="button" class="ghost" id="lavDlBtn" onclick="lavDoneDownload()" aria-haspopup="true" aria-expanded="false" aria-controls="lavDlMenu">다운로드</button>
                <div class="lav-dl-menu" id="lavDlMenu" hidden>
