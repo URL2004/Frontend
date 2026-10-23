@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-24",
+  "tool": "Built-in image_gen",
+  "format": "WebP, width 1200px, quality 82",
+  "images": [
+    {
+      "slug": "assignment-feedback-action-plan",
+      "asset": "assets/img/blog/assignment-feedback-action-plan.webp",
+      "prompt": "Wide 16:9 sophisticated editorial still life for a guide about turning feedback into action. A small lavender ceramic funnel hovering above a neatly aligned row of three ivory wooden stepping blocks, several tiny warm amber speech-bubble-shaped pebbles near the funnel becoming orderly coral rectangular tabs below. Abstract conceptual sculpture, soft pale sage background, natural studio daylight, tactile matte surfaces, uncluttered balanced composition. Main objects contained in central 65 percent width and middle 60 percent height for cropping. No text, numbers, lettering, logos, watermark, robots, books, charts, bowls or index cards."
+    },
+    {
+      "slug": "report-to-presentation-script-guide",
+      "asset": "assets/img/blog/report-to-presentation-script-guide.webp",
+      "prompt": "Wide 16:9 editorial still life about turning an academic report into an oral presentation. A sculptural terracotta speaking horn lies on its side beside a single folded ivory paper sheet, from the horn emerge three delicate concentric brass arcs suggesting sound, not literal physics. Deep muted petrol blue studio background, warm side light, sophisticated contemporary art photography, tactile clay and metal, spare balanced composition. Objects inside central 65 percent width and middle 60 percent height to survive cropping. No text, letters, numbers, logos, watermark, microphones, robots, books, charts, funnel, beads, bowls or index cards."
+    }
+  ]
+}
