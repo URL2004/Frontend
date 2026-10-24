@@ -602,7 +602,7 @@ window.redeemCoupon = async function() {
 function renderCreatedCoupons(result, data) {
  const codes = data.codes.map(c => c.display);
  const codeLines = codes.join('\n');
- result.replaceChildren();
+ result.textContent = '';
  const summary = document.createElement('p');
  summary.className = 'gp-coupon-summary';
  summary.textContent = codes.length.toLocaleString() + '개 · 코드당 ' + Number(data.credits).toLocaleString() + '크레딧';

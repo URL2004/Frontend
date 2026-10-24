@@ -3332,7 +3332,7 @@
   document.addEventListener('input', function (event) {
     if (event.target && event.target.id === 'lavInput') {
       structurePlan = null; structurePlanKey = '';
-      if ($('lavStructurePreview')) $('lavStructurePreview').replaceChildren();
+      if ($('lavStructurePreview')) $('lavStructurePreview').textContent = '';
       renderConfirmCost(); updateConfirmStartState();
     }
   });
@@ -3362,7 +3362,7 @@
       if (key !== structureInputKey()) throw new Error('원문이 바뀌었습니다. 변경안을 다시 확인해 주세요.');
       structurePlan = plan; structurePlanKey = key;
       if (area) {
-        area.replaceChildren();
+        area.textContent = '';
         var intro = document.createElement('p'); intro.textContent = plan.reason || '변경안을 확인한 뒤 시작해 주세요.'; area.appendChild(intro);
         if (plan.applied) {
           var list = document.createElement('ol');
@@ -3497,7 +3497,7 @@
 
   window.lavDocumentProfileChange = function () {
     structurePlan = null; structurePlanKey = '';
-    if ($('lavStructurePreview')) $('lavStructurePreview').replaceChildren();
+    if ($('lavStructurePreview')) $('lavStructurePreview').textContent = '';
     renderConfirmCost(); updateConfirmStartState();
     var hint = $('lavDocumentProfileHint');
     var profile = currentDocumentProfile();
@@ -5165,16 +5165,51 @@
   window.lavApproveReco = function () { submitApproval('reco'); };
   window.lavApprovePick = function () { submitApproval('pick'); };
 
-  window.lavDoneCopy = function (btn) {
-    var body = $('lavDoneBody');
-    if (body && navigator.clipboard) {
-      navigator.clipboard.writeText(body.textContent).catch(function () {});
+  function resultActionNotice(message, type) {
+    if (window.gpToast) window.gpToast(message, { type: type || 'info' });
+    else window.alert(message);
+  }
+
+  window.lavDoneCopy = async function (btn) {
+    if (btn && btn.disabled) return false;
+    var body = $('lavDoneBody'), text = body ? body.textContent : '';
+    if (!text.trim()) { resultActionNotice('복사할 결과를 먼저 확인해 주세요.', 'error'); return false; }
+    var label = btn && (btn._lavCopyLabel || btn.textContent);
+    if (btn) { btn._lavCopyLabel = label; btn.disabled = true; }
+    try {
+      if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') throw new Error('CLIPBOARD_UNAVAILABLE');
+      await navigator.clipboard.writeText(text);
+      if (btn) {
+        btn.textContent = '복사됨';
+        setTimeout(function () { btn.textContent = label; }, 1200);
+      }
+      return true;
+    } catch (_) {
+      resultActionNotice('복사하지 못했어요. 결과를 직접 선택해 복사하거나 다운로드를 이용해 주세요.', 'error');
+      return false;
+    } finally {
+      if (btn) btn.disabled = false;
     }
-    if (btn) {
-      var t = btn.textContent;
-      btn.textContent = '복사됨';
-      setTimeout(function () { btn.textContent = t; }, 1200);
+  };
+
+  window.lavDoneDetect = function () {
+    if (lavRefineBusy || detectPending) {
+      resultActionNotice('진행 중인 작업이 끝난 뒤 결과 전체를 검사해 주세요.');
+      return false;
     }
+    var body = $('lavDoneBody'), input = $('lavInput');
+    var text = body ? body.textContent : '';
+    if (!input || !text.trim()) { resultActionNotice('검사할 결과를 먼저 확인해 주세요.', 'error'); return false; }
+    if (window.lavFlowReset() === false) return false;
+    // Preserve the source in the existing comparison while moving the complete,
+    // current result (including paragraph refinement) to the normal composer.
+    if (resultPreviewSource == null) resultPreviewSource = input.value;
+    input.value = text;
+    window.lavSetMode('detect');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.focus();
+    resultActionNotice('결과 전체를 AI 감지 입력칸으로 옮겼어요. 시작 버튼을 누르면 비용 확인 후 검사해요.');
+    return true;
   };
 
   // ── 결과 .md 파일 다운로드 ──────────

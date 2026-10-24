@@ -644,6 +644,7 @@
            <button type="button" class="lav-collapse-toggle" id="lavDoneToggle" onclick="lavToggleCollapse('lavDoneBody',this)" aria-expanded="false" hidden><span>펼쳐보기</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
            <div class="lav-done-actions">
              <button type="button" class="ghost lav-done-new" onclick="gpRequestNewSentence()">새 글 시작</button>
+              <button type="button" class="ghost" onclick="lavDoneDetect()">결과 전체 검사</button>
              <div class="lav-dl">
                <button type="button" class="ghost" id="lavDlBtn" onclick="lavDoneDownload()" aria-haspopup="true" aria-expanded="false" aria-controls="lavDlMenu">다운로드</button>
                <div class="lav-dl-menu" id="lavDlMenu" hidden>
