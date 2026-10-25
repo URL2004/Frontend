@@ -8071,7 +8071,7 @@ function renderAdminJobs(data) {
     <td class="num">${adminNumber(r.needed)}</td>
     <td class="muted">${escapeHtml(r.stage || '')}</td>
     <td class="muted">${escapeHtml(adminDateText(r.createdAtMs))}</td>
-    <td><details class="gp-admin-row-detail"><summary>상세</summary><div class="gp-admin-row-detail-panel"><button type="button" class="gp-admin-detail-close" aria-label="작업 상세 닫기" onclick="adminCloseJobDetail(this)">×</button><dl>${detail.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl><button type="button" class="gp-admin-mini-btn" onclick="adminOpenUser('${jsAttr(r.uid)}')">사용자 열기</button></div></details></td>
+    <td><details class="gp-admin-row-detail"><summary>상세</summary><div class="gp-admin-row-detail-panel"><button type="button" class="gp-admin-detail-close" aria-label="작업 상세 닫기" onclick="adminCloseJobDetail(this)">×</button><dl>${detail.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl>${r.status === 'blocked' ? `<button type="button" class="gp-admin-mini-btn" onclick="adminOpenBlockedDetail(this,'${jsAttr(r.uid)}','${jsAttr(r.id)}')">원문·판정 근거</button>` : ''}<button type="button" class="gp-admin-mini-btn" onclick="adminOpenUser('${jsAttr(r.uid)}')">사용자 열기</button></div></details></td>
   </tr>`;
  }).join('');
  el.innerHTML = `
@@ -8921,12 +8921,30 @@ function adminLedgerDetailFocusable(root) {
  return [...root.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(el => !el.hidden && el.offsetParent !== null);
 }
 
-window.adminOpenLedgerDetail = async function(trigger, uid, creditHistoryId) {
- if (!uid || !creditHistoryId) return;
+function adminRenderBlockedEvidence(data) {
+ const evidence = data.evidence || {}, job = data.job || {};
+ const text = adminLedgerTextBlock;
+ const info = adminLedgerDetailPairs('중단 작업', [['작업 ID', job.id], ['엔진', job.engineVersion],
+  ['사유', job.stage], ['크레딧 차감', job.deducted ? '차감 기록 확인 필요' : '없음']]);
+ if (!evidence.available) return info + '<p>이 작업의 차단 결과와 상세 판정 근거가 저장되어 있지 않습니다. 오탐 여부나 정상 판정을 확정할 수 없습니다.</p>'
+  + (data.retainedSource ? text('보관 중인 입력 원문', data.retainedSource) : '');
+ return info + '<p><strong>관리자 검토용 미전달 결과입니다.</strong> 고객에게 전달되거나 과금된 결과가 아닙니다.</p>'
+  + text('입력 원문', evidence.source) + text('전달하지 않은 생성 결과', evidence.candidate)
+  + adminSemanticEvidence(evidence.audit)
+  + (evidence.recovery || []).map((attempt, i) => `<details><summary>복원 시도 ${i + 1} · ${attempt.accepted ? '채택' : '미채택'}</summary>`
+   + text('복원 후보', attempt.candidate) + adminSemanticEvidence({ available: true, ...attempt.trace }) + '</details>').join('');
+}
+window.adminOpenBlockedDetail = function(trigger, uid, jobId) {
+ return window.adminOpenLedgerDetail(trigger, uid, '', jobId);
+};
+window.adminOpenLedgerDetail = async function(trigger, uid, creditHistoryId, jobId = '') {
+ if (!uid || (!creditHistoryId && !jobId)) return;
  const root = document.getElementById('adminLedgerDetail');
  const body = document.getElementById('adminLedgerDetailBody');
  const status = document.getElementById('adminLedgerDetailStatus');
  if (!root || !body || !status) return;
+ const title = document.getElementById('adminLedgerDetailTitle');
+ if (title) title.textContent = jobId ? '안전 중단 원문·판정 근거' : '원장 작업 상세';
  adminLedgerDetailGeneration += 1;
  const generation = adminLedgerDetailGeneration;
  if (adminLedgerDetailController) adminLedgerDetailController.abort();
@@ -8941,16 +8959,17 @@ window.adminOpenLedgerDetail = async function(trigger, uid, creditHistoryId) {
  status.textContent = '작업 정보를 불러오는 중입니다.';
  document.getElementById('adminLedgerDetailClose')?.focus();
  try {
-  const data = await adminPost('/admin/credit-history-item', { uid, creditHistoryId }, { signal: adminLedgerDetailController.signal });
+  const data = await adminPost(jobId ? '/admin/blocked-job-audit' : '/admin/credit-history-item',
+   jobId ? { uid, jobId } : { uid, creditHistoryId }, { signal: adminLedgerDetailController.signal });
   if (generation !== adminLedgerDetailGeneration || root.hidden) return;
-  body.innerHTML = adminRenderLedgerDetail(data);
+  body.innerHTML = jobId ? adminRenderBlockedEvidence(data) : adminRenderLedgerDetail(data);
   body.setAttribute('aria-busy', 'false');
-  status.textContent = '원장과 작업 기록 연결을 완료했습니다.';
+  status.textContent = jobId ? '중단 작업의 보관된 자료를 불러왔습니다.' : '원장과 작업 기록 연결을 완료했습니다.';
  } catch (error) {
   if (error?.name === 'AbortError' || generation !== adminLedgerDetailGeneration || root.hidden) return;
   body.setAttribute('aria-busy', 'false');
   status.textContent = '작업 정보를 불러오지 못했습니다.';
-  body.innerHTML = `<div class="gp-admin-ledger-detail-error" role="alert"><strong>작업 상세를 열 수 없습니다.</strong><p>${escapeHtml(error.message || '잠시 후 다시 시도해 주세요.')}</p><button type="button" class="gp-admin-mini-btn" onclick="adminOpenLedgerDetail(adminLedgerDetailReturnFocus,'${jsAttr(uid)}','${jsAttr(creditHistoryId)}')">다시 시도</button></div>`;
+  body.innerHTML = `<div class="gp-admin-ledger-detail-error" role="alert"><strong>작업 상세를 열 수 없습니다.</strong><p>${escapeHtml(error.message || '잠시 후 다시 시도해 주세요.')}</p><button type="button" class="gp-admin-mini-btn" onclick="adminOpenLedgerDetail(adminLedgerDetailReturnFocus,'${jsAttr(uid)}','${jsAttr(creditHistoryId)}','${jsAttr(jobId)}')">다시 시도</button></div>`;
  }
 };
 

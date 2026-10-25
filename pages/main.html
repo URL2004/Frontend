@@ -601,7 +601,7 @@
              <strong>전달 가능한 결과를 만들지 못했어요</strong>
              <span class="lav-blocked-free">크레딧 차감 없음</span>
            </div>
-           <p id="lavBlockedReason" class="lav-blocked-reason">모델 응답이나 필수 검사 과정에서 기술 문제가 발생해 작업을 중단했어요. 원문을 확인한 뒤 다시 시도해 주세요.</p>
+           <p id="lavBlockedReason" class="lav-blocked-reason" role="status">원문의 내용과 문장 연결을 보존하는 결과를 만들지 못했어요. 크레딧은 차감되지 않았어요.</p>
            <div id="lavBlockedAbstract" class="lav-blocked-abstract" hidden>
              <div class="lav-blocked-abstract-title">이 부분이 두루뭉술해서 AI 티 줄이기가 어려워요</div>
              <ul id="lavBlockedAbstractList" class="lav-blocked-abstract-list"></ul>
@@ -609,7 +609,7 @@
            </div>
            <textarea class="lav-blocked-memo" id="lavBlockedMemo" rows="2" maxlength="500" placeholder="예) 작년 겨울 편의점 야간 알바에서 정산이 30분 늦어 막차를 놓친 적이 있다 — 실제 겪은 일만 한 줄"></textarea>
            <div class="lav-blocked-actions">
-             <button type="button" class="lav-flow-cta" onclick="lavBlockedRetryMemo()">메모 반영해 다시 시도</button>
+             <button type="button" class="lav-flow-cta" id="lavBlockedRetry" onclick="lavBlockedRetryMemo()">입력과 방법 다시 확인</button>
              <button type="button" id="lavBlockedEvidence" class="lav-blocked-2nd" onclick="lavBlockedRetryEvidence()" hidden>근거 보강 켜고 다시 시도</button>
              <button type="button" id="lavBlockedFallback" class="lav-blocked-2nd" onclick="lavBlockedAcceptFallback()" hidden>원문 보존 다듬기로 받기</button>
              <button type="button" class="lav-blocked-cancel" onclick="lavBlockedCancel()">취소</button>

@@ -4263,8 +4263,8 @@
       lavInitCollapse('lavDoneBody', 'lavDoneToggle');
       return true;
     }
-    // 차단(blog/formal) 재진입 — 새로고침해도 동의 기반 재시도/보존형 화면 복원(blockOffer는 영속화됨)
-    if (st.status === 'blocked' && (st.mode === 'blog' || st.mode === 'formal')) {
+    // 차단(blog/formal/polish) 재진입 — 새로고침해도 동의 기반 재시도/보존형 화면 복원(blockOffer는 영속화됨)
+    if (st.status === 'blocked' && ['blog', 'formal', 'polish'].indexOf(st.mode) >= 0) {
       renderBlockOffer(jobId, st);
       show('blocked');
       return true;
@@ -4611,9 +4611,9 @@
         if (window.gpTrackFeature) window.gpTrackFeature('error', { feature: 'humanize', run_id: jobId, mode: st.mode, chars: st.inputChars, duration_ms: st.durationMs, error_code: st.status === 'blocked' ? 'QUALITY_BLOCKED' : 'JOB_ERROR' });
         stopFormalTicker();
         if (st.gateDetail) console.warn('[evasion] 차단 상세:', st.gates, st.gateDetail);
-        // 회피(blog/formal) 차단 → 동의 기반 재시도/보존형 화면. error·polish는 기존 안내.
+        // 휴머나이징 차단 → 사유·무차감·재시도 화면. error는 기존 안내.
         //   jobRef는 유지(보존형 받기 accept-fallback에 jobId 필요).
-        if (st.status === 'blocked' && (st.mode === 'blog' || st.mode === 'formal')) {
+        if (st.status === 'blocked' && ['blog', 'formal', 'polish'].indexOf(st.mode) >= 0) {
           renderBlockOffer(jobId, st);
           show('blocked');
           return;
@@ -4894,14 +4894,21 @@
     setActiveJobUi(jobId, 'blocked', '작업 확인이 필요해요');
     var offer = (st && st.blockOffer) || {};
     var reasonEl = $('lavBlockedReason');
-    if (reasonEl && st && st.reason) reasonEl.textContent = st.reason + ' 크레딧은 차감되지 않았어요.';
+    if (reasonEl) reasonEl.textContent = (st && st.reason || '원문의 내용과 문장 연결을 보존하는 결과를 만들지 못했어요.')
+      + ' 크레딧은 차감되지 않았어요. 문의할 때 작업 번호 ' + String(jobId || '') + '를 알려주세요.';
     // 차단 원인이 lostFacts면 실제 빠진 사실/수치를 먼저 보여준다.
-    // 아니면 surfaceguard가 짚은 추상 문단(경험·사례 메모로 보강할 위치)을 보여준다.
+    // 입력 보강이 필요한 별도 유형에서만 경험·사례 메모를 보여준다.
     var abEl = $('lavBlockedAbstract'), abList = $('lavBlockedAbstractList');
     var gates = (st && st.gates) || [];
     var lost = st && st.gateDetail && st.gateDetail.lostFacts ? st.gateDetail.lostFacts : [];
     var showLost = gates.indexOf('lostFacts') >= 0 && lost.length;
-    var paras = showLost ? lost.map(function (x) { return { snippet: x }; }) : (offer.abstractParas || []);
+    // Engine preservation failures are not proof that the user's source lacks
+    // experience or detail. Do not prescribe invented/additional content.
+    var needsSourceMemo = gates.indexOf('restructure_unfit') >= 0;
+    var paras = showLost ? lost.map(function (x) { return { snippet: x }; }) : (needsSourceMemo ? offer.abstractParas || [] : []);
+    var memo = $('lavBlockedMemo'), retry = $('lavBlockedRetry');
+    if (memo) { memo.hidden = !needsSourceMemo; if (!needsSourceMemo) memo.value = ''; }
+    if (retry) retry.textContent = needsSourceMemo ? '메모 반영해 다시 시도' : '입력과 방법 다시 확인';
     if (abEl && abList) {
       if (paras.length) {
         var title = abEl.querySelector('.lav-blocked-abstract-title');
@@ -4921,7 +4928,7 @@
     }
     // 근거 보강 켜고 다시(재구성·미사용 시만)
     var evBtn = $('lavBlockedEvidence');
-    if (evBtn) evBtn.hidden = !offer.canEvidence;
+    if (evBtn) evBtn.hidden = !needsSourceMemo || !offer.canEvidence;
     // 보존형으로 받기(+단가). 기본 차단 작업에만 노출하며 고급은
     // 이전 서버·캐시 응답에 fallbackOffer가 남아 있어도 다운그레이드하지 않는다.
     var fbBtn = $('lavBlockedFallback');

@@ -165,7 +165,8 @@ test('크레딧 원장은 연결 가능한 작업만 안전한 상세 화면으�
   assert.match(source, /type === 'detect'[\s\S]*?\^\[A-Za-z0-9:_-\]\{1,180\}\$/u);
   assert.match(source, /!\['humanize', 'restructure'\]\.includes\(type\) \|\| \/_refine\\d\+\$\/u\.test\(requestId\)/u);
   assert.match(source, /const canOpenTask = adminHistoryHasLinkedTask\(h\)/u);
-  assert.match(source, /adminPost\('\/admin\/credit-history-item', \{ uid, creditHistoryId \}/u);
+  assert.match(source, /jobId \? '\/admin\/blocked-job-audit' : '\/admin\/credit-history-item'/u);
+  assert.match(source, /jobId \? \{ uid, jobId \} : \{ uid, creditHistoryId \}/u);
   assert.match(source, /const engine = engineBundle\.engineMeta \|\| history\.engineMeta \|\| \{\}/u);
   assert.match(source, /const archive = engineBundle\.archive \|\| \{\}/u);
   assert.match(source, /adminLedgerDetailController\.abort\(\)/u);

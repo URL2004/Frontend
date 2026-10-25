@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 test('paragraph integrity notes disclose detector limitations and preserve earlier releases', () => {
   const html = readFileSync(new URL('../pages/admin.html', import.meta.url), 'utf8');
-  assert.match(html, /휴머나이징 v2\.5\.121 · AI 감지 v1\.61/);
+  assert.match(html, /휴머나이징 v2\.5\.122 · AI 감지 v1\.61/);
   assert.match(html, /v2\.5\.74 · 감지 v1\.43/);
   assert.match(html, /113건은 개발·회귀 자료/);
   const timeline = html.split('<div class="gp-admin-patch-timeline">')[1];
@@ -35,8 +35,8 @@ test('paragraph integrity notes disclose detector limitations and preserve earli
   assert.match(html, /해결 완료로 표시하지 않습니다/);
   assert.match(html, /Backend 23a3624/);
   const count = [...html.matchAll(/<details class="gp-admin-patch-release"/g)].length;
-  assert.equal(count, 125);
-  assert.match(html, /125개 변경 묶음/);
+  assert.equal(count, 126);
+  assert.match(html, /126개 변경 묶음/);
   assert.match(html, /2026\.06\.04 — 10\.25/);
   assert.match(html, /Backend 80e7543/);
   assert.match(html, /원본 PDF 대조가 없는 상태/);
