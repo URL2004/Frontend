@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-25",
+  "tool": "Built-in image_gen",
+  "format": "WebP, width 1200px, quality 82",
+  "images": [
+    {
+      "slug": "source-credibility-checklist",
+      "asset": "assets/img/blog/source-credibility-checklist.webp",
+      "prompt": "Wide 16:9 editorial photograph for a university writing guide about tracing information to its original source. A cobalt blue thread passes through three freestanding translucent glass rings and ends at a small warm ochre stone, resting on an ivory tabletop against pale blue background. Carefully composed conceptual still life, tactile material, gentle directional daylight, refined museum quality, no charts. Main objects centered within middle 65 percent of frame for a wide crop. No text, lettering, numbers, logos, watermarks, robots, books, magnifying glasses, funnels or speaking horns."
+    },
+    {
+      "slug": "research-limitations-writing-guide",
+      "asset": "assets/img/blog/research-limitations-writing-guide.webp",
+      "prompt": "Wide 16:9 premium editorial photograph about clearly stating the limits of a research conclusion. A warm cream architectural window frame stands alone on a muted plum studio floor, framing a small softly lit coral landscape sculpture inside its rectangular opening. Outside the frame the same landscape fades gently into shadow and is out of focus, suggesting bounded perspective, not broken or incomplete work. Minimal contemplative composition, handmade plaster and clay texture, warm indirect light, no charts. Keep key sculpture centered for a 2.4:1 wide crop. No text, typography, numbers, logos, watermark, books, robots, glass rings, cords, funnels, speaking horns or magnifying glasses."
+    }
+  ]
+}
