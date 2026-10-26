@@ -33,4 +33,16 @@ test('engine failure does not blame source experience, preserves original and cl
  assert.match(element('lavBlockedReason').textContent,/평가 표현/);assert.match(element('lavBlockedReason').textContent,/synthetic-job/);assert.match(element('lavBlockedReason').textContent,/차감되지/);
  c.renderBlockOffer('next-job',{mode:'formal',gates:['internal_marker_leak'],blockOffer:{}});
  assert.doesNotMatch(element('lavBlockedReason').textContent,/평가 표현|synthetic-job/);
+ for (const mode of ['formal','blog','polish']) {
+  c.renderBlockOffer('retry-job',{mode,blockOffer:{retryOffer:true,retryCredit:20}});
+  assert.equal(element('lavBlockedFallback').hidden,false);
+  assert.match(element('lavBlockedFallback').textContent,/같은 모드/u);
+  assert.doesNotMatch(element('lavBlockedFallback').textContent,/다듬기/u);
+ }
+ c.renderBlockOffer('legacy-job',{mode:'blog',blockOffer:{fallbackOffer:true,fallbackCredit:10}});
+ assert.equal(element('lavBlockedFallback').hidden,true,'old cached offers cannot downgrade');
+ c.window.UC = 0;
+ c.renderBlockOffer('coupon-job',{mode:'formal',billingMode:'coupon',blockOffer:{retryOffer:true,retryCredit:1}});
+ assert.match(element('lavBlockedFallback').textContent,/이용권 1회/u);
+ assert.doesNotMatch(element('lavBlockedFallback').textContent,/크레딧|충전/u);
 });

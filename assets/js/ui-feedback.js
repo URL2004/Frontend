@@ -717,7 +717,7 @@
       var items = getLocalItems().filter(function (n) { return n.syncState === 'pending'; });
       for (var i = 0; i < items.length; i++) {
         // Pace a backlog; a reconnect must not flood the notification endpoint.
-        if (i > 0) await new Promise(function (resolve) { setTimeout(resolve, 1200); });
+        if (i > 0) await new Promise(function (resolve) { setTimeout(resolve, 2100); });
         if (owner !== notificationOwner) return;
         try {
           var saved = await window.persistUserNotification(items[i], owner);

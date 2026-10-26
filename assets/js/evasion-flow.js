@@ -3932,7 +3932,8 @@
   var jobTickerGeneration = 0;   // 이전 작업 타이머가 새 작업 진행률을 덮어쓰지 못하게 하는 화면 세대
   var activeJobUi = { jobId: '', status: 'idle', label: '' };
   var lavBlockedJobId = null;   // 차단 화면이 띄운 job — '보존형으로 받기'(accept-fallback)에 필요
-  var lavBlockedFallbackCredit = 0;   // 보존형 받기 단가 — 클릭 전 잔액(window.UC) 사전확인용
+  var lavBlockedFallbackCredit = 0;   // Same-mode retry price; original billing instrument is retained.
+  var lavBlockedRetryBillingMode = 'credit';
   var paymentJob = null;
 
   function isBlockingJobStatus(status) {
@@ -4709,13 +4710,14 @@
     var effectNotices = Array.isArray(result.effectNotices)
       ? result.effectNotices
       : (Array.isArray(st && st.effectNotices) ? st.effectNotices : []);
-    var effectLimited = (result.effectStatus || st && st.effectStatus) === 'limited'
-      || !!(result.engineMeta && result.engineMeta.humanizationNoBenefitDelivered);
+    var depthTargetMissed = result.engineMeta && (typeof result.engineMeta.humanizationDepthTargetMissed === 'boolean'
+      ? result.engineMeta.humanizationDepthTargetMissed : result.engineMeta.humanizationNoBenefitDelivered);
+    var effectLimited = (result.effectStatus || st && st.effectStatus) === 'limited' || !!depthTargetMissed;
     if (effectWrap) {
       var effectMessages = effectNotices.map(function (notice) { return notice && notice.message; }).filter(Boolean);
       effectWrap.hidden = !effectLimited && effectMessages.length === 0;
       effectWrap.textContent = effectMessages.join(' ') || (effectLimited
-        ? '원문을 안전하게 지키느라 바꿀 수 있는 범위가 제한적이었어요.' : '');
+        ? '원문의 뜻을 유지하며 수정했지만 선택한 강도의 재구성 목표에는 일부 미치지 못했어요. 원문과 결과를 비교해 주세요.' : '');
     }
     var qualityWarnings = Array.isArray(result.qualityWarnings)
       ? result.qualityWarnings
@@ -4820,8 +4822,8 @@
   //   차감 확인 중·무제한·관리자 테스트 등은 기존 차감 안내(renderBillingDisposition)와 같은 말을 쓴다.
   var doneCreditSt = null;
   var DONE_CREDIT_TEXT = {
-    waived_quality_shortfall: '과거 무차감 정책으로 처리된 작업이에요',
-    waived_repeat_low_benefit: '과거 무차감 정책으로 처리된 작업이에요',
+    waived_quality_shortfall: '변환 효과 또는 검증 기준을 충족하지 못해 크레딧·쿠폰을 차감하지 않았어요',
+    waived_repeat_low_benefit: '변환 효과 또는 검증 기준을 충족하지 못해 크레딧·쿠폰을 차감하지 않았어요',
     plan_unlimited: '무제한 이용권으로 처리했어요',
     admin_no_charge: '관리자 테스트로 처리되어 크레딧을 차감하지 않았어요'
   };
@@ -4867,8 +4869,8 @@
     var disposition = st && st.billingDisposition || result.billingDisposition || meta.billingDisposition || '';
     var labels = {
       charged: '크레딧 차감이 완료됐어요.',
-      waived_quality_shortfall: '과거 무차감 정책으로 처리된 작업이에요.',
-      waived_repeat_low_benefit: '과거 무차감 정책으로 처리된 작업이에요.',
+      waived_quality_shortfall: '변환 효과 또는 검증 기준을 충족하지 못해 크레딧·쿠폰을 차감하지 않았어요.',
+      waived_repeat_low_benefit: '변환 효과 또는 검증 기준을 충족하지 못해 크레딧·쿠폰을 차감하지 않았어요.',
       plan_unlimited: '무제한 이용권으로 처리했어요.',
       admin_no_charge: '관리자 테스트로 처리되어 크레딧을 차감하지 않았어요.'
     };
@@ -4929,18 +4931,19 @@
     // 근거 보강 켜고 다시(재구성·미사용 시만)
     var evBtn = $('lavBlockedEvidence');
     if (evBtn) evBtn.hidden = !needsSourceMemo || !offer.canEvidence;
-    // 보존형으로 받기(+단가). 기본 차단 작업에만 노출하며 고급은
-    // 이전 서버·캐시 응답에 fallbackOffer가 남아 있어도 다운그레이드하지 않는다.
+    // Only the new same-mode offer is usable. Ignore legacy downgrade offers.
     var fbBtn = $('lavBlockedFallback');
-    lavBlockedFallbackCredit = offer.fallbackCredit || 0;
+    lavBlockedFallbackCredit = offer.retryCredit || 0;
+    lavBlockedRetryBillingMode = st && st.billingMode === 'coupon' ? 'coupon' : 'credit';
     if (fbBtn) {
-      var fallbackAllowed = offer.fallbackOffer === true && st && st.mode === 'blog';
+      var fallbackAllowed = offer.retryOffer === true && st && ['blog', 'formal', 'polish'].indexOf(st.mode) >= 0;
       fbBtn.hidden = !fallbackAllowed;
       if (fallbackAllowed) {
-        var need = offer.fallbackCredit || 0;
+        var need = offer.retryCredit || 0;
         // 잔액이 단가보다 적으면 버튼에 '충전 필요'를 미리 표시(서버 precheck와 동일 기준 — 클릭 전에 알 수 있게).
-        var short = need && window.UP !== 'unlimited' && (window.UC || 0) < need;
-        fbBtn.textContent = '원문 보존 다듬기로 받기' + (need ? ' (' + need + ' 크레딧)' : '') + (short ? ' · 충전 필요' : '');
+        var coupon = lavBlockedRetryBillingMode === 'coupon';
+        var short = !coupon && need && window.UP !== 'unlimited' && (window.UC || 0) < need;
+        fbBtn.textContent = '같은 모드로 다시 처리' + (need ? ' (' + (coupon ? '이용권 ' + need + '회' : need + ' 크레딧') + ')' : '') + (short ? ' · 충전 필요' : '');
       }
     }
   }
@@ -4972,10 +4975,13 @@
   window.lavBlockedAcceptFallback = function () {
     if (!lavBlockedJobId) return;
     var jid = lavBlockedJobId;
+    var retryRequestId = window.crypto && typeof window.crypto.randomUUID === 'function'
+      ? window.crypto.randomUUID() : 'retry_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2);
     // ★ 크레딧 사전 확인(2026-06-16, 서버 precheck와 동일 기준): 부족하면 작업을 시작하지 않고 충전으로 안내.
-    //   서버도 accept-fallback에서 402로 막지만, 여기서 먼저 걸러 헛클릭·헛요청을 줄인다(서버가 최종 권위).
+    //   서버가 원래 결제 수단으로 최종 확인한다. 이용권 요청에 크레딧 충전을 요구하지 않는다.
     var need = lavBlockedFallbackCredit || 0;
-    if (need && window.UP !== 'unlimited' && (window.UC || 0) < need) {
+    var retryCoupon = lavBlockedRetryBillingMode === 'coupon';
+    if (!retryCoupon && need && window.UP !== 'unlimited' && (window.UC || 0) < need) {
       if (typeof window.gpOpenCreditCheckout === 'function') {
         window.gpOpenCreditCheckout({
           action: 'evasion_fallback',
@@ -4984,14 +4990,14 @@
           currentCredits: window.UC || 0,
           payload: { jobId: jid, neededCredits: need }
         });
-      } else if (confirm('원문 보존 다듬기로 받으려면 ' + need + '크레딧이 필요해요(현재 ' + (window.UC || 0) + '크레딧). 충전 페이지로 이동할까요?') && window.switchTab) {
+      } else if (confirm('같은 모드로 재시도하려면 ' + need + '크레딧이 필요해요(현재 ' + (window.UC || 0) + '크레딧). 충전 페이지로 이동할까요?') && window.switchTab) {
         window.switchTab('pricing');
       }
       if (window.gpTrack) window.gpTrack('credit_insufficient', { analysis_mode: 'fallback', needed_credits: need, current_credits: window.UC || 0 });
       return;
     }
-    if ($('lavJobTitle')) $('lavJobTitle').textContent = '원문 보존형으로 처리하고 있어요';
-    setActiveJobUi(jid, 'running', '원문 보존형 처리 중');
+    if ($('lavJobTitle')) $('lavJobTitle').textContent = '같은 모드로 재처리를 준비하고 있어요';
+    setActiveJobUi(jid, 'queued', '같은 모드 재처리 대기 중');
     show('job');
     armCancelWindow(0);
     var gen = ++pollGen;
@@ -5001,8 +5007,8 @@
         authErr.httpStatus = 401;
         throw authErr;
       }
-      return fetch(window.apiUrl('/transform/' + jid + '/accept-fallback'), {
-        method: 'POST', headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }), body: JSON.stringify({})
+      return fetch(window.apiUrl('/transform/' + jid + '/retry'), {
+        method: 'POST', headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }), body: JSON.stringify({ requestId: retryRequestId })
       });
     }).then(function (r) {
       if (gen !== pollGen) return;
@@ -5014,7 +5020,7 @@
           throw err;
         });
       }
-      saveJobRef(jid, 'running');
+      saveJobRef(jid, 'queued');
       pollTransform(jid, gen);
     }).catch(function (e) {
       if (gen !== pollGen) return;
@@ -5024,7 +5030,7 @@
         else alert(msg);
         if (typeof showScreen === 'function') showScreen('login');
         return;
-      } else if (e && e.httpStatus === 402) {   // 잔액 부족(주로 사전확인 후 다른 탭에서 소진된 레이스) — 충전 안내
+      } else if (e && e.httpStatus === 402 && !retryCoupon) {
         if (typeof window.gpOpenCreditCheckout === 'function') {
           window.gpOpenCreditCheckout({
             action: 'evasion_fallback',
@@ -5163,7 +5169,8 @@
     if (typeof window.switchTab === 'function') window.switchTab('main');
     lavBlockedJobId = String(payload.jobId);
     lavBlockedFallbackCredit = Number(payload.neededCredits) || 0;
-    setActiveJobUi(lavBlockedJobId, 'blocked', '원문 보존형 작업 확인');
+    lavBlockedRetryBillingMode = 'credit';
+    setActiveJobUi(lavBlockedJobId, 'blocked', '같은 모드 재처리 확인');
     show('blocked');
     setTimeout(function () { window.lavBlockedAcceptFallback(); }, 120);
     return true;
