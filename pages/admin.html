@@ -106,10 +106,10 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">127개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">128개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 10.26</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 10.27</span>
       </div>
 
       <div class="gp-admin-filter-row gp-admin-patch-filters">
@@ -122,9 +122,9 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.123 · AI 감지 v1.62</strong>
-          <code>2026.10.26 · 운영 브랜치 기준</code>
-        <span>모드 유지 재시도 · 목록 문장 경계 · 알림 제한 분리 · 감지 최종 근거 대조</span>
+          <strong>휴머나이징 v2.5.124 · AI 감지 v1.62</strong>
+          <code>2026.10.27 · 운영 브랜치 기준</code>
+        <span>처리 장애 자동 재개 · 검증 미확정 무차감 · PDF 문장 연결 · 한정 표현 국소 복원</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="2026년 9월 3일까지의 기존 감사 범위">
@@ -136,6 +136,16 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.124 · 감지 v1.62</span><span class="gp-admin-patch-title"><b>연쇄 중단 방지·모드 유지 복구·검증 미확정 무차감</b><small>2026.10.27 · 휴머나이징 406쌍·AI 감지 243건·운영 로그 118,290건 대조</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">처리 복구</span><span>모델 공급자 잔액 소진을 확인하면 인스턴스 간 복구 상태를 공유하고 새 요청의 연쇄 실패를 막습니다. 기존 작업은 원문·모드·가격·결제 수단을 보관한 채 최대 30분 자동 재개를 기다리며, 이후에는 같은 작업 번호로 직접 다시 처리할 수 있습니다. 복구 확인은 한 요청만 수행하고 저장된 완료 결과는 별도로 전달합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">결제 보호</span><span>효과 미달·검증 실패 무차감에 더해 의미 검증이 중단되거나 미확정인 결과도 크레딧·이용권을 차감하지 않습니다. 이미 확정된 결제는 별도 정산 없이 임의 변경하지 않습니다. 고급·일반을 다듬기로 전환하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">대기 안내</span><span>실제 대기열 혼잡과 일시적인 처리 장애를 구분합니다. 장애 복구 대기에는 자동 재개·차감 상태·취소 가능 여부를 표시하고 근거 없는 예상 시간을 제시하지 않습니다. 자동 대기가 끝나도 같은 모드 재처리 화면으로 복귀할 수 있습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">원문 보존</span><span>인용 작품명 안의 콜론과 줄 끝 인용 쪽수를 제목·문단 경계로 잘못 보호하던 경로를 수정했습니다. 의미 검사에서 확정한 누락 한정 표현은 고유한 앞뒤 어절에만 복원하며, 국소 수정은 실제 변경량으로 한도를 계산해 주변 변환을 유지합니다. 수정 후보는 기존 구조·의미 재검증을 통과해야 합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">검토 범위</span><span>v2.5.123의 두 운영 커밋 전체 기간에서 보관된 원문·결과와 감지 근거를 비교했습니다. API 장애로 실패 로그가 남은 114개 작업은 차감이 없었습니다. 406쌍 구조 재검사와 243건 감지 결과·좌표 대조를 수행했습니다. 전체 모델 재생이나 사람 평가로 의미 보존을 전부 보증한 것은 아니며, 과거 결과의 품질 경고는 별도로 유지합니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.123 · 감지 v1.62</span><span class="gp-admin-patch-title"><b>모드 유지 재시도·목록 문장 경계·알림 충돌·감지 근거 개선</b><small>2026.10.26 · 휴머나이징 266건·AI 감지 133건·차단 9건·취소 23건 대조</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>

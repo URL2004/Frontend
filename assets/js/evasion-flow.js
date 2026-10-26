@@ -3760,6 +3760,15 @@
       $('lavStepSlot').textContent = '대기 ' + pos + '번째 · ' + Math.floor(st.queueWaitSec / 60) + '분째 기다리고 있어요. 아직 변환을 시작하지 않았으며, 완료 전에는 차감되지 않아요. 원하면 작업을 취소할 수 있어요.';
     }
     if (st && st.queueWaitReason === 'connection_retry' && $('lavJobTitle')) $('lavJobTitle').textContent = '처리 연결을 다시 확인하고 있어요';
+    if (st && st.queueWaitReason === 'capacity' && (size > 1 || Number(st.queueEtaSec) > 15) && $('lavJobTitle')) {
+      $('lavJobTitle').textContent = '현재 이용자가 많아 처리가 지연되고 있습니다';
+    }
+    if (st && st.queueWaitReason === 'provider_recovery') {
+      if ($('lavJobTitle')) $('lavJobTitle').textContent = '현재 요청 처리가 지연되고 있습니다. 잠시만 기다려 주세요.';
+      if ($('lavStepSlot')) $('lavStepSlot').textContent = '입력한 글과 선택한 모드를 보관하고 있어요. 복구되면 자동으로 다시 처리합니다. '
+        + (st.deducted === true ? '결제 상태와 결과를 확인하고 있어요.' : '크레딧·이용권은 차감되지 않았어요.')
+        + ' 대기 중에는 취소할 수 있어요.';
+    }
   }
 
   // 보고서에서 넘어온 글이면 원글의 감지 점수·근거 수를 작업에 같이 보낸다.
@@ -4265,7 +4274,7 @@
       return true;
     }
     // 차단(blog/formal/polish) 재진입 — 새로고침해도 동의 기반 재시도/보존형 화면 복원(blockOffer는 영속화됨)
-    if (st.status === 'blocked' && ['blog', 'formal', 'polish'].indexOf(st.mode) >= 0) {
+    if ((st.status === 'blocked' || st.status === 'error' && st.recoveryCode === 'SERVICE_TEMPORARILY_UNAVAILABLE') && ['blog', 'formal', 'polish'].indexOf(st.mode) >= 0) {
       renderBlockOffer(jobId, st);
       show('blocked');
       return true;
@@ -4614,7 +4623,7 @@
         if (st.gateDetail) console.warn('[evasion] 차단 상세:', st.gates, st.gateDetail);
         // 휴머나이징 차단 → 사유·무차감·재시도 화면. error는 기존 안내.
         //   jobRef는 유지(보존형 받기 accept-fallback에 jobId 필요).
-        if (st.status === 'blocked' && ['blog', 'formal', 'polish'].indexOf(st.mode) >= 0) {
+        if ((st.status === 'blocked' || st.status === 'error' && st.recoveryCode === 'SERVICE_TEMPORARILY_UNAVAILABLE') && ['blog', 'formal', 'polish'].indexOf(st.mode) >= 0) {
           renderBlockOffer(jobId, st);
           show('blocked');
           return;
@@ -4898,6 +4907,8 @@
     var reasonEl = $('lavBlockedReason');
     if (reasonEl) reasonEl.textContent = (st && st.reason || '원문의 내용과 문장 연결을 보존하는 결과를 만들지 못했어요.')
       + ' 크레딧은 차감되지 않았어요. 문의할 때 작업 번호 ' + String(jobId || '') + '를 알려주세요.';
+    if (reasonEl && st && st.recoveryCode === 'SERVICE_TEMPORARILY_UNAVAILABLE') reasonEl.textContent = st.error
+      || '현재 요청 처리가 지연되고 있습니다. 잠시 후 같은 모드로 다시 처리해 주세요.';
     // 차단 원인이 lostFacts면 실제 빠진 사실/수치를 먼저 보여준다.
     // 입력 보강이 필요한 별도 유형에서만 경험·사례 메모를 보여준다.
     var abEl = $('lavBlockedAbstract'), abList = $('lavBlockedAbstractList');
