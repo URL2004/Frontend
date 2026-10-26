@@ -85,3 +85,13 @@ test('design A is on for every user, with admin-only sample tools and a fallback
   assert.match(source, /window\.lavAdminPreviewDone = function[\s\S]{0,200}if \(!\(window\.isAdmin && window\.isAdmin\(\)\)/);
   assert.match(source, /\.catch\(failResultDesign\)/);
 });
+
+test('quality shortfall is explicitly free for both credit and coupon completions', () => {
+  for (const billingMode of ['credit', 'coupon']) {
+    const h = setup();
+    h.ctx.renderDoneCredit(done({ billingDisposition: 'waived_quality_shortfall', creditBreakdown: { total: 42, charged: 0 } }, { billingMode, deducted: false }));
+    assert.match(h.line().textContent, /크레딧·쿠폰을 차감하지 않았어요/u);
+    assert.doesNotMatch(h.line().textContent, /42크레딧|과거/u);
+    assert.equal(h.line().hidden, false);
+  }
+});

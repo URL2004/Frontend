@@ -37,7 +37,7 @@ test('기록 목록은 50건 페이지 단위로 읽고 개별 주소로 바로 
   assert.match(source, /limit\(HISTORY_PAGE_SIZE \+ 1\)/u);
   assert.match(source, /startAfter\(historyState\.cursor\)/u);
   assert.match(source, /searchParams\.set\('item', id\)/u);
-  assert.match(source, /getDoc\(doc\(db, 'users', CU\.uid, 'history', id\)\)/u);
+  assert.match(source, /getDoc\(doc\(db, 'users', uid, 'history', id\)\)/u);
   assert.match(source, /openHistoryRecord\(this\.dataset\.historyId\)/u);
   assert.match(main, /data-tab-call="openHistoryHome"/u);
   assert.doesNotMatch(shell, /data-tab-call="openHistoryHome"/u);

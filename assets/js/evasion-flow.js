@@ -4822,8 +4822,8 @@
   //   차감 확인 중·무제한·관리자 테스트 등은 기존 차감 안내(renderBillingDisposition)와 같은 말을 쓴다.
   var doneCreditSt = null;
   var DONE_CREDIT_TEXT = {
-    waived_quality_shortfall: '과거 무차감 정책으로 처리된 작업이에요',
-    waived_repeat_low_benefit: '과거 무차감 정책으로 처리된 작업이에요',
+    waived_quality_shortfall: '변환 효과 또는 검증 기준을 충족하지 못해 크레딧·쿠폰을 차감하지 않았어요',
+    waived_repeat_low_benefit: '변환 효과 또는 검증 기준을 충족하지 못해 크레딧·쿠폰을 차감하지 않았어요',
     plan_unlimited: '무제한 이용권으로 처리했어요',
     admin_no_charge: '관리자 테스트로 처리되어 크레딧을 차감하지 않았어요'
   };
@@ -4869,8 +4869,8 @@
     var disposition = st && st.billingDisposition || result.billingDisposition || meta.billingDisposition || '';
     var labels = {
       charged: '크레딧 차감이 완료됐어요.',
-      waived_quality_shortfall: '과거 무차감 정책으로 처리된 작업이에요.',
-      waived_repeat_low_benefit: '과거 무차감 정책으로 처리된 작업이에요.',
+      waived_quality_shortfall: '변환 효과 또는 검증 기준을 충족하지 못해 크레딧·쿠폰을 차감하지 않았어요.',
+      waived_repeat_low_benefit: '변환 효과 또는 검증 기준을 충족하지 못해 크레딧·쿠폰을 차감하지 않았어요.',
       plan_unlimited: '무제한 이용권으로 처리했어요.',
       admin_no_charge: '관리자 테스트로 처리되어 크레딧을 차감하지 않았어요.'
     };

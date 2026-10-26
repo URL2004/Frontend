@@ -497,8 +497,8 @@ test('완료 화면·이용 기록·관리자 관측은 과금 처리와 v2.5 �
     read('assets/js/app-module.js')
   ]);
   assert.match(main, /id="lavBillingNotice"[^>]*role="status"/u);
-  assert.match(evasion, /waived_quality_shortfall:\s*'과거 무차감 정책/u);
-  assert.match(evasion, /waived_repeat_low_benefit:\s*'과거 무차감 정책/u);
+  assert.match(evasion, /waived_quality_shortfall:\s*'변환 효과 또는 검증 기준/u);
+  assert.match(evasion, /waived_repeat_low_benefit:\s*'변환 효과 또는 검증 기준/u);
   assert.match(module, /waived_quality_shortfall:\s*\{ short: '무차감'/u);
   assert.match(module, /admin_no_charge:\s*\{ short: '무차감'/u);
   assert.match(module, /deliveredLimitedEffectCount/u);

@@ -4181,7 +4181,7 @@ window.saveHistory = async (type, inputText, detectResult, humanResult, credits)
    data.outputText = humanResult.outputText || '';
    data.humanSummary = humanResult.summary || '';
    data.humanDetail = humanResult.detail || '';
-   if (['charged', 'plan_unlimited', 'admin_no_charge'].includes(humanResult.billingDisposition)) {
+   if (['charged', 'waived_quality_shortfall', 'plan_unlimited', 'admin_no_charge'].includes(humanResult.billingDisposition)) {
     data.billingDisposition = humanResult.billingDisposition;
    }
    if (humanResult.qualityStatus === 'needs_review' || humanResult.qualityStatus === 'clean') data.qualityStatus = humanResult.qualityStatus;
@@ -4573,40 +4573,45 @@ function historyRender() {
 }
 
 async function historyFetchPage(reset) {
- if (historyState.loading || !CU) return;
+ if (!CU || (historyState.loading && !reset)) return;
+ const uid = CU.uid;
+ const request = historyState.request = (historyState.request || 0) + 1;
+ const isCurrent = () => CU?.uid === uid && historyState.userId === uid && historyState.request === request;
  historyState.loading = true;
  historyState.error = '';
- if (reset) {
-  historyState.items = [];
-  historyState.cursor = null;
-  historyState.hasMore = false;
-  historyState.initialized = false;
- }
+ // Keep the last successful page until a fresh read for this account succeeds.
  historyRenderList();
  try {
   const constraints = [orderBy('createdAt', 'desc')];
   if (!reset && historyState.cursor) constraints.push(startAfter(historyState.cursor));
   constraints.push(limit(HISTORY_PAGE_SIZE + 1));
-  const snap = await getDocs(query(collection(db, 'users', CU.uid, 'history'), ...constraints));
+  const snap = await getDocs(query(collection(db, 'users', uid, 'history'), ...constraints));
+  if (!isCurrent()) return;
+  if (reset) historyState.items = [];
   const pageDocs = snap.docs.slice(0, HISTORY_PAGE_SIZE);
   const known = new Set(historyState.items.map(item => item.id));
   pageDocs.forEach(snapshot => { if (!known.has(snapshot.id)) historyState.items.push(historyNormalizeDoc(snapshot)); });
   historyState.items.sort((a, b) => b.createdAtMs - a.createdAtMs);
-  historyState.cursor = pageDocs.length ? pageDocs[pageDocs.length - 1] : historyState.cursor;
+  historyState.cursor = pageDocs.length ? pageDocs[pageDocs.length - 1] : (reset ? null : historyState.cursor);
   historyState.hasMore = snap.docs.length > HISTORY_PAGE_SIZE;
   historyState.initialized = true;
  } catch (error) {
+  if (!isCurrent()) return;
   console.warn('[history] 목록 불러오기 실패', error?.code || error?.message || error);
   historyState.error = 'load_failed';
+  if (historyState.initialized && window.gpToast) window.gpToast('최신 기록을 불러오지 못했어요. 잠시 후 작업 기록을 다시 열어 주세요.', { type: 'error' });
  } finally {
-  historyState.loading = false;
+  if (isCurrent()) historyState.loading = false;
  }
 }
 
 async function historyEnsureItem(id) {
  if (!id || historyState.items.some(item => item.id === id) || !CU) return;
  try {
-  const snapshot = await getDoc(doc(db, 'users', CU.uid, 'history', id));
+  const uid = CU.uid;
+  const request = historyState.request;
+  const snapshot = await getDoc(doc(db, 'users', uid, 'history', id));
+  if (!CU || CU.uid !== uid || request !== historyState.request) return;
   if (!snapshot.exists()) {
    historyState.missingId = id;
    return;
@@ -4624,6 +4629,8 @@ window.loadHistory = async function (options) {
  if (!list) return;
  options = options || {};
  if (!CU) {
+  historyState.request = (historyState.request || 0) + 1;
+  historyState.loading = false;
   historyState.userId = '';
   historyState.items = [];
   historyState.initialized = false;
@@ -4634,6 +4641,10 @@ window.loadHistory = async function (options) {
  const userChanged = historyState.userId !== CU.uid;
  if (userChanged) {
   historyState.userId = CU.uid;
+  historyState.items = [];
+  historyState.cursor = null;
+  historyState.hasMore = false;
+  historyState.initialized = false;
   historyState.filter = 'all';
   historyState.search = '';
   historyState.selectedId = '';
@@ -4641,7 +4652,12 @@ window.loadHistory = async function (options) {
   const search = document.getElementById('historySearch');
   if (search) search.value = '';
  }
- if (userChanged || options.force || !historyState.initialized) await historyFetchPage(true);
+ const ownerUid = CU.uid;
+ const selectedId = historyState.selectedId;
+ const refresh = historyFetchPage(true);
+ const request = historyState.request;
+ await refresh;
+ if (!CU || CU.uid !== ownerUid || request !== historyState.request) return;
  const requestedId = options.itemId || historyRequestedId();
  historyState.missingId = '';
  if (requestedId) {
@@ -4649,6 +4665,9 @@ window.loadHistory = async function (options) {
   historyState.selectedId = requestedId;
  } else if (historyIsMobile()) {
   historyState.selectedId = '';
+ } else if (selectedId) {
+  await historyEnsureItem(selectedId);
+  historyState.selectedId = selectedId;
  }
  historyRender();
 };
@@ -4684,8 +4703,7 @@ window.openHistoryHome = function () {
  historySetRoute('', 'replace');
  historyState.selectedId = '';
  historyState.missingId = '';
- if (historyState.initialized) historyRender();
- else window.loadHistory();
+ window.loadHistory();
 };
 
 window.historyCloseDetail = function () {
