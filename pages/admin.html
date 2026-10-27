@@ -106,10 +106,10 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">128개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">129개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 10.27</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 10.28</span>
       </div>
 
       <div class="gp-admin-filter-row gp-admin-patch-filters">
@@ -122,9 +122,9 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.124 · AI 감지 v1.62</strong>
-          <code>2026.10.27 · 운영 브랜치 기준</code>
-        <span>처리 장애 자동 재개 · 검증 미확정 무차감 · PDF 문장 연결 · 한정 표현 국소 복원</span>
+          <strong>휴머나이징 v2.5.125 · AI 감지 v1.62</strong>
+          <code>2026.10.28 · 운영 브랜치 기준</code>
+        <span>짧은 문장 의미 복원 · 회고·평가 보존 · 장애 복구 시간 분리 · 운영 로그 집계</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="2026년 9월 3일까지의 기존 감사 범위">
@@ -136,6 +136,16 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.125 · 감지 v1.62</span><span class="gp-admin-patch-title"><b>짧은 문장 복원·회고 보존·장애 복구 상태·운영 로그 개선</b><small>2026.10.28 · 휴머나이징 490쌍·AI 감지 304건·운영 로그 108,334건 조사</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">의미 보존</span><span>정확한 원문·결과 위치가 확인된 짧은 완결 문장도 국소 복원 후보로 만들 수 있게 했습니다. 문장 소속·인용·중복·복원량 제한과 수정 후 의미 재검증은 유지합니다. 깨달음을 현재의 의견으로 바꾸거나 유일한 평가를 반복 표현으로 삭제하지 않도록 편집 지침을 정리했습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">자동 재개</span><span>공급자 장애가 끝난 것이 확인되면 해당 장애의 대기 시작 시각을 해제합니다. 이후 별개 장애나 재시도가 이전 30분 제한에 걸리지 않게 했습니다. 열린 복구 확인·저장소 미확인 상태에서는 대기 한도를 초기화하지 않습니다. 일반·고급 모드와 기존 결제 보호는 유지합니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">판정 표시</span><span>[본문] 같은 대괄호 라벨 뒤의 본문 콜론을 제목 경계로 오인하던 구조 경고를 수정했습니다. 라벨 자체의 누락·병합 검사는 유지합니다. 정책상 의미 검사를 생략한 후보와 안전 기준을 충족하지 못한 후보의 내부 사유도 구분합니다. 검사 생략을 통과로 승격하거나 기존 무차감을 과금으로 바꾸지 않습니다. 현재 무차감 결과를 과거 정책으로 설명하던 안내도 수정했습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">운영 비용</span><span>같은 종류의 CSP 보고는 시간 창마다 첫 표본만 개별 로그에 남기고 전체 건수는 집계합니다. 외부 입력으로 집계 키가 무한히 늘지 않도록 상한과 초과 건수를 기록합니다. 실제 차단과 관측 보고는 구분하며 보안 허용 범위는 변경하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">검증 범위</span><span>저장된 원문·결과와 감지 점수·문장·근거 위치, 안전 중단 16건의 미전달 후보를 대조했습니다. 합성 회귀시험과 로컬 재생을 사용했으며 고객 원문을 새 외부 모델에 전량 재전송하지 않았습니다. 기존 의미 경고 전체 해소나 장문 처리 시간 단축률을 확정하는 결과는 아닙니다. AI 감지 이력 보정 산식은 유지합니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.124 · 감지 v1.62</span><span class="gp-admin-patch-title"><b>연쇄 중단 방지·모드 유지 복구·검증 미확정 무차감</b><small>2026.10.27 · 휴머나이징 406쌍·AI 감지 243건·운영 로그 118,290건 대조</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>

@@ -8289,7 +8289,7 @@ function renderAdminHumanizeQuality(data) {
    <td><span class="gp-admin-quality-status ${row.qualityStatus === 'needs_review' ? 'warn' : row.qualityStatus === 'clean' ? 'clean' : 'muted'}">${row.qualityStatus === 'needs_review' ? '검토 필요' : row.qualityStatus === 'clean' ? '정상' : '미측정'}</span></td>
    <td>${escapeHtml(({
      charged: '차감 완료',
-     waived_quality_shortfall: '품질 미달 무차감',
+     waived_quality_shortfall: '효과·검증 기준 무차감',
      waived_repeat_low_benefit: '재결제 보호',
      plan_unlimited: '이용권',
      admin_no_charge: '관리자 무차감'

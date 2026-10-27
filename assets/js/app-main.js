@@ -1934,7 +1934,7 @@ function renderHuman(r) {
   + noteCopy + '</div>';
   const billingLabels = {
    charged: '크레딧 차감 완료',
-   waived_quality_shortfall: '과거 무차감 정책으로 처리된 작업이에요.',
+   waived_quality_shortfall: '변환 효과 또는 검증 기준에 따라 크레딧·이용권을 차감하지 않았어요.',
    waived_repeat_low_benefit: '과거 무차감 정책으로 처리된 작업이에요.',
    plan_unlimited: '무제한 이용권으로 처리했어요.',
    admin_no_charge: '관리자 테스트 · 무차감'
