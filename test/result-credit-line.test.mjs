@@ -95,3 +95,16 @@ test('quality shortfall is explicitly free for both credit and coupon completion
     assert.equal(h.line().hidden, false);
   }
 });
+
+test('explicit no-change polish review has a completion notice with no charge',()=>{
+  for(const evidence of [{engineMeta:{polishNoChangeReviewed:true}},
+    {engineMeta:{effectNoticeCodes:['polish_no_change_reviewed']}},
+    {effectNotices:[{code:'polish_no_change_reviewed'}]}]) {
+    const h=setup();h.ctx.renderDoneCredit(done({billingDisposition:'waived_quality_shortfall',...evidence}));
+    assert.match(h.line().textContent,/다듬기 검토 완료/u);
+    assert.match(h.line().textContent,/크레딧·쿠폰 미사용/u);
+    assert.doesNotMatch(h.line().textContent,/충족하지 못해/u);
+  }
+  const h=setup();h.ctx.renderDoneCredit(done({billingDisposition:'charged',engineMeta:{polishNoChangeReviewed:true},creditBreakdown:{charged:12}}));
+  assert.match(h.line().textContent,/12크레딧/u);
+});

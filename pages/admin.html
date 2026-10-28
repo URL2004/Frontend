@@ -106,10 +106,10 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">130개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">131개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
-        <span class="gp-admin-patch-range">2026.06.04 — 10.28</span>
+        <span class="gp-admin-patch-range">2026.06.04 — 10.29</span>
       </div>
 
       <div class="gp-admin-filter-row gp-admin-patch-filters">
@@ -122,9 +122,9 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.126 · AI 감지 v1.62</strong>
-          <code>2026.10.28 · 운영 브랜치 기준</code>
-        <span>목록 문장 의미 복구 · 복원안 오경고 수정 · 최종 국소 복구 · 보고서 의미 보존</span>
+          <strong>휴머나이징 v2.5.127 · AI 감지 v1.62</strong>
+          <code>2026.10.29 · 운영 브랜치 기준</code>
+        <span>문단 들여쓰기 · 원문 미완성 구분 · 장문 복구 · 무수정 다듬기 검토 · 감지 비용 기록</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="2026년 9월 3일까지의 기존 감사 범위">
@@ -136,6 +136,17 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.127 · 감지 v1.62</span><span class="gp-admin-patch-title"><b>최신 전수 대조에 따른 미전달 원인과 구조 오경고 수정</b><small>2026.10.29 · v2.5.126 휴머나이징 243쌍·AI 감지 146건·운영 로그 39,191줄</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area safety">입력 구분</span><span>빈 줄로 구분된 긴 문단의 앞쪽 탭을 표의 빈 셀로 오인해 본문 전체가 편집에서 제외되던 문제를 수정했습니다. 실제 표·내부 탭·단독의 모호한 행은 계속 보호합니다. 원문부터 미완성이던 마지막 구절이 정확히 유지된 경우를 새 문장 잘림과 구분합니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">장문 복구</span><span>장문에서 작은 원문 복원이 누적 8문장을 넘어 중단되던 한도를 길이에 따라 최대 16개로 조정했습니다. 각 회차 한도, 누적 교체량 30%, 두 번의 재검증과 기존 절대 시간 제한을 유지하며 새 의미 판정 통과 없이 결과를 전달하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area frontend">다듬기 완료</span><span>명시적인 무수정 재검토 응답, 입력 원문과의 완전 일치, 잔여 교정 항목·모델 실패 없음이 확인되면 원문과 ‘다듬기 검토 완료·미사용’ 안내를 표시합니다. 실제 수정이 있었다고 표시하지 않으며 일반·고급 무변화 작업은 이 예외에 포함하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">문서 구조</span><span>학기 정보가 있는 짧은 표지 행을 제목에 합치지 않도록 보호했습니다. 연 구분 없이 이어진 불규칙한 짧은 창작문 행도 전처리에서 보존합니다. 열거 문장을 짧은 서술문과 설명으로 나눈 경우에는 같은 문단의 유일한 근거로 번호 보존을 확인합니다. 다른 문단의 유사 내용이나 바뀐 번호는 허용하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">감지 진단</span><span>감지 응답의 지시문 노출 검사에서 거부된 호출도 사용량을 보존하고 닫힌 오류 코드로 기록합니다. 점수 산식과 이력 보정은 그대로입니다. 기존 재검토 실패 2건의 원인이 이 오류였다고 소급 확정하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">검증 범위</span><span>저장 원문·결과, 판정 근거, 차감 원장, 완료 알림을 대조했습니다. 미전달 8건은 무차감이며, 장문 2건의 복원량 한도 원인을 로컬에서 재현했습니다. 전량 신규 생성이나 사람 블라인드 평가는 아니며, 미확정 의미 판정과 모델 품질 경고의 전면 해소를 보장하지 않습니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.126 · 감지 v1.62</span><span class="gp-admin-patch-title"><b>반복 중단을 유발한 목록 복구 누락과 의미 검사 충돌 수정</b><small>2026.10.28 · 반복 중단 작업의 원문·후보·복구 근거 대조</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>

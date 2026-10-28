@@ -4858,6 +4858,8 @@
     else if (disposition === 'charged' && !coupon) {
       var charged = cb.charged != null && cb.charged !== '' ? Number(cb.charged) : NaN;
       parts.push(isFinite(charged) ? '이번 변환 ' + charged.toLocaleString('ko-KR') + '크레딧' : '크레딧 차감이 완료됐어요');
+    } else if (disposition === 'waived_quality_shortfall' && isPolishNoChangeReview(result, meta)) {
+      parts.push('다듬기 검토 완료 · 수정할 부분을 찾지 못해 크레딧·쿠폰 미사용');
     } else if (DONE_CREDIT_TEXT[disposition]) parts.push(DONE_CREDIT_TEXT[disposition]);
     var balance = Number(window.UC);
     if (parts.length && !review && window.CU && window.UP !== 'unlimited' && isFinite(balance)) parts.push('현재 잔액 ' + Math.max(0, balance).toLocaleString('ko-KR') + '크레딧');
@@ -4869,6 +4871,14 @@
     var flow = $('lavFlow');
     if (doneCreditSt && flow && flow.dataset.step === 'done') renderDoneCredit(doneCreditSt);
   };
+
+  function isPolishNoChangeReview(result, meta) {
+    return meta && (meta.polishNoChangeReviewed === true
+      || Array.isArray(meta.effectNoticeCodes) && meta.effectNoticeCodes.indexOf('polish_no_change_reviewed') >= 0)
+      || Array.isArray(result && result.effectNotices) && result.effectNotices.some(function (n) {
+        return n && n.code === 'polish_no_change_reviewed';
+      });
+  }
 
   function renderBillingDisposition(st) {
     var wrap = $('lavBillingNotice');
@@ -4883,6 +4893,8 @@
       plan_unlimited: '무제한 이용권으로 처리했어요.',
       admin_no_charge: '관리자 테스트로 처리되어 크레딧을 차감하지 않았어요.'
     };
+    if (isPolishNoChangeReview(result, meta)) labels.waived_quality_shortfall =
+      '다듬기 검토를 완료했어요. 명확히 교정할 부분을 찾지 못해 원문을 그대로 표시하며, 크레딧·쿠폰은 사용하지 않았어요.';
     wrap.className = 'lav-billing-notice';
     if (!labels[disposition]) {
       wrap.hidden = true;

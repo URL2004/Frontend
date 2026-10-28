@@ -1939,7 +1939,12 @@ function renderHuman(r) {
    plan_unlimited: '무제한 이용권으로 처리했어요.',
    admin_no_charge: '관리자 테스트 · 무차감'
   };
-  const billing = billingLabels[r.billingDisposition] || '';
+  const noChangeReview = r.engineMeta?.polishNoChangeReviewed === true
+   || r.engineMeta?.effectNoticeCodes?.includes('polish_no_change_reviewed')
+   || r.effectNotices?.some(n => n?.code === 'polish_no_change_reviewed');
+  const billing = r.billingDisposition === 'waived_quality_shortfall' && noChangeReview
+   ? '다듬기 검토 완료 · 명확히 교정할 부분을 찾지 못해 원문을 표시하며 크레딧·쿠폰은 사용하지 않았어요.'
+   : billingLabels[r.billingDisposition] || '';
   const billingNote = billing
    ? '<div class="sstrip" style="background:#f5f7ff;color:#4c587f;font-size:12.5px;line-height:1.5;"><b>과금 상태</b> · '+escapeHtml(billing)+'</div>'
    : '';
