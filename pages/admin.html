@@ -106,7 +106,7 @@
     <section id="adminPanelPatches" class="gp-admin-panel gp-admin-patch-notes" data-admin-tab="patches">
       <div class="gp-admin-section-head gp-admin-patch-head">
         <div>
-          <h3>운영 패치노트 <span class="gp-admin-count">129개 변경 묶음</span></h3>
+          <h3>운영 패치노트 <span class="gp-admin-count">130개 변경 묶음</span></h3>
           <p>운영 Git과 프로젝트 작업 대화를 교차 확인해 기능 단위로 정리합니다. 현재 운영, 후속 대체, 실험·검증 이력을 구분합니다.</p>
         </div>
         <span class="gp-admin-patch-range">2026.06.04 — 10.28</span>
@@ -122,9 +122,9 @@
 
       <div class="gp-admin-patch-current" aria-label="현재 운영 버전">
         <span class="gp-admin-patch-live"><i aria-hidden="true"></i>현재 운영</span>
-          <strong>휴머나이징 v2.5.125 · AI 감지 v1.62</strong>
+          <strong>휴머나이징 v2.5.126 · AI 감지 v1.62</strong>
           <code>2026.10.28 · 운영 브랜치 기준</code>
-        <span>짧은 문장 의미 복원 · 회고·평가 보존 · 장애 복구 시간 분리 · 운영 로그 집계</span>
+        <span>목록 문장 의미 복구 · 복원안 오경고 수정 · 최종 국소 복구 · 보고서 의미 보존</span>
       </div>
 
       <dl class="gp-admin-patch-audit" aria-label="2026년 9월 3일까지의 기존 감사 범위">
@@ -136,6 +136,15 @@
       <p>위 감사 건수는 9월 3일까지의 기록입니다. 이후 변경은 운영 브랜치의 커밋과 검증 기록을 대조해 추가했습니다. 과거 검토 범위는 휴머나이징 357쌍과 AI 감지 300건, 당시 후속 검토는 휴머나이징 53쌍과 AI 감지 44건입니다. 9월 20일 v2.5.63은 저장된 415쌍과 제보 1쌍의 레이아웃을 비교하고 변경된 2건을 확인했습니다. 신규 모델 전량 재생이나 사람 블라인드 평가는 아닙니다. 버전별 검증 범위와 제한은 아래에 따로 기록합니다.</p>
 
       <div class="gp-admin-patch-timeline">
+        <details class="gp-admin-patch-release" open>
+          <summary><span class="gp-admin-patch-version">v2.5.126 · 감지 v1.62</span><span class="gp-admin-patch-title"><b>반복 중단을 유발한 목록 복구 누락과 의미 검사 충돌 수정</b><small>2026.10.28 · 반복 중단 작업의 원문·후보·복구 근거 대조</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
+          <ul>
+            <li><span class="gp-admin-patch-area engine">생성</span><span>보고서의 가능성·계획·실행·배움의 회고와 절차의 대상·수단을 구분하도록 생성 지침을 보완했습니다. 문장 분리 시 동시성·시점 제한·부정 범위·결합과 선택 관계를 보존합니다.</span></li>
+            <li><span class="gp-admin-patch-area safety">복구 충돌</span><span>유일하게 확인된 목록 문장은 표식·번호·소속을 유지하며 복구할 수 있습니다. 원문대로 복원한 이웃 문장의 목적 표현을 현재 문장의 새 주장으로 잘못 세던 검사를 수정했습니다. 다른 위치의 유사 문장이나 실제 새 목적 추가는 예외로 처리하지 않습니다.</span></li>
+            <li><span class="gp-admin-patch-area engine">완료 경로</span><span>복구 후 재검수에서 추가로 확인된 국소 오류는 이미 복구한 후보에서 한 번 더 원문 근거로 수정할 수 있습니다. 기존 절대 시간 한도·누적 복원량 제한 안에서만 수행하며 최종 문자열의 의미 재검증을 통과해야 전달합니다. 전체 문서 재생성이나 일반·고급의 다듬기 전환은 추가하지 않았습니다.</span></li>
+            <li><span class="gp-admin-patch-area observe">운영</span><span>복구안의 안전성·구조 거절 사유를 보존해 원인이 없는 것처럼 표시하지 않도록 수정했습니다. AI 감지와 본인 휴머나이징 이력 보정, 과금·환불 정책은 유지합니다. 과거 중단 결과의 자동 전달이나 소급 차감은 하지 않습니다.</span></li>
+          </ul>
+        </details>
         <details class="gp-admin-patch-release" open>
           <summary><span class="gp-admin-patch-version">v2.5.125 · 감지 v1.62</span><span class="gp-admin-patch-title"><b>짧은 문장 복원·회고 보존·장애 복구 상태·운영 로그 개선</b><small>2026.10.28 · 휴머나이징 490쌍·AI 감지 304건·운영 로그 108,334건 조사</small></span><span class="gp-admin-patch-state is-live">운영 반영</span></summary>
           <ul>
