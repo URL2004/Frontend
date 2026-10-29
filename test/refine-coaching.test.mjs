@@ -80,3 +80,21 @@ test('invalid memo stays local and focuses the field; API failure restores all c
   assert.equal(input.value, '입력선을 확인했다'); assert.equal(input.disabled, false); assert.equal(skip.disabled, false);
   assert.equal(h.ctx.lavRefineBusy, false);
 });
+
+test('server capacity denial preserves the draft, prevents repeated submission, and never auto-posts', async()=>{
+ const h=setup();h.render();const list=h.nodes.get('lavDoneRefineList');
+ const input=list.querySelector('textarea'),btn=list.querySelector('.lav-refine-btn'),skip=list.querySelector('.lav-refine-skip'),status=list.querySelector('.lav-refine-status');
+ input.value='현장에서 확인한 내용을 적었습니다';input.oninput();
+ let calls=0,elapsed=0,wake;h.ctx.Date={now:()=>elapsed};h.ctx.setTimeout=(fn,ms)=>{assert.equal(ms,15000);wake=fn;};
+ h.ctx.window.apiUrl=p=>p;
+ h.ctx.fetch=async()=>{calls++;return {ok:false,status:503,json:async()=>({code:'ENGINE_CAPACITY_BUSY',billingState:'not_started',retryAfterMs:15000,error:'처리 대기 중이에요.'})};};
+ await h.ctx.lavRefineSubmit(1,10,2,input,btn,status,skip);
+ assert.equal(btn.disabled,true);assert.equal(input.disabled,false);assert.equal(skip.disabled,false);
+ await h.ctx.lavRefineSubmit(1,10,2,input,btn,status,skip);assert.equal(calls,1);
+ elapsed=15000;wake();assert.equal(btn.disabled,false);assert.equal(calls,1);
+ assert.equal(input.value,'현장에서 확인한 내용을 적었습니다');
+ // Another result never inherits a previous result's cooldown.
+ h.ctx.lavRefineJobId='job-b';
+ await h.ctx.lavRefineSubmit(1,10,2,input,btn,status,skip);assert.equal(calls,2);
+ h.ctx.lavRefineJobId='job-c';wake();assert.equal(btn.disabled,true);
+});

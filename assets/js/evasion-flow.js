@@ -5290,6 +5290,7 @@
   // Optional contextual follow-up: one question, grounded in an existing experience.
   // Skipping changes no result text and makes no API or billing request.
   var lavRefineJobId = null, lavRefineBusy = false, refinePollGen = 0;
+  var refineCapacityWait = { jobId: null, until: 0 };
   var refineView = { jobId: null, skipped: false, drafts: {} };
 
   // 결과 본문을 문단 단위 DOM으로 렌더 — 보강 대상 문단을 본문 안에서 직접 강조한다.
@@ -5478,6 +5479,10 @@
 
   async function lavRefineSubmit(idx, credit, freeLeft, input, btn, statusEl, skip) {
     if (lavRefineBusy || !lavRefineJobId) return;
+    if (refineCapacityWait.jobId === lavRefineJobId && refineCapacityWait.until > Date.now()) {
+      lavRefineStatus(statusEl, '아직 문단 보완을 시작하지 않았어요. 입력한 내용은 유지돼요. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
     var memo = (input && input.value || '').trim();
     if (memo.length < 5) { lavRefineStatus(statusEl, '기억나는 내용을 5자 이상 적어주세요. 떠오르지 않으면 건너뛸 수 있어요.', true); input.setAttribute('aria-invalid', 'true'); input.focus(); return; }
     // 유료 회차 클라이언트 프리체크 — accept-fallback과 동일 패턴
@@ -5503,6 +5508,19 @@
       var d = null;
       try { d = await res.json(); } catch (e2) { d = {}; }
       if (!res.ok) {
+        if (res.status === 503 && d.code === 'ENGINE_CAPACITY_BUSY' && d.billingState === 'not_started') {
+          var delay = Math.max(3000, Math.min(60000, Number(d.retryAfterMs) || 15000));
+          var waitingJobId = lavRefineJobId;
+          refineCapacityWait = { jobId: waitingJobId, until: Date.now() + delay };
+          lavRefineBusy = false; input.disabled = false; if (skip) skip.disabled = false;
+          btn.disabled = true; btn.textContent = Math.ceil(delay / 1000) + '초 후 다시 시도';
+          lavRefineStatus(statusEl, d.error);
+          setTimeout(function () {
+            if (waitingJobId !== lavRefineJobId || lavRefineBusy) return;
+            btn.disabled = false; btn.textContent = prevLabel;
+          }, delay);
+          return;
+        }
         if (res.status === 402 && typeof window.gpOpenCreditCheckout === 'function') {
           window.gpOpenCreditCheckout({ action: 'paragraph_refine', source: 'refine_card', neededCredits: (d && d.needed) || credit, currentCredits: Number(window.UC) || 0 });
         }
