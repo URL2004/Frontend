@@ -3930,7 +3930,7 @@ window.persistUserNotification = async (n, ownerUid) =>{
   if (typeof window.updateNotifBadge === 'function') await window.updateNotifBadge(owner);
   return true;
  } catch(e) {
-  if (window.gpReportWorkflowIssue) window.gpReportWorkflowIssue({feature:'notification',code:'NOTIFICATION_PERSIST_FAILED',stage:'persist'});
+  if (window.gpReportWorkflowIssue) window.gpReportWorkflowIssue({feature:'notification',code:'NOTIFICATION_PERSIST_FAILED',stage:'persist',httpStatus:Number(e.status)||0});
   if (CU && CU.uid === owner && e.status === 429) window.gpNotificationRetryAt = { owner: owner,
     at: Date.now() + Math.max(30000, Math.min(86400000, (Number(e.retryAfter) || 60) * 1000)) };
   return false;

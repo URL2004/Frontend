@@ -126,7 +126,7 @@
         errorName: cleanText(detail.errorName, 80),
         stack: cleanText(detail.stack, 600),
         page: window.location.pathname,
-        release: (window.GP_BUILD_VERSION || 'web-20261012-engine-audit')
+        release: (window.GP_BUILD_VERSION || 'build-unknown')
       };
       Promise.resolve().then(async function () {
         var idToken = '';
@@ -246,9 +246,10 @@
       workflowRecentFailures.set(key, at);
     }
     var payload = { type: 'workflow_issue', feature: detail.feature, code: detail.code, stage: detail.stage,
-      release: window.GP_BUILD_VERSION || 'web-20261012-engine-audit',
+      release: window.GP_BUILD_VERSION || 'build-unknown',
       pages: Number(detail.pages) || 0, emptyPages: Number(detail.emptyPages) || 0,
-      durationMs: Number(detail.durationMs) || 0 };
+      durationMs: Number(detail.durationMs) || 0,
+      httpStatus: Number.isInteger(detail.httpStatus) && detail.httpStatus >= 400 && detail.httpStatus <= 599 ? detail.httpStatus : 0 };
     // Never include document text, file names, parser messages or credentials.
     workflowInFlight++;
     window.gpFetch(window.apiUrl('/events'), { method: 'POST', headers: { 'Content-Type': 'application/json' },

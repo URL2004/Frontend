@@ -9,9 +9,10 @@ test('event rate limits and duplicate failures do not create an error-report sto
   const c={Date:class extends Date {static now(){return time;}},window:{apiUrl:x=>x,gpFetch:async(url,opts)=>{
     calls++;sent.push(JSON.parse(opts.body));return {status,headers:{get:()=> '120'}};
   }}};vm.createContext(c);vm.runInContext(script,c);
-  const event={feature:'notification',code:'NOTIFICATION_PERSIST_FAILED',stage:'persist',text:'private text'};
+  const event={feature:'notification',code:'NOTIFICATION_PERSIST_FAILED',stage:'persist',httpStatus:429,text:'private text'};
   c.window.gpReportWorkflowIssue(event);c.window.gpReportWorkflowIssue(event);
   await new Promise(r=>setImmediate(r));assert.equal(calls,1);assert.equal('text' in sent[0],false);
+  assert.equal(sent[0].httpStatus,429);assert.equal(sent[0].release,'build-unknown');
   time+=61000;c.window.gpReportWorkflowIssue({...event,code:'PDF_IMPORTED'});assert.equal(calls,1);
   time+=60000;status=200;c.window.gpReportWorkflowIssue(event);await new Promise(r=>setImmediate(r));assert.equal(calls,2);
 });
