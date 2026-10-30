@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-30",
+  "tool": "Built-in image_gen",
+  "format": "WebP, width 1200px, quality 82",
+  "images": [
+    {
+      "slug": "comparative-analysis-report-guide",
+      "asset": "assets/img/blog/comparative-analysis-report-guide.webp",
+      "prompt": "Wide 16:9 editorial cover photograph for a guide to comparing two alternatives using the same criteria. Overhead still life of two distinct folded fabric swatches, one rich cobalt linen and one warm burnt orange ribbed textile, arranged side by side at identical scale on a pale warm gray tailor's worktable. A simple unmarked brass straightedge crosses beneath both, visually providing a shared standard. Soft raking daylight shows different textures, tactile realistic photography, restrained composition with generous negative space. All important objects centered inside middle 70 percent width and middle 65 percent height for a 2.4:1 crop. No readable text, letters, numbers, logos, watermarks, books, robots, glass rings, cords, funnels, picture frames or speaking horns."
+    },
+    {
+      "slug": "report-appendix-writing-guide",
+      "asset": "assets/img/blog/report-appendix-writing-guide.webp",
+      "prompt": "Wide 16:9 refined editorial still life about supporting materials organized separately from the main report. A small sculptural walnut wood cabinet with three shallow drawers, the lower two partly pulled out in staggered steps revealing neatly arranged blank cream paper sheets with single pale green and soft mauve divider tabs. One smooth ivory stone rests on the closed top as the main idea. Deep forest green studio background, warm side lighting, tactile woodworking, contemplative premium product photography, sparse balanced composition. Cabinet centered within middle 60 percent of frame for a 2.4:1 crop, low wide shape. No text, lettering, numbers, logos, watermark, books, robots, fabrics, ruler, glass rings, funnels or picture frames."
+    }
+  ]
+}
