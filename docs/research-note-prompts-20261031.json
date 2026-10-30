@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-31",
+  "tool": "Built-in image_gen",
+  "format": "WebP, width 1200px, quality 82",
+  "images": [
+    {
+      "slug": "operational-definition-guide",
+      "asset": "assets/img/blog/operational-definition-guide.webp",
+      "prompt": "Wide 16:9 editorial still life photograph for a university research writing guide about turning an abstract concept into precise observable measures. A sculptural pale turquoise irregular ceramic blob beside a row of three precise ivory ceramic cylinders, all placed on a warm apricot studio surface. A slender dark blue caliper-like tool with absolutely no scale marks lies beside the cylinders, suggesting measurement, thoughtful tactile modern art direction, soft directional daylight, clean composition, generous negative space, key objects within central 65 percent width and middle 60 percent height to survive a 2.4:1 crop. No text, lettering, digits, numbers, logos, watermarks, robots, books, fabric swatches, drawers, funnels, glass rings, cords, picture frames or speaking horns."
+    },
+    {
+      "slug": "reflective-writing-guide",
+      "asset": "assets/img/blog/reflective-writing-guide.webp",
+      "prompt": "Wide 16:9 sophisticated editorial photograph for a guide about reflecting on a learning experience and planning the next step. A small copper origami boat resting on a matte midnight blue surface beside a circular pool of still reflective water, with a single ivory folded-paper sail reflected in the pool. Quiet contemplative atmosphere, soft dawn light from the left, realistic metal folds, sculptural minimal composition with gentle light path leading forward, refined material contrast. Keep all key objects within central 65 percent width and middle 60 percent height for a 2.4:1 wide crop. No text, letters, numbers, logos, watermarks, people, robots, books, drawers, fabric swatches, cylinders, calipers, glass rings, funnels or framed pictures."
+    }
+  ]
+}
