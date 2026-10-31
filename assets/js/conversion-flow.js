@@ -284,6 +284,13 @@
         badge: '크레딧 충전'
       };
     }
+    if (pending.action === 'composer_draft') {
+      return {
+        title: work + '에 필요한 크레딧을 충전해요',
+        description: '입력한 글을 보관했어요. 충전 후 입력 화면의 시작 버튼을 눌러 방법과 비용을 확인해 주세요.',
+        badge: '충전 후 입력 복원'
+      };
+    }
     return {
       title: work + '에 필요한 크레딧을 충전해요',
       description: '입력한 내용과 설정을 보관했어요. 결제가 끝나면 중단된 작업을 자동으로 이어가요.',
@@ -578,22 +585,16 @@
 
   async function resumePendingJob(orderId, paymentData) {
     var pending = readPending();
-    if (!pending || !pending.orderId || pending.orderId !== orderId) return false;
-    if (pending.uid && window.CU && pending.uid !== window.CU.uid) return false;
+    if (!pending || !pending.orderId || pending.orderId !== orderId) return { status: 'none' };
+    if (!window.CU || !pending.uid || pending.uid !== window.CU.uid) return { status: 'attention_required' };
+    var outcome = function (status) { return { status: status, action: pending.action }; };
     if (number(pending.neededCredits) > number(window.UC) && window.UP !== 'unlimited') {
-      if (window.gpNotify) {
-        window.gpNotify({
-          clientId: 'payment_more_credit_' + orderId,
-          type: 'payment',
-          title: '충전 완료',
-          message: '작업에 필요한 크레딧이 아직 부족해요. 입력 내용은 보관되어 있어요.',
-          action: { tab: 'pricing' }
-        }, { persist: true });
-      }
-      return false;
+      return outcome('insufficient');
     }
     var resumedKey = RESUMED_PREFIX + orderId;
-    try { if (localStorage.getItem(resumedKey)) { clearPending(); return false; } } catch (_) {}
+    try {
+      if (localStorage.getItem(resumedKey)) return outcome('already_requested');
+    } catch (_) {}
     var handlers = {
       main_analysis: 'gpResumeMainAnalysis',
       evasion_detect: 'gpResumeEvasionDetect',
@@ -606,26 +607,52 @@
     var handler = handlerName && window[handlerName];
     if (typeof handler !== 'function') {
       if (pending.action === 'pricing_purchase') clearPending();
-      return false;
+      return outcome(pending.action === 'pricing_purchase' ? 'none' : 'attention_required');
     }
     try { localStorage.setItem(resumedKey, String(Date.now())); } catch (_) {}
     try {
       var result = await Promise.resolve(handler(pending.payload || {}));
-      if (result === false) throw new Error('resume rejected');
-      clearPending();
-      track('job_resumed', {
+      if (result === false || result == null) throw new Error('resume rejected');
+      // Opening a screen or scheduling a handler is not a server admission receipt.
+      var status = result === true ? 'requested' : result.status;
+      if (status === 'started' && !String(result.jobId || '').trim()) status = 'requested';
+      if (['started', 'input_restored', 'requested', 'pending', 'attention_required'].indexOf(status) < 0) throw new Error('invalid resume result');
+      if (status === 'attention_required') throw new Error('resume requires attention');
+      if (status === 'started' || status === 'input_restored') {
+        var current = readPending();
+        if (current && current.orderId === pending.orderId && current.uid === pending.uid) clearPending();
+      }
+      track(status === 'started' ? 'job_resumed' : (status === 'input_restored' ? 'draft_restored' : 'job_resume_requested'), {
         pending_action: pending.action,
         paywall_source: pending.source,
         segment: pending.segment || '',
         offer_variant: paymentData && paymentData.experimentVariant || pending.offerVariant || ''
       });
-      return true;
+      return outcome(status);
     } catch (error) {
       try { localStorage.removeItem(resumedKey); } catch (_) {}
-      if (window.gpToast) window.gpToast('결제는 완료됐지만 작업을 자동으로 다시 시작하지 못했어요. 입력 내용은 보관되어 있어요.', { type: 'warning' });
-      return false;
+      if (window.gpToast) window.gpToast('충전은 완료됐지만 작업 재개를 확인하지 못했어요. 현재 화면의 안내와 작업 기록을 확인해 주세요.', { type: 'warning' });
+      return outcome('attention_required');
     }
   }
+
+  window.gpCreditResumeNotice = function (result, chargedCredits) {
+    var status = result && typeof result === 'object' ? result.status : (result === true ? 'requested' : 'none');
+    var prefix = format(chargedCredits) + '크레딧이 충전됐어요. ';
+    var messages = {
+      started: '작업이 접수됐어요. 진행 상태와 작업 기록에서 결과를 확인해 주세요.',
+      input_restored: '입력한 글을 복원했어요. 입력 화면의 시작 버튼을 눌러 방법과 비용을 확인해 주세요.',
+      requested: '작업 화면에서 재개 상태와 추가 확인 안내를 확인해 주세요.',
+      pending: '작업 접수 여부를 확인하고 있어요. 새 요청 전에 진행 상태와 작업 기록을 확인해 주세요.',
+      already_requested: '이미 재개를 요청한 작업이에요. 진행 상태와 작업 기록을 확인해 주세요.',
+      attention_required: '작업 재개를 확인하지 못했어요. 현재 화면의 안내와 작업 기록을 확인해 주세요.',
+      insufficient: '작업에 필요한 크레딧이 아직 부족해요. 입력 내용은 보관되어 있어요.',
+      none: '보유 크레딧을 확인해 주세요.'
+    };
+    var tab = status === 'none' || status === 'insufficient' ? 'pricing'
+      : result && result.action === 'writing_lab_generate' ? 'writingLab' : 'main';
+    return { message: prefix + (messages[status] || messages.attention_required), action: { tab: tab } };
+  };
 
   window.gpHandleCreditPaymentSuccess = async function (details) {
     details = details || {};

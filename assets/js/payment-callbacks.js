@@ -139,18 +139,19 @@
         }));
         await refreshCreditBalance(uid);
         const chargedCredits = data.creditAmount || credits;
-        const resumed = typeof window.gpHandleCreditPaymentSuccess === 'function'
+        const resumeResult = typeof window.gpHandleCreditPaymentSuccess === 'function'
           ? await window.gpHandleCreditPaymentSuccess({ orderId, amount: _amt, chargedCredits, data })
           : false;
+        const resumeNotice = typeof window.gpCreditResumeNotice === 'function'
+          ? window.gpCreditResumeNotice(resumeResult, chargedCredits)
+          : { message: chargedCredits + '크레딧이 충전됐어요. 작업 화면에서 진행 상태를 확인해 주세요.', action: { tab: 'main' } };
         if (window.gpNotify) {
           window.gpNotify({
             clientId: 'payment_' + orderId,
             type: 'payment',
             title: '충전 완료',
-            message: resumed
-              ? chargedCredits + '크레딧이 충전되어 방금 작업을 다시 시작했어요.'
-              : chargedCredits + '크레딧이 충전됐어요. 보유 크레딧을 확인해 주세요.',
-            action: { tab: resumed && conversionMeta.pending_action === 'writing_lab_generate' ? 'writingLab' : (resumed ? 'main' : 'pricing') }
+            message: resumeNotice.message,
+            action: resumeNotice.action
           }, { persist: true });
         } else alert(chargedCredits + '크레딧이 충전됐어요.');
         return true;

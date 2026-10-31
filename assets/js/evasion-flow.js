@@ -251,16 +251,19 @@
   // 결제 후 복귀: 아직 시작하지 않은 초안이므로 작업을 실행하지 않고 입력 상태만 되살린다.
   window.gpResumeComposerDraft = function (payload) {
     payload = payload || {};
+    var src = $('lavInput');
+    if (!src || !String(payload.text || '').trim()) return false;
     if (typeof window.switchTab === 'function') window.switchTab('main');
     if (typeof window.lavSetMode === 'function') window.lavSetMode(payload.mode === 'detect' ? 'detect' : 'humanize');
-    var src = $('lavInput');
     if (src && payload.text) {
       src.value = String(payload.text);
       if (typeof window.lavSyncCount === 'function') window.lavSyncCount(src);
       src.focus();
     }
     window.lavUpdateEstimate();
-    return true;
+    var start = $('lavRunButton');
+    if (start && typeof start.focus === 'function') start.focus();
+    return { status: 'input_restored' };
   };
 
   // Before/After 러너: proof 블록이 화면에 들어올 때 1회 달리기 재생(스크롤 밖에서 끝나버리는 문제 해결)
@@ -3849,7 +3852,8 @@
     if (typeof m.lengthRatio === 'number') badge(true, '분량 ' + Math.round(m.lengthRatio * 100) + '%');
   }
 
-  function runShortJob(mode, s) {
+  function runShortJob(mode, s, onAdmission) {
+    var admissionOwner = onAdmission && window.CU && window.CU.uid;
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
     activeCancel = null;
@@ -3873,6 +3877,10 @@
           throw authErr;
         }
         if (gen !== pollGen) return;
+        if (onAdmission && (!admissionOwner || !window.CU || window.CU.uid !== admissionOwner)) {
+          onAdmission({ status: 'attention_required' });
+          return;
+        }
         var body = Object.assign({ text: text, mode: mode, memo: (s && s.memo) || '', lang: evDetectLang(text) }, reportHandoffFields(text));
         if (s && s.documentProfile) body.documentProfile = s.documentProfile;
         if (mode === 'blog') body.basicStyle = (s && s.basicStyle === 'report') ? 'report' : 'blog';
@@ -3891,12 +3899,14 @@
         setActiveJobUi(r.jobId, r.job && r.job.status || 'running', mode === 'polish' ? '원문 보존 다듬기 진행 중' : '기본 휴머나이징 진행 중');
         saveJobRef(r.jobId, r.job && r.job.status || 'running');
         activeCancel = makeJobCanceller(r.jobId);
+        if (onAdmission) onAdmission({ status: 'started', jobId: r.jobId });
         if (r.job && r.job.status === 'queued') {
           resumeTransformState(r.jobId, r.job);
           return;
         }
         await pollTransform(r.jobId, gen);
       } catch (err) {
+        if (onAdmission) onAdmission({ status: err && err.httpStatus >= 400 && err.httpStatus < 500 ? 'attention_required' : 'pending' });
         if (gen !== pollGen) return;
         err.gpResumePayload = { flowMode: mode, text: text, settings: s || {} };
         await handleTransformStartError(err, 'select', gen);
@@ -5096,7 +5106,8 @@
     };
   }
 
-  function runFormalEvasion(s) {
+  function runFormalEvasion(s, onAdmission) {
+    var admissionOwner = onAdmission && window.CU && window.CU.uid;
     var src = $('lavInput');
     var text = (src ? src.value : '').trim();
     activeCancel = null;
@@ -5119,6 +5130,10 @@
           throw authErr;
         }
         if (gen !== pollGen) return;
+        if (onAdmission && (!admissionOwner || !window.CU || window.CU.uid !== admissionOwner)) {
+          onAdmission({ status: 'attention_required' });
+          return;
+        }
         var r = await fetch(window.apiUrl('/transform'), {
           method: 'POST',
           headers: evAuthHeaders(idToken, { 'Content-Type': 'application/json' }),   // idToken은 Authorization 헤더로(body 미노출)
@@ -5133,6 +5148,7 @@
         setActiveJobUi(r.jobId, r.job && r.job.status || 'running', stageLabel);
         saveJobRef(r.jobId, r.job && r.job.status || 'running');
         activeCancel = makeJobCanceller(r.jobId);
+        if (onAdmission) onAdmission({ status: 'started', jobId: r.jobId });
         if (r.job && r.job.status === 'queued') {
           resumeTransformState(r.jobId, r.job);
           return;
@@ -5140,6 +5156,7 @@
         replaceJobTicker(estimateRangeFromPayload(r, estimate), stageLabel);
         await pollTransform(r.jobId, gen);
       } catch (err) {
+        if (onAdmission) onAdmission({ status: err && err.httpStatus >= 400 && err.httpStatus < 500 ? 'attention_required' : 'pending' });
         if (gen !== pollGen) return;
         err.gpResumePayload = { flowMode: 'formal', text: text, settings: s || {} };
         await handleTransformStartError(err, 'select', gen);
@@ -5172,18 +5189,33 @@
   window.gpResumeEvasionTransform = function (payload) {
     payload = payload || {};
     var text = String(payload.text || '').trim();
-    if (!text) return false;
+    var ownerUid = window.CU && window.CU.uid;
+    if (!text || !ownerUid) return false;
     if (typeof window.switchTab === 'function') window.switchTab('main');
     var input = $('lavInput');
     if (!input) return false;
     input.value = text;
     if (typeof window.lavSetMode === 'function') window.lavSetMode('humanize');
     var settings = payload.settings || {};
-    setTimeout(function () {
-      if (payload.flowMode === 'formal') runFormalEvasion(settings);
-      else runShortJob(payload.flowMode === 'polish' ? 'polish' : 'blog', settings);
-    }, 120);
-    return true;
+    // Resolve on admission, not on dispatch or on the end of a several-minute job.
+    // A missing acknowledgement keeps the original request; it never submits a second job.
+    return new Promise(function (resolve) {
+      var settled = false;
+      var timer = setTimeout(function () { finish({ status: 'pending' }); }, 15000);
+      function finish(outcome) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(outcome);
+      }
+      setTimeout(function () {
+        try {
+          if (!window.CU || window.CU.uid !== ownerUid) { finish({ status: 'attention_required' }); return; }
+          if (payload.flowMode === 'formal') runFormalEvasion(settings, finish);
+          else runShortJob(payload.flowMode === 'polish' ? 'polish' : 'blog', settings, finish);
+        } catch (_) { finish({ status: 'attention_required' }); }
+      }, 120);
+    });
   };
 
   window.gpResumeEvasionFallback = function (payload) {
